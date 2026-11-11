@@ -1,12 +1,9 @@
 id = "eos.pr_molar_volume"
 name = "Molar volume from a compressibility factor"
+summary = "Molar volume from a compressibility factor, temperature and pressure. Use it to turn a cubic EOS root into a volume."
 equation = "v = z*R*T/P"
 latex = '''v = \frac{z\,R\,T}{P}'''
-assumptions = ["`z` is the compressibility factor for the *same* `T` and `P`. NOT CHECKED, and not checkable here.\n", "the fluid is a single phase at this state; this calc does not know whether it is two-phase, supercritical, or on the unstable branch.\n", "no volume translation is applied, so `v` from a liquid root will be several per cent low - a property of the equation, not an error here.\n", """\
-    `R` is the exact value from the 2019 SI definition, not a truncated constant. A caller \
-    reproducing this by hand with `8.314` will disagree in the fourth significant figure.""", """\
-    the volume is molar. Converting to a specific volume needs a molar mass, which this calc \
-    does not take - `eos.pr_mass_density` is where that lives."""]
+assumptions = ["`z` is the compressibility factor for the *same* `T` and `P`. NOT CHECKED, and not checkable here.\n", "the fluid is a single phase at this state; this calc does not know whether it is two-phase, supercritical, or on the unstable branch.\n", "no volume translation is applied, so `v` from a liquid root will be several per cent low - a property of the equation, not an error here.\n", "`R` is the exact value from the 2019 SI definition, not a truncated constant. A caller reproducing this by hand with `8.314` will disagree in the fourth significant figure.", "the volume is molar. Converting to a specific volume needs a molar mass, which this calc does not take - `eos.pr_mass_density` is where that lives."]
 references = ["Clapeyron, É. (1834). \\\"Mémoire sur la puissance motrice de la chaleur.\\\"", """\
     van der Waals, J. D. (1873). \"Over de Continuiteit van den Gas- en Vloeistoftoestand.\" \
     Leiden. (the compressibility factor as the departure from ideality)""", """\

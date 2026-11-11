@@ -48,10 +48,6 @@ export function ProvenanceSheet({
             <td>{entry.model ?? "—"}</td>
           </tr>
           <tr>
-            <th scope="row">source</th>
-            <td>{entry.source ?? "—"}</td>
-          </tr>
-          <tr>
             <th scope="row">verification</th>
             {/* The library's own status word, and not a sentence about it. */}
             <td>{entry.verification ?? "—"}</td>

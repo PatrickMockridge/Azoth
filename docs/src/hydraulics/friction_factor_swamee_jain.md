@@ -4,6 +4,8 @@
 
 `hydraulics.friction_factor_swamee_jain`
 
+Explicit Swamee-Jain approximation to the Colebrook-White friction factor. Use it for turbulent-flow pressure-drop estimates where an explicit form is preferred.
+
 ## Equation
 
 $$
@@ -51,7 +53,7 @@ Equation: "Explicit equations for pipe-flow problems"
 | `relative_roughness < 0.01` | warns `OUT_OF_VALID_RANGE` | Upper relative-roughness bound stated in the original paper (10**-2). |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

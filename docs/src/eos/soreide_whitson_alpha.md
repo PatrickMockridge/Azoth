@@ -4,6 +4,8 @@
 
 `eos.soreide_whitson_alpha`
 
+Soreide-Whitson alpha function for water in a cubic equation of state. Use it for water-containing mixtures with a salinity correction.
+
 ## Equation
 
 $$
@@ -21,6 +23,14 @@ alpha = (1 + 0.453*(1 - Tr*(1 - 0.0103*salinity**1.1)) + 0.0034*((1/Tr)**3 - 1))
 **NeqSim master `AttractiveTermSoreideWhitson`**
 
 `alpha(temperature)`, water branch ported verbatim
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the correlation is for water; for any other component NeqSim's class delegates to the 1978 Peng-Robinson alpha (`pr78_kappa`), which is ported separately.
+
 
 ## Inputs
 
@@ -45,15 +55,13 @@ alpha = (1 + 0.453*(1 - Tr*(1 - 0.0103*salinity**1.1)) + 0.0034*((1/Tr)**3 - 1))
 | `salinity >= 0` | raises | the formula takes a fractional power of `salinity`; negative salinity is not a state |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
 - `salinity` is the molality (mol NaCl / kg H2O), the unit the Soreide-Whitson correlation expects; it is declared dimensionless because the vocabulary carries no molality unit.
-
-- the correlation is for water; for any other component NeqSim's class delegates to the 1978 Peng-Robinson alpha (`pr78_kappa`), which is ported separately.
 
 
 

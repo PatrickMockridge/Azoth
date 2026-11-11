@@ -98,11 +98,13 @@ fn every_variant() -> Vec<Diagnostic> {
             instance: "sep1".into(),
             port: "feed".into(),
             count: 2,
+            incoming: true,
         },
         Diagnostic::UnderfedPort {
             instance: "mix1".into(),
             port: "feed".into(),
             count: 0,
+            incoming: true,
         },
         Diagnostic::UnusedFeed {
             name: "feed_1".into(),
@@ -266,6 +268,7 @@ fn a_record_is_the_documented_shape() {
         instance: "m1".into(),
         port: "feed".into(),
         count: 2,
+        incoming: true,
     });
     let document = serde_json::to_value(&record).expect("a record serialises");
     assert_eq!(
@@ -277,8 +280,8 @@ fn a_record_is_the_documented_shape() {
             "path": "m1.ports.feed",
             "target": { "kind": "handle", "role": "instance", "node": "m1",
                         "port": "feed", "index": null },
-            "message": "`feed` takes one stream and 2 are connected",
-            "detail": { "count": 2 },
+            "message": "the inlet `feed` of `m1` takes one stream and 2 are connected",
+            "detail": { "count": 2, "incoming": true },
         })
     );
 }
@@ -310,7 +313,7 @@ fn a_type_mismatch_reaches_the_wire_as_its_field_and_dimensions() {
     // And the human line is still the sentence the CLI prints, rendered from the structure.
     assert_eq!(
         record.message,
-        "field \"h\" differs: molar_energy (scalar) vs molar_flow (scalar)"
+        "the field `h` differs: the producer has molar_energy (scalar); the consumer has molar_flow (scalar)"
     );
 }
 
@@ -374,9 +377,9 @@ fn every_palette_entry_has_a_form_and_every_form_a_palette_entry() {
 fn the_one_entry_that_does_not_run_declares_no_parameter() {
     let palette = palette();
     let forms = forms(&palette);
-    assert_eq!(forms.len(), 29);
-    assert_eq!(forms.iter().filter(|f| f.model.is_some()).count(), 28);
-    assert_eq!(forms.iter().filter(|f| f.runnable).count(), 28);
+    assert_eq!(forms.len(), 31);
+    assert_eq!(forms.iter().filter(|f| f.model.is_some()).count(), 30);
+    assert_eq!(forms.iter().filter(|f| f.runnable).count(), 30);
 
     let refused: Vec<&FormSpec> = forms.iter().filter(|f| !f.runnable).collect();
     assert_eq!(refused.len(), 1);
@@ -486,7 +489,37 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
         }
         checked += spec.input_checks().count();
     }
-    assert_eq!(checked, 94, "the bounds this test walked");
+    // The reactor vessel state eight, which took the walk from ninety-four to a hundred and
+    // two; the plug-flow reactor's feed bound is the third, the throttling valve's opening the
+    // fourth, the pump's feed and speed the fifth and sixth, the filter's exponent, void
+    // fraction and efficiency the seventh to ninth, and the pipe's stated outlet pressure the
+    // tenth, the compressor's speed the eleventh, and the expander's polytropic efficiency the
+    // twelfth. **The separator's capacity surface adds three** - its diameter, its design gas
+    // load factor and its design liquid level - the thirteenth to fifteenth. **The three-phase
+    // separator's vessel adds four** - its diameter, its tan-tan length and its two level
+    // fractions - the sixteenth to nineteenth. **The flare's radiation surface adds two** - its
+    // ground distance and its flux threshold, which the form does not carry - the twentieth and
+    // twenty-first. **The separator's sizing surface adds three bounds** - its length, its
+    // operating level fraction and its safety factor - the twenty-second to twenty-fourth,
+    // and **its mechanical design's seven** - the liquid fraction, the volume safety factor,
+    // the retention time, the operating pressure, the allowable stress, the joint efficiency
+    // and the corrosion allowance - make twenty-four to thirty-one. **And the gas scrubber's
+    // six** - its volume safety factor, level fraction, operating pressure, allowable stress,
+    // joint efficiency and corrosion allowance - thirty-two to thirty-seven. **And the
+    // splitter's design velocity's positive bound** takes the walk to a hundred and fifty-one.
+    // **And the filter's loading state's five** - the solids loading, the drop increase, the
+    // breakthrough start (with its ceiling), the bypass cracking pressure and the terminal
+    // drop - take it to a hundred and fifty-six. **And its step's five** - the time step, the
+    // holdup volume and the three rates - take it to a hundred and sixty-one. **And its design's
+    // ten** - the element count, the face velocity, the element area, the nozzle velocity, the
+    // two L/D ratios, the pressure multiplier and additive margin, the corrosion allowance and
+    // the collapse rating - take it to a hundred and seventy-one.
+    // **And the exchanger's transient eight** - the time step, the wall mass and specific
+    // heat, the two holdup volumes, the two film coefficients and the area - 191 + 8 = 199.
+    // **And the cooler's transient eleven** - the time step, the design mass flow and three
+    // design temperatures, the design and carried openings, the two time constants and the
+    // carried outlet - 199 + 11 = 210.
+    assert_eq!(checked, 210, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -600,7 +633,97 @@ fn the_generated_input_table_is_the_models_own() {
     // `material_grade` and `max_operation_pressure`. `417 + 6 = 423`. **And then the
     // absorber pair's six**, on `process.absorption_column` and `process.stripping_column`,
     // which inherit the vessel from the same class: the same six names, `423 + 12 = 435`.
-    assert_eq!(walked, 435, "the inputs this test walked");
+    // **And then the reactor vessel's eleven**, all on `process.gibbs_reactor` and five of them
+    // class defaults: `reactor_type`, `catalyst_bulk_density`, `catalyst_particle_diameter`,
+    // `bed_void_fraction`, `ghsv`, `lhsv`, `number_of_beds`, `max_operation_pressure`,
+    // `max_operation_temperature`, `joint_efficiency` and `corrosion_allowance`.
+    // `435 + 11 = 446`. **And then the Gibbs solver's five step controls**, on the same entry:
+    // `armijo_line_search`, `armijo_c1`, `armijo_rho`, `armijo_max_backtracks` and
+    // `adaptive_step_size`. `446 + 5 = 451`. **And then the regularisation's three**, on the
+    // same entry: `regularization`, `regularization_threshold` and `regularization_tau`.
+    // `451 + 3 = 454`. **And then the throttling valve's nine**, all on `process.throttling_valve`
+    // and eight of them class defaults: `valve_opening`, `kv`, `fouling_fraction`,
+    // `valve_characterization`, `xt`, `allow_choked`, `is_calc_pressure`, `is_isothermal` and
+    // `sizing_standard`. `454 + 9 = 463`. **And then the pump's performance curve's seven**,
+    // all on `process.pump` and all optional: `curve`, `speed`, `reference_density`, `viscosity`,
+    // `use_viscosity_correction`, `check_npsh` and `npsh_margin`. `463 + 7 = 470`. **And then
+    // the filter's clean-drop and capture surface's thirteen**, all on `process.filter`: the
+    // model selector, the reference flow and exponent, the drop curve, the four media numbers,
+    // the viscosity, the beta curve, the particle size, the scalar efficiency and the inlet
+    // concentration. `470 + 13 = 483`. **And then the pipe's five**, all on `process.pipe`
+    // and all optional: `fittings`, `outlet_pressure`, `correlation`, `number_of_increments`
+    // and `elevation`. `483 + 5 = 488`. **And then the compressor's chart's three**, all on
+    // `process.compressor`: `curve`, `speed` and `chart_type`. `488 + 3 = 491`. **And then the
+    // expander's three**, all on `process.expander`: `use_polytropic_calc`,
+    // `polytropic_efficiency` and `number_of_steps`. `491 + 3 = 494`. **And then the
+    // turbo-expander's twenty-nine**, all on `process.turbo_expander_compressor`: two component
+    // lists, eight feed quantities, five design numbers, and fourteen optional - `494 + 29 = 523`.
+    // **And then the compressor's surge surface's four**, all on `process.compressor`:
+    // `surge_curve`, `surge_control_margin`, `anti_surge_active` and `surge_control_factor` -
+    // `523 + 4 = 527`. **And then the Khader chart's two**, on the same model:
+    // `chart_conditions` and `impeller_diameter` - `527 + 2 = 529`. **And then the
+    // speed-solve mode's four**, on the same model: `solve_speed`, `min_speed`, `max_speed` and
+    // `limit_speed` - `553 + 4 = 557`. **And then the separator's capacity surface's four** -
+    // `internal_diameter`, `design_gas_load_factor`, `orientation` and
+    // `design_liquid_level_fraction` - `557 + 4 = 561`. **And the three-phase separator's
+    // vessel's six** - `internal_diameter`, `separator_length`, `nll_fraction`, `nil_fraction`,
+    // `water_level` and `oil_level` - `561 + 6 = 567`. **And the flare's radiation, dispersion
+    // and capacity surface's eight** - `flame_height`, `radiant_fraction`, `tip_diameter`,
+    // `ground_distance`, `radiation_flux_threshold` and the three design capacities -
+    // `567 + 8 = 575`. **And then the separator's sizing surface's three** -
+    // `separator_length`, `liquid_level_fraction` and `safety_factor` - `575 + 3 = 578`.
+    // **And the mechanical design's eight** - its flag, `fg`, the volume safety factor, the
+    // retention time, the operating pressure, the allowable stress, the joint efficiency and
+    // the corrosion allowance - `578 + 8 = 586`. **And the gas scrubber's eight** - its
+    // flag, orientation, volume factor, level fraction, pressure, stress, joint efficiency
+    // and corrosion allowance - `586 + 8 = 594`. **And then the separator family's eight** -
+    // `auto_size`, the gas scrubber's `safety_factor` and three mesh-pad fields, and the
+    // three-phase separator's three outlet fractions - `594 + 8 = 602`. **And the heat
+    // exchanger's three** - `use_delta_t`, `delta_t` and `guess_out_temperature` -
+    // `602 + 3 = 605`. **And the compressor's polytropic three** - `use_polytropic_calc`,
+    // `polytropic_efficiency` and `polytropic_method` - `605 + 3 = 608`. **And the
+    // compressor's ratio, cap and fixed power** - `compression_ratio`,
+    // `max_outlet_pressure` and `power` - `608 + 3 = 611`. **And the deposit's three** -
+    // `deposit`, `wetted_area` and `passage_half_height` - `611 + 3 = 614`. **And the
+    // stirred-tank reactor's three stored fields** - `vessel_volume`, `residence_time` and
+    // `agitator_power_per_volume` - `614 + 3 = 617`. **And the splitter's capacity four** -
+    // `design_pressure_drop`, `max_design_velocity`, `header_diameter` and
+    // `capacity_analysis_enabled` - `617 + 4 = 621`. **And the splitter's mechanical
+    // design's six** - `mechanical_design`, `design_velocity`, `max_operation_pressure`,
+    // `tensile_strength`, `joint_efficiency` and `corrosion_allowance` - `621 + 6 = 627`.
+    // **And the heater's two outlet-temperature limits** - `max_outlet_temperature` and
+    // `min_outlet_temperature` - `627 + 2 = 629`. **And the expander's recovered-power
+    // rating** - `rated_recovered_power` - `629 + 1 = 630`. **And the filter's loaded
+    // state's six** - `solids_loading`, `loading_capacity`,
+    // `pressure_drop_increase_at_capacity`, `breakthrough_start_fraction`,
+    // `bypass_cracking_pressure` and `terminal_pressure_drop` - `630 + 6 = 636`. **And the
+    // filter's step's seven** - `time_step`, `holdup_volume`, `solids_loading_rate`,
+    // `backwash_removal_rate`, `regeneration_removal_rate`, `backwash_active` and
+    // `regeneration_active` - `636 + 7 = 643`. **And the filter's design's sixteen** - the
+    // flag, the type, the element count, the face velocity, the element area, the nozzle
+    // velocity, the two L/D ratios, the two pressure margins, the temperature margin, the
+    // allowable stress, the joint efficiency, the corrosion allowance, the collapse rating
+    // and the integrity flag - `643 + 16 = 659`. **And the expander's two modes** -
+    // `shaft_power` and `outlet_temperature` - `659 + 2 = 661`. **And the heater's instrument
+    // design's four** - `instrument_design`, `include_safety_instruments`,
+    // `default_sil_level` and `heat_exchanger_type` - `661 + 4 = 665`. **And the heater's
+    // electrical design's nine** - `electrical_design`, `motor_sizing_margin`, `motor_poles`,
+    // `efficiency_class`, `frequency_hz`, `phases`, `number_of_fans`, `instrumentation_power`
+    // and `cooling_water_pump_power` - `665 + 9 = 674`. **And the heater's utility
+    // specification's six** - the flag, the two temperatures, the approach, the
+    // heat-capacity rate and the coefficient - `674 + 6 = 680`. **And the heater's
+    // mechanical design's three** - `mechanical_design`, `mechanical_type` and
+    // `mechanical_selection` - `680 + 3 = 683`. **And the heater's electrical cable's
+    // `cable_length`** - `683 + 1 = 684` - **and its `use_vfd`** - `684 + 1 = 685` - **and the
+    // heat exchanger's mechanical design's three** - `mechanical_design`, `mechanical_type` and
+    // `mechanical_selection` - `685 + 3 = 688`.
+    // **And the exchanger's transient thirteen** - the time step, the gate, the tube side, the
+    // wall mass and specific heat, the wall and two fluid temperatures, the two holdup volumes,
+    // the two film coefficients and the area - 714 + 13 = 727. **And the cooler's twelve** -
+    // the time step, the gate, the design mass flow and three temperatures, the design and
+    // carried openings, the requested opening, the two time constants and the carried outlet -
+    // 727 + 12 = 739.
+    assert_eq!(walked, 739, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`
@@ -915,7 +1038,7 @@ fn the_shipped_flowsheet_projects_to_six_nodes_and_six_edges() {
             (
                 "e0".into(),
                 "input:feed_1#feed_1".into(),
-                "instance:mix1#mix1.feed".into(),
+                "instance:mix1#mix1.feed[0]".into(),
                 "feed_1".into(),
                 "connection",
                 "feed_1"
@@ -956,7 +1079,7 @@ fn the_shipped_flowsheet_projects_to_six_nodes_and_six_edges() {
             (
                 "e5".into(),
                 "instance:sep1#sep1.liquid".into(),
-                "instance:mix1#mix1.feed".into(),
+                "instance:mix1#mix1.feed[1]".into(),
                 "recycle_1".into(),
                 "recycle",
                 "sep1.liquid"
@@ -964,8 +1087,8 @@ fn the_shipped_flowsheet_projects_to_six_nodes_and_six_edges() {
         ]
     );
 
-    // A mixer's inlet is one handle however many streams reach it, which is what makes the loop
-    // wireable at all.
+    // A mixer's inlet is a row of points: the feed and the recycle get their own, and one spare
+    // slot is drawn so another feed can be added.
     let mixer = document
         .nodes
         .iter()
@@ -975,7 +1098,10 @@ fn the_shipped_flowsheet_projects_to_six_nodes_and_six_edges() {
     assert_eq!(ports.inlets.len(), 1);
     assert_eq!(ports.inlets[0].name, "feed");
     assert_eq!(ports.inlets[0].multiplicity, "many");
-    assert_eq!(ports.inlets[0].handles, ["mix1.feed"]);
+    assert_eq!(
+        ports.inlets[0].handles,
+        ["mix1.feed[0]", "mix1.feed[1]", "mix1.feed[2]"]
+    );
     assert_eq!(ports.outlets[0].handles, ["mix1.product"]);
 
     // A separator's two outlets are two handles on two ports.
@@ -1343,7 +1469,7 @@ fn the_embedded_palette_is_the_directory() {
         bundled, files,
         "the bundle and the directory list the same files"
     );
-    assert_eq!(bundled.len(), 29);
+    assert_eq!(bundled.len(), 31);
 }
 
 /// And the two sources parse to one palette, which is what makes the loader shared rather than
@@ -1355,5 +1481,5 @@ fn the_two_palette_loaders_agree() {
     let from_disk = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
     let from_text = azoth_process::load_palette_text(PALETTE).expect("the bundle parses");
     assert_eq!(from_disk, from_text);
-    assert_eq!(from_text.len(), 29);
+    assert_eq!(from_text.len(), 31);
 }

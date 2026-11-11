@@ -5,11 +5,9 @@ The Rust half holds the same numbers in ``crates/azoth-process/src/column/mechan
 ``calcDesign`` publishes is compared with what the class printed. This is the Python half of that
 pair, and the two halves are mirrors.
 
-**The capture's fourth row, ``absorber_mechanical``, is the Rust half's alone for now**: it is
-held by ``crates/azoth-process/tests/absorber.rs``, whose column is the lean-oil absorber solved
-unpinned, and the Python twin of that state is not written. The wiring this module's caller will
-do puts all four rows on ``process.distillation_column``'s cases, where both implementations are
-pinned to them at once.
+**The capture's absorber and stripper rows are held elsewhere**: ``tests/absorber.rs`` holds each
+to its own row, and the two ids' cases hold the same numbers on both implementations at once.
+This module holds the three binary rows.
 """
 
 from __future__ import annotations

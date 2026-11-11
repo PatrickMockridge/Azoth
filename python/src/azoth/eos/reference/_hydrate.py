@@ -242,6 +242,43 @@ def water_fugacity_coefficient(
     )
 
 
+def pitzer_water_fugacity_coefficient(
+    guests: list[HydrateGuest],
+    ref_fugacities: list[float],
+    t: float,
+    p: float,
+    structure: int,
+    p_sat_water: float,
+) -> float:
+    """``ComponentHydratePitzer``'s coefficient: the PVTsim exponent, Antoine reference.
+
+    ``p_sat_water`` is in pascals, as every fugacity here is.
+    """
+    return math.exp(exponent(guests, ref_fugacities, PVTSIM, t, p, structure)) * p_sat_water / p
+
+
+def pitzer_structure(
+    guests: list[HydrateGuest],
+    ref_fugacities: list[float],
+    t: float,
+    p: float,
+    p_sat_water: float,
+    requested: int | None = None,
+) -> tuple[int, float]:
+    """The structure and coefficient the Pitzer component reports.
+
+    A requested structure is evaluated alone; ``None`` evaluates both and keeps the lower
+    coefficient, which is the stable hydrate.
+    """
+    if requested is not None:
+        return requested, pitzer_water_fugacity_coefficient(
+            guests, ref_fugacities, t, p, requested, p_sat_water
+        )
+    first = pitzer_water_fugacity_coefficient(guests, ref_fugacities, t, p, 0, p_sat_water)
+    second = pitzer_water_fugacity_coefficient(guests, ref_fugacities, t, p, 1, p_sat_water)
+    return (0, first) if first <= second else (1, second)
+
+
 def stable_structure(
     guests: list[HydrateGuest],
     ref_fugacities: list[float],

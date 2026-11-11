@@ -1,8 +1,10 @@
 id = "eos.heat_of_vaporization"
 name = "Heat of vaporisation from NeqSim's correlation"
+summary = "Latent heat of vaporisation from a temperature-dependent correlation. Use it for duty and flash calculations when a component's latent heat is needed."
 equation = "hov = 1e-3 * c0 * (1 - Tr)**(c1 + c2*Tr + c3*Tr**2)"
 latex = '''\Delta h_{\mathrm{vap}} = 10^{-3}\,c_0\,\left(1 - T_r\right)^{c_1 + c_2 T_r + c_3 T_r^{2}}'''
-assumptions = ["the four coefficients are the raw `heatofvaporizationcoefs1..4` NeqSim ships, in its internal unit; the `1e-3` in the equation is what recovers `J/mol` from them. NOT CHECKED - the coefficients come from the caller.\n", "`Tr` is reduced against the critical temperature the caller supplies.\n", "the correlation is a fit of limited range; NeqSim's own data is inconsistent across components (methane's `c0` is three orders of magnitude smaller than n-butane's), which this calc reproduces rather than repairs.\n", "this calc returns a pure-component property and says nothing about a mixture or a phase.\n"]
+assumptions = ["`Tr` is reduced against the critical temperature the caller supplies.\n", "the correlation is a fit of limited range; the library's data are inconsistent across components (methane's `c0` is three orders of magnitude smaller than n-butane's), and this calculation reproduces them rather than repairing them.\n", "this calc returns a pure-component property and says nothing about a mixture or a phase.\n"]
+notes = ["the four coefficients are the raw `heatofvaporizationcoefs1..4` NeqSim ships, in its internal unit; the `1e-3` in the equation is what recovers `J/mol` from them. NOT CHECKED - the coefficients come from the caller.\n"]
 references = ["Watson, K. M. (1943). \\\"Thermodynamics of the Liquid State.\\\" Ind. Eng. Chem. 35(4), 398-406. DOI 10.1021/ie50400a004."]
 [source]
 standard = "NeqSim's `getPureComponentHeatOfVaporization`"
@@ -10,7 +12,7 @@ edition = "the correlation NeqSim master evaluates in `thermo/component/Componen
 [inputs]
 [inputs.c0]
 unit = "dimensionless"
-description = "The first heat-of-vaporisation coefficient, NeqSim's internal scale.\n"
+description = "The first heat-of-vaporisation coefficient, in the correlation's internal scale.\n"
 [inputs.c1]
 unit = "dimensionless"
 description = "The exponent's constant term.\n"

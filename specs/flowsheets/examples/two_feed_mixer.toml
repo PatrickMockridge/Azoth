@@ -1,0 +1,89 @@
+id = "flowsheets.two_feed_mixer"
+name = "Two feeds, mix, heat, separate, recycle"
+
+products = ["vapour_product"]
+
+[[inputs]]
+name = "feed_1"
+components = ["methane", "n-butane"]
+n = 1.0
+z = [0.9, 0.1]
+P = 5.0e5
+T = 300.0
+
+[[inputs]]
+name = "feed_2"
+components = ["methane", "n-butane"]
+n = 0.5
+z = [0.5, 0.5]
+P = 5.0e5
+T = 300.0
+
+[[instances]]
+id = "mix1"
+unit = "unit_ops.mixer"
+
+[[instances]]
+id = "p1"
+unit = "unit_ops.pump"
+[instances.parameters]
+outlet_pressure = 2.0e6
+isentropic_efficiency = 0.75
+
+[[instances]]
+id = "hx1"
+unit = "unit_ops.heater"
+[instances.parameters]
+outlet_temperature = 300.0
+
+[[instances]]
+id = "sep1"
+unit = "unit_ops.separator"
+[instances.parameters]
+pressure_drop = 5.0e4
+gas_in_liquid = 0.0
+
+[[connections]]
+from = "feed_1"
+to = "mix1.feed[0]"
+
+[[connections]]
+from = "feed_2"
+to = "mix1.feed[1]"
+
+[[connections]]
+from = "mix1.product"
+to = "p1.inlet"
+
+[[connections]]
+from = "p1.outlet"
+to = "hx1.inlet"
+
+[[connections]]
+from = "hx1.outlet"
+to = "sep1.feed"
+
+[[connections]]
+from = "sep1.vapour"
+to = "vapour_product"
+
+[[recycles]]
+stream = "recycle_1"
+from = "sep1.liquid"
+to = "mix1.feed[2]"
+
+# Where an editor draws each node. Nothing in the run reads it - the checker ignores it and the
+# executor never sees it - and its position here, after the arrays of tables, is the only order
+# TOML lets a writer emit. A flowsheet without a `[layout]` derives a deterministic one instead.
+[layout.inputs]
+feed_1 = [0.0, 60.0]
+feed_2 = [0.0, 120.0]
+
+[layout.instances]
+mix1 = [240.0, 60.0]
+p1 = [480.0, 60.0]
+hx1 = [720.0, 60.0]
+sep1 = [960.0, 60.0]
+
+[layout.products]
+vapour_product = [1200.0, 0.0]

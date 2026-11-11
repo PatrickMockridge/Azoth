@@ -25,6 +25,11 @@
  */
 
 import type {
+  CalcForm,
+  CalcInput,
+  CalcOutput,
+  CalcProvenance,
+  CalcWarning,
   Catalogue,
   Diagnostic,
   Envelope,
@@ -50,6 +55,12 @@ import type {
   Role,
   SessionReport,
   Severity,
+  Sheet,
+  SheetBook,
+  SheetDiagnostic,
+  SheetEnvelope,
+  SheetResult,
+  SheetValue,
   StreamRecord,
   Target,
   TearRecord,
@@ -156,6 +167,8 @@ const KINDS = [
   "string",
   "components",
   "matrix",
+  "fitting_list",
+  "record_list",
   "unknown",
 ] as const;
 
@@ -560,6 +573,154 @@ function form(value: unknown, path: string): Form {
   };
 }
 
+/** The scalar an input or a worked example carries. */
+function exampleValue(value: unknown, path: string): number | boolean | string {
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") {
+    return value;
+  }
+  return fail(path, "a number, a flag or a name", value);
+}
+
+function calcInput(value: unknown, path: string): CalcInput {
+  const raw = obj(value, path);
+  return {
+    ...formParameter(value, path),
+    default:
+      raw.default === null || raw.default === undefined
+        ? null
+        : exampleValue(raw.default, `${path}.default`),
+  };
+}
+
+function calcOutput(value: unknown, path: string): CalcOutput {
+  const raw = obj(value, path);
+  return {
+    name: str(raw.name, `${path}.name`),
+    kind: oneOf(raw.kind, `${path}.kind`, KINDS),
+    unit: nullable(raw.unit, `${path}.unit`, str),
+    dimension: nullable(raw.dimension, `${path}.dimension`, str),
+    values: list(raw.values, `${path}.values`, str),
+    description: str(raw.description, `${path}.description`),
+    optional: bool(raw.optional, `${path}.optional`),
+  };
+}
+
+function calcProvenance(value: unknown, path: string): CalcProvenance {
+  const raw = obj(value, path);
+  return {
+    verification: str(raw.verification, `${path}.verification`),
+    spec_sha256: nullable(raw.spec_sha256, `${path}.spec_sha256`, str),
+    rust_sha256: nullable(raw.rust_sha256, `${path}.rust_sha256`, str),
+    python_sha256: nullable(raw.python_sha256, `${path}.python_sha256`, str),
+    tests_active: num(raw.tests_active, `${path}.tests_active`),
+    tests_skipped: num(raw.tests_skipped, `${path}.tests_skipped`),
+    validation_cases: num(raw.validation_cases, `${path}.validation_cases`),
+  };
+}
+
+function calcForm(value: unknown, path: string): CalcForm {
+  const raw = obj(value, path);
+  return {
+    id: str(raw.id, `${path}.id`),
+    name: str(raw.name, `${path}.name`),
+    summary: str(raw.summary, `${path}.summary`),
+    namespace: str(raw.namespace, `${path}.namespace`),
+    available: bool(raw.available, `${path}.available`),
+    refusal: nullable(raw.refusal, `${path}.refusal`, str),
+    equation: nullable(raw.equation, `${path}.equation`, str),
+    assumptions: list(raw.assumptions, `${path}.assumptions`, str),
+    references: list(raw.references, `${path}.references`, str),
+    inputs: list(raw.inputs, `${path}.inputs`, calcInput),
+    outputs: list(raw.outputs, `${path}.outputs`, calcOutput),
+    worked_example: mapOf(raw.worked_example, `${path}.worked_example`, exampleValue),
+    provenance: calcProvenance(raw.provenance, `${path}.provenance`),
+  };
+}
+
+function calcWarning(value: unknown, path: string): CalcWarning {
+  const raw = obj(value, path);
+  return {
+    code: str(raw.code, `${path}.code`),
+    message: str(raw.message, `${path}.message`),
+    field: nullable(raw.field, `${path}.field`, str),
+  };
+}
+
+/** One output: a quantity object, or a native name/flag/number/vector. */
+function sheetValue(value: unknown, path: string): SheetValue {
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return list(value, path, num);
+  }
+  return quantity(value, path);
+}
+
+function sheetResult(value: unknown, path: string): SheetResult {
+  const raw = obj(value, path);
+  return {
+    outputs: mapOf(raw.outputs, `${path}.outputs`, sheetValue),
+    warnings: list(raw.warnings, `${path}.warnings`, calcWarning),
+  };
+}
+
+function sheetDiagnostic(value: unknown, path: string): SheetDiagnostic {
+  const raw = obj(value, path);
+  return {
+    code: str(raw.code, `${path}.code`),
+    message: str(raw.message, `${path}.message`),
+    field: nullable(raw.field, `${path}.field`, str),
+  };
+}
+
+function sheet(value: unknown, path: string): Sheet {
+  const raw = obj(value, path);
+  return {
+    id: str(raw.id, `${path}.id`),
+    name: str(raw.name, `${path}.name`),
+    calculation: str(raw.calculation, `${path}.calculation`),
+    inputs: mapOf(raw.inputs, `${path}.inputs`, exampleValue),
+    ready: bool(raw.ready, `${path}.ready`),
+    missing: list(raw.missing, `${path}.missing`, str),
+    stale: bool(raw.stale, `${path}.stale`),
+    result: nullable(raw.result, `${path}.result`, sheetResult),
+    error:
+      raw.error === null || raw.error === undefined
+        ? null
+        : {
+            message: str(obj(raw.error, `${path}.error`).message, `${path}.error.message`),
+            field: nullable(
+              obj(raw.error, `${path}.error`).field,
+              `${path}.error.field`,
+              str,
+            ),
+          },
+    diagnostics: list(raw.diagnostics, `${path}.diagnostics`, sheetDiagnostic),
+  };
+}
+
+function sheetBook(value: unknown, path: string): SheetBook {
+  const raw = obj(value, path);
+  return {
+    id: str(raw.id, `${path}.id`),
+    name: str(raw.name, `${path}.name`),
+    document: str(raw.document, `${path}.document`),
+    sheets: list(raw.sheets, `${path}.sheets`, sheet),
+  };
+}
+
+/** One call's answer from the calculation-sheet workspace. */
+export function decodeSheetEnvelope(value: unknown): SheetEnvelope {
+  const path = "the sheet envelope";
+  const raw = obj(value, path);
+  return {
+    ok: bool(raw.ok, `${path}.ok`),
+    dirty: bool(raw.dirty, `${path}.dirty`),
+    book: sheetBook(raw.book, `${path}.book`),
+  };
+}
+
 /** The palette, the units and the components: what a front end asks the *library* for. */
 export function decodeCatalogue(value: unknown): Catalogue {
   const path = "the catalogue";
@@ -604,9 +765,15 @@ export function decodeCatalogue(value: unknown): Catalogue {
       };
     }),
   );
+  const calcs = nullable(raw.calcs, `${path}.calcs`, (entry, at) =>
+    list(entry, at, calcForm),
+  );
   const catalogue: Catalogue = {
     unit_ops: list(raw.unit_ops, `${path}.unit_ops`, form),
   };
+  if (calcs !== null) {
+    catalogue.calcs = calcs;
+  }
   if (units !== null) {
     catalogue.units = units;
   }
@@ -643,3 +810,5 @@ function parse<T>(json: string, decode: (value: unknown) => T): T {
 
 export const parseEnvelope = (json: string): Envelope => parse(json, decodeEnvelope);
 export const parseCatalogue = (json: string): Catalogue => parse(json, decodeCatalogue);
+export const parseSheetEnvelope = (json: string): SheetEnvelope =>
+  parse(json, decodeSheetEnvelope);

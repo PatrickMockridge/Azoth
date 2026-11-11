@@ -4,6 +4,8 @@
 
 `eos.chung_conductivity`
 
+Gas thermal conductivity from the Chung correlation. Use it for gas heat-transfer and insulation screening when composition and properties are known.
+
 ## Equation
 
 $$
@@ -23,6 +25,16 @@ mu_r = 131.3*dipole/sqrt(Vc_cm3*Tc),  Fc = 1 - 0.2756*omega + 0.059035*mu_r**4 +
 Generalized multiparameter correlation for nonpolar and polar fluid transport properties. Ind. Eng. Chem. Res. 27(4), 671-679
 
 DOI: [10.1021/ie00076a024](https://doi.org/10.1021/ie00076a024)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the viscosity inside the correlation is the *dilute-gas* Chung viscosity (the `40.785` form), not the dense-gas `eos.chung_viscosity`.
+
+- the gas constant is NeqSim's `8.3144621` J/(mol*K), not the exact SI value, so the port reproduces NeqSim to the last digit.
+
 
 ## Inputs
 
@@ -54,7 +66,7 @@ DOI: [10.1021/ie00076a024](https://doi.org/10.1021/ie00076a024)
 | `T > 0` | raises | An absolute temperature; zero and below are not states. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
@@ -63,10 +75,6 @@ satisfy for the result to mean what it says.
 - the ideal-gas constant-volume heat capacity, molar mass, critical constants and correction factors are those of the gas whose conductivity is wanted. NOT CHECKED - they come from the caller.
 
 - `Cv0` is the ideal-gas heat capacity at constant volume at `T`, i.e. `Cp0 - R`; the caller gets `Cp0` from `eos.ideal_gas_cp`.
-
-- the viscosity inside the correlation is the *dilute-gas* Chung viscosity (the `40.785` form), not the dense-gas `eos.chung_viscosity`.
-
-- the gas constant is NeqSim's `8.3144621` J/(mol*K), not the exact SI value, so the port reproduces NeqSim to the last digit.
 
 
 

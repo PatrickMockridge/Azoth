@@ -1,0 +1,336 @@
+id = "thermal.two_phase_pressure_drop"
+name = "Two-phase pressure drop, Friedel and Muller-Steinhagen-Heck"
+summary = "Two-phase pressure gradient from the Friedel and Muller-Steinhagen-Heck methods. Use it to size a line or check an exchanger tube side carrying a vapour-liquid mixture."
+equation = "dPdz_F = phi_lo**2*dPdz_lo; phi_lo**2 = E + 3.24*F*H/(Fr**0.045*We**0.035); dPdz_MSH = (A + 2*(B-A)*x)*(1-x)**(1/3) + B*x**3; dPdz_grav = rho_tp*9.81; dP_accel = G**2*(M_out - M_in)"
+latex = '''\left(\frac{dp}{dz}\right)_{tp} = \phi_{lo}^2 \left(\frac{dp}{dz}\right)_{lo}, \qquad \phi_{lo}^2 = E + \frac{3.24 F H}{Fr^{0.045} We^{0.035}}'''
+assumptions = ["The flow is a steady, fully developed vapour-liquid mixture in a circular tube. The methods are pressure-gradient correlations, not a flow-regime map.\n"]
+notes = ["**the Friedel gradient is `phi_lo**2` times the all-liquid Fanning gradient** `4 f_lo G**2/(2 rho_l D)`, and every helper answers zero for a non-positive flux, diameter, density or viscosity, as the class's guards do.\n", "**the multiplier's Froude and Weber terms are floored at `1e-10`**, and a non-positive surface tension answers the class's `We = 1e6` sentinel rather than refusing - the branch the capture pins as `no_surface_tension`.\n", "**the Fanning friction factor is `16/Re` below 2300 and the Blasius `0.079 Re**-0.25` above**, with zero at a non-positive Reynolds number.\n", "**quality is clamped to `[0, 1]`**; below `1e-10` the Friedel gradient answers the all-liquid gradient, and at quality one the multiplier's `F` is zero, so the answer is the all-vapour term `E`.\n", "**the averaged entry is Simpson's rule over the quality range** with `n = max(4, intervals)` raised to even, and `|sum*dx/3/(x_out-x_in)|` times the length, so the two sweep directions agree to rounding.\n", "**an equal pair of endpoint qualities answers the single-point drop at that quality**, and a non-positive length answers zero in the class - which the composed calculation refuses at the boundary instead.\n", "**the Muller-Steinhagen-Heck gradient is `(A + 2(B-A)x)(1-x)**(1/3) + B x**3`**, with `A` and `B` the all-liquid and all-vapour gradients; at either endpoint it reduces to the same gradient the Friedel entry answers there.\n", "**the gravitational gradient uses the homogeneous void fraction** `alpha = 1/(1 + (1-x)/x * rho_v/rho_l)`, with the endpoints pinned to 0 and 1, and `g = 9.81`.\n", "**the acceleration term is `G**2 (momentum_out - momentum_in)`** with the same void fraction and endpoint pins, so a falling quality answers a negative number - a pressure recovery, not a drop.\n", "**the zone analysis consumes `calcFriedelPressureDrop` at a single average quality**; the averaged entry here is the class's separate Simpson integration over a quality range, not the zone analysis's own averaging.\n"]
+references = [
+    "Friedel, L. (1979). \"Improved friction pressure drop correlations for horizontal and vertical two-phase pipe flow.\" European Two-Phase Flow Group Meeting, Ispra, Italy, Paper E2.",
+    "Muller-Steinhagen, H.; Heck, K. (1986). \"A simple friction pressure drop correlation for two-phase flow in pipes.\" Chemical Engineering and Processing 20, 297-308.",
+    "Blasius, H. (1913). \"Das Ahnlichkeitsgesetz bei Reibungsvorgangen in Flussigkeiten.\" Forschungsheft 131. The smooth-tube Fanning factor the class uses above Re 2300.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/mechanicaldesign/heatexchanger/TwoPhasePressureDrop.java` is the port source.",
+    "`validation/neqsim/captures/two_phase_pressure_drop_probe.tsv` - the gradient across quality, the drop and the average in both directions, the M-S-H gradient, the two body terms and the composed state each case pins.\n",
+]
+[source]
+standard = "NeqSim process/mechanicaldesign/heatexchanger/TwoPhasePressureDrop.java"
+edition = "`calcFriedelGradient`, `calcFriedelPressureDrop`, `calcFriedelAveragePressureDrop`, `calcMullerSteinhagenHeckGradient`, `calcGravitationalGradient` and `calcAccelerationPressureDrop`, with `calcFanningFriction` and `calcMomentumFlux` as their leaves."
+[inputs]
+[inputs.mass_flux]
+unit = "kg/(m**2*s)"
+description = "The total mass flux. Zero gives zero for every flow term.\n"
+[inputs.vapor_quality]
+unit = "dimensionless"
+description = "the local vapour quality, clamped to `[0, 1]` by the gradient entries.\n"
+[inputs.tube_inner_diameter]
+unit = "m"
+description = "the tube inner diameter.\n"
+[inputs.tube_length]
+unit = "m"
+description = "the tube length, which the single-point and averaged drops multiply the gradient by.\n"
+[inputs.liquid_density]
+unit = "kg/m**3"
+description = "the liquid density.\n"
+[inputs.vapor_density]
+unit = "kg/m**3"
+description = "the vapour density.\n"
+[inputs.liquid_viscosity]
+unit = "Pa*s"
+description = "the liquid dynamic viscosity, in the all-liquid Reynolds number.\n"
+[inputs.vapor_viscosity]
+unit = "Pa*s"
+description = "the vapour dynamic viscosity, in the all-vapour Reynolds number.\n"
+[inputs.surface_tension]
+unit = "N/m"
+description = "The surface tension. Zero selects the large-Weber-number sentinel.\n"
+[inputs.quality_in]
+unit = "dimensionless"
+description = "the inlet quality of the averaged range, clamped to `[0, 1]`.\n"
+[inputs.quality_out]
+unit = "dimensionless"
+description = "the outlet quality of the averaged range, clamped to `[0, 1]`.\n"
+[inputs.intervals]
+unit = "dimensionless"
+optional = true
+description = "The Simpson's-rule interval count. Defaults to 20 and is raised to an even number of at least four.\n"
+[outputs]
+[outputs.friedel_gradient]
+unit = "Pa/m"
+description = "the Friedel frictional gradient at `vapor_quality`.\n"
+[outputs.friedel_pressure_drop]
+unit = "Pa"
+description = "the Friedel gradient times `tube_length` at `vapor_quality`.\n"
+[outputs.friedel_average_pressure_drop]
+unit = "Pa"
+description = "the Simpson's-rule average of the Friedel gradient over `quality_in` to `quality_out`, times `tube_length`.\n"
+[outputs.muller_steinhagen_heck_gradient]
+unit = "Pa/m"
+description = "the Muller-Steinhagen-Heck frictional gradient at `vapor_quality`.\n"
+[outputs.gravitational_gradient]
+unit = "Pa/m"
+description = "the gravitational gradient of the homogeneous mixture at `vapor_quality`, positive for upflow.\n"
+[outputs.acceleration_pressure_drop]
+unit = "Pa"
+description = "the momentum-flux change over `quality_in` to `quality_out`, negative when the quality falls.\n"
+[[valid_range]]
+quantity = "mass_flux"
+min = 0
+severity = "error"
+rationale = "zero flux is the class's guarded answer of zero for every flow term; a negative flux is refused.\n"
+[[valid_range]]
+quantity = "tube_inner_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a diameter is positive; the Reynolds numbers divide by it.\n"
+[[valid_range]]
+quantity = "tube_length"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the drops multiply by it; the class answers zero for a non-positive length, which the composed calculation refuses.\n"
+[[valid_range]]
+quantity = "liquid_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a density is positive; the gradients divide by it.\n"
+[[valid_range]]
+quantity = "vapor_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a density is positive; the gradients divide by it.\n"
+[[valid_range]]
+quantity = "liquid_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the all-liquid Reynolds number divides by it.\n"
+[[valid_range]]
+quantity = "vapor_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the all-vapour Reynolds number divides by it.\n"
+[[valid_range]]
+quantity = "surface_tension"
+min = 0
+severity = "error"
+rationale = "zero selects the class's `1e6` Weber sentinel; a negative surface tension is refused.\n"
+[worked_example]
+source = "the capture's `composed_test_fluid` row at NeqSim f0c7436c, the class's own R134a-like test fluid."
+derivation = "G = 300 kg/(m2 s), x = 0.5, D = 0.01905 m, L = 5 m, rho_l = 1147, rho_v = 50.1, mu_l = 1.65e-4, mu_v = 1.25e-5, sigma = 0.006, quality 0.1 to 0.9, 20 intervals.\n\n  Re_lo = 300*0.01905/1.65e-4 = 34636.36;  f_lo = 0.079*Re_lo**-0.25 = 0.005790872708824305\n  dPdz_lo = 4 f_lo G**2/(2 rho_l D) = 47.7043657235868\n  Re_vo = 457200;  f_vo = 0.003038089305047381\n  E = 3.2527710345419627;  F = 0.49861562567603473;  H = 10.011322746507915\n  rho_h = 96.00651574638711;  Fr = 52.24889436272037;  We = 2976.36048739487\n  FrWe = 1.5808565510452752;  phi_lo**2 = 13.483578076340299\n  friedel gradient = 643.2255398162746;  drop = 3216.127699081373;  average = 3170.093601996102\n  MSH A = 47.7043657235868, B = 572.9811504639314;  gradient = 526.3980843101883\n  alpha = 0.9581488597443824;  rho_tp = 96.006515746387;  gravity = 941.8239194720564\n  M_in(0.1) = 0.0027806636073972367, M_out(0.9) = 0.018051255814439126;  acceleration = 1374.35329863377\n"
+tolerance = 1e-9
+[worked_example.inputs]
+mass_flux = 300.0
+vapor_quality = 0.5
+tube_inner_diameter = 0.01905
+tube_length = 5.0
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+surface_tension = 0.006
+quality_in = 0.1
+quality_out = 0.9
+intervals = 20.0
+[worked_example.expected]
+friedel_gradient = 643.2255398162746
+friedel_pressure_drop = 3216.127699081373
+friedel_average_pressure_drop = 3170.093601996102
+muller_steinhagen_heck_gradient = 526.3980843101883
+gravitational_gradient = 941.8239194720564
+acceleration_pressure_drop = 1374.35329863377
+[implementations]
+python = "azoth.thermal.two_phase_pressure_drop"
+rust = "azoth_thermal::two_phase_pressure_drop"
+[[tests]]
+id = "the_composed_test_fluid_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "a_quality_of_zero_answers_the_liquid_only_gradient"
+type = "reference"
+status = "active"
+source = "The capture's `composed_quality_zero` row: the worked example at a quality of zero. The Friedel and M-S-H gradients are both the all-liquid 47.7043657235868 Pa/m, the gravity is the liquid's 11252.07 Pa/m, and the average over 0.1 to 0.9 is unchanged.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+vapor_quality = 0.0
+tube_inner_diameter = 0.01905
+tube_length = 5.0
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+surface_tension = 0.006
+quality_in = 0.1
+quality_out = 0.9
+intervals = 20.0
+[tests.expected]
+friedel_gradient = 47.7043657235868
+friedel_pressure_drop = 238.52182861793398
+friedel_average_pressure_drop = 3170.093601996102
+muller_steinhagen_heck_gradient = 47.7043657235868
+gravitational_gradient = 11252.07
+acceleration_pressure_drop = 1374.35329863377
+[[tests]]
+id = "a_quality_of_one_answers_the_vapour_only_gradient"
+type = "reference"
+status = "active"
+source = "The capture's `composed_quality_one` row: the worked example at a quality of one. The Friedel multiplier's `F` is zero, so the gradient is the all-vapour 572.9811504639315 Pa/m, and the M-S-H entry answers the same term to rounding; the gravity is the vapour's 491.481 Pa/m.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+vapor_quality = 1.0
+tube_inner_diameter = 0.01905
+tube_length = 5.0
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+surface_tension = 0.006
+quality_in = 0.1
+quality_out = 0.9
+intervals = 20.0
+[tests.expected]
+friedel_gradient = 572.9811504639315
+friedel_pressure_drop = 2864.9057523196575
+muller_steinhagen_heck_gradient = 572.9811504639314
+gravitational_gradient = 491.48100000000005
+[[tests]]
+id = "no_surface_tension_takes_the_weber_sentinel"
+type = "reference"
+status = "active"
+source = "The capture's `composed_no_surface_tension` row: the worked example with a zero surface tension, so the multiplier reads `We = 1e6`. The gradient falls to 553.3216477386686 Pa/m from 643.2255398162746, while the M-S-H entry, which reads no surface tension, is unchanged at 526.3980843101883.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+vapor_quality = 0.5
+tube_inner_diameter = 0.01905
+tube_length = 5.0
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+surface_tension = 0.0
+quality_in = 0.1
+quality_out = 0.9
+intervals = 20.0
+[tests.expected]
+friedel_gradient = 553.3216477386686
+friedel_pressure_drop = 2766.608238693343
+friedel_average_pressure_drop = 2759.9925961443832
+muller_steinhagen_heck_gradient = 526.3980843101883
+[[tests]]
+id = "a_falling_quality_answers_a_pressure_recovery"
+type = "reference"
+status = "active"
+source = "The capture's `acceleration_down` row: the worked example swept from 0.9 to 0.1. The momentum flux falls, so the acceleration term is the negative -1374.35329863377 Pa, and the average agrees with the rising sweep to rounding.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+vapor_quality = 0.5
+tube_inner_diameter = 0.01905
+tube_length = 5.0
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+surface_tension = 0.006
+quality_in = 0.9
+quality_out = 0.1
+intervals = 20.0
+[tests.expected]
+friedel_average_pressure_drop = 3170.0936019961005
+acceleration_pressure_drop = -1374.35329863377
+[[tests]]
+id = "a_zero_mass_flux_leaves_only_the_gravitational_gradient"
+type = "reference"
+status = "active"
+source = "The capture's `composed_zero_flux` row: the worked example at zero mass flux. Every flow term is zero, including the M-S-H gradient and the acceleration; the gravitational gradient is unchanged at 941.8239194720564 Pa/m.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 0.0
+vapor_quality = 0.5
+tube_inner_diameter = 0.01905
+tube_length = 5.0
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+surface_tension = 0.006
+quality_in = 0.1
+quality_out = 0.9
+intervals = 20.0
+[tests.expected]
+friedel_gradient = 0.0
+friedel_pressure_drop = 0.0
+friedel_average_pressure_drop = 0.0
+muller_steinhagen_heck_gradient = 0.0
+gravitational_gradient = 941.8239194720564
+acceleration_pressure_drop = 0.0
+[[tests]]
+id = "an_odd_interval_count_is_raised_to_even"
+type = "reference"
+status = "active"
+source = "The capture's `composed_odd_intervals` row: the worked example with 7 intervals, raised to 8. The average moves from 3170.093601996102 to 3169.6368785906598.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+vapor_quality = 0.5
+tube_inner_diameter = 0.01905
+tube_length = 5.0
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+surface_tension = 0.006
+quality_in = 0.1
+quality_out = 0.9
+intervals = 7.0
+[tests.expected]
+friedel_average_pressure_drop = 3169.6368785906598
+[[tests]]
+id = "an_interval_count_below_four_is_raised_to_four"
+type = "reference"
+status = "active"
+source = "The capture's `friedel_average_below_minimum` row: the worked example with 2 intervals, raised to 4. The average moves to 3165.9675823199977.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+vapor_quality = 0.5
+tube_inner_diameter = 0.01905
+tube_length = 5.0
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+surface_tension = 0.006
+quality_in = 0.1
+quality_out = 0.9
+intervals = 2.0
+[tests.expected]
+friedel_average_pressure_drop = 3165.9675823199977
+[[tests]]
+id = "the_gradient_rises_with_quality_before_the_vapour_only_term"
+type = "reference"
+status = "active"
+source = "The capture's `friedel_gradient_high_quality` row: the worked example at a quality of 0.8 gives 911.5654834270882 Pa/m, the maximum of the pinned qualities - above it the multiplier falls to the all-vapour term.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+vapor_quality = 0.8
+tube_inner_diameter = 0.01905
+tube_length = 5.0
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+surface_tension = 0.006
+quality_in = 0.1
+quality_out = 0.9
+intervals = 20.0
+[tests.expected]
+friedel_gradient = 911.5654834270882

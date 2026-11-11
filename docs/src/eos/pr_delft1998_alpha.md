@@ -4,6 +4,8 @@
 
 `eos.pr_delft1998_alpha`
 
+Peng-Robinson alpha function with the Delft (1998) kappa form. Use it when a Peng-Robinson EOS needs this attraction-temperature dependence.
+
 ## Equation
 
 $$
@@ -21,6 +23,14 @@ alpha = (1 + m*(1 - sqrt(Tr)))**2, with m the 1978 Peng-Robinson coefficient (0.
 **NeqSim master `AttractiveTermPrDelft1998`**
 
 `alpha(temperature)`, general branch ported verbatim
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- NeqSim's class also carries a methane-specific polynomial keyed on the component name; that branch is a component identity, not a scalar function of `omega` and `Tr`, so this calc ports the general form and names the methane branch.
+
 
 ## Inputs
 
@@ -44,15 +54,13 @@ alpha = (1 + m*(1 - sqrt(Tr)))**2, with m the 1978 Peng-Robinson coefficient (0.
 | `Tr > 0` | raises | the formula takes a square root of `Tr`; zero and below are not states |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
 - the alpha uses the 1978 Peng-Robinson coefficient, the same `m` as `pr78_kappa`.
-
-- NeqSim's class also carries a methane-specific polynomial keyed on the component name; that branch is a component identity, not a scalar function of `omega` and `Tr`, so this calc ports the general form and names the methane branch.
 
 
 

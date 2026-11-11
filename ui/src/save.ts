@@ -35,8 +35,8 @@ function cancelled(error: unknown): boolean {
 }
 
 /** The fallback: a Blob and an anchor, which is the download every browser can do. */
-function download(name: string, text: string): void {
-  const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+function download(name: string, text: string, mime: string): void {
+  const url = URL.createObjectURL(new Blob([text], { type: mime }));
   const link = document.createElement("a");
   link.href = url;
   link.download = name;
@@ -47,14 +47,18 @@ function download(name: string, text: string): void {
 /**
  * Write `text` as `name`.
  *
+ * **The document and the exports share the picker.** A CSV or an SVG is a file the reader chooses
+ * the same way the flowsheet is; only the MIME type differs, and a picker that showed a different
+ * dialog for a table than for a document would be a seam nobody asked for.
+ *
  * # Errors
  * Whatever the picker or the write refused, so that a real failure reaches the editor. A dismissal
  * is not one, and is answered with nothing.
  */
-export async function saveDocument(name: string, text: string): Promise<void> {
+export async function saveText(name: string, text: string, mime = "text/plain"): Promise<void> {
   const picker = (window as { showSaveFilePicker?: SaveFilePicker }).showSaveFilePicker;
   if (picker === undefined) {
-    download(name, text);
+    download(name, text, mime);
     return;
   }
   // **The dismissal is caught here rather than around the write.** They are different questions: a
@@ -72,4 +76,9 @@ export async function saveDocument(name: string, text: string): Promise<void> {
   const writable = await handle.createWritable();
   await writable.write(text);
   await writable.close();
+}
+
+/** The flowsheet document, which is the text the editor's Save writes. */
+export async function saveDocument(name: string, text: string): Promise<void> {
+  return saveText(name, text, "text/plain");
 }

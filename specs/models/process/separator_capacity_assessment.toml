@@ -1,0 +1,120 @@
+id = "process.separator_capacity_assessment"
+name = "Separator capacity assessment"
+kind = "direct"
+assumptions = [
+    "**a detached snapshot, not a sizing.** It folds the same `run` and capacity arithmetic `process.separator` carries into one immutable report, and sizes nothing.",
+    "**it fails closed rather than refusing.** Blank provenance, an orientation that is neither of the two, non-positive geometry or K, no gas phase, a level outside `[0, 1)` and non-finite evidence all answer `unassessed` with the class's diagnostic.",
+    "**the checks run in the class's order**: provenance, orientation, geometry and the gas phase, then the level, then the evidence - so a state failing two carries the earlier sentence.",
+    "**the class defaults K to `0.11`, the level to `0.8` and the orientation to `horizontal`; this id requires all four vessel inputs**, because a report over a vessel nobody stated is the thing the provenance check refuses.",
+    "**the mechanical limit is an input.** The port has no `SeparatorMechanicalDesign`; `mechanical_design_max_gas_flow` is the m3/s the class holds in `maxDesignGassVolumeFlow / 3600`. Non-positive means no mechanical basis.",
+    "**a stated limit that does not bind still names a source.** A positive limit above the Souders-Brown flow reports `design_basis_source = mechanicalDesign` and leaves `governing_capacity_basis = soudersBrown`; only a limit at or below it governs.",
+    "**the unassessed snapshot carries no numbers.** The class holds `NaN` in every numeric field there; the port omits them, and the two string evidence fields are empty.",
+    "**five class members are omitted**: `designBasisConfidence` (`NaN` unless a `CapacityConstraint` holds a confidence, and the port models no constraints), `separatorName`, the provenance echo, `isFeasible` (which `status` states) and `toJson`.",
+    "**one liquid, and the sizing rule's densities.** The assessment reads the same oil-aqueous-`1000.0` liquid density and gas area as `process.separator`'s capacity surface, with no `10.0` floor.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/SeparatorCapacityAssessment.java` is the port source, through its `from`.",
+    "`validation/neqsim/captures/process_separator_capacity_assessment.tsv` - fifteen rows: nine PR states over the status branches, the pin's #3154 state mirrored on PR in three forms, and the same three on SRK as evidence.",
+]
+[source]
+standard = "NeqSim process/equipment/separator/SeparatorCapacityAssessment.java"
+edition = "`from`: the provenance and state checks in the class's order, the sizing family's densities and gas area, the optional mechanical-design gas limit and the governed utilisation."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank.\n"
+[inputs.feed_n]
+unit = "mol/s"
+description = "the inlet's molar flow, which the flash's vapour fraction divides between the outlets.\n"
+[inputs.feed_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, the feed the assessment's vessel holds.\n"
+[inputs.feed_p]
+unit = "Pa"
+description = "the inlet pressure. The assessment reads the outlets at this less `pressure_drop`.\n"
+[inputs.feed_t]
+unit = "K"
+description = "the inlet temperature, which the vessel holds unless a `heat_input` moves the flash.\n"
+[inputs.pressure_drop]
+unit = "Pa"
+description = "the pressure drop across the vessel.\n"
+[inputs.gas_in_liquid]
+unit = "dimensionless"
+description = "the fraction of the vapour's moles carried into the liquid outlet; the assessment reads the entrained liquid's density.\n"
+[inputs.internal_diameter]
+unit = "m"
+description = "the vessel's internal diameter, which the gas area is `pi d**2 / 4` over. **A non-positive or non-finite value answers `unassessed`**, as the class does, rather than being refused at the input.\n"
+[inputs.design_gas_load_factor]
+unit = "m/s"
+description = "the Souders-Brown `K` the vessel is designed to. **A non-positive or non-finite value answers `unassessed`.**\n"
+[inputs.orientation]
+type = "string"
+description = "`horizontal` or `vertical`. **Any other value answers `unassessed`**, which is why this is a string rather than the separator's enum: the class's fail-closed branch is reachable here.\n"
+[inputs.design_liquid_level_fraction]
+unit = "dimensionless"
+description = "the fraction of the cross-section the liquid occupies at design; horizontal derates the gas area by `1 - f`. **Outside `[0, 1)` answers `unassessed`.**\n"
+[inputs.design_basis_provenance]
+type = "string"
+description = "where the geometry and design `K` come from. **Blank or whitespace answers `unassessed`**, because a design basis nobody can name is not evidence.\n"
+[inputs.heat_input]
+unit = "W"
+optional = true
+description = "heat added to the feed before the flash. When omitted the flash is at the feed's temperature.\n"
+[inputs.mechanical_design_max_gas_flow]
+unit = "m**3/s"
+optional = true
+description = "the mechanical design's gas-flow limit, which the class stores in m3/hr and reports in m3/s. **Absent or zero means no mechanical basis**, and a limit at or below the Souders-Brown flow governs.\n"
+[outputs]
+[outputs.status]
+type = "string"
+description = "`feasible`, `infeasible` or `unassessed` - the class's `FEASIBLE`/`INFEASIBLE`/`UNASSESSED` in the library's spelling.\n"
+[outputs.diagnostic]
+type = "string"
+description = "the class's sentence for the status: one of seven fixed strings, not a composed message.\n"
+[outputs.design_basis_source]
+type = "string"
+description = "`equipment` when no mechanical limit was stated, `mechanicalDesign` when one was, and empty on `unassessed`.\n"
+[outputs.governing_capacity_basis]
+type = "string"
+description = "`soudersBrown` or `mechanicalDesignGasFlow`, and empty on `unassessed`.\n"
+[outputs.gas_area]
+unit = "m**2"
+optional = true
+description = "the gas flow area: the full cross-section vertical, `(1 - design_liquid_level_fraction)` of it horizontal. **Absent on `unassessed`.**\n"
+[outputs.gas_density]
+unit = "kg/m**3"
+optional = true
+description = "the gas phase's mass density. Absent on `unassessed`.\n"
+[outputs.liquid_density]
+unit = "kg/m**3"
+optional = true
+description = "the liquid phase's mass density, or `1000.0` where the system carries no liquid. Absent on `unassessed`.\n"
+[outputs.maximum_gas_velocity]
+unit = "m/s"
+optional = true
+description = "`getMaxAllowableGasVelocity`: `K sqrt((rho_l - rho_g)/rho_g)`, the sizing rule's, with no `10.0` floor. Absent on `unassessed`.\n"
+[outputs.current_gas_flow]
+unit = "m**3/s"
+optional = true
+description = "the gas phase's actual volumetric flow. Absent on `unassessed`.\n"
+[outputs.mechanical_design_maximum_gas_flow]
+unit = "m**3/s"
+optional = true
+description = "the stated mechanical limit in m3/s, or `0.0` when none was stated - the class's snapshot field. Absent on `unassessed`.\n"
+[outputs.souders_brown_maximum_gas_flow]
+unit = "m**3/s"
+optional = true
+description = "`getMaxAllowableGasFlowRate`: the maximum velocity times the gas area. Absent on `unassessed`.\n"
+[outputs.maximum_gas_flow]
+unit = "m**3/s"
+optional = true
+description = "the governed limit: the mechanical limit where it binds, the Souders-Brown flow otherwise. Absent on `unassessed`.\n"
+[outputs.utilization]
+unit = "dimensionless"
+optional = true
+description = "the current gas flow over the governed limit; `<= 1` is `feasible`. Absent on `unassessed`.\n"
+[implementations]
+python = "azoth.process.separator_capacity_assessment"
+rust = "azoth_process::separator_capacity_assessment"

@@ -6,9 +6,10 @@
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
 use azoth_core::units::{
-    DiffusionCoefficient, DynamicViscosity, Mass, MassDensity, MolarConcentration, MolarEnergy,
-    MolarHeatCapacity, MolarVolume, Pressure, SurfaceTension, ThermalConductivity,
-    ThermodynamicTemperature, Velocity,
+    DiffusionCoefficient, DynamicViscosity, HeatTransfer, Length, Mass, MassDensity, MassRate,
+    Molality, MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure,
+    SpecificHeatCapacity, SurfaceTension, TemperatureInterval, ThermalConductivity,
+    ThermodynamicTemperature, Time, Velocity,
 };
 use azoth_core::{CalcResult, Warning};
 
@@ -1216,6 +1217,1089 @@ impl CalcResult for ScalePredictionResult {
         "si_feco3",
         "has_scaling_risk",
         "scale_risk_count",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.electrolyte_scale_calculator`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ElectrolyteScaleCalculatorResult {
+    /// `0.5 * sum(m_i z_i^2)` over the eleven ions.
+    pub ionic_strength: Molality,
+    /// The temperature-adjusted Debye-Huckel A.
+    pub debye_hueckel_a: f64,
+    /// The Davies coefficient for a divalent ion.
+    pub divalent_activity_coefficient: f64,
+    /// The Davies coefficient for a monovalent ion.
+    pub monovalent_activity_coefficient: f64,
+    /// Calcite's activity-corrected saturation index.
+    pub si_caco3: f64,
+    /// Barite's activity-corrected saturation index.
+    pub si_baso4: f64,
+    /// Gypsum's activity-corrected saturation index.
+    pub si_caso4: f64,
+    /// Celestite's activity-corrected saturation index.
+    pub si_srso4: f64,
+    /// Brucite's activity-corrected saturation index.
+    pub si_brucite: f64,
+    /// The hydroxide activity the class derives from pH and its `Kw(T)`.
+    pub hydroxide_activity: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ElectrolyteScaleCalculatorResult {
+    const CALC_ID: &'static str = "eos.electrolyte_scale_calculator";
+    const FIELDS: &'static [&'static str] = &[
+        "ionic_strength",
+        "debye_hueckel_a",
+        "divalent_activity_coefficient",
+        "monovalent_activity_coefficient",
+        "si_caco3",
+        "si_baso4",
+        "si_caso4",
+        "si_srso4",
+        "si_brucite",
+        "hydroxide_activity",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One mixing fraction's mineral indices.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BrineMixingPointRow {
+    /// The fraction of brine A in the mixture.
+    pub fraction_a: f64,
+    /// Calcite's index.
+    pub si_caco3: f64,
+    /// Barite's index.
+    pub si_baso4: f64,
+    /// Gypsum's index.
+    pub si_caso4: f64,
+    /// Celestite's index.
+    pub si_srso4: f64,
+}
+
+/// Result of `eos.brine_mixing_scale_evaluator`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BrineMixingScaleEvaluatorResult {
+    /// One row per mixing fraction, from all brine A to all brine B.
+    pub points: Vec<BrineMixingPointRow>,
+    /// The fraction of brine A where the worst index occurs.
+    pub worst_fraction_a: f64,
+    /// The mineral that produced it.
+    pub worst_mineral: String,
+    /// The worst index itself.
+    pub worst_saturation_index: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for BrineMixingScaleEvaluatorResult {
+    const CALC_ID: &'static str = "eos.brine_mixing_scale_evaluator";
+    const FIELDS: &'static [&'static str] = &[
+        "points",
+        "worst_fraction_a",
+        "worst_mineral",
+        "worst_saturation_index",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.scale_inhibitor_performance`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleInhibitorPerformanceResult {
+    /// The minimum inhibitor concentration the correlation returns.
+    pub minimum_inhibitor_concentration: MassDensity,
+    /// `1.5 * minimum_inhibitor_concentration`.
+    pub recommended_dose: MassDensity,
+    /// The efficiency at the supplied dose, 0..1.
+    pub efficiency: f64,
+    /// Whether the supplied dose meets the MIC.
+    pub adequate: bool,
+    /// Phosphonate above 175 C.
+    pub thermal_degradation_risk: bool,
+    /// Phosphonate with more than 2000 mg/L calcium.
+    pub calcium_phosphonate_precipitation_risk: bool,
+    /// A saturation ratio above 100.
+    pub extreme_supersaturation_risk: bool,
+    /// Phosphate ester below 40 C.
+    pub low_temperature_solubility_risk: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ScaleInhibitorPerformanceResult {
+    const CALC_ID: &'static str = "eos.scale_inhibitor_performance";
+    const FIELDS: &'static [&'static str] = &[
+        "minimum_inhibitor_concentration",
+        "recommended_dose",
+        "efficiency",
+        "adequate",
+        "thermal_degradation_risk",
+        "calcium_phosphonate_precipitation_risk",
+        "extreme_supersaturation_risk",
+        "low_temperature_solubility_risk",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.scale_kinetics`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleKineticsResult {
+    /// `S = 10^SI`.
+    pub supersaturation_ratio: f64,
+    /// The nucleation induction time; infinite at or below saturation.
+    pub induction_time: Time,
+    /// The surface-reaction growth rate.
+    pub surface_limited_growth: Velocity,
+    /// The mass-transport growth rate; zero when no transport data are given.
+    pub transport_limited_growth: Velocity,
+    /// The rate-controlling growth rate.
+    pub effective_growth_rate: Velocity,
+    /// `REACTION`, `TRANSPORT` or `NONE`.
+    pub limiting_regime: String,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ScaleKineticsResult {
+    const CALC_ID: &'static str = "eos.scale_kinetics";
+    const FIELDS: &'static [&'static str] = &[
+        "supersaturation_ratio",
+        "induction_time",
+        "surface_limited_growth",
+        "transport_limited_growth",
+        "effective_growth_rate",
+        "limiting_regime",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One candidate remedy from the remediation knowledge base.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RemediationOptionRow {
+    /// The canonical deposit key, `UNKNOWN` for the fallback.
+    pub scale_type: String,
+    /// `MINERAL_SCALE`, `SCAVENGER_SOLIDS`, `ORGANIC_DEPOSIT` or `UNSPECIFIED`.
+    pub category: String,
+    /// The dissolver or solvent chemistry.
+    pub dissolver: String,
+    /// The recommended concentration or dilution, as the CSV states it.
+    pub concentration: String,
+    /// The application method.
+    pub method: String,
+    /// `HIGH`, `MEDIUM` or `LOW`.
+    pub effectiveness: String,
+    /// The lower bound of the effective window.
+    pub min_temperature: ThermodynamicTemperature,
+    /// The upper bound of the effective window.
+    pub max_temperature: ThermodynamicTemperature,
+    /// The operational and safety cautions.
+    pub cautions: String,
+    /// The informational standard reference.
+    pub standard: String,
+}
+
+/// Result of `eos.scale_remediation_advisor`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleRemediationAdvisorResult {
+    /// The knowledge-base key the lookup used.
+    pub canonical_key: String,
+    /// The candidate remedies, ordered by descending effectiveness.
+    pub options: Vec<RemediationOptionRow>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ScaleRemediationAdvisorResult {
+    const CALC_ID: &'static str = "eos.scale_remediation_advisor";
+    const FIELDS: &'static [&'static str] = &["canonical_key", "options", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One scale's uninhibited index.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleControlRow {
+    /// `CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.
+    pub scale: String,
+    /// The index; absent where the water has none.
+    pub saturation_index: Option<f64>,
+}
+
+/// One scale's inhibited risk index.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleControlRiskRow {
+    /// `CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.
+    pub scale: String,
+    /// The risk index; absent where the thermodynamic index is.
+    pub risk_index: Option<f64>,
+}
+
+/// Result of `eos.scale_control_assessor`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleControlAssessorResult {
+    /// The uninhibited indices, in the class's order.
+    pub thermodynamic_si: Vec<ScaleControlRow>,
+    /// The inhibited risk indices, in the same order.
+    pub kinetic_risk_index: Vec<ScaleControlRiskRow>,
+    /// The largest defined risk index.
+    pub worst_kinetic_risk_index: Option<f64>,
+    /// Whether the worst index is below the class's 0.5 threshold.
+    pub kinetically_controlled: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ScaleControlAssessorResult {
+    const CALC_ID: &'static str = "eos.scale_control_assessor";
+    const FIELDS: &'static [&'static str] = &[
+        "thermodynamic_si",
+        "kinetic_risk_index",
+        "worst_kinetic_risk_index",
+        "kinetically_controlled",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One mineral's precipitated mass and rate in a stream analysis.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StreamScaleMineralRow {
+    /// The mineral's formula.
+    pub mineral: String,
+    /// The index before anything precipitated.
+    pub initial_si: f64,
+    /// The index at the answer.
+    pub final_si: f64,
+    /// The precipitated mass per cubic metre of water.
+    pub precipitated_mass: MassDensity,
+    /// The precipitated mass times the aqueous throughput.
+    pub scale_rate: MassRate,
+}
+
+/// Result of `eos.stream_scale_analyzer`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StreamScaleAnalyzerResult {
+    /// One row per registered mineral, in the equilibrium's order.
+    pub minerals: Vec<StreamScaleMineralRow>,
+    /// The total precipitated mass per cubic metre.
+    pub total_scale_mass: MassDensity,
+    /// The total mass rate.
+    pub total_scale_rate: MassRate,
+    /// The mineral precipitating the greatest mass, or `none`.
+    pub dominant_scale: String,
+    /// Whether the total precipitated mass is positive.
+    pub has_scaling: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for StreamScaleAnalyzerResult {
+    const CALC_ID: &'static str = "eos.stream_scale_analyzer";
+    const FIELDS: &'static [&'static str] = &[
+        "minerals",
+        "total_scale_mass",
+        "total_scale_rate",
+        "dominant_scale",
+        "has_scaling",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.valve_scale_drift`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ValveScaleDriftResult {
+    /// The accumulated radial deposit thickness.
+    pub deposit_thickness: Length,
+    /// The time the state is at.
+    pub elapsed_time: Time,
+    /// The open flow area as a fraction of the clean area.
+    pub open_area_fraction: f64,
+    /// The loss of effective flow coefficient, capped at 0.999999.
+    pub fouling_fraction: f64,
+    /// The clean Kv times the open-area fraction.
+    pub effective_kv: f64,
+    /// The time for the port to close.
+    pub time_to_plug: Time,
+    /// The opening needed to hold the same flow, capped at 100.
+    pub opening_percent: f64,
+    /// The time for the opening to reach 100 percent.
+    pub time_to_pin: Time,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ValveScaleDriftResult {
+    const CALC_ID: &'static str = "eos.valve_scale_drift";
+    const FIELDS: &'static [&'static str] = &[
+        "deposit_thickness",
+        "elapsed_time",
+        "open_area_fraction",
+        "fouling_fraction",
+        "effective_kv",
+        "time_to_plug",
+        "opening_percent",
+        "time_to_pin",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// The corrosion severity band a corrected rate falls in, per NORSOK M-001.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CorrosionSeverity {
+    /// Below 0.1 mm/yr.
+    Low,
+    /// 0.1 to 0.3 mm/yr.
+    Medium,
+    /// 0.3 to 1.0 mm/yr.
+    High,
+    /// Above 1.0 mm/yr.
+    VeryHigh,
+}
+
+impl CorrosionSeverity {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Low => "low",
+            Self::Medium => "medium",
+            Self::High => "high",
+            Self::VeryHigh => "very_high",
+        }
+    }
+}
+
+/// The iron-sulfide morphology the temperature band predicts.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FeSMorphology {
+    /// No H2S and no elemental sulfur, so no FeS forms.
+    None,
+    /// Below 60 C: porous and non-protective.
+    Mackinawite,
+    /// 60 to 120 C: partially protective.
+    CubicFesTroilite,
+    /// Above 120 C: dense and protective.
+    Pyrrhotite,
+}
+
+impl FeSMorphology {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Mackinawite => "mackinawite",
+            Self::CubicFesTroilite => "cubic_fes_troilite",
+            Self::Pyrrhotite => "pyrrhotite",
+        }
+    }
+}
+
+/// Result of `eos.de_waard_milliams_corrosion`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DeWaardMilliamsCorrosionResult {
+    /// The uncorrected de Waard-Milliams 1991 rate.
+    pub baseline_rate: Velocity,
+    /// De Waard-Lotz pH correction, at most one where the film protects.
+    pub ph_correction_factor: f64,
+    /// Protective-scale correction above 80 C and pH 5.
+    pub scale_correction_factor: f64,
+    /// Glycol correction on the aqueous phase's water activity.
+    pub glycol_correction_factor: f64,
+    /// Mass-transfer correction above 1 m/s, capped at five.
+    pub flow_correction_factor: f64,
+    /// `1 - inhibitor_efficiency`, after the class's clamp.
+    pub inhibitor_factor: f64,
+    /// CO2 rate with every correction and the sulfur contribution.
+    pub corrected_rate: Velocity,
+    /// The elemental-sulfur contribution.
+    pub sulfur_rate: Velocity,
+    /// The H2S/FeS contribution, capped at 100 mm/yr.
+    pub fes_rate: Velocity,
+    /// `corrected_rate` less the sulfur contribution.
+    pub co2_corrected_rate: Velocity,
+    /// `corrected_rate` plus the FeS contribution.
+    pub total_corrosion_rate: Velocity,
+    /// The FeCO3 saturation index, above one where scale forms.
+    pub feco3_saturation_index: f64,
+    /// Whether the FeCO3 index exceeds one.
+    pub feco3_scale_forming: bool,
+    /// NACE MR0175 sour service: H2S partial pressure above 0.003 bar.
+    pub is_sour_service: bool,
+    /// The NORSOK M-001 severity band.
+    pub corrosion_severity: CorrosionSeverity,
+    /// The FeS morphology the temperature band predicts.
+    pub fes_morphology: FeSMorphology,
+    /// The corrected rate times the design life.
+    pub corrosion_allowance: Length,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for DeWaardMilliamsCorrosionResult {
+    const CALC_ID: &'static str = "eos.de_waard_milliams_corrosion";
+    const FIELDS: &'static [&'static str] = &[
+        "baseline_rate",
+        "ph_correction_factor",
+        "scale_correction_factor",
+        "glycol_correction_factor",
+        "flow_correction_factor",
+        "inhibitor_factor",
+        "corrected_rate",
+        "sulfur_rate",
+        "fes_rate",
+        "co2_corrected_rate",
+        "total_corrosion_rate",
+        "feco3_saturation_index",
+        "feco3_scale_forming",
+        "is_sour_service",
+        "corrosion_severity",
+        "fes_morphology",
+        "corrosion_allowance",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// The erosion risk band the rate and velocity ratio put a line in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ErosionRiskLevel {
+    /// Rate at most 0.1 mm/yr and ratio at most 0.8.
+    Low,
+    /// Rate above 0.1 mm/yr or ratio above 0.8.
+    Medium,
+    /// Rate above 0.5 mm/yr or ratio above 1.0.
+    High,
+    /// Rate above 1.0 mm/yr or ratio above 1.5.
+    Critical,
+}
+
+impl ErosionRiskLevel {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Low => "low",
+            Self::Medium => "medium",
+            Self::High => "high",
+            Self::Critical => "critical",
+        }
+    }
+}
+
+/// Result of `eos.erosion_prediction`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ErosionPredictionResult {
+    /// The API RP 14E erosional velocity at the mixture density.
+    pub erosional_velocity: Velocity,
+    /// The actual velocity over the erosional one.
+    pub velocity_ratio: f64,
+    /// The DNV RP O501 wall-loss rate, or the straight-pipe empirical rate.
+    pub erosion_rate: Velocity,
+    /// The rate over the design life.
+    pub cumulative_erosion: Length,
+    /// The wall less the cumulative erosion and the corrosion allowance.
+    pub remaining_wall_thickness: Length,
+    /// Whether the velocity ratio is at most one.
+    pub within_api_limits: bool,
+    /// Whether the remaining wall is positive.
+    pub within_erosion_limits: bool,
+    /// The rate-and-ratio risk band.
+    pub risk_level: ErosionRiskLevel,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ErosionPredictionResult {
+    const CALC_ID: &'static str = "eos.erosion_prediction";
+    const FIELDS: &'static [&'static str] = &[
+        "erosional_velocity",
+        "velocity_ratio",
+        "erosion_rate",
+        "cumulative_erosion",
+        "remaining_wall_thickness",
+        "within_api_limits",
+        "within_erosion_limits",
+        "risk_level",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Which phase is continuous in an emulsion.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EmulsionType {
+    /// Water droplets in oil, below the inversion water cut.
+    WaterInOil,
+    /// Oil droplets in water, at or above the inversion water cut.
+    OilInWater,
+}
+
+impl EmulsionType {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::WaterInOil => "water_in_oil",
+            Self::OilInWater => "oil_in_water",
+        }
+    }
+}
+
+/// Result of `eos.emulsion_viscosity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EmulsionViscosityResult {
+    /// The effective emulsion viscosity.
+    pub effective_viscosity: DynamicViscosity,
+    /// The model's relative viscosity before the tightness and demulsifier corrections.
+    pub relative_viscosity: f64,
+    /// The effective viscosity over the continuous phase's.
+    pub viscosity_ratio: f64,
+    /// The water cut at which the phases invert.
+    pub inversion_water_cut: f64,
+    /// Which phase is continuous at the stated water cut.
+    pub emulsion_type: EmulsionType,
+    /// Whether the water cut is at or above the inversion point.
+    pub is_inverted: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for EmulsionViscosityResult {
+    const CALC_ID: &'static str = "eos.emulsion_viscosity";
+    const FIELDS: &'static [&'static str] = &[
+        "effective_viscosity",
+        "relative_viscosity",
+        "viscosity_ratio",
+        "inversion_water_cut",
+        "emulsion_type",
+        "is_inverted",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.pipeline_cooldown`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PipelineCooldownResult {
+    /// The time at each march step, the first at zero.
+    pub time: Vec<f64>,
+    /// The lumped fluid-and-steel temperature at each step.
+    pub fluid_temperature: Vec<f64>,
+    /// The thermal mass over the per-length conductance.
+    pub time_constant: Time,
+    /// The layer-resistance U value, which the class's getter always recomputes.
+    pub calculated_u_value: HeatTransfer,
+    /// The U value the march ran with: the supplied one, or the layer value.
+    pub effective_u_value: HeatTransfer,
+    /// The interpolated crossing of the target temperature, absent when not reached.
+    pub time_to_reach_target: Option<Time>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PipelineCooldownResult {
+    const CALC_ID: &'static str = "eos.pipeline_cooldown";
+    const FIELDS: &'static [&'static str] = &[
+        "time",
+        "fluid_temperature",
+        "time_constant",
+        "calculated_u_value",
+        "effective_u_value",
+        "time_to_reach_target",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// The hydrate risk band one profile point falls in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HydrateRiskLevel {
+    /// Inside the hydrate region: a negative subcooling.
+    Critical,
+    /// Below the high-risk subcooling.
+    High,
+    /// Below the medium-risk subcooling.
+    Medium,
+    /// Outside the medium band.
+    Low,
+    /// No hydrate temperature could be computed.
+    Unknown,
+}
+
+impl HydrateRiskLevel {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Critical => "critical",
+            Self::High => "high",
+            Self::Medium => "medium",
+            Self::Low => "low",
+            Self::Unknown => "unknown",
+        }
+    }
+}
+
+/// One profile point's hydrate risk.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HydrateRiskPoint {
+    /// The distance from the inlet.
+    pub distance: Length,
+    /// The point's pressure.
+    pub pressure: Pressure,
+    /// The point's actual temperature.
+    pub actual_temperature: ThermodynamicTemperature,
+    /// The hydrate formation temperature, absent where the solve failed.
+    pub hydrate_temperature: Option<ThermodynamicTemperature>,
+    /// The actual temperature less the hydrate one, absent where it is.
+    pub subcooling: Option<TemperatureInterval>,
+    /// The risk band's spelling, `unknown` where the point could not be evaluated.
+    pub risk_level: String,
+}
+
+/// Result of `eos.hydrate_risk_map`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HydrateRiskMapResult {
+    /// One row per profile point, in the order the points were given.
+    pub points: Vec<HydrateRiskPoint>,
+    /// The worst risk, with UNKNOWN outranking everything but a confirmed CRITICAL.
+    pub overall_risk: HydrateRiskLevel,
+    /// The smallest subcooling over the evaluated points, absent when none was.
+    pub minimum_subcooling: Option<TemperatureInterval>,
+    /// The number of points inside the hydrate region.
+    pub critical_point_count: u32,
+    /// The number of points whose hydrate temperature could not be computed.
+    pub unknown_point_count: u32,
+    /// The number of profile points.
+    pub total_points: u32,
+    /// Whether every point produced a hydrate temperature.
+    pub all_points_evaluated: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for HydrateRiskMapResult {
+    const CALC_ID: &'static str = "eos.hydrate_risk_map";
+    const FIELDS: &'static [&'static str] = &[
+        "points",
+        "overall_risk",
+        "minimum_subcooling",
+        "critical_point_count",
+        "unknown_point_count",
+        "total_points",
+        "all_points_evaluated",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// The screening verdict a surface-cooldown analysis reports.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CooldownVerdict {
+    /// The no-touch time meets the requirement, or no hydrate risk exists.
+    Ok,
+    /// The no-touch time is at least three-quarters of the requirement, or at least six hours.
+    Marginal,
+    /// The no-touch time is below the marginal band.
+    Critical,
+    /// The hydrate temperature is absent or no colder than the seabed, so no touch is bounded.
+    NoHydrateRisk,
+}
+
+impl CooldownVerdict {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Ok => "ok",
+            Self::Marginal => "marginal",
+            Self::Critical => "critical",
+            Self::NoHydrateRisk => "no_hydrate_risk",
+        }
+    }
+}
+
+/// Result of `eos.surf_cooldown`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SurfCooldownResult {
+    /// The screening verdict.
+    pub verdict: CooldownVerdict,
+    /// Whether the fluid carries a water component above the class's floor.
+    pub water_present: bool,
+    /// The water's mole fraction.
+    pub water_mole_fraction: f64,
+    /// The no-touch time, absent where the class returns positive infinity.
+    pub no_touch_time: Option<Time>,
+    /// The initial fluid temperature the cooldown ran from.
+    pub initial_fluid_temperature: ThermodynamicTemperature,
+    /// The hydrate equilibrium temperature at the operating pressure, absent where the solve failed.
+    pub hydrate_equilibrium_temperature: Option<ThermodynamicTemperature>,
+    /// The margin added above the hydrate temperature.
+    pub hydrate_margin: TemperatureInterval,
+    /// The ambient temperature.
+    pub seabed_temperature: ThermodynamicTemperature,
+    /// The U value the cooldown ran with.
+    pub overall_u_value: HeatTransfer,
+    /// The thermal mass over the per-length conductance.
+    pub time_constant: Time,
+    /// The fluid density the cooldown used.
+    pub fluid_density: MassDensity,
+    /// The fluid specific heat the cooldown used.
+    pub fluid_specific_heat: SpecificHeatCapacity,
+    /// The pipe's internal diameter, an echo of the input.
+    pub internal_diameter: Length,
+    /// The insulation thickness, an echo of the input.
+    pub insulation_thickness: Length,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SurfCooldownResult {
+    const CALC_ID: &'static str = "eos.surf_cooldown";
+    const FIELDS: &'static [&'static str] = &[
+        "verdict",
+        "water_present",
+        "water_mole_fraction",
+        "no_touch_time",
+        "initial_fluid_temperature",
+        "hydrate_equilibrium_temperature",
+        "hydrate_margin",
+        "seabed_temperature",
+        "overall_u_value",
+        "time_constant",
+        "fluid_density",
+        "fluid_specific_heat",
+        "internal_diameter",
+        "insulation_thickness",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One evaluated pipe segment's deposition.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DepositionSegmentRow {
+    /// The CaCO3 index at the segment.
+    pub saturation_index: f64,
+    /// The deposit mass over the segment's wall area and the service time.
+    pub deposition_mass: Mass,
+    /// The deposit thickness over the segment.
+    pub thickness: Length,
+}
+
+/// Result of `eos.scale_deposition_accumulator`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleDepositionAccumulatorResult {
+    /// One row per evaluated segment, in the profile's order.
+    pub segments: Vec<DepositionSegmentRow>,
+    /// The mass summed over the segments.
+    pub total_deposition_mass: Mass,
+    /// The thickest segment, which sets the blockage time.
+    pub max_thickness: Length,
+    /// The time until the worst segment occludes half the pipe cross-section.
+    pub time_to_blockage: Time,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ScaleDepositionAccumulatorResult {
+    const CALC_ID: &'static str = "eos.scale_deposition_accumulator";
+    const FIELDS: &'static [&'static str] = &[
+        "segments",
+        "total_deposition_mass",
+        "max_thickness",
+        "time_to_blockage",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One warning a production-chemical scenario reports.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChemicalWarningRow {
+    /// The warning's code.
+    pub code: String,
+    /// The warning's message.
+    pub message: String,
+}
+
+/// One mineral's index in a scenario.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScenarioIndexRow {
+    /// The mineral's formula.
+    pub mineral: String,
+    /// The index; absent where the equilibrium has no row for it.
+    pub saturation_index: Option<f64>,
+}
+
+/// One mineral's treated-minus-baseline change.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScenarioChangeRow {
+    /// The mineral's formula.
+    pub mineral: String,
+    /// The change; absent where either side's index is.
+    pub change: Option<f64>,
+}
+
+/// Result of `eos.production_chemical_scale_scenario`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProductionChemicalScaleScenarioResult {
+    /// The pH after the dose.
+    pub treated_ph: f64,
+    /// The bicarbonate at the treated pH.
+    pub treated_bicarbonate: MassDensity,
+    /// The summed acid/base equivalents, positive for a base.
+    pub base_dose_equivalents: MolarConcentration,
+    /// The summed H2S capacity of the dosed scavengers.
+    pub scavenger_capacity: MassDensity,
+    /// The dissolved H2S the capacity leaves.
+    pub residual_dissolved_h2s: MassDensity,
+    /// The untreated indices.
+    pub baseline_si: Vec<ScenarioIndexRow>,
+    /// The treated indices.
+    pub treated_si: Vec<ScenarioIndexRow>,
+    /// The treated-minus-baseline change.
+    pub si_change: Vec<ScenarioChangeRow>,
+    /// The class's warning map, in insertion order.
+    pub model_warnings: Vec<ChemicalWarningRow>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ProductionChemicalScaleScenarioResult {
+    const CALC_ID: &'static str = "eos.production_chemical_scale_scenario";
+    const FIELDS: &'static [&'static str] = &[
+        "treated_ph",
+        "treated_bicarbonate",
+        "base_dose_equivalents",
+        "scavenger_capacity",
+        "residual_dissolved_h2s",
+        "baseline_si",
+        "treated_si",
+        "si_change",
+        "model_warnings",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// The flow regime a Beggs-and-Brill segment is in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BeggsBrillRegime {
+    /// One phase flows, and the correlation's two-phase map does not apply.
+    SinglePhase,
+    /// Segregated: stratified, wavy or annular.
+    Segregated,
+    /// The transition band between segregated and intermittent.
+    Transition,
+    /// Intermittent: plug or slug.
+    Intermittent,
+    /// Distributed: bubble or mist.
+    Distributed,
+}
+
+impl BeggsBrillRegime {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::SinglePhase => "single_phase",
+            Self::Segregated => "segregated",
+            Self::Transition => "transition",
+            Self::Intermittent => "intermittent",
+            Self::Distributed => "distributed",
+        }
+    }
+}
+
+/// Result of `eos.beggs_brill_segment`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BeggsBrillSegmentResult {
+    /// The regime the segment's velocities put it in.
+    pub regime: BeggsBrillRegime,
+    /// The liquid holdup after the inclination correction and the physical bound.
+    pub liquid_holdup: f64,
+    /// The gas superficial velocity.
+    pub superficial_gas_velocity: Velocity,
+    /// The liquid superficial velocity.
+    pub superficial_liquid_velocity: Velocity,
+    /// Their sum.
+    pub superficial_mixture_velocity: Velocity,
+    /// The volume-weighted no-slip mixture density.
+    pub no_slip_density: MassDensity,
+    /// The volume-weighted no-slip mixture viscosity.
+    pub no_slip_viscosity: DynamicViscosity,
+    /// The no-slip Reynolds number.
+    pub reynolds: f64,
+    /// The single-phase Darcy friction factor.
+    pub friction_factor: f64,
+    /// `f exp(S)`.
+    pub two_phase_friction_factor: f64,
+    /// The elevation term over the segment.
+    pub hydrostatic_drop: Pressure,
+    /// The friction term over the segment.
+    pub friction_drop: Pressure,
+    /// Their sum.
+    pub total_drop: Pressure,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for BeggsBrillSegmentResult {
+    const CALC_ID: &'static str = "eos.beggs_brill_segment";
+    const FIELDS: &'static [&'static str] = &[
+        "regime",
+        "liquid_holdup",
+        "superficial_gas_velocity",
+        "superficial_liquid_velocity",
+        "superficial_mixture_velocity",
+        "no_slip_density",
+        "no_slip_viscosity",
+        "reynolds",
+        "friction_factor",
+        "two_phase_friction_factor",
+        "hydrostatic_drop",
+        "friction_drop",
+        "total_drop",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.pipe_beggs_and_brills`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PipeBeggsAndBrillsResult {
+    /// The pressure at the inlet and each segment's outlet.
+    pub pressure_profile: Vec<f64>,
+    /// Each segment's drop; the inlet entry is zero.
+    pub pressure_drop_profile: Vec<f64>,
+    /// One value, the isothermal temperature, as the class's own profile list has.
+    pub temperature_profile: Vec<f64>,
+    /// The holdup at each segment, one entry per segment.
+    pub liquid_holdup_profile: Vec<f64>,
+    /// The mixture superficial velocity at each segment.
+    pub mixture_superficial_velocity_profile: Vec<f64>,
+    /// Each segment's flow regime.
+    pub flow_regime_profile: Vec<String>,
+    /// The pressure after the last segment.
+    pub outlet_pressure: Pressure,
+    /// The inlet pressure minus the outlet's.
+    pub total_pressure_drop: Pressure,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PipeBeggsAndBrillsResult {
+    const CALC_ID: &'static str = "eos.pipe_beggs_and_brills";
+    const FIELDS: &'static [&'static str] = &[
+        "pressure_profile",
+        "pressure_drop_profile",
+        "temperature_profile",
+        "liquid_holdup_profile",
+        "mixture_superficial_velocity_profile",
+        "flow_regime_profile",
+        "outlet_pressure",
+        "total_pressure_drop",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.closed_loop_deposition_solver`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ClosedLoopDepositionSolverResult {
+    /// The number of iterations the loop ran.
+    pub iterations_taken: u32,
+    /// Whether the loop met the diameter tolerance or detected a blocked line.
+    pub converged: bool,
+    /// The diameter after deposition; zero when the line is blocked.
+    pub final_effective_diameter: Length,
+    /// The effective diameter each iteration ran at, oldest first.
+    pub diameter_history: Vec<f64>,
+    /// The worst segment's thickness after each iteration's accumulator pass.
+    pub max_thickness_history: Vec<f64>,
+    /// The mean mixture superficial velocity of each iteration's profile.
+    pub velocity_history: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ClosedLoopDepositionSolverResult {
+    const CALC_ID: &'static str = "eos.closed_loop_deposition_solver";
+    const FIELDS: &'static [&'static str] = &[
+        "iterations_taken",
+        "converged",
+        "final_effective_diameter",
+        "diameter_history",
+        "max_thickness_history",
+        "velocity_history",
         "warnings",
     ];
 
@@ -5263,6 +6347,160 @@ impl CalcResult for WaterCompatibilityResult {
         "worst_case_percent",
         "worst_case_scale",
         "worst_case_saturation_index",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.pitzer_hydrate_formation_temperature`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PitzerHydrateFormationTemperatureResult {
+    /// The temperature at which the hydrate's water fugacity meets the aqueous phase's.
+    pub temperature: ThermodynamicTemperature,
+    /// The structure the coefficient comparison chose, or the pinned one.
+    pub structure: HydrateStructure,
+    /// `f_aq^water / pSat_water(T)` at the answer.
+    pub water_activity: f64,
+    /// Flash evaluations taken, the scan's and the bisection's together.
+    pub iterations: u32,
+    /// `ln(f_hydrate^water / f_aq^water)` at the answer.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PitzerHydrateFormationTemperatureResult {
+    const CALC_ID: &'static str = "eos.pitzer_hydrate_formation_temperature";
+    const FIELDS: &'static [&'static str] = &[
+        "temperature",
+        "structure",
+        "water_activity",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.pitzer_hydrate_formation_pressure`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PitzerHydrateFormationPressureResult {
+    /// The pressure at which the hydrate's water fugacity meets the aqueous phase's.
+    pub pressure: Pressure,
+    /// The structure the coefficient comparison chose, or the pinned one.
+    pub structure: HydrateStructure,
+    /// `f_aq^water / pSat_water(T)` at the answer.
+    pub water_activity: f64,
+    /// Flash evaluations taken, the scan's and the bisection's together.
+    pub iterations: u32,
+    /// `ln(f_hydrate^water / f_aq^water)` at the answer.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PitzerHydrateFormationPressureResult {
+    const CALC_ID: &'static str = "eos.pitzer_hydrate_formation_pressure";
+    const FIELDS: &'static [&'static str] = &[
+        "pressure",
+        "structure",
+        "water_activity",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.sound_speed`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SoundSpeedResult {
+    /// The speed of sound in the phase the flash puts first, m/s.
+    pub sound_speed: Velocity,
+    /// `SystemThermo.getSoundSpeed()`: the beta-weighted mean of the phase speeds, m/s.
+    pub system_sound_speed: Velocity,
+    /// What the flash found at the state.
+    pub phase: Phase,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SoundSpeedResult {
+    const CALC_ID: &'static str = "eos.sound_speed";
+    const FIELDS: &'static [&'static str] =
+        &["sound_speed", "system_sound_speed", "phase", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// One accepted pressure sample of `eos.equilibrium_sound_speed`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EquilibriumSoundSpeedSample {
+    /// Absolute pressure.
+    pub pressure: Pressure,
+    /// Temperature.
+    pub temperature: ThermodynamicTemperature,
+    /// Mass over EOS total volume, kg/m**3.
+    pub density: f64,
+    /// Signed specific-entropy error, J/(kg*K).
+    pub entropy_residual: f64,
+    /// What the flash found.
+    pub phase: Phase,
+    /// The vapour fraction where the state is two-phase.
+    pub vapour_fraction: Option<f64>,
+}
+
+/// Result of `eos.equilibrium_sound_speed`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EquilibriumSoundSpeedResult {
+    /// The acoustic speed, m/s; absent when no step converged.
+    pub sound_speed: Option<f64>,
+    /// The convergence or failure category.
+    pub status: String,
+    /// The class's own message for that category.
+    pub message: String,
+    /// The final pressure step, Pa.
+    pub pressure_step: f64,
+    /// The successive-derivative difference at that step, relative.
+    pub relative_step_error: Option<f64>,
+    /// The target specific entropy, J/(kg*K).
+    pub specific_entropy: f64,
+    /// The accepted stencil.
+    pub stencil: String,
+    /// Whether any sampled stencil changed the phase assemblage.
+    pub phase_boundary_encountered: bool,
+    /// `tp`/quality evaluations, including rejected trials.
+    pub flash_evaluations: u32,
+    /// The final stencil's states: centre first.
+    pub samples: Vec<EquilibriumSoundSpeedSample>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for EquilibriumSoundSpeedResult {
+    const CALC_ID: &'static str = "eos.equilibrium_sound_speed";
+    const FIELDS: &'static [&'static str] = &[
+        "sound_speed",
+        "status",
+        "message",
+        "pressure_step",
+        "relative_step_error",
+        "specific_entropy",
+        "stencil",
+        "phase_boundary_encountered",
+        "flash_evaluations",
+        "samples",
         "warnings",
     ];
 

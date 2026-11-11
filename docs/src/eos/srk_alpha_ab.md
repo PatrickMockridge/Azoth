@@ -4,6 +4,8 @@
 
 `eos.srk_alpha_ab`
 
+Soave-Redlich-Kwong alpha function and reduced attraction parameters. Use it to evaluate the SRK attraction term at a reduced temperature and pressure.
+
 ## Equation
 
 $$
@@ -26,6 +28,14 @@ b_reduced = 0.08664034996495773*Pr/Tr
 Equilibrium constants from a modified Redlich-Kwong equation of state. Chemical Engineering Science, 27(6), 1197-1203
 
 DOI: [10.1016/0009-2509(72)80096-4](https://doi.org/10.1016/0009-2509(72)80096-4)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **`Omega_a` and `Omega_b` are Redlich-Kwong's**, `1/(9*(2**(1/3) - 1))` and `(2**(1/3) - 1)/3`, which NeqSim's `ComponentSrk` computes from `Math.pow(2.0, 1.0/3.0)`.
+
 
 ## Inputs
 
@@ -53,7 +63,7 @@ DOI: [10.1016/0009-2509(72)80096-4](https://doi.org/10.1016/0009-2509(72)80096-4
 | `Pr > 0` | raises | Pr = 0 drives both A and B to zero, and B is a divisor in the fugacity-coefficient expression that consumes this calc's output. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
@@ -68,8 +78,6 @@ satisfy for the result to mean what it says.
 - the range of reduced temperature over which the alpha function's fit holds is NOT established, and no bound asserts one.
 
 - A and B are the reduced parameters of the Soave-Redlich-Kwong cubic and go with that cubic's mixing rules, not with another equation of state's.
-
-- **`Omega_a` and `Omega_b` are Redlich-Kwong's**, `1/(9*(2**(1/3) - 1))` and `(2**(1/3) - 1)/3`, which NeqSim's `ComponentSrk` computes from `Math.pow(2.0, 1.0/3.0)`.
 
 
 

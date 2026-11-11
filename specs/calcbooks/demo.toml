@@ -1,0 +1,25 @@
+id = "calcbook_1"
+name = "Worked examples"
+
+[[sheets]]
+id = "pump_power_1"
+name = "Pump shaft power"
+calculation = "hydraulics.pump_power"
+
+[sheets.inputs]
+rho = 998.0
+q = 0.01
+H = 30.0
+eta = 0.75
+
+[[sheets]]
+id = "darcy_weisbach_1"
+name = "Darcy-Weisbach pressure drop"
+calculation = "hydraulics.darcy_weisbach"
+
+[sheets.inputs]
+f = 0.02
+L = 100.0
+D = 0.1
+rho = 998.0
+v = 1.5

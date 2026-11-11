@@ -2,11 +2,12 @@
 
 Educational gas-scrubber sizing screening using the public Souders-Brown / K-factor relation for vertical separators with a mist-eliminator gas-load check. USE WHEN: a task needs a public, screening-level estimate of the Souders-Brown velocity, required vessel diameter, velocity utilisation, and mist-eliminator load for a vertical gas scrubber before detailed separator design.
 
-This is a `screening` skill and, for the sizing it wants, still a placeholder: azoth's
-`process.gas_scrubber` is an **equilibrium flash split** and, given a vessel's diameter and a
-design K, reports that vessel's Souders-Brown **capacity utilisation** — but the required
-diameter, the K-factor velocity itself and the mist-eliminator load this screening is for are
-still not ported.
+This is a `screening` skill and **partly ported**. azoth's `process.gas_scrubber` is an
+**equilibrium flash split** and, given a vessel's diameter and a design K, reports that
+vessel's Souders-Brown **capacity utilisation**; `process.separator`'s capacity surface
+adds the **K-factor velocity itself** (`gas_load_factor`), the maximum allowable velocity
+and the overload flag. The required diameter and the mist-eliminator load are still not
+ported.
 
 ## When to Use
 
@@ -47,14 +48,16 @@ Not applicable until the calculation is ported.
 ## Limitations
 
 Azoth has not ported the sizing; nothing here produces a required diameter or a mist-eliminator
-load. The utilisation is the one of the four numbers this skill wants that the library answers,
-and only when the vessel's diameter and its design K are both stated.
+load. Three of the four numbers this skill wants are answered when the vessel's diameter and
+its design K are both stated: the utilisation and the maximum allowable velocity on
+`process.separator`, and the K-factor velocity as `gas_load_factor` there.
 
 ## Related Azoth functionality
 
 `process.gas_scrubber`'s `capacity_utilization`, which is the utilisation this skill's checklist
-asks for. It is an **equilibrium flash split** otherwise, and the required diameter, the K-factor
-velocity and the mist-eliminator load are not ported.
+asks for, and `process.separator`'s capacity surface, which adds the maximum allowable velocity
+and the actual Souders-Brown `gas_load_factor`. Both stream sides are an **equilibrium flash
+split**; the required diameter and the mist-eliminator load are not ported.
 
 ## References
 

@@ -1,5 +1,6 @@
 id = "eos.vdw1f_mix_binary"
 name = "van der Waals one-fluid mixing, for a binary"
+summary = "van der Waals one-fluid mixing rules for a binary mixture. Use it to combine pure-component attraction and co-volume parameters with an interaction parameter."
 equation = """\
     a_mix = z1**2*a1 + 2*z1*(1 - z1)*(1 - k12)*(a1*a2)**0.5 + (1 - z1)**2*a2\n\
     b_mix = z1*b1 + (1 - z1)*b2\n\
@@ -8,11 +9,7 @@ latex = """\
     a_{\\mathrm{mix}} = z_{1}^{2}a_{1} + 2z_{1}z_{2}\\left(1 - \
     k_{12}\\right)\\sqrt{a_{1}a_{2}} + z_{2}^{2}a_{2}, \\qquad b_{\\mathrm{mix}} = \
     z_{1}b_{1} + z_{2}b_{2}"""
-assumptions = ["""\
-    `k12` is a fitted parameter for the pair intended, and its correctness is NOT CHECKED - \
-    this library ships no values for it and has no second source.""", "The convention is `a12 = (1 - k12)*sqrt(a1*a2)`; authors differ, so a value copied from a table without checking its convention is a plausible-looking wrong number.\n", "the two components' `A` and `B` must come from the *same* equation of state and the same temperature.\n", """\
-    this is not a pressure or temperature dependence. `A` and `B` carry those; this calc \
-    only combines them.""", "no volume translation is applied, and no `l12` covolume correction."]
+assumptions = ["`k12` is a fitted parameter for the pair intended, and its correctness is NOT CHECKED - this library ships no values for it and has no second source.", "The convention is `a12 = (1 - k12)*sqrt(a1*a2)`; authors differ, so a value copied from a table without checking its convention is a plausible-looking wrong number.\n", "the two components' `A` and `B` must come from the *same* equation of state and the same temperature.\n", "this is not a pressure or temperature dependence. `A` and `B` carry those; this calc only combines them.", "no volume translation is applied, and no `l12` covolume correction."]
 references = ["""\
     van der Waals, J. D. (1890). \"On the Continuity of the Gaseous and Liquid States.\" \
     (the origin of the quadratic mixing form; the citation is unconfirmed - see `notes`)""", "Poling, B. E.; Prausnitz, J. M.; O'Connell, J. P. \\\"The Properties of Gases and Liquids\\\", 5th ed."]

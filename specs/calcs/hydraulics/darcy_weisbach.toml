@@ -1,5 +1,6 @@
 id = "hydraulics.darcy_weisbach"
 name = "Darcy-Weisbach pressure drop"
+summary = "Pressure drop for steady flow in a circular pipe from the Darcy-Weisbach relation. Use it for line sizing and pump-head checks once a friction factor is known."
 equation = "dP = f * (L / D) * (rho * v**2 / 2)"
 latex = '''\Delta P = f\,\frac{L}{D}\,\frac{\rho v^{2}}{2}'''
 assumptions = ["constant density along the pipe", "fully developed flow", "negligible elevation change and no shaft work between the two points", "steady, single-phase, incompressible flow", "Mach number below about 0.3; above that the incompressible form is not valid.", "The friction factor f corresponds to the actual flow regime.", "The pipe is straight; fittings' resistance must be added separately."]

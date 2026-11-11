@@ -75,3 +75,111 @@ product_t = 288.15
 product_h = -2022.5692972719955
 heat_duty = 1856692.489362915
 co2_emission = 0.110025
+
+[[cases]]
+id = "performance_defaults"
+tolerance = 1.0e-6
+source = "The capture's `performance_defaults` block: the binary gas at its default setters, read at 30 m and 4 kW/m2. **The radiation model is a point source at 30 m**, so the 4 kW/m2 contour is inside the flame-height sphere and the distance is the class's zero; the flux is `0.18 * 1046833.06 / (4 pi (30^2 + 30^2)) = 8.3304328` W/m2, which the port reproduces exactly. **The surrogate's velocity and momentum agree to `6.2e-8`**, the system density's own agreement, which sets a `1e-6` band; the standard volume rate is the inlet's own Sm3 flow.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 101325.0
+inlet_t = 288.15
+ground_distance = 30.0
+radiation_flux_threshold = 4000.0
+[cases.expected]
+radiation_flux = 8.330432843526976
+radiation_distance = 0.0
+exit_velocity = 0.3332699477343139
+momentum_flux = 0.09547952202390333
+standard_volume_rate = 0.023644828562694297
+
+[[cases]]
+id = "performance_design_capacities"
+tolerance = 1.0e-6
+source = "The capture's `performance_design_capacities` block: the same gas with the three design limits at `0.8 x` duty, `0.5 x` mass and `0.5 x` molar, read at 50 m and 1.5 kW/m2. **The utilisations are the design ratios exactly** - `1.25`, `2.0` and `2.0` - and the flag is true because each is above `1 + 1e-6`. The flux is `4.4102291` W/m2 and the distance is zero again, the 30 m source putting the contour inside its own sphere.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 101325.0
+inlet_t = 288.15
+ground_distance = 50.0
+radiation_flux_threshold = 1500.0
+design_heat_duty_capacity = 837466.4519183197
+design_mass_flow_capacity = 0.010125499999999999
+design_molar_flow_capacity = 0.5
+[cases.expected]
+radiation_flux = 4.410229152455459
+radiation_distance = 0.0
+exit_velocity = 0.3332699477343139
+momentum_flux = 0.09547952202390333
+standard_volume_rate = 0.023644828562694297
+heat_utilization = 1.25
+mass_utilization = 2.0
+molar_utilization = 2.0
+overloaded = true
+
+[[cases]]
+id = "performance_hot_flame"
+tolerance = 1.0e-6
+source = "The capture's `performance_hot_flame` block: the sales gas with a 60 m flame, a 0.3 radiant fraction and a 0.6 m tip, read at 10 m and 2 kW/m2. **The setters are the oracle**: the taller source and the wider tip move the flux to `6.1242584` W/m2 and the velocity to `0.0833661` m/s, and the distance is zero because the contour is still inside the flame-height sphere.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane", "nitrogen"]
+inlet_n = 1.0
+inlet_z = [0.85, 0.07, 0.03, 0.02, 0.03]
+inlet_p = 101325.0
+inlet_t = 288.15
+flame_height = 60.0
+radiant_fraction = 0.3
+tip_diameter = 0.6
+ground_distance = 10.0
+radiation_flux_threshold = 2000.0
+[cases.expected]
+radiation_flux = 6.124258427677121
+radiation_distance = 0.0
+exit_velocity = 0.0833661263044291
+momentum_flux = 0.0056219209062236845
+standard_volume_rate = 0.023644828562694297
+
+[[cases]]
+id = "performance_high_duty"
+tolerance = 1.0e-6
+source = "The capture's `performance_high_duty` block: 100 mol/s of the binary gas, read at 60 m and 1 kW/m2. **The one row where the inverse is positive**: `sqrt(0.18 * 104.68 MW / (4 pi * 1000) - 30^2) = 24.484238` m, so the horizontal distance branch the three other rows answer zero from is exercised here.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 100.0
+inlet_z = [0.9, 0.1]
+inlet_p = 101325.0
+inlet_t = 288.15
+ground_distance = 60.0
+radiation_flux_threshold = 1000.0
+[cases.expected]
+radiation_flux = 333.21731374107935
+radiation_distance = 24.484238028471637
+exit_velocity = 33.326994773431394
+momentum_flux = 954.7952202390334
+standard_volume_rate = 2.3644828562694302
+
+[[cases]]
+id = "performance_clamped_fields"
+tolerance = 1.0e-6
+source = "The capture's `performance_clamped_fields` block: a negative flame height, a radiant fraction of 5 and a zero tip diameter on the binary gas. **The setters clamp rather than refuse** - the height to 0, the fraction to 1 and the tip to `1e-4` m - and the row pins each: the flux at 30 m is `92.5603649` W/m2, the distance `4.5635602` m, and the velocity 23557 m/s off the floored tip.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 101325.0
+inlet_t = 288.15
+flame_height = -5.0
+radiant_fraction = 5.0
+tip_diameter = 0.0
+ground_distance = 30.0
+radiation_flux_threshold = 4000.0
+[cases.expected]
+radiation_flux = 92.56036492807755
+radiation_distance = 4.563560244898433
+exit_velocity = 23557.464437948434
+momentum_flux = 4.770622123328937e8
+standard_volume_rate = 0.023644828562694297

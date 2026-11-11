@@ -10,12 +10,12 @@ liquid_viscosity_Pa_s=6.5E-4
 surface_tension_N_per_m=0.072
 design_flood_fraction=0.7
 trial_column_diameter_m=1.0
-trial_flooding_velocity_m_per_s=0.10238615607703111
-sized_diameter_m=0.4
-derived_design_velocity_m_per_s=0.07167030925392177
+trial_flooding_velocity_m_per_s=0.16908517183707505
+sized_diameter_m=0.3
+derived_design_velocity_m_per_s=0.11835962028595252
 derived_vapor_volumetric_flow_m3_per_s=0.0077777777777777776
-derived_required_area_m2=0.10852161597659327
-derived_required_diameter_m=0.3717176521500718
+derived_required_area_m2=0.06571310180775293
+derived_required_diameter_m=0.2892551120185065
 
 mellapak_250y_absorber_sized
 packing=Mellapak-250Y
@@ -48,12 +48,12 @@ liquid_viscosity_Pa_s=6.5E-4
 surface_tension_N_per_m=0.072
 design_flood_fraction=0.7
 trial_column_diameter_m=1.0
-trial_flooding_velocity_m_per_s=0.05661349698882555
-sized_diameter_m=0.5
-derived_design_velocity_m_per_s=0.03962944789217788
+trial_flooding_velocity_m_per_s=0.09349411320268088
+sized_diameter_m=0.4
+derived_design_velocity_m_per_s=0.06544587924187661
 derived_vapor_volumetric_flow_m3_per_s=0.0077777777777777776
-derived_required_area_m2=0.1962625822832361
-derived_required_diameter_m=0.4998892686534238
+derived_required_area_m2=0.11884289534918555
+derived_required_diameter_m=0.3889928970680642
 
 pall_ring_50_light_load_sized
 packing=Pall-Ring-50
@@ -67,12 +67,12 @@ liquid_viscosity_Pa_s=6.5E-4
 surface_tension_N_per_m=0.072
 design_flood_fraction=0.7
 trial_column_diameter_m=1.0
-trial_flooding_velocity_m_per_s=0.05661349698882555
+trial_flooding_velocity_m_per_s=0.09349411320268088
 sized_diameter_m=0.3
-derived_design_velocity_m_per_s=0.03962944789217788
+derived_design_velocity_m_per_s=0.06544587924187661
 derived_vapor_volumetric_flow_m3_per_s=4.4444444444444447E-4
-derived_required_area_m2=0.011215004701899206
-derived_required_diameter_m=0.11949639107876378
+derived_required_area_m2=0.006791022591382032
+derived_required_diameter_m=0.09298708788072386
 
 pall_ring_50_absorber_sized_half_flood
 packing=Pall-Ring-50
@@ -86,10 +86,10 @@ liquid_viscosity_Pa_s=6.5E-4
 surface_tension_N_per_m=0.072
 design_flood_fraction=0.5
 trial_column_diameter_m=1.0
-trial_flooding_velocity_m_per_s=0.10238615607703111
-sized_diameter_m=0.5
-derived_design_velocity_m_per_s=0.051193078038515555
+trial_flooding_velocity_m_per_s=0.16908517183707505
+sized_diameter_m=0.4
+derived_design_velocity_m_per_s=0.08454258591853753
 derived_vapor_volumetric_flow_m3_per_s=0.0077777777777777776
-derived_required_area_m2=0.15193026236723056
-derived_required_diameter_m=0.439822257381259
+derived_required_area_m2=0.0919983425308541
+derived_required_diameter_m=0.34225126407418016
 

@@ -9,6 +9,7 @@ members = [
   "crates/azoth-reactions",
   "crates/azoth-standards",
   "crates/azoth-characterization",
+  "crates/azoth-sheets",
   "crates/azoth-process",
   "crates/azoth-python",
   "crates/azoth-wasm",
@@ -16,7 +17,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.1"
+version = "0.1.3"
 edition = "2024"
 rust-version = "1.85"
 license = "AGPL-3.0-or-later"
@@ -33,6 +34,7 @@ azoth-eos = { path = "crates/azoth-eos" }
 azoth-reactions = { path = "crates/azoth-reactions" }
 azoth-standards = { path = "crates/azoth-standards" }
 azoth-characterization = { path = "crates/azoth-characterization" }
+azoth-sheets = { path = "crates/azoth-sheets" }
 azoth-process = { path = "crates/azoth-process" }
 azoth-python = { path = "crates/azoth-python" }
 azoth-cli = { path = "crates/azoth-cli" }

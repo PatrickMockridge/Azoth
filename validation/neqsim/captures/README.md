@@ -10,6 +10,29 @@ cd validation/neqsim
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar CpaSweep > captures/cpa_sweep.tsv
 ```
 
+**Eight captures are run against the pin plus the fixes that moved them.**
+`packing_probe`, `packing_sizing_probe`, `process_packed_column`,
+`process_rate_based_packed_column`, `process_rate_based_billet` and
+`process_rate_based_solvers` were taken from a jar built at `f0c7436c` with only the packing fix
+`834b5c4f` applied: its `Packing.csv`, `PackingSpecificationLibrary.java`,
+`PackingHydraulicsCalculator.java`, and the single `getOrDefault` -> `require` line of
+`RateBasedPackedColumn.java`. `process_shortcut_distillation_column` adds the Kirkbride fix
+`1f7581f9`'s `ShortcutDistillationColumn.java`.
+
+**The same jar carries the re-vendored `COMP.csv`** (upstream `8bb7bace`), because the port's
+component data is that file: `ge_henry_probe`, `ge_electrolyte_probe`, `pitzer_fugacity_probe`,
+`pitzer_hydrate_probe` and `aqueous_viscosity_probe` are taken with it.
+`pseudo_component_combiner_probe` adds the characterization fix `c93c8153`'s one hunk: the
+mass-quantile candidate is projected into `nextUp`/`nextDown` of the reference gap rather than
+discarded for the midpoint (upstream PR #4330).
+
+**The jar also carries the re-vendored `REACTIONDATA.csv` and `REACTIONDATAPITZER.csv`**
+(upstream `1acf0652`), so `reactive_flash_probe`, `reactive_ph_flash_probe`,
+`hybrid_eos_ge_reactive_probe` and `hybrid_eos_ge_reactive_loop_probe` are taken with them. Everything else is the pin, so each capture's delta is those changes rather than the
+five hundred commits between the revisions. The built-in packing rows are
+the reference after the fix: `Pall-Ring-50` is `120.0`, `0.96`, factor `66`, and the file's
+plastic ring is reachable as `Pall-Ring-50-plastic` (`111.1`, `0.919`, `180`).
+
 **A probe that declares NeqSim's own package compiles with `-d .` and runs under that
 package's name**, because what it needs is package-private; `WaxReferenceProbe`,
 `PcsaftCompositionProbe` and `WaterDewPointSeedProbe` are the three, and each says in its
@@ -155,6 +178,10 @@ is the only probe here that drives `neqsim.process` rather than `neqsim.thermo`.
 ```bash
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pump > captures/process_pump.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe splitter > captures/process_splitter.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe splitter_capacity \
+  > captures/process_splitter_capacity.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe splitter_mechanical_design \
+  > captures/process_splitter_mechanical_design.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe mixer > captures/process_mixer.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator > captures/process_separator.tsv
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve > captures/process_throttling_valve.tsv
@@ -167,6 +194,351 @@ is the only probe here that drives `neqsim.process` rather than `neqsim.thermo`.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe column_divergence \
   > captures/process_column_divergence.tsv
 ```
+
+## The heat exchanger's delta-T mode
+
+`process_heat_exchanger_delta_t.tsv` is `HeatExchanger.runDeltaT`, which `setDeltaT` enables:
+the class perturbs each side by `delta_t`, estimates its capacity from the enthalpy change,
+sets the side with the larger swing and closes the other by `PHflash`.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger_delta_t \
+  > captures/process_heat_exchanger_delta_t.tsv
+```
+
+**The rating capture's 100 K PR fixture is degenerate here.** The closure asks the hot side
+for more enthalpy than its inventory carries, and the class answers an outlet at `~0` K with
+a `NaN` enthalpy; the PR rows here therefore use the class's own `HeatExchangerTest.testRun2`
+fluid on PR, where the same arithmetic stays in a state the cubic is for. **The SRK row is
+that test's own `15780.77130`**, and it is a labelled control rather than a PR case.
+
+## The heat exchanger's thermal-hydraulic rating
+
+`process_heat_exchanger_rating.tsv` is `HeatExchanger.runThermalHydraulicRating`, which
+`setUseRatingPressureDrop(true)` enables: both inlets are flashed and required single-phase,
+the calculator is fed their five transport properties, the correlated pressure drops move
+the outlet pressures, and the outlets are `PHflash`ed at the effectiveness-NTU duty. The
+rows are the class's own `HeatExchangerFoulingRatingTest` re-cased on **PR** (the class test
+is SRK); the SRK row is a labelled control and is not a PR case. The refusals are the
+class's own: a multiphase feed, a capacity clone across a phase transition, and the three
+configuration checks.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger_rating \
+  > captures/process_heat_exchanger_rating.tsv
+```
+
+## The rating calculator, directly
+
+`thermal_rating_probe.tsv` drives `ThermalDesignCalculator` with stated geometry and fluid
+properties, so the arithmetic is observable without a flash: Kern and Bell-Delaware, square
+and triangular pitch, laminar/transition/turbulent tube side, the fouling pair, a deposit
+layer, a stated wall viscosity and bypass area, and the two entry points' refusals. The J
+factors come from the class's own `toMap()`, because they have no getters. Both `calculate()`
+and `calculateStrict()` are printed where they disagree: the permissive path leaves zeros,
+the strict one throws.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ThermalRatingProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ThermalRatingProbe \
+  > captures/thermal_rating_probe.tsv
+```
+
+## The tube-vibration screen
+
+`tube_vibration_probe.tsv` drives `VibrationAnalysis` directly: the natural frequency
+under all three end conditions, the vortex-shedding frequency with the Fitzhugh pitch
+correction, Connors' critical velocity for both layouts, the first three acoustic modes,
+the effective acoustic velocity, and `performScreening` on a passing state and on one
+state for each of the three critical mechanisms. The degenerate rows print the class's
+`Double.MAX_VALUE` sentinel and its "passed" answer; the port refuses those geometry
+states at the boundary instead.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TubeVibrationProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TubeVibrationProbe \
+  > captures/tube_vibration_probe.tsv
+```
+
+## The LMTD correction factor
+
+`lmtd_correction_probe.tsv` drives `LMTDcorrectionFactor` on the class's own R/P state and
+on six edge states: R = 1, a small effectiveness, no heat transfer, equal inlets, a
+temperature cross, a state that needs four shell passes, and one no number of passes up to
+six clears. Each row prints `R`, `P`, the two dedicated shell-pass wrappers, `F_t` for one
+to six passes and the required-pass count. **The multi-pass path converts the overall P to
+a per-shell P1**, and an undefined conversion answers 1.0 rather than zero — which is why
+the cross row reads 1.0 at two passes.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar LmtdCorrectionProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar LmtdCorrectionProbe \
+  > captures/lmtd_correction_probe.tsv
+```
+
+## The condensation correlations
+
+`shah_condensation_probe.tsv` drives `ShahCondensation` directly on the class's R134a-like
+test fluid: the liquid-only coefficient, the local coefficient at mid, zero and high
+quality with its clamps, the average over a quality range, the vertical-tube coefficient in
+both regimes, and the validity predicate. **At a quality of one the local coefficient is
+zero** — the clamp sends `x` to one and both terms vanish — and a quality below zero clamps
+to zero and answers the liquid-only coefficient.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ShahCondensationProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ShahCondensationProbe \
+  > captures/shah_condensation_probe.tsv
+```
+
+## The boiling correlations
+
+`boiling_heat_transfer_probe.tsv` drives `BoilingHeatTransfer` on the class's R134a-like
+test fluid: the Chen local coefficient with and without wall superheat, the Gungor-Winterton
+local coefficient across the quality clamp, the horizontal stratified correction, the
+Martinelli parameter and the two Chen factors, the Simpson average, and the composed state
+each case pins. **The boiling quality clamp is `[0.001, 0.999]`**, unlike the condensation
+correlation's `[0, 1]`.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar BoilingHeatTransferProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar BoilingHeatTransferProbe \
+  > captures/boiling_heat_transfer_probe.tsv
+```
+
+## The two-phase pressure drop
+
+`two_phase_pressure_drop_probe.tsv` drives `TwoPhasePressureDrop` on the same R134a-like
+test fluid: the Friedel gradient across quality, with no surface tension and with no flux;
+the total drop and the Simpson average over a quality range in both directions, with odd
+and below-minimum interval counts; the Muller-Steinhagen-Heck gradient; and the
+gravitational and acceleration terms, and the composed state each case pins, including
+zero flux and quality one. **At quality zero the Friedel and M-S-H gradients both reduce
+to the liquid-only Fanning term, and at quality one both reduce to the vapour-only term**,
+the gravitational endpoints are exactly `rho * 9.81`, and the average is
+direction-symmetric because the class takes the absolute value of the Simpson sum over the
+span. A zero flux answers zero for every flow term and leaves the gravitational gradient.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TwoPhasePressureDropProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TwoPhasePressureDropProbe \
+  > captures/two_phase_pressure_drop_probe.tsv
+```
+
+## The fouling model
+
+`fouling_model_probe.tsv` drives `FoulingModel` on its three model types: the fixed
+resistance, the Kern-Seaton asymptotic approach, and the Ebert-Panchal threshold model with
+its analytical resistance, rate, threshold temperature and threshold velocity. Every row
+states its operating conditions, so a row is a state a caller can rebuild. **The threshold
+temperature answers `Double.MAX_VALUE` when the target rate exceeds the deposition rate at
+zero fouling**, and the threshold velocity is the class's 50-step binary search over
+`[0.1, 10]` m/s, stopping at an endpoint unless the asymptote crosses the fixed resistance
+inside the bracket. The three-hour Euler row pins the stateful `advanceTime` path beside the
+analytical one.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar FoulingModelProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar FoulingModelProbe \
+  > captures/fouling_model_probe.tsv
+```
+
+## The tube-insert enhancement
+
+`tube_insert_probe.tsv` drives `TubeInsertModel` on its four insert types: the plain tube,
+the twisted tape, the wire matrix and the coiled wire, across each regime boundary and the
+twist-ratio clamp, with `applyEnhancement` applied to a 1000 W/(m2 K) and 5000 Pa plain
+state. **The twisted tape's blockage factor cancels the tape thickness** (`t/(t/0.05)` is
+`0.05` for any non-zero thickness), and **the coiled wire's pitch cancels against itself**,
+so both parameters are carried and unread; the laminar branches read neither Reynolds nor
+Prandtl number.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TubeInsertProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TubeInsertProbe \
+  > captures/tube_insert_probe.tsv
+```
+
+## The TEMA standard
+
+`tema_standard_probe.tsv` drives `TEMAStandard`: five common and two custom configurations across
+the three construction classes, every tube size, pitch pattern and baffle type, all eight
+`recommendConfiguration` branches, the tube-count estimate at one, two and four passes on one
+geometry, and the unsupported span across the diameter bands and the three material factors.
+**The class speaks millimetres in every static method**, the tube count is an `int`
+truncation, and a material name is matched by upper-cased substring (`STAINLESS` or `SS`,
+`COPPER` or `CU`, `TITANIUM` or `TI`). A designation not in the common table - `AEW`, which
+the recommendation itself can return - makes `getConfiguration` answer null, so the probe
+builds `AJW` instead.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TemaStandardProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TemaStandardProbe \
+  > captures/tema_standard_probe.tsv
+```
+
+## The exchanger's zone-by-zone rating
+
+`zone_analysis_probe.tsv` drives `ThermalDesignCalculator.calculateZones` on the documented
+desuperheating example, a three-zone desuperheating/condensing/subcooling case, the same case
+under Bell-Delaware with two sealing pairs and with a 1 mm inner deposit, the degenerate zone
+properties the permissive path does not answer, a zero and a negative LMTD, empty and null
+arrays, and the base state before, during and after the loop. **Each zone overrides only the
+eight transport properties** (density, viscosity, cp and conductivity on both sides), runs the
+full permissive `calculate()` and restores them; mass flows, fouling, deposit, method and
+geometry are the base's. The required area is `dutyFraction * totalDuty / (U * lmtd)`, zero
+when either denominator is non-positive.
+
+**The loop restores properties, not results**: after `calculateZones` the result fields still
+hold the last zone's answer, and a fresh `calculate()` on the base reproduces its pre-loop U
+(`340.717857335297` both times) - which is the row that proves the restore. **A zero
+viscosity, conductivity or density is not refused by the permissive path**: the tube-side HTC
+comes back `32.08`, `NaN` and `32.08` respectively while U stays `24.29`, and the zero-density
+row carries an infinite velocity and a `NaN` pressure drop. The port refuses these states;
+the capture marks them as the class's own unanswered answers. The strict entry point throws
+for all eight refusal states, and the messages are in the `strict_refusals.*` keys.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ZoneAnalysisProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ZoneAnalysisProbe \
+  > captures/zone_analysis_probe.tsv
+```
+
+## The exchanger's incremental zone analysis
+
+`incremental_zone_analysis_probe.tsv` drives `IncrementalZoneAnalysis` - the HTRI-style
+incremental rating, not `calculateZones` - on one liquid zone, a liquid/vapour pair, the
+condensing/evaporating/vapour cycle, a `TWO_PHASE` tube regime, the three LMTD branches, a
+single-point quality range, zero flow, no zones, the constructor's target counts and the
+zone-count baffle scaling. **The tube side dispatches on the regime**: `CONDENSING` uses
+Shah's liquid-only coefficient and its average, `EVAPORATING` uses Gungor-Winterton with a
+heat flux of `duty/(tube_count*pi*tube_id*tube_length/zones)`, and every other regime -
+**including `TWO_PHASE`** - falls through to the single-phase Gnielinski/laminar path. The
+shell side is always Kern and ignores its phase regime. The tube drop is Friedel for the two
+two-phase regimes and Fanning otherwise; the shell drop's baffle count is
+`max(1, round(L/S/N))`, which is why it rises with the zone count while the summed tube drop
+does not.
+
+**The class never subdivides.** The constructor clamps `targetZoneCount` to at least three and
+stores it, but `calculate()` reads `zones.size()`; the probe pins identical results at 3, 20
+and 100. A zero tube flow is not refused: the laminar branch answers `32.08` W/(m**2 K) and
+U `24.59`. With no zones the minimum approach is `Double.MAX_VALUE` and every total is zero.
+The LMTD falls back to `max(|dt1|,|dt2|)` when either endpoint difference is non-positive,
+and to the arithmetic mean when the two differ by less than 0.01 K.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar IncrementalZoneAnalysisProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar IncrementalZoneAnalysisProbe \
+  > captures/incremental_zone_analysis_probe.tsv
+```
+
+## The shell-and-tube design calculator
+
+`shell_and_tube_design_probe.tsv` drives `ShellAndTubeDesignCalculator` on its defaults, every
+rear-head clearance branch, the standard-size table's ends, all five tube sizes, the three
+pressure levels, the allowable-stress derating boundaries, five material pairs, the NACE
+threshold and both compliance flags, joint efficiencies and nozzle sizes, and the optional
+thermal and vibration block on both shell-side methods and with one side only. It also pins
+two calls on one instance and the four refusals.
+
+**The material table is the H2 design database**, and a failed lookup is silent: the class
+leaves `shell.material` at `Carbon Steel SA-516-70`. Every row here printed an `ASME-II-A`
+specification, so the database initialized; a row printing a `Carbon Steel ...` string is a
+failed lookup and is not usable as a case. The warning in that case is that the jar's CSV
+load did not run; a Maven classpath build is the fallback.
+
+**Two upstream defects are pinned.** The NACE test is `"Yes".equalsIgnoreCase(csv)` against a
+column that holds `true`/`false`, so **every grade reads not compliant** - the stainless row's
+two issue strings fire as readily as the carbon row's. And the price test is
+`contains("STAINLESS")` against `"ASME-II-A SA-..."`, so **every grade prices as carbon steel**
+at 1.5 USD/kg; `carbon_carbon` and `carbon_ss` therefore have identical costs, and the
+5 USD/kg branch is unreachable. The calculator's other quirks are in the capture too: the
+shell minimum wall is the TEMA *tube*-wall minimum, the weight uses a separate tubesheet
+estimate rather than the reported UHX thickness, and `calculate()` twice duplicates
+`appliedStandards`.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ShellAndTubeDesignProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ShellAndTubeDesignProbe \
+  > captures/shell_and_tube_design_probe.tsv
+```
+
+## The heat exchanger's mechanical design
+
+`process_heat_exchanger_mechanical_design.tsv` is `HeatExchangerMechanicalDesign.calcDesign`'s
+two-stream branch: the four stream temperatures give the LMTD and approach, `getUAvalue()` is
+the starting UA, and the five candidate types give their areas at their own typical
+coefficients. The pinned rows set the two outlets to the **reference state** - the pin, and
+the other side at the duty's enthalpy from a fresh flash - because `runSpecifiedStream`'s own
+clone-and-flash lands its enthalpy elsewhere; the class's `duty` field stays zero there,
+which is what the estimate reads.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger_mechanical \
+  > captures/process_heat_exchanger_mechanical_design.tsv
+```
+
+## The heat exchanger's transient step
+
+`process_heat_exchanger_transient.tsv` is `HeatExchanger.runTransient`'s enabled branch, one
+step at a time: a forward-Euler wall energy balance, optional per-side CSTR holdup
+temperatures, and a `PHflash` of each side. The class reads `inStream[0]` as the **shell** and
+`inStream[1]` as the **tube** - the reverse of the rating's stream 0 - and the capture prints
+the private CSTR temperatures by reflection because they have no getters. **The outlet enthalpy
+shift is applied as a power where a joule belongs** (`h_out = h_in - q`, not `q*dt`), so the
+`dt_quirk_*` rows print identical outlets at `dt = 0`, `0.5` and `1` while the wall moves by
+`dt`; the `wall_upstream_1000kg_*` rows are the upstream test's own flow, where that shift is
+about `-17` kJ/mol and is evidence rather than a case. The three gate rows pin the fallback to
+`Heater.runTransient` (the steady run), and the last rows are uncased evidence: a zero-flow
+side answers, a two-phase side answers, and `calculateSteadyState=false` throws a
+`NullPointerException` because `Heater.runTransient` reads its single-stream `outStream`.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger_transient \
+  > captures/process_heat_exchanger_transient.tsv
+```
+
+## The cooler's dynamic temperature control
+
+`process_cooler_transient.tsv` is `Cooler.runTransient`'s configured branch: a manual
+controller's requested opening moves the valve by a first-order actuator, an NTU scaled by
+opening and inverse mass flow gives the equilibrium outlet, and a second first-order lag moves
+the outlet. The first rows pin the gate (no configuration is the steady run) and the design
+point's equilibrium; the manual rows pin the actuator and the thermal lag, the two carried
+steps pin the state contract, and the same-UUID row is evidence of the class's per-step cache,
+which a one-step id keeps outside. `cooler_invalid_design` is the class's own refusal.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe cooler_transient \
+  > captures/process_cooler_transient.tsv
+```
+
+## The compressor's no-chart modes
+
+Three captures on `CompressorDepositTest`'s machine: the polytropic branch, the
+compression-ratio and fixed-power modes, and the deposit model with its run-time effect.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_polytropic \
+  > captures/process_compressor_polytropic.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_modes \
+  > captures/process_compressor_modes.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_deposit \
+  > captures/process_compressor_deposit.tsv
+```
+
+`compressor_polytropic` prints the class's own densities and enthalpies beside its reported
+outlet, and **those do not reproduce that outlet on PR**: the formula on the printed numbers
+gives `0.2-0.44%` less enthalpy than the class reports, because its in-place isentropic state
+differs from a fresh `PSflash`. `compressor_modes` is `setCompressionRatio`,
+`setMaxOutletPressure` and `setPower`; `compressor_deposit` is the mass-to-multiplier mapping,
+the class's `0.77` inverse row, and the clean-versus-fouled machine.
 
 **`ProcessProbe absorber_efficiency` is the absorber's Murphree override, and NeqSim's own solve
 does not converge with it.** It runs the lean-oil absorber at `0.6` column-wide and at `1.0` with
@@ -238,9 +610,9 @@ the column's `isHydraulicsOk()` are three predicates that all read as "the hydra
 and on these rows **all three are false**, so the row alone cannot tell them apart - which is
 what makes publishing one under another's name a way to reproduce every row while answering a
 different question. `getPressureDropPerMeter()` beside the column's `getPackingPressureDrop()`
-settles a name that does not say which it is: on the 2.3 m row they are `0.27862153390634686` and
-`0.6408295279845977`, **a ratio of exactly the bed height**, so the column's is the total.
-`resolved_packing` and `resolved_packing_factor` (`Pall-Ring-50`, `180.0`) and
+settles a name that does not say which it is: on the 2.3 m row they are `0.08962289003108304` and
+`0.20613264707149095`, **a ratio of exactly the bed height**, so the column's is the total.
+`resolved_packing` and `resolved_packing_factor` (`Pall-Ring-50`, `66.0`) and
 `calculated_diameter_m` (`0.3`) are the geometry and the sized diameter the report used.
 
 **And `interphase_surface_tension_N_per_m` is `0.0` on every tray**, which is the measurement
@@ -266,7 +638,7 @@ from `designFloodFraction`, the area from the vapour's volumetric flow, and the 
 class's standard-diameter table - was measured by nothing. Five states: the absorber, structured
 packing, a high liquid load, a light load that reaches the table's **0.3 m floor**, and the
 absorber again at a `0.5` flood fraction. **That last pair is the measurement of the one claim** -
-the flood fraction moves the sized diameter from `0.4` to `0.5` m and leaves the calculation
+the flood fraction moves the sized diameter from `0.3` to `0.4` m and leaves the calculation
 untouched - and **the light and high-liquid rows share a flooding velocity to the last digit**,
 which is the Eckert fit's `FLV` clamped at its ceiling of `5` on both.
 
@@ -364,6 +736,15 @@ stated `0.5` row reads back `0.5` and moves the factor to `0.08158631462070312`,
 column's stage count, and the capacity family is indifferent to the packing. Both packed rows also
 read `max_allowable_fs_factor=2.5`, so `PackedColumn` overrides neither default.
 
+**A single phase carries the feed's root, and none of these rows is such a state.** The flash's
+negative-flash branch reports the *trial* composition's root for an `all_vapour`/`all_liquid`
+answer - 95.79 kg/m3 against the feed's 36.69 at 95/5 methane/ethane, 50 bar and 303 K - and the
+columns' capacity family now reads the feed's, as NeqSim's `getPhase(0)` does. Every row here is
+two-phase (where the two roots agree) or a stable single phase whose flash root is already the
+feed's, so no captured number moves. The negative-flash state is pinned by
+`process_separator_capacity_assessment.tsv`'s `36.692464746744186` and by the two unit tests that
+mount it.
+
 **`ProcessProbe designer` is `ColumnInternalsDesigner`'s trayed half - the class the tray
 calculator is driven *by*.** It walks the column's trays, picks the **controlling** one by the
 largest vapour mass flow, sizes a diameter off that one and runs a calculator per tray at the
@@ -434,6 +815,60 @@ public surface of forty-odd getters.
 
 ```bash
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe mechanical > captures/process_column_mechanical_design.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe reactor_mechanical \
+  > captures/process_reactor_mechanical_design.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe gibbs_algorithms \
+  > captures/process_gibbs_algorithms.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe valve_sizing \
+  > captures/process_valve_sizing.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe filter_models \
+  > captures/process_filter_models.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe filter_loading \
+  > captures/process_filter_loading.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe filter_dynamic \
+  > captures/process_filter_dynamic.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe filter_mechanical_design \
+  > captures/process_filter_mechanical_design.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_instruments \
+  > captures/process_heater_instruments.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_electrical \
+  > captures/process_heater_electrical.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_vfd \
+  > captures/process_heater_vfd.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_utility \
+  > captures/process_heater_utility.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_mechanical \
+  > captures/process_heater_mechanical_design.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pipe_modes \
+  > captures/process_pipe_modes.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_curve \
+  > captures/process_compressor_curve.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_map_lookup \
+  > captures/process_compressor_map_lookup.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_khader \
+  > captures/process_compressor_khader.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_speed_solve \
+  > captures/process_compressor_speed_solve.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_steps \
+  > captures/process_expander_steps.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_capacity \
+  > captures/process_expander_capacity.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_power_modes \
+  > captures/process_expander_power_modes.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_chart \
+  > captures/process_expander_chart.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe turbo_expander \
+  > captures/process_turbo_expander.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe map_turbo_expander \
+  > captures/process_map_turbo_expander.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe equilibrium_sound_speed \
+  > captures/process_equilibrium_sound_speed.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge \
+  > captures/process_anti_surge.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe sound_speed \
+  > captures/process_sound_speed.tsv
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pump_curve \
+  > captures/process_pump_curve.tsv
 ```
 
 **`calcDesign` runs two sizings and publishes the second one's diameter beside the first one's
@@ -487,6 +922,286 @@ produced the false claim. **And the `216.19496855345912` mm wall is the probe's 
 `100.0` bara initialiser - a property of the measurement, not of the class. Both corrections are
 in the issue's own "what I am not claiming" section.
 
+**A fifth row is the stripping column's own**, and it is the same class a second time.
+`StrippingColumn extends AbsorptionColumn extends DistillationColumn`, so it inherits
+`DistillationColumnMechanicalDesign` and overrides no getter of it. The row is built from the same
+recipe as `process_absorber.tsv`'s `hydrocarbon_stripper` row - five trays at 12 bara, 150 kg/hr of
+stripping gas against 900 kg/hr of rich liquid, both at 70 C, the `1e-4` K gate and direct
+substitution - so the two captures describe one state rather than two copies of one. It carries
+the same `#4140` read: `tray0_liquid_density_kg_per_m3=0.0`, `weir_loading=Infinity` and
+`tray_pressure_drop_Pa=5.0`, which one `initProperties()` moves to `631.6396155323132`,
+`3.480252186825798` and `8.098192314185997`. The vessel is `0.5` m by `8.8` m at
+`216.19496855345912` mm - the base class's `100.0` bara initialiser, the same artefact the binary
+rows carry - with `8` actual trays at the `0.65` efficiency and both duties zero, because a
+stripper has no ends.
+
+**`ProcessProbe reactor_mechanical` is `ReactorMechanicalDesign`, which is `GibbsReactor`'s own
+vessel.** `GibbsReactor` overrides `getMechanicalDesign()` (`GibbsReactor.java:700`) and lazily
+builds it; `PlugFlowReactor` overrides nothing, so its `getMechanicalDesign()` is
+`ProcessEquipmentBaseClass`'s, whose `calcDesign()` only reads design specifications and computes
+no vessel - **there is nothing there to capture.** The reactor class reads the **inlet** stream of
+a `TwoPortInterface` and nothing else: its pressure, temperature, volumetric flow
+(`getFlowRate("m3/hr")`) and the fluid's system density (`getDensity("kg/m3")`), then a catalyst
+volume from a space velocity, a vessel from a bed fill fraction and a target L/D, an ASME VIII
+Div 1 shell and head, an Ergun bed drop and a weight. **No capture in this directory held the
+class.**
+
+**The three rows separate every branch that changes an answer.** The defaults row is the ammonia
+feed at 300 bara, where `flow/GHSV` floors the catalyst volume at `0.01` m3 and the shell is
+`69.85605419136324` mm at a `330.0` bara design pressure. The CSTR row takes the LHSV branch,
+which is the only place `reactorType` is read, and its `1.5` 1/hr keeps the vessel **above** the
+`0.5` m diameter floor - at every default-GHSV flow the floor answers, and a capture that only
+ever reads `0.5` does not measure the cube root: this row reports
+`vessel_diameter_m=0.5385511691956425` and `vessel_length_m=2.15420467678257`. The high-pressure
+row feeds 1 bara with `maxOperationPressure` stated as `150.0`, so `max(inlet, maxOperation)`
+takes the max branch (`165.0` bara design) and its 299 m3/hr over the default `5000` keeps the
+GHSV division above the floor on a gas whose density is `0.2767` kg/m3, where the Ergun inertial
+term is a third of the answer.
+
+**Two branches cannot answer, and the capture is what makes that a measurement.**
+
+- **The head thickness is always the shell's.** The 2:1 ellipsoidal form divides by
+  `2SE - 0.2p` and the shell by `2SE - 1.2p`, so at every positive design pressure the head is
+  thinner and `Math.max(head, shell)` reports the shell. `head_thickness_mm` equals
+  `shell_thickness_mm` on all three rows, to the last digit.
+- **The L/D clamps are unreachable.** The diameter is built at the target `4.0` and the length is
+  `4.0 * D`, so the ratio is exactly `4.0` and neither the `2.0` floor nor the `8.0` ceiling can
+  fire on any state the class can reach.
+
+**Five configured parameters are setters with no getters.** `ghsv`, `lhsv`,
+`catalystBulkDensity`, `catalystParticleDiameter` and `bedVoidFraction` therefore appear as
+`requested_` keys - the probe's statement of what it configured, with the class's own
+initialisers on the defaults row - and are not a reading of the class. The six that do have
+getters are printed as `class_` keys, and `calcDesign`'s own `super.calcDesign()` leaves
+`joint_efficiency=1.0` and `corrosion_allowance=0.0` at the pin, which is why those two are class
+defaults and not design-standard output.
+
+**`ProcessProbe gibbs_algorithms` is the Gibbs solver's two step controls, on the states
+`GibbsReactorAlgorithmTest` solves.** `useArmijoLineSearch` and `useAdaptiveStepSize` are both
+`false` by default, so no row of `process_gibbs_reactor.tsv` reaches either; and
+**`useAdaptiveStepSize` is named nowhere in this tree's record** - the rules below are its first
+statement. Five rows, each printing the whole path rather than the class's own "it converged":
+the iteration count, the final error, the outlet, and both diagnostic histories.
+
+**The Armijo row does not backtrack, and printing the step history is how that is known.** The
+class's own Armijo test caps the step at its `damping` of `0.01`, and every one of the row's 100
+steps is exactly `0.01` - the line search accepts `alpha_max` on every pass. Its baseline
+(`fixed_methane_adiabatic`, the same feed, damping and gate with the search off) agrees to `1e-15`
+on the whole Gibbs history, which is the class's own assertion made measurable rather than assumed.
+
+**The adaptive pair separates the two branches, and on this state Armijo adds nothing.**
+`adaptive_hydrogen` and `armijo_adaptive_hydrogen` carry step histories that differ in the
+fifteenth digit: the adaptive limit answers `1.0, 1.0, 0.0193, 0.0247, 0.0127, ...` and the line
+search accepts each of them.
+
+**The row that does backtrack is the undamped one.** `armijo_ammonia_undamped` starts from a full
+Newton step (`damping = 1.0`) and its history reads `1.0, 1.0, 1.0, 1.0, 1.0, 0.5, ... 0.001953125
+... 0.03125, ...` - contractions by `armijoRho = 0.5`, nine of them in one pass. It converges at
+the `min_iterations` floor with a final error of `7.0e-16`, **and the class's own
+`getMassBalanceConverged()` reports false on the row** - a second stopping flag this port does not
+carry, printed so the capture states it.
+
+**Two more rows carry the regularisation and the condition-number diagnostic.**
+`regularized_methane` turns `useRegularization` on at the class's `1e10` threshold: its first
+condition number is `2.901938724391527e12`, so the augmentation fires - `max(tau,
+maxDiag*1e-8)` on the composition block's diagonal, then a re-solve - and the row reaches the
+same adiabatic equilibrium the baseline does. `diagnostic_ammonia` leaves the flag off and
+records the history anyway.
+
+**The history is the whole run, not the first five passes.** The class's disjunction is
+`useRegularization || !conditionNumberHistory.isEmpty() || iteration <= 5`, so once the first
+number is recorded every later pass adds one. Every row prints it, and the port's entries agree
+with the class's where the trajectories do - `1.192020268e7` against `1.1920202268595556e7` on
+the ammonia row's first entry. **The lengths differ where the trajectories do**: the ammonia row
+stops at 104 passes against the class's 117, which is the conditioning divergence the baseline
+rows already carry.
+
+**`ProcessProbe valve_sizing` is `ControlValveSizing`, the `ValveMechanicalDesign` default.**
+`setValveSizingStandard` selects the IEC and multiphase-choke families; a valve that never calls
+it runs the default, which is the class `ThrottlingValveSizingStateRegressionTest` exercises. The
+rows are that regression state and two others, **re-cased on PR** so the port can rebuild them:
+the rich gas (methane/ethane/propane/n-butane `0.1/0.2/0.4/0.3`) at `296.25` K and `1.82925`
+bara, methane at `10` bara and water at `14.8` bara. Each row prints what the sizing reads -
+volumetric flow, density, `Z`, `gamma`, molar mass - and then drives the three modes: the first
+`run` auto-sizes (`calcKv` through `getMechanicalDesign()`), `isCalcPressure` solves the drop
+from the trim, and the flow mode states the sized `Kv` and asks `calculateMolarFlow()`.
+
+**Two facts are measured and one divergence is bounded.** The flow mode reproduces the inlet flow
+to `1e-17` and the pressure mode returns the stated pressure to `5e-7` bara - the inverse pair is
+consistent on the class's own state. **The gas `Kv` agrees to `3e-5` and the liquid to `3e-8`**:
+the gas branch reads `gamma`, and the two libraries' heat capacities differ by the divergence the
+plug-flow reactor's own test measures, which the choked `Kv` scales as `1/sqrt(Fgamma)`; the
+liquid branch reads only the density. The `allow_choked` row is the cap: capping `x` at
+`Fgamma xT` raises the rich gas's `Kv` from `607.954` to `873.111`.
+
+**`ProcessProbe pump_curve` is `PumpChart`, the performance curve, and `Pump.run`'s chart
+branch.** The chart rows are fluid-free: the eight-speed table `PumpChartTest` states, read at the
+flow and speed its own run reaches, at both edges of the measured reduced-flow range and past
+both; the three-point curve in metre and in `kJ/kg`; `PumpDensityCorrectionTest`'s reference
+densities; `PumpNPSHCurveTest`'s NPSH table; and `PumpViscosityCorrectionTest`'s Hydraulic
+Institute factors at `1`, `50`, `75`, `100` and `500` cSt. **The run rows use PR water, not the
+SRK water the class tests build**, because the chart branch multiplies the head by the inlet
+density and the port's fluid is PR - a row on SRK water would price the equation of state rather
+than the chart. The NPSH-available rows are `PumpNPSHTest`'s water states at `25/60/80` C and its
+n-hexane state, and the last row puts the NPSH table on a running pump at `40` m3/hr.
+
+**Two of the class's states are cached rather than pure, and the rows say which.** `getHead`,
+`getEfficiency`, `getNPSHRequired` and the density correction are functions of the chart; the
+viscosity factors are not - `getFullyCorrectedHead` recomputes them only when the viscosity moved
+by more than `0.1` cSt, so a chart that has just been handed `calculateViscosityCorrection`'s
+factors keeps them. The `viscosity_*` rows are the seeded factors at the class's own BEP
+(`30` m3/hr, `88` m); the `viscosity_run_*` rows use a fresh chart, which recomputes them at its
+own best-efficiency point - and that is the state `Pump.run` meets.
+
+**`ProcessProbe filter_models` is `FilterPressureDropModel`'s four branches and the
+particle-capture update.** The rows are `FilterTest`'s states re-cased on PR methane at 298.15 K
+and 20 bara: `FIXED`, `FLOW_SCALED` at the reference flow and at twice it, `TABULATED` at the
+midpoint of a two-point curve, `ERGUN` at one and two thousand kg/hr, and the beta-ratio capture
+row. Each prints the actual flow, density and viscosity the class reads beside the calculated
+clean drop, the applied drop and both records. **The Ergun rows' viscosity is printed because the
+port takes it as an input**: azoth's viscosity dispatch is a separate calculation, and these rows
+are the packed-bed arithmetic rather than a second viscosity model.
+
+**`ProcessProbe pipe_modes` is `AdiabaticPipe`'s fittings and `calcFlow`, and
+`PipeBeggsAndBrills`.** The rows are `AdiabaticPipeTest`'s 50 km gas state re-cased on PR:
+the plain line, the same line with two standard elbows (Crane L/D 30 each, so the effective
+length is `50000 + 60 D`), the line asked for 80 bara - where `calcFlow` bisects the flow and
+writes it back onto the inlet stream - and the Beggs-and-Brills march at five segments. Each
+row prints the effective and equivalent lengths, the drop, the velocity, Reynolds number and
+friction factor, and both records.
+
+**`ProcessProbe compressor_curve` is the default `CompressorChart` and `Compressor.run`'s
+fixed-speed polytropic branch.** The chart rows are fluid-free: the eight-speed
+`CompressorChartTest` table read at five flows and speeds, the `getSpeedValue`/`getFlow`
+inverses at stated states, and the surge/stonewall lookups and `getFlowRangeStatus` at
+`11683` rpm. The run row re-cases `CompressorCalculationTest.testRun` on PR - its nine-component
+gas, the same table in kJ/kg and speed `11918` - and prints the chart head, the polytropic
+efficiency and the power beside both records. **The class's own test asserts `1163805.3` J,
+`55.404` kJ/kg and `0.43175` on SRK; on PR the same state answers its own numbers**, which is
+what the port is held to.
+
+**`ProcessProbe compressor_map_lookup` is the two alternative map lookups.**
+`CompressorChartAlternativeMapLookup` reads the measured speed lines directly - a natural cubic
+spline along each, averaged over the one or two nearest speeds, with no speed scaling - and its
+extrapolating subclass adds linear extrapolation past the flow knots and a head scaled by
+`speed / max(s1, s2)`. The rows are a three-speed synthetic table read at exact speeds, between
+them and outside them; the base class's flow outside the knots, where it prints the
+`OutOfRangeException` its spline throws; and `CompressorChartTest.runCurveTest`'s machine on PR
+with each class, which the two differ on (`155.99` against `158.26` bara). **The pinned jar's
+source scales the blended head and the working tree's does not**; the rows are the jar's, which
+is the oracle.
+
+**`ProcessProbe compressor_khader` is `CompressorChartKhader2015`.** The map is fitted in the
+*reference* fluid's phase sound speed - a default methane/ethane/propane mix rescaled to the
+chart conditions' 20 g/mol - and read in the *process* fluid's system value; both are printed.
+`setCurves` also stores a second corrected-flow column for the efficiency **without** the
+`3600` the head's has, and the getters never read it: both interpolate against the head's
+corrected flow, which is why the port carries one axis. The rows re-case
+`CompressorChartKhader2015Test` on PR - the nine-component gas at 24 C, 48 bara, 3 MSm3/day and
+speed 10000, then the test's own reference-like three-component gas. **The three-component
+row's machine run is not cased**: its outlet lands on a state where our `PHflash` refuses
+(`SolverNotConverged`, residual `0.193`) while the class converges, so the capture prints it as
+a finding; the chart read itself matches the class to `1e-5` in both rows.
+
+**`ProcessProbe compressor_speed_solve` is `Compressor.run`'s `solveSpeed` branch.** The
+state is `CompressorChartTest.runCurveTestMaxMinSpeed`'s - the PR seven-component gas at
+75.73 bara and 29.96 C, 559401.4 kg/hr, the fan-law chart's 7000-10500 rpm lines, its surge
+curve and a control factor of 1.0, with anti-surge inactive. The rows are five successive
+runs on one machine, so each starting speed is the previous run's answer: a 240 bara target
+reaches `10992.86` rpm **above the map's ceiling**, because `limit_speed` is off; with the
+limit on the same target pegs at `10500` and reports the chart's `215.4439` bara; a 100 bara
+target pegs at the `7000` floor with `106.1631` bara; from 15000 rpm and the limit off the
+Newton passes below the floor and reaches 100 bara at `6669.27` rpm; and a 90 bara target
+with no floor finds `6064.93` rpm, below the map's measured lines, by the fan law's reduced
+extrapolation. **The pinned test's fourth block is stale against the jar**: it asserts
+`106.16307446` bara and `7000` rpm after `setSpeed(15000)`, which are the third block's
+numbers, while the jar reaches its stated 100 bara at `6669.27` rpm. The capture is the jar's.
+
+**`ProcessProbe expander_steps` is `Expander.run`'s stepped polytropic branch.** The class's
+own `ExpanderPolytropicStepsTest` is a *relative* oracle - five steps against forty, to `0.1` K
+and `0.5 %` - so the capture supplies the absolute rows: the 82/10/5/3 methane/ethane/propane/
+n-butane gas at 25 C, 90 to 30 bara and 50 000 kg/hr, a polytropic efficiency of `0.80`, at
+**five and forty steps**, plus the isentropic row at the same efficiency. The five-step power is
+`-999.9` kW and the forty-step `-1003.5` kW, `0.354 %` apart, inside the class's own band.
+
+**`ProcessProbe expander_chart` is `ExpanderChartKhader`.** The rows are
+`TurboExpanderEnhancementsTest`'s 2-D table - IGV `{0.6, 1.0}`, U/C `0.5..0.9`, the efficiency
+and head rows - read at the exact nodes, the IGV midpoint, and both U/C extrapolation ends; the
+optimum U/C; and the head round-trip with no reference fluid (`37.0` kJ/kg at the design node).
+The second block gives the reference fluid and a CO2-rich fluid the composition-aware row needs:
+**the class's cached reference sound speed is the *phase* value (`415.42` m/s) while its
+`getStageHeadDrop` reads `SystemInterface.getSoundSpeed()`, which is twice that** (`830.84`),
+so the capture prints both. The chart's own surface now reads them from
+`eos.sound_speed` - the reference fluid's PR phase value in place of the class's SRK one - and
+the `830.84` is recorded as the unflashed doubling, which a flashed system does not report.
+
+**`ProcessProbe turbo_expander` is `TurboExpanderCompressor`.** The rows are
+`TurboExpanderCompressorTest`'s reference state re-cased on PR - the nine-component gas at
+456 000 kg/hr, 60.95 bara and -23 C into the expander, 423 448 kg/hr at 42 bara and 17 C into
+the compressor, with the test's UC and Q/N curves and design numbers - the same compressor at a
+lower expander pressure, `testMassBalance`'s small methane/ethane pair, and
+`testOutletTemperatureSpecConsistency`'s inverse, where the forward outlet temperature is
+stated back and the design efficiency returns at `0.8800000059`. The last row is
+`TurboExpanderEnhancementsTest`'s map-and-IGV-penalty state: the chart attached, the IGV held at
+`1.0`, and the `{0.4, 1.0} -> {0.85, 0.90}` penalty, which moves the efficiency from `0.85720`
+to `0.76261`. Each row prints the solved speed, both powers, both efficiencies, the polytropic
+head, UC/QN, the IGV opening and both outlet records; `getMassBalance` is exactly zero on both
+sides.
+
+**`ProcessProbe map_turbo_expander` is `MapTurboExpanderCompressor`, the second shaft.** The
+nine-component gas at 60 bara and 25 C expands to 30 bara at `0.85`, and the same fluid at
+48 bara and 20 C is compressed on the Khader map at a 0.9 m impeller and chart conditions
+25 C/50 bara/20 g/mol, with a `0.98` mechanical efficiency. **The balanced row bisects over the
+map's own measured speeds**, 8200 to 12913 rpm, to `1e-3` rpm: it settles at `10418.06` rpm with
+both powers at `1.6387` MW and a residual of `-0.10` W, which is the bisection's tolerance and
+not zero. The specified row runs the compressor on its isentropic route to 58 bara at `0.78` and
+stops at the class's default 3000 rpm, reporting `0.7705` MW consumed against `1.6387` MW
+available - the residual is a read-out, not a solve. **The turndown row is the pegged one**: the
+expander at 31 bara leaves only `90.8` kW on the shaft, less than the slowest map line draws, so
+the speed is clamped at 8200 rpm, the status is `UNDER_POWER_SURGE` and the class's own
+`feasible` is false. The row prints both outlet records, the shaft speed, the available and
+consumed powers, the residual and the class's `ShaftMode`/`OperatingStatus` enums.
+
+**`ProcessProbe anti_surge` is the compressor's surge surface.** Three blocks: the
+`SafeSplineSurgeCurveTest.testSurgeCurve10250` table read at the points that test asserts
+(`9321.84` at head 130, `0` at 190, `11941.98` at 10, the head round trip and the monotonic
+pair); the eight-speed chart's own `generateSurgeCurve` / `generateStoneWallCurve` read at three
+heads and at speed 11683; and three `Compressor.run` states - one read out with a 0.10 control
+margin and the surge curve `{2789, 2550, 2500, 2200}` over `{80, 72, 70, 65}` kJ/kg, then the
+same machine at 0.30 and 4.00 MSm3/day with `AntiSurge` active and the default 1.05 factor.
+**The deep-surge row prints `polytropic_fluid_head` beside `polytropic_head` because they
+disagree**: after a recycle the class recomputes the fluid head as the recycled power over the
+*restored* flow, which inflates it by `1 + fraction` (`680.5` against `67.6` kJ/kg), and every
+read-out is evaluated at the inflated number. Its discharge pressure is the one number the case
+does not record: it belongs to a pass whose head the run does not report.
+
+**`ProcessProbe equilibrium_sound_speed` is `EquilibriumSoundSpeed`, the HEM derivative.** The
+rows are `EquilibriumSoundSpeedTest`'s states re-cased on PR, with volume correction left at its
+default (the test disables it; azoth's PR carries the Peneloux shift, so the capture is only
+comparable on one convention): dense CO2 at 298.15 K and 150 bara, where the equilibrium speed
+and the frozen phase value coincide at `456.226` m/s; nitrogen at 350 K and 100 Pa, the ideal-gas
+limit; the CO2 feed's isentrope at 40 bara, two-phase, where the equilibrium speed `57.082` is a
+seventh of the phase value `408.758`; the CO2/2% N2 isentropes at 50, 40 and 20 bara and the
+CO2/2% H2 one at 40 bara, each built by the test's wide temperature bracket; and the same 40 bara
+state at relative steps `2e-4`, `2e-3` and `0.01`. **The phase-entry row is a finding and is not
+cased**: at 46.5 bara and `284.3849043789973` K the state sits on the saturation line, and the
+class's flash returns the dense liquid root labelled `GAS` with the liquid entropy, on which it
+reports `392.303` m/s and a forward stencil; this library's flash selects the vapour root there,
+whose own entropy gives a two-phase isentrope, so the two implementations are answering at
+different roots of a degenerate state rather than disagreeing about the arithmetic.
+
+**`ProcessProbe sound_speed` is the cubic's isentropic speed.** `PhaseEos.getSoundSpeed` is
+`c^2 = -gamma (v^2/M) (dP/dv)_T` with `gamma = cp/cv`, and its two derivatives are closed forms
+of the Helmholtz residual; the rows print the phase value, the beta-weighted system value,
+`Cp`, `Cv`, `Z` and the density for a flashed nine-component gas at two states, a two-phase
+methane/n-butane state, liquid propane and a low-pressure gas. **The system value doubles on an
+unflashed system** - two phase objects with `beta = 1.0` each - which is where the turbo
+capture's `830.84` against `415.42` came from; every row here flashes first, so the system value
+is the phase value on one phase and a weighted mean (not a mixture speed) on two.
+`PhaseGE.getSoundSpeed` is a constant `1470.0` m/s and `PhaseDefault`'s is `NaN`; neither is a
+model, and `EquilibriumSoundSpeed` - the re-flash finite-difference utility - is a separate
+class, owed.
+
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers
 `devtools/generate_water_caloric_alpha_reference.py` fits for water - and 130 of those rows are
@@ -500,7 +1215,9 @@ inside them, and its capture is the sorted list of the names that match.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar WaterCpSentinel > captures/water_cp_sentinel.tsv
 ```
 
-**`ProcessProbe rate_based` runs every state on two cubics.** `RateBasedPackedColumnTest` uses
+**`ProcessProbe rate_based` runs every state on two cubics.** The probe states an iteration cap
+of 60 rather than the class's 20 because the packing fix moves the stripper to 21 passes and the
+TEG profile to 33; every row's converged state is independent of the cap. `RateBasedPackedColumnTest` uses
 SRK and this library's process layer resolves PR, so each state is run on both and the pair
 measures what the cubic moved; the PR rows are the ones the port is held to. `teg_dehydration`
 and `teg_circulation` are `SystemSrkCPAstatoil` with mixing rule 10, which PR cannot
@@ -511,13 +1228,14 @@ represent, so they are evidence for a refusal rather than an oracle for a state.
   > captures/process_rate_based_packed_column.tsv
 ```
 
-**`ProcessProbe rate_based_billet` is the same absorber state run twice**, once at each
-`MassTransferCorrelation`, because that parameter is not a correlation: it scales the two film
-coefficients by constants the packing row carries, so one state at each value is the whole
-measurement. `Pall-Ring-50` resolves to the file's plastic row, `cp = 0.698` and `ch = 2.725`,
-so the pair is `1.1354166...` on `kGa` and `0.698` on `kLa`; the capture's own two ratios are
-what the port's test reads, and the liquid one is `0.6978956` rather than `0.698` because the
-base `kLa` moved `1.495e-4` between the two converged states.
+**`ProcessProbe rate_based_billet` runs the same absorber state twice at each
+`MassTransferCorrelation`, on two packings.** That parameter is not a correlation: it scales the
+two film coefficients by constants the packing row carries. On the built-in `Pall-Ring-50` those
+constants are `1.0` and `0.40`, so the pair is the identity; on `Pall-Ring-50-plastic` (`cp =
+0.698`, `ch = 2.725`) it is `1.1354166...` on `kGa` and `0.698` on `kLa` - the state the pin's
+`Pall-Ring-50` resolved to. The capture's own two ratios are what the port's test reads, and the
+liquid one is `0.6978956` rather than `0.698` because the base `kLa` moved `1.495e-4` between the
+two converged states.
 
 ```bash
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based_billet \
@@ -529,11 +1247,11 @@ class's own absorber state - the PR row `process_rate_based_packed_column.tsv` h
 reproduces to `1e-4` - five ways: the pair this port carries as the control, then
 `SegmentSolver.SIMULTANEOUS_RESIDUAL` and `ColumnSolver.EQUATION_ORIENTED` alone, then both, then
 `EQUATION_ORIENTED` at the settings of the class's own test for it. **No refused row converges**,
-and the control reproduces the baseline exactly (fifteen passes at `6.009670053264138e-10` mol/s),
+and the control reproduces the baseline exactly (fifteen passes at `6.770219315721526e-10` mol/s),
 which is what makes the rest a reading rather than a mis-set-up state. The segment solve takes the
-full 20-pass cap at a `1.76` mol/s outlet residual against a `1e-9` gate and publishes a vapour at
-`2.2e-29` K; the column-wide Newton stalls after two passes at a residual of `65.9` against its own
-`1e-6` gate and publishes a `153` K vapour beside a `454` K liquid, and at its own test's settings
+full 20-pass cap at a `0.25` mol/s outlet residual against a `1e-9` gate and publishes a vapour at
+`4.3e-31` K; the column-wide Newton stalls after two passes at a residual of `118.6` against its own
+`1e-6` gate and publishes a `300` K vapour beside a `463` K liquid, and at its own test's settings
 the norm is `30.5` against `1e-5`. **That test asserts finiteness and never convergence** - it caps
 the Newton at two iterations and removes the homotopy - and its companion caps them at one.
 
@@ -598,6 +1316,129 @@ PHREEQC CO2-chloride parameters at its zero zeta map.
 ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PitzerHydrateSalinityProbe > captures/pitzer_hydrate_salinity_probe.tsv
 ```
 
+**The process-scale group's probe** records the five process-chemistry scale calculators:
+the activity-corrected `ElectrolyteScaleCalculator` over the upstream brucite seawater and
+advanced-models brines, the pH and temperature grid, the Debye-Hueckel floor, the absent-ion
+state and the 50-bar pressure correction; the `BrineMixingScaleEvaluator` over the two
+upstream formation/seawater pairs and its steps floor; the `ScaleInhibitorPerformance` MIC
+grid with every warning and the efficiency on both sides of the MIC; the `ScaleKinetics`
+supersaturation grid with the transport and reaction branches and the clamped setters; and
+the `ScaleControlAssessor` over the RCA and skill states, the absent-scale NaN, the zero-dose
+identity and the 0.999 efficiency cap.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessScaleProbe > captures/process_scale_probe.tsv
+```
+
+**The stream analyser probe** records `StreamScaleAnalyzer` on the equilibrium capture's own
+brines, so the two layers can be compared directly: the sulphate-limited water in Davies and
+B-dot, the co-precipitating water, and the corners - zero flow, no minerals, an absent
+barium, and the auto-pH path, where the class's broken Henry constant removes the carbonate
+row rather than moving it. Every row prints the per-mineral initial and final indices, the
+precipitated mg/L and the kg/day rate, with the total and the dominant mineral.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar StreamScaleAnalyzerProbe > captures/stream_scale_analyzer_probe.tsv
+```
+
+**The valve drift probe** records `ValveScaleDrift`: a uniform radial deposit on a trim
+port, its open-area fraction, fouling fraction and effective Kv, and the time to plug and
+to pin the opening for a stated clean opening. The valve is constructed without a stream
+and given a Kv directly - nothing in the drift arithmetic reads a fluid. The states are
+the not-advanced, thirty-day, one-year and pinned deposits, zero growth, an unset port, a
+clean opening already at 100 percent, a negative advance the class ignores, a reset, and a
+growth rate taken from the evaluated `ScaleKinetics`.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ValveScaleDriftProbe > captures/valve_scale_drift_probe.tsv
+```
+
+**The deposition probe** records `ScaleDepositionAccumulator` over a real Beggs-and-Brills
+pipe: the pipe's own segment temperatures and pressures (which are the state the port's model
+takes directly), then the accumulator's per-segment CaCO3 index, deposit mass and wall
+thickness, its total, its worst thickness and its time to half-block. Two profiles are run -
+an isothermal one whose temperature list is a single value, so the class evaluates one
+segment over the whole length, and a cooled one with eleven segments - across the inhibitor,
+five-year service, doubled base rate and no-calcite corners.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ScaleDepositionProbe > captures/scale_deposition_probe.tsv
+```
+
+**The treatment-scenario probe** records `ProductionChemicalScaleScenario`: caustic, MDEA and
+HCl pH adjusters, two triazine scavenger doses, a scale and a corrosion inhibitor, no
+bicarbonate, a large caustic dose that trips the chemical-induced calcite warning, the B-dot
+and Pitzer activity models, and an unsupported active. Each row prints the treated pH and
+bicarbonate, the dose equivalents, the scavenger capacity and residual H2S, the baseline and
+treated indices and their change, and the warning map with its messages.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProductionChemicalScenarioProbe > captures/production_chemical_scenario_probe.tsv
+```
+
+**The Beggs-and-Brills probe** records the pipe's per-segment state: the pressure, the flow
+regime, the liquid holdup, the three superficial velocities, the no-slip density and
+viscosity, the Reynolds number and the pressure drop, plus the outlet and the total drop.
+The states are a horizontal wet-gas line at two diameters, an uphill and a downhill leg, a
+liquid-rich line, a three-phase oil/water/gas line, single-phase gas and liquid, a rough
+wall, and the three liquid-rich or high-flow states that reach the INTERMITTENT and
+DISTRIBUTED branches the others do not; one high-flow state is refused upstream for a
+negative outlet pressure and is recorded as such.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PipeBeggsAndBrillsProbe > captures/pipe_beggs_and_brills_probe.tsv
+```
+
+**The closed-loop deposition probe** records `ClosedLoopDepositionSolver` over the same pipe:
+the iteration count, convergence, the final effective diameter, the last accumulator pass and
+the diameter, thickness and mean-velocity histories. The states are a one-year service that
+meets the tolerance on its first step, a thousand-year service that iterates three times, the
+iteration cap reached before convergence, a blocked line, a brine that deposits nothing, an
+inhibited line, a tolerance wider than the step, and a Peng-Robinson fluid.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ClosedLoopDepositionProbe > captures/closed_loop_deposition_probe.tsv
+```
+
+**The flow-assurance remainder probe** records the six reachable calculators of
+`pvtsimulation/flowassurance` outside the scale set: de Waard–Milliams CO2/H2S/S8 corrosion,
+the API RP 14E / DNV RP O501 erosion screen, the six emulsion-viscosity models and the inversion
+point, the lumped pipeline cooldown march (supplied U and layer resistances, a step that does not
+divide the horizon, target crossings), the hydrate risk map over four profile points (including a
+dry fluid and a zero-water fluid), and the surface cooldown no-touch analyser (required-time
+bands, an operating-temperature override, a seabed above the hydrate temperature, and the
+no-water refusal).
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar FlowAssuranceRemainderProbe > captures/flow_assurance_remainder_probe.tsv
+```
+
+**The characterization fluid-rebuild probe** records `PseudoComponentCombiner`'s two fluid
+builders and its binary-interaction transfer: two and three unequal reservoir fluids combined at
+a target pseudo-component count, a target beyond the pool, base-only fluids and a base-only fluid
+beside a pseudo one; the common slate at equal and weighted settings, an inferred and an explicit
+count, a zero-weight fluid and the no-pseudo clone path; and the BIP transfer from a reference to
+a target with different pseudo names, fewer pseudo components, and a missing base name. Each
+component is one wide row (`fluid|name|pseudo|` then the nineteen pseudo fields), and the BIP
+rows print the reference's and the target's initial matrices beside the transferred one. Every
+source is a real TBP fraction, so the properties are finite and the TBP model's own defaults
+cannot leak into a row.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar CharacterizationFluidRebuildProbe > captures/characterization_fluid_rebuild_probe.tsv
+```
+
+**The TBP fraction component probe** records what `SystemThermo.addTBPfraction` makes of one
+cut: the component's own getters after the call, and the intermediates that are not on it - the
+model's Edmister acentric factor and the fitted `m`, and the molar volume of the one-component
+SRK reference phase `calcRacketZ` flashes at 15 C and one atmosphere. Six cuts span the
+boiling-point switch at 540 g/mol and the heavy coefficient switch at 1120, and the last one
+pins the class's clamp on a fitted `m` whose root runs past -0.99.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TbpFractionComponentProbe > captures/tbp_fraction_component_probe.tsv
+```
+
 ## Which captures a layer diff can read
 
 `tools/neqsim_layer_diff.py` compares a model's intermediates against a capture key by key,
@@ -616,3 +1457,336 @@ that is not a question those captures answer.
 `furst_probe.tsv` was written in the readable shape and in the order the phase builds its
 layers, for exactly this reason, and `python/src/azoth/eos/layers.py` carries the dumper
 that meets it.
+
+## The release model
+
+`process_hem_release.tsv` is `HomogeneousEquilibriumReleaseModel.calculate` on the pinned
+`ReleaseFlowModelTest`, `ReleaseFlowBenchmarkTest` and `ReleaseFlowEnsembleTest` states, plus
+the states those tests only reach through a builder or a flag.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe hem_release \
+  > captures/process_hem_release.tsv
+```
+
+**The `pr` rows are the oracle** because this library's databank route resolves Peng-Robinson
+and no other fluid. The NeqSim tests build `SystemSrkEos`; their `srk` rows are here as
+evidence beside the oracle, not as cases, and the difference between the two EOS on the same
+state is visible row to row. Each row carries the request, the status, the rate, the choked
+flag, the throat sound speed, every diagnostic and every station's pressure, temperature,
+density, enthalpy, entropy, velocity, mass flux, gas mass fraction and composition.
+
+Two rows are not cases because azoth has no input that expresses them: an empty fluid, which
+the class refuses as `INVALID`, and `setHydrateCheck(true)`, which it refuses as
+`UNSUPPORTED`. Both are printed with their status.
+
+**One row is a measured divergence.** The 80/20 propane/n-butane state at 300 K and 20 bar
+into 3 bar is `INVALID` in the class on both EOS - its bracketed mixture entropy root does
+not close - and this port converges, returning a valid result. The port's flash is not the
+class's, and a root one finds and the other does not is a fact about the two numerical
+routes rather than a tolerance to widen. The row stays evidence, and the port's answer is
+not cased against a class that has none.
+
+## The legacy blowdown
+
+`process_leak_blowdown.tsv` is `LeakModel.calculateSourceTerm` on the `LeakModelTest`
+states, re-cased on PR, plus the propane, subsonic, no-forward-flow, mixture and
+over-depletion rows. The SRK rows are the tests' own EOS and evidence beside the oracle.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe leak_blowdown \
+  > captures/process_leak_blowdown.tsv
+```
+
+**The class's density is cached.** `implied_velocity_density` is the density the class's
+jet velocity actually divided by, and on the methane row it is `35.2554` at every step
+while the fresh density falls to `19.38` - the class initialises physical properties once
+and the `PhysicalProperties` density never updates. The port flashes each step and uses the
+fresh corrected density, so the rate on the choked branch (density-independent) agrees while
+the velocity, momentum and SMD on a later state do not; that is a class defect the port
+records rather than reproduces. The class's `getBeta()` is also a *molar* phase fraction and
+a single-phase state reports `1.0` whatever its phase type; the probe prints the phase count
+and types beside it.
+
+**The long horizons are evidence, not cases.** The isentropic recurrence multiplies a
+`3e-5` difference in the initial `getGamma` through the pressure: over ten steps the class
+and the port agree to `4.4e-4`, over thirty to `1.4e-1` and over sixty to `1.6e-1`. The
+short horizons are cased; the long rows stay here as the measurement of that sensitivity.
+The over-depletion row also shows the class's zero-filled tail - it allocates two slots and
+records one - which the port reports as `number_of_points` against `recorded_points`.
+
+## The separator capacity
+
+`process_separator_capacity.tsv` is `Separator`'s steady capacity getters on the same
+methane/n-butane fluid as `process_separator.tsv`, swept over the vessel, the orientation and
+the design liquid level, plus the pin's `SeparatorTest` states re-cased on SRK.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity \
+  > captures/process_separator_capacity.tsv
+```
+
+Each row prints the geometry and the class's own defaults beside the five getters it answers -
+utilisation, maximum allowable velocity, superficial velocity, the no-argument Souders-Brown
+load factor and the overload flag - and the densities, gas area and flows they were formed
+from. **The PR rows are the oracle**; the SRK rows are `SeparatorTest`'s own cubic as evidence,
+and the `GasScrubber` row at minimum setup prints the vertical/`0.1`/`0.11` defaults this port
+does not adopt.
+
+**The pin's near-dry scrubber state is single-phase in this jar.** `96/3/0.05`
+methane/ethane/n-heptane at 90 bara and 25 C prints one `GAS` phase on both cubics, so its
+`getGasLoadFactor` takes the dry `1000.0` fallback and never reaches the `10.0`
+`MIN_LIQUID_GAS_DENSITY_DIFFERENCE` floor the test exists to guard. The row stays as evidence
+that the floor is not reachable from that state; the port pins the floor on constructed
+densities instead.
+
+## The separator sizing and derating
+
+`process_separator_sizing.tsv` is `Separator.getGasLoadFactor(int)`,
+`getDeRatedGasLoadFactor` and `sizeFromFlow` on the capacity capture's fluid, swept over
+orientation, the operating level and the safety factor.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_sizing \
+  > captures/process_separator_sizing.tsv
+```
+
+Each row prints the geometry, both fractions (the design level and the operating one), every
+phase's density and the interphase surface tension the derating reads, then the no-argument
+and phase-indexed load factors and `sizeFromFlow`'s diameter. **The horizontal rows are the
+point**: the superficial velocity divides by the design gas area while the indexed overload
+divides its radicand by `1 - liquidVolume/separatorVolume`, so the two differ by `sqrt(2)` on
+the `0.8`/`0.5` state and agree on a vertical vessel.
+
+**`getDeRatedGasLoadFactor` reads a stale interphase model.** The separator's
+`getInterphaseProperties()` was built on a pre-flash clone whose phases carry zero density, so
+the Parachor it computes is `0.0` N/m on every row - `class_derating_factor` is exactly `0.5`
+on a two-phase state and `1.0` on a single phase. The probe also builds a `ParachorSurfaceTension`
+over the live system and prints its answer (`live_parachor_surface_tension_n_per_m`, `0.008919878`
+on the two-phase rows) and the factor the class's own formula would give
+(`intended_derating_factor`, `0.94599`). The port refuses the getter rather than baking the
+stale model's `0.5` into a state function.
+
+## The separator mechanical design
+
+`process_separator_mechanical_design.tsv` is `SeparatorMechanicalDesign.calcDesign` on the
+class's own `SeparatorMechanicalDesignTest` fixture, in two rows: the test's SRK fluid and the
+same composition on PR, which is the cubic this port's separator carries.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_mechanical \
+  > captures/process_separator_mechanical_design.tsv
+```
+
+**The class has no company standard set, and `super.calcDesign()` installs nine defaults.**
+The row prints the keys and each standard's class, then every value this fold reads from them:
+`K = 0.11` m/s, `Fg = 0.8`, volume safety `1.0`, retention `60` s, allowable stress `425`,
+joint efficiency `1.0`, maximum operation pressure `100` bara and corrosion allowance `0`.
+
+**Two surprises the port reproduces rather than tidies.** The design's phase volume is the
+cubic's *untranslated* `getVolume()`, not mass over the physical-properties density: on the PR
+row that is `0.11035858` m3 against `0.110877` from the translated density, and using the
+density moves the diameter by `0.23%`. And `calcLiquidRetentionTime` divides a m3/s flow as
+though it were m3/hr, which is the row's `394 159` s.
+
+## The separator's `autoSize`
+
+`process_separator_autosize.tsv` is `Separator.autoSize(safetyFactor)` on the PR fixture, at
+the class's no-argument `1.2` and at an overridden `1.5`.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_autosize \
+  > captures/process_separator_autosize.tsv
+```
+
+**`autoSize` reads the design database, not the code's initialisers**: the shipped
+`technicalrequirements_process` table's midpoints give `K = 0.107` and `Fg = 0.5`, and
+`readDesignSpecifications` hard-sets the retention to `120` s. With no pressure-vessel code
+installed, `performSizingCalculations` leaves the wall, the weights and the outer diameter at
+zero and `volumeTotal` at the class's `2.0`.
+
+## The gas scrubber mechanical design
+
+`process_gas_scrubber_mechanical_design.tsv` is `GasScrubberMechanicalDesign.calcDesign` on the
+same two-cubic fixture, through a `GasScrubber` rather than a `Separator`.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe gas_scrubber_mechanical \
+  > captures/process_gas_scrubber_mechanical_design.tsv
+```
+
+**The subclass is a second sizing machine.** It calls the separator's `calcDesign` first (on
+the separator standard's `1.0` safety), then re-sizes on the scrubber standard's `K = 0.11`
+and volume factor `1.1`: vertical `Fg = 1`, `length = 5 d`, and a module `2 d` high rather
+than the separator's `2 d + 1`. The row prints both standards' values so the override is
+visible. The first two rows leave the mesh-pad, vane-pack and cyclone fields at their absent
+defaults; the third configures a pad on the sized vessel (`setMeshPad` and
+`setMeshPadElevationM`) and then reads the inherited `sizeFromFlow(1.5)`.
+
+## The separator capacity assessment
+
+`process_separator_capacity_assessment.tsv` is `Separator.getCapacityAssessment` on the
+capacity capture's states plus the pin's #3154 state, swept over the status branches.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity_assessment \
+  > captures/process_separator_capacity_assessment.tsv
+```
+
+Each row prints the snapshot's every getter beside the state it was taken on. **The mechanical
+limit is stated as a fraction of the Souders-Brown flow and printed as the absolute number the
+probe set**: the class stores `maxDesignGassVolumeFlow` in m3/hr and the snapshot reports
+`/3600`, which is the port's input unit. The **PR rows are the oracle**; the SRK #3154 rows
+are evidence.
+
+**The #3154 state exposed a flash defect that the port now avoids.** At 50 bar and 303 K the
+port's `pt_flash` answers `all_vapour` through its negative-flash branch, whose trial
+composition's root is the *other* side of the cubic: `Z = 0.34` against the feed's `0.93`, and
+a gas density of `95.79` kg/m3 against NeqSim's `36.69`. The class reads the feed's composition
+and root for a single phase, and `labelled_phases_at`'s note already said so for the
+composition; the separator and gas-scrubber capacity surfaces now take the root from the feed
+too (`labelled_phases_at_from_feed`), and so does the columns' capacity family. Its own
+capture rows are single-phase, so the change does not move one of them - which is why the
+family's regression is a unit test at the measured negative-flash state rather than a row.
+
+## The three-phase separator's vessel state
+
+`process_three_phase_separator.tsv` is `ThreePhaseSeparator.run` on a 0.5/0.3/0.2
+methane/n-butane/water feed at 300 K and 20 bar: the plain flash, a pressure drop, a heat
+input, two entrainment transfers and a dry feed. **Four rows append the vessel**: a 1 m
+diameter and 3 m tan-tan length, a stated pair of levels, a negative pair, and the dry feed in
+the same vessel.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe three_phase_separator \
+  > captures/process_three_phase_separator.tsv
+```
+
+**The retention times are a mechanical-design read.** `calcOilRetentionTime` takes NLL and NIL
+from `getMechanicalDesign()` - `0.5` and `0.2` of the internal diameter by default - and the
+effective liquid length from `getEffectiveLengthLiquid()`, which is `0.82 * separatorLength`.
+The oil's volume is the circular segment between NIL and NLL, the water's the segment below
+NIL, each times that length, over the phase's own volumetric flow. The class reports minutes;
+the port stores seconds. **The level setters do not enter it**: `setWaterLevel` and
+`setOilLevel` store separate fields, clamp at zero, and only `getOilThickness` reads them, so
+the stated-level row carries the same two times as the bare-vessel row.
+`calcInterfaceSettlingTime` is printed as evidence; its own capture is below.
+
+## The three-phase interface settling
+
+`process_three_phase_settling.tsv` is `ThreePhaseSeparator.calcInterfaceSettlingTime` on two
+vessels - 1 m x 3 m and 1.2 m x 4 m - with the same feed.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe three_phase_settling \
+  > captures/process_three_phase_settling.tsv
+```
+
+A **150 µm water droplet** settles through the oil layer by Stokes on the oil phase's own
+viscosity, `9.81 d^2 (rho_w - rho_o)/(18 mu_o)`, over the layer between NIL and NLL, in
+minutes. **The class's own call on a freshly run separator answers `Infinity`**: the aqueous
+phase's density has not been initialised, so it reads `0.0` and the velocity is negative. The
+row prints that answer beside the same call after `initPhysicalProperties()`, and the port
+reproduces the initialised one - `0.1239` and `0.1487` min, both below the class's one-minute
+limit.
+
+## The separator performance standard path
+
+`process_separator_performance.tsv` is `SeparatorPerformanceCalculator`'s standard path on the
+class's own test states: the two-phase wire mesh, the vertical vane-pack scrubber, the
+three-phase state, gravity alone, the gas-bubble carry-under and the plate-pack coalescer with
+no gas-liquid distribution, then the calibration test's base and tuned machines, the
+gravity-section-off state and a log-normal distribution with custom lookup tables on both
+internals and coalescer.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_performance \
+  > captures/process_separator_performance.tsv
+```
+
+## The separator performance enhanced chain
+
+`process_separator_performance_enhanced.tsv` is
+`SeparatorPerformanceCalculator.calculateEnhanced` on `EnhancedPerformanceCalculatorTest`'s
+own six states - two-phase horizontal, three-phase horizontal, vertical, the no-device and
+inlet-cyclone pair, and the high-velocity flooding row - plus the mist-position and
+weir-position setters, the vane-pack and axial-cyclone design-K records, and the
+inlet-device overrides.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_performance_enhanced \
+  > captures/process_separator_performance_enhanced.tsv
+```
+
+**The enhanced path is a second solver, and a capture of the final efficiency cannot say
+which stage moved.** Every row prints the chain's own intermediates: the predicted flow
+regime, the inlet device's bulk efficiency, pressure drop, nozzle velocity and momentum
+flux, the geometry's areas, settling heights and residence times, the gravity and mist
+efficiencies, the K factor and its utilisation, and the API 12J compliance record with its
+two comments. The default device is `HALF_PIPE`, not none; the pair sets `NONE` and
+`INLET_CYCLONE` explicitly. `process.separator_performance`'s `enhanced` input runs this
+chain; six of the capture's eleven states are this id's cases, and the remaining five are
+the class's own evidence.
+
+## The anti-surge recycle calculator
+
+`process_anti_surge_recycle.tsv` is `AntiSurgeRecycleCalculator.solve` on the charted machine
+`anti_surgeMachine` builds: the nine-component gas at 24 C and 48 bara, the eight-speed
+`CompressorChartTest` table, speed `11918`, and the surge curve `{2789, 2550, 2500, 2200}`
+m3/hr over `{80, 72, 70, 65}` kJ/kg. **Three states**: 0.30 MSm3/day at a 0.05 control margin,
+4.00 MSm3/day at the same margin, and 0.30 again at 0.10 - the two inside the control line and
+the one above it.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge_recycle \
+  > captures/process_anti_surge_recycle.tsv
+```
+
+**The calculator is a loop around the machine, not a machine.** `solve` runs the compressor
+once, compares `getInletStream().getFlowRate("m3/hr")` with `getSurgeFlowRate() * (1 + margin)`,
+and - where the natural point is short - clones the suction fluid at the cooler's temperature
+and the suction pressure, sets the recycle mass in kg/hr, and joins it to the natural suction
+through a `Mixer`. The fixed point updates the recycle mass by the volume-flow error over the
+mixed inlet's volume per unit mass, damped at 0.8, and stops when the error is under 0.5% of
+the control flow. Each block prints the result's own getters and the machine state the last
+run left behind.
+
+**The converged state is the oracle's own, to six figures.** The port's inlet volume flow is
+2.9% below NeqSim's on the same natural state (the capture's `compressor_inlet_m3_hr` against
+the port's charted case), but the loop drives the *ratio* to the control line, so the converged
+inlet, surge flow and control flow agree to `6e-5` and the recycle mass to `6.1e-5`. The
+`iterations` count is five in both active rows on both implementations, which is why the case
+pins it.
+
+## The flare's radiation, dispersion and capacity surface
+
+`process_flare.tsv`'s first four blocks are `Flare.run` on four gases: the record through,
+the duty and the CO2 emission beside it. **Five blocks append the surface `run` never reads**:
+the point-source radiation flux at a stated ground distance and its inverse for a stated
+threshold, the tip's dispersion surrogate, and the three-axis capacity check.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe flare \
+  > captures/process_flare.tsv
+```
+
+**The radiation model puts a point source at the flame height**, `flameHeight` (30 m by
+default): the flux at a horizontal distance is `radiantFraction * heatDuty / (4 pi (d^2 +
+h^2))`, and the distance for a threshold is its inverse with the flame-height sphere removed -
+so at 1 mol/s every contour falls inside the sphere and the class answers zero. The
+`performance_high_duty` row is 100 mol/s, where the 1 kW/m2 contour is at `24.48` m. The
+capacity check divides the operating point by three optional design limits; the probe states
+each as a multiple of the state it checks, so the printed design value is the oracle rather
+than a typed number. **`performance_clamped_fields` pins the setters' clamps**: a negative
+height is zero, a fraction above one is one, and a zero tip diameter is `1e-4` m.

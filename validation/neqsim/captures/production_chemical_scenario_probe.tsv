@@ -1,0 +1,95 @@
+production_chemical_scenario
+ ph_adjusters
+  caustic_100 treated_ph=6.612286718254484 residual_h2s_mg_l=20.0 delta_caco3=0.1517345028756344 delta_baso4=0.0033453720183884705
+    BaSO4 baseline_si=2.4198627757618456 treated_si=2.423208147780234 change=0.0033453720183884705
+    SrSO4 baseline_si=-1.6597602269863978 treated_si=-1.6564148549680096 change=0.0033453720183882485
+    CaSO4 baseline_si=-0.4623042579796999 treated_si=-0.4632431345215311 change=-9.388765418312239E-4
+    CaCO3 baseline_si=-0.40009729670710953 treated_si=-0.24836279383147514 change=0.1517345028756344
+    FeCO3 baseline_si=-0.6728207294851731 treated_si=-0.516801978049319 change=0.15601875143585409
+    chemistry treated_ph=6.612286718254484 treated_bicarbonate_mg_l=876.1187807037203 dose_equivalents_mol_l=0.0012500937570317774 scavenger_capacity_mg_l=0.0 residual_h2s_mg_l=20.0
+  mdea_200 treated_ph=6.574404485391451 residual_h2s_mg_l=20.0 delta_caco3=0.10128072260416726 delta_baso4=0.0022467892952864332
+    BaSO4 baseline_si=2.4198627757618456 treated_si=2.422109565057132 change=0.0022467892952864332
+    SrSO4 baseline_si=-1.6597602269863978 treated_si=-1.6575134376911118 change=0.002246789295285989
+    CaSO4 baseline_si=-0.4623042579796999 treated_si=-0.4629334211803143 change=-6.291632006144021E-4
+    CaCO3 baseline_si=-0.40009729670710953 treated_si=-0.29881657410294227 change=0.10128072260416726
+    FeCO3 baseline_si=-0.6728207294851731 treated_si=-0.5686640543851054 change=0.10415667510006776
+    chemistry treated_ph=6.574404485391451 treated_bicarbonate_mg_l=851.1049682652292 dose_equivalents_mol_l=8.39186660288848E-4 scavenger_capacity_mg_l=0.0 residual_h2s_mg_l=20.0
+  hcl_100 treated_ph=6.464653452086296 residual_h2s_mg_l=20.0 delta_caco3=-0.04916089003419899 delta_baso4=-0.0011029827041606488
+    BaSO4 baseline_si=2.4198627757618456 treated_si=2.418759793057685 change=-0.0011029827041606488
+    SrSO4 baseline_si=-1.6597602269863978 treated_si=-1.6608632096905587 change=-0.0011029827041608709
+    CaSO4 baseline_si=-0.4623042579796999 treated_si=-0.46199742905131225 change=3.0682892838762577E-4
+    CaCO3 baseline_si=-0.40009729670710953 treated_si=-0.4492581867413085 change=-0.04916089003419899
+    FeCO3 baseline_si=-0.6728207294851731 treated_si=-0.7233914311519204 change=-0.050570701666747264
+    chemistry treated_ph=6.464653452086296 treated_bicarbonate_mg_l=774.9387898370603 dose_equivalents_mol_l=-4.113984805682784E-4 scavenger_capacity_mg_l=0.0 residual_h2s_mg_l=20.0
+ scavengers
+  triazine_100 treated_ph=6.5 residual_h2s_mg_l=12.797210187044278 delta_caco3=0.0 delta_baso4=0.0
+    BaSO4 baseline_si=2.4198627757618456 treated_si=2.4198627757618456 change=0.0
+    SrSO4 baseline_si=-1.6597602269863978 treated_si=-1.6597602269863978 change=0.0
+    CaSO4 baseline_si=-0.4623042579796999 treated_si=-0.4623042579796999 change=0.0
+    CaCO3 baseline_si=-0.40009729670710953 treated_si=-0.40009729670710953 change=0.0
+    FeCO3 baseline_si=-0.6728207294851731 treated_si=-0.6728207294851731 change=0.0
+    warning=triazine_spent_product message=Check dithiazine/amorphous spent-product deposition; scavenger removal is not mineral equilibrium
+    warning=h2s_scavenger_under_capacity message=Calculated dissolved-H2S load exceeds the practical active scavenger capacity
+    chemistry treated_ph=6.5 treated_bicarbonate_mg_l=800.0 dose_equivalents_mol_l=0.0 scavenger_capacity_mg_l=7.202789812955722 residual_h2s_mg_l=12.797210187044278
+  triazine_10 treated_ph=6.5 residual_h2s_mg_l=19.27972101870443 delta_caco3=0.0 delta_baso4=0.0
+    BaSO4 baseline_si=2.4198627757618456 treated_si=2.4198627757618456 change=0.0
+    SrSO4 baseline_si=-1.6597602269863978 treated_si=-1.6597602269863978 change=0.0
+    CaSO4 baseline_si=-0.4623042579796999 treated_si=-0.4623042579796999 change=0.0
+    CaCO3 baseline_si=-0.40009729670710953 treated_si=-0.40009729670710953 change=0.0
+    FeCO3 baseline_si=-0.6728207294851731 treated_si=-0.6728207294851731 change=0.0
+    warning=triazine_spent_product message=Check dithiazine/amorphous spent-product deposition; scavenger removal is not mineral equilibrium
+    warning=h2s_scavenger_under_capacity message=Calculated dissolved-H2S load exceeds the practical active scavenger capacity
+    chemistry treated_ph=6.5 treated_bicarbonate_mg_l=800.0 dose_equivalents_mol_l=0.0 scavenger_capacity_mg_l=0.7202789812955722 residual_h2s_mg_l=19.27972101870443
+ inhibitors
+  scale_inhibitor_10 treated_ph=6.5 residual_h2s_mg_l=20.0 delta_caco3=0.0 delta_baso4=0.0
+    BaSO4 baseline_si=2.4198627757618456 treated_si=2.4198627757618456 change=0.0
+    SrSO4 baseline_si=-1.6597602269863978 treated_si=-1.6597602269863978 change=0.0
+    CaSO4 baseline_si=-0.4623042579796999 treated_si=-0.4623042579796999 change=0.0
+    CaCO3 baseline_si=-0.40009729670710953 treated_si=-0.40009729670710953 change=0.0
+    FeCO3 baseline_si=-0.6728207294851731 treated_si=-0.6728207294851731 change=0.0
+    warning=inhibitor_is_kinetic message=Scale inhibitor does not change thermodynamic SI; evaluate MIC and growth control separately with ScaleControlAssessor
+    chemistry treated_ph=6.5 treated_bicarbonate_mg_l=800.0 dose_equivalents_mol_l=0.0 scavenger_capacity_mg_l=0.0 residual_h2s_mg_l=20.0
+  corrosion_inhibitor_10 treated_ph=6.5 residual_h2s_mg_l=20.0 delta_caco3=0.0 delta_baso4=0.0
+    BaSO4 baseline_si=2.4198627757618456 treated_si=2.4198627757618456 change=0.0
+    SrSO4 baseline_si=-1.6597602269863978 treated_si=-1.6597602269863978 change=0.0
+    CaSO4 baseline_si=-0.4623042579796999 treated_si=-0.4623042579796999 change=0.0
+    CaCO3 baseline_si=-0.40009729670710953 treated_si=-0.40009729670710953 change=0.0
+    FeCO3 baseline_si=-0.6728207294851731 treated_si=-0.6728207294851731 change=0.0
+    warning=no_equilibrium_effect_ci message=Chemical retained in audit trail; no supported stoichiometric effect on this aqueous scale scenario
+    chemistry treated_ph=6.5 treated_bicarbonate_mg_l=800.0 dose_equivalents_mol_l=0.0 scavenger_capacity_mg_l=0.0 residual_h2s_mg_l=20.0
+ corners
+  no_bicarbonate treated_ph=6.5 residual_h2s_mg_l=20.0 delta_caco3=NaN delta_baso4=0.0
+    BaSO4 baseline_si=2.384271407507988 treated_si=2.384271407507988 change=0.0
+    SrSO4 baseline_si=-1.6953515952402558 treated_si=-1.6953515952402558 change=0.0
+    CaSO4 baseline_si=-0.4530155136886078 treated_si=-0.4530155136886078 change=0.0
+    chemistry treated_ph=6.5 treated_bicarbonate_mg_l=0.0 dose_equivalents_mol_l=0.0 scavenger_capacity_mg_l=0.0 residual_h2s_mg_l=20.0
+  huge_caustic treated_ph=12.52246120309228 residual_h2s_mg_l=20.0 delta_caco3=3.8459624358888806 delta_baso4=0.17340492545892827
+    BaSO4 baseline_si=2.4198627757618456 treated_si=2.593267701220774 change=0.17340492545892827
+    SrSO4 baseline_si=-1.6597602269863978 treated_si=-1.4863553015274698 change=0.17340492545892805
+    CaSO4 baseline_si=-0.4623042579796999 treated_si=-0.7516010698859693 change=-0.28929681190626944
+    CaCO3 baseline_si=-0.40009729670710953 treated_si=3.445865139181771 change=3.8459624358888806
+    FeCO3 baseline_si=-0.6728207294851731 treated_si=3.635843443768905 change=4.308664173254078
+    warning=chemical_induced_calcite_risk message=Base-equivalent dosing increased calcite SI by 3.85
+    chemistry treated_ph=12.52246120309228 treated_bicarbonate_mg_l=5.387695012895745 dose_equivalents_mol_l=0.06250468785158886 scavenger_capacity_mg_l=0.0 residual_h2s_mg_l=20.0
+  bdot treated_ph=6.51828261991834 residual_h2s_mg_l=20.0 delta_caco3=0.025160571442977897 delta_baso4=5.62092461323993E-4
+    BaSO4 baseline_si=0.6669205869710103 treated_si=0.6674826794323343 change=5.62092461323993E-4
+    SrSO4 baseline_si=-3.4127024157772334 treated_si=-3.412140323315909 change=5.620924613243261E-4
+    CaSO4 baseline_si=-2.2152464467705353 treated_si=-2.215403321590899 change=-1.5687482036375044E-4
+    CaCO3 baseline_si=-2.153039485497945 treated_si=-2.127878914054967 change=0.025160571442977897
+    FeCO3 baseline_si=-2.4257629182760083 treated_si=-2.399883379551343 change=0.02587953872466553
+    chemistry treated_ph=6.51828261991834 treated_bicarbonate_mg_l=812.7783997063651 dose_equivalents_mol_l=2.09796665072212E-4 scavenger_capacity_mg_l=0.0 residual_h2s_mg_l=20.0
+  pitzer treated_ph=6.51828261991834 residual_h2s_mg_l=20.0 delta_caco3=0.025160571442977897 delta_baso4=5.620924613240486E-4
+    BaSO4 baseline_si=0.26048251916882753 treated_si=0.2610446116301516 change=5.620924613240486E-4
+    SrSO4 baseline_si=-3.7575856531386673 treated_si=-3.7570235606773434 change=5.62092461323882E-4
+    CaSO4 baseline_si=-2.56233740129713 treated_si=-2.5624942761174943 change=-1.5687482036419453E-4
+    CaCO3 baseline_si=-2.3766734311564868 treated_si=-2.351512859713509 change=0.025160571442977897
+    FeCO3 baseline_si=-2.678533528887676 treated_si=-2.6526539901630106 change=0.02587953872466553
+    chemistry treated_ph=6.51828261991834 treated_bicarbonate_mg_l=812.7783997063651 dose_equivalents_mol_l=2.09796665072212E-4 scavenger_capacity_mg_l=0.0 residual_h2s_mg_l=20.0
+  unsupported_adjuster treated_ph=6.5 residual_h2s_mg_l=20.0 delta_caco3=0.0 delta_baso4=0.0
+    BaSO4 baseline_si=2.4198627757618456 treated_si=2.4198627757618456 change=0.0
+    SrSO4 baseline_si=-1.6597602269863978 treated_si=-1.6597602269863978 change=0.0
+    CaSO4 baseline_si=-0.4623042579796999 treated_si=-0.4623042579796999 change=0.0
+    CaCO3 baseline_si=-0.40009729670710953 treated_si=-0.40009729670710953 change=0.0
+    FeCO3 baseline_si=-0.6728207294851731 treated_si=-0.6728207294851731 change=0.0
+    warning=unsupported_ph_adjuster_bespoke message=No acid/base-equivalent model for active ingredient KOH
+    chemistry treated_ph=6.5 treated_bicarbonate_mg_l=800.0 dose_equivalents_mol_l=0.0 scavenger_capacity_mg_l=0.0 residual_h2s_mg_l=20.0

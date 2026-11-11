@@ -211,9 +211,39 @@ def solve_least_squares(a: list[list[float]], b: list[float]) -> list[float]:
     # applied to `work`'s columns.
     right = [[1.0 if i == j else 0.0 for j in range(cols)] for i in range(cols)]
 
-    # One-sided Jacobi: rotate column pairs until every pair is orthogonal. The relative
-    # threshold is at the level of rounding, so a convergence failure can only leave
-    # pairs that are orthogonal to working precision.
+    _rotate_columns(work, right)
+
+    singular = [math.sqrt(sum(row[j] * row[j] for row in work)) for j in range(cols)]
+    cutoff = 1.0e-12 * (max(singular) if singular else 0.0)
+
+    # `y_j = (B_j . b) / sigma_j**2`, and zero for a truncated direction.
+    scaled = [0.0] * cols
+    for j, sigma in enumerate(singular):
+        if sigma > cutoff and sigma > 0.0:
+            dot = sum(row[j] * value for row, value in zip(work, b, strict=True))
+            scaled[j] = dot / (sigma * sigma)
+
+    solution = [0.0] * cols
+    for j, coefficient in enumerate(scaled):
+        for i in range(cols):
+            solution[i] += right[i][j] * coefficient
+    for i, value in enumerate(solution):
+        if not math.isfinite(value):
+            raise InvalidInputError(
+                "reaction_matrix", f"the pseudo-inverse's solution[{i}] is not finite"
+            )
+    return solution
+
+
+def _rotate_columns(work: list[list[float]], right: list[list[float]] | None = None) -> None:
+    """One-sided Jacobi's rotation sweep, over ``work``'s columns.
+
+    **One implementation for the two callers.** :func:`solve_least_squares` needs the right
+    singular vectors and passes ``right``; :func:`condition_number_2` needs only the rotated
+    columns. The rotations are the decomposition, so writing them twice would be a second
+    decomposition with no test comparing them.
+    """
+    cols = len(work[0]) if work else 0
     for _sweep in range(_MAX_SWEEPS):
         rotated = False
         for p in range(cols):
@@ -236,35 +266,54 @@ def solve_least_squares(a: list[list[float]], b: list[float]) -> list[float]:
                     turned = row[q]
                     row[p] = cosine * held - sine * turned
                     row[q] = sine * held + cosine * turned
-                for row in right:
-                    held = row[p]
-                    turned = row[q]
-                    row[p] = cosine * held - sine * turned
-                    row[q] = sine * held + cosine * turned
+                if right is not None:
+                    for row in right:
+                        held = row[p]
+                        turned = row[q]
+                        row[p] = cosine * held - sine * turned
+                        row[q] = sine * held + cosine * turned
                 rotated = True
         if not rotated:
             break
 
-    singular = [math.sqrt(sum(row[j] * row[j] for row in work)) for j in range(cols)]
-    cutoff = 1.0e-12 * (max(singular) if singular else 0.0)
 
-    # `y_j = (B_j . b) / sigma_j**2`, and zero for a truncated direction.
-    scaled = [0.0] * cols
-    for j, sigma in enumerate(singular):
-        if sigma > cutoff and sigma > 0.0:
-            dot = sum(row[j] * value for row, value in zip(work, b, strict=True))
-            scaled[j] = dot / (sigma * sigma)
+def condition_number_2(a: list[list[float]]) -> float:
+    """The 2-norm condition number ``sigma_max / sigma_min``, infinity for a zero smallest.
 
-    solution = [0.0] * cols
-    for j, coefficient in enumerate(scaled):
-        for i in range(cols):
-            solution[i] += right[i][j] * coefficient
-    for i, value in enumerate(solution):
-        if not math.isfinite(value):
+    **``SimpleMatrix.conditionP2()``'s own quantity**, over the one-sided Jacobi decomposition
+    :func:`solve_least_squares` already forms. It is what ``applyRegularization`` tests against
+    its threshold and what the class records in ``getConditionNumberHistory()``.
+
+    Raises:
+        InvalidInputError: if ``a`` is empty, ragged or carries a non-finite entry.
+    """
+    rows = len(a)
+    if rows == 0 or not a[0]:
+        raise InvalidInputError(
+            "reaction_matrix", "a condition number needs a matrix with rows and columns"
+        )
+    cols = len(a[0])
+    work: list[list[float]] = []
+    for i, row in enumerate(a):
+        if len(row) != cols:
             raise InvalidInputError(
-                "reaction_matrix", f"the pseudo-inverse's solution[{i}] is not finite"
+                "reaction_matrix", f"row {i} has {len(row)} entries against {cols}"
             )
-    return solution
+        for j, value in enumerate(row):
+            if not math.isfinite(value):
+                raise InvalidInputError(
+                    "reaction_matrix", f"entry [{i}][{j}] is {value}, not a finite number"
+                )
+        work.append([float(value) for value in row])
+    _rotate_columns(work)
+    singular = [math.sqrt(sum(row[j] * row[j] for row in work)) for j in range(cols)]
+    largest = max(singular)
+    smallest = min(singular)
+    if largest == 0.0:
+        return math.nan
+    if smallest == 0.0:
+        return math.inf
+    return largest / smallest
 
 
 #: The largest sweep count one-sided Jacobi is given. Each sweep rotates every pair, and

@@ -243,9 +243,10 @@ def test_the_activity_phase_resolves_each_component_reference_state() -> None:
     ions = databank.ge_nrtl_phase_parameters(["water", "Na+", "Cl-"])
     assert ions.reference_kind == ("solvent", "henry_database_ion", "henry_database_ion")
 
-    with pytest.raises(PropertyUnavailableError) as raised:
-        databank.ge_nrtl_phase_parameters(["water", "n-butane"])
-    assert "n-butane" in str(raised.value)
+    # n-butane's Henry row is fitted now (upstream PR #4045), so the dry arm answers rather
+    # than refusing; the refusal survives for a row the table still fits nothing for.
+    n_butane = databank.ge_nrtl_phase_parameters(["water", "n-butane"])
+    assert n_butane.reference_kind == ("solvent", "henry_database")
 
     for name in ("argon", "hydrogen", "helium"):
         with pytest.raises(PropertyUnavailableError) as raised:
@@ -489,3 +490,21 @@ def test_the_salt_table_is_read() -> None:
     assert databank.salt("KBr") is None
     assert databank.salt("hydromagnesite (3MgCO3-Mg(OH)2-3H2O)") is not None
     assert len(databank.salts()) == 22
+
+
+def test_a_cpa_mixture_reads_the_cpa_parachor_column() -> None:
+    """**A CPA component reads ``PARACHOR_CPA``; a cubic one reads ``PARACHOR``.**
+
+    ``Component.createComponent`` tests ``this instanceof ComponentSrkCPA`` (upstream PR
+    #4004), so every CPA subclass - the electrolyte and UMR ones included - reads the
+    associative column. Methanol is the substance the class's own test names: ``73.0695``
+    on the cubic column against ``87.543852818`` on the CPA one.
+    """
+    cubic, _ = databank.mixture_of(["methanol", "water"], eos="srk")
+    cpa, _ = databank.mixture_of(["methanol", "water"], eos="srk", associating=True)
+    assert [component.parachor for component in cubic.components] == pytest.approx(
+        [73.069489067, 52.8786226]
+    )
+    assert [component.parachor for component in cpa.components] == pytest.approx(
+        [87.543852818, 52.419867266]
+    )

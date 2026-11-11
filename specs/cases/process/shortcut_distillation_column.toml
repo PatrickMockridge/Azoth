@@ -2,7 +2,7 @@ model = "process.shortcut_distillation_column"
 [[cases]]
 id = "propane_nbutane_split"
 tolerance = 0.0001
-source = "NeqSim master, `ShortcutDistillationColumn.run` on a two-phase PR feed, from `validation/neqsim/captures/process_shortcut_distillation_column.tsv`. Four components so every branch of the class's own split-fraction estimate is reached: methane and ethane are more volatile than the light key (the `0.999` branch), propane is the light key, n-butane the heavy key, and nothing sits between the keys. The feed's flash finds two phases, so the K-values are the flash's `y/x` and not Wilson's. **The feed tray is where the port and the published correlation part**: this argument is the class's, and the assumptions give the expression. **Tolerance**: the worst field is `distillate_h` at `2.8e-5` relative, which is the libraries' ideal-gas enthalpy offset and not this arithmetic - the FUG chain agrees to `3e-12` or better. Azoth is `0.0636` J/mol below NeqSim on these products, the offset `tests/stream.rs` measures.\n"
+source = "NeqSim master, `ShortcutDistillationColumn.run` on a two-phase PR feed, from `validation/neqsim/captures/process_shortcut_distillation_column.tsv`. Four components so every branch of the class's own split-fraction estimate is reached: methane and ethane are more volatile than the light key (the `0.999` branch), propane is the light key, n-butane the heavy key, and nothing sits between the keys. The feed's flash finds two phases, so the K-values are the flash's `y/x` and not Wilson's. **The feed tray follows the corrected Kirkbride basis** (upstream PR #4108): product mole fractions, the composition ratio squared, and `B/D` once. **Tolerance**: the worst field is `distillate_h` at `2.8e-5` relative, which is the libraries' ideal-gas enthalpy offset and not this arithmetic - the FUG chain agrees to `3e-12` or better. Azoth is `0.0636` J/mol below NeqSim on these products, the offset `tests/stream.rs` measures.\n"
 [cases.inputs]
 components = ["methane", "ethane", "propane", "n-butane"]
 feed_n = 1.0
@@ -20,7 +20,7 @@ minimum_stages = 7.620946291100026
 minimum_reflux_ratio = 0.44008894984866465
 actual_reflux_ratio = 0.5281067398183975
 actual_stages = 20.510953860048968
-feed_tray_number = 14.0
+feed_tray_number = 13.0
 condenser_duty = -36472.85166598551
 reboiler_duty = 36378.53354647986
 distillate_n = 0.7956000000005571
@@ -56,7 +56,7 @@ minimum_stages = 7.620946291100026
 minimum_reflux_ratio = 0.44008894984866465
 actual_reflux_ratio = 0.5281067398183975
 actual_stages = 20.510953860048968
-feed_tray_number = 14.0
+feed_tray_number = 13.0
 condenser_duty = -36472.85166598551
 reboiler_duty = 36378.53354647986
 distillate_n = 0.7956000000005571
@@ -137,3 +137,37 @@ bottoms_z = [0.010000000000000009, 0.99]
 bottoms_p = 2000000.0
 bottoms_t = 300.0
 bottoms_h = -18733.17152906549
+[[cases]]
+id = "asymmetric_kirkbride_regression"
+tolerance = 0.001
+source = "The regression state of upstream PR #4108's own test: an asymmetric ethane/propane split at 303.15 K and 20 bara, 100 kmol/h, with 0.98 of the light key in the distillate and 0.95 of the heavy key in the bottoms. **The test writes the material balance out by hand** - `D = 0.98 (30) + 0.05 (70) = 32.9` kmol/h and `B = 67.1` - and asserts the feed tray equals the fixed correlation's rectifying share rounded plus one, which is `4`. That is the case's oracle: not a number the port produced, but an independent balance the class's own test states. The feed flashes one phase, so the K-values are the Wilson fallback's. **Tolerance**: the distillate's enthalpy is `178.6` J/mol, so the libraries' `0.0636` J/mol ideal-gas offset is `4e-4` relative; every FUG number agrees to `1e-12` or better.\n"
+[cases.inputs]
+components = ["ethane", "propane"]
+feed_n = 27.77777777777778
+feed_z = [0.3, 0.7]
+feed_p = 2000000.0
+feed_t = 303.15
+light_key = "ethane"
+heavy_key = "propane"
+light_key_recovery_distillate = 0.98
+heavy_key_recovery_bottoms = 0.95
+reflux_ratio_multiplier = 1.5
+[cases.expected]
+relative_volatility = 4.291304498436764
+minimum_stages = 4.693328722586142
+minimum_reflux_ratio = 0.7068776132867396
+actual_reflux_ratio = 1.0603164199301094
+actual_stages = 10.064058394163284
+feed_tray_number = 4.0
+condenser_duty = -564870.0851308384
+reboiler_duty = 561518.4938778763
+distillate_n = 9.138888888888891
+distillate_z = [0.8936170212765957, 0.10638297872340431]
+distillate_p = 2000000.0
+distillate_t = 303.15
+distillate_h = 178.59860414153772
+bottoms_n = 18.638888888888886
+bottoms_z = [0.008941877794336781, 0.9910581222056634]
+bottoms_p = 2000000.0
+bottoms_t = 303.15
+bottoms_h = -13708.580016047456

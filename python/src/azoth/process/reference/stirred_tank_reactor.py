@@ -58,6 +58,9 @@ def stirred_tank_reactor(
     reactor_temperature: Q | None = None,
     reactor_pressure: Q | None = None,
     pressure_drop: Q | None = None,
+    vessel_volume: Q | None = None,
+    residence_time: Q | None = None,
+    agitator_power_per_volume: Q | None = None,
 ) -> StirredTankReactorResult:
     """React a feed stoichiometrically and flash the product.
 
@@ -140,6 +143,25 @@ def stirred_tank_reactor(
         drop,
     )
 
+    # The class's three stored fields, at its own initialisers when absent. **``run`` reads
+    # none of them**: the volume and the specific power are ``toMap``'s echo and the
+    # agitator's product, and the residence time is carried for a transient this port has not.
+    vessel = (
+        DEFAULT_VESSEL_VOLUME_M3
+        if vessel_volume is None
+        else float(vessel_volume.to("m**3").magnitude)
+    )
+    _residence = (
+        DEFAULT_RESIDENCE_TIME_H
+        if residence_time is None
+        else float(residence_time.to("h").magnitude)
+    )
+    per_volume = (
+        DEFAULT_AGITATOR_POWER_PER_VOLUME_W_PER_M3
+        if agitator_power_per_volume is None
+        else float(agitator_power_per_volume.to("W/m**3").magnitude)
+    )
+
     return StirredTankReactorResult(
         product_n=from_si(states.product_n, "mol/s"),
         product_z=states.product_z,
@@ -147,6 +169,7 @@ def stirred_tank_reactor(
         product_t=states.product_t,
         product_h=from_si(states.product_h, "J/mol"),
         heat_duty=from_si(states.heat_duty, "W"),
+        agitator_power=from_si(_agitator_power_w(per_volume, vessel), "kW"),
         warnings=tuple(warnings),
     )
 
@@ -285,6 +308,22 @@ def _enthalpy_in(
 ) -> float:
     """The feed's own molar enthalpy, on the same basis as the product's."""
     return float(enthalpy_at(mixture, ideal_gas, feed_t.to("K").magnitude, feed_p, feed_z)[0])
+
+
+#: ``StirredTankReactor``'s stored field initialisers, in their own units.
+DEFAULT_VESSEL_VOLUME_M3 = 10.0
+DEFAULT_RESIDENCE_TIME_H = 1.0
+DEFAULT_AGITATOR_POWER_PER_VOLUME_W_PER_M3 = 1000.0
+
+
+def _agitator_power_w(per_volume_w_per_m3: float, vessel_volume_m3: float) -> float:
+    """``getAgitatorPower``: the specific power times the vessel volume, in watts.
+
+    **``run`` reads neither operand.** The product is the number the class would write to an
+    agitator energy port, which is declared out; the two fields are ``toMap``'s echo of what
+    the caller stored.
+    """
+    return per_volume_w_per_m3 * vessel_volume_m3
 
 
 def _spec() -> dict[str, object]:

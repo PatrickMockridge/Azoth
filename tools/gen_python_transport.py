@@ -173,6 +173,21 @@ def field_expr(
         if optional:
             return f"{base}.as_ref().map(|rows| rows.iter().map(Py{element}::from).collect())"
         return f"{base}.iter().map(Py{element}::from).collect()"
+    if optional and depth > 0:
+        # **`Option<Vec<T>>` is not `Option<T>`, and the `map` has to reach inside.** The
+        # first optional vector in the tree is `process.separator`'s phase-indexed load
+        # factors, whose unit is `m/s`; the scalar branch below would bind the whole `Vec` to
+        # one element and fail to compile. The element binding follows the depth-1 branch.
+        src = "*v" if kind == "number" else "v"
+        if depth == 1:
+            return (
+                f"{base}.as_ref().map(|values| values.iter().map(|v| "
+                f"{element_expr(kind, unit, src, element)}).collect())"
+            )
+        return (
+            f"{base}.as_ref().map(|rows| rows.iter().map(|row| row.iter().map(|v| "
+            f"{element_expr(kind, unit, src, element)}).collect()).collect())"
+        )
     if optional:
         if identity(kind, unit):
             # A `String` is not `Copy` and the source is behind a reference, so an optional

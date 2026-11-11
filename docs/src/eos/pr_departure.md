@@ -4,6 +4,8 @@
 
 `eos.pr_departure`
 
+Peng-Robinson fugacity coefficient and departure functions. Use it to convert between residual and ideal-gas properties in a Peng-Robinson EOS.
+
 ## Equation
 
 $$
@@ -75,7 +77,7 @@ DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 | `z_minus_b_reduced > 0` | raises | `z` appears as `ln(z - b_reduced)`, so `z = b_reduced` is the zero-volume limit and `z < b_reduced` makes the logarithm of a negative number. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

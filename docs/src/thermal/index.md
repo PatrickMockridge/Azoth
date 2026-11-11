@@ -2,8 +2,20 @@
 
 # Heat transfer
 
-Every calculation in this section is generated from its specification. Each page shows the equation, where it came from, the range in which it is validated, its assumptions, a worked example, and the tests that exercise it.
+Every calculation in this section is generated from its specification. Each page states what the calculation is for, the equation and where it came from, the range in which it is validated, the conditions it does not check, a worked example, and the tests that exercise it.
 
-| Calculation | Equation | Source |
+| Calculation | What it is for | Source |
 |---|---|---|
-| [`thermal.conduction_plane_wall`](./conduction_plane_wall.md) | $q = \frac{k\,A\,\Delta T}{L}$ | Fourier, J. (1822) |
+| [`thermal.boiling_heat_transfer`](./boiling_heat_transfer.md) | Flow-boiling heat-transfer coefficient from the Chen and Gungor-Winterton methods. Use it to estimate an evaporator tube-side coefficient when no test data are available. | NeqSim process/mechanicaldesign/heatexchanger/BoilingHeatTransfer.java |
+| [`thermal.conduction_plane_wall`](./conduction_plane_wall.md) | Steady heat flow through a plane wall from its conductivity, area, thickness and temperature difference. Use it for insulation and wall-loss screening. | Fourier, J. (1822) |
+| [`thermal.fouling_model`](./fouling_model.md) | Heat-exchanger fouling resistance with time for the fixed, Kern-Seaton and Ebert-Panchal models. Use it to estimate a fouling allowance or a cleaning interval. | NeqSim process/mechanicaldesign/heatexchanger/FoulingModel.java |
+| [`thermal.incremental_zone_analysis`](./incremental_zone_analysis.md) | A shell-and-tube exchanger rated in incremental zones along the tube, with the local tube-side regime and shell-side coefficient. Use it where the coefficient changes with quality or temperature. | NeqSim process/mechanicaldesign/heatexchanger/IncrementalZoneAnalysis.java |
+| [`thermal.lmtd_correction_factor`](./lmtd_correction_factor.md) | The LMTD correction factor for a shell-and-tube exchanger from its terminal temperatures and pass arrangement. Use it to convert a counterflow mean temperature difference to the exchanger's own. | NeqSim process/mechanicaldesign/heatexchanger/LMTDcorrectionFactor.java |
+| [`thermal.shah_condensation`](./shah_condensation.md) | In-tube condensation heat-transfer coefficient from Shah's correlation. Use it to estimate a condenser tube-side coefficient across the vapour-quality range. | NeqSim process/mechanicaldesign/heatexchanger/ShahCondensation.java |
+| [`thermal.shell_and_tube_design`](./shell_and_tube_design.md) | A detailed shell-and-tube exchanger design from a duty and stream data, applying TEMA layout and ASME wall rules. Use it to size a new exchanger. | NeqSim process/mechanicaldesign/heatexchanger/ShellAndTubeDesignCalculator.java |
+| [`thermal.shell_and_tube_rating`](./shell_and_tube_rating.md) | A shell-and-tube exchanger's thermal-hydraulic rating from its geometry and stream data. Use it to check whether an existing exchanger meets a duty. | NeqSim process/mechanicaldesign/heatexchanger/ThermalDesignCalculator.java |
+| [`thermal.shell_and_tube_vibration`](./shell_and_tube_vibration.md) | A shell-and-tube exchanger's tube-vibration screen from its geometry, flow and natural frequency. Use it to flag a bundle at risk of flow-induced vibration. | NeqSim process/mechanicaldesign/heatexchanger/VibrationAnalysis.java |
+| [`thermal.tema_standard`](./tema_standard.md) | TEMA construction class, configuration limits, recommended designation and a relative cost factor. Use it to select a shell-and-tube configuration and check its layout rules. | NeqSim process/mechanicaldesign/heatexchanger/TEMAStandard.java |
+| [`thermal.tube_insert_model`](./tube_insert_model.md) | Heat-transfer enhancement and pressure-drop penalty of a tube insert from its type and geometry. Use it to screen whether an insert is worth the extra pressure drop. | NeqSim process/mechanicaldesign/heatexchanger/TubeInsertModel.java |
+| [`thermal.two_phase_pressure_drop`](./two_phase_pressure_drop.md) | Two-phase pressure gradient from the Friedel and Muller-Steinhagen-Heck methods. Use it to size a line or check an exchanger tube side carrying a vapour-liquid mixture. | NeqSim process/mechanicaldesign/heatexchanger/TwoPhasePressureDrop.java |
+| [`thermal.zone_rating`](./zone_rating.md) | A shell-and-tube exchanger rated zone by zone, with the local regime and an optional per-zone override. Use it where a single overall coefficient hides a changing duty. | NeqSim process/mechanicaldesign/heatexchanger/ThermalDesignCalculator.java |

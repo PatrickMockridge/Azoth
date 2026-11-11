@@ -1,8 +1,10 @@
 id = "eos.pr_danesh_alpha"
 name = "Danesh alpha function"
+summary = "Danesh alpha function for a Peng-Robinson EOS. Use it when the attraction term follows Danesh's temperature form."
 equation = "m = 0.37464 + 1.54226*omega - 0.26992*omega**2,  m_mod = 1.21*m above Tr = 1 else m,  alpha = (1 + m_mod*(1 - sqrt(Tr)))**2"
 latex = '''\alpha = \left(1 + \tilde m\left(1 - \sqrt{T_r}\right)\right)^2,\qquad \tilde m = \begin{cases}1.21\,m & T_r > 1 \\ m & \text{otherwise}\end{cases}'''
-assumptions = ["the 1.21 factor above the critical is NeqSim's, applied to the Peng-Robinson Soave coefficient to damp the attraction past `Tr = 1`.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+assumptions = ["the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+notes = ["the 1.21 factor above the critical is NeqSim's, applied to the Peng-Robinson Soave coefficient to damp the attraction past `Tr = 1`.\n"]
 references = ["Danesh, A.; Xu, D.-H.; Todd, A. C. (1991). \"Comparative study of the cubic equations of state for predicting phase behaviour and volumetric properties of injection gas-reservoir oil systems.\" Fluid Phase Equilib. 63, 259-278. DOI 10.1016/0378-3812(91)80034-S."]
 [source]
 standard = "NeqSim master `AttractiveTermPrDanesh`"

@@ -1,0 +1,666 @@
+model = "eos.surf_cooldown"
+
+[[cases]]
+id = "wet_u2_5"
+tolerance = 1e-03
+source = "The capture's `wet_u2_5` row: the wet-gas state at a supplied U of 2.5 and an eight-hour requirement.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+overall_u_value = 2.5
+hydrate_margin = 3.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "ok"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 44492.435713666484
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 40923.983763683995
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "wet_u1_5"
+tolerance = 1e-03
+source = "The capture's `wet_u1_5` row: U 1.5, a longer no-touch time and the same passing verdict.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+overall_u_value = 1.5
+hydrate_margin = 3.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "ok"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 74263.16567199984
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 1.5
+time_constant = 68206.63960614
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "wet_u6"
+tolerance = 1e-03
+source = "The capture's `wet_u6` row: U 6, whose 5.1-hour no-touch time is below the requirement and critical.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+overall_u_value = 6.0
+hydrate_margin = 3.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "critical"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 18443.200793547385
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 6.0
+time_constant = 17051.659901535
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "layers"
+tolerance = 1e-03
+source = "The capture's `layers` row: the layer U at an external coefficient of 500.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+external_htc = 500.0
+hydrate_margin = 3.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "ok"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 37277.46847114684
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 2.981752570396536
+time_constant = 34312.02187095089
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "no_required"
+tolerance = 1e-03
+source = "The capture's `no_required` row: no requirement, so the absolute twelve- and six-hour bands decide.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+overall_u_value = 2.5
+hydrate_margin = 3.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "ok"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 44492.435713666484
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 40923.983763683995
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "req_half"
+tolerance = 1e-03
+source = "The capture's `req_half` row: a requirement of four hours, which the no-touch time meets.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+overall_u_value = 2.5
+hydrate_margin = 3.0
+required_no_touch_time = 14400.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "ok"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 44492.435713666484
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 40923.983763683995
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "req_1_2t"
+tolerance = 1e-03
+source = "The capture's `req_1_2t` row: a requirement at 1.2 times the measured time, still met.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+overall_u_value = 2.5
+hydrate_margin = 3.0
+required_no_touch_time = 34560.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "ok"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 44492.435713666484
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 40923.983763683995
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "req_2t"
+tolerance = 1e-03
+source = "The capture's `req_2t` row: a requirement at twice the measured time, in the marginal band.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+overall_u_value = 2.5
+hydrate_margin = 3.0
+required_no_touch_time = 57600.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "marginal"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 44492.435713666484
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 40923.983763683995
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "operating_override"
+tolerance = 1e-03
+source = "The capture's `operating_override` row: the operating temperature overridden to 35 C while the flash stays at 65 C.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+operating_temperature = 308.15
+overall_u_value = 2.5
+hydrate_margin = 3.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "critical"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 16893.195616896453
+initial_fluid_temperature = 308.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 40923.983763683995
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "initial_below_target"
+tolerance = 1e-03
+source = "The capture's `initial_below_target` row: an initial temperature below the hydrate-plus-margin target: zero no-touch.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+operating_temperature = 293.15
+overall_u_value = 2.5
+hydrate_margin = 3.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "critical"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 0.0
+initial_fluid_temperature = 293.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 40923.983763683995
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "seabed_300k"
+tolerance = 1e-03
+source = "The capture's `seabed_300k` row: a seabed warmer than the hydrate temperature, so there is no risk to bound.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 300.0
+overall_u_value = 2.5
+hydrate_margin = 3.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "no_hydrate_risk"
+water_mole_fraction = 0.09000000000000001
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 300.0
+overall_u_value = 2.5
+time_constant = 40923.983763683995
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "dry"
+tolerance = 1e-03
+source = "The capture's `dry` row: a fluid with no water: no hydrate temperature and the no-risk verdict.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane"]
+z = [0.9,0.07,0.03]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+overall_u_value = 2.5
+hydrate_margin = 3.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "no_hydrate_risk"
+water_mole_fraction = 0.0
+initial_fluid_temperature = 338.15
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 40334.89508953456
+fluid_density = 86.12024725861052
+fluid_specific_heat = 2968.289653131351
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "wet_require"
+tolerance = 1e-03
+source = "The capture's `wet_require` row: the same wet fluid with `require_water` set, which passes.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+overall_u_value = 2.5
+hydrate_margin = 3.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 300.0
+require_water = true
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "ok"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 44492.435713666484
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 40923.983763683995
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "cold_operating"
+tolerance = 1e-03
+source = "The capture's `cold_operating` row: a 15 C operating override, colder than the hydrate temperature.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+operating_temperature = 288.15
+overall_u_value = 2.5
+hydrate_margin = 3.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "critical"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 0.0
+initial_fluid_temperature = 288.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 40923.983763683995
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "low_pressure"
+tolerance = 1e-03
+source = "The capture's `low_pressure` row: the same gas at 10 bara, where the hydrate temperature is below the seabed.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 1000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+overall_u_value = 2.5
+hydrate_margin = 3.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "no_hydrate_risk"
+water_mole_fraction = 0.09000000000000001
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 275.8839254254754
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 36652.13256073724
+fluid_density = 6.938091986832445
+fluid_specific_heat = 2470.0369075525364
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "margin_1"
+tolerance = 1e-03
+source = "The capture's `margin_1` row: a 1 K margin instead of 3, which lengthens the no-touch time.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+overall_u_value = 2.5
+hydrate_margin = 1.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "ok"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 48681.31190138289
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 1.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 40923.983763683995
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "margin_5"
+tolerance = 1e-03
+source = "The capture's `margin_5` row: a 5 K margin, which shortens it.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+overall_u_value = 2.5
+hydrate_margin = 5.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 300.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "ok"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 40694.09483933296
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 5.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 40923.983763683995
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06
+
+[[cases]]
+id = "dt_600"
+tolerance = 1e-03
+source = "The capture's `dt_600` row: a ten-minute step rather than five.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+z = [0.82,0.06,0.03,0.09]
+operating_pressure = 12000000.0
+flash_temperature = 338.15
+internal_diameter = 0.254
+wall_thickness = 0.0159
+insulation_thickness = 0.06
+coating_thickness = 0.006
+insulation_conductivity = 0.22
+seabed_temperature = 277.15
+overall_u_value = 2.5
+hydrate_margin = 3.0
+required_no_touch_time = 28800.0
+total_time = 259200.0
+time_step = 600.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+verdict = "ok"
+water_mole_fraction = 0.09000000000000001
+no_touch_time = 44328.38366298987
+initial_fluid_temperature = 338.15
+hydrate_equilibrium_temperature = 294.6346950906306
+hydrate_margin = 3.0
+seabed_temperature = 277.15
+overall_u_value = 2.5
+time_constant = 40923.983763683995
+fluid_density = 93.86985158263911
+fluid_specific_heat = 3129.6385757167163
+internal_diameter = 0.254
+insulation_thickness = 0.06

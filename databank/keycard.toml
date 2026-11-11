@@ -23,23 +23,23 @@ value = 0.302
 unit = "dimensionless"
 
 [components."(e)-2-methyl-3-hexene".cp_a]
-value = 36.54003
+value = -19.339
 unit = "J/(mol*K)"
 
 [components."(e)-2-methyl-3-hexene".cp_b]
-value = -0.034802404
+value = 0.69476
 unit = "J/(mol*K**2)"
 
 [components."(e)-2-methyl-3-hexene".cp_c]
-value = 0.000116811
+value = -0.000444
 unit = "J/(mol*K**3)"
 
 [components."(e)-2-methyl-3-hexene".cp_d]
-value = -1.3e-07
+value = 1.19e-07
 unit = "J/(mol*K**4)"
 
 [components."(e)-2-methyl-3-hexene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."(e)-2-methyl-3-hexene".ionic_charge]
@@ -83,23 +83,23 @@ value = 0.278
 unit = "dimensionless"
 
 [components."(e)-3,4-dimethyl-2-pentene".cp_a]
-value = 36.54003
+value = -19.03
 unit = "J/(mol*K)"
 
 [components."(e)-3,4-dimethyl-2-pentene".cp_b]
-value = -0.034802404
+value = 0.69468
 unit = "J/(mol*K**2)"
 
 [components."(e)-3,4-dimethyl-2-pentene".cp_c]
-value = 0.000116811
+value = -0.0004463
 unit = "J/(mol*K**3)"
 
 [components."(e)-3,4-dimethyl-2-pentene".cp_d]
-value = -1.3e-07
+value = 1.208e-07
 unit = "J/(mol*K**4)"
 
 [components."(e)-3,4-dimethyl-2-pentene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."(e)-3,4-dimethyl-2-pentene".ionic_charge]
@@ -143,23 +143,23 @@ value = 0.307
 unit = "dimensionless"
 
 [components."(e)-3-methyl-3-hexene".cp_a]
-value = 36.54003
+value = -17.348
 unit = "J/(mol*K)"
 
 [components."(e)-3-methyl-3-hexene".cp_b]
-value = -0.034802404
+value = 0.68876
 unit = "J/(mol*K**2)"
 
 [components."(e)-3-methyl-3-hexene".cp_c]
-value = 0.000116811
+value = -0.0004431
 unit = "J/(mol*K**3)"
 
 [components."(e)-3-methyl-3-hexene".cp_d]
-value = -1.3e-07
+value = 1.213e-07
 unit = "J/(mol*K**4)"
 
 [components."(e)-3-methyl-3-hexene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."(e)-3-methyl-3-hexene".ionic_charge]
@@ -263,23 +263,23 @@ value = 0.267
 unit = "dimensionless"
 
 [components."1,1,4-trimethylcyclohexane".cp_a]
-value = 36.54003
+value = -114.95
 unit = "J/(mol*K)"
 
 [components."1,1,4-trimethylcyclohexane".cp_b]
-value = -0.034802404
+value = 1.24636
 unit = "J/(mol*K**2)"
 
 [components."1,1,4-trimethylcyclohexane".cp_c]
-value = 0.000116811
+value = -0.001024
 unit = "J/(mol*K**3)"
 
 [components."1,1,4-trimethylcyclohexane".cp_d]
-value = -1.3e-07
+value = 3.753e-07
 unit = "J/(mol*K**4)"
 
 [components."1,1,4-trimethylcyclohexane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."1,1,4-trimethylcyclohexane".ionic_charge]
@@ -323,23 +323,23 @@ value = 0.31500806
 unit = "dimensionless"
 
 [components."1,2,3,5-tetramethylcyclohexane".cp_a]
-value = 36.54003
+value = -53.99
 unit = "J/(mol*K)"
 
 [components."1,2,3,5-tetramethylcyclohexane".cp_b]
-value = -0.034802404
+value = 0.99648
 unit = "J/(mol*K**2)"
 
 [components."1,2,3,5-tetramethylcyclohexane".cp_c]
-value = 0.000116811
+value = -0.000435
 unit = "J/(mol*K**3)"
 
 [components."1,2,3,5-tetramethylcyclohexane".cp_d]
-value = -1.3e-07
+value = 3.28e-08
 unit = "J/(mol*K**4)"
 
 [components."1,2,3,5-tetramethylcyclohexane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."1,2,3,5-tetramethylcyclohexane".ionic_charge]
@@ -383,23 +383,23 @@ value = 0.2594502
 unit = "dimensionless"
 
 [components."1,2,3-trimethylcyclopentane".cp_a]
-value = 36.54003
+value = -52.99
 unit = "J/(mol*K)"
 
 [components."1,2,3-trimethylcyclopentane".cp_b]
-value = -0.034802404
+value = 0.84256
 unit = "J/(mol*K**2)"
 
 [components."1,2,3-trimethylcyclopentane".cp_c]
-value = 0.000116811
+value = -0.000428
 unit = "J/(mol*K**3)"
 
 [components."1,2,3-trimethylcyclopentane".cp_d]
-value = -1.3e-07
+value = 6.71e-08
 unit = "J/(mol*K**4)"
 
 [components."1,2,3-trimethylcyclopentane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."1,2,3-trimethylcyclopentane".ionic_charge]
@@ -443,23 +443,23 @@ value = 0.4168
 unit = "dimensionless"
 
 [components."1,2,4,5-tetramethylbenzene".cp_a]
-value = 36.54003
+value = 2.79
 unit = "J/(mol*K)"
 
 [components."1,2,4,5-tetramethylbenzene".cp_b]
-value = -0.034802404
+value = 0.69648
 unit = "J/(mol*K**2)"
 
 [components."1,2,4,5-tetramethylbenzene".cp_c]
-value = 0.000116811
+value = -0.00035028
 unit = "J/(mol*K**3)"
 
 [components."1,2,4,5-tetramethylbenzene".cp_d]
-value = -1.3e-07
+value = 5.86e-08
 unit = "J/(mol*K**4)"
 
 [components."1,2,4,5-tetramethylbenzene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."1,2,4,5-tetramethylbenzene".ionic_charge]
@@ -503,23 +503,23 @@ value = 0.3771
 unit = "dimensionless"
 
 [components."1,2,4-trimethylbenzene".cp_a]
-value = 36.54003
+value = 14.1838779173
 unit = "J/(mol*K)"
 
 [components."1,2,4-trimethylbenzene".cp_b]
-value = -0.034802404
+value = 0.451924285105
 unit = "J/(mol*K**2)"
 
 [components."1,2,4-trimethylbenzene".cp_c]
-value = 0.000116811
+value = 0.000200591368959
 unit = "J/(mol*K**3)"
 
 [components."1,2,4-trimethylbenzene".cp_d]
-value = -1.3e-07
+value = -5.37609942435e-07
 unit = "J/(mol*K**4)"
 
 [components."1,2,4-trimethylbenzene".cp_e]
-value = 5.254448e-11
+value = 2.33299183225e-10
 unit = "J/(mol*K**5)"
 
 [components."1,2,4-trimethylbenzene".ionic_charge]
@@ -563,23 +563,23 @@ value = 0.2459
 unit = "dimensionless"
 
 [components."1,2,4-trimethylcyclopentane".cp_a]
-value = 36.54003
+value = -52.99
 unit = "J/(mol*K)"
 
 [components."1,2,4-trimethylcyclopentane".cp_b]
-value = -0.034802404
+value = 0.84256
 unit = "J/(mol*K**2)"
 
 [components."1,2,4-trimethylcyclopentane".cp_c]
-value = 0.000116811
+value = -0.000428
 unit = "J/(mol*K**3)"
 
 [components."1,2,4-trimethylcyclopentane".cp_d]
-value = -1.3e-07
+value = 6.71e-08
 unit = "J/(mol*K**4)"
 
 [components."1,2,4-trimethylcyclopentane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."1,2,4-trimethylcyclopentane".ionic_charge]
@@ -623,23 +623,23 @@ value = 0.34
 unit = "dimensionless"
 
 [components."1,2-diethylbenzene".cp_a]
-value = 36.54003
+value = -25.808
 unit = "J/(mol*K)"
 
 [components."1,2-diethylbenzene".cp_b]
-value = -0.034802404
+value = 0.81544
 unit = "J/(mol*K**2)"
 
 [components."1,2-diethylbenzene".cp_c]
-value = 0.000116811
+value = -0.00048436
 unit = "J/(mol*K**3)"
 
 [components."1,2-diethylbenzene".cp_d]
-value = -1.3e-07
+value = 1.084e-07
 unit = "J/(mol*K**4)"
 
 [components."1,2-diethylbenzene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."1,2-diethylbenzene".ionic_charge]
@@ -683,23 +683,23 @@ value = 0.5238
 unit = "dimensionless"
 
 [components."1,3,5-triethylbenzene".cp_a]
-value = 36.54003
+value = -13.327
 unit = "J/(mol*K)"
 
 [components."1,3,5-triethylbenzene".cp_b]
-value = -0.034802404
+value = 0.94596
 unit = "J/(mol*K**2)"
 
 [components."1,3,5-triethylbenzene".cp_c]
-value = 0.000116811
+value = -0.00052612
 unit = "J/(mol*K**3)"
 
 [components."1,3,5-triethylbenzene".cp_d]
-value = -1.3e-07
+value = 1.073e-07
 unit = "J/(mol*K**4)"
 
 [components."1,3,5-triethylbenzene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."1,3,5-triethylbenzene".ionic_charge]
@@ -743,23 +743,23 @@ value = 0.302
 unit = "dimensionless"
 
 [components."1,3-diethylcyclopentane".cp_a]
-value = 36.54003
+value = -59.838
 unit = "J/(mol*K)"
 
 [components."1,3-diethylcyclopentane".cp_b]
-value = -0.034802404
+value = 0.96404
 unit = "J/(mol*K**2)"
 
 [components."1,3-diethylcyclopentane".cp_c]
-value = 0.000116811
+value = -0.0005378
 unit = "J/(mol*K**3)"
 
 [components."1,3-diethylcyclopentane".cp_d]
-value = -1.3e-07
+value = 1.072e-07
 unit = "J/(mol*K**4)"
 
 [components."1,3-diethylcyclopentane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."1,3-diethylcyclopentane".ionic_charge]
@@ -803,23 +803,23 @@ value = 0.409
 unit = "dimensionless"
 
 [components."1,4-diethylbenzene".cp_a]
-value = 36.54003
+value = -25.808
 unit = "J/(mol*K)"
 
 [components."1,4-diethylbenzene".cp_b]
-value = -0.034802404
+value = 0.81544
 unit = "J/(mol*K**2)"
 
 [components."1,4-diethylbenzene".cp_c]
-value = 0.000116811
+value = -0.00048436
 unit = "J/(mol*K**3)"
 
 [components."1,4-diethylbenzene".cp_d]
-value = -1.3e-07
+value = 1.084e-07
 unit = "J/(mol*K**4)"
 
 [components."1,4-diethylbenzene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."1,4-diethylbenzene".ionic_charge]
@@ -863,23 +863,23 @@ value = 0.245
 unit = "dimensionless"
 
 [components."1,5-dimethylcyclopentene".cp_a]
-value = 36.54003
+value = -41.88
 unit = "J/(mol*K)"
 
 [components."1,5-dimethylcyclopentene".cp_b]
-value = -0.034802404
+value = 0.68504
 unit = "J/(mol*K**2)"
 
 [components."1,5-dimethylcyclopentene".cp_c]
-value = 0.000116811
+value = -0.00040464
 unit = "J/(mol*K**3)"
 
 [components."1,5-dimethylcyclopentene".cp_d]
-value = -1.3e-07
+value = 9.09e-08
 unit = "J/(mol*K**4)"
 
 [components."1,5-dimethylcyclopentene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."1,5-dimethylcyclopentene".ionic_charge]
@@ -983,23 +983,23 @@ value = 0.442
 unit = "dimensionless"
 
 [components.1-butyl-2-methylbenzene.cp_a]
-value = 36.54003
+value = -26.717
 unit = "J/(mol*K)"
 
 [components.1-butyl-2-methylbenzene.cp_b]
-value = -0.034802404
+value = 0.91044
 unit = "J/(mol*K**2)"
 
 [components.1-butyl-2-methylbenzene.cp_c]
-value = 0.000116811
+value = -0.00053876
 unit = "J/(mol*K**3)"
 
 [components.1-butyl-2-methylbenzene.cp_d]
-value = -1.3e-07
+value = 1.203e-07
 unit = "J/(mol*K**4)"
 
 [components.1-butyl-2-methylbenzene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.1-butyl-2-methylbenzene.ionic_charge]
@@ -1043,23 +1043,23 @@ value = 0.362
 unit = "dimensionless"
 
 [components."1-ethyl-2,3-dimethylbenzene".cp_a]
-value = 36.54003
+value = -11.509
 unit = "J/(mol*K)"
 
 [components."1-ethyl-2,3-dimethylbenzene".cp_b]
-value = -0.034802404
+value = 0.75596
 unit = "J/(mol*K**2)"
 
 [components."1-ethyl-2,3-dimethylbenzene".cp_c]
-value = 0.000116811
+value = -0.00041732
 unit = "J/(mol*K**3)"
 
 [components."1-ethyl-2,3-dimethylbenzene".cp_d]
-value = -1.3e-07
+value = 8.35e-08
 unit = "J/(mol*K**4)"
 
 [components."1-ethyl-2,3-dimethylbenzene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."1-ethyl-2,3-dimethylbenzene".ionic_charge]
@@ -1103,23 +1103,23 @@ value = 0.4331
 unit = "dimensionless"
 
 [components."1-ethyl-2,4-dimethylbenzene".cp_a]
-value = 36.54003
+value = -11.509
 unit = "J/(mol*K)"
 
 [components."1-ethyl-2,4-dimethylbenzene".cp_b]
-value = -0.034802404
+value = 0.75596
 unit = "J/(mol*K**2)"
 
 [components."1-ethyl-2,4-dimethylbenzene".cp_c]
-value = 0.000116811
+value = -0.00041732
 unit = "J/(mol*K**3)"
 
 [components."1-ethyl-2,4-dimethylbenzene".cp_d]
-value = -1.3e-07
+value = 8.35e-08
 unit = "J/(mol*K**4)"
 
 [components."1-ethyl-2,4-dimethylbenzene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."1-ethyl-2,4-dimethylbenzene".ionic_charge]
@@ -1163,23 +1163,23 @@ value = 0.276
 unit = "dimensionless"
 
 [components.1-ethyl-3-methylcyclopentane.cp_a]
-value = 36.54003
+value = -58.929
 unit = "J/(mol*K)"
 
 [components.1-ethyl-3-methylcyclopentane.cp_b]
-value = -0.034802404
+value = 0.86904
 unit = "J/(mol*K**2)"
 
 [components.1-ethyl-3-methylcyclopentane.cp_c]
-value = 0.000116811
+value = -0.0004834
 unit = "J/(mol*K**3)"
 
 [components.1-ethyl-3-methylcyclopentane.cp_d]
-value = -1.3e-07
+value = 9.53e-08
 unit = "J/(mol*K**4)"
 
 [components.1-ethyl-3-methylcyclopentane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.1-ethyl-3-methylcyclopentane.ionic_charge]
@@ -1223,23 +1223,23 @@ value = 0.3316
 unit = "dimensionless"
 
 [components.1-heptene.cp_a]
-value = 36.54003
+value = -6.466
 unit = "J/(mol*K)"
 
 [components.1-heptene.cp_b]
-value = -0.034802404
+value = 0.64882
 unit = "J/(mol*K**2)"
 
 [components.1-heptene.cp_c]
-value = 0.000116811
+value = -0.0003799
 unit = "J/(mol*K**3)"
 
 [components.1-heptene.cp_d]
-value = -1.3e-07
+value = 8.95e-08
 unit = "J/(mol*K**4)"
 
 [components.1-heptene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.1-heptene.ionic_charge]
@@ -1283,23 +1283,23 @@ value = 0.2839
 unit = "dimensionless"
 
 [components.1-hexene.cp_a]
-value = 36.54003
+value = -5.557
 unit = "J/(mol*K)"
 
 [components.1-hexene.cp_b]
-value = -0.034802404
+value = 0.55382
 unit = "J/(mol*K**2)"
 
 [components.1-hexene.cp_c]
-value = 0.000116811
+value = -0.0003255
 unit = "J/(mol*K**3)"
 
 [components.1-hexene.cp_d]
-value = -1.3e-07
+value = 7.76e-08
 unit = "J/(mol*K**4)"
 
 [components.1-hexene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.1-hexene.ionic_charge]
@@ -1343,23 +1343,23 @@ value = 0.292
 unit = "dimensionless"
 
 [components.1-methyl-1-ethylcyclohexane.cp_a]
-value = 36.54003
+value = -120.889
 unit = "J/(mol*K)"
 
 [components.1-methyl-1-ethylcyclohexane.cp_b]
-value = -0.034802404
+value = 1.27284
 unit = "J/(mol*K**2)"
 
 [components.1-methyl-1-ethylcyclohexane.cp_c]
-value = 0.000116811
+value = -0.0010794
 unit = "J/(mol*K**3)"
 
 [components.1-methyl-1-ethylcyclohexane.cp_d]
-value = -1.3e-07
+value = 4.035e-07
 unit = "J/(mol*K**4)"
 
 [components.1-methyl-1-ethylcyclohexane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.1-methyl-1-ethylcyclohexane.ionic_charge]
@@ -1403,23 +1403,23 @@ value = 0.274
 unit = "dimensionless"
 
 [components.1-methyl-2-propylcyclohexane.cp_a]
-value = 36.54003
+value = -65.868
 unit = "J/(mol*K)"
 
 [components.1-methyl-2-propylcyclohexane.cp_b]
-value = -0.034802404
+value = 1.04944
 unit = "J/(mol*K**2)"
 
 [components.1-methyl-2-propylcyclohexane.cp_c]
-value = 0.000116811
+value = -0.0005458
 unit = "J/(mol*K**3)"
 
 [components.1-methyl-2-propylcyclohexane.cp_d]
-value = -1.3e-07
+value = 8.92e-08
 unit = "J/(mol*K**4)"
 
 [components.1-methyl-2-propylcyclohexane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.1-methyl-2-propylcyclohexane.ionic_charge]
@@ -1463,23 +1463,23 @@ value = 0.334
 unit = "dimensionless"
 
 [components.1-methyl-2-propylcyclopentane.cp_a]
-value = 36.54003
+value = -59.838
 unit = "J/(mol*K)"
 
 [components.1-methyl-2-propylcyclopentane.cp_b]
-value = -0.034802404
+value = 0.96404
 unit = "J/(mol*K**2)"
 
 [components.1-methyl-2-propylcyclopentane.cp_c]
-value = 0.000116811
+value = -0.0005378
 unit = "J/(mol*K**3)"
 
 [components.1-methyl-2-propylcyclopentane.cp_d]
-value = -1.3e-07
+value = 1.072e-07
 unit = "J/(mol*K**4)"
 
 [components.1-methyl-2-propylcyclopentane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.1-methyl-2-propylcyclopentane.ionic_charge]
@@ -1523,23 +1523,23 @@ value = 0.2576
 unit = "dimensionless"
 
 [components.1-methylcyclohexene.cp_a]
-value = 36.54003
+value = -52.94
 unit = "J/(mol*K)"
 
 [components.1-methylcyclohexene.cp_b]
-value = -0.034802404
+value = 0.70192
 unit = "J/(mol*K**2)"
 
 [components.1-methylcyclohexene.cp_c]
-value = 0.000116811
+value = -0.00041364
 unit = "J/(mol*K**3)"
 
 [components.1-methylcyclohexene.cp_d]
-value = -1.3e-07
+value = 8.92e-08
 unit = "J/(mol*K**4)"
 
 [components.1-methylcyclohexene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.1-methylcyclohexene.ionic_charge]
@@ -1583,23 +1583,23 @@ value = 0.232
 unit = "dimensionless"
 
 [components.1-methylcyclopentene.cp_a]
-value = 36.54003
+value = -46.91
 unit = "J/(mol*K)"
 
 [components.1-methylcyclopentene.cp_b]
-value = -0.034802404
+value = 0.61652
 unit = "J/(mol*K**2)"
 
 [components.1-methylcyclopentene.cp_c]
-value = 0.000116811
+value = -0.00040564
 unit = "J/(mol*K**3)"
 
 [components.1-methylcyclopentene.cp_d]
-value = -1.3e-07
+value = 1.072e-07
 unit = "J/(mol*K**4)"
 
 [components.1-methylcyclopentene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.1-methylcyclopentene.ionic_charge]
@@ -1643,23 +1643,23 @@ value = 0.334
 unit = "dimensionless"
 
 [components.1-methylnaphthalene.cp_a]
-value = 36.54003
+value = -58.16
 unit = "J/(mol*K)"
 
 [components.1-methylnaphthalene.cp_b]
-value = -0.034802404
+value = 0.90672
 unit = "J/(mol*K**2)"
 
 [components.1-methylnaphthalene.cp_c]
-value = 0.000116811
+value = -0.00067548
 unit = "J/(mol*K**3)"
 
 [components.1-methylnaphthalene.cp_d]
-value = -1.3e-07
+value = 2.014e-07
 unit = "J/(mol*K**4)"
 
 [components.1-methylnaphthalene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.1-methylnaphthalene.ionic_charge]
@@ -1703,23 +1703,23 @@ value = 0.233
 unit = "dimensionless"
 
 [components.1-pentene.cp_a]
-value = 36.54003
+value = -4.648
 unit = "J/(mol*K)"
 
 [components.1-pentene.cp_b]
-value = -0.034802404
+value = 0.45882
 unit = "J/(mol*K**2)"
 
 [components.1-pentene.cp_c]
-value = 0.000116811
+value = -0.0002711
 unit = "J/(mol*K**3)"
 
 [components.1-pentene.cp_d]
-value = -1.3e-07
+value = 6.57e-08
 unit = "J/(mol*K**4)"
 
 [components.1-pentene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.1-pentene.ionic_charge]
@@ -2363,23 +2363,23 @@ value = 0.7799
 unit = "dimensionless"
 
 [components."2,2,3-trimethylhexane".cp_a]
-value = 36.54003
+value = -31.448
 unit = "J/(mol*K)"
 
 [components."2,2,3-trimethylhexane".cp_b]
-value = -0.034802404
+value = 0.9906
 unit = "J/(mol*K**2)"
 
 [components."2,2,3-trimethylhexane".cp_c]
-value = 0.000116811
+value = -0.0006408
 unit = "J/(mol*K**3)"
 
 [components."2,2,3-trimethylhexane".cp_d]
-value = -1.3e-07
+value = 1.673e-07
 unit = "J/(mol*K**4)"
 
 [components."2,2,3-trimethylhexane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,2,3-trimethylhexane".ionic_charge]
@@ -2423,23 +2423,23 @@ value = 0.297
 unit = "dimensionless"
 
 [components."2,2,3-trimethylpentane".cp_a]
-value = 36.54003
+value = -30.539
 unit = "J/(mol*K)"
 
 [components."2,2,3-trimethylpentane".cp_b]
-value = -0.034802404
+value = 0.8956
 unit = "J/(mol*K**2)"
 
 [components."2,2,3-trimethylpentane".cp_c]
-value = 0.000116811
+value = -0.0005864
 unit = "J/(mol*K**3)"
 
 [components."2,2,3-trimethylpentane".cp_d]
-value = -1.3e-07
+value = 1.554e-07
 unit = "J/(mol*K**4)"
 
 [components."2,2,3-trimethylpentane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,2,3-trimethylpentane".ionic_charge]
@@ -2483,23 +2483,23 @@ value = 0.389
 unit = "dimensionless"
 
 [components."2,2,4-trimethylheptane".cp_a]
-value = 36.54003
+value = -32.357
 unit = "J/(mol*K)"
 
 [components."2,2,4-trimethylheptane".cp_b]
-value = -0.034802404
+value = 1.0856
 unit = "J/(mol*K**2)"
 
 [components."2,2,4-trimethylheptane".cp_c]
-value = 0.000116811
+value = -0.0006952
 unit = "J/(mol*K**3)"
 
 [components."2,2,4-trimethylheptane".cp_d]
-value = -1.3e-07
+value = 1.792e-07
 unit = "J/(mol*K**4)"
 
 [components."2,2,4-trimethylheptane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,2,4-trimethylheptane".ionic_charge]
@@ -2543,23 +2543,23 @@ value = 0.357
 unit = "dimensionless"
 
 [components."2,2,5-trimethylhexane".cp_a]
-value = 36.54003
+value = -31.448
 unit = "J/(mol*K)"
 
 [components."2,2,5-trimethylhexane".cp_b]
-value = -0.034802404
+value = 0.9906
 unit = "J/(mol*K**2)"
 
 [components."2,2,5-trimethylhexane".cp_c]
-value = 0.000116811
+value = -0.0006408
 unit = "J/(mol*K**3)"
 
 [components."2,2,5-trimethylhexane".cp_d]
-value = -1.3e-07
+value = 1.673e-07
 unit = "J/(mol*K**4)"
 
 [components."2,2,5-trimethylhexane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,2,5-trimethylhexane".ionic_charge]
@@ -2603,23 +2603,23 @@ value = 0.419
 unit = "dimensionless"
 
 [components."2,2,6-trimethyloctane".cp_a]
-value = 36.54003
+value = -33.266
 unit = "J/(mol*K)"
 
 [components."2,2,6-trimethyloctane".cp_b]
-value = -0.034802404
+value = 1.1806
 unit = "J/(mol*K**2)"
 
 [components."2,2,6-trimethyloctane".cp_c]
-value = 0.000116811
+value = -0.0007496
 unit = "J/(mol*K**3)"
 
 [components."2,2,6-trimethyloctane".cp_d]
-value = -1.3e-07
+value = 1.911e-07
 unit = "J/(mol*K**4)"
 
 [components."2,2,6-trimethyloctane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,2,6-trimethyloctane".ionic_charge]
@@ -2663,23 +2663,23 @@ value = 0.429
 unit = "dimensionless"
 
 [components."2,2-dimethyloctane".cp_a]
-value = 36.54003
+value = -30.675
 unit = "J/(mol*K)"
 
 [components."2,2-dimethyloctane".cp_b]
-value = -0.034802404
+value = 1.07968
 unit = "J/(mol*K**2)"
 
 [components."2,2-dimethyloctane".cp_c]
-value = 0.000116811
+value = -0.000692
 unit = "J/(mol*K**3)"
 
 [components."2,2-dimethyloctane".cp_d]
-value = -1.3e-07
+value = 1.797e-07
 unit = "J/(mol*K**4)"
 
 [components."2,2-dimethyloctane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,2-dimethyloctane".ionic_charge]
@@ -2723,23 +2723,23 @@ value = 0.192
 unit = "dimensionless"
 
 [components."2,3,3-trimethyl-1-butene".cp_a]
-value = 36.54003
+value = -30.63
 unit = "J/(mol*K)"
 
 [components."2,3,3-trimethyl-1-butene".cp_b]
-value = -0.034802404
+value = 0.77458
 unit = "J/(mol*K**2)"
 
 [components."2,3,3-trimethyl-1-butene".cp_c]
-value = 0.000116811
+value = -0.000554
 unit = "J/(mol*K**3)"
 
 [components."2,3,3-trimethyl-1-butene".cp_d]
-value = -1.3e-07
+value = 1.632e-07
 unit = "J/(mol*K**4)"
 
 [components."2,3,3-trimethyl-1-butene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,3,3-trimethyl-1-butene".ionic_charge]
@@ -2783,23 +2783,23 @@ value = 0.419
 unit = "dimensionless"
 
 [components."2,3,3-trimethyloctane".cp_a]
-value = 36.54003
+value = -33.266
 unit = "J/(mol*K)"
 
 [components."2,3,3-trimethyloctane".cp_b]
-value = -0.034802404
+value = 1.1806
 unit = "J/(mol*K**2)"
 
 [components."2,3,3-trimethyloctane".cp_c]
-value = 0.000116811
+value = -0.0007496
 unit = "J/(mol*K**3)"
 
 [components."2,3,3-trimethyloctane".cp_d]
-value = -1.3e-07
+value = 1.911e-07
 unit = "J/(mol*K**4)"
 
 [components."2,3,3-trimethyloctane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,3,3-trimethyloctane".ionic_charge]
@@ -2843,23 +2843,23 @@ value = 0.2867
 unit = "dimensionless"
 
 [components."2,3,3-trimethylpentane".cp_a]
-value = 36.54003
+value = -30.539
 unit = "J/(mol*K)"
 
 [components."2,3,3-trimethylpentane".cp_b]
-value = -0.034802404
+value = 0.8956
 unit = "J/(mol*K**2)"
 
 [components."2,3,3-trimethylpentane".cp_c]
-value = 0.000116811
+value = -0.0005864
 unit = "J/(mol*K**3)"
 
 [components."2,3,3-trimethylpentane".cp_d]
-value = -1.3e-07
+value = 1.554e-07
 unit = "J/(mol*K**4)"
 
 [components."2,3,3-trimethylpentane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,3,3-trimethylpentane".ionic_charge]
@@ -2903,23 +2903,23 @@ value = 0.28001368
 unit = "dimensionless"
 
 [components."2,3,4-trimethyl-1,4-pentadiene".cp_a]
-value = 36.54003
+value = -11.43
 unit = "J/(mol*K)"
 
 [components."2,3,4-trimethyl-1,4-pentadiene".cp_b]
-value = -0.034802404
+value = 0.72956
 unit = "J/(mol*K**2)"
 
 [components."2,3,4-trimethyl-1,4-pentadiene".cp_c]
-value = 0.000116811
+value = -0.000465
 unit = "J/(mol*K**3)"
 
 [components."2,3,4-trimethyl-1,4-pentadiene".cp_d]
-value = -1.3e-07
+value = 1.219e-07
 unit = "J/(mol*K**4)"
 
 [components."2,3,4-trimethyl-1,4-pentadiene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,3,4-trimethyl-1,4-pentadiene".ionic_charge]
@@ -2963,23 +2963,23 @@ value = 0.364
 unit = "dimensionless"
 
 [components."2,3,5-trimethylhexane".cp_a]
-value = 36.54003
+value = -10.339
 unit = "J/(mol*K)"
 
 [components."2,3,5-trimethylhexane".cp_b]
-value = -0.034802404
+value = 0.8766
 unit = "J/(mol*K**2)"
 
 [components."2,3,5-trimethylhexane".cp_c]
-value = 0.000116811
+value = -0.0004754
 unit = "J/(mol*K**3)"
 
 [components."2,3,5-trimethylhexane".cp_d]
-value = -1.3e-07
+value = 9.44e-08
 unit = "J/(mol*K**4)"
 
 [components."2,3,5-trimethylhexane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,3,5-trimethylhexane".ionic_charge]
@@ -3023,23 +3023,23 @@ value = 0.325
 unit = "dimensionless"
 
 [components."2,3-dimethyl-1-hexene".cp_a]
-value = 36.54003
+value = -8.748
 unit = "J/(mol*K)"
 
 [components."2,3-dimethyl-1-hexene".cp_b]
-value = -0.034802404
+value = 0.74966
 unit = "J/(mol*K**2)"
 
 [components."2,3-dimethyl-1-hexene".cp_c]
-value = 0.000116811
+value = -0.0004398
 unit = "J/(mol*K**3)"
 
 [components."2,3-dimethyl-1-hexene".cp_d]
-value = -1.3e-07
+value = 1.027e-07
 unit = "J/(mol*K**4)"
 
 [components."2,3-dimethyl-1-hexene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,3-dimethyl-1-hexene".ionic_charge]
@@ -3083,23 +3083,23 @@ value = 0.411
 unit = "dimensionless"
 
 [components."2,3-dimethyl-2-heptene".cp_a]
-value = 36.54003
+value = -18.857
 unit = "J/(mol*K)"
 
 [components."2,3-dimethyl-2-heptene".cp_b]
-value = -0.034802404
+value = 0.87868
 unit = "J/(mol*K**2)"
 
 [components."2,3-dimethyl-2-heptene".cp_c]
-value = 0.000116811
+value = -0.0005542
 unit = "J/(mol*K**3)"
 
 [components."2,3-dimethyl-2-heptene".cp_d]
-value = -1.3e-07
+value = 1.469e-07
 unit = "J/(mol*K**4)"
 
 [components."2,3-dimethyl-2-heptene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,3-dimethyl-2-heptene".ionic_charge]
@@ -3143,23 +3143,23 @@ value = 0.40175837
 unit = "dimensionless"
 
 [components."2,3-dimethyl-2-octene".cp_a]
-value = 36.54003
+value = -19.766
 unit = "J/(mol*K)"
 
 [components."2,3-dimethyl-2-octene".cp_b]
-value = -0.034802404
+value = 0.97368
 unit = "J/(mol*K**2)"
 
 [components."2,3-dimethyl-2-octene".cp_c]
-value = 0.000116811
+value = -0.0006086
 unit = "J/(mol*K**3)"
 
 [components."2,3-dimethyl-2-octene".cp_d]
-value = -1.3e-07
+value = 1.588e-07
 unit = "J/(mol*K**4)"
 
 [components."2,3-dimethyl-2-octene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,3-dimethyl-2-octene".ionic_charge]
@@ -3203,23 +3203,23 @@ value = 0.282
 unit = "dimensionless"
 
 [components."2,3-dimethyl-2-pentene".cp_a]
-value = 36.54003
+value = -17.039
 unit = "J/(mol*K)"
 
 [components."2,3-dimethyl-2-pentene".cp_b]
-value = -0.034802404
+value = 0.68868
 unit = "J/(mol*K**2)"
 
 [components."2,3-dimethyl-2-pentene".cp_c]
-value = 0.000116811
+value = -0.0004454
 unit = "J/(mol*K**3)"
 
 [components."2,3-dimethyl-2-pentene".cp_d]
-value = -1.3e-07
+value = 1.231e-07
 unit = "J/(mol*K**4)"
 
 [components."2,3-dimethyl-2-pentene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,3-dimethyl-2-pentene".ionic_charge]
@@ -3263,23 +3263,23 @@ value = 0.385
 unit = "dimensionless"
 
 [components."2,3-dimethylheptane".cp_a]
-value = 36.54003
+value = -8.657
 unit = "J/(mol*K)"
 
 [components."2,3-dimethylheptane".cp_b]
-value = -0.034802404
+value = 0.87068
 unit = "J/(mol*K**2)"
 
 [components."2,3-dimethylheptane".cp_c]
-value = 0.000116811
+value = -0.0004722
 unit = "J/(mol*K**3)"
 
 [components."2,3-dimethylheptane".cp_d]
-value = -1.3e-07
+value = 9.49e-08
 unit = "J/(mol*K**4)"
 
 [components."2,3-dimethylheptane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,3-dimethylheptane".ionic_charge]
@@ -3323,23 +3323,23 @@ value = 0.433
 unit = "dimensionless"
 
 [components."2,3-dimethyloctane".cp_a]
-value = 36.54003
+value = -9.566
 unit = "J/(mol*K)"
 
 [components."2,3-dimethyloctane".cp_b]
-value = -0.034802404
+value = 0.96568
 unit = "J/(mol*K**2)"
 
 [components."2,3-dimethyloctane".cp_c]
-value = 0.000116811
+value = -0.0005266
 unit = "J/(mol*K**3)"
 
 [components."2,3-dimethyloctane".cp_d]
-value = -1.3e-07
+value = 1.068e-07
 unit = "J/(mol*K**4)"
 
 [components."2,3-dimethyloctane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,3-dimethyloctane".ionic_charge]
@@ -3383,23 +3383,23 @@ value = 0.37012315
 unit = "dimensionless"
 
 [components."2,4-dimethyl-1-heptene".cp_a]
-value = 36.54003
+value = -9.657
 unit = "J/(mol*K)"
 
 [components."2,4-dimethyl-1-heptene".cp_b]
-value = -0.034802404
+value = 0.84466
 unit = "J/(mol*K**2)"
 
 [components."2,4-dimethyl-1-heptene".cp_c]
-value = 0.000116811
+value = -0.0004942
 unit = "J/(mol*K**3)"
 
 [components."2,4-dimethyl-1-heptene".cp_d]
-value = -1.3e-07
+value = 1.146e-07
 unit = "J/(mol*K**4)"
 
 [components."2,4-dimethyl-1-heptene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,4-dimethyl-1-heptene".ionic_charge]
@@ -3443,23 +3443,23 @@ value = 0.39
 unit = "dimensionless"
 
 [components."2,4-dimethylheptane".cp_a]
-value = 36.54003
+value = -8.657
 unit = "J/(mol*K)"
 
 [components."2,4-dimethylheptane".cp_b]
-value = -0.034802404
+value = 0.87068
 unit = "J/(mol*K**2)"
 
 [components."2,4-dimethylheptane".cp_c]
-value = 0.000116811
+value = -0.0004722
 unit = "J/(mol*K**3)"
 
 [components."2,4-dimethylheptane".cp_d]
-value = -1.3e-07
+value = 9.49e-08
 unit = "J/(mol*K**4)"
 
 [components."2,4-dimethylheptane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,4-dimethylheptane".ionic_charge]
@@ -3503,23 +3503,23 @@ value = 0.435
 unit = "dimensionless"
 
 [components."2,4-dimethyloctane".cp_a]
-value = 36.54003
+value = -9.566
 unit = "J/(mol*K)"
 
 [components."2,4-dimethyloctane".cp_b]
-value = -0.034802404
+value = 0.96568
 unit = "J/(mol*K**2)"
 
 [components."2,4-dimethyloctane".cp_c]
-value = 0.000116811
+value = -0.0005266
 unit = "J/(mol*K**3)"
 
 [components."2,4-dimethyloctane".cp_d]
-value = -1.3e-07
+value = 1.068e-07
 unit = "J/(mol*K**4)"
 
 [components."2,4-dimethyloctane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,4-dimethyloctane".ionic_charge]
@@ -3563,23 +3563,23 @@ value = 0.449
 unit = "dimensionless"
 
 [components."2,5,6-trimethyloctane".cp_a]
-value = 36.54003
+value = -12.157
 unit = "J/(mol*K)"
 
 [components."2,5,6-trimethyloctane".cp_b]
-value = -0.034802404
+value = 1.0666
 unit = "J/(mol*K**2)"
 
 [components."2,5,6-trimethyloctane".cp_c]
-value = 0.000116811
+value = -0.0005842
 unit = "J/(mol*K**3)"
 
 [components."2,5,6-trimethyloctane".cp_d]
-value = -1.3e-07
+value = 1.182e-07
 unit = "J/(mol*K**4)"
 
 [components."2,5,6-trimethyloctane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,5,6-trimethyloctane".ionic_charge]
@@ -3623,23 +3623,23 @@ value = 0.393
 unit = "dimensionless"
 
 [components."2,5-dimethylheptane".cp_a]
-value = 36.54003
+value = -8.657
 unit = "J/(mol*K)"
 
 [components."2,5-dimethylheptane".cp_b]
-value = -0.034802404
+value = 0.87068
 unit = "J/(mol*K**2)"
 
 [components."2,5-dimethylheptane".cp_c]
-value = 0.000116811
+value = -0.0004722
 unit = "J/(mol*K**3)"
 
 [components."2,5-dimethylheptane".cp_d]
-value = -1.3e-07
+value = 9.49e-08
 unit = "J/(mol*K**4)"
 
 [components."2,5-dimethylheptane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,5-dimethylheptane".ionic_charge]
@@ -3683,23 +3683,23 @@ value = 0.44
 unit = "dimensionless"
 
 [components."2,5-dimethyloctane".cp_a]
-value = 36.54003
+value = -9.566
 unit = "J/(mol*K)"
 
 [components."2,5-dimethyloctane".cp_b]
-value = -0.034802404
+value = 0.96568
 unit = "J/(mol*K**2)"
 
 [components."2,5-dimethyloctane".cp_c]
-value = 0.000116811
+value = -0.0005266
 unit = "J/(mol*K**3)"
 
 [components."2,5-dimethyloctane".cp_d]
-value = -1.3e-07
+value = 1.068e-07
 unit = "J/(mol*K**4)"
 
 [components."2,5-dimethyloctane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,5-dimethyloctane".ionic_charge]
@@ -3743,23 +3743,23 @@ value = 0.411
 unit = "dimensionless"
 
 [components."2,6-dimethyl-3-heptene".cp_a]
-value = 36.54003
+value = -22.839
 unit = "J/(mol*K)"
 
 [components."2,6-dimethyl-3-heptene".cp_b]
-value = -0.034802404
+value = 0.89068
 unit = "J/(mol*K**2)"
 
 [components."2,6-dimethyl-3-heptene".cp_c]
-value = 0.000116811
+value = -0.000556
 unit = "J/(mol*K**3)"
 
 [components."2,6-dimethyl-3-heptene".cp_d]
-value = -1.3e-07
+value = 1.423e-07
 unit = "J/(mol*K**4)"
 
 [components."2,6-dimethyl-3-heptene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,6-dimethyl-3-heptene".ionic_charge]
@@ -3803,23 +3803,23 @@ value = 0.4442
 unit = "dimensionless"
 
 [components."2,6-dimethyloctane".cp_a]
-value = 36.54003
+value = -9.566
 unit = "J/(mol*K)"
 
 [components."2,6-dimethyloctane".cp_b]
-value = -0.034802404
+value = 0.96568
 unit = "J/(mol*K**2)"
 
 [components."2,6-dimethyloctane".cp_c]
-value = 0.000116811
+value = -0.0005266
 unit = "J/(mol*K**3)"
 
 [components."2,6-dimethyloctane".cp_d]
-value = -1.3e-07
+value = 1.068e-07
 unit = "J/(mol*K**4)"
 
 [components."2,6-dimethyloctane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,6-dimethyloctane".ionic_charge]
@@ -3863,23 +3863,23 @@ value = 0.4459
 unit = "dimensionless"
 
 [components."2,7-dimethyloctane".cp_a]
-value = 36.54003
+value = -9.566
 unit = "J/(mol*K)"
 
 [components."2,7-dimethyloctane".cp_b]
-value = -0.034802404
+value = 0.96568
 unit = "J/(mol*K**2)"
 
 [components."2,7-dimethyloctane".cp_c]
-value = 0.000116811
+value = -0.0005266
 unit = "J/(mol*K**3)"
 
 [components."2,7-dimethyloctane".cp_d]
-value = -1.3e-07
+value = 1.068e-07
 unit = "J/(mol*K**4)"
 
 [components."2,7-dimethyloctane".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2,7-dimethyloctane".ionic_charge]
@@ -3983,23 +3983,23 @@ value = 0.4359
 unit = "dimensionless"
 
 [components."2-ethyl-1,3-dimethylbenzene".cp_a]
-value = 36.54003
+value = -11.509
 unit = "J/(mol*K)"
 
 [components."2-ethyl-1,3-dimethylbenzene".cp_b]
-value = -0.034802404
+value = 0.75596
 unit = "J/(mol*K**2)"
 
 [components."2-ethyl-1,3-dimethylbenzene".cp_c]
-value = 0.000116811
+value = -0.00041732
 unit = "J/(mol*K**3)"
 
 [components."2-ethyl-1,3-dimethylbenzene".cp_d]
-value = -1.3e-07
+value = 8.35e-08
 unit = "J/(mol*K**4)"
 
 [components."2-ethyl-1,3-dimethylbenzene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."2-ethyl-1,3-dimethylbenzene".ionic_charge]
@@ -4043,23 +4043,23 @@ value = 0.299
 unit = "dimensionless"
 
 [components.2-hexene.cp_a]
-value = 36.54003
+value = -16.748
 unit = "J/(mol*K)"
 
 [components.2-hexene.cp_b]
-value = -0.034802404
+value = 0.59384
 unit = "J/(mol*K**2)"
 
 [components.2-hexene.cp_c]
-value = 0.000116811
+value = -0.0003864
 unit = "J/(mol*K**3)"
 
 [components.2-hexene.cp_d]
-value = -1.3e-07
+value = 1.076e-07
 unit = "J/(mol*K**4)"
 
 [components.2-hexene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.2-hexene.ionic_charge]
@@ -4343,23 +4343,23 @@ value = 0.232
 unit = "dimensionless"
 
 [components.2-methyl-1-butene.cp_a]
-value = 36.54003
+value = -4.339
 unit = "J/(mol*K)"
 
 [components.2-methyl-1-butene.cp_b]
-value = -0.034802404
+value = 0.45874
 unit = "J/(mol*K**2)"
 
 [components.2-methyl-1-butene.cp_c]
-value = 0.000116811
+value = -0.0002734
 unit = "J/(mol*K**3)"
 
 [components.2-methyl-1-butene.cp_d]
-value = -1.3e-07
+value = 6.75e-08
 unit = "J/(mol*K**4)"
 
 [components.2-methyl-1-butene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.2-methyl-1-butene.ionic_charge]
@@ -4403,23 +4403,23 @@ value = 0.355
 unit = "dimensionless"
 
 [components.2-methyl-1-heptene.cp_a]
-value = 36.54003
+value = -7.066
 unit = "J/(mol*K)"
 
 [components.2-methyl-1-heptene.cp_b]
-value = -0.034802404
+value = 0.74374
 unit = "J/(mol*K**2)"
 
 [components.2-methyl-1-heptene.cp_c]
-value = 0.000116811
+value = -0.0004366
 unit = "J/(mol*K**3)"
 
 [components.2-methyl-1-heptene.cp_d]
-value = -1.3e-07
+value = 1.032e-07
 unit = "J/(mol*K**4)"
 
 [components.2-methyl-1-heptene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.2-methyl-1-heptene.ionic_charge]
@@ -4463,23 +4463,23 @@ value = 0.309
 unit = "dimensionless"
 
 [components.2-methyl-1-hexene.cp_a]
-value = 36.54003
+value = -6.157
 unit = "J/(mol*K)"
 
 [components.2-methyl-1-hexene.cp_b]
-value = -0.034802404
+value = 0.64874
 unit = "J/(mol*K**2)"
 
 [components.2-methyl-1-hexene.cp_c]
-value = 0.000116811
+value = -0.0003822
 unit = "J/(mol*K**3)"
 
 [components.2-methyl-1-hexene.cp_d]
-value = -1.3e-07
+value = 9.13e-08
 unit = "J/(mol*K**4)"
 
 [components.2-methyl-1-hexene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.2-methyl-1-hexene.ionic_charge]
@@ -4523,23 +4523,23 @@ value = 0.274
 unit = "dimensionless"
 
 [components.2-methyl-1-pentene.cp_a]
-value = 36.54003
+value = -5.248
 unit = "J/(mol*K)"
 
 [components.2-methyl-1-pentene.cp_b]
-value = -0.034802404
+value = 0.55374
 unit = "J/(mol*K**2)"
 
 [components.2-methyl-1-pentene.cp_c]
-value = 0.000116811
+value = -0.0003278
 unit = "J/(mol*K**3)"
 
 [components.2-methyl-1-pentene.cp_d]
-value = -1.3e-07
+value = 7.94e-08
 unit = "J/(mol*K**4)"
 
 [components.2-methyl-1-pentene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.2-methyl-1-pentene.ionic_charge]
@@ -4583,23 +4583,23 @@ value = 0.285
 unit = "dimensionless"
 
 [components.2-methyl-2-butene.cp_a]
-value = 36.54003
+value = -15.53
 unit = "J/(mol*K)"
 
 [components.2-methyl-2-butene.cp_b]
-value = -0.034802404
+value = 0.49876
 unit = "J/(mol*K**2)"
 
 [components.2-methyl-2-butene.cp_c]
-value = 0.000116811
+value = -0.0003343
 unit = "J/(mol*K**3)"
 
 [components.2-methyl-2-butene.cp_d]
-value = -1.3e-07
+value = 9.75e-08
 unit = "J/(mol*K**4)"
 
 [components.2-methyl-2-butene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.2-methyl-2-butene.ionic_charge]
@@ -4643,23 +4643,23 @@ value = 0.307
 unit = "dimensionless"
 
 [components.2-methyl-2-hexene.cp_a]
-value = 36.54003
+value = -17.348
 unit = "J/(mol*K)"
 
 [components.2-methyl-2-hexene.cp_b]
-value = -0.034802404
+value = 0.68876
 unit = "J/(mol*K**2)"
 
 [components.2-methyl-2-hexene.cp_c]
-value = 0.000116811
+value = -0.0004431
 unit = "J/(mol*K**3)"
 
 [components.2-methyl-2-hexene.cp_d]
-value = -1.3e-07
+value = 1.213e-07
 unit = "J/(mol*K**4)"
 
 [components.2-methyl-2-hexene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.2-methyl-2-hexene.ionic_charge]
@@ -4703,23 +4703,23 @@ value = 0.49009629
 unit = "dimensionless"
 
 [components.2-methyl-2-octene.cp_a]
-value = 36.54003
+value = -19.166
 unit = "J/(mol*K)"
 
 [components.2-methyl-2-octene.cp_b]
-value = -0.034802404
+value = 0.87876
 unit = "J/(mol*K**2)"
 
 [components.2-methyl-2-octene.cp_c]
-value = 0.000116811
+value = -0.0005519
 unit = "J/(mol*K**3)"
 
 [components.2-methyl-2-octene.cp_d]
-value = -1.3e-07
+value = 1.451e-07
 unit = "J/(mol*K**4)"
 
 [components.2-methyl-2-octene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.2-methyl-2-octene.ionic_charge]
@@ -4763,23 +4763,23 @@ value = 0.229
 unit = "dimensionless"
 
 [components.2-methyl-2-pentene.cp_a]
-value = 36.54003
+value = -16.439
 unit = "J/(mol*K)"
 
 [components.2-methyl-2-pentene.cp_b]
-value = -0.034802404
+value = 0.59376
 unit = "J/(mol*K**2)"
 
 [components.2-methyl-2-pentene.cp_c]
-value = 0.000116811
+value = -0.0003887
 unit = "J/(mol*K**3)"
 
 [components.2-methyl-2-pentene.cp_d]
-value = -1.3e-07
+value = 1.094e-07
 unit = "J/(mol*K**4)"
 
 [components.2-methyl-2-pentene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.2-methyl-2-pentene.ionic_charge]
@@ -4823,23 +4823,23 @@ value = 0.3464
 unit = "dimensionless"
 
 [components.2-methylnaphthalene.cp_a]
-value = 36.54003
+value = -58.16
 unit = "J/(mol*K)"
 
 [components.2-methylnaphthalene.cp_b]
-value = -0.034802404
+value = 0.90672
 unit = "J/(mol*K**2)"
 
 [components.2-methylnaphthalene.cp_c]
-value = 0.000116811
+value = -0.00067548
 unit = "J/(mol*K**3)"
 
 [components.2-methylnaphthalene.cp_d]
-value = -1.3e-07
+value = 2.014e-07
 unit = "J/(mol*K**4)"
 
 [components.2-methylnaphthalene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.2-methylnaphthalene.ionic_charge]
@@ -5783,23 +5783,23 @@ value = 0.1207
 unit = "dimensionless"
 
 [components."3,3-dimethyl-1-butene".cp_a]
-value = 36.54003
+value = -30.03
 unit = "J/(mol*K)"
 
 [components."3,3-dimethyl-1-butene".cp_b]
-value = -0.034802404
+value = 0.67966
 unit = "J/(mol*K**2)"
 
 [components."3,3-dimethyl-1-butene".cp_c]
-value = 0.000116811
+value = -0.0004973
 unit = "J/(mol*K**3)"
 
 [components."3,3-dimethyl-1-butene".cp_d]
-value = -1.3e-07
+value = 1.495e-07
 unit = "J/(mol*K**4)"
 
 [components."3,3-dimethyl-1-butene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."3,3-dimethyl-1-butene".ionic_charge]
@@ -5843,23 +5843,23 @@ value = 0.253
 unit = "dimensionless"
 
 [components."3,3-dimethyl-1-pentene".cp_a]
-value = 36.54003
+value = -30.939
 unit = "J/(mol*K)"
 
 [components."3,3-dimethyl-1-pentene".cp_b]
-value = -0.034802404
+value = 0.77466
 unit = "J/(mol*K**2)"
 
 [components."3,3-dimethyl-1-pentene".cp_c]
-value = 0.000116811
+value = -0.0005517
 unit = "J/(mol*K**3)"
 
 [components."3,3-dimethyl-1-pentene".cp_d]
-value = -1.3e-07
+value = 1.614e-07
 unit = "J/(mol*K**4)"
 
 [components."3,3-dimethyl-1-pentene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."3,3-dimethyl-1-pentene".ionic_charge]
@@ -5903,23 +5903,23 @@ value = 0.36005516
 unit = "dimensionless"
 
 [components."3,5-dimethyl-3-heptene".cp_a]
-value = 36.54003
+value = -20.848
 unit = "J/(mol*K)"
 
 [components."3,5-dimethyl-3-heptene".cp_b]
-value = -0.034802404
+value = 0.88468
 unit = "J/(mol*K**2)"
 
 [components."3,5-dimethyl-3-heptene".cp_c]
-value = 0.000116811
+value = -0.0005551
 unit = "J/(mol*K**3)"
 
 [components."3,5-dimethyl-3-heptene".cp_d]
-value = -1.3e-07
+value = 1.446e-07
 unit = "J/(mol*K**4)"
 
 [components."3,5-dimethyl-3-heptene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."3,5-dimethyl-3-heptene".ionic_charge]
@@ -5963,23 +5963,23 @@ value = 0.091511693
 unit = "dimensionless"
 
 [components."3,5-dimethylcyclopentene".cp_a]
-value = 36.54003
+value = -50.24
 unit = "J/(mol*K)"
 
 [components."3,5-dimethylcyclopentene".cp_b]
-value = -0.034802404
+value = 0.71804
 unit = "J/(mol*K**2)"
 
 [components."3,5-dimethylcyclopentene".cp_c]
-value = 0.000116811
+value = -0.00041628
 unit = "J/(mol*K**3)"
 
 [components."3,5-dimethylcyclopentene".cp_d]
-value = -1.3e-07
+value = 8.76e-08
 unit = "J/(mol*K**4)"
 
 [components."3,5-dimethylcyclopentene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."3,5-dimethylcyclopentene".ionic_charge]
@@ -6083,23 +6083,23 @@ value = 0.307
 unit = "dimensionless"
 
 [components.3-ethyl-2-pentene.cp_a]
-value = 36.54003
+value = -17.348
 unit = "J/(mol*K)"
 
 [components.3-ethyl-2-pentene.cp_b]
-value = -0.034802404
+value = 0.68876
 unit = "J/(mol*K**2)"
 
 [components.3-ethyl-2-pentene.cp_c]
-value = 0.000116811
+value = -0.0004431
 unit = "J/(mol*K**3)"
 
 [components.3-ethyl-2-pentene.cp_d]
-value = -1.3e-07
+value = 1.213e-07
 unit = "J/(mol*K**4)"
 
 [components.3-ethyl-2-pentene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.3-ethyl-2-pentene.ionic_charge]
@@ -6143,23 +6143,23 @@ value = 0.351
 unit = "dimensionless"
 
 [components.3-ethyl-3-hexene.cp_a]
-value = 36.54003
+value = -18.257
 unit = "J/(mol*K)"
 
 [components.3-ethyl-3-hexene.cp_b]
-value = -0.034802404
+value = 0.78376
 unit = "J/(mol*K**2)"
 
 [components.3-ethyl-3-hexene.cp_c]
-value = 0.000116811
+value = -0.0004975
 unit = "J/(mol*K**3)"
 
 [components.3-ethyl-3-hexene.cp_d]
-value = -1.3e-07
+value = 1.332e-07
 unit = "J/(mol*K**4)"
 
 [components.3-ethyl-3-hexene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.3-ethyl-3-hexene.ionic_charge]
@@ -6203,23 +6203,23 @@ value = 0.27
 unit = "dimensionless"
 
 [components.3-ethylcyclopentene.cp_a]
-value = 36.54003
+value = -56.179
 unit = "J/(mol*K)"
 
 [components.3-ethylcyclopentene.cp_b]
-value = -0.034802404
+value = 0.74452
 unit = "J/(mol*K**2)"
 
 [components.3-ethylcyclopentene.cp_c]
-value = 0.000116811
+value = -0.00047168
 unit = "J/(mol*K**3)"
 
 [components.3-ethylcyclopentene.cp_d]
-value = -1.3e-07
+value = 1.158e-07
 unit = "J/(mol*K**4)"
 
 [components.3-ethylcyclopentene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.3-ethylcyclopentene.ionic_charge]
@@ -6263,23 +6263,23 @@ value = 0.408
 unit = "dimensionless"
 
 [components.3-ethylheptane.cp_a]
-value = 36.54003
+value = -6.975
 unit = "J/(mol*K)"
 
 [components.3-ethylheptane.cp_b]
-value = -0.034802404
+value = 0.86476
 unit = "J/(mol*K**2)"
 
 [components.3-ethylheptane.cp_c]
-value = 0.000116811
+value = -0.000469
 unit = "J/(mol*K**3)"
 
 [components.3-ethylheptane.cp_d]
-value = -1.3e-07
+value = 9.54e-08
 unit = "J/(mol*K**4)"
 
 [components.3-ethylheptane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.3-ethylheptane.ionic_charge]
@@ -6323,23 +6323,23 @@ value = 0.507
 unit = "dimensionless"
 
 [components.3-ethylnonane.cp_a]
-value = 36.54003
+value = -8.793
 unit = "J/(mol*K)"
 
 [components.3-ethylnonane.cp_b]
-value = -0.034802404
+value = 1.05476
 unit = "J/(mol*K**2)"
 
 [components.3-ethylnonane.cp_c]
-value = 0.000116811
+value = -0.0005778
 unit = "J/(mol*K**3)"
 
 [components.3-ethylnonane.cp_d]
-value = -1.3e-07
+value = 1.192e-07
 unit = "J/(mol*K**4)"
 
 [components.3-ethylnonane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.3-ethylnonane.ionic_charge]
@@ -6383,23 +6383,23 @@ value = 0.446
 unit = "dimensionless"
 
 [components.3-ethyloctane.cp_a]
-value = 36.54003
+value = -7.884
 unit = "J/(mol*K)"
 
 [components.3-ethyloctane.cp_b]
-value = -0.034802404
+value = 0.95976
 unit = "J/(mol*K**2)"
 
 [components.3-ethyloctane.cp_c]
-value = 0.000116811
+value = -0.0005234
 unit = "J/(mol*K**3)"
 
 [components.3-ethyloctane.cp_d]
-value = -1.3e-07
+value = 1.073e-07
 unit = "J/(mol*K**4)"
 
 [components.3-ethyloctane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.3-ethyloctane.ionic_charge]
@@ -6443,23 +6443,23 @@ value = 0.31
 unit = "dimensionless"
 
 [components.3-ethylpentane.cp_a]
-value = 36.54003
+value = -5.157
 unit = "J/(mol*K)"
 
 [components.3-ethylpentane.cp_b]
-value = -0.034802404
+value = 0.67476
 unit = "J/(mol*K**2)"
 
 [components.3-ethylpentane.cp_c]
-value = 0.000116811
+value = -0.0003602
 unit = "J/(mol*K**3)"
 
 [components.3-ethylpentane.cp_d]
-value = -1.3e-07
+value = 7.16e-08
 unit = "J/(mol*K**4)"
 
 [components.3-ethylpentane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.3-ethylpentane.ionic_charge]
@@ -6863,23 +6863,23 @@ value = 0.306
 unit = "dimensionless"
 
 [components.3-methyl-1-hexene.cp_a]
-value = 36.54003
+value = -8.148
 unit = "J/(mol*K)"
 
 [components.3-methyl-1-hexene.cp_b]
-value = -0.034802404
+value = 0.65474
 unit = "J/(mol*K**2)"
 
 [components.3-methyl-1-hexene.cp_c]
-value = 0.000116811
+value = -0.0003831
 unit = "J/(mol*K**3)"
 
 [components.3-methyl-1-hexene.cp_d]
-value = -1.3e-07
+value = 8.9e-08
 unit = "J/(mol*K**4)"
 
 [components.3-methyl-1-hexene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.3-methyl-1-hexene.ionic_charge]
@@ -6923,23 +6923,23 @@ value = 0.264
 unit = "dimensionless"
 
 [components.3-methyl-1-pentene.cp_a]
-value = 36.54003
+value = -7.239
 unit = "J/(mol*K)"
 
 [components.3-methyl-1-pentene.cp_b]
-value = -0.034802404
+value = 0.55974
 unit = "J/(mol*K**2)"
 
 [components.3-methyl-1-pentene.cp_c]
-value = 0.000116811
+value = -0.0003287
 unit = "J/(mol*K**3)"
 
 [components.3-methyl-1-pentene.cp_d]
-value = -1.3e-07
+value = 7.71e-08
 unit = "J/(mol*K**4)"
 
 [components.3-methyl-1-pentene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.3-methyl-1-pentene.ionic_charge]
@@ -6983,23 +6983,23 @@ value = 0.33690735
 unit = "dimensionless"
 
 [components.3-methyl-2-hexene.cp_a]
-value = 36.54003
+value = -17.348
 unit = "J/(mol*K)"
 
 [components.3-methyl-2-hexene.cp_b]
-value = -0.034802404
+value = 0.68876
 unit = "J/(mol*K**2)"
 
 [components.3-methyl-2-hexene.cp_c]
-value = 0.000116811
+value = -0.0004431
 unit = "J/(mol*K**3)"
 
 [components.3-methyl-2-hexene.cp_d]
-value = -1.3e-07
+value = 1.213e-07
 unit = "J/(mol*K**4)"
 
 [components.3-methyl-2-hexene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.3-methyl-2-hexene.ionic_charge]
@@ -7043,23 +7043,23 @@ value = 0.465
 unit = "dimensionless"
 
 [components.3-methylnonane.cp_a]
-value = 36.54003
+value = -7.884
 unit = "J/(mol*K)"
 
 [components.3-methylnonane.cp_b]
-value = -0.034802404
+value = 0.95976
 unit = "J/(mol*K**2)"
 
 [components.3-methylnonane.cp_c]
-value = 0.000116811
+value = -0.0005234
 unit = "J/(mol*K**3)"
 
 [components.3-methylnonane.cp_d]
-value = -1.3e-07
+value = 1.073e-07
 unit = "J/(mol*K**4)"
 
 [components.3-methylnonane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.3-methylnonane.ionic_charge]
@@ -7223,23 +7223,23 @@ value = 0.416
 unit = "dimensionless"
 
 [components.4-ethylheptane.cp_a]
-value = 36.54003
+value = -6.975
 unit = "J/(mol*K)"
 
 [components.4-ethylheptane.cp_b]
-value = -0.034802404
+value = 0.86476
 unit = "J/(mol*K**2)"
 
 [components.4-ethylheptane.cp_c]
-value = 0.000116811
+value = -0.000469
 unit = "J/(mol*K**3)"
 
 [components.4-ethylheptane.cp_d]
-value = -1.3e-07
+value = 9.54e-08
 unit = "J/(mol*K**4)"
 
 [components.4-ethylheptane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.4-ethylheptane.ionic_charge]
@@ -7343,23 +7343,23 @@ value = 0.302
 unit = "dimensionless"
 
 [components.4-methyl-1-hexene.cp_a]
-value = 36.54003
+value = -8.148
 unit = "J/(mol*K)"
 
 [components.4-methyl-1-hexene.cp_b]
-value = -0.034802404
+value = 0.65474
 unit = "J/(mol*K**2)"
 
 [components.4-methyl-1-hexene.cp_c]
-value = 0.000116811
+value = -0.0003831
 unit = "J/(mol*K**3)"
 
 [components.4-methyl-1-hexene.cp_d]
-value = -1.3e-07
+value = 8.9e-08
 unit = "J/(mol*K**4)"
 
 [components.4-methyl-1-hexene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.4-methyl-1-hexene.ionic_charge]
@@ -7403,23 +7403,23 @@ value = 0.369
 unit = "dimensionless"
 
 [components.4-methylheptane.cp_a]
-value = 36.54003
+value = -6.066
 unit = "J/(mol*K)"
 
 [components.4-methylheptane.cp_b]
-value = -0.034802404
+value = 0.76976
 unit = "J/(mol*K**2)"
 
 [components.4-methylheptane.cp_c]
-value = 0.000116811
+value = -0.0004146
 unit = "J/(mol*K**3)"
 
 [components.4-methylheptane.cp_d]
-value = -1.3e-07
+value = 8.35e-08
 unit = "J/(mol*K**4)"
 
 [components.4-methylheptane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.4-methylheptane.ionic_charge]
@@ -7463,23 +7463,23 @@ value = 0.465
 unit = "dimensionless"
 
 [components.4-methylnonane.cp_a]
-value = 36.54003
+value = -7.884
 unit = "J/(mol*K)"
 
 [components.4-methylnonane.cp_b]
-value = -0.034802404
+value = 0.95976
 unit = "J/(mol*K**2)"
 
 [components.4-methylnonane.cp_c]
-value = 0.000116811
+value = -0.0005234
 unit = "J/(mol*K**3)"
 
 [components.4-methylnonane.cp_d]
-value = -1.3e-07
+value = 1.073e-07
 unit = "J/(mol*K**4)"
 
 [components.4-methylnonane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.4-methylnonane.ionic_charge]
@@ -7523,23 +7523,23 @@ value = 0.424
 unit = "dimensionless"
 
 [components.5-ethyltetralin.cp_a]
-value = 36.54003
+value = -74.629
 unit = "J/(mol*K)"
 
 [components.5-ethyltetralin.cp_b]
-value = -0.034802404
+value = 1.11372
 unit = "J/(mol*K**2)"
 
 [components.5-ethyltetralin.cp_c]
-value = 0.000116811
+value = -0.00075532
 unit = "J/(mol*K**3)"
 
 [components.5-ethyltetralin.cp_d]
-value = -1.3e-07
+value = 2.049e-07
 unit = "J/(mol*K**4)"
 
 [components.5-ethyltetralin.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.5-ethyltetralin.ionic_charge]
@@ -7583,23 +7583,23 @@ value = 0.328
 unit = "dimensionless"
 
 [components.5-methyl-3-heptene.cp_a]
-value = 36.54003
+value = -20.248
 unit = "J/(mol*K)"
 
 [components.5-methyl-3-heptene.cp_b]
-value = -0.034802404
+value = 0.78976
 unit = "J/(mol*K**2)"
 
 [components.5-methyl-3-heptene.cp_c]
-value = 0.000116811
+value = -0.0004984
 unit = "J/(mol*K**3)"
 
 [components.5-methyl-3-heptene.cp_d]
-value = -1.3e-07
+value = 1.309e-07
 unit = "J/(mol*K**4)"
 
 [components.5-methyl-3-heptene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.5-methyl-3-heptene.ionic_charge]
@@ -7643,23 +7643,23 @@ value = 0.28866083
 unit = "dimensionless"
 
 [components.5-methyl-3-heptyne.cp_a]
-value = 36.54003
+value = 11.492
 unit = "J/(mol*K)"
 
 [components.5-methyl-3-heptyne.cp_b]
-value = -0.034802404
+value = 0.61996
 unit = "J/(mol*K**2)"
 
 [components.5-methyl-3-heptyne.cp_c]
-value = 0.000116811
+value = -0.00032246
 unit = "J/(mol*K**3)"
 
 [components.5-methyl-3-heptyne.cp_d]
-value = -1.3e-07
+value = 6.248e-08
 unit = "J/(mol*K**4)"
 
 [components.5-methyl-3-heptyne.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.5-methyl-3-heptyne.ionic_charge]
@@ -7703,23 +7703,23 @@ value = 0.456
 unit = "dimensionless"
 
 [components.5-methylnonane.cp_a]
-value = 36.54003
+value = -7.884
 unit = "J/(mol*K)"
 
 [components.5-methylnonane.cp_b]
-value = -0.034802404
+value = 0.95976
 unit = "J/(mol*K**2)"
 
 [components.5-methylnonane.cp_c]
-value = 0.000116811
+value = -0.0005234
 unit = "J/(mol*K**3)"
 
 [components.5-methylnonane.cp_d]
-value = -1.3e-07
+value = 1.073e-07
 unit = "J/(mol*K**4)"
 
 [components.5-methylnonane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.5-methylnonane.ionic_charge]
@@ -7763,23 +7763,23 @@ value = 0.504
 unit = "dimensionless"
 
 [components.5-undecene.cp_a]
-value = 36.54003
+value = -21.293
 unit = "J/(mol*K)"
 
 [components.5-undecene.cp_b]
-value = -0.034802404
+value = 1.06884
 unit = "J/(mol*K**2)"
 
 [components.5-undecene.cp_c]
-value = 0.000116811
+value = -0.0006584
 unit = "J/(mol*K**3)"
 
 [components.5-undecene.cp_d]
-value = -1.3e-07
+value = 1.671e-07
 unit = "J/(mol*K**4)"
 
 [components.5-undecene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.5-undecene.ionic_charge]
@@ -8243,23 +8243,23 @@ value = 0.403
 unit = "dimensionless"
 
 [components.biphenyl.cp_a]
-value = 36.54003
+value = -75.83
 unit = "J/(mol*K)"
 
 [components.biphenyl.cp_b]
-value = -0.034802404
+value = 0.986
 unit = "J/(mol*K**2)"
 
 [components.biphenyl.cp_c]
-value = 0.000116811
+value = -0.0006914
 unit = "J/(mol*K**3)"
 
 [components.biphenyl.cp_d]
-value = -1.3e-07
+value = 1.826e-07
 unit = "J/(mol*K**4)"
 
 [components.biphenyl.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.biphenyl.ionic_charge]
@@ -8363,23 +8363,23 @@ value = 0.392
 unit = "dimensionless"
 
 [components.butylbenzene.cp_a]
-value = 36.54003
+value = -40.107
 unit = "J/(mol*K)"
 
 [components.butylbenzene.cp_b]
-value = -0.034802404
+value = 0.87492
 unit = "J/(mol*K**2)"
 
 [components.butylbenzene.cp_c]
-value = 0.000116811
+value = -0.0005514
 unit = "J/(mol*K**3)"
 
 [components.butylbenzene.cp_d]
-value = -1.3e-07
+value = 1.333e-07
 unit = "J/(mol*K**4)"
 
 [components.butylbenzene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.butylbenzene.ionic_charge]
@@ -9443,23 +9443,23 @@ value = 0.294
 unit = "dimensionless"
 
 [components.cis-2-heptene.cp_a]
-value = 36.54003
+value = -17.657
 unit = "J/(mol*K)"
 
 [components.cis-2-heptene.cp_b]
-value = -0.034802404
+value = 0.68884
 unit = "J/(mol*K**2)"
 
 [components.cis-2-heptene.cp_c]
-value = 0.000116811
+value = -0.0004408
 unit = "J/(mol*K**3)"
 
 [components.cis-2-heptene.cp_d]
-value = -1.3e-07
+value = 1.195e-07
 unit = "J/(mol*K**4)"
 
 [components.cis-2-heptene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.cis-2-heptene.ionic_charge]
@@ -9503,23 +9503,23 @@ value = 0.389
 unit = "dimensionless"
 
 [components.cis-2-octene.cp_a]
-value = 36.54003
+value = -18.566
 unit = "J/(mol*K)"
 
 [components.cis-2-octene.cp_b]
-value = -0.034802404
+value = 0.78384
 unit = "J/(mol*K**2)"
 
 [components.cis-2-octene.cp_c]
-value = 0.000116811
+value = -0.0004952
 unit = "J/(mol*K**3)"
 
 [components.cis-2-octene.cp_d]
-value = -1.3e-07
+value = 1.314e-07
 unit = "J/(mol*K**4)"
 
 [components.cis-2-octene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.cis-2-octene.ionic_charge]
@@ -9563,23 +9563,23 @@ value = 0.233
 unit = "dimensionless"
 
 [components.cis-2-pentene.cp_a]
-value = 36.54003
+value = -15.839
 unit = "J/(mol*K)"
 
 [components.cis-2-pentene.cp_b]
-value = -0.034802404
+value = 0.49884
 unit = "J/(mol*K**2)"
 
 [components.cis-2-pentene.cp_c]
-value = 0.000116811
+value = -0.000332
 unit = "J/(mol*K**3)"
 
 [components.cis-2-pentene.cp_d]
-value = -1.3e-07
+value = 9.57e-08
 unit = "J/(mol*K**4)"
 
 [components.cis-2-pentene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.cis-2-pentene.ionic_charge]
@@ -9623,23 +9623,23 @@ value = 0.292
 unit = "dimensionless"
 
 [components.cis-3-hexene.cp_a]
-value = 36.54003
+value = -16.748
 unit = "J/(mol*K)"
 
 [components.cis-3-hexene.cp_b]
-value = -0.034802404
+value = 0.59384
 unit = "J/(mol*K**2)"
 
 [components.cis-3-hexene.cp_c]
-value = 0.000116811
+value = -0.0003864
 unit = "J/(mol*K**3)"
 
 [components.cis-3-hexene.cp_d]
-value = -1.3e-07
+value = 1.076e-07
 unit = "J/(mol*K**4)"
 
 [components.cis-3-hexene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.cis-3-hexene.ionic_charge]
@@ -9683,23 +9683,23 @@ value = 0.38
 unit = "dimensionless"
 
 [components.cis-3-octene.cp_a]
-value = 36.54003
+value = -18.566
 unit = "J/(mol*K)"
 
 [components.cis-3-octene.cp_b]
-value = -0.034802404
+value = 0.78384
 unit = "J/(mol*K**2)"
 
 [components.cis-3-octene.cp_c]
-value = 0.000116811
+value = -0.0004952
 unit = "J/(mol*K**3)"
 
 [components.cis-3-octene.cp_d]
-value = -1.3e-07
+value = 1.314e-07
 unit = "J/(mol*K**4)"
 
 [components.cis-3-octene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.cis-3-octene.ionic_charge]
@@ -9743,23 +9743,23 @@ value = 0.339
 unit = "dimensionless"
 
 [components.cis-4-octene.cp_a]
-value = 36.54003
+value = -18.566
 unit = "J/(mol*K)"
 
 [components.cis-4-octene.cp_b]
-value = -0.034802404
+value = 0.78384
 unit = "J/(mol*K**2)"
 
 [components.cis-4-octene.cp_c]
-value = 0.000116811
+value = -0.0004952
 unit = "J/(mol*K**3)"
 
 [components.cis-4-octene.cp_d]
-value = -1.3e-07
+value = 1.314e-07
 unit = "J/(mol*K**4)"
 
 [components.cis-4-octene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.cis-4-octene.ionic_charge]
@@ -10343,23 +10343,23 @@ value = 0.3261
 unit = "dimensionless"
 
 [components.cumene.cp_a]
-value = 36.54003
+value = -40.88
 unit = "J/(mol*K)"
 
 [components.cumene.cp_b]
-value = -0.034802404
+value = 0.78584
 unit = "J/(mol*K**2)"
 
 [components.cumene.cp_c]
-value = 0.000116811
+value = -0.0005002
 unit = "J/(mol*K**3)"
 
 [components.cumene.cp_d]
-value = -1.3e-07
+value = 1.209e-07
 unit = "J/(mol*K**4)"
 
 [components.cumene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.cumene.ionic_charge]
@@ -10463,23 +10463,23 @@ value = 0.2741
 unit = "dimensionless"
 
 [components.cyclohexene.cp_a]
-value = 36.54003
+value = -66.33
 unit = "J/(mol*K)"
 
 [components.cyclohexene.cp_b]
-value = -0.034802404
+value = 0.6664
 unit = "J/(mol*K**2)"
 
 [components.cyclohexene.cp_c]
-value = 0.000116811
+value = -0.00042628
 unit = "J/(mol*K**3)"
 
 [components.cyclohexene.cp_d]
-value = -1.3e-07
+value = 1.022e-07
 unit = "J/(mol*K**4)"
 
 [components.cyclohexene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.cyclohexene.ionic_charge]
@@ -10523,23 +10523,23 @@ value = 0.194
 unit = "dimensionless"
 
 [components.cyclopentene.cp_a]
-value = 36.54003
+value = -60.3
 unit = "J/(mol*K)"
 
 [components.cyclopentene.cp_b]
-value = -0.034802404
+value = 0.581
 unit = "J/(mol*K**2)"
 
 [components.cyclopentene.cp_c]
-value = 0.000116811
+value = -0.00041828
 unit = "J/(mol*K**3)"
 
 [components.cyclopentene.cp_d]
-value = -1.3e-07
+value = 1.202e-07
 unit = "J/(mol*K**4)"
 
 [components.cyclopentene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.cyclopentene.ionic_charge]
@@ -12803,23 +12803,23 @@ value = 0.3694
 unit = "dimensionless"
 
 [components.isobutylbenzene.cp_a]
-value = 36.54003
+value = -41.789
 unit = "J/(mol*K)"
 
 [components.isobutylbenzene.cp_b]
-value = -0.034802404
+value = 0.88084
 unit = "J/(mol*K**2)"
 
 [components.isobutylbenzene.cp_c]
-value = 0.000116811
+value = -0.0005546
 unit = "J/(mol*K**3)"
 
 [components.isobutylbenzene.cp_d]
-value = -1.3e-07
+value = 1.328e-07
 unit = "J/(mol*K**4)"
 
 [components.isobutylbenzene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.isobutylbenzene.ionic_charge]
@@ -12863,23 +12863,23 @@ value = 0.3189
 unit = "dimensionless"
 
 [components.isobutylcyclohexane.cp_a]
-value = 36.54003
+value = -73.489
 unit = "J/(mol*K)"
 
 [components.isobutylcyclohexane.cp_b]
-value = -0.034802404
+value = 1.08184
 unit = "J/(mol*K**2)"
 
 [components.isobutylcyclohexane.cp_c]
-value = 0.000116811
+value = -0.0006044
 unit = "J/(mol*K**3)"
 
 [components.isobutylcyclohexane.cp_d]
-value = -1.3e-07
+value = 1.169e-07
 unit = "J/(mol*K**4)"
 
 [components.isobutylcyclohexane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.isobutylcyclohexane.ionic_charge]
@@ -12923,23 +12923,23 @@ value = 0.164
 unit = "dimensionless"
 
 [components.isoprene.cp_a]
-value = 36.54003
+value = -7.33
 unit = "J/(mol*K)"
 
 [components.isoprene.cp_b]
-value = -0.034802404
+value = 0.43872
 unit = "J/(mol*K**2)"
 
 [components.isoprene.cp_c]
-value = 0.000116811
+value = -0.0002963
 unit = "J/(mol*K**3)"
 
 [components.isoprene.cp_d]
-value = -1.3e-07
+value = 8.49e-08
 unit = "J/(mol*K**4)"
 
 [components.isoprene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.isoprene.ionic_charge]
@@ -13671,23 +13671,23 @@ value = 1.0
 unit = "angstrom"
 
 [components.megpvtsim18.dielectric_1]
-value = -19.2905
+value = -18.46
 unit = "dimensionless"
 
 [components.megpvtsim18.dielectric_2]
-value = 29814.5
+value = 16744.0
 unit = "K"
 
 [components.megpvtsim18.dielectric_3]
-value = -0.019678
+value = 0.0
 unit = "1/K"
 
 [components.megpvtsim18.dielectric_4]
-value = 0.013189
+value = 0.0
 unit = "1/K**2"
 
 [components.megpvtsim18.dielectric_5]
-value = 0.031144
+value = 0.0
 unit = "1/K**3"
 
 [components.megpvtsim19.Tc]
@@ -13731,23 +13731,23 @@ value = 1.0
 unit = "angstrom"
 
 [components.megpvtsim19.dielectric_1]
-value = -19.2905
+value = -18.46
 unit = "dimensionless"
 
 [components.megpvtsim19.dielectric_2]
-value = 29814.5
+value = 16744.0
 unit = "K"
 
 [components.megpvtsim19.dielectric_3]
-value = -0.019678
+value = 0.0
 unit = "1/K"
 
 [components.megpvtsim19.dielectric_4]
-value = 0.013189
+value = 0.0
 unit = "1/K**2"
 
 [components.megpvtsim19.dielectric_5]
-value = 0.031144
+value = 0.0
 unit = "1/K**3"
 
 [components.mercury.Tc]
@@ -13823,23 +13823,23 @@ value = 0.3796
 unit = "dimensionless"
 
 [components.mesitylene.cp_a]
-value = 36.54003
+value = -10.6
 unit = "J/(mol*K)"
 
 [components.mesitylene.cp_b]
-value = -0.034802404
+value = 0.66096
 unit = "J/(mol*K**2)"
 
 [components.mesitylene.cp_c]
-value = 0.000116811
+value = -0.00036292
 unit = "J/(mol*K**3)"
 
 [components.mesitylene.cp_d]
-value = -1.3e-07
+value = 7.16e-08
 unit = "J/(mol*K**4)"
 
 [components.mesitylene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.mesitylene.ionic_charge]
@@ -18623,23 +18623,23 @@ value = 0.464
 unit = "dimensionless"
 
 [components.pentamethylbenzene.cp_a]
-value = 36.54003
+value = 16.18
 unit = "J/(mol*K)"
 
 [components.pentamethylbenzene.cp_b]
-value = -0.034802404
+value = 0.732
 unit = "J/(mol*K**2)"
 
 [components.pentamethylbenzene.cp_c]
-value = 0.000116811
+value = -0.00033764
 unit = "J/(mol*K**3)"
 
 [components.pentamethylbenzene.cp_d]
-value = -1.3e-07
+value = 4.56e-08
 unit = "J/(mol*K**4)"
 
 [components.pentamethylbenzene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.pentamethylbenzene.ionic_charge]
@@ -20123,23 +20123,23 @@ value = 0.175
 unit = "dimensionless"
 
 [components."trans-1,3-pentadiene".cp_a]
-value = 36.54003
+value = -18.83
 unit = "J/(mol*K)"
 
 [components."trans-1,3-pentadiene".cp_b]
-value = -0.034802404
+value = 0.47882
 unit = "J/(mol*K**2)"
 
 [components."trans-1,3-pentadiene".cp_c]
-value = 0.000116811
+value = -0.0003549
 unit = "J/(mol*K**3)"
 
 [components."trans-1,3-pentadiene".cp_d]
-value = -1.3e-07
+value = 1.131e-07
 unit = "J/(mol*K**4)"
 
 [components."trans-1,3-pentadiene".cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."trans-1,3-pentadiene".ionic_charge]
@@ -20183,23 +20183,23 @@ value = 0.29
 unit = "dimensionless"
 
 [components.trans-1-ethyl-2-methylcyclopentane.cp_a]
-value = 36.54003
+value = -58.929
 unit = "J/(mol*K)"
 
 [components.trans-1-ethyl-2-methylcyclopentane.cp_b]
-value = -0.034802404
+value = 0.86904
 unit = "J/(mol*K**2)"
 
 [components.trans-1-ethyl-2-methylcyclopentane.cp_c]
-value = 0.000116811
+value = -0.0004834
 unit = "J/(mol*K**3)"
 
 [components.trans-1-ethyl-2-methylcyclopentane.cp_d]
-value = -1.3e-07
+value = 9.53e-08
 unit = "J/(mol*K**4)"
 
 [components.trans-1-ethyl-2-methylcyclopentane.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.trans-1-ethyl-2-methylcyclopentane.ionic_charge]
@@ -20483,23 +20483,23 @@ value = 0.411
 unit = "dimensionless"
 
 [components.trans-2-nonene.cp_a]
-value = 36.54003
+value = -19.475
 unit = "J/(mol*K)"
 
 [components.trans-2-nonene.cp_b]
-value = -0.034802404
+value = 0.87884
 unit = "J/(mol*K**2)"
 
 [components.trans-2-nonene.cp_c]
-value = 0.000116811
+value = -0.0005496
 unit = "J/(mol*K**3)"
 
 [components.trans-2-nonene.cp_d]
-value = -1.3e-07
+value = 1.433e-07
 unit = "J/(mol*K**4)"
 
 [components.trans-2-nonene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.trans-2-nonene.ionic_charge]
@@ -20543,23 +20543,23 @@ value = 0.334
 unit = "dimensionless"
 
 [components.trans-3-heptene.cp_a]
-value = 36.54003
+value = -17.657
 unit = "J/(mol*K)"
 
 [components.trans-3-heptene.cp_b]
-value = -0.034802404
+value = 0.68884
 unit = "J/(mol*K**2)"
 
 [components.trans-3-heptene.cp_c]
-value = 0.000116811
+value = -0.0004408
 unit = "J/(mol*K**3)"
 
 [components.trans-3-heptene.cp_d]
-value = -1.3e-07
+value = 1.195e-07
 unit = "J/(mol*K**4)"
 
 [components.trans-3-heptene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.trans-3-heptene.ionic_charge]
@@ -20603,23 +20603,23 @@ value = 0.2072
 unit = "dimensionless"
 
 [components.trans-3-methyl-2-pentene.cp_a]
-value = 36.54003
+value = -16.439
 unit = "J/(mol*K)"
 
 [components.trans-3-methyl-2-pentene.cp_b]
-value = -0.034802404
+value = 0.59376
 unit = "J/(mol*K**2)"
 
 [components.trans-3-methyl-2-pentene.cp_c]
-value = 0.000116811
+value = -0.0003887
 unit = "J/(mol*K**3)"
 
 [components.trans-3-methyl-2-pentene.cp_d]
-value = -1.3e-07
+value = 1.094e-07
 unit = "J/(mol*K**4)"
 
 [components.trans-3-methyl-2-pentene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.trans-3-methyl-2-pentene.ionic_charge]
@@ -20663,23 +20663,23 @@ value = 0.41439023
 unit = "dimensionless"
 
 [components.trans-3-nonene.cp_a]
-value = 36.54003
+value = -19.475
 unit = "J/(mol*K)"
 
 [components.trans-3-nonene.cp_b]
-value = -0.034802404
+value = 0.87884
 unit = "J/(mol*K**2)"
 
 [components.trans-3-nonene.cp_c]
-value = 0.000116811
+value = -0.0005496
 unit = "J/(mol*K**3)"
 
 [components.trans-3-nonene.cp_d]
-value = -1.3e-07
+value = 1.433e-07
 unit = "J/(mol*K**4)"
 
 [components.trans-3-nonene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.trans-3-nonene.ionic_charge]
@@ -20723,23 +20723,23 @@ value = 0.255
 unit = "dimensionless"
 
 [components.trans-4-methyl-2-pentene.cp_a]
-value = 36.54003
+value = -18.43
 unit = "J/(mol*K)"
 
 [components.trans-4-methyl-2-pentene.cp_b]
-value = -0.034802404
+value = 0.59976
 unit = "J/(mol*K**2)"
 
 [components.trans-4-methyl-2-pentene.cp_c]
-value = 0.000116811
+value = -0.0003896
 unit = "J/(mol*K**3)"
 
 [components.trans-4-methyl-2-pentene.cp_d]
-value = -1.3e-07
+value = 1.071e-07
 unit = "J/(mol*K**4)"
 
 [components.trans-4-methyl-2-pentene.cp_e]
-value = 5.254448e-11
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.trans-4-methyl-2-pentene.ionic_charge]

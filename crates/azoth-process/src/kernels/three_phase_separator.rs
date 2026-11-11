@@ -1,7 +1,7 @@
 //! `unit_ops.three_phase_separator` - a multiphase flash, split three ways.
 
 use azoth_core::units::{
-    Power, Pressure, ThermodynamicTemperature, joules_per_mole, kelvins, pascals,
+    Length, Power, Pressure, ThermodynamicTemperature, joules_per_mole, kelvins, pascals,
 };
 use azoth_core::{AzothError, Result};
 use azoth_eos::hydrate_inhibitor_wt::{PhaseLabel, label};
@@ -9,6 +9,7 @@ use azoth_eos::{
     IdealGasModel, Mixture, RootSide, molar_enthalpy_entropy, ph_flash, tp_multiflash,
 };
 
+use crate::segment::phase::{Pick, molar_mass_of, phase_view_from_feed};
 use crate::stream::Stream;
 
 /// The six entrainment directions, **in the order `run` applies them**.
@@ -433,4 +434,87 @@ fn solve_temperature(
     }
     let _ = (h_low, h_high);
     Ok(0.5 * (low + high))
+}
+
+/// The two retention times, in seconds; `None` where the class answers `Infinity`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Retention {
+    /// `calcOilRetentionTime`, converted from minutes.
+    pub oil: Option<f64>,
+    /// `calcWaterRetentionTime`, converted from minutes.
+    pub water: Option<f64>,
+}
+
+/// `calcOilRetentionTime` and `calcWaterRetentionTime` on the two liquid outlets.
+///
+/// The oil's volume is the circular segment between NIL and NLL; the water's is the segment
+/// below NIL. Both times the effective liquid length, `0.82 * separator_length`, over the
+/// phase's own volumetric flow. An absent phase, or a zero flow, is `Infinity` in the class
+/// and `None` here.
+///
+/// **The levels are the mechanical design's and not `setWaterLevel`/`setOilLevel`.** The
+/// class's setters store separate fields, and the retention methods read `getNLL()` and
+/// `getNIL()` - fractions of the diameter, `0.5` and `0.2` by default.
+///
+/// # Errors
+/// Whatever the outlet flashes or their densities raise.
+pub fn retention_times(
+    oil: &Stream,
+    aqueous: &Stream,
+    internal_diameter: Length,
+    separator_length: Length,
+    nll_fraction: f64,
+    nil_fraction: f64,
+) -> Result<Retention> {
+    let diameter = internal_diameter.value;
+    let nll = nll_fraction * diameter;
+    let nil = nil_fraction * diameter;
+    let effective_length = 0.82 * separator_length.value;
+    Ok(Retention {
+        oil: retention_of(
+            oil,
+            (segment_area(diameter, nll) - segment_area(diameter, nil)) * effective_length,
+        )?,
+        water: retention_of(aqueous, segment_area(diameter, nil) * effective_length)?,
+    })
+}
+
+/// One outlet's retention time in seconds: the liquid's volume over its volumetric flow.
+fn retention_of(outlet: &Stream, volume: f64) -> Result<Option<f64>> {
+    if outlet.n <= 0.0 {
+        return Ok(None);
+    }
+    let density = phase_view_from_feed(outlet, Pick::Liquid)?.density;
+    if !density.is_finite() || density <= 0.0 {
+        return Ok(None);
+    }
+    let (mixture, _ideal_gas) = outlet.mixture()?;
+    let molar_mass = molar_mass_of(&mixture, &outlet.z)?;
+    let flow = outlet.n * molar_mass / density;
+    if !flow.is_finite() || flow <= 0.0 {
+        return Ok(None);
+    }
+    Ok(Some(volume / flow))
+}
+
+/// `Separator.calcSegmentArea`: the circular segment below a stated height.
+///
+/// The height is clamped to the diameter, and the upper half is the full circle less its
+/// complement - the class's own two branches.
+pub fn segment_area(diameter: f64, level_height: f64) -> f64 {
+    let radius = diameter / 2.0;
+    let height = level_height.min(diameter);
+    if height <= 0.0 {
+        return 0.0;
+    }
+    if height <= radius {
+        let theta = ((radius - height) / radius).acos();
+        return radius * radius * theta
+            - (radius - height) * (2.0 * radius * height - height * height).sqrt();
+    }
+    let complement = diameter - height;
+    let theta = ((radius - complement) / radius).acos();
+    let lower = radius * radius * theta
+        - (radius - complement) * (2.0 * radius * complement - complement * complement).sqrt();
+    std::f64::consts::PI * radius * radius - lower
 }

@@ -4,6 +4,8 @@
 
 `eos.siddiqi_lucas_diffusivity`
 
+Liquid binary diffusivity from the Siddiqi-Lucas correlation. Use it for liquid-phase mass-transfer screening with an aqueous or organic solvent.
+
 ## Equation
 
 $$
@@ -23,6 +25,16 @@ aqueous: D = 2.98e-7 * eta**-1.026 * VA**-0.5473 * T;  organic: D = 9.89e-8 * et
 Correlations for prediction of diffusion in liquids. Can. J. Chem. Eng. 64(5), 839-843
 
 DOI: [10.1002/cjce.5450640519](https://doi.org/10.1002/cjce.5450640519)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- `VA` and `VB` are the solute and solvent liquid molar volumes; the caller gets them as `M/rho_normal`, or `Vc` directly (Siddiqi-Lucas's fallback, unlike the other methods' Tyn-Calus estimate).
+
+- `eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.
+
 
 ## Inputs
 
@@ -49,19 +61,14 @@ DOI: [10.1002/cjce.5450640519](https://doi.org/10.1002/cjce.5450640519)
 | `T > 0` | raises | An absolute temperature; zero and below are not states. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- `form` selects the solvent correlation: `aqueous` for water-rich solvents, `organic` otherwise; NeqSim auto-detects water content when the form is not set, which a scalar calc cannot, so the caller chooses.
-
-- `VA` and `VB` are the solute and solvent liquid molar volumes; the caller gets them as `M/rho_normal`, or `Vc` directly (Siddiqi-Lucas's fallback, unlike the other methods' Tyn-Calus estimate).
-
-- `eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.
-
-- the viscosity is floored at NeqSim's 0.01 cP; the correlation is not applied below it.
+- The form selects the solvent correlation: `aqueous` for water-rich solvents, `organic` otherwise. The caller chooses; this calculation does not detect water content.
+- the viscosity is floored at 0.01 cP; the correlation is not applied below it.
 
 - the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.
 

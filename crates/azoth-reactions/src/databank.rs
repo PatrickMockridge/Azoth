@@ -502,7 +502,7 @@ mod tests {
             co2,
             FormationProperties {
                 gibbs_energy_of_formation: -394_359.0,
-                enthalpy_of_formation: -393_509.0,
+                enthalpy_of_formation: -393_522.4,
                 absolute_entropy: 213.8,
             }
         );

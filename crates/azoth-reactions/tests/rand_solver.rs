@@ -32,10 +32,10 @@ const PRESSURE_BARA: f64 = 1.0;
 
 /// From `captures/reactive_flash_probe.tsv`, `fluid=wgs-600K`, `equilibrium_moles[0]`.
 const CAPTURED_MOLES: [f64; 4] = [
-    0.079_140_502_548_023_4,
-    0.079_140_502_560_693_7,
-    0.420_859_061_906_977_14,
-    0.420_859_061_880_687_67,
+    0.079_121_177_614_086_4,
+    0.079_121_177_688_377_76,
+    0.420_878_822_427_265_5,
+    0.420_878_822_270_270_4,
 ];
 
 fn thermo_data() -> Vec<ThermoData> {
@@ -155,7 +155,7 @@ fn the_drivers_single_phase_answer_is_the_captured_one() {
     assert!(outcome.converged, "the captured state converges");
 
     // `equilibrium_total_moles` from the capture.
-    let captured_total = 0.999_999_128_896_382_f64;
+    let captured_total = 0.999_997_099_033_628_1_f64;
     assert!(
         (outcome.total_moles - captured_total).abs() / captured_total < 1.0e-5,
         "the total is {} against the capture's {captured_total}",
@@ -169,7 +169,7 @@ fn the_drivers_single_phase_answer_is_the_captured_one() {
     // the thermodynamic value; `reactive_flash.rs` reproduces the capture's number from those
     // two phases and their weights. The ratio is asserted here rather than the number, which is
     // what makes the doubling a measurement instead of a rounding difference.
-    let captured_gibbs = -2.259_535_542_715_054_7_f64;
+    let captured_gibbs = -2.259_405_858_361_138_7_f64;
     let ratio = captured_gibbs / outcome.gibbs_energy;
     assert!(
         (ratio - 2.0).abs() < 1.0e-4,

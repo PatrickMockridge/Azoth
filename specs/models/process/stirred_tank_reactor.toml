@@ -9,7 +9,7 @@ assumptions = [
     "**the extent is the limiting reactant's, not the stoichiometry's.** A conversion that would take any substance below zero is refused here rather than allowed to overwrite its slot - the class's `addComponent` would carry a negative mole count.",
     "**the energy-port branch is owed.** `run` takes `PHflash(inlet + duty)` when an energy port is connected and in `SPECIFICATION` mode; that is an `EnergyStream` this library's five-field record has no place for, and the duty is declared out with the port named rather than guessed at.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `StirredTankReactor` also carries a vessel volume, a residence time, an agitator power per volume and a `runTransient`. **None is here**: `run` reads the first three only through energy ports and mechanical design, and the transient needs a holdup.",
+    "NeqSim's `StirredTankReactor` carries a vessel volume, a residence time and an agitator power per volume, all stored, plus a `runTransient`. **The three are declared and echoed**: `run` reads none, `toMap` prints them and `getAgitatorPower` is their product; **the transient needs a holdup**.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/reactor/StirredTankReactor.java` is the port source, through its `run`, and `StoichiometricReaction.java` is the reaction it applies.",
@@ -61,6 +61,18 @@ description = "the pressure the vessel holds, `setReactorPressure`. When omitted
 unit = "Pa"
 optional = true
 description = "the pressure drop the outlet takes where no reactor pressure is stated, `setPressureDrop`. When omitted the drop is zero, so the outlet keeps the feed's own pressure.\n"
+[inputs.vessel_volume]
+unit = "m**3"
+optional = true
+description = "`getVesselVolume`'s stored field. **Absent is the class's `10.0`, and `run` reads neither it nor its neighbours**: only `toMap` echoes it and `getAgitatorPower` multiplies it.\n"
+[inputs.residence_time]
+unit = "h"
+optional = true
+description = "`getResidenceTime`'s stored hours, `setResidenceTime`'s own unit. **Absent is `1.0`, and it is carried and unread** - the class holds it for `toMap` and for a transient it does not implement in this port.\n"
+[inputs.agitator_power_per_volume]
+unit = "W/m**3"
+optional = true
+description = "`getAgitatorPowerPerVolume`'s stored field, the specific power: the class's `1.0` kW/m3 is `1000` W/m3. **Absent is `1000.0`, and `run` reads it only to write a connected energy port's duty** - a branch this id declares out.\n"
 [outputs]
 [outputs.product_n]
 unit = "mol/s"
@@ -82,6 +94,9 @@ description = "the product's molar enthalpy at its own state.\n"
 [outputs.heat_duty]
 unit = "W"
 description = "the heat the vessel had to supply: the outlet's total enthalpy less the feed's when isothermal, and zero when adiabatic.\n"
+[outputs.agitator_power]
+unit = "kW"
+description = "`getAgitatorPower`: the specific power times the vessel volume - `1.0 * 10.0 = 10` at the defaults. **Not a duty `run` applies**; it is the number the class would write to an agitator energy port, which is declared out.\n"
 [[valid_range]]
 quantity = "conversion"
 min = 0

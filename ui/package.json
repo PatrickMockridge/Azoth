@@ -8,6 +8,7 @@
     "wasm": "wasm-pack build ../crates/azoth-wasm --target web --out-dir ../../ui/src/wasm/pkg --release",
     "dev": "npm run wasm && vite",
     "build": "npm run wasm && tsc --noEmit && vite build",
+    "check:dist": "node scripts/check-dist.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

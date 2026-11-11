@@ -2,11 +2,11 @@
 
 # Petroleum fraction characterisation
 
-Every calculation in this section is generated from its specification. Each page shows the equation, where it came from, the range in which it is validated, its assumptions, a worked example, and the tests that exercise it.
+Every calculation in this section is generated from its specification. Each page states what the calculation is for, the equation and where it came from, the range in which it is validated, the conditions it does not check, a worked example, and the tests that exercise it.
 
-| Calculation | Equation | Source |
+| Calculation | What it is for | Source |
 |---|---|---|
-| [`characterization.tbp_cut_properties`](./tbp_cut_properties.md) | $\begin{aligned} T_{c} &= c_{0}d + c_{1}\ln M + c_{2}M + \frac{c_{3}}{M}, & P_{c} &= \exp\left(0.01325 + c_{0} + c_{1}d^{c_{4}} + \frac{c_{2}}{M} + \frac{c_{3}}{M^{2}}\right), \\ \omega &= \frac{3}{7}\frac{\log_{10}(P_{c}/P_{\mathrm{ref}})}{T_{c}/T_{b} - 1} - 1, & m &= c_{0} + c_{1}M + c_{2}d + c_{3}M^{2} \end{aligned}$ | NeqSim master `TBPfractionModel`, all ten models |
+| [`characterization.tbp_cut_properties`](./tbp_cut_properties.md) | TBP cut properties by one of ten characterisation models. Use it to compare or build pseudo-component properties from a boiling cut. | NeqSim master `TBPfractionModel`, all ten models |
 
 ## Models
 
@@ -16,7 +16,9 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 |---|---|---|
 | [`characterization.assay_mass_fractions`](./assay_mass_fractions.md) | `direct composition` | NeqSim master `OilAssayCharacterisation.resolveMassFractions` |
 | [`characterization.characterise_plus_fraction`](./characterise_plus_fraction.md) | `direct composition` | NeqSim master `Characterise.characterisePlusFraction` |
+| [`characterization.characterize_to_common_slate`](./characterize_to_common_slate.md) | `direct composition` | NeqSim master `PseudoComponentCombiner.characterizeToCommonSlate` |
 | [`characterization.characterize_to_reference`](./characterize_to_reference.md) | `direct composition` | NeqSim master `PseudoComponentCombiner.characterizeToReference` |
+| [`characterization.combine_reservoir_fluids`](./combine_reservoir_fluids.md) | `direct composition` | NeqSim master `PseudoComponentCombiner.combineReservoirFluids` |
 | [`characterization.delumping`](./delumping.md) | `direct composition` | NeqSim master `PseudoComponentCombiner.delumpContributions` |
 | [`characterization.lumping`](./lumping.md) | `direct composition` | NeqSim master `LumpingModel.StandardLumpingModel` |
 | [`characterization.oil_assay_derivation`](./oil_assay_derivation.md) | `direct composition` | NeqSim master `OilAssayCharacterisation.apply` |
@@ -25,5 +27,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`characterization.tbp_closure`](./tbp_closure.md) | `molar_mass_bisection` | NeqSim master `TbpClosure` |
 | [`characterization.tbp_cut_boundaries`](./tbp_cut_boundaries.md) | `direct composition` | NeqSim master `OilAssayCharacterisation.addTBPCutBoundariesKelvin` |
 | [`characterization.tbp_density`](./tbp_density.md) | `direct composition` | NeqSim master `TbpClosure.RIAZI_DAUBERT_1980.calcDensity` |
+| [`characterization.tbp_fraction_component`](./tbp_fraction_component.md) | `direct composition` | NeqSim master `SystemThermo.addTBPfraction` |
 | [`characterization.tbp_grouping`](./tbp_grouping.md) | `direct composition` | NeqSim master `Phase.groupTBPfractions` |
+| [`characterization.transfer_binary_interaction_parameters`](./transfer_binary_interaction_parameters.md) | `direct composition` | NeqSim master `PseudoComponentCombiner.transferBinaryInteractionParameters` |
 | [`characterization.whitson_gamma_split`](./whitson_gamma_split.md) | `direct composition` | NeqSim master `PlusFractionModel.WhitsonGammaModel` |

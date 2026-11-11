@@ -35,6 +35,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `product_z` | dimensionless | the outlet composition: the feeds' mole fractions weighted by their flows. |
 | `product_p` | Pa | the outlet pressure: `outlet_pressure` when given, else the lowest feed pressure. |
 | `product_t` | K | the outlet temperature, solved from the joined enthalpy at the outlet pressure. |
+| `inlet_pressure_spread` | Pa | `getInletPressureSpread`: the active inlets' highest pressure less the lowest. Active is `FlowRate("kg/hr") > 1e-20`. |
+| `pressure_mismatch` | - | `isPressureMismatch`: the spread exceeds `0.5` bar and the caller did not specify `outlet_pressure`; the outlet then collapses to the lowest inlet. |
 | `product_h` | J/mol | the outlet molar enthalpy, the flow-weighted average of the feeds'. Mixing adds no heat and no work, so this is the whole of the energy balance. |
 
 | Bound | On violation | Why |
@@ -49,19 +51,20 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **`outlet_pressure` is optional, and omitting it leaves the pressure unchecked.** A bound on an optional input cannot always run, so an omitted pressure produces a `RANGE_CHECK_SKIPPED` warning rather than silence: `checked and fine` and `never checked` must not look alike.
 - **feeds carrying nothing in total are refused.** The outlet composition is the flows' weighted average, so a zero total is a 0/0 and every field would return NaN. NeqSim propagates a zero-flow outlet instead, through an `isActive` flag `Stream` has no equivalent of.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `Mixer` also carries a canonical inlet ordering, a pressure-mismatch flag and a `runTransient`. **The flag is owed**: it warns that the inlets arrived at different pressures and the outlet collapsed to the lowest, which is about upstream equipment rather than the record.
+- NeqSim's `Mixer` also carries a canonical inlet ordering and a `runTransient`. **The pressure-mismatch flag is ported**: it reports the inlet spread and warns past the class's `0.5` bar tolerance, which is about upstream equipment rather than the record.
 
 ## Cases
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `two_feeds_at_different_pressures` | components = ['n-butane', 'n-pentane'], feed_n = [1.0, 2.0], feed_z = [[0.6, 0.4], [0.3, 0.7]], feed_p = [1000000.0, 600000.0], feed_t = [300.0, 300.0] | product_n = 3.0, product_z = [0.4, 0.6], product_p = 600000.0, product_t = 300.0379420950389, product_h = -21581.51317087694 |
-| `a_stated_outlet_pressure_overrides_the_lowest_feed` | components = ['n-butane', 'n-pentane'], feed_n = [1.0, 2.0], feed_z = [[0.6, 0.4], [0.3, 0.7]], feed_p = [1000000.0, 600000.0], feed_t = [300.0, 300.0], outlet_pressure = 800000.0 | product_n = 3.0, product_z = [0.4, 0.6], product_p = 800000.0, product_t = 299.9753356067683, product_h = -21581.513144252458 |
+| `two_feeds_at_different_pressures` | components = ['n-butane', 'n-pentane'], feed_n = [1.0, 2.0], feed_z = [[0.6, 0.4], [0.3, 0.7]], feed_p = [1000000.0, 600000.0], feed_t = [300.0, 300.0] | product_n = 3.0, product_z = [0.4, 0.6], product_p = 600000.0, product_t = 300.0379420950389, product_h = -21581.51317087694, inlet_pressure_spread = 400000.0, pressure_mismatch = True |
+| `a_stated_outlet_pressure_overrides_the_lowest_feed` | components = ['n-butane', 'n-pentane'], feed_n = [1.0, 2.0], feed_z = [[0.6, 0.4], [0.3, 0.7]], feed_p = [1000000.0, 600000.0], feed_t = [300.0, 300.0], outlet_pressure = 800000.0 | product_n = 3.0, product_z = [0.4, 0.6], product_p = 800000.0, product_t = 299.9753356067683, product_h = -21581.513144252458, inlet_pressure_spread = 200000.0, pressure_mismatch = False |
+| `a_sub_tolerance_spread_raises_no_flag` | components = ['n-butane', 'n-pentane'], feed_n = [1.0, 2.0], feed_z = [[0.6, 0.4], [0.3, 0.7]], feed_p = [1000000.0, 960000.0], feed_t = [300.0, 300.0] | product_n = 3.0, product_z = [0.4, 0.6], product_p = 960000.0, product_t = 300.00453958863363, product_h = -21569.23594720072, inlet_pressure_spread = 40000.0, pressure_mismatch = False |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 2 declared, every one run
+- Tests: 3 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

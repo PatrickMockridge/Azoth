@@ -1,5 +1,6 @@
 id = "eos.twucoon_param_alpha"
 name = "Twu-Coon parameter alpha function"
+summary = "Twu-Coon parameter alpha function. Use it when a cubic EOS needs this attraction-temperature form."
 equation = "alpha = Tr**(c*(b-1)) * exp(a*(1 - Tr**(b*c)))"
 latex = '''\alpha = T_r^{c(b-1)} \exp\left(a\left(1 - T_r^{bc}\right)\right)'''
 assumptions = ["the three parameters are the caller's fitted Twu-Coon parameters, not the cubic's `a` and `b`.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]

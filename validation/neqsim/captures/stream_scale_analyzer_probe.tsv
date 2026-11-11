@@ -1,0 +1,32 @@
+stream_scale_analyzer
+ sulphate_limited
+  davies model=DAVIES flow_l_per_day=100000.0 total_mg_per_l=1699.4196722154927 total_kg_per_day=169.94196722154928 dominant=BaSO4 has_scaling=true
+    BaSO4 initial_si=4.876927696794577 final_si=8.355304428255001E-10 mg_per_l=1699.4196722154927 kg_per_day=169.94196722154928
+    SrSO4 initial_si=0.6239941092936203 final_si=-0.024562773607350038 mg_per_l=0.0 kg_per_day=0.0
+    CaSO4 initial_si=0.5172688634939727 final_si=-0.13128801940699758 mg_per_l=0.0 kg_per_day=0.0
+    CaCO3 initial_si=-6.977584279583682 final_si=-6.977584279583682 mg_per_l=0.0 kg_per_day=0.0
+  bdot model=BDOT flow_l_per_day=100000.0 total_mg_per_l=1697.7826379846324 total_kg_per_day=169.77826379846323 dominant=BaSO4 has_scaling=true
+    BaSO4 initial_si=3.6375202399726745 final_si=4.841367472462266E-11 mg_per_l=1697.7826379846324 kg_per_day=169.77826379846323
+    SrSO4 initial_si=-0.615413347528282 final_si=-1.2625284691246774 mg_per_l=0.0 kg_per_day=0.0
+    CaSO4 initial_si=-0.7221385933279296 final_si=-1.369253714924325 mg_per_l=0.0 kg_per_day=0.0
+    CaCO3 initial_si=-8.216991736405584 final_si=-8.216991736405584 mg_per_l=0.0 kg_per_day=0.0
+ co_precipitation
+  davies model=DAVIES flow_l_per_day=250000.0 total_mg_per_l=4292.748019675318 total_kg_per_day=1073.1870049188294 dominant=SrSO4 has_scaling=true
+    BaSO4 initial_si=4.445020684845298 final_si=3.5926079406150245E-9 mg_per_l=169.93331841713223 kg_per_day=42.48332960428306
+    SrSO4 initial_si=1.112905851296717 final_si=-9.575771742875196E-14 mg_per_l=4002.33592985708 kg_per_day=1000.58398246427
+    CaSO4 initial_si=0.562231451720118 final_si=8.688590473644248E-14 mg_per_l=120.47877140110569 kg_per_day=30.119692850276422
+    CaCO3 initial_si=-7.377023818186227 final_si=-7.452860219247141 mg_per_l=0.0 kg_per_day=0.0
+ corners
+  zero_flow model=DAVIES flow_l_per_day=0.0 total_mg_per_l=1699.4196722154927 total_kg_per_day=0.0 dominant=BaSO4 has_scaling=true
+    BaSO4 initial_si=4.876927696794577 final_si=8.355304428255001E-10 mg_per_l=1699.4196722154927 kg_per_day=0.0
+    SrSO4 initial_si=0.6239941092936203 final_si=-0.024562773607350038 mg_per_l=0.0 kg_per_day=0.0
+    CaSO4 initial_si=0.5172688634939727 final_si=-0.13128801940699758 mg_per_l=0.0 kg_per_day=0.0
+    CaCO3 initial_si=-6.977584279583682 final_si=-6.977584279583682 mg_per_l=0.0 kg_per_day=0.0
+  no_minerals model=DAVIES flow_l_per_day=1000.0 total_mg_per_l=0.0 total_kg_per_day=0.0 dominant=none has_scaling=false
+  absent_barium model=DAVIES flow_l_per_day=100000.0 total_mg_per_l=730.3150836515322 total_kg_per_day=73.03150836515323 dominant=CaSO4 has_scaling=true
+    CaSO4 initial_si=0.5172688634939727 final_si=8.601801001654469E-14 mg_per_l=730.3150836515322 kg_per_day=73.03150836515323
+    CaCO3 initial_si=-6.977584279583682 final_si=-7.127062544742807 mg_per_l=0.0 kg_per_day=0.0
+  auto_ph model=DAVIES flow_l_per_day=100000.0 total_mg_per_l=1699.4196722154904 total_kg_per_day=169.94196722154902 dominant=BaSO4 has_scaling=true
+    BaSO4 initial_si=4.876927696792897 final_si=8.354946662765598E-10 mg_per_l=1699.4196722154904 kg_per_day=169.94196722154902
+    SrSO4 initial_si=0.623994109291941 final_si=-0.024562773614825117 mg_per_l=0.0 kg_per_day=0.0
+    CaSO4 initial_si=0.5172688634965064 final_si=-0.1312880194102597 mg_per_l=0.0 kg_per_day=0.0

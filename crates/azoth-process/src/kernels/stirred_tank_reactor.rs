@@ -1,7 +1,8 @@
 //! `unit_ops.stirred_tank_reactor` - a stoichiometric conversion, then a flash.
 
 use azoth_core::units::{
-    Power, Pressure, ThermodynamicTemperature, joules_per_mole, pascals, watts,
+    Power, Pressure, ThermodynamicTemperature, Volume, VolumetricPowerDensity, joules_per_mole,
+    kilowatts, pascals, watts,
 };
 use azoth_core::{AzothError, Result};
 use azoth_eos::{ph_flash, pt_flash};
@@ -194,4 +195,21 @@ pub fn stirred_tank_reactor(feed: &Stream, setup: &ReactorSetup) -> Result<(Stre
     };
 
     Ok((product, watts(duty)))
+}
+
+/// `StirredTankReactor`'s stored vessel volume's own initialiser, m3.
+pub const DEFAULT_VESSEL_VOLUME_M3: f64 = 10.0;
+/// `residenceTime`'s initialiser, hours - the unit its getter reports.
+pub const DEFAULT_RESIDENCE_TIME_H: f64 = 1.0;
+/// `agitatorPowerPerVolume`'s initialiser, W/m3 - the class stores `1.0` kW/m3.
+pub const DEFAULT_AGITATOR_POWER_PER_VOLUME_W_PER_M3: f64 = 1000.0;
+
+/// `getAgitatorPower`: the specific power times the vessel volume, in kW.
+///
+/// **`run` reads neither operand.** The product is the number the class would write to an
+/// agitator energy port, which is declared out; the two fields are `toMap`'s echo of what the
+/// caller stored, and the class's defaults are their initialisers.
+#[must_use]
+pub fn agitator_power(per_volume: VolumetricPowerDensity, vessel_volume: Volume) -> Power {
+    kilowatts(per_volume.value * vessel_volume.value / 1.0e3)
 }

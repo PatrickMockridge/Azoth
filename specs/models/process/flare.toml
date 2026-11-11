@@ -6,18 +6,21 @@ assumptions = [
     "**the reported duty multiplies two different volumetric references.** `LCV()` is per normal cubic metre at **0 °C** and `getFlowRate(\"Sm3/sec\")` is a volume at **15 °C**, so the duty is 5.5 per cent above the same gas measured consistently. The port reproduces the class.",
     "**two molar gas constants, and the class uses both.** The standard's density reaches `8.314510` and the Sm3 conversion divides by `8.3144621`; a port that used one for both would be a port of neither.",
     "**the carbon comes from the element table, not the standard's.** `getElements().getNumberOfElements(\"C\")` reads the component's formula, so a gas ISO 6976 has no row for still gets a CO2 emission - and only its duty is refused.",
-    "**no parameter is declared, and none is read.** The entry has one inlet and one outlet and the class's own setters (a flame height, a radiant fraction, a tip diameter) are radiation-model inputs `run` never reads.",
+    "**the radiation model is a point source at the flame height.** The flux at a ground distance is `radiant_fraction * duty / (4 pi (d^2 + h^2))`, and the distance for a threshold is its inverse, zero where the contour falls inside the flame-height sphere.",
+    "**the setters clamp rather than refuse, and so does the port.** A negative flame height is zero, a radiant fraction above one is one (a NaN keeps the default), and a tip diameter below `1e-4` m is `1e-4`.",
+    "**the dispersion surrogate divides by the inlet's own density.** It is the cubic's vapour root with the Peneloux shift, `getThermoSystem().getDensity`'s reading; `momentumPerMass` is omitted because its dimension is one the vocabulary does not carry.",
+    "**a utilisation exists only where its design capacity is finite and positive.** The class answers `NaN` with none, so an unstated limit is an absent output rather than a zero - and `overloaded` is absent until one utilisation exists.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route - and the duty reads the standard's table rather than the cubic, so the fluid choice moves the *record* and not the report.",
-    "NeqSim's `Flare` also carries a radiation model, a capacity check and a `runTransient`. **None is here**: the first two read setters nothing declares, and the transient needs a holdup this library has no state for.",
+    "NeqSim's `Flare` also carries `runTransient`, the cumulative accumulators and a performance DTO with an emission map. **None is here**: the first two need a holdup this library has no state for, and the DTO restates the outputs this id declares.",
 ]
 references = [
-    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/flare/Flare.java` is the port source, through its `run`.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/flare/Flare.java` is the port source, through its `run`, `estimateRadiationHeatFlux`, `radiationDistanceForFlux`, `getDispersionSurrogate` and `evaluateCapacity`.",
     "ISO 6976:1995 through `Standard_ISO6976`, which is what `Stream.LCV()` builds; see `standards.iso6976`.",
-    "`validation/neqsim/captures/process_flare.tsv` - four gases, each with the record through and the duty and emission beside it.",
+    "`validation/neqsim/captures/process_flare.tsv` - four gases with the record through and the duty and emission beside it, then five states over the radiation model, the dispersion surrogate and the capacity check.",
 ]
 [source]
 standard = "NeqSim process/equipment/flare/Flare.java"
-edition = "Its steady-state `run`: the inlet cloned to the outlet, `heatDuty = inStream.LCV() * flowSm3sec`, and `co2Emission` from the gas's carbon. **The radiation model and the capacity check are not read.**"
+edition = "Its steady-state `run`: the inlet cloned to the outlet, `heatDuty = inStream.LCV() * flowSm3sec`, and `co2Emission` from the gas's carbon; then the point-source radiation model, the tip's dispersion surrogate and the three-axis capacity check."
 [inputs]
 [inputs.components]
 type = "components"
@@ -36,6 +39,38 @@ description = "the inlet pressure, which the outlet carries unchanged.\n"
 [inputs.inlet_t]
 unit = "K"
 description = "the inlet temperature, which the outlet carries unchanged.\n"
+[inputs.flame_height]
+unit = "m"
+optional = true
+description = "`setFlameHeight`: the point source's height above the base. Absent is the class's 30 m, and a negative value is clamped at zero.\n"
+[inputs.radiant_fraction]
+unit = "dimensionless"
+optional = true
+description = "`setRadiantFraction`: the fraction of the duty radiated. Absent is the class's 0.18; clamped to `[0, 1]`, and a NaN leaves the default standing.\n"
+[inputs.tip_diameter]
+unit = "m"
+optional = true
+description = "`setTipDiameter`: the tip's outlet diameter, which the exit velocity divides. Absent is the class's 0.3 m; clamped at `1e-4` m.\n"
+[inputs.ground_distance]
+unit = "m"
+optional = true
+description = "the horizontal distance the radiation flux is read at. **Absent leaves `radiation_flux` absent.**\n"
+[inputs.radiation_flux_threshold]
+unit = "W/m**2"
+optional = true
+description = "the flux the horizontal distance is solved for. **Absent leaves `radiation_distance` absent**, and a non-positive threshold answers zero.\n"
+[inputs.design_heat_duty_capacity]
+unit = "W"
+optional = true
+description = "`setDesignHeatDutyCapacity`: the design heat release the duty is checked against. Absent or non-positive leaves the heat utilisation absent.\n"
+[inputs.design_mass_flow_capacity]
+unit = "kg/s"
+optional = true
+description = "`setDesignMassFlowCapacity`: the design mass flow. Absent or non-positive leaves the mass utilisation absent.\n"
+[inputs.design_molar_flow_capacity]
+unit = "mol/s"
+optional = true
+description = "`setDesignMolarFlowCapacity`: the design molar flow. Absent or non-positive leaves the molar utilisation absent.\n"
 [outputs]
 [outputs.product_n]
 unit = "mol/s"
@@ -60,6 +95,39 @@ description = "the heat the flare releases: the gas's inferior calorific value p
 [outputs.co2_emission]
 unit = "kg/s"
 description = "the carbon dioxide the combustion forms: the gas's carbon atoms per second times `44.01e-3` kg/mol.\n"
+[outputs.radiation_flux]
+unit = "W/m**2"
+optional = true
+description = "`estimateRadiationHeatFlux` at `ground_distance`: the radiant fraction of the duty over the sphere through the point source. Present only with `ground_distance`.\n"
+[outputs.radiation_distance]
+unit = "m"
+optional = true
+description = "`radiationDistanceForFlux`: the horizontal distance at which the flux falls to `radiation_flux_threshold`, zero where the contour is inside the flame-height sphere. Present only with the threshold.\n"
+[outputs.exit_velocity]
+unit = "m/s"
+description = "`getDispersionSurrogate().getExitVelocityMs()`: the inlet's mass flow over the tip area and the inlet's density, floored at zero.\n"
+[outputs.momentum_flux]
+unit = "Pa"
+description = "the surrogate's `momentumFlux`, `rho v^2`, floored at the density the class floors.\n"
+[outputs.standard_volume_rate]
+unit = "m**3/s"
+description = "the surrogate's `standardVolumeSm3PerSec`: the inlet's own `Sm3/sec`, scaled by the mass rate over the reference mass rate.\n"
+[outputs.heat_utilization]
+unit = "dimensionless"
+optional = true
+description = "`evaluateCapacity().getHeatUtilization()`: the duty over `design_heat_duty_capacity`. Absent when the design is not finite and positive.\n"
+[outputs.mass_utilization]
+unit = "dimensionless"
+optional = true
+description = "the operating mass flow over `design_mass_flow_capacity`. Absent as the heat's is.\n"
+[outputs.molar_utilization]
+unit = "dimensionless"
+optional = true
+description = "the operating molar flow over `design_molar_flow_capacity`. Absent as the heat's is.\n"
+[outputs.overloaded]
+type = "boolean"
+optional = true
+description = "`isOverloaded`: any present utilisation above `1 + 1e-6`. Absent until at least one utilisation exists.\n"
 [[valid_range]]
 quantity = "inlet_n"
 min = 0
@@ -78,6 +146,18 @@ min = 0
 min_inclusive = true
 severity = "error"
 rationale = "a mass rate of carbon dioxide is non-negative\n"
+[[valid_range]]
+quantity = "ground_distance"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a horizontal distance from the base; the class squares it, so a negative one would silently be its magnitude\n"
+[[valid_range]]
+quantity = "radiation_flux_threshold"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a flux the distance is solved for; the class answers zero below it, which is the no-contour branch\n"
 [implementations]
 python = "azoth.process.flare"
 rust = "azoth_process::flare"

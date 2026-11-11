@@ -5,9 +5,9 @@ line for line, and **the two halves are held to the same capture**: the Rust mod
 test and ``python/tests/test_mechanical_report.py`` compare the same rows of
 ``validation/neqsim/captures/process_column_mechanical_design.tsv``.
 
-**Nothing calls this yet, and neither does anything call the Rust module.** ``calcDesign`` is
-ported and not wired - what no model declares is its inputs - so this is the other half of a pair
-that waits for ``process.distillation_column`` to publish the vessel.
+**It is wired.** ``process.distillation_column`` and the absorber pair declare ``calcDesign``'s
+inputs and publish its quantities, and this module is the Python half of
+``crates/azoth-process/src/column/mechanical.rs``.
 
 **The class runs two sizings and publishes the second one's diameter beside the first one's
 numbers**, which is the shape ``validation/neqsim/captures/process_column_mechanical_design.tsv``

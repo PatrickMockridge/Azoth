@@ -4,6 +4,8 @@
 
 `eos.rachford_rice_binary`
 
+Vapour fraction of a two-component mixture from its composition and K-values. Use it for a binary flash when the phase split is needed.
+
 ## Equation
 
 $$
@@ -52,7 +54,7 @@ DOI: [10.2118/952327-G](https://doi.org/10.2118/952327-G)
 | `vapour_fraction >= 0 and vapour_fraction <= 1` | warns `OUT_OF_VALID_RANGE` | Outside `[0, 1]` the feed is single phase and the value is the *tangent-plane* solution rather than a phase split, but it is still returned as a warning. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

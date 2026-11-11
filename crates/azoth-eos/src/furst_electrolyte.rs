@@ -605,7 +605,10 @@ pub fn furst_mixture_reading(
                         Some(record) if record.has_fitted_set(family) => record.m_srk,
                         _ => crate::srk_kappa::srk_kappa(e.omega)?.kappa,
                     };
-                    c.with_alpha_params(vec![m])
+                    // **The electrolyte CPA subclasses read `PARACHOR_CPA`**, which is what
+                    // `Component.createComponent`'s `instanceof ComponentSrkCPA` selects for
+                    // them (upstream PR #4004).
+                    c.with_alpha_params(vec![m]).with_parachor(e.parachor_cpa)
                 }
             })
         })

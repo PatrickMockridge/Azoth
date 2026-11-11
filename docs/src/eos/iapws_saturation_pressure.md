@@ -4,6 +4,8 @@
 
 `eos.iapws_saturation_pressure`
 
+Saturation pressure of water from the IAPWS-IF97 Region 4 formulation. Use it for steam, water and humid-gas calculations where an accurate water vapour pressure is needed.
+
 ## Equation
 
 $$
@@ -21,6 +23,16 @@ p_sat = (2C / (-B + sqrt(B**2 - 4*A*C)))**4, with theta = T + n9/(T - n10), A = 
 **IAPWS (2007), Region 4**
 
 The revised release's saturation equation, as NeqSim master implements it in `Iapws_if97.p4_T`.
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **this is the boundary everything else in IF97 is selected by.** `eos.water_phase` asks it whether a state is Region 1 or Region 2, and the ten coefficients are the IAPWS release's own - not a fit of this library's and not a rearrangement of `eos.antoine_vapor_pressure`'s row for water.
+- `eos.pure_saturation` is a *different* answer to the same question: it is the pressure where a Peng-Robinson fluid's two roots cross, which is a property of that cubic and not of water. A water dew point wants this one.
+- the equation is the **forward** direction only. `p4_T` and `T4_p` are separate fits in the IAPWS release and in NeqSim's class, not an inversion of one another, so `tsat_p` is owed as its own id rather than read out of this one.
+- the returned pressure is **pascals**, where NeqSim's method returns megapascals - the same `1e6` `eos.iapws_henry_law` applies to the class's bar. The equation above is stated in the release's own MPa.
 
 ## Inputs
 
@@ -43,17 +55,13 @@ The revised release's saturation equation, as NeqSim master implements it in `Ia
 | `T >= 273.15 and T < 647.096` | raises | The curve is defined between the triple point and the critical point. Below the first there is no liquid water to saturate and at the second the two phases become one, so a caller asking outside either end is asking a different question. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **this is the boundary everything else in IF97 is selected by.** `eos.water_phase` asks it whether a state is Region 1 or Region 2, and the ten coefficients are the IAPWS release's own - not a fit of this library's and not a rearrangement of `eos.antoine_vapor_pressure`'s row for water.
-- `eos.pure_saturation` is a *different* answer to the same question: it is the pressure where a Peng-Robinson fluid's two roots cross, which is a property of that cubic and not of water. A water dew point wants this one.
 - **the domain is the Region 4 curve's own, `[273.15, 647.096)` K**: below the triple point it is not liquid water and at the critical point the two phases meet. Both ends are `error` and neither is extrapolated to.
-- the equation is the **forward** direction only. `p4_T` and `T4_p` are separate fits in the IAPWS release and in NeqSim's class, not an inversion of one another, so `tsat_p` is owed as its own id rather than read out of this one.
-- the returned pressure is **pascals**, where NeqSim's method returns megapascals - the same `1e6` `eos.iapws_henry_law` applies to the class's bar. The equation above is stated in the release's own MPa.
 
 
 

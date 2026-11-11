@@ -234,9 +234,15 @@ fn azoth_model_spec(id: &str) -> &'static azoth_core::spec::ModelSpec {
 /// of one branch and not of the model: an ion is capped by its class before the row is read,
 /// so `1e12` is what an ion's entry gives whatever its correlation says. That is why the
 /// captured ion entries pin and this one cannot.
+/// **Methanol's Henry row is fitted now**, so the neutral arm reads it where it used to
+/// refuse the four zeros. The sourced row is `12.5730 - 5500/T`; at 313.15 K the arm gives
+/// a small but finite coefficient rather than NeqSim's `1.802` from the zeros.
+///
+/// **The ion branch never reads the row at all**, which is the reason this was a refusal of
+/// one branch and not of the model: an ion is capped by its class before the row is read.
 #[test]
-fn a_neutral_with_no_henry_correlation_is_refused_where_neqsim_answers() {
-    let err = pitzer_phase(
+fn a_neutral_now_reads_a_sourced_henry_row() {
+    let result = pitzer_phase(
         &["water", "methanol", "na+", "cl-"],
         313.15,
         5.0e5,
@@ -247,26 +253,8 @@ fn a_neutral_with_no_henry_correlation_is_refused_where_neqsim_answers() {
             0.03389830508474576,
         ],
     )
-    .unwrap_err();
-    let message = err.to_string();
-    assert!(message.contains("methanol"), "{message}");
-    assert!(
-        message.contains("Henry coefficient"),
-        "the refusal should name what it cannot build: {message}"
-    );
-
-    // The same fluid's ions *do* answer, so the refusal is the neutral arm's alone - and
-    // the fluid is otherwise the captured one, at the captured state.
-    let brine = pitzer_phase(
-        &["water", "na+", "cl-"],
-        313.15,
-        5.0e5,
-        &[
-            0.9090909090909091,
-            0.045454545454545456,
-            0.045454545454545456,
-        ],
-    )
-    .expect("a brine of ions and water has no neutral arm to take");
-    assert!(brine.ln_phi[1] > 0.0, "the ionic arm answered");
+    .expect("the sourced methanol row resolves");
+    assert!(result.henry[1].is_finite() && result.henry[1] > 0.0);
+    assert_eq!(result.henry[2], 1.0e12);
+    assert_eq!(result.henry[3], 1.0e12);
 }

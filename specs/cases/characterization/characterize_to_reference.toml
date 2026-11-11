@@ -198,7 +198,7 @@ group_density = [
 [[cases]]
 id = "delumped_and_shared_imaginary_boundaries"
 tolerance = 1.0e-12
-source = "Both flags at once: the source split first, then binned against the reference's equal-mass cuts."
+source = "Both flags at once: the source split first, then binned against the reference's mass-quantile cuts. **Upstream PR #4330 moved this row**: a quantile that falls outside its reference gap is projected to `nextUp`/`nextDown` of the gap rather than discarded for the midpoint, so the second cut sits where the mass is and the middle group takes the heavier source cuts."
 [cases.inputs]
 delump_before_recharacterization = true
 delump_resolution = 4
@@ -217,13 +217,13 @@ reference = [
 ]
 [cases.expected]
 group_moles = [
-    2.77880263128536, 1.36094742071323, 1.86024994800142,
+    2.77880263128536, 1.98959573542904, 1.23160163328561,
 ]
 group_molar_mass = [
-    0.116122650303254, 0.173228662062528, 0.274996902167632,
+    0.116122650303254, 0.184865006136985, 0.308144643274659,
 ]
 group_density = [
-    779.355803802129, 794.479407660991, 817.288476091106,
+    779.355803802129, 792.908460288090, 827.185553486031,
 ]
 
 [[cases]]

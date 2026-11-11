@@ -38,6 +38,7 @@ jobs:
       extension: ${{ steps.plan.outputs.extension }}
       rust-test: ${{ steps.plan.outputs.rust-test }}
       python-test: ${{ steps.plan.outputs.python-test }}
+      notebooks: ${{ steps.plan.outputs.notebooks }}
       wheel-data: ${{ steps.plan.outputs.wheel-data }}
       ui: ${{ steps.plan.outputs.ui }}
       docs-build: ${{ steps.plan.outputs.docs-build }}
@@ -212,7 +213,18 @@ jobs:
           # has to be in the clone; the default fetch-depth of one has only the tip.
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          # `gen_sheets.py --check` formats its generated Rust through rustfmt.
+          components: rustfmt
       - uses: Swatinem/rust-cache@v2
+      # **pyo3 links `libpython`.** `cargo test -p azoth-python --all-targets` builds a test
+      # binary against the interpreter, and a runner whose system Python has no shared library
+      # fails to link it (`unable to find library -lpython3.12`) - a failure that hides until a
+      # change to a crate the binding depends on invalidates the cached binary. `setup-python`
+      # supplies one; this job is still not the Python suite, which builds the extension.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       # **What this change reaches, which is not the whole workspace.** The full set runs in
       # `.github/workflows/nightly.yml` on a 24-hour cycle. A push runs the crates its diff
       # touches and every crate that depends on them - read off the manifests by
@@ -232,6 +244,10 @@ jobs:
       # `test/currency.test.ts`, which asks the module that job builds for the same three
       # documents - a stale fixture fails there whether or not this ran.
       - run: python tools/gen_ui_fixtures.py --check
+      # **The calculation catalogue and dispatcher, held to the specs.** It shells out to
+      # `rustfmt` so the generated files are what `cargo fmt --check` wants; this job has the
+      # toolchain, and `spec-validate` does not.
+      - run: python tools/gen_sheets.py --check
 
   rust-lint:
     name: rust-lint
@@ -251,7 +267,13 @@ jobs:
   python-test:
     name: python-test
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # **75, and the reason is measured.** The full suite's slowest target,
+    # `test_every_declared_range_check_runs`, runs every model case on both backends and took
+    # 3082 s on 2026-11-01 - 51 of the 53 minutes the step spent, and nearly double the 1681 s
+    # it cost on 2026-10-23 as the model set grew. The old 60-minute ceiling left seven minutes;
+    # the ceiling is a ceiling, not a budget to spend, and the next model's cases must not be
+    # what makes a release run fail on time.
+    timeout-minutes: 75
     needs: scope
     if: needs.scope.outputs.python-test == 'true'
     env:
@@ -336,6 +358,35 @@ jobs:
           .venv/bin/python -m coverage json -o coverage.json
           python tools/check_coverage.py \
             --base "${{ needs.scope.outputs.base }}" --json coverage.json
+  notebooks:
+    name: notebooks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: scope
+    if: needs.scope.outputs.notebooks == 'true'
+    env:
+      # A missing notebook extra is an error here, not a skip.
+      AZOTH_REQUIRE_NOTEBOOKS: "1"
+      VIRTUAL_ENV: ${{ github.workspace }}/.venv
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --extra notebook --extra dev --no-install-project
+      # The process notebook needs the compiled extension, and the wheel carries the
+      # embedded palette `Session` opens.
+      - run: .venv/bin/maturin develop
+      - name: execute every worked notebook
+        env:
+          PYTHONPATH: ""
+          # The notebooks select the inline backend themselves; this is only the font cache,
+          # and `runner` is a step-level context.
+          MPLCONFIGDIR: ${{ runner.temp }}/mpl
+        run: .venv/bin/python tools/check_notebooks.py
   wheel-data:
     name: wheel-data
     runs-on: ubuntu-latest
@@ -422,6 +473,10 @@ jobs:
         working-directory: ui
       - run: npm run build
         working-directory: ui
+      # The built artifact, served under the path Pages uses: a relative build can be right on
+      # disk and wrong when served under `/Azoth/`, which is what this asks the page itself.
+      - run: npm run check:dist
+        working-directory: ui
       # **The boundary the Rust tests cannot reach.** Every function in `azoth-wasm` is a call
       # into the wire layer and a string out, so what is untested there is the seam itself: that
       # a wasm-bindgen constructor works, that a `Result` arrives as a JS exception rather than a
@@ -469,6 +524,9 @@ jobs:
         with:
           python-version: "3.12"
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          # `gen_sheets.py` formats its generated Rust through rustfmt.
+          components: rustfmt
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v5
       # The generators import the runtime to render bounds, so the full dev set
@@ -503,6 +561,7 @@ jobs:
           .venv/bin/python tools/gen_python_result.py
           .venv/bin/python tools/gen_rust_model_records.py
           .venv/bin/python tools/gen_parameter_bounds.py
+          .venv/bin/python tools/gen_sheets.py
       - name: Fail if anything drifted
         run: |
           if ! git diff --exit-code; then
@@ -515,6 +574,7 @@ jobs:
             echo "::error::  python tools/gen_python_register.py"
             echo "::error::  python tools/gen_guard_theorems.py"
             echo "::error::  python tools/gen_dispatch.py"
+            echo "::error::  python tools/gen_sheets.py"
             echo "::error::  python tools/gen_python_records.py"
             echo "::error::  python tools/gen_python_wrappers.py"
             echo "::error::  python tools/gen_python_bridge.py"

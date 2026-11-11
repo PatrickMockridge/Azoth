@@ -1,0 +1,130 @@
+model = "process.leak_blowdown"
+[[cases]]
+id = "no_forward_flow_is_a_valid_zero"
+tolerance = 1.0e-9
+source = "NeqSim `LeakModel.calculateSourceTerm` with the initial pressure at 5 bar and the receiving pressure at 6 bar, where `calculateMassFlowRate` returns zero and the pressure update is floored at the receiver. The series runs to its declared points with a zero rate, the total is zero and the momentum is negative.\n"
+[cases.inputs]
+components = ["methane"]
+initial_z = [1.0]
+initial_t = 300.0
+initial_p = 500000.0
+duration = 3.0
+vessel_volume = 1.0
+hole_diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 600000.0
+time_step = 1.0
+[cases.expected]
+status = "valid"
+number_of_points = 4
+recorded_points = 4
+total_mass_released = 0.0
+peak_mass_flow_rate = 0.0
+time_to_empty = 0.0
+[[cases]]
+id = "a_single_step_depletes_the_vessel"
+tolerance = 1.0e-4
+source = "The one-step over-depletion: a 100 s step on a 1 m3 methane vessel at 50 bar (`pr_single_step_depletion_100s`). The class records the first state, subtracts more than the inventory, and stops at the 1% floor; the total released is larger than the inventory because `mdot dt` is not clamped. The port's rate agrees to `1.1e-5`.\n"
+[cases.inputs]
+components = ["methane"]
+initial_z = [1.0]
+initial_t = 300.0
+initial_p = 5000000.0
+duration = 100.0
+vessel_volume = 1.0
+hole_diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 101325.0
+time_step = 100.0
+[cases.expected]
+status = "valid"
+number_of_points = 2
+recorded_points = 1
+total_mass_released = 43.050562364190256
+peak_mass_flow_rate = 0.4305056236419026
+time_to_empty = 199.99999999999997
+[[cases]]
+id = "methane_50bara_ten_seconds"
+tolerance = 5.0e-3
+source = "The `LeakModelTest` source-term state re-cased on PR (`pr_methane_50bara_10s_1s`): methane at 300 K and 50 bar, a 1 m3 vessel and a 1 cm opening with `Cd = 0.62`, for ten one-second steps. **Tolerance**: the totals agree to `4.4e-4` and the initial rate to `1.1e-5`; the worst layer is the tenth pressure at `3.3e-3`, because the two `getGamma` routes differ by `3e-5` at the first state and the isentropic recurrence multiplies it.\n"
+[cases.inputs]
+components = ["methane"]
+initial_z = [1.0]
+initial_t = 300.0
+initial_p = 5000000.0
+duration = 10.0
+vessel_volume = 1.0
+hole_diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 101325.0
+time_step = 1.0
+[cases.expected]
+status = "valid"
+number_of_points = 11
+recorded_points = 11
+total_mass_released = 3.6632755290249834
+peak_mass_flow_rate = 0.4305056236419026
+time_to_empty = 17.01847933151331
+[[cases]]
+id = "propane_two_phase_blowdown"
+tolerance = 1.0e-9
+source = "A propane vessel at 300 K and 11 bar with a 0.01 m3 volume and a 1 cm opening (`pr_propane_11bara_10s_1s`), where the first state is a liquid root the class labels `OIL` and its `getBeta()` reports `1.0`. **Recorded divergences**: the port publishes the physical `0.0`, and the class's cached initial density feeds its velocity; the ten-step total differs by `3.9e-2`, so this case states the shape and the capture holds the numbers.\n"
+[cases.inputs]
+components = ["propane"]
+initial_z = [1.0]
+initial_t = 300.0
+initial_p = 1100000.0
+duration = 10.0
+vessel_volume = 0.01
+hole_diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 101325.0
+time_step = 1.0
+[cases.expected]
+status = "valid"
+number_of_points = 11
+recorded_points = 11
+[[cases]]
+id = "subsonic_flow_uses_the_density_branch"
+tolerance = 2.0e-3
+source = "Methane at 2 bar into 1.9 bar (`pr_methane_2bara_subsonic_1s`), where the pressure ratio is above the critical ratio and the class's subsonic `Cd A sqrt(2 rho dP)` branch runs. **Tolerance**: the total agrees to `1.45e-3`, the divergence the class's cached initial density leaves in the density-dependent branch; the rate itself agrees to `3e-8` at the first point.\n"
+[cases.inputs]
+components = ["methane"]
+initial_z = [1.0]
+initial_t = 300.0
+initial_p = 200000.0
+duration = 1.0
+vessel_volume = 1.0
+hole_diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 190000.0
+time_step = 1.0
+[cases.expected]
+status = "valid"
+number_of_points = 2
+recorded_points = 2
+total_mass_released = 0.015005383850676528
+peak_mass_flow_rate = 0.007825829692113012
+time_to_empty = 3.834835267575316
+[[cases]]
+id = "a_mixture_is_accepted"
+tolerance = 1.0e-3
+source = "A methane/ethane mixture at 300 K and 50 bar (`pr_methane_ethane_50bara_5s`); the class's molar mass and capacity ratio are the mixture's, not a pure component's. The total agrees to `3.0e-4`.\n"
+[cases.inputs]
+components = ["methane", "ethane"]
+initial_z = [0.9, 0.1]
+initial_t = 300.0
+initial_p = 5000000.0
+duration = 5.0
+vessel_volume = 1.0
+hole_diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 101325.0
+time_step = 1.0
+[cases.expected]
+status = "valid"
+number_of_points = 6
+recorded_points = 6
+total_mass_released = 2.4952489359443843
+peak_mass_flow_rate = 0.45003692062306727
+time_to_empty = 11.08908545765428

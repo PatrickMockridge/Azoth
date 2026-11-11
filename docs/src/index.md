@@ -1,19 +1,23 @@
 # azoth
 
-This book is the **human entry point** for azoth: how to install it, pick a calculation,
+This book is the **human entry point** for azoth: how to use the editor, pick a calculation,
 read its page, and call it. The **agentic entry point** is
 [the agentic section](./agentic/index.md) and, at the repository root, `CLAUDE.md` and
 `AGENTS.md`.
 
-Start here: [install it](https://github.com/PatrickMockridge/Azoth#install) - `azoth-engine`
-is not on PyPI yet, so a checkout is where 0.1 is built from - pick a calculation from
+**Use it in the browser:** [the editor](https://patrickmockridge.github.io/azoth/) for the
+flowsheet and its calculation book, then [calculation sheets](./using/calculations.md) and
+[reading a calculation page](./using/reading-a-calculation.md) for the guide.
+
+Start here: [install it](https://github.com/PatrickMockridge/azoth#install) - `azoth-engine`
+is on PyPI - pick a calculation from
 [What is implemented](#what-is-implemented), read its page for the equation, range and
 worked example, then call it as the page shows or over arrays with
 [the batch API](#the-batch-api).
 
-Every calculation in this book ships with its equation, where the equation came
-from, the range in which it is validated, its assumptions, a worked example, and
-the tests that exercise it. Nothing here is prose written alongside code: every
+Every calculation in this book ships with a statement of what it is for, its equation, where
+the equation came from, the range in which it is validated, the conditions it does not check, a
+worked example, and the tests that exercise it. Nothing here is prose written alongside code: every
 page under [Equations of state](./eos/index.md), [Hydraulics](./hydraulics/index.md),
 [Unit operations](./process/index.md), [Reactions](./reactions/index.md) and
 [Heat transfer](./thermal/index.md) is **generated from the same specification files
@@ -52,12 +56,13 @@ Each page has the same shape, and the order is deliberate:
 
 | Section | Why it is there |
 |---|---|
+| What this is for | What the calculation computes and the decision it supports |
 | Equation | In LaTeX for a reader, and in the form the library evaluates, so you can check one against the other |
 | Source | Where the equation came from, and what about that attribution is not confirmed |
 | Notes | The reasoning you need in order to judge a number: where this implementation departs from its source, why a constant takes the value it does, which claims are unconfirmed |
 | Inputs and outputs | Names, units, and what they mean |
 | Valid range | The bounds, what happens when one is violated, and why each exists |
-| Assumptions | What is **not** checked at runtime, and is therefore your responsibility |
+| Conditions for a valid result | What is **not** checked at runtime, and is therefore your responsibility |
 | Worked example | A fully specified case you can reproduce by hand |
 | Tests | What is actually exercised, including what is deliberately skipped and why |
 
@@ -70,8 +75,8 @@ Five sections, and the difference between them is the point:
   quantities with units.
 - **Hydraulics** — a kernel of correlations over a geometry, through Darcy-Weisbach
   pressure drop.
-- **Unit operations** — the palette and the flowsheet: 29 unit operations declared on
-  typed channels, 28 of them with kernels, and the checker that holds a flowsheet to the
+- **Unit operations** — the palette and the flowsheet: 31 unit operations declared on
+  typed channels, 30 of them with kernels, and the checker that holds a flowsheet to the
   calculus's rules. **The executor that runs one is built** — it converges the shipped
   flowsheet's recycle, against a NeqSim `ProcessSystem` capture.
 - **Reactions** — chemical equilibrium, the reactive flashes, and the kinetics rate law
@@ -88,7 +93,9 @@ Five sections, and the difference between them is the point:
 
 - [`characterization.assay_mass_fractions`](./characterization/assay_mass_fractions.md) — An oil assay's declared fractions resolved to a mass basis
 - [`characterization.characterise_plus_fraction`](./characterization/characterise_plus_fraction.md) — A C7+ end characterised end to end: model, split and lumps
+- [`characterization.characterize_to_common_slate`](./characterization/characterize_to_common_slate.md) — Several fluids re-characterized onto one shared pseudo-component slate
 - [`characterization.characterize_to_reference`](./characterization/characterize_to_reference.md) — A fluid's pseudo-components re-cut onto another fluid's slate
+- [`characterization.combine_reservoir_fluids`](./characterization/combine_reservoir_fluids.md) — Several reservoir fluids blended onto one pseudo-component slate
 - [`characterization.delumping`](./characterization/delumping.md) — A lumped pseudo-component table split into a finer grid
 - [`characterization.lumping`](./characterization/lumping.md) — A cut table grouped into equal-mass lumps
 - [`characterization.oil_assay_derivation`](./characterization/oil_assay_derivation.md) — An assay's cuts derived to molar masses and moles, one component each
@@ -97,17 +104,24 @@ Five sections, and the difference between them is the point:
 - [`characterization.tbp_closure`](./characterization/tbp_closure.md) — TBP cut molar mass from its normal boiling point and specific gravity
 - [`characterization.tbp_cut_boundaries`](./characterization/tbp_cut_boundaries.md) — A cumulative TBP curve cut into an assay, one row per interval
 - [`characterization.tbp_density`](./characterization/tbp_density.md) — TBP cut specific gravity from its boiling point and molar mass
+- [`characterization.tbp_fraction_component`](./characterization/tbp_fraction_component.md) — The component card NeqSim builds from a TBP cut
 - [`characterization.tbp_grouping`](./characterization/tbp_grouping.md) — A fluid's components grouped into boiling-point bins
+- [`characterization.transfer_binary_interaction_parameters`](./characterization/transfer_binary_interaction_parameters.md) — A fluid's interaction table written onto another fluid's slate
 - [`characterization.whitson_gamma_split`](./characterization/whitson_gamma_split.md) — A plus fraction split into carbon-number cuts by Whitson's three-parameter gamma
 
 **Equations of state** - [`eos/index.md`](./eos/index.md):
 
 - [`eos.antoine_vapor_pressure`](./eos/antoine_vapor_pressure.md)
+- [`eos.beggs_brill_segment`](./eos/beggs_brill_segment.md)
 - [`eos.chapman_enskog_diffusivity`](./eos/chapman_enskog_diffusivity.md)
 - [`eos.chung_conductivity`](./eos/chung_conductivity.md)
 - [`eos.chung_viscosity`](./eos/chung_viscosity.md)
 - [`eos.co2_water_diffusivity`](./eos/co2_water_diffusivity.md)
 - [`eos.costald_molar_volume`](./eos/costald_molar_volume.md)
+- [`eos.de_waard_milliams_corrosion`](./eos/de_waard_milliams_corrosion.md)
+- [`eos.electrolyte_scale_calculator`](./eos/electrolyte_scale_calculator.md)
+- [`eos.emulsion_viscosity`](./eos/emulsion_viscosity.md)
+- [`eos.erosion_prediction`](./eos/erosion_prediction.md)
 - [`eos.firozabadi_ramley_interface_tension`](./eos/firozabadi_ramley_interface_tension.md)
 - [`eos.fuller_schettler_giddings_diffusivity`](./eos/fuller_schettler_giddings_diffusivity.md)
 - [`eos.hayduk_minhas_diffusivity`](./eos/hayduk_minhas_diffusivity.md)
@@ -143,6 +157,8 @@ Five sections, and the difference between them is the point:
 - [`eos.rackett_molar_volume`](./eos/rackett_molar_volume.md)
 - [`eos.rk_alpha_ab`](./eos/rk_alpha_ab.md)
 - [`eos.rk_departure`](./eos/rk_departure.md)
+- [`eos.scale_inhibitor_performance`](./eos/scale_inhibitor_performance.md)
+- [`eos.scale_kinetics`](./eos/scale_kinetics.md)
 - [`eos.scale_mass`](./eos/scale_mass.md)
 - [`eos.scale_prediction`](./eos/scale_prediction.md)
 - [`eos.scale_saturation_ratio`](./eos/scale_saturation_ratio.md)
@@ -172,12 +188,14 @@ Five sections, and the difference between them is the point:
 - [`eos.aqueous_viscosity`](./eos/aqueous_viscosity.md) — Liquid viscosity of an aqueous phase
 - [`eos.argon_solid_phase`](./eos/argon_solid_phase.md) — Solid argon reference phase state
 - [`eos.barite_celestite_solid_solution`](./eos/barite_celestite_solid_solution.md) — Barite-celestite solid-solution composition and saturation
+- [`eos.brine_mixing_scale_evaluator`](./eos/brine_mixing_scale_evaluator.md) — Mineral-scale risk of mixing two incompatible brines
 - [`eos.bubble_pressure`](./eos/bubble_pressure.md) — Bubble-point pressure
 - [`eos.bubble_temperature`](./eos/bubble_temperature.md) — Bubble-point temperature
 - [`eos.bwrs_phase`](./eos/bwrs_phase.md) — BWRS (MBWR-32) phase state
 - [`eos.calc_ionic_composition`](./eos/calc_ionic_composition.md) — Molalities and activity coefficients of a phase
 - [`eos.capillary_dew_point`](./eos/capillary_dew_point.md) — Capillary dew point
 - [`eos.cdft_surface_tension`](./eos/cdft_surface_tension.md) — Surface tension from the classical density functional theory
+- [`eos.closed_loop_deposition_solver`](./eos/closed_loop_deposition_solver.md) — Closed-loop deposition and flow solver over a Beggs-and-Brills line
 - [`eos.co2_brine_phase_equilibrium`](./eos/co2_brine_phase_equilibrium.md) — Constrained CO2/brine phase selection
 - [`eos.co2_phase`](./eos/co2_phase.md) — CO2 reference phase state
 - [`eos.critical_point`](./eos/critical_point.md) — Mixture critical point
@@ -187,6 +205,7 @@ Five sections, and the difference between them is the point:
 - [`eos.effective_diffusion`](./eos/effective_diffusion.md) — Effective diffusion coefficients from a binary matrix
 - [`eos.electrolyte_cpa_statoil_phase`](./eos/electrolyte_cpa_statoil_phase.md) — Phase state of an electrolyte-CPA fluid
 - [`eos.eos_cg_phase`](./eos/eos_cg_phase.md) — EOS-CG phase state
+- [`eos.equilibrium_sound_speed`](./eos/equilibrium_sound_speed.md) — Homogeneous-equilibrium speed of sound
 - [`eos.filippov_conductivity`](./eos/filippov_conductivity.md) — Liquid thermal conductivity from the Filippov mixing rule
 - [`eos.flowline_scale_profile`](./eos/flowline_scale_profile.md) — Mineral-scale saturation indices along a flowline's temperature and pressure profile
 - [`eos.freezing_point`](./eos/freezing_point.md) — Freezing-point temperature
@@ -212,6 +231,7 @@ Five sections, and the difference between them is the point:
 - [`eos.hydrate_fraction`](./eos/hydrate_fraction.md) — Hydrate fraction
 - [`eos.hydrate_inhibitor_concentration`](./eos/hydrate_inhibitor_concentration.md) — Hydrate inhibitor concentration
 - [`eos.hydrate_inhibitor_wt`](./eos/hydrate_inhibitor_wt.md) — Hydrate inhibitor weight fraction
+- [`eos.hydrate_risk_map`](./eos/hydrate_risk_map.md) — Hydrate risk map along a pipeline profile
 - [`eos.hydrogen_phase`](./eos/hydrogen_phase.md) — Hydrogen reference phase state
 - [`eos.interface_properties`](./eos/interface_properties.md) — Interface tension by NeqSim's phase-pair dispatch
 - [`eos.kent_eisenberg_phase`](./eos/kent_eisenberg_phase.md) — Fugacity coefficients of a Kent-Eisenberg phase
@@ -227,8 +247,13 @@ Five sections, and the difference between them is the point:
 - [`eos.pcsaft_rahmat_phase`](./eos/pcsaft_rahmat_phase.md) — PC-SAFT (Rahmat) phase state
 - [`eos.ph_flash`](./eos/ph_flash.md) — Pressure-enthalpy flash
 - [`eos.phase_transport`](./eos/phase_transport.md) — A phase's transport properties, by NeqSim's phase-type dispatch
+- [`eos.pipe_beggs_and_brills`](./eos/pipe_beggs_and_brills.md) — Segmented pipeline pressure and temperature profile by Beggs and Brill
+- [`eos.pipeline_cooldown`](./eos/pipeline_cooldown.md) — Lumped pipeline cooldown after shutdown
+- [`eos.pitzer_hydrate_formation_pressure`](./eos/pitzer_hydrate_formation_pressure.md) — Hydrate formation pressure of a Pitzer brine
+- [`eos.pitzer_hydrate_formation_temperature`](./eos/pitzer_hydrate_formation_temperature.md) — Hydrate formation temperature of a Pitzer brine
 - [`eos.pitzer_phase`](./eos/pitzer_phase.md) — Activity coefficients of a Pitzer electrolyte phase
 - [`eos.pr_cpa_phase`](./eos/pr_cpa_phase.md) — Peng-Robinson CPA phase state
+- [`eos.production_chemical_scale_scenario`](./eos/production_chemical_scale_scenario.md) — Treatment-aware mineral-scale scenario for a produced water
 - [`eos.ps_flash`](./eos/ps_flash.md) — Pressure-entropy flash
 - [`eos.pt_flash`](./eos/pt_flash.md) — Pressure-temperature flash
 - [`eos.pt_phase_envelope`](./eos/pt_phase_envelope.md) — PT phase envelope
@@ -241,9 +266,15 @@ Five sections, and the difference between them is the point:
 - [`eos.saft_vr_mie_phase`](./eos/saft_vr_mie_phase.md) — SAFT-VR-Mie phase state
 - [`eos.salt_precipitation`](./eos/salt_precipitation.md) — Scale precipitation of one mineral
 - [`eos.saturate_with_water`](./eos/saturate_with_water.md) — Water saturation of a fluid
+- [`eos.scale_control_assessor`](./eos/scale_control_assessor.md) — Residual scaling risk after threshold inhibition
+- [`eos.scale_deposition_accumulator`](./eos/scale_deposition_accumulator.md) — Segmented pipeline scale deposition from a temperature and pressure profile
+- [`eos.scale_remediation_advisor`](./eos/scale_remediation_advisor.md) — Dissolver and solvent recommendations for a scaled or fouled deposit
 - [`eos.soreide_whitson_phase`](./eos/soreide_whitson_phase.md) — Phase state of a Soreide-Whitson fluid
+- [`eos.sound_speed`](./eos/sound_speed.md) — Speed of sound of a mixture
 - [`eos.srk_cpa_phase`](./eos/srk_cpa_phase.md) — Soave-Redlich-Kwong CPA phase state
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test
+- [`eos.stream_scale_analyzer`](./eos/stream_scale_analyzer.md) — Scale mass rates of an aqueous stream from its coupled mineral equilibrium
+- [`eos.surf_cooldown`](./eos/surf_cooldown.md) — Surface flowline cooldown and no-touch time
 - [`eos.th_flash`](./eos/th_flash.md) — Temperature-enthalpy flash
 - [`eos.thermal_conductivity`](./eos/thermal_conductivity.md) — Liquid thermal conductivity from the Pedersen (PFCT) correlation
 - [`eos.tp_flash_saft`](./eos/tp_flash_saft.md) — SAFT-VR-Mie flash
@@ -259,6 +290,7 @@ Five sections, and the difference between them is the point:
 - [`eos.unifac_psrk_activity_coefficients`](./eos/unifac_psrk_activity_coefficients.md) — Activity coefficients from UNIFAC with PSRK temperature-dependent interaction parameters
 - [`eos.unifac_umrpru_activity_coefficients`](./eos/unifac_umrpru_activity_coefficients.md) — Activity coefficients from UNIFAC with UMR-PRU group-interaction parameters
 - [`eos.uniquac_activity_coefficients`](./eos/uniquac_activity_coefficients.md) — Activity coefficients from the UNIQUAC model
+- [`eos.valve_scale_drift`](./eos/valve_scale_drift.md) — Valve trim fouling from a deposit growth rate
 - [`eos.van_laar_acid_activity_coefficients`](./eos/van_laar_acid_activity_coefficients.md) — Activity coefficients from the Van Laar model for the water-nitric-sulfuric acid system
 - [`eos.vh_flash`](./eos/vh_flash.md) — Volume-enthalpy flash
 - [`eos.viscosity`](./eos/viscosity.md) — Liquid viscosity from the Pedersen (PFCT) heavy-oil correlation
@@ -295,6 +327,7 @@ Five sections, and the difference between them is the point:
 *Models* — whose specs fix a procedure rather than an equation:
 
 - [`process.absorption_column`](./process/absorption_column.md) — Absorption column
+- [`process.anti_surge_recycle`](./process/anti_surge_recycle.md) — Anti-surge recycle calculator
 - [`process.component_splitter`](./process/component_splitter.md) — Component splitter
 - [`process.compressor`](./process/compressor.md) — Compressor
 - [`process.cooler`](./process/cooler.md) — Cooler
@@ -307,7 +340,10 @@ Five sections, and the difference between them is the point:
 - [`process.gibbs_reactor`](./process/gibbs_reactor.md) — Gibbs reactor
 - [`process.heat_exchanger`](./process/heat_exchanger.md) — Heat exchanger
 - [`process.heater`](./process/heater.md) — Heater
+- [`process.hem_release`](./process/hem_release.md) — Homogeneous-equilibrium orifice release
+- [`process.leak_blowdown`](./process/leak_blowdown.md) — Vessel leak blowdown
 - [`process.manifold`](./process/manifold.md) — Manifold
+- [`process.map_turbo_expander_compressor`](./process/map_turbo_expander_compressor.md) — Map turbo-expander compressor
 - [`process.mixer`](./process/mixer.md) — Mixer
 - [`process.packed_column`](./process/packed_column.md) — Packed column
 - [`process.pipe`](./process/pipe.md) — Pipe
@@ -315,6 +351,8 @@ Five sections, and the difference between them is the point:
 - [`process.pump`](./process/pump.md) — Pump
 - [`process.rate_based_packed_column`](./process/rate_based_packed_column.md) — Rate-based packed column
 - [`process.separator`](./process/separator.md) — Separator
+- [`process.separator_capacity_assessment`](./process/separator_capacity_assessment.md) — Separator capacity assessment
+- [`process.separator_performance`](./process/separator_performance.md) — Separator performance calculator
 - [`process.shortcut_distillation_column`](./process/shortcut_distillation_column.md) — Shortcut distillation column
 - [`process.splitter`](./process/splitter.md) — Splitter
 - [`process.stirred_tank_reactor`](./process/stirred_tank_reactor.md) — Stirred-tank reactor
@@ -322,6 +360,7 @@ Five sections, and the difference between them is the point:
 - [`process.tank`](./process/tank.md) — Tank
 - [`process.three_phase_separator`](./process/three_phase_separator.md) — Three-phase separator
 - [`process.throttling_valve`](./process/throttling_valve.md) — Throttling valve
+- [`process.turbo_expander_compressor`](./process/turbo_expander_compressor.md) — Turbo-expander compressor
 
 **Reactions** - [`reactions/index.md`](./reactions/index.md):
 
@@ -348,7 +387,19 @@ Five sections, and the difference between them is the point:
 
 **Heat transfer** - [`thermal/index.md`](./thermal/index.md):
 
+- [`thermal.boiling_heat_transfer`](./thermal/boiling_heat_transfer.md)
 - [`thermal.conduction_plane_wall`](./thermal/conduction_plane_wall.md)
+- [`thermal.fouling_model`](./thermal/fouling_model.md)
+- [`thermal.incremental_zone_analysis`](./thermal/incremental_zone_analysis.md)
+- [`thermal.lmtd_correction_factor`](./thermal/lmtd_correction_factor.md)
+- [`thermal.shah_condensation`](./thermal/shah_condensation.md)
+- [`thermal.shell_and_tube_design`](./thermal/shell_and_tube_design.md)
+- [`thermal.shell_and_tube_rating`](./thermal/shell_and_tube_rating.md)
+- [`thermal.shell_and_tube_vibration`](./thermal/shell_and_tube_vibration.md)
+- [`thermal.tema_standard`](./thermal/tema_standard.md)
+- [`thermal.tube_insert_model`](./thermal/tube_insert_model.md)
+- [`thermal.two_phase_pressure_drop`](./thermal/two_phase_pressure_drop.md)
+- [`thermal.zone_rating`](./thermal/zone_rating.md)
 <!-- END GENERATED: implemented -->
 
 Relief valve *sizing* to a standard is not implemented; `hydraulics.choked_flow_area`
@@ -439,7 +490,8 @@ a second implementation, so the cross-language claim is unchanged — and it del
 gives up one thing the scalar API provides, which is unit checking: inputs are plain
 numbers in the spec's canonical unit, and outputs are SI base magnitudes with a unit map.
 `orifice_flow` is the live example, whose `d` is in **millimetres**, so `d=[50.0]` means
-50 mm.
+50 mm. [Python scripting and Jupyter](./using/python.md) has a worked sweep, the notebook
+install, and the rules this section states in one place.
 
 ## Licence
 

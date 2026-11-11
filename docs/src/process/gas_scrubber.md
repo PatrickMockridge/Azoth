@@ -28,7 +28,19 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `gas_in_liquid` | dimensionless | the fraction of the vapour's moles carried into the liquid outlet. Zero is the equilibrium split and no entrainment. |
 | `internal_diameter` | m | *Optional.* the vessel's internal diameter, which `getSepCrossArea` is `pi d**2 / 4` over. **Absent means the metric is not computed** - a vessel nobody stated a size for has nothing to check. |
 | `design_gas_load_factor` | m/s | *Optional.* the Souders-Brown `K` the vessel is designed to: the settling velocity per root of the density ratio, `0.04` to `0.10` m/s for a vertical scrubber and `0.11` by `Separator`'s own initialiser. **Absent means the metric is not computed**, as with the diameter. |
+| `safety_factor` | dimensionless | *Optional.* the factor `sizeFromFlow` multiplies the gas volumetric flow by. **Absent leaves `required_diameter` absent**; present requires the diameter and load factor. |
+| `mesh_pad_area` | m**2 | *Optional.* `configureMeshPad`'s face area; a positive area turns `has_mesh_pad` on. Requires `mechanical_design`. |
+| `mesh_pad_thickness` | mm | *Optional.* the mesh pad's thickness. **Absent is the class's `100` mm.** Requires `mechanical_design`. |
+| `mesh_pad_elevation` | m | *Optional.* `setMeshPadElevation`'s elevation. **Absent is `0`.** Requires `mechanical_design`. |
 | `heat_input` | W | *Optional.* heat added to the feed before the flash. When omitted the flash is at the feed's temperature; when given it is at the enthalpy the duty implies and both outlets are at the temperature that solves for. |
+| `mechanical_design` | - | *Optional.* run `GasScrubberMechanicalDesign.calcDesign` and publish its vessel. **Absent is false**; present requires `design_gas_load_factor`, and the group below is refused without it. |
+| `orientation` | horizontal / vertical | *Optional.* the vessel's orientation, which picks the gas area in the design. **Absent is the class's `vertical`**; the capacity metric does not read it. |
+| `volume_safety_factor` | dimensionless | *Optional.* `getVolumetricDesignFactor` from the scrubber standard. **Absent is the class default's `1.1`** - not the separator's `1.0`. |
+| `design_liquid_level_fraction` | dimensionless | *Optional.* the horizontal gas area's derating, `1 - f`; a vertical vessel ignores it. **Absent is `0.8`**, which is what the base class leaves after its own `calcDesign`. |
+| `max_operation_pressure` | Pa | *Optional.* `getMaxOperationPressure`, the pressure the ASME wall-thickness formula divides by. **Absent is `100` bara.** |
+| `allowable_stress` | Pa | *Optional.* the material plate standard's allowable stress. **Absent is `425` MPa.** |
+| `joint_efficiency` | dimensionless | *Optional.* the plate joint-efficiency factor. **Absent is `1.0`.** |
+| `corrosion_allowance` | mm | *Optional.* the corrosion allowance the wall thickness adds. **Absent is `0`.** |
 
 
 ## Outputs
@@ -46,6 +58,43 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `liquid_t` | K | the liquid outlet's temperature, the same as the vapour's - one flash decides both. |
 | `liquid_h` | J/mol | the liquid outlet's molar enthalpy at its own state. |
 | `capacity_utilization` | dimensionless | *Optional.* `getCapacityUtilization`: the vapour's volumetric flow over what the cross-section admits at the design load factor, `Q / (K sqrt((rho_l - rho_g)/rho_g) A)`. Present only when both mechanical inputs are supplied. |
+| `required_diameter` | m | *Optional.* `sizeFromFlow(safety_factor)`'s diameter. Absent when no safety factor or no gas. |
+| `has_mesh_pad` | - | *Optional.* whether a positive mesh-pad area was configured. Present with the design. |
+| `mesh_pad_area` | m**2 | *Optional.* the configured mesh-pad face area, `0` when none. |
+| `mesh_pad_thickness` | mm | *Optional.* the mesh pad's thickness, `100` by default. |
+| `mesh_pad_elevation` | m | *Optional.* the mesh pad's elevation, `0` by default. |
+| `has_inlet_cyclones` | - | *Optional.* whether inlet cyclones are configured; the class's default is none. |
+| `has_demisting_cyclones` | - | *Optional.* whether demisting cyclones are configured; the class's default is none. |
+| `design_inner_diameter` | m | *Optional.* `calcDesign`'s sized internal diameter, from the gas flow, the design `K` and the orientation's gas area. Absent unless `mechanical_design`. |
+| `design_tantan_length` | m | *Optional.* the tangent-to-tangent length, always `5 d` for this class. |
+| `design_outer_diameter` | m | *Optional.* the inside diameter plus twice the wall thickness. |
+| `design_wall_thickness` | m | *Optional.* the ASME wall thickness at the stated pressure, allowable stress, joint efficiency and corrosion allowance. |
+| `max_design_gas_volume_flow` | m**3/h | *Optional.* the design velocity over the sized gas area, in m3/hr. |
+| `vessel_shell_weight` | kg | *Optional.* the class's empty-shell estimate, `0.032 wall_mm d_mm L`. |
+| `piping_weight` | kg | *Optional.* the class's piping allowance, `0.4` of the shell weight. |
+| `structural_weight` | kg | *Optional.* the class's structural allowance, `0.1` of the shell weight. |
+| `electrical_weight` | kg | *Optional.* the class's electrical allowance, `0.08` of the shell weight. |
+| `internals_weight` | kg | *Optional.* the internals' weight. `0.0` here: the class leaves it at zero without internals sections, and this port builds none. |
+| `total_weight` | kg | *Optional.* the shell plus the class's piping, structural and electrical allowances. |
+| `module_width` | m | *Optional.* `2 d`. |
+| `module_length` | m | *Optional.* `1.5 L` - the class writes `2.5 d` first and overwrites it with this. |
+| `module_height` | m | *Optional.* `2 d`, with no separator's `+ 1`. |
+| `vessel_volume` | m**3 | *Optional.* the cylinder's internal volume, `pi (d/2)^2 L`. |
+| `hhll` | m | *Optional.* the high-high liquid level, `0.80 d`. |
+| `hll` | m | *Optional.* the high liquid level, `0.70 d`. |
+| `nll` | m | *Optional.* the normal liquid level, `0.50 d`. |
+| `lll` | m | *Optional.* the low liquid level, `0.30 d`. |
+| `llll` | m | *Optional.* the low-low liquid level, `0.15 d`. |
+| `weir_height` | m | *Optional.* the weir height, `0.25 d`. |
+| `nil` | m | *Optional.* the normal interface level, `0.20 d`. |
+| `effective_length_liquid` | m | *Optional.* the effective liquid separation length, `0.82 L`. |
+| `effective_length_gas` | m | *Optional.* the effective gas separation length, `0.64 L`. |
+| `inlet_nozzle_id` | m | *Optional.* the inlet nozzle's inside diameter at API 12J's `8000 Pa` momentum limit, rounded up in `50` mm steps with a `50` mm floor. |
+| `gas_outlet_nozzle_id` | m | *Optional.* the gas outlet nozzle's inside diameter at `20` m/s, rounded up in `50` mm steps. |
+| `oil_outlet_nozzle_id` | m | *Optional.* the oil outlet nozzle's inside diameter at `1.5` m/s, rounded up in `25` mm steps with a `50` mm floor. |
+| `surge_volume` | m**3 | *Optional.* the volume between NLL and HLL over the effective liquid length. |
+| `surge_time` | s | *Optional.* the surge volume over the liquid flow, with the class's unit slip: m3/s divided as though m3/hr. |
+| `liquid_retention_time` | s | *Optional.* the volume at NLL over the same flow, again as though m3/hr. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -53,6 +102,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `internal_diameter > 0` | raises | a diameter is a positive length, and the cross-section divides by nothing but its own square - NeqSim's `getSepCrossArea` returns a zero area and its `getCapacityUtilization` then answers NaN, which this refuses at the input instead |
 | `design_gas_load_factor > 0` | raises | a Souders-Brown load factor is a positive velocity; zero is a vessel that admits no gas at all |
 | `gas_in_liquid >= 0 and gas_in_liquid <= 1` | raises | an entrainment fraction is a fraction |
+| `volume_safety_factor > 0` | raises | a flow multiplier; zero sizes nothing |
+| `design_liquid_level_fraction >= 0 and design_liquid_level_fraction < 1` | raises | a fraction of the cross-section; at one there is no gas area |
+| `max_operation_pressure > 0` | raises | a pressure the wall thickness divides by |
+| `allowable_stress > 0` | raises | the ASME denominator subtracts the pressure from twice it |
+| `joint_efficiency > 0 and joint_efficiency <= 1` | raises | a weld joint efficiency is at most one |
+| `corrosion_allowance >= 0` | raises | an allowance adds metal; a negative one removes it |
 
 ## Assumptions
 
@@ -63,7 +118,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the three parameters are the separator's**, and the entry declares all three for the reason the separator does: a scrubber holds its feed's temperature unless a `heat_input` moves the flash, and a pressure drop is not a throttling.
 - **an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)`, so accepting one would let a case hand over a state that does not exist.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `GasScrubber` also carries a mechanical design with a mesh pad, a liquid level and a vessel sizing, and a `runTransient`. **None is here**: the capacity metric reads the vessel's size and its design K, and nothing else of them.
+- **the mechanical design is a second sizing machine**: the separator's `calcDesign` runs first on the separator standard's `1.0` safety, then this subclass re-sizes at the scrubber standard's `1.1`, `Fg = 1`, `length = 5 d` and a module `2 d` high.
+- **the design basis is declared as inputs at the standards' own values**: volume safety `1.1`, the `100` bara maximum operation pressure, `425` MPa allowable stress, joint efficiency `1.0` and no corrosion allowance. The levels and nozzle formulas are the separator's.
+- NeqSim's `GasScrubber` also carries a mesh pad, vane pack and cyclone surface, and a `runTransient`. **None is here**: `calcDesign` sets none of them, and the capture prints them at their absent defaults.
 
 ## Cases
 
@@ -74,11 +131,13 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `the_capacity_utilization_of_a_one_metre_vessel` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0, internal_diameter = 1.0, design_gas_load_factor = 0.07 | capacity_utilization = 0.003341057093792472 |
 | `the_same_vessel_at_twice_the_diameter` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0, internal_diameter = 2.0, design_gas_load_factor = 0.07 | capacity_utilization = 0.000835264273448118 |
 | `the_vessel_that_carries_five_per_cent_of_its_vapour` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.05, internal_diameter = 1.0, design_gas_load_factor = 0.07 | vapour_n = 0.7773101311100368, liquid_n = 0.22268986888996328, capacity_utilization = 0.0033609430039118087 |
+| `the_mechanical_design_sizes_the_vertical_scrubber` | components = ['methane', 'ethane', 'propane', 'n-pentane'], feed_n = 107.40852445606174, feed_z = [0.7, 0.1, 0.1, 0.1], feed_p = 2000000.0, feed_t = 298.15, pressure_drop = 0.0, gas_in_liquid = 0.0, design_gas_load_factor = 0.11, mechanical_design = True, orientation = vertical | design_inner_diameter = 0.5153753093296343, design_tantan_length = 2.5768765466481716, design_outer_diameter = 0.5276754360439454, design_wall_thickness = 0.00615006335715554, max_design_gas_volume_flow = 437.0199728065295, vessel_shell_weight = 261.3646146595328, piping_weight = 104.54584586381311, structural_weight = 26.13646146595328, electrical_weight = 20.909169172762624, internals_weight = 0.0, total_weight = 412.9560911620618, module_width = 1.0307506186592685, module_length = 3.8653148199722573, module_height = 1.0307506186592685, vessel_volume = 0.537564660701708, hhll = 0.4123002474637074, hll = 0.360762716530744, nll = 0.25768765466481713, lll = 0.15461259279889028, llll = 0.07730629639944514, weir_height = 0.12884382733240857, nil = 0.10307506186592685, effective_length_liquid = 2.1130387682515006, effective_length_gas = 1.6492009898548299, inlet_nozzle_id = 0.1, gas_outlet_nozzle_id = 0.1, oil_outlet_nozzle_id = 0.05, surge_volume = 0.10917994933751654, surge_time = 394130.4984517307, liquid_retention_time = 795631.0473858638 |
+| `a_configured_mesh_pad_and_size_from_flow` | components = ['methane', 'ethane', 'propane', 'n-pentane'], feed_n = 107.40852445606174, feed_z = [0.7, 0.1, 0.1, 0.1], feed_p = 2000000.0, feed_t = 298.15, pressure_drop = 0.0, gas_in_liquid = 0.0, design_gas_load_factor = 0.11, mechanical_design = True, orientation = vertical, internal_diameter = 0.5153753093296343, safety_factor = 1.5, mesh_pad_area = 0.208610948791937, mesh_pad_thickness = 150.0, mesh_pad_elevation = 0.75 | has_mesh_pad = True, mesh_pad_area = 0.208610948791937, mesh_pad_thickness = 150.0, mesh_pad_elevation = 0.75, has_inlet_cyclones = False, has_demisting_cyclones = False, required_diameter = 0.6032413503836097 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 5 declared, every one run
+- Tests: 7 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

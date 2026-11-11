@@ -23,6 +23,9 @@ exponents = [0, 1, 0, 0, 0, 0, 0]
 id = "mass_rate"
 exponents = [0, 1, -1, 0, 0, 0, 0]
 [[dimensions]]
+id = "time"
+exponents = [0, 0, 1, 0, 0, 0, 0]
+[[dimensions]]
 id = "amount"
 exponents = [0, 0, 0, 0, 0, 1, 0]
 [[dimensions]]
@@ -30,14 +33,24 @@ id = "molar_flow"
 exponents = [0, 0, -1, 0, 0, 1, 0]
 uom_absent = "uom has no molar-flow quantity, and no crate outside uom can add one: `quantity!` runs inside `uom::si` and the `Units` trait `system!` assembles is a closed list. Every unit of the dimension converts through this crate's `MolarFlow` instead - `mol/s` itself, which is the SI base, through `moles_per_second`, and `kmol/h` through `kilomoles_per_hour` - so none of them gets a type ascription."
 [[dimensions]]
+id = "amount_concentration_rate"
+exponents = [-3, 0, -1, 0, 0, 1, 0]
+uom_absent = "uom carries a molar concentration and a molar flow, and no quantity for one over a volume over a time: every unit of the dimension converts through this crate's `MolarRateDensity` instead - `mol/(m**3*s)` itself, the SI base, through `moles_per_cubic_meter_second` - so none of them gets a type ascription."
+[[dimensions]]
 id = "mass_density"
 exponents = [-3, 1, 0, 0, 0, 0, 0]
+[[dimensions]]
+id = "mass_flux"
+exponents = [-2, 1, -1, 0, 0, 0, 0]
 [[dimensions]]
 id = "velocity"
 exponents = [1, 0, -1, 0, 0, 0, 0]
 [[dimensions]]
 id = "pressure"
 exponents = [-1, 1, -2, 0, 0, 0, 0]
+[[dimensions]]
+id = "force"
+exponents = [1, 1, -2, 0, 0, 0, 0]
 [[dimensions]]
 id = "dynamic_viscosity"
 exponents = [-1, 1, -1, 0, 0, 0, 0]
@@ -51,6 +64,9 @@ exponents = [0, 0, 0, 0, 1, 0, 0]
 id = "power"
 exponents = [2, 1, -3, 0, 0, 0, 0]
 [[dimensions]]
+id = "volumetric_power_density"
+exponents = [-1, 1, -3, 0, 0, 0, 0]
+[[dimensions]]
 id = "specific_heat_capacity"
 exponents = [2, 0, -2, 0, -1, 0, 0]
 [[dimensions]]
@@ -59,6 +75,9 @@ exponents = [1, 1, -3, 0, -1, 0, 0]
 [[dimensions]]
 id = "heat_transfer"
 exponents = [0, 1, -3, 0, -1, 0, 0]
+[[dimensions]]
+id = "heat_flux_density"
+exponents = [0, 1, -3, 0, 0, 0, 0]
 [[dimensions]]
 id = "thermal_conductance"
 exponents = [2, 1, -3, 0, -1, 0, 0]
@@ -152,6 +171,11 @@ dimension = "molar_flow"
 pint = "mole/second"
 rust_ctor = "moles_per_second"
 [[units]]
+id = "mol/(m**3*s)"
+dimension = "amount_concentration_rate"
+pint = "mole/(meter**3*second)"
+rust_ctor = "moles_per_cubic_meter_second"
+[[units]]
 id = "mol"
 dimension = "amount"
 pint = "mole"
@@ -170,6 +194,12 @@ pint = "kilogram/meter**3"
 uom = "mass_density::kilogram_per_cubic_meter"
 rust_ctor = "kilograms_per_cubic_meter"
 [[units]]
+id = "kg/(m**2*s)"
+dimension = "mass_flux"
+pint = "kilogram/second/meter**2"
+uom = "mass_flux::kilogram_per_square_meter_second"
+rust_ctor = "kilograms_per_square_meter_second"
+[[units]]
 id = "m/s"
 dimension = "velocity"
 pint = "meter/second"
@@ -187,6 +217,24 @@ dimension = "pressure"
 pint = "pascal"
 uom = "pressure::pascal"
 rust_ctor = "pascals"
+[[units]]
+id = "N"
+dimension = "force"
+pint = "newton"
+uom = "force::newton"
+rust_ctor = "newtons"
+[[units]]
+id = "s"
+dimension = "time"
+pint = "second"
+uom = "time::second"
+rust_ctor = "seconds"
+[[units]]
+id = "h"
+dimension = "time"
+pint = "hour"
+uom = "time::hour"
+rust_ctor = "hours"
 [[units]]
 id = "Pa*s"
 dimension = "dynamic_viscosity"
@@ -217,6 +265,12 @@ dimension = "thermal_conductivity"
 pint = "watt/(meter*kelvin)"
 uom = "thermal_conductivity::watt_per_meter_kelvin"
 rust_ctor = "watts_per_meter_kelvin"
+[[units]]
+id = "W/m**2"
+dimension = "heat_flux_density"
+pint = "watt/meter**2"
+uom = "heat_flux_density::watt_per_square_meter"
+rust_ctor = "watts_per_square_meter"
 [[units]]
 id = "W/(m**2*K)"
 dimension = "heat_transfer"
@@ -301,6 +355,17 @@ uom_absent = "uom carries a temperature and not its reciprocal. The unit is alre
 id = "per_temperature_cubed"
 exponents = [0, 0, 0, 0, -3, 0, 0]
 uom_absent = "uom carries a temperature and not its reciprocal. The unit is already its own SI base, so its conversion is the identity."
+[[dimensions]]
+id = "per_time"
+exponents = [0, 0, -1, 0, 0, 0, 0]
+[[dimensions]]
+id = "inverse_length"
+exponents = [-1, 0, 0, 0, 0, 0, 0]
+uom_absent = "uom has no reciprocal-length quantity. The unit is its own SI base, so its conversion is the identity."
+[[dimensions]]
+id = "pressure_gradient"
+exponents = [-2, 1, -2, 0, 0, 0, 0]
+uom_absent = "uom has no pressure-gradient quantity. The unit is its own SI base, so its conversion is the identity."
 [[units]]
 id = "C"
 dimension = "charge"
@@ -325,6 +390,19 @@ pint = "1/kelvin**2"
 id = "1/K**3"
 dimension = "per_temperature_cubed"
 pint = "1/kelvin**3"
+[[units]]
+id = "1/s"
+dimension = "per_time"
+pint = "1/second"
+rust_ctor = "per_second"
+[[units]]
+id = "1/m"
+dimension = "inverse_length"
+pint = "1/meter"
+[[units]]
+id = "Pa/m"
+dimension = "pressure_gradient"
+pint = "pascal/meter"
 
 [[dimensions]]
 id = "molality"
@@ -439,6 +517,12 @@ dimension = "power"
 pint = "MW"
 uom = "power::megawatt"
 rust_ctor = "megawatts"
+[[units]]
+id = "W/m**3"
+dimension = "volumetric_power_density"
+pint = "watt/meter**3"
+uom = "volumetric_power_density::watt_per_cubic_meter"
+rust_ctor = "watts_per_cubic_meter"
 [[units]]
 id = "hp"
 dimension = "power"

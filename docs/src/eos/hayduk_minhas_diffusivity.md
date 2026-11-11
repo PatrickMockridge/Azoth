@@ -4,6 +4,8 @@
 
 `eos.hayduk_minhas_diffusivity`
 
+Liquid binary diffusivity from the Hayduk-Minhas correlation. Use it for liquid-phase mass-transfer screening when a solute molar volume and viscosity are available.
+
 ## Equation
 
 $$
@@ -23,6 +25,16 @@ paraffin: D = 13.3e-8 * T**1.47 * eta**(10.2/VA - 0.791) / VA**0.71;  aqueous: D
 Correlations for prediction of molecular diffusivities in liquids. Can. J. Chem. Eng. 60(2), 295-299
 
 DOI: [10.1002/cjce.5450600213](https://doi.org/10.1002/cjce.5450600213)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- `VA` is the solute liquid molar volume at the normal boiling point; the caller gets it as `M/rho_normal`, or the Tyn-Calus estimate `0.285*Vc**1.048` when the density is unknown.
+
+- `eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.
+
 
 ## Inputs
 
@@ -48,19 +60,14 @@ DOI: [10.1002/cjce.5450600213](https://doi.org/10.1002/cjce.5450600213)
 | `T > 0` | raises | An absolute temperature; zero and below are not states. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- `form` selects the solvent correlation: `paraffin` for hydrocarbons, `aqueous` for water-rich solvents; NeqSim auto-detects water content when the form is not set, which a scalar calc cannot, so the caller chooses.
-
-- `VA` is the solute liquid molar volume at the normal boiling point; the caller gets it as `M/rho_normal`, or the Tyn-Calus estimate `0.285*Vc**1.048` when the density is unknown.
-
-- `eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.
-
-- the molar volume and viscosity are clamped to NeqSim's `[20, 500]` cm**3/mol and `[0.1, 100]` cP; the correlation is not applied outside them.
+- The form selects the solvent correlation: `paraffin` for hydrocarbons, `aqueous` for water-rich solvents. The caller chooses; this calculation does not detect water content.
+- the molar volume and viscosity are clamped to `[20, 500]` cm**3/mol and `[0.1, 100]` cP; the correlation is not applied outside them.
 
 - the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.
 

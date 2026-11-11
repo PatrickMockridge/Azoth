@@ -1,0 +1,94 @@
+id = "eos.valve_scale_drift"
+name = "Valve trim fouling from a deposit growth rate"
+kind = "direct"
+assumptions = [
+    "**the deposit is a uniform radial layer** on a circular trim port: the open-area fraction is `((d0 - 2t)/d0)^2` for `t < d0/2`, zero beyond it, and the fouling fraction is its complement capped at `0.999999`.\n",
+    "**the drift is a state function of the elapsed time**, not a stepper: `advance(days)` adds `growth * days/365.25`, so a total elapsed time and `thickness = growth * elapsed` are the same state; a negative step the class ignores becomes a clamped total.\n",
+    "**the valve coupling is the boundary**: the model takes the valve's Kv and returns the fouling fraction and the effective Kv, which is `Kv * open area`; calling `ThrottlingValve.setFoulingFraction` is the process layer's step, not this model's.\n",
+    "**a zero growth rate or an unset port gives an infinite time to plug and to pin**, the class's own positive-infinity return; a port at or below zero leaves the open area at one while the thickness still accumulates.\n",
+    "**the opening and the pin time use the linear-characteristic approximation**: the required opening is `clean opening / open area` capped at 100 percent, and the opening pins at the thickness `(d0/2)(1 - sqrt(clean/100))`.\n",
+    "the class's `reset` is the zero-elapsed state, and its Gson report is not a calculation.\n",
+]
+references = [
+    "NeqSim master, `process/chemistry/scale/ValveScaleDrift.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/valve_scale_drift_probe.tsv` - the not-advanced, thirty-day, one-year and pinned states, zero growth, an unset port, a clean opening at 100 percent, a reset, and a growth rate taken from the evaluated `ScaleKinetics`.",
+]
+[source]
+standard = "NeqSim master `ValveScaleDrift`"
+edition = "`advance`, `getOpenAreaFraction`, `getFoulingFraction`, `getDepositThicknessMm`, `getElapsedDays`, `getEffectiveKv`, `getTimeToPlugDays`, `predictOpeningPercent` and `predictTimeToPinDays`, ported. The bound `ThrottlingValve`, `setKinetics`, `reset` and the Gson report are not."
+[inputs]
+[inputs.port_diameter]
+unit = "m"
+description = "the trim port or seat diameter the deposit grows into, 50 mm as 0.05 m.\n"
+[inputs.growth_rate]
+unit = "m/s"
+description = "the radial deposit growth rate, 1 mm/yr as 3.168808781402895e-11 m/s.\n"
+[inputs.elapsed_time]
+unit = "s"
+description = "the elapsed simulated time; the class's days of `advance` as seconds.\n"
+[inputs.clean_opening_percent]
+unit = "dimensionless"
+description = "the opening percent the clean valve held to pass the required flow, 0..100.\n"
+[inputs.valve_kv]
+unit = "dimensionless"
+description = "the clean valve's flow coefficient, which the open area scales; the class reads it from the bound valve.\n"
+[outputs]
+[outputs.deposit_thickness]
+unit = "m"
+description = "the accumulated radial deposit thickness.\n"
+[outputs.elapsed_time]
+unit = "s"
+description = "the time the state is at.\n"
+[outputs.open_area_fraction]
+unit = "dimensionless"
+description = "the open flow area as a fraction of the clean area, 0..1.\n"
+[outputs.fouling_fraction]
+unit = "dimensionless"
+description = "the loss of effective flow coefficient, capped at 0.999999.\n"
+[outputs.effective_kv]
+unit = "dimensionless"
+description = "the clean Kv times the open-area fraction.\n"
+[outputs.time_to_plug]
+unit = "s"
+description = "the time for the port to close; infinite with zero growth or no port.\n"
+[outputs.opening_percent]
+unit = "dimensionless"
+description = "the opening needed to hold the same flow, capped at 100.\n"
+[outputs.time_to_pin]
+unit = "s"
+description = "the time for the opening to reach 100 percent; infinite when it never pins.\n"
+[[valid_range]]
+quantity = "port_diameter"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "The class treats a port at or below zero as fully open while the deposit still grows; the arithmetic still runs.\n"
+[[valid_range]]
+quantity = "growth_rate"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "The class's setter clamps a negative growth rate to zero; the warning names it and the arithmetic still runs.\n"
+[[valid_range]]
+quantity = "elapsed_time"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "A negative total time is not a state; the class ignores a negative step, so the model clamps it.\n"
+[[valid_range]]
+quantity = "clean_opening_percent"
+min = 0
+max = 100
+min_inclusive = true
+max_inclusive = true
+severity = "warning"
+rationale = "An opening outside the valve's range is a caller's mistake rather than a state; the capping still runs.\n"
+[[valid_range]]
+quantity = "valve_kv"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "The class does not clamp the valve's coefficient; a negative one is a caller's mistake and the arithmetic still runs.\n"
+[implementations]
+python = "azoth.eos.valve_scale_drift"
+rust = "azoth_eos::valve_scale_drift"

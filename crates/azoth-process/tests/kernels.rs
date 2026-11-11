@@ -4,6 +4,7 @@ use azoth_core::units::{kelvins, meters, pascals, watts_per_kelvin};
 use azoth_eos::RootSide;
 use azoth_process::Stream;
 use azoth_process::kernels::ejector::EjectorSetup;
+use azoth_process::kernels::heat_exchanger::{RatingGeometry, heat_exchanger_rating};
 use azoth_process::kernels::stirred_tank_reactor::ReactorSetup;
 use azoth_process::kernels::three_phase_separator::Entrainment;
 use azoth_process::kernels::{
@@ -152,6 +153,8 @@ fn a_heat_exchanger_conserves_energy() {
         "counterflow",
         None,
         None,
+        false,
+        kelvins(1.0),
     )
     .expect("heat_exchanger");
     let (hot_out, cold_out) = (outcome.hot_out, outcome.cold_out);
@@ -171,8 +174,17 @@ fn a_heat_exchanger_conserves_energy() {
 fn a_pinned_outlet_temperature_is_honoured() {
     let hot = binary(1.0, 50.0, 1e5, 350.0);
     let cold = binary(0.0, 50.0, 1e5, 300.0);
-    let pinned = heat_exchanger(&hot, &cold, None, "counterflow", Some(kelvins(330.0)), None)
-        .expect("heat_exchanger");
+    let pinned = heat_exchanger(
+        &hot,
+        &cold,
+        None,
+        "counterflow",
+        Some(kelvins(330.0)),
+        None,
+        false,
+        kelvins(1.0),
+    )
+    .expect("heat_exchanger");
     let (hot_out, cold_out) = (pinned.hot_out, pinned.cold_out);
 
     close(hot_out.t.value, 330.0);
@@ -195,11 +207,25 @@ fn an_exchanger_refuses_the_shapes_it_cannot_answer() {
             "counterflow",
             Some(kelvins(330.0)),
             Some(kelvins(340.0)),
+            false,
+            kelvins(1.0),
         )
         .is_err()
     );
     // The rating without a conductance is NeqSim's 500 W/K, which this will not guess.
-    assert!(heat_exchanger(&hot, &cold, None, "counterflow", None, None).is_err());
+    assert!(
+        heat_exchanger(
+            &hot,
+            &cold,
+            None,
+            "counterflow",
+            None,
+            None,
+            false,
+            kelvins(1.0)
+        )
+        .is_err()
+    );
     // An arrangement NeqSim does not know falls through to counterflow; this refuses.
     assert!(
         heat_exchanger(
@@ -209,6 +235,8 @@ fn an_exchanger_refuses_the_shapes_it_cannot_answer() {
             "concentric tube counterflow",
             None,
             None,
+            false,
+            kelvins(1.0),
         )
         .is_err()
     );
@@ -262,7 +290,7 @@ fn an_unstated_heater_is_an_isothermal_drop_and_not_a_throttling() {
 #[test]
 fn a_heater_refuses_a_temperature_and_a_duty_together() {
     // `Heater`'s two setters clear each other's flags, so the class's answer to both is the
-    // order they were called in. A model that picked one would be inventing a rule the
+    // order they were called in (upstream #4087). A model that picked one would be inventing a rule the
     // class does not have, and a model that silently preferred the temperature would report
     // a duty the caller never asked for.
     let feed = binary(0.9, 100.0, 3e6, 320.0);
@@ -577,6 +605,10 @@ fn absolute(a: f64, b: f64, tolerance: f64, what: &str) {
 /// J/mol below NeqSim on the distillate at 300 K, which is that offset to three figures.
 /// `reboiler_duty` inherits a thousandth of it, because the class's own estimate adds one per
 /// cent of the feed's enthalpy.
+///
+/// **The feed tray is the fix's**: the class's Kirkbride argument squared `B/D` and left the
+/// composition ratio linear, which answered `14`; upstream PR #4108 squares the composition
+/// ratio on product mole fractions and enters `B/D` once, which answers `13`.
 #[test]
 fn a_shortcut_column_splits_a_four_component_feed() {
     let out = shortcut_distillation_column(
@@ -616,7 +648,7 @@ fn a_shortcut_column_splits_a_four_component_feed() {
         "actual_reflux_ratio",
     );
     relative(out.actual_stages, 20.510953860048968, 1e-6, "actual_stages");
-    assert_eq!(out.feed_tray_number, 14, "the feed tray, which is a count");
+    assert_eq!(out.feed_tray_number, 13, "the feed tray, which is a count");
     relative(
         out.condenser_duty.value,
         -36472.85166598551,
@@ -1312,4 +1344,85 @@ fn a_stirred_tank_reactor_reacts_and_flashes() {
     )
     .expect("the same reaction");
     close(pressed.p.value, 3.0e5);
+}
+
+#[test]
+fn a_thermal_hydraulic_rating_closes_both_outlets() {
+    let tube = Stream::from_pt(
+        vec!["n-heptane".into(), "n-octane".into()],
+        vec![0.7, 0.3],
+        76.618_738_453_316_67,
+        pascals(2.0e6),
+        kelvins(303.15),
+    )
+    .expect("the tube feed resolves");
+    let shell = Stream::from_pt(
+        vec!["n-heptane".into(), "n-octane".into()],
+        vec![0.7, 0.3],
+        95.773_423_066_645_85,
+        pascals(2.0e6),
+        kelvins(383.15),
+    )
+    .expect("the shell feed resolves");
+    let geometry = RatingGeometry {
+        tube_outside_diameter: Some(0.025),
+        tube_inside_diameter: Some(0.020),
+        tube_length: Some(4.0),
+        tube_count: Some(100.0),
+        tube_passes: Some(2.0),
+        tube_pitch: Some(0.032),
+        triangular_pitch: Some(true),
+        fouling_tube: Some(0.0),
+        fouling_shell: Some(0.0),
+        ..Default::default()
+    };
+    let area = std::f64::consts::PI * 0.025 * 4.0 * 100.0;
+    let outcome = heat_exchanger_rating(&shell, &tube, false, area, &geometry, "counterflow")
+        .expect("the rating closes");
+    let d = outcome.rating_diagnostics.as_ref().expect("diagnostics");
+    close(d.rating_u, 428.359_535_752_190_1);
+    close(d.tube_side_pressure_drop, 2_893.954_991_137_198);
+    close(d.shell_side_pressure_drop, 1_994.632_362_049_744_2);
+    close(outcome.duty.value, 652_587.842_283_532_8);
+    close(outcome.hot_out.t.value, 356.718_560_924_026);
+    close(outcome.cold_out.t.value, 339.726_268_305_800_03);
+    close(outcome.hot_out.p.value, 1_998_005.367_637_950_2);
+    close(outcome.cold_out.p.value, 1_997_106.045_008_862_9);
+}
+
+#[test]
+fn a_thermal_hydraulic_rating_refuses_two_phases_and_an_exhausted_inlet() {
+    let wet = binary(0.5, 1.0, 2.0e6, 300.0);
+    let dry = Stream::from_pt(
+        vec!["n-heptane".into(), "n-octane".into()],
+        vec![0.7, 0.3],
+        1.0,
+        pascals(2.0e6),
+        kelvins(383.15),
+    )
+    .expect("the shell feed resolves");
+    let geometry = RatingGeometry {
+        tube_outside_diameter: Some(0.025),
+        tube_inside_diameter: Some(0.020),
+        tube_length: Some(4.0),
+        tube_count: Some(100.0),
+        tube_passes: Some(2.0),
+        tube_pitch: Some(0.032),
+        ..Default::default()
+    };
+    assert!(heat_exchanger_rating(&dry, &wet, false, 1.0, &geometry, "counterflow").is_err());
+
+    let cold_dry = Stream::from_pt(
+        vec!["n-heptane".into(), "n-octane".into()],
+        vec![0.7, 0.3],
+        1.0,
+        pascals(2.0e6),
+        kelvins(303.15),
+    )
+    .expect("the tube feed resolves");
+    let exhausted = RatingGeometry {
+        tube_length: Some(1.0e7),
+        ..geometry
+    };
+    assert!(heat_exchanger_rating(&dry, &cold_dry, false, 1.0, &exhausted, "counterflow").is_err());
 }

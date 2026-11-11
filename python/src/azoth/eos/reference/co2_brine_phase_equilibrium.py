@@ -59,6 +59,13 @@ _BETA_CEILING = 1.0 - 1.0e-12
 #: The worst `|z_i - sum_k beta_k x_ik|` an accepted answer may have.
 _CONSERVATION_TOLERANCE = 1.0e-10
 
+#: How close two candidate roots' mixing Gibbs energies are treated as a tie, relative to the
+#: larger. **The 200 bara brine state is the state that needs it**: its two trials reach one
+#: fixed point, so the energies are equal to the last bit and a strict `<` lets each
+#: implementation's own arithmetic choose the label. `1e-9` is four orders above that noise
+#: and far below any physical gap, and a tie goes to the first trial - the gas root.
+_GIBBS_TIE = 1.0e-9
+
 
 @dataclass(frozen=True, slots=True)
 class _Layer:
@@ -210,7 +217,9 @@ def co2_brine_phase_equilibrium(
         beta, rich, aqueous, split_steps = split
         iterations += split_steps
         gibbs = _mixing_gibbs([rich, aqueous], [beta, 1.0 - beta])
-        if best is None or gibbs < best[1]:
+        # A trial inside `_GIBBS_TIE` of the incumbent is not better than it: the two roots are
+        # one fixed point, and the first trial - the gas one - keeps the label.
+        if best is None or gibbs < best[1] - _GIBBS_TIE * max(1.0, abs(best[1])):
             best = (label, gibbs, rich, aqueous, beta)
 
     if best is None:

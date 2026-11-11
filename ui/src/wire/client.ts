@@ -6,10 +6,17 @@
  * is `./http.ts`, and the interface both implement is `./session.ts`.
  */
 
-import init, { Editor, palette_json } from "../wasm/pkg/azoth_wasm.js";
-import { parseCatalogue, parseEnvelope } from "./decode";
-import type { Door, Opened, OpenableDoor, Session } from "./session";
-import type { Catalogue, Command, Envelope, ExecutionOrder } from "./types";
+import init, { Editor, SheetEditor, palette_json } from "../wasm/pkg/azoth_wasm.js";
+import { parseCatalogue, parseEnvelope, parseSheetEnvelope } from "./decode";
+import type { Doors, Opened, OpenableDoor, Session, SheetOpened, SheetSession } from "./session";
+import type { SheetCommand } from "./sheetCommands";
+import type {
+  Catalogue,
+  Command,
+  Envelope,
+  ExecutionOrder,
+  SheetEnvelope,
+} from "./types";
 
 /**
  * The module's session.
@@ -56,14 +63,43 @@ class WasmDoor implements OpenableDoor {
   }
 }
 
+/** The calculation book behind the same module. */
+class WasmSheetSession implements SheetSession {
+  readonly #editor: SheetEditor;
+
+  constructor(editor: SheetEditor) {
+    this.#editor = editor;
+  }
+
+  async apply(command: SheetCommand): Promise<SheetEnvelope> {
+    return parseSheetEnvelope(this.#editor.apply(JSON.stringify(command)));
+  }
+
+  async calculate(sheet: string | null): Promise<SheetEnvelope> {
+    return parseSheetEnvelope(this.#editor.calculate(sheet ?? undefined));
+  }
+}
+
+class WasmSheetDoor {
+  readonly kind = "openable" as const;
+
+  async open(document: string): Promise<SheetOpened> {
+    const editor = new SheetEditor(document);
+    return {
+      session: new WasmSheetSession(editor),
+      envelope: parseSheetEnvelope(editor.envelope()),
+    };
+  }
+}
+
 /**
- * Load the module, and the door with it.
+ * Load the module, and both doors with it.
  *
  * The wasm is fetched beside the glue `wasm-pack` wrote (`new URL(..., import.meta.url)`), and
  * `vite` emits it as an asset — which is why the module is built with `--target web` rather than
  * `bundler`: no plugin, no second loader, and the same code path a static host serves.
  */
-export async function moduleDoor(): Promise<Door> {
+export async function moduleDoors(): Promise<Doors> {
   await init();
-  return new WasmDoor();
+  return { flowsheet: new WasmDoor(), sheets: new WasmSheetDoor() };
 }

@@ -8,47 +8,129 @@
  */
 
 .canvas {
+  position: relative;
   min-height: 0;
   background: var(--bg-canvas);
 }
 
-.unit {
-  min-width: 130px;
+.unit-plate {
+  position: relative;
+  /* A 72px glyph plus a label on each side; the label never has to sit on the drawing. */
+  min-width: 190px;
+  /*
+   * **A fixed plate, so the nozzles do not move when a readout appears.** Handles are placed at
+   * percentages of the node's measured height; a node that grew with its result rows moved every
+   * edge endpoint under the reader. The readout is clipped here and shown in full in the overview.
+   *
+   * **The plate is not `.unit`.** `unit` is the semantic class of a unit string in a field, a table
+   * or a result; an unscoped `.unit` rule here put a 168px plate around every one of them.
+   */
+  height: 168px;
+  overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: var(--r4);
   background: var(--bg-panel);
   box-shadow: var(--e-node);
 }
 
-.unit.selected {
+.unit-plate header,
+.unit-plate .id,
+.unit-plate .readout {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/*
+ * **Every connection point says which way it goes.** The label sits beside the handle it names:
+ * inside the plate for a left or right port, outside it for a top or bottom one, so a column's
+ * distillate label does not cover its header. The panel background masks a glyph line the label
+ * may pass over, and `pointer-events: none` keeps the handle and the drag underneath reachable.
+ */
+.port-label {
+  position: absolute;
+  z-index: 2;
+  padding: 1px var(--s1);
+  border-radius: var(--r2);
+  background: var(--bg-panel);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.port-label.left {
+  left: var(--s2);
+  transform: translateY(-50%);
+}
+
+.port-label.right {
+  right: var(--s2);
+  transform: translateY(-50%);
+}
+
+.port-label.top {
+  bottom: calc(100% + var(--s1));
+  transform: translateX(-50%);
+}
+
+.port-label.bottom {
+  top: calc(100% + var(--s1));
+  transform: translateX(-50%);
+}
+
+/*
+ * **A boundary stream's label sits above its pill.** The pill already carries the stream's name,
+ * so a label inside it would collide with that name; above it, the one handle is unambiguous and
+ * the outgoing edge still leaves from the side.
+ */
+.stream .port-label {
+  top: auto;
+  right: auto;
+  bottom: calc(100% + var(--s1));
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-canvas);
+}
+
+.unit-plate.selected {
   border-color: var(--accent);
 }
 
-.unit.bad {
+.unit-plate.bad {
   border-color: var(--error);
 }
 
-.unit header {
+/* A warning is not a refusal. */
+.unit-plate.warn {
+  border-color: var(--warn);
+}
+
+.unit-plate header {
   padding: var(--s3) var(--s5);
   border-bottom: 1px solid var(--line);
   font-weight: 600;
   color: var(--text-strong);
 }
 
-.unit .id {
+.unit-plate .id {
   padding: var(--s1) var(--s5) var(--s4);
   color: var(--text-dim);
   font-family: var(--font-mono);
   font-size: var(--fs-2xs);
 }
 
-.unit .readout {
+.unit-plate .readout {
   padding: 0 var(--s5) var(--s4);
   font-size: var(--fs-xs);
   color: var(--ok);
 }
 
 .stream {
+  position: relative;
   padding: var(--s3) var(--s6);
   border: 1px dashed var(--line-strong);
   border-radius: var(--r-pill);
@@ -63,6 +145,10 @@
 
 .stream.bad {
   border-color: var(--error);
+}
+
+.stream.warn {
+  border-color: var(--warn);
 }
 
 /*
@@ -116,12 +202,48 @@
   fill: var(--error);
 }
 
+/*
+ * **A 14 px hit target around a 7 px dot.** Wiring is a precision gesture with a high error cost;
+ * the visible dot stays small, while the transparent element around it is easier to hit.
+ */
 .react-flow__handle {
-  width: 7px;
-  height: 7px;
-  background: var(--text-dim);
+  width: 14px;
+  height: 14px;
+  background: transparent;
   border: 0;
   pointer-events: auto;
+}
+
+.react-flow__handle::after {
+  content: "";
+  position: absolute;
+  inset: 3.5px;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+
+/*
+ * **A port says whether it is wired.** The unfilled amber dot is the one still to connect;
+ * the accent dot is carrying a stream. Without this a fresh unit looked wired simply because
+ * its handles were drawn.
+ */
+.react-flow__handle.connected::after {
+  background: var(--accent);
+}
+
+.react-flow__handle.unconnected::after {
+  background: var(--warn);
+  box-shadow: 0 0 0 1px var(--bg-canvas);
+}
+
+.react-flow__edge.bad .react-flow__edge-path {
+  stroke: var(--error);
+  stroke-dasharray: 3 2;
+}
+
+.react-flow__edge.warn .react-flow__edge-path {
+  stroke: var(--warn);
+  stroke-dasharray: 1 2;
 }
 
 .react-flow__edge-text {

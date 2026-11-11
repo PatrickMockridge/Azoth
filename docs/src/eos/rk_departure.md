@@ -4,6 +4,8 @@
 
 `eos.rk_departure`
 
+Redlich-Kwong fugacity coefficient and departure functions. Use it to convert between residual and ideal-gas properties in a Redlich-Kwong EOS.
+
 ## Equation
 
 $$
@@ -29,6 +31,14 @@ s_dep_r = ln(z - b_reduced) + c*psi*I
 On the Thermodynamics of Solutions. V. Chemical Reviews, 44(1), 233-244
 
 DOI: [10.1021/cr60137a013](https://doi.org/10.1021/cr60137a013)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the alpha derivative `psi` is the constant `-1/2` - RK's `1/sqrt(Tr)` has no fitted coefficient, so `psi` and `T*dpsi/dT` are constants and this calc takes neither `kappa` nor `Tr`.
+
 
 ## Inputs
 
@@ -57,7 +67,7 @@ DOI: [10.1021/cr60137a013](https://doi.org/10.1021/cr60137a013)
 | `z_minus_b_reduced > 0` | raises | `z` appears as `ln(z - b_reduced)`, so `z = b_reduced` is the zero-volume limit and `z < b_reduced` makes the logarithm of a negative number. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
@@ -68,8 +78,6 @@ satisfy for the result to mean what it says.
 - the departure functions are relative to the ideal-gas state at the same temperature and pressure.
 
 - no mixing rule is applied. These are pure-component departure functions, computed from the composition-weighted `A` and `B` a caller passes.
-
-- the alpha derivative `psi` is the constant `-1/2` - RK's `1/sqrt(Tr)` has no fitted coefficient, so `psi` and `T*dpsi/dT` are constants and this calc takes neither `kappa` nor `Tr`.
 
 
 

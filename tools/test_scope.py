@@ -177,6 +177,14 @@ CLOSE_OUT: tuple[Command, ...] = (
     Command("the strict type check", SCRIPT, ".venv/bin/mypy", jobs=("python-lint",)),
     Command("the provenance record", SCRIPT, "python tools/provenance.py --out provenance.json"),
     Command("every tracked path claims something", SCRIPT, "python tools/test_scope.py --audit"),
+    # Reached by its own job rather than `spec-validate`: it starts Jupyter kernels and needs
+    # the notebook extra, so a push that changes no notebook does not pay for it.
+    Command(
+        "the worked notebooks execute",
+        SCRIPT,
+        ".venv/bin/python tools/check_notebooks.py",
+        jobs=("notebooks",),
+    ),
 )
 
 
@@ -211,6 +219,11 @@ class Claim:
     #: A path that reaches no test **and that no test should reach** - a licence, a gitignore.
     #: The distinction from an empty claim is the whole point: this one has to say why.
     inert: str = ""
+    #: The path names a **namespace**, not one of its ids - so the bounded sample applies.
+    #: A model or kernel file names its own id and does not need the sample; a spec names its
+    #: id too. A shared file (`layers.py`, `segment/phase.rs`, `__init__.py`) is what the
+    #: sample is for.
+    shared: bool = False
 
     def empty(self) -> bool:
         """True when the claim places the path nowhere and names no reason."""
@@ -285,6 +298,9 @@ EXTENSION_TESTS: tuple[str, ...] = (
     f"{TESTS}/test_gen_python_registry.py",
     f"{TESTS}/test_gen_python_transport.py",
     f"{TESTS}/test_gen_python_wrappers.py",
+    # A hand-written `#[pyfunction]` whose parameter order has moved away from its spec is a
+    # stub drift, and this is the test that names it.
+    f"{TESTS}/test_gen_stub.py",
 )
 
 #: **One registered id per namespace**, the smoke that a core or binding change has not broken
@@ -302,6 +318,61 @@ SMOKE_IDS: tuple[str, ...] = (
     "standards.iso6976",
 )
 
+#: A bounded per-namespace sample, for a namespace whose change would otherwise select every
+#: id it has. **A namespace with no entry keeps the `ns.` term**, so this is opt-in and the
+#: other namespaces' golden behaviour is untouched.
+#:
+#: `process` is the first entry because its 33 ids are what made the push `python-test` job
+#: take 48m23s of a 60-minute ceiling: a one-model change selected all of them. The sample is
+#: the families the shared process code serves, so a change to `segment/phase.rs`,
+#: `layers.py` or `__init__.py` still runs the separator, column, rotating and vessel paths.
+#:
+#: **A sample is not a reached set.** `selection_terms` subtracts it before narrowing a
+#: registry-wide sweep, for the same reason it subtracts `SMOKE_IDS`: narrowing to a policy
+#: sample would be the whole sweep wearing a shorter name.
+NAMESPACE_SMOKE_IDS: dict[str, tuple[str, ...]] = {
+    "process": (
+        "process.separator",
+        "process.gas_scrubber",
+        "process.distillation_column",
+        "process.absorption_column",
+        "process.packed_column",
+        "process.rate_based_packed_column",
+        "process.compressor",
+        "process.anti_surge_recycle",
+        "process.tank",
+    ),
+}
+
+#: The models a kernel file also serves, beyond its own stem.
+#:
+#: `kernels/separator.rs` is the separator's arithmetic, and `gas_scrubber`, `tank` and the
+#: capacity assessment call it; a change to it reaches all four. `table_problems` parses every
+#: `models/*.rs` and `kernels/*.rs` for `kernels::<stem>` imports and refuses a consumer the
+#: table does not name, so a new caller is a gate failure rather than a silent miss.
+KERNEL_CONSUMERS: dict[str, tuple[str, ...]] = {
+    "absorption_column": ("stripping_column",),
+    "compressor": (
+        "anti_surge_recycle",
+        "map_turbo_expander_compressor",
+    ),
+    # `stripping_column` reaches distillation through `absorption_column`'s kernel.
+    "distillation_column": (
+        "absorption_column",
+        "packed_column",
+        "stripping_column",
+    ),
+    "expander": ("map_turbo_expander_compressor", "turbo_expander_compressor"),
+    "filter_design": ("filter",),
+    "heater": ("cooler",),
+    "heater_electrical": ("heater",),
+    "heater_mechanical": ("heater", "heat_exchanger"),
+    "mixer": ("anti_surge_recycle", "ejector", "manifold", "tank"),
+    "pump": ("compressor",),
+    "separator": ("gas_scrubber", "separator_capacity_assessment", "tank"),
+    "splitter": ("manifold",),
+}
+
 #: The wall-clock budget each lane is held to, in minutes. The tool enforces the local run
 #: with a process-group watchdog and renders a matching `timeout` for CI; `--max-minutes`
 #: overrides. The numbers are the point of the lanes: an edit is minutes, not hours.
@@ -309,7 +380,7 @@ LANE_BUDGET_MINUTES: dict[str, int] = {
     "iterate": 5,
     "push": 15,
     "tranche": 20,
-    "nightly": 45,
+    "nightly": 60,
 }
 
 #: **Which generators a diff can make stale.** Conservative by design: a miss here is caught
@@ -335,6 +406,7 @@ SPEC_GENERATORS = frozenset(
         "gen_python_wrappers",
         "gen_reaction_data",
         "gen_registry",
+        "gen_sheets",
         "gen_rust_model_records",
         "gen_stub",
         "gen_vocabulary",
@@ -395,6 +467,9 @@ NAMESPACE_TESTS: dict[str, tuple[str, ...]] = {
     # machinery that every other namespace imports. The tests that name it are the unit,
     # dispatch, solver and record suites; the namespaces are covered by the smoke ids.
     "core": CORE_TESTS,
+    # The r-gen bridge is a consumer of the public result surface, not a calculation: it has
+    # no spec id and no kernels, so its tests are the only thing a change to it reaches.
+    "rgen": (f"{TESTS}/rgen",),
 }
 
 #: module directly under `python/src/azoth/` (not a namespace) -> the tests that name it.
@@ -444,16 +519,56 @@ SPEC_TREES: tuple[tuple[str, Claim], ...] = (
         ),
     ),
     (
+        "specs/calcs/",
+        Claim(
+            # **A calc spec moves the sheet catalogue and the dispatcher it generates**, and
+            # both are the UI's input. The crate test is the one that runs every worked example
+            # through the generated arm.
+            crates=("azoth-sheets",),
+            jobs=("ui",),
+            commands=(
+                Command(
+                    "the catalogue and dispatch the specs generate",
+                    SCRIPT,
+                    "python tools/gen_sheets.py --check",
+                ),
+            ),
+            generated=True,
+        ),
+    ),
+    (
+        "specs/calcbooks/",
+        Claim(
+            crates=("azoth-sheets",),
+            jobs=("ui",),
+            files=(f"{TESTS}/test_gen_ui_fixtures.py",),
+        ),
+    ),
+    (
         "specs/unit_ops/",
         Claim(
-            commands=(Command("the palette the UI reads", SCRIPT, "python tools/check_ui.py"),),
-            files=(f"{TESTS}/test_check_ui.py",),
+            commands=(
+                Command("the palette the UI reads", SCRIPT, "python tools/check_ui.py"),
+                # A palette entry moves the command model's `unit` enum, which the envelope
+                # fixture carries - so the fixture check is part of this claim.
+                Command(
+                    "the fixtures a palette entry moves",
+                    SCRIPT,
+                    "python tools/gen_ui_fixtures.py --check",
+                ),
+            ),
+            files=(f"{TESTS}/test_check_ui.py", f"{TESTS}/test_gen_ui_fixtures.py"),
             generated=True,
         ),
     ),
     (
         "specs/flowsheets/",
         Claim(
+            # **The examples are documents the solver runs and the editor opens.** A flowsheet
+            # change that only checked the fixture would leave every new example unexecuted and
+            # the editor's own loader untested.
+            crates=("azoth-process",),
+            jobs=("ui",),
             commands=(
                 Command(
                     "the fixture a flowsheet produces, which only the CLI can make",
@@ -507,6 +622,17 @@ ROOT_CLAIMS: dict[str, Claim] = {
         ),
     ),
     "tools/gated.sh": Claim(inert="the memory wrapper the hook requires; no test reads it"),
+    "notebooks/": Claim(
+        commands=(
+            Command(
+                "the worked notebooks execute on the installed wheel",
+                SCRIPT,
+                ".venv/bin/python tools/check_notebooks.py",
+                jobs=("notebooks",),
+            ),
+        ),
+        jobs=("notebooks",),
+    ),
     # **These run somewhere this box is not.** They are placed in a job rather than silently
     # dropped, so a diff that reaches them is a job that runs rather than a shrug.
     "ui/": Claim(jobs=("ui",)),
@@ -545,6 +671,7 @@ CARGO_GENERATORS = ("gen_ui_fixtures",)
 UNRUNNABLE: dict[str, str] = {
     "check_nightly": "it asks the GitHub API; .github/workflows/liveness.yml runs it",
     "check_coverage": "it reads a coverage document the instrumented run writes; CI runs it",
+    "check_notebooks": "it starts kernels and needs the notebook extra; the notebooks job runs it",
 }
 
 
@@ -570,7 +697,14 @@ def crate_namespaces() -> dict[str, str]:
 #: The members that name no namespace, kept as a tuple so [`table_problems`] can refuse a new
 #: crate that is in neither this list nor the namespace map. A crate that reaches nothing has to
 #: say so, rather than reach nothing in silence.
-NAMELESS_CRATES = ("azoth-cli", "azoth-core", "azoth-python", "azoth-test-support", "azoth-wasm")
+NAMELESS_CRATES = (
+    "azoth-cli",
+    "azoth-core",
+    "azoth-python",
+    "azoth-sheets",
+    "azoth-test-support",
+    "azoth-wasm",
+)
 
 
 def crate_claim(crate: str) -> Claim:
@@ -599,6 +733,10 @@ def crate_claim(crate: str) -> Claim:
         return Claim(files=EXTENSION_TESTS, ids=SMOKE_IDS)
     if crate == "azoth-cli":
         return Claim(files=(f"{TESTS}/validation/test_mcp_conformance.py",))
+    if crate == "azoth-sheets":
+        # The calculation catalogue and the sheet book are the UI's second document; its own
+        # Rust tests cover the worked examples, and the UI job covers the wire and the screen.
+        return Claim(jobs=("ui",))
     if crate == "azoth-wasm":
         return Claim(jobs=("ui",))
     if crate == "azoth-test-support":
@@ -661,6 +799,22 @@ def namespace_targets(namespace: str) -> tuple[str, ...]:
     return targets
 
 
+def kernel_importers() -> dict[str, set[str]]:
+    """The model and kernel stems that import each ``kernels::<stem>``, read from the sources.
+
+    Only ``src/models/*.rs`` and ``src/kernels/*.rs`` are scanned: those are the files a
+    registered id names, and an internal helper module (``column/designer.rs``) belongs to the
+    model whose directory it sits in rather than being an id of its own.
+    """
+    out: dict[str, set[str]] = {}
+    root = ROOT / "crates" / "azoth-process" / "src"
+    for sub in ("models", "kernels"):
+        for path in (root / sub).glob("*.rs"):
+            for match in re.finditer(r"kernels::([a-z_]+)", path.read_text(encoding="utf-8")):
+                out.setdefault(match.group(1), set()).add(path.stem)
+    return out
+
+
 def table_problems() -> list[str]:
     """Everything wrong with the tables, as messages. Empty is the only good answer."""
     problems: list[str] = []
@@ -696,6 +850,46 @@ def table_problems() -> list[str]:
             f"SMOKE_IDS names {unknown_smoke}, which are not registered ids - a `-k` on one "
             "selects nothing, and that looks like a pass"
         )
+    for namespace, sample in NAMESPACE_SMOKE_IDS.items():
+        if namespace not in discovered_namespaces():
+            problems.append(
+                f"NAMESPACE_SMOKE_IDS names {namespace!r}, which is not a namespace the "
+                "specs or the sources declare"
+            )
+        if not sample:
+            problems.append(
+                f"NAMESPACE_SMOKE_IDS[{namespace!r}] is empty, so the namespace would select "
+                "no id at all - give it a sample or remove the entry"
+            )
+        unknown = sorted(set(sample) - registered_ids())
+        if unknown:
+            problems.append(
+                f"NAMESPACE_SMOKE_IDS[{namespace!r}] names {unknown}, which are not registered "
+                "ids - a `-k` on one selects nothing, and that looks like a pass"
+            )
+        foreign = sorted(id_ for id_ in sample if not id_.startswith(f"{namespace}."))
+        if foreign:
+            problems.append(
+                f"NAMESPACE_SMOKE_IDS[{namespace!r}] names {foreign}, which are another "
+                "namespace's ids"
+            )
+    for stem, consumers in KERNEL_CONSUMERS.items():
+        kernel_file = ROOT / "crates" / "azoth-process" / "src" / "kernels" / f"{stem}.rs"
+        if not kernel_file.exists():
+            problems.append(f"KERNEL_CONSUMERS names {stem!r}, and {kernel_file} does not exist")
+        unknown = sorted({f"process.{consumer}" for consumer in consumers} - registered_ids())
+        if unknown:
+            problems.append(
+                f"KERNEL_CONSUMERS[{stem!r}] names {unknown}, which are not registered ids"
+            )
+    for stem, importers in kernel_importers().items():
+        expected = {stem} | set(KERNEL_CONSUMERS.get(stem, ()))
+        missing = sorted(importers - expected)
+        if missing:
+            problems.append(
+                f"the kernel {stem!r} is imported by {missing}, which KERNEL_CONSUMERS does "
+                "not name - a change to it would reach them and the scope would not run them"
+            )
     triggered = SPEC_GENERATORS | DATA_GENERATORS | CAPTURE_GENERATORS
     for entry in generator_sweep():
         stem = Path(entry.command.split()[1]).stem
@@ -711,6 +905,29 @@ def table_problems() -> list[str]:
                 "to it would reach no Python test"
             )
     return problems
+
+
+def model_ids_for_crate_path(parts: list[str]) -> tuple[str, ...]:
+    """The registered ids a model-shaped crate source names, possibly none.
+
+    ``models/<leaf>.rs`` names the model of its stem. ``kernels/<leaf>.rs`` names that model
+    and every consumer `KERNEL_CONSUMERS` lists for it - `kernels/separator.rs` is four ids,
+    not one. A shared file (``mod.rs``, ``lib.rs``, ``segment/...``) names none and keeps the
+    namespace claim, which is what `NAMESPACE_SMOKE_IDS` bounds.
+    """
+    if len(parts) != 5 or parts[3] not in ("models", "kernels"):
+        return ()
+    namespace = crate_namespaces().get(parts[1])
+    if namespace is None:
+        return ()
+    stem = parts[4].removesuffix(".rs")
+    found: list[str] = []
+    candidate = f"{namespace}.{stem}"
+    if candidate in registered_ids():
+        found.append(candidate)
+    if parts[3] == "kernels":
+        found.extend(f"{namespace}.{consumer}" for consumer in KERNEL_CONSUMERS.get(stem, ()))
+    return tuple(dict.fromkeys(found))
 
 
 def claims(path: str) -> Claim:
@@ -729,7 +946,8 @@ def claims(path: str) -> Claim:
         # otherwise name all twelve members, because every crate reads it.
         if parts[-1].endswith("_gen.rs"):
             return Claim(generated=True)
-        return Claim(crates=(parts[1],))
+        ids = model_ids_for_crate_path(parts)
+        return Claim(crates=(parts[1],), ids=ids, shared=not ids)
 
     if parts[0] == "python":
         return python_claim(path, parts)
@@ -738,6 +956,9 @@ def claims(path: str) -> Claim:
         return specs_claim(path, parts)
 
     if path.endswith(".py") and (parts[0] == "tools" or parts[:2] == [".claude", "hooks"]):
+        if path == "tools/check_notebooks.py":
+            # The tool's own test is local; the notebooks job is what proves it against them.
+            return Claim(tools=("check_notebooks",), jobs=("notebooks",))
         return Claim(tools=(Path(path).stem,))
 
     if parts[0] in ("databank", "data"):
@@ -880,6 +1101,13 @@ def triggered_generators(paths: list[str]) -> frozenset[str] | None:
     return frozenset(names)
 
 
+#: Namespaces the worked notebooks exercise. A change to one re-executes them, because an
+#: example that stops running is a broken page rather than a stale test.
+NOTEBOOK_NAMESPACES = frozenset(
+    {"batch", "core", "eos", "hydraulics", "process", "standards", "thermal"}
+)
+
+
 def python_claim(path: str, parts: list[str]) -> Claim:
     """A path under `python/`: a test file, a fixture, a module, or a namespace package."""
     if path.startswith(f"{TESTS}/"):
@@ -924,8 +1152,17 @@ def python_claim(path: str, parts: list[str]) -> Claim:
                 f"test_scope: python/src/azoth/{parts[3]} is a module with no MODULE_TESTS entry,"
                 f" so a change to it reaches nothing. Known: {sorted(MODULE_TESTS)}."
             )
-        return Claim(files=targets)
-    return Claim(namespaces=(parts[3],))
+        jobs = ("notebooks",) if stem in {"__init__", "_dispatch"} else ()
+        return Claim(files=targets, jobs=jobs)
+    # **A reference module names its model.** `reference/<leaf>.py` is the Python twin of the
+    # registered id's kernel, so it can say which id it reaches rather than the namespace; a
+    # shared helper (`_column_mesh.py`, `capacity.py`) matches no id and keeps the claim.
+    if len(parts) == 6 and parts[4] == "reference":
+        candidate = f"{parts[3]}.{parts[5].removesuffix('.py')}"
+        if candidate in registered_ids():
+            return Claim(ids=(candidate,), namespaces=(parts[3],))
+    jobs = ("notebooks",) if parts[3] in NOTEBOOK_NAMESPACES else ()
+    return Claim(namespaces=(parts[3],), shared=True, jobs=jobs)
 
 
 def specs_claim(path: str, parts: list[str]) -> Claim:
@@ -1035,13 +1272,15 @@ def declared_id(path: Path) -> list[str]:
 
     A case file under `specs/cases/` has an `id` of its own - the *case's* name, which is not
     a registered id at all - and names its model on a `model = ` line. So that line is asked
-    for first: reading `id` first put case names into the `-k` expression, where they select
-    nothing.
+    for first, and only there: the path decides, because a calc's own inputs may be named
+    `model` (`eos.emulsion_viscosity`'s is), and a line-based test read one of those as the
+    spec's id.
     """
     text = path.read_text(encoding="utf-8")
-    match = re.search(r'^model = "([^"]+)"', text, re.M)
-    if match:
-        return [match.group(1)]
+    if path.is_relative_to(SPECS / "cases"):
+        match = re.search(r'^model = "([^"]+)"', text, re.M)
+        if match:
+            return [match.group(1)]
     match = re.search(r'^id = "([^"]+)"', text, re.M)
     return [match.group(1)] if match else []
 
@@ -1097,6 +1336,9 @@ def is_cheap(entry: Command) -> bool:
     `CLOSE_OUT` is flat-cost by construction - that is why those five jobs run on every push -
     so a formatting or lint failure belongs at the front of the run with the generators.
     """
+    if "tools/check_notebooks" in entry.command:
+        # Minutes, not seconds: starting five kernels is not a cheap-first check.
+        return False
     return is_generator_check(entry) or entry.command in {step.command for step in CLOSE_OUT}
 
 
@@ -1168,7 +1410,32 @@ def id_named_files(ids: set[str]) -> tuple[str, ...]:
     return tuple(sorted(found))
 
 
-def python_commands(namespaces: set[str], ids: set[str], files: set[str]) -> list[Command]:
+@lru_cache(maxsize=1)
+def model_spec_ids() -> frozenset[str]:
+    """The ids under `specs/models/`, the only ids `test_model_cases.py` can select.
+
+    **The calc ids and the model ids share a `-k` expression but not a test file.** A bare
+    namespace term is how a namespace without a sample reaches its ids, and a namespace that
+    holds calculations alone - `thermal`, `hydraulics`, `reactions` - has no model case for
+    `thermal.` to select: the narrowed command collected nothing and pytest exited 5, which
+    the lane read as a failure over a diff that was green.
+    """
+    return frozenset(
+        tomllib.loads(path.read_text(encoding="utf-8"))["id"]
+        for path in (ROOT / "specs" / "models").glob("**/*.toml")
+    )
+
+
+def selects_a_model(term: str) -> bool:
+    """Whether a `-k` term can select a model case: an id there, or a namespace with one."""
+    if term.endswith("."):
+        return any(identifier.startswith(term) for identifier in model_spec_ids())
+    return term in model_spec_ids()
+
+
+def python_commands(
+    namespaces: set[str], ids: set[str], files: set[str], shared: set[str]
+) -> list[Command]:
     """The pytest invocations for those namespaces, ids and files."""
     out: list[Command] = []
     for path in sorted(files):
@@ -1188,19 +1455,39 @@ def python_commands(namespaces: set[str], ids: set[str], files: set[str]) -> lis
             out.append(Command(f"the {namespace} namespace's own tests", PYTEST, target))
             if (ROOT / target).is_dir():
                 covered.append(str(ROOT / target) + "/")
-        # **A change inside a namespace reaches that whole namespace**, whether or not a spec
+        # **A change inside a namespace reaches that namespace's ids**, whether or not a spec
         # moved with it: only a `specs/` path contributed ids before, so `azoth/standards/...`
-        # reached nothing - and the file it changed was real code. The term is the namespace and
-        # a dot, which pytest accepts (`-k "process."` selects 106 of 431), rather than a hundred
-        # ids that nobody can check by reading.
+        # reached nothing - and the file it changed was real code.
+        #
+        # **A bounded namespace uses its sample rather than the dot.** `process`'s 33 ids were
+        # what made a one-model push take 48 minutes of a 60-minute ceiling; its sample is the
+        # families the shared process code serves. A namespace with no sample keeps the dot,
+        # so the other namespaces are unchanged.
         namespace_ids = set(ids_of(namespace))
         if namespace_ids:
-            terms.add(f"{namespace}.")
-            named |= set(id_named_files(namespace_ids))
+            sample = NAMESPACE_SMOKE_IDS.get(namespace)
+            if sample is None:
+                terms.add(f"{namespace}.")
+                named |= set(id_named_files(namespace_ids))
+            else:
+                # **The sample is for a namespace reached as a namespace.** A model or kernel
+                # file names its own ids, and a spec names its id; adding the sample to those
+                # would run every family for a one-model change - the over-selection this
+                # exists to remove. A path with no id in this namespace (a shared file, or a
+                # lockfile that reaches every crate) still gets the sample.
+                reached = {id_ for id_ in ids if id_.startswith(f"{namespace}.")}
+                if namespace in shared or not reached:
+                    terms |= set(sample)
+                named |= set(id_named_files(reached))
     named = {path for path in named if not any(str(ROOT / path).startswith(d) for d in covered)}
 
     if terms:
-        unknown = sorted(ids - registered_ids())
+        # **Every term, not just the spec-contributed ids.** A sample that has drifted would
+        # otherwise emit a `-k` that selects less in silence; `table_problems` catches it at
+        # `--audit`, and this catches it on the run.
+        unknown = sorted(
+            term for term in terms if not term.endswith(".") and term not in registered_ids()
+        )
         if unknown:
             raise SystemExit(
                 f"test_scope: {unknown} are not registered ids, so a `-k` naming them selects "
@@ -1208,13 +1495,15 @@ def python_commands(namespaces: set[str], ids: set[str], files: set[str]) -> lis
                 "`id =` line out of any spec file, including the ones whose id is not a model."
             )
         expression = " or ".join(sorted(terms))
-        out.append(
-            Command(
-                f"the cases of {sorted(terms)}",
-                PYTEST,
-                f'{TESTS}/models/test_model_cases.py -k "{expression}"',
+        model_terms = sorted(term for term in terms if selects_a_model(term))
+        if model_terms:
+            out.append(
+                Command(
+                    f"the cases of {model_terms}",
+                    PYTEST,
+                    f'{TESTS}/models/test_model_cases.py -k "{" or ".join(model_terms)}"',
+                )
             )
-        )
         out.append(
             Command(
                 f"{sorted(terms)} on both kernels",
@@ -1237,6 +1526,7 @@ def scope(paths: list[str], edges: dict[str, set[str]]) -> tuple[list[Command], 
     """Every command the paths reach, and the paths nothing claimed."""
     crates: set[str] = set()
     namespaces: set[str] = set()
+    shared: set[str] = set()
     ids: set[str] = set()
     files: set[str] = set()
     tools: set[str] = set()
@@ -1255,6 +1545,8 @@ def scope(paths: list[str], edges: dict[str, set[str]]) -> tuple[list[Command], 
             continue
         crates |= set(claim.crates)
         namespaces |= set(claim.namespaces)
+        if claim.shared:
+            shared |= set(claim.namespaces)
         ids |= set(claim.ids)
         files |= set(claim.files)
         tools |= set(claim.tools)
@@ -1277,7 +1569,7 @@ def scope(paths: list[str], edges: dict[str, set[str]]) -> tuple[list[Command], 
         jobs |= set(crate_side.jobs)
 
     commands = rust_scope(crates, edges) + commands
-    commands += python_commands(namespaces, ids, files)
+    commands += python_commands(namespaces, ids, files, shared)
 
     for tool in sorted(tools):
         script = next(
@@ -1372,6 +1664,8 @@ def script_jobs(command: str) -> set[str]:
     """Which job runs a non-cargo, non-pytest command, read off the command itself."""
     if command.endswith("/maturin develop"):
         return {"python-test"}
+    if "tools/check_notebooks" in command:
+        return {"notebooks"}
     if "tools/gen_ui_fixtures" in command:
         # The one generator that *runs* the CLI rather than reading the specs, so it belongs in
         # the job that has a cargo build - which is why `ci.yml` keeps it beside `rust-test`.
@@ -1431,13 +1725,17 @@ def known_jobs() -> tuple[str, ...]:
 def needs_extension(commands: list[Command]) -> bool:
     """Whether `python-test` must build the extension for this set.
 
-    A skills-only diff never touches `python/tests` and needs no `maturin develop`; a Rust
-    change emits the rebuild command itself. The job's separate build step is guarded on this,
-    so a docs or skills push does not pay a Rust link.
+    A docs-only diff touches neither `python/tests` nor the skills' own tests and needs no
+    rebuild; a Rust change emits the rebuild command itself. **The skills' smoke checks drive
+    the extension too** - the job sets `AZOTH_REQUIRE_RUST` - so a skills diff builds as well.
+    The job's separate build step is guarded on this, so a docs push does not pay a Rust link.
     """
     return any(
         entry.command.endswith("/maturin develop")
-        or (entry.kind == PYTEST and entry.command.split()[0].startswith(TESTS))
+        or (
+            entry.kind == PYTEST
+            and (entry.command.split()[0].startswith(TESTS) or "skills" in entry.command.split())
+        )
         for entry in commands
     )
 
@@ -1630,14 +1928,25 @@ def sweep_line(
     terms = tuple(term for term in selection.split(" or ") if term)
     if not any(file_has_selected_marked_tests(path, terms) for path in files):
         return None
-    return pytest_line(f'{entry.command} -m {MARKER} -k "{selection}"', gate, budget_seconds)
+    probe = f'{entry.command} -m {MARKER} -k "{selection}"'
+    # **The marker test is a cheap pre-filter, not the answer.** A file whose marked tests are
+    # parametrized at collection time - the registry completeness sweeps - looks reachable from
+    # its AST under any term, and `test_registration_completeness.py` does: its `calc_id` grid
+    # carries no `process.*` id, so the narrowed command collected nothing and pytest exited 5,
+    # which the lane read as a failure. The collection is the only thing that knows.
+    if collects_nothing(probe) is not None:
+        return None
+    return pytest_line(probe, gate, budget_seconds)
 
 
 def selection_terms(commands: list[Command]) -> str:
-    """The ids and namespace terms the scope selected, minus the smoke.
+    """The ids and namespace terms the scope selected, minus the samples.
 
-    The smoke ids are one per namespace by construction, not a reached set: narrowing a
-    registry-wide sweep to them would be the full sweep wearing nine names.
+    The smoke ids are one per namespace by construction, and `NAMESPACE_SMOKE_IDS` is a
+    bounded per-namespace sample; neither is a reached set, so narrowing a registry-wide sweep
+    to one would be the full sweep wearing a shorter name. An id a spec or a model file really
+    names is subtracted too when it happens to be in a sample (already true of
+    `process.compressor`), which skips that sweep rather than widening it - the safe direction.
     """
     terms: set[str] = set()
     for entry in commands:
@@ -1647,6 +1956,8 @@ def selection_terms(commands: list[Command]) -> str:
         if found:
             terms |= {term.strip() for term in found.group(1).split(" or ")}
     terms -= set(SMOKE_IDS)
+    for sample in NAMESPACE_SMOKE_IDS.values():
+        terms -= set(sample)
     return " or ".join(sorted(terms))
 
 
@@ -1682,6 +1993,8 @@ def estimate_seconds(entry: Command) -> int:
             (ESTIMATE_SECONDS.get(target, ESTIMATE_PYTEST_DEFAULT) for target in targets),
             default=ESTIMATE_PYTEST_DEFAULT,
         )
+    if "tools/check_notebooks" in entry.command:
+        return 180
     if is_generator_check(entry):
         stem = Path(entry.command.split()[1]).stem
         return ESTIMATE_GENERATORS.get(stem, 2)
@@ -2162,6 +2475,14 @@ def main() -> int:
 
     budget = args.max_minutes if args.max_minutes is not None else LANE_BUDGET_MINUTES[lane]
     budget_seconds = budget * 60 if budget else None
+    if args.no_gate:
+        # **On a runner the job's `timeout-minutes` is the watchdog, not this lane's budget.**
+        # `--no-gate` is the CI render - the gated wrapper does not exist there - and a command
+        # the diff widens to a whole suite (a change to `python/tests/_helpers.py` reaches every
+        # model) can take longer than a local lane's fifteen minutes without being hung. The
+        # 60-minute job ceiling is what bounds it; carrying the lane budget into the render made
+        # a correct wide diff fail at 900 s with exit 124.
+        budget_seconds = None
     selection = selection_terms(commands) if lane == "tranche" else ""
 
     sweeps = marked_sweeps(commands)

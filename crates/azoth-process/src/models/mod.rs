@@ -31,6 +31,7 @@
 //! per outlet and `products_z` a matrix with one row per outlet.
 
 pub mod absorption_column;
+pub mod anti_surge_recycle;
 pub mod component_splitter;
 pub mod compressor;
 pub mod cooler;
@@ -43,7 +44,10 @@ pub mod gas_scrubber;
 pub mod gibbs_reactor;
 pub mod heat_exchanger;
 pub mod heater;
+pub mod hem_release;
+pub mod leak_blowdown;
 pub mod manifold;
+pub mod map_turbo_expander_compressor;
 pub mod mixer;
 pub mod packed_column;
 pub mod pipe;
@@ -51,6 +55,8 @@ pub mod plug_flow_reactor;
 pub mod pump;
 pub mod rate_based_packed_column;
 pub mod separator;
+pub mod separator_capacity_assessment;
+pub mod separator_performance;
 pub mod shortcut_distillation_column;
 pub mod splitter;
 pub mod stirred_tank_reactor;
@@ -58,8 +64,10 @@ pub mod stripping_column;
 pub mod tank;
 pub mod three_phase_separator;
 pub mod throttling_valve;
+pub mod turbo_expander_compressor;
 
 pub use absorption_column::{AbsorptionColumnResult, absorption_column};
+pub use anti_surge_recycle::{AntiSurgeRecycleResult, anti_surge_recycle};
 pub use component_splitter::{ComponentSplitterResult, component_splitter};
 pub use compressor::{CompressorResult, compressor};
 pub use cooler::{CoolerResult, cooler};
@@ -72,7 +80,10 @@ pub use gas_scrubber::{GasScrubberResult, gas_scrubber};
 pub use gibbs_reactor::{GibbsReactorResult, gibbs_reactor};
 pub use heat_exchanger::{HeatExchangerResult, heat_exchanger};
 pub use heater::{HeaterResult, heater};
+pub use hem_release::{HemReleaseResult, hem_release};
+pub use leak_blowdown::{LeakBlowdownResult, leak_blowdown};
 pub use manifold::{ManifoldResult, manifold};
+pub use map_turbo_expander_compressor::{MapTurboExpanderResult, map_turbo_expander_compressor};
 pub use mixer::{MixerResult, mixer};
 pub use packed_column::{PackedColumnResult, packed_column};
 pub use pipe::{PipeResult, pipe};
@@ -80,6 +91,10 @@ pub use plug_flow_reactor::{PlugFlowReactorResult, plug_flow_reactor};
 pub use pump::{PumpResult, pump};
 pub use rate_based_packed_column::{RateBasedPackedColumnResult, rate_based_packed_column};
 pub use separator::{SeparatorResult, separator};
+pub use separator_capacity_assessment::{
+    SeparatorCapacityAssessmentResult, separator_capacity_assessment,
+};
+pub use separator_performance::{SeparatorPerformanceResult, separator_performance};
 pub use shortcut_distillation_column::{
     ShortcutDistillationColumnResult, shortcut_distillation_column,
 };
@@ -89,3 +104,4 @@ pub use stripping_column::{StrippingColumnResult, stripping_column};
 pub use tank::{TankResult, tank};
 pub use three_phase_separator::{ThreePhaseSeparatorResult, three_phase_separator};
 pub use throttling_valve::{ThrottlingValveResult, throttling_valve};
+pub use turbo_expander_compressor::{TurboExpanderResult, turbo_expander_compressor};

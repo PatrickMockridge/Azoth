@@ -42,6 +42,10 @@ public class AqueousViscProbe {
     row("water_350K_5bar", new String[] { "water" }, new double[] { 1.0 }, 350.0, 5.0);
     row("methanol_300K_5bar", new String[] { "methanol" }, new double[] { 1.0 }, 300.0, 5.0);
     row("teg_300K_5bar", new String[] { "TEG" }, new double[] { 1.0 }, 300.0, 5.0);
+    // **The one pair in the table with a non-zero `GIJVISC`**: water/TEG is `0.8`, so this
+    // row is where the mixing rule's interaction term is measurable.
+    row("water_teg_300K_5bar", new String[] { "water", "TEG" }, new double[] { 0.5, 0.5 },
+        300.0, 5.0);
     row("water_methanol_300K_5bar", new String[] { "water", "methanol" },
         new double[] { 0.5, 0.5 }, 300.0, 5.0);
     row("brine_nacl_300K_5bar", new String[] { "water", "Na+", "Cl-" },

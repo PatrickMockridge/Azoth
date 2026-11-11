@@ -31,6 +31,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `reactor_temperature` | K | *Optional.* the temperature an isothermal vessel holds. Required when `isothermal` is true, permitted and unused otherwise. |
 | `reactor_pressure` | Pa | *Optional.* the pressure the vessel holds, `setReactorPressure`. When omitted the outlet is the feed's less `pressure_drop`. |
 | `pressure_drop` | Pa | *Optional.* the pressure drop the outlet takes where no reactor pressure is stated, `setPressureDrop`. When omitted the drop is zero, so the outlet keeps the feed's own pressure. |
+| `vessel_volume` | m**3 | *Optional.* `getVesselVolume`'s stored field. **Absent is the class's `10.0`, and `run` reads neither it nor its neighbours**: only `toMap` echoes it and `getAgitatorPower` multiplies it. |
+| `residence_time` | h | *Optional.* `getResidenceTime`'s stored hours, `setResidenceTime`'s own unit. **Absent is `1.0`, and it is carried and unread** - the class holds it for `toMap` and for a transient it does not implement in this port. |
+| `agitator_power_per_volume` | W/m**3 | *Optional.* `getAgitatorPowerPerVolume`'s stored field, the specific power: the class's `1.0` kW/m3 is `1000` W/m3. **Absent is `1000.0`, and `run` reads it only to write a connected energy port's duty** - a branch this id declares out. |
 
 
 ## Outputs
@@ -43,6 +46,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `product_t` | K | the product's temperature: the held one when isothermal, and otherwise the one the flash lands on at the feed's enthalpy. |
 | `product_h` | J/mol | the product's molar enthalpy at its own state. |
 | `heat_duty` | W | the heat the vessel had to supply: the outlet's total enthalpy less the feed's when isothermal, and zero when adiabatic. |
+| `agitator_power` | kW | `getAgitatorPower`: the specific power times the vessel volume - `1.0 * 10.0 = 10` at the defaults. **Not a duty `run` applies**; it is the number the class would write to an agitator energy port, which is declared out. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -58,20 +62,21 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the extent is the limiting reactant's, not the stoichiometry's.** A conversion that would take any substance below zero is refused here rather than allowed to overwrite its slot - the class's `addComponent` would carry a negative mole count.
 - **the energy-port branch is owed.** `run` takes `PHflash(inlet + duty)` when an energy port is connected and in `SPECIFICATION` mode; that is an `EnergyStream` this library's five-field record has no place for, and the duty is declared out with the port named rather than guessed at.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `StirredTankReactor` also carries a vessel volume, a residence time, an agitator power per volume and a `runTransient`. **None is here**: `run` reads the first three only through energy ports and mechanical design, and the transient needs a holdup.
+- NeqSim's `StirredTankReactor` carries a vessel volume, a residence time and an agitator power per volume, all stored, plus a `runTransient`. **The three are declared and echoed**: `run` reads none, `toMap` prints them and `getAgitatorPower` is their product; **the transient needs a holdup**.
 
 ## Cases
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `adiabatic` | components = ['methane', 'oxygen', 'CO2', 'water', 'nitrogen'], feed_n = 1.0, feed_z = [0.05, 0.1, 0.02, 0.03, 0.8], feed_p = 500000.0, feed_t = 500.0, reaction = methanecombustion, limiting_reactant = oxygen, conversion = 0.5, isothermal = False, pressure_drop = 0.0 | product_n = 1.0, product_z = [0.025, 0.05, 0.045, 0.08, 0.8], product_p = 500000.0, product_t = 498.5366986205672, product_h = 6861.2392872763785, heat_duty = 0.0 |
-| `isothermal_800_k` | components = ['methane', 'oxygen', 'CO2', 'water', 'nitrogen'], feed_n = 1.0, feed_z = [0.05, 0.1, 0.02, 0.03, 0.8], feed_p = 500000.0, feed_t = 500.0, reaction = methanecombustion, limiting_reactant = oxygen, conversion = 0.5, isothermal = True, reactor_temperature = 800.0, pressure_drop = 0.0 | product_n = 1.0, product_z = [0.025, 0.05, 0.045, 0.08, 0.8], product_p = 500000.0, product_t = 800.0, product_h = 16686.180909326755, heat_duty = 9824.941623206952 |
-| `isothermal_800_k_3bara` | components = ['methane', 'oxygen', 'CO2', 'water', 'nitrogen'], feed_n = 1.0, feed_z = [0.05, 0.1, 0.02, 0.03, 0.8], feed_p = 500000.0, feed_t = 500.0, reaction = methanecombustion, limiting_reactant = oxygen, conversion = 0.5, isothermal = True, reactor_temperature = 800.0, reactor_pressure = 300000.0, pressure_drop = 0.0 | product_n = 1.0, product_z = [0.025, 0.05, 0.045, 0.08, 0.8], product_p = 300000.0, product_t = 800.0, product_h = 16685.47174570607, heat_duty = 9824.232459586266 |
+| `adiabatic` | components = ['methane', 'oxygen', 'CO2', 'water', 'nitrogen'], feed_n = 1.0, feed_z = [0.05, 0.1, 0.02, 0.03, 0.8], feed_p = 500000.0, feed_t = 500.0, reaction = methanecombustion, limiting_reactant = oxygen, conversion = 0.5, isothermal = False, pressure_drop = 0.0 | product_n = 1.0, product_z = [0.025, 0.05, 0.045, 0.08, 0.8], product_p = 500000.0, product_t = 498.5366986205672, product_h = 6861.2392872763785, heat_duty = 0.0, agitator_power = 10.0 |
+| `isothermal_800_k` | components = ['methane', 'oxygen', 'CO2', 'water', 'nitrogen'], feed_n = 1.0, feed_z = [0.05, 0.1, 0.02, 0.03, 0.8], feed_p = 500000.0, feed_t = 500.0, reaction = methanecombustion, limiting_reactant = oxygen, conversion = 0.5, isothermal = True, reactor_temperature = 800.0, pressure_drop = 0.0 | product_n = 1.0, product_z = [0.025, 0.05, 0.045, 0.08, 0.8], product_p = 500000.0, product_t = 800.0, product_h = 16686.180909326755, heat_duty = 9824.941623206952, agitator_power = 10.0 |
+| `isothermal_800_k_3bara` | components = ['methane', 'oxygen', 'CO2', 'water', 'nitrogen'], feed_n = 1.0, feed_z = [0.05, 0.1, 0.02, 0.03, 0.8], feed_p = 500000.0, feed_t = 500.0, reaction = methanecombustion, limiting_reactant = oxygen, conversion = 0.5, isothermal = True, reactor_temperature = 800.0, reactor_pressure = 300000.0, pressure_drop = 0.0 | product_n = 1.0, product_z = [0.025, 0.05, 0.045, 0.08, 0.8], product_p = 300000.0, product_t = 800.0, product_h = 16685.47174570607, heat_duty = 9824.232459586266, agitator_power = 10.0 |
+| `the_stored_fields_echo_and_their_product` | components = ['methane', 'oxygen', 'CO2', 'water', 'nitrogen'], feed_n = 1.0, feed_z = [0.05, 0.1, 0.02, 0.03, 0.8], feed_p = 500000.0, feed_t = 500.0, reaction = methanecombustion, limiting_reactant = oxygen, conversion = 0.5, isothermal = False, pressure_drop = 0.0, vessel_volume = 20.0, residence_time = 0.5, agitator_power_per_volume = 2000.0 | product_n = 1.0, product_z = [0.025, 0.05, 0.045, 0.08, 0.8], product_p = 500000.0, product_t = 498.5366986205672, product_h = 6861.2392872763785, heat_duty = 0.0, agitator_power = 40.0 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 3 declared, every one run
+- Tests: 4 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

@@ -1,8 +1,10 @@
 id = "eos.schwartzentruber_alpha"
 name = "Schwartzentruber-Renon alpha function"
+summary = "Schwartzentruber-Renon alpha function for a cubic equation of state. Use it when the attraction term follows this temperature form."
 equation = "alpha = (1 + m*(1 - sqrt(Tr)) - p1*(1 - Tr)*(1 + p2*Tr + p3*Tr**2))**2 with m = 0.48508 + 1.55191*omega - 0.15613*omega**2"
 latex = '''\alpha = \left[1 + m(1 - \sqrt{T_r}) - p_1(1 - T_r)(1 + p_2 T_r + p_3 T_r^2)\right]^2, \quad m = 0.48508 + 1.55191\omega - 0.15613\omega^2'''
-assumptions = ["the three `p` parameters are the caller's fitted Schwartzentruber-Renon parameters, not derived.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+assumptions = ["the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+notes = ["the three `p` parameters are the caller's fitted Schwartzentruber-Renon parameters, not derived.\n"]
 references = ["Schwartzentruber, J.; Renon, H. (1989). \"Extension of UNIFAC to high pressures and temperatures by the use of a cubic equation of state.\" Ind. Eng. Chem. Res. 28(7), 1049-1055."]
 [source]
 standard = "NeqSim master `AttractiveTermSchwartzentruber`"

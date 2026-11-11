@@ -4,6 +4,8 @@
 
 `eos.fuller_schettler_giddings_diffusivity`
 
+Gas binary diffusivity from the Fuller-Schettler-Giddings correlation. Use it for gas mixing and mass-transfer estimates when diffusion volumes are known.
+
 ## Equation
 
 $$
@@ -24,13 +26,23 @@ A new method for prediction of binary gas-phase diffusion coefficients. Ind. Eng
 
 DOI: [10.1021/ie50677a007](https://doi.org/10.1021/ie50677a007)
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- `VA` and `VB` are *diffusion volumes*, not molar volumes, and the caller resolves each with `azoth_eos::fuller_diffusion_volume`: the special-molecule table, then `0.285*Vc`, then `max(10, 0.95*M)` - the class's own three rungs.
+
+- **the pressure is in bar, and the class says so twice over**: `calcBinaryDiffusionCoefficient` divides by the bara pressure with the constant `1.013e-3` - Poling's Table 11-1 pair - while its javadoc writes `1.013e-2` with `P` in atm. The port follows the code.
+
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
 | `MA` | kg/mol | Molar mass of the first component of the pair. |
 | `MB` | kg/mol | Molar mass of the second. |
-| `VA` | m**3/mol | Diffusion volume of the first component, in NeqSim's cm**3/mol times 1e-6; see the resolution ladder in the assumptions. |
+| `VA` | m**3/mol | Diffusion volume of the first component. |
 | `VB` | m**3/mol | Diffusion volume of the second. |
 | `T` | K | Absolute temperature. |
 | `P` | Pa | Absolute pressure, which the correlation takes in bar - the port converts. |
@@ -51,19 +63,15 @@ DOI: [10.1021/ie50677a007](https://doi.org/10.1021/ie50677a007)
 | `T >= 200 and T <= 2000` | warns `OUT_OF_VALID_RANGE` | `Diffusivity.T_MIN` and `T_MAX`: outside that band the class's own `enableTemperatureWarnings` says the correlation is not validated, and the port says the same thing in its own vocabulary rather than log-only. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- `VA` and `VB` are *diffusion volumes*, not molar volumes, and the caller resolves each with `azoth_eos::fuller_diffusion_volume`: the special-molecule table, then `0.285*Vc`, then `max(10, 0.95*M)` - the class's own three rungs.
+- the temperature is the gas phase's own; outside `[200, 2000]` K the calculation warns rather than refuses.
 
-- **the pressure is in bar, and the class says so twice over**: `calcBinaryDiffusionCoefficient` divides by the bara pressure with the constant `1.013e-3` - Poling's Table 11-1 pair - while its javadoc writes `1.013e-2` with `P` in atm. The port follows the code.
-
-- the temperature is the gas phase's own, and a state outside the class's validated `[200, 2000]` K is *warned* about rather than refused, which is `Diffusivity.enableTemperatureWarnings` over `T_MIN`/`T_MAX`.
-
-- the correlation is for a *binary* pair in the gas phase; the class answers a matrix over the phase's components, and this id is one entry of it.
+- the correlation is for a binary pair in the gas phase; a mixture's diffusivity is one entry of its matrix.
 
 
 

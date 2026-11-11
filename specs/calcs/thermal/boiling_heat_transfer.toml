@@ -1,0 +1,415 @@
+id = "thermal.boiling_heat_transfer"
+name = "Flow boiling heat transfer, Chen and Gungor-Winterton"
+summary = "Flow-boiling heat-transfer coefficient from the Chen and Gungor-Winterton methods. Use it to estimate an evaporator tube-side coefficient when no test data are available."
+equation = "h_Chen = h_l*F + h_nucleate*S; h_GW = h_l*(1 + 3000*Bo**0.86 + 1.12*(x/(1-x))**0.75*(rho_l/rho_v)**0.41); X_tt = ((1-x)/x)**0.9*(rho_v/rho_l)**0.5*(mu_l/mu_v)**0.1"
+latex = '''h_{tp} = h_l F + h_{nuc} S, \qquad h_{GW} = h_l\left[1 + 3000\,Bo^{0.86} + 1.12\left(\frac{x}{1-x}\right)^{0.75}\left(\frac{\rho_l}{\rho_v}\right)^{0.41}\right]'''
+assumptions = ["The flow is saturated boiling in a plain tube. Subcooled boiling and dryout are not modelled, and the quality is clamped inside the correlation's range.\n"]
+notes = ["**the local Chen, Gungor-Winterton and corrected entries clamp the quality to `[0.001, 0.999]`**, and the average clamps both of its endpoints to the same band - unlike the condensation correlation's `[0, 1]`.\n", "**the Chen enhancement is `F = 1` when `1/X_tt <= 0.1` and `2.35*(0.213 + 1/X_tt)**0.736` otherwise**, and the suppression is `S = 1/(1 + 2.53e-6 Re_tp**1.17)` over `Re_tp = Re_l F**1.25`.\n", "**the Martinelli parameter is `((1-x)/x)**0.9 (rho_v/rho_l)**0.5 (mu_l/mu_v)**0.1`**, answering 1 at an endpoint or for a non-positive density or vapour viscosity.\n", "**the published Martinelli and Chen factors are the class's public helpers at the stated quality**, while the Chen local clamps the quality first; at a clamp the two differ, and the helper's raw-quality answer is the one those methods give a caller.\n", "**the Chen local's liquid Reynolds number floors at 1** before the Dittus-Boelter power, and its nucleate term is zero unless the wall superheat, saturation pressure difference, surface tension and latent heat are all positive.\n", "**the Gungor-Winterton boiling number is `heat_flux/(G*h_fg)`**, zero when the flux or the latent heat is zero; its convective enhancement is zero at `x >= 0.999` or a non-positive vapour density.\n", "**the horizontal correction applies below `Fr_l = 0.05`** with `E2 = Fr_l**(0.1 - 2 Fr_l)`; the average uses the uncorrected coefficient, as the class does.\n", "**the average is Simpson's rule** with `n = max(4, intervals)` rounded to even and the class's `|sum*dx/3/(x_out-x_in)|`; the zone analysis states 10 intervals, and an omitted count is 20.\n"]
+references = [
+    "Chen, J.C. (1966). \"Correlation for boiling heat transfer to saturated fluids in convective flow.\" I&EC Process Design and Development 5(3), 322-329. The superposition and the two factors.",
+    "Forster, H.K.; Zuber, N. (1955). \"Dynamics of vapor bubbles and boiling heat transfer.\" AIChE Journal 1(4), 531-535. The nucleate term.",
+    "Gungor, K.E.; Winterton, R.H.S. (1986). \"A general correlation for flow boiling in tubes and annuli.\" Int. J. Heat Mass Transfer 29(3), 351-358.",
+    "Gungor, K.E.; Winterton, R.H.S. (1987). \"Simplified general correlation for saturated flow boiling and comparisons of correlations with data.\" Chem. Eng. Res. Des. 65, 148-156. The simplified enhancement the average integrates.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/mechanicaldesign/heatexchanger/BoilingHeatTransfer.java` is the port source.",
+    "`validation/neqsim/captures/boiling_heat_transfer_probe.tsv` - the local entries, the factors and the composed state each case pins.\n",
+]
+[source]
+standard = "NeqSim process/mechanicaldesign/heatexchanger/BoilingHeatTransfer.java"
+edition = "`calcChenHTC`, `calcGungorWintertonHTC`, `calcGungorWintertonCorrectedHTC`, the Martinelli and factor helpers, and `calcAverageHTC`, composed as the zone analysis uses them."
+[inputs]
+[inputs.mass_flux]
+unit = "kg/(m**2*s)"
+description = "the total mass flux.\n"
+[inputs.tube_inner_diameter]
+unit = "m"
+description = "the tube inner diameter.\n"
+[inputs.liquid_density]
+unit = "kg/m**3"
+description = "the liquid density.\n"
+[inputs.vapor_density]
+unit = "kg/m**3"
+description = "the vapour density.\n"
+[inputs.liquid_viscosity]
+unit = "Pa*s"
+description = "the liquid dynamic viscosity.\n"
+[inputs.vapor_viscosity]
+unit = "Pa*s"
+description = "the vapour dynamic viscosity, in the Martinelli parameter.\n"
+[inputs.liquid_cp]
+unit = "J/(kg*K)"
+description = "the liquid specific heat capacity.\n"
+[inputs.liquid_conductivity]
+unit = "W/(m*K)"
+description = "the liquid thermal conductivity.\n"
+[inputs.surface_tension]
+unit = "N/m"
+description = "the surface tension, in the Forster-Zuber nucleate term.\n"
+[inputs.heat_of_vaporization]
+unit = "dimensionless"
+description = "the latent heat in J/kg, declared dimensionless because neither the vocabulary nor `uom` carries a mass-specific energy unit. It is in the nucleate term and the boiling number.\n"
+[inputs.wall_superheat]
+unit = "K"
+interval = true
+description = "the wall superheat `T_wall - T_sat`; a difference, so an offset unit is refused. Zero disables the nucleate term.\n"
+[inputs.saturation_pressure_difference]
+unit = "Pa"
+description = "the saturation-pressure difference corresponding to the wall superheat. Zero disables the nucleate term.\n"
+[inputs.heat_flux]
+unit = "W/m**2"
+description = "the wall heat flux, in the Gungor-Winterton boiling number.\n"
+[inputs.vapor_quality]
+unit = "dimensionless"
+description = "the local vapour quality, clamped to `[0.001, 0.999]` by the local entries.\n"
+[inputs.quality_in]
+unit = "dimensionless"
+description = "the inlet quality of the averaged range, clamped to `[0.001, 0.999]`.\n"
+[inputs.quality_out]
+unit = "dimensionless"
+description = "the outlet quality of the averaged range, clamped to `[0.001, 0.999]`.\n"
+[inputs.intervals]
+unit = "dimensionless"
+optional = true
+description = "The Simpson's-rule interval count. Defaults to 20 and is raised to an even number of at least four.\n"
+[inputs.horizontal]
+type = "boolean"
+optional = true
+description = "whether the tube is horizontal, which enables the stratified correction below `Fr_l = 0.05`. Absent is false.\n"
+[outputs]
+[outputs.chen_htc]
+unit = "W/(m**2*K)"
+description = "the Chen local coefficient at `vapor_quality`.\n"
+[outputs.gungor_winterton_htc]
+unit = "W/(m**2*K)"
+description = "the Gungor-Winterton local coefficient at `vapor_quality`.\n"
+[outputs.gungor_winterton_corrected_htc]
+unit = "W/(m**2*K)"
+description = "the same coefficient with the horizontal stratified correction where it applies.\n"
+[outputs.average_htc]
+unit = "W/(m**2*K)"
+description = "the Simpson's-rule average of the uncorrected coefficient over the range.\n"
+[outputs.martinelli_parameter]
+unit = "dimensionless"
+description = "the Lockhart-Martinelli parameter at `vapor_quality`.\n"
+[outputs.chen_enhancement_factor]
+unit = "dimensionless"
+description = "the Chen enhancement factor `F`.\n"
+[outputs.chen_suppression_factor]
+unit = "dimensionless"
+description = "the Chen suppression factor `S`.\n"
+[[valid_range]]
+quantity = "mass_flux"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a mass flux is positive; the class's guards return zero for a non-positive one.\n"
+[[valid_range]]
+quantity = "tube_inner_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a diameter is positive.\n"
+[[valid_range]]
+quantity = "liquid_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a density is positive.\n"
+[[valid_range]]
+quantity = "vapor_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a density is positive.\n"
+[[valid_range]]
+quantity = "liquid_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the Reynolds number divides by it.\n"
+[[valid_range]]
+quantity = "vapor_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the Martinelli parameter divides by it.\n"
+[[valid_range]]
+quantity = "liquid_cp"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the Prandtl number multiplies by it.\n"
+[[valid_range]]
+quantity = "liquid_conductivity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the coefficient multiplies by it.\n"
+[[valid_range]]
+quantity = "surface_tension"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the nucleate term divides by its square root.\n"
+[[valid_range]]
+quantity = "heat_of_vaporization"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the boiling number divides by it.\n"
+[[valid_range]]
+quantity = "wall_superheat"
+min = 0
+severity = "error"
+rationale = "a superheat cannot be negative; zero is the subcooled limit.\n"
+[[valid_range]]
+quantity = "saturation_pressure_difference"
+min = 0
+severity = "error"
+rationale = "a saturation pressure difference cannot be negative.\n"
+[[valid_range]]
+quantity = "heat_flux"
+min = 0
+severity = "error"
+rationale = "a heat flux cannot be negative; zero makes the boiling number zero.\n"
+[worked_example]
+source = "the capture's `composed_test_fluid` row at NeqSim f0c7436c, the class's own R134a-like test fluid."
+derivation = "G = 300 kg/(m2 s), x = 0.3, D = 0.01905 m, rho_l = 1147, rho_v = 50.1, mu_l = 1.65e-4, mu_v = 1.25e-5, cp_l = 1480, k_l = 0.078, sigma = 0.006, h_fg = 163000, dT_sat = 5 K, dP_sat = 50000 Pa, q = 20000 W/m2, quality 0.1 to 0.9, 20 intervals.\n\n  X_tt = ((1-0.3)/0.3)**0.9*(50.1/1147)**0.5*(1.65e-4/1.25e-5)**0.1 = 0.5799274339133583\n  F = 2.35*(0.213 + 1/X_tt)**0.736 = 3.823434196686962\n  Re_l = 300*0.7*0.01905/1.65e-4 = 24245.45;  Pr_l = 3.130769\n  h_l = 0.023*Re_l**0.8*Pr_l**0.4*0.078/0.01905\n  h_nuc = 0.00122*(k**0.79 cp**0.45 rho_l**0.49)/(sigma**0.5 mu_l**0.29 h_fg**0.24 rho_v**0.24)*5**0.24*50000**0.75\n  Re_tp = Re_l*F**1.25;  S = 1/(1 + 2.53e-6 Re_tp**1.17) = 0.2918448293001838\n  h_Chen = h_l F + h_nuc S = 2526.2127147050714\n  h_GW  = 3253.478374625191;  corrected = 3253.478374625191 (vertical)\n  average = 3092.2347498731165\n"
+tolerance = 1e-9
+[worked_example.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+surface_tension = 0.006
+heat_of_vaporization = 163000.0
+wall_superheat = 5.0
+saturation_pressure_difference = 50000.0
+heat_flux = 20000.0
+vapor_quality = 0.3
+quality_in = 0.1
+quality_out = 0.9
+intervals = 20.0
+horizontal = false
+[worked_example.expected]
+chen_htc = 2526.2127147050714
+gungor_winterton_htc = 3253.478374625191
+gungor_winterton_corrected_htc = 3253.478374625191
+average_htc = 3092.2347498731165
+martinelli_parameter = 0.5799274339133583
+chen_enhancement_factor = 3.823434196686962
+chen_suppression_factor = 0.2918448293001838
+[implementations]
+python = "azoth.thermal.boiling_heat_transfer"
+rust = "azoth_thermal::boiling_heat_transfer"
+[[tests]]
+id = "the_composed_test_fluid_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "no_wall_superheat_leaves_the_convective_term"
+type = "reference"
+status = "active"
+source = "The capture's `composed_no_wall_superheat` row: the worked example with zero superheat and zero saturation-pressure difference. The Chen coefficient falls to 1829.5562481491982, the `h_l F` term alone, while the Gungor-Winterton entries are unchanged.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+surface_tension = 0.006
+heat_of_vaporization = 163000.0
+wall_superheat = 0.0
+saturation_pressure_difference = 0.0
+heat_flux = 20000.0
+vapor_quality = 0.3
+quality_in = 0.1
+quality_out = 0.9
+intervals = 20.0
+horizontal = false
+[tests.expected]
+chen_htc = 1829.5562481491982
+gungor_winterton_htc = 3253.478374625191
+average_htc = 3092.2347498731165
+[[tests]]
+id = "a_quality_of_zero_clamps_to_the_floor"
+type = "reference"
+status = "active"
+source = "The capture's `composed_quality_zero` row: the worked example at a quality of zero, clamped to 0.001. The Chen coefficient is 2209.102773142971, the Gungor-Winterton local 2976.793857449522, and the Martinelli parameter answers its endpoint value of 1.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+surface_tension = 0.006
+heat_of_vaporization = 163000.0
+wall_superheat = 5.0
+saturation_pressure_difference = 50000.0
+heat_flux = 20000.0
+vapor_quality = 0.0
+quality_in = 0.1
+quality_out = 0.9
+intervals = 20.0
+horizontal = false
+[tests.expected]
+chen_htc = 2209.102773142971
+gungor_winterton_htc = 2976.793857449522
+martinelli_parameter = 1.0
+chen_enhancement_factor = 2.7088777854229495
+chen_suppression_factor = 0.3103290817184858
+[[tests]]
+id = "a_quality_of_one_clamps_to_the_ceiling"
+type = "reference"
+status = "active"
+source = "The capture's `composed_quality_one` row: the worked example at a quality of one, clamped to 0.999. The Gungor-Winterton local coefficient collapses to 11.8026629178737 because the liquid fraction is 0.001, while the average over 0.1 to 0.9 is unchanged.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+surface_tension = 0.006
+heat_of_vaporization = 163000.0
+wall_superheat = 5.0
+saturation_pressure_difference = 50000.0
+heat_flux = 20000.0
+vapor_quality = 1.0
+quality_in = 0.1
+quality_out = 0.9
+intervals = 20.0
+horizontal = false
+[tests.expected]
+chen_htc = 2353.9863993947697
+gungor_winterton_htc = 11.8026629178737
+average_htc = 3092.2347498731165
+chen_suppression_factor = 0.9993128852001366
+[[tests]]
+id = "a_low_flux_horizontal_tube_takes_the_stratified_correction"
+type = "reference"
+status = "active"
+source = "The capture's `composed_horizontal_low_flux` row: 5 kg/(m2 s) in a horizontal tube. Fr_l is below 0.05, so the corrected coefficient falls to 852.7989243844984 from the uncorrected 2294.4223781391147, and the average is 1744.464563537604.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 5.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+surface_tension = 0.006
+heat_of_vaporization = 163000.0
+wall_superheat = 5.0
+saturation_pressure_difference = 50000.0
+heat_flux = 20000.0
+vapor_quality = 0.3
+quality_in = 0.1
+quality_out = 0.9
+intervals = 20.0
+horizontal = true
+[tests.expected]
+chen_htc = 2409.0558017379
+gungor_winterton_htc = 2294.4223781391147
+gungor_winterton_corrected_htc = 852.7989243844984
+average_htc = 1744.464563537604
+chen_suppression_factor = 0.9802362111099722
+[[tests]]
+id = "an_odd_interval_count_is_raised_to_even"
+type = "reference"
+status = "active"
+source = "The capture's `composed_odd_intervals` row: the worked example with 7 intervals, raised to 8. The average moves from 3092.2347498731165 to 3092.07102804659.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+surface_tension = 0.006
+heat_of_vaporization = 163000.0
+wall_superheat = 5.0
+saturation_pressure_difference = 50000.0
+heat_flux = 20000.0
+vapor_quality = 0.3
+quality_in = 0.1
+quality_out = 0.9
+intervals = 7.0
+horizontal = false
+[tests.expected]
+average_htc = 3092.07102804659
+[[tests]]
+id = "the_zone_analysis_uses_ten_intervals"
+type = "reference"
+status = "active"
+source = "The capture's `composed_zone_intervals` row: the worked example with the zone analysis's 10 intervals. The average is 3092.16162204219, between the 7-to-8 and 20-interval answers.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+surface_tension = 0.006
+heat_of_vaporization = 163000.0
+wall_superheat = 5.0
+saturation_pressure_difference = 50000.0
+heat_flux = 20000.0
+vapor_quality = 0.3
+quality_in = 0.1
+quality_out = 0.9
+intervals = 10.0
+horizontal = false
+[tests.expected]
+average_htc = 3092.16162204219
+[[tests]]
+id = "a_zero_heat_flux_leaves_the_convective_term"
+type = "reference"
+status = "active"
+source = "The capture's `composed_zero_heat_flux` row: the worked example with zero heat flux. The boiling number is zero, so the Gungor-Winterton coefficient falls to 1503.2546034873365 and the average to 1780.3744350067752; the Chen entries read no heat flux and are unchanged.\n"
+tolerance = 1e-9
+[tests.inputs]
+mass_flux = 300.0
+tube_inner_diameter = 0.01905
+liquid_density = 1147.0
+vapor_density = 50.1
+liquid_viscosity = 1.65e-4
+vapor_viscosity = 1.25e-5
+liquid_cp = 1480.0
+liquid_conductivity = 0.078
+surface_tension = 0.006
+heat_of_vaporization = 163000.0
+wall_superheat = 5.0
+saturation_pressure_difference = 50000.0
+heat_flux = 0.0
+vapor_quality = 0.3
+quality_in = 0.1
+quality_out = 0.9
+intervals = 20.0
+horizontal = false
+[tests.expected]
+chen_htc = 2526.2127147050714
+gungor_winterton_htc = 1503.2546034873365
+average_htc = 1780.3744350067752

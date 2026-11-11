@@ -30,12 +30,15 @@ use crate::stream::Stream;
 /// than in the three modules that read it - the checker, the execution order and the session each
 /// had their own `split_once('.')`, which is three places for a grammar to disagree with itself.
 ///
-/// **The index is what a `many` outlet needs and nothing else does.** `unit_ops.splitter` declares
+/// **The index names a position on either side of a `many` port.** `unit_ops.splitter` declares
 /// its outlets as one port named `products`, so a two-way split returns two streams under one
-/// name; `split1.products[0]` is the first of them. An index on an inlet is not a thing a
-/// connection has - a `many` *inlet* takes several connections to the same port name, which is
-/// how a mixer is wired - so a consumer endpoint never carries one, and the checker refuses one
-/// that does.
+/// name; `split1.products[0]` is the first of them. A `many` *inlet* is a row of connection
+/// points too: `mix1.feed[0]` and `mix1.feed[1]` are the first and second feed, and no two lines
+/// share a point. An index on a `one` port is still a mistake, and the checker refuses it.
+///
+/// An endpoint written without an index (`mix1.feed`) is an older spelling. The projection assigns
+/// it the next free slot in document order; the checker and executor read the port and do not care
+/// which spelling a document used.
 ///
 /// A bare name - no dot - is a boundary stream, and returns `None` for the instance.
 #[must_use]
@@ -230,7 +233,7 @@ impl Recycle {
 
     /// Whether this declaration's acceleration is one the port carries, and why not if it is not.
     ///
-    /// **`broyden` is declared and refused, and the reason is measured.** Its arithmetic *is*
+    /// **`broyden` is declared and refused, and the reason is measured** (upstream #3997). Its arithmetic *is*
     /// transcribed - `BroydenAccelerator` is held to `captures/process_acceleration.tsv` call by
     /// call - but what a `Recycle` does with the answer is not reproducible: `applyStreamValues`
     /// writes the accelerated fractions through `Component.setx` on **both** phases, and a

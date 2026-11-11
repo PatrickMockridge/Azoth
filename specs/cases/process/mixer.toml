@@ -18,6 +18,8 @@ product_z = [0.4, 0.6]
 product_p = 600000.0
 product_t = 300.0379420950389
 product_h = -21581.51317087694
+inlet_pressure_spread = 400000.0
+pressure_mismatch = true
 [[cases]]
 id = "a_stated_outlet_pressure_overrides_the_lowest_feed"
 tolerance = 1e-05
@@ -38,3 +40,29 @@ product_z = [0.4, 0.6]
 product_p = 800000.0
 product_t = 299.9753356067683
 product_h = -21581.513144252458
+# The class reports `highest - lowestPressure`, and a specified outlet replaced the
+# lowest, so this row's spread is 10 - 8 bara rather than 10 - 6.
+inlet_pressure_spread = 200000.0
+pressure_mismatch = false
+
+[[cases]]
+id = "a_sub_tolerance_spread_raises_no_flag"
+tolerance = 1e-05
+source = "The capture's third row: the same feeds at 10 and 9.6 bara, a 0.4 bar spread. **Below the class's `0.5` bar tolerance the flag stays clear** while the spread itself is still reported, which is what separates the threshold from the arithmetic.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = [1.0, 2.0]
+feed_z = [
+    [0.6, 0.4],
+    [0.3, 0.7],
+]
+feed_p = [1000000.0, 960000.0]
+feed_t = [300.0, 300.0]
+[cases.expected]
+product_n = 3.0
+product_z = [0.4, 0.6]
+product_p = 960000.0
+product_t = 300.00453958863363
+product_h = -21569.23594720072
+inlet_pressure_spread = 40000.0
+pressure_mismatch = false

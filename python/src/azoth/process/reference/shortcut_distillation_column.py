@@ -331,20 +331,25 @@ def _states(
         y_gilliland = 0.5
     actual_stages = (y_gilliland + minimum_stages) / (1.0 - y_gilliland)
 
-    # Kirkbride, on the class's own argument - see the spec's assumptions for how it differs
-    # from the correlation as usually quoted.
+    # Kirkbride on product mole fractions, as upstream PR #4108 corrects it: the key amounts
+    # are normalised by the product fractions, the composition ratio is squared, and `B/D`
+    # enters once.
     z_lk_f = feed_z[lk]
     z_hk_f = feed_z[hk]
     b_over_d = _bottoms_to_distillate(feed_z, fractions)
-    x_hk_distillate = x_hk_d * z_hk_f
-    x_lk_bottoms = x_lk_b * z_lk_f
+    distillate_fraction = 1.0 / (1.0 + b_over_d)
+    bottoms_fraction = b_over_d * distillate_fraction
+    x_hk_distillate = x_hk_d * z_hk_f / distillate_fraction
+    x_lk_bottoms = x_lk_b * z_lk_f / bottoms_fraction
     if x_lk_bottoms > 1.0e-15 and b_over_d > 1.0e-15:
+        composition_ratio = x_lk_bottoms / x_hk_distillate
         kirkbride_ratio = (
-            (z_hk_f / z_lk_f) * (x_lk_bottoms / x_hk_distillate) * (b_over_d * b_over_d)
+            (z_hk_f / z_lk_f) * composition_ratio * composition_ratio * b_over_d
         ) ** 0.206
     else:
         kirkbride_ratio = 0.0
-    feed_tray_number = round(actual_stages / (1.0 + kirkbride_ratio)) + 1
+    n_rectifying = actual_stages * kirkbride_ratio / (1.0 + kirkbride_ratio)
+    feed_tray_number = round(n_rectifying) + 1
 
     total_distillate_fraction = min(
         max(sum(feed_z[i] * fractions[i] for i in range(count)), 0.001), 0.999

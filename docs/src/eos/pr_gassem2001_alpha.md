@@ -4,6 +4,8 @@
 
 `eos.pr_gassem2001_alpha`
 
+Gassem (2001) alpha function for a cubic equation of state. Use it when the attraction term follows this exponential temperature form.
+
 ## Equation
 
 $$
@@ -21,6 +23,14 @@ alpha = exp((A + B*Tr)*(1 - Tr**(C + D*omega + E*omega**2))),  with A = 2.0, B =
 **NeqSim master `AttractiveTermPrGassem2001`**
 
 `alpha(temperature)`, ported verbatim
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the five constants are NeqSim's, fitted for reservoir-fluid components; the acentric factor is the caller's.
+
 
 ## Inputs
 
@@ -44,13 +54,11 @@ alpha = exp((A + B*Tr)*(1 - Tr**(C + D*omega + E*omega**2))),  with A = 2.0, B =
 | `Tr > 0` | raises | the formula takes fractional powers of `Tr`; zero and below are not states |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
-
-- the five constants are NeqSim's, fitted for reservoir-fluid components; the acentric factor is the caller's.
 
 - the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.
 

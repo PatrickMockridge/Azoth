@@ -28,17 +28,20 @@ const check = (what, condition, detail = "") => {
 
 // 1. The palette the module carries, with no filesystem anywhere in sight.
 const catalogue = JSON.parse(azoth.palette_json(false));
-check("29 palette entries", catalogue.unit_ops.length === 29, `${catalogue.unit_ops.length}`);
+check("31 palette entries", catalogue.unit_ops.length === 31, `${catalogue.unit_ops.length}`);
 // **Two censuses, and both print what they found rather than only what they wanted.**
 // `unit_ops.simple_absorber` is the one entry with neither a model nor a kernel, so both counts
 // sit one short of the entry count. A census has to move when the palette grows; a failure that
 // named only the expected number is how these two went stale unnoticed.
 const withModel = catalogue.unit_ops.filter((entry) => entry.model !== null).length;
 const runnable = catalogue.unit_ops.filter((entry) => entry.runnable).length;
-check("28 with a model", withModel === 28, `${withModel}`);
-check("28 runnable", runnable === 28, `${runnable}`);
+check("30 with a model", withModel === 30, `${withModel}`);
+check("30 runnable", runnable === 30, `${runnable}`);
 const withTools = JSON.parse(azoth.palette_json(true));
-check("15 tools", withTools.tools.length === 15, `${withTools.tools.length}`);
+check("16 tools", withTools.tools.length === 16, `${withTools.tools.length}`);
+check("98 calculations", catalogue.calcs.length === 98, `${catalogue.calcs.length}`);
+const available = catalogue.calcs.filter((entry) => entry.available).length;
+check("94 a sheet can draw", available === 94, `${available}`);
 
 // 2. Opening the shipped document.
 const document = readFileSync("specs/flowsheets/demo.toml", "utf8");
@@ -99,7 +102,26 @@ try {
 }
 check("a name that is neither order raises with both in it", refusedOrder);
 
-// 7. And the module is still alive after every refusal - a trap would have taken it with them.
+// 7. The calculation book, which is a second document on the same module.
+const book = readFileSync("specs/calcbooks/demo.toml", "utf8");
+const sheets = new azoth.SheetEditor(book);
+const opened = JSON.parse(sheets.envelope());
+check("two sheets", opened.book.sheets.length === 2, `${opened.book.sheets.length}`);
+const calculated = JSON.parse(sheets.calculate("pump_power_1"));
+check("the worked example ran", calculated.book.sheets[0].stale === false);
+check(
+  "and the spec's answer is on the wire",
+  Math.abs(calculated.book.sheets[0].result.outputs.power.magnitude_si - 3914.81468) < 1e-6,
+);
+const added = JSON.parse(
+  sheets.apply(
+    '{"command":"add_sheet","id":"reynolds_1","calculation":"hydraulics.reynolds_number"}',
+  ),
+);
+check("a sheet is added", added.book.sheets.length === 3, `${added.book.sheets.length}`);
+check("its inputs are empty", Object.keys(added.book.sheets[2].inputs).length === 0);
+
+// 8. And the module is still alive after every refusal - a trap would have taken it with them.
 check("the module survives its refusals", editor.value("p1.outlet.T") > 300.0);
 
 if (failures.length > 0) {
@@ -107,4 +129,6 @@ if (failures.length > 0) {
   for (const failure of failures) console.error(`  ${failure}`);
   process.exit(1);
 }
-console.log("wasm smoke: OK (29 palette entries, 15 tools, 6 nodes, 43 values)");
+console.log(
+  "wasm smoke: OK (31 palette entries, 16 tools, 98 calculations, 6 nodes, 43 values)",
+);

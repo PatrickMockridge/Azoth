@@ -12,6 +12,8 @@ import { displayOf, type Units } from "../../state/units";
 import { fieldOf, isQuantity } from "../../wire/decode";
 import { formatQuantity } from "../../wire/field";
 import type { Catalogue, Envelope, StreamRecord } from "../../wire/types";
+import { compositionCsv, streamsCsv, tearsCsv } from "../../report/csv";
+import { saveText } from "../../save";
 import { DockTabs } from "../property/DockTabs";
 import { WorkbookGrid } from "./WorkbookGrid";
 
@@ -54,10 +56,24 @@ export function Workbook({
   const masses = molarMasses(catalogue);
   const axis = componentAxis(envelope);
   const stale = envelope.dirty;
+  const exportable = envelope.ok && envelope.run_error === null && !stale;
+
+  /** The active sheet as a file, in the units on screen. */
+  const exportCsv = () => {
+    const stem = envelope.flowsheet.name.replace(/[^A-Za-z0-9._-]+/g, "_") || "case";
+    const text =
+      sheet === "streams"
+        ? streamsCsv(envelope, units)
+        : sheet === "composition"
+          ? compositionCsv(envelope, catalogue, units)
+          : tearsCsv(envelope);
+    void saveText(`${stem}-${sheet}.csv`, text, "text/csv");
+  };
 
   return (
     <div className="workbook">
-      <DockTabs
+      <div className="workbook-head">
+        <DockTabs
         label="workbook"
         active={sheet}
         tabs={[
@@ -66,7 +82,21 @@ export function Workbook({
           { id: "tears", label: LABELS.tears, count: envelope.session?.tears.length ?? 0 },
         ]}
         onTab={setSheet}
-      />
+        />
+        <button
+          type="button"
+          className="button export"
+          disabled={!exportable}
+          title={
+            exportable
+              ? "download the active sheet in CSV format, in the units on screen"
+              : "solve the document first; a stale case is not an export"
+          }
+          onClick={exportCsv}
+        >
+          Export CSV
+        </button>
+      </div>
       {sheet === "streams" ? (
         <WorkbookGrid
           columns={streamColumns(rows[0]?.record, units)}

@@ -49,6 +49,26 @@ def test_a_splitter_conserves_moles_and_state() -> None:
         assert out.h == feed.h
 
 
+def test_the_splitter_model_publishes_its_capacity_map() -> None:
+    """The model id reaches the capacity arithmetic the kernel test does not."""
+    q = azoth.ureg.Quantity
+    result = process.splitter(
+        ["n-butane", "n-pentane"],
+        q(1.0, "mol/s"),
+        [0.6, 0.4],
+        q(10.0, "bar"),
+        q(300.0, "K"),
+        [0.3, 0.7],
+        header_diameter=q(0.02, "m"),
+        capacity_analysis_enabled=True,
+    )
+    assert result.velocity_value is not None
+    assert result.velocity_utilization == pytest.approx(0.011532557994935995)
+    assert result.max_utilization == pytest.approx(0.011532557994935995)
+    assert result.bottleneck_constraint == "velocity"
+    assert result.capacity_exceeded is False
+
+
 def test_a_mixer_conserves_moles_and_enthalpy() -> None:
     a = _binary(1.0, 50.0, 1e5, 300.0)
     b = _binary(0.0, 50.0, 1e5, 300.0)
@@ -252,9 +272,9 @@ def _demo() -> str:
 def test_the_palette_comes_back_as_a_form_per_entry() -> None:
     """The declaration a unit-op window *is*, and the embedded bundle is the shipped palette."""
     entries = process.forms()
-    assert len(entries) == 29
-    assert sum(1 for entry in entries if entry["model"]) == 28
-    assert sum(1 for entry in entries if entry["runnable"]) == 28
+    assert len(entries) == 31
+    assert sum(1 for entry in entries if entry["model"]) == 30
+    assert sum(1 for entry in entries if entry["runnable"]) == 30
 
     pump = next(entry for entry in entries if entry["id"] == "unit_ops.pump")
     pressure = next(p for p in pump["parameters"] if p["name"] == "outlet_pressure")
@@ -274,13 +294,13 @@ def test_the_palette_comes_back_as_a_form_per_entry() -> None:
 
 def test_the_agent_tools_are_the_command_model() -> None:
     names = [tool["name"] for tool in process.tools()]
-    assert len(names) == 15
+    assert len(names) == 16
     assert names[:4] == ["add_instance", "remove_instance", "connect", "disconnect"]
 
     add = process.tools()[0]["input_schema"]
     assert add["additionalProperties"] is False
     assert add["properties"]["command"]["const"] == "add_instance"
-    assert len(add["properties"]["unit"]["enum"]) == 29
+    assert len(add["properties"]["unit"]["enum"]) == 31
 
 
 def test_a_session_holds_a_document_and_marks_its_values_stale() -> None:
@@ -474,3 +494,37 @@ def test_a_pumparound_and_a_side_draw_flow_are_refused_together() -> None:
             side_draw_flow_phase="liquid",
             side_draw_flow_target=q(0.02, "kg/s"),
         )
+
+
+def test_the_column_capacity_reads_a_single_phase_at_the_feeds_root() -> None:
+    """**The negative-flash branch's trial root is not the outlet's state.**
+
+    A 95/5 methane/ethane stream at 50 bar and 303.15 K flashes `all_vapour` through the
+    negative-flash branch, whose trial composition sits on the other side of the cubic: the
+    flash root reads 95.794 kg/m3 and the feed's 36.692 - the density NeqSim's
+    `process_separator_capacity_assessment.tsv` records. The columns' capacity family reads the
+    outlet as `getPhase(0)` does, so `fs_limits` must use the second.
+    """
+    import math
+
+    from azoth.process.reference import capacity
+
+    q = azoth.ureg.Quantity
+    feed = process.Stream.from_pt(
+        ["methane", "ethane"], [0.95, 0.05], 1.0, q(5_000_000.0, "Pa"), q(303.15, "K")
+    )
+    components = list(feed.components)
+    t = feed.t.to("K").magnitude
+    p = feed.p.to("Pa").magnitude
+    z = list(feed.z)
+
+    assert capacity.system_mass_density(components, t, p, z) == pytest.approx(
+        95.79432907719706, rel=1e-9
+    )
+    feed_root = capacity.system_mass_density(components, t, p, z, from_feed=True)
+    assert feed_root == pytest.approx(36.69246246008776, rel=1e-9)
+
+    limits = capacity.fs_limits(feed, q(1.0, "m"), 2.5)
+    flow = capacity.system_volumetric_flow(components, t, p, z, feed.n, from_feed=True)
+    expected = flow / (math.pi / 4.0) * math.sqrt(feed_root)
+    assert limits["fs_factor"] == pytest.approx(expected, rel=1e-12)

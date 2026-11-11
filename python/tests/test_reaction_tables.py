@@ -22,7 +22,7 @@ def test_the_formation_properties_are_read_by_name_in_the_databanks_own_spelling
     co2 = _tables.formation_properties("CO2")
     assert co2 == _tables.FormationProperties(
         gibbs_energy_of_formation=-394_359.0,
-        enthalpy_of_formation=-393_509.0,
+        enthalpy_of_formation=-393_522.4,
         absolute_entropy=213.8,
     )
     assert _tables.formation_properties("no-such-substance") is None

@@ -128,3 +128,34 @@ fn a_single_phase_feed_is_refused() {
     .expect_err("one supercritical phase has no pair to dispatch");
     assert!(error.to_string().contains("no pair to dispatch"), "{error}");
 }
+
+/// **A component with no parachor is refused** (upstream #4110). `ParachorSurfaceTension`'s
+/// `calcSurfaceTension` returns `0.0` for every failure with its logging commented out, so a
+/// missing coefficient and no interface are the same number. Here it is an error naming the
+/// component.
+#[test]
+fn a_component_without_a_parachor_is_refused() {
+    let entry = |name: &str| {
+        databank::entry(name, None)
+            .unwrap_or_else(|error| panic!("{name}: {error}"))
+            .component()
+            .expect("a component")
+    };
+    let mixture = azoth_eos::Mixture::new(
+        vec![entry("methane").with_parachor(0.0), entry("n-butane")],
+        vec![0.0; 4],
+    )
+    .expect("a mixture");
+    let error = interface_properties(
+        &mixture,
+        "parachor",
+        &[1.0, 1.0],
+        0.0,
+        &[vec![0.0, 0.0], vec![0.0, 0.0]],
+        kelvins(250.0),
+        pascals(1.0e5),
+        &[0.5, 0.5],
+    )
+    .expect_err("no parachor");
+    assert!(error.to_string().contains("no parachor"), "{error}");
+}

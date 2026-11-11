@@ -44,6 +44,7 @@ use crate::unit_op::UnitOpSpec;
 pub fn catalogue(palette: &[UnitOpSpec], with_tools: bool) -> Result<String> {
     let mut document = serde_json::json!({
         "unit_ops": form::forms(palette),
+        "calcs": azoth_sheets::catalogue::to_value()?,
         "units": units(),
         "unit_sets": unit_sets(),
         "components": components(),

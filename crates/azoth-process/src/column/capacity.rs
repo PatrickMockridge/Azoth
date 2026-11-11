@@ -19,11 +19,20 @@
 //! **Both velocities are superficial over the total area**, which is what separates them from
 //! `TrayHydraulicsCalculator.getFsFactor()`, whose area is the net one less a downcomer. The two
 //! ids are not interchangeable and the tray model refuses to be wired in as if they were.
+//!
+//! **A single phase's root is the feed's.** The flash's negative-flash branch answers
+//! `all_vapour`/`all_liquid` with the *trial* composition's root - the other side of the cubic -
+//! while `getPhase(0)`/`getDensity` read the system's, so the family here uses the `_from_feed`
+//! variants. The designer keeps the flash's root: its own capture was taken against it, and the
+//! Python designer uses a separate copy, so a global switch would move one mirror and not the
+//! other.
 
 use azoth_core::Result;
 use azoth_core::units::{Length, meters};
 
-use crate::segment::phase::{Pick, phase_view, system_mass_density, system_volumetric_flow};
+use crate::segment::phase::{
+    Pick, phase_view_from_feed, system_mass_density_from_feed, system_volumetric_flow_from_feed,
+};
 use crate::stream::Stream;
 
 /// `DistillationColumn`'s own constructor default for `internalDiameter`, which the whole family
@@ -93,13 +102,14 @@ pub fn fs_limits(
     let fs_factor = if area <= 0.0 {
         0.0
     } else {
-        system_volumetric_flow(gas_out)? / area * system_mass_density(gas_out)?.sqrt()
+        system_volumetric_flow_from_feed(gas_out)? / area
+            * system_mass_density_from_feed(gas_out)?.sqrt()
     };
     // `getMinimumDiameterForFsLimit` **does not consult the area at all** - its own guard is the
     // limit's - so a column with no diameter still owes this number.
     let minimum_diameter_for_fs_limit = if max_allowable_fs_factor > 0.0 {
-        let flow = system_volumetric_flow(gas_out)?;
-        let density = system_mass_density(gas_out)?;
+        let flow = system_volumetric_flow_from_feed(gas_out)?;
+        let density = system_mass_density_from_feed(gas_out)?;
         meters(
             (4.0 * flow * density.sqrt() / (std::f64::consts::PI * max_allowable_fs_factor)).sqrt(),
         )
@@ -147,7 +157,7 @@ pub fn gas_load_limits(
     let velocity = if area <= 0.0 {
         0.0
     } else {
-        system_volumetric_flow(gas_out)? / area
+        system_volumetric_flow_from_feed(gas_out)? / area
     };
 
     let gas_load_factor = if not_positive(velocity) {
@@ -170,7 +180,8 @@ pub fn gas_load_limits(
                 * ((liquid_density - gas_density) / gas_density).sqrt();
             if permissible > 0.0 {
                 meters(
-                    (4.0 * system_volumetric_flow(gas_out)? / (std::f64::consts::PI * permissible))
+                    (4.0 * system_volumetric_flow_from_feed(gas_out)?
+                        / (std::f64::consts::PI * permissible))
                         .sqrt(),
                 )
             } else {
@@ -192,10 +203,10 @@ pub fn gas_load_limits(
 /// The two densities both gas-load getters read: `getPhase(0)` of the gas outlet and of the
 /// liquid outlet's own system, with the near-dry fallback applied to the second.
 fn densities(gas_out: &Stream, liquid_out_vapour: &Stream) -> Result<(f64, f64)> {
-    let gas_density = phase_view(gas_out, Pick::Gas)?.density;
+    let gas_density = phase_view_from_feed(gas_out, Pick::Gas)?.density;
     let liquid_density = resolve_liquid_density(
         gas_density,
-        phase_view(liquid_out_vapour, Pick::Gas)?.density,
+        phase_view_from_feed(liquid_out_vapour, Pick::Gas)?.density,
     );
     Ok((gas_density, liquid_density))
 }

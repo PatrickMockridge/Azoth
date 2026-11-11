@@ -94,19 +94,31 @@ def mixer(
                 f"`feed_n` has {len(feed_n)} and `{name}` has {got}",
             )
 
+    flows = [input_to_si(spec, "feed_n", value) for value in feed_n]
+    pressures = [input_to_si(spec, "feed_p", value) for value in feed_p]
+    temperatures = [input_to_si(spec, "feed_t", value) for value in feed_t]
     states = _route(
         components,
-        [input_to_si(spec, "feed_n", value) for value in feed_n],
+        flows,
         feed_z,
-        [input_to_si(spec, "feed_p", value) for value in feed_p],
-        [input_to_si(spec, "feed_t", value) for value in feed_t],
-        None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure),
+        pressures,
+        temperatures,
+        p_out,
     )
+    # `getMinimumFlow()` is `1e-20` kg/hr, so an inlet is active when it carries any flow.
+    active = [p for n, p in zip(flows, pressures, strict=True) if n > 0.0]
+    # The class stores the *outlet* pressure in `lowestPressure`, so a specified outlet
+    # makes the reported spread `highest - specified`, not `highest - lowest inlet`.
+    low = min(active) if p_out is None else p_out
+    spread = max(active) - low if active else 0.0
+    pressure_mismatch = p_out is None and spread > 0.5e5
     return MixerResult(
         product_n=from_si(states.n_total, "mol/s"),
         product_z=states.z,
         product_p=from_si(states.pressure, "Pa"),
         product_t=states.product_t,
+        inlet_pressure_spread=from_si(spread, "Pa"),
+        pressure_mismatch=pressure_mismatch,
         product_h=from_si(states.h_out, "J/mol"),
         warnings=tuple(warnings),
     )

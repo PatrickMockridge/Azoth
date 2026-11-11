@@ -130,6 +130,18 @@ owner = "check"
 checker = "crates/azoth-process/src/kernels/gas_scrubber.rs"
 reason = "the radicand's positivity is a property of the flashed state, not a bound the spec carries"
 
+# The same state as the scrubber's, on the separator's own capacity surface: the two densities are
+# the flash's and the gas area is the input's, so only the diameter's bound is a spec row. The
+# sizing and load-factor positivity refusals above the arithmetic are the port's own - NeqSim
+# answers `NaN` from its getters there.
+[[guard]]
+key = "separator_capacity.radicand_positive"
+site = "crates/azoth-process/src/kernels/separator.rs"
+spec = "process.separator"
+owner = "check"
+checker = "crates/azoth-process/src/kernels/separator.rs"
+reason = "the radicand's positivity is a property of the flashed state, not a bound the spec carries"
+
 # --- the classes -----------------------------------------------------------------------------
 #
 # One entry per shape a `valid_range` row in `specs/` actually takes, keyed by the shape itself:

@@ -4,6 +4,8 @@
 
 `eos.pr_kappa`
 
+Peng-Robinson attraction-parameter coefficient from the acentric factor. Use it when assembling a Peng-Robinson EOS with the standard kappa form.
+
 ## Equation
 
 $$
@@ -45,7 +47,7 @@ DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 | `kappa > 0` | warns `OUT_OF_VALID_RANGE` | The polynomial passes through zero at omega = -0.23338349942403008 and omega = 5.947150541510574, and kappa is negative below the lower one. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

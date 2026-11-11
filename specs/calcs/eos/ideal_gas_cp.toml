@@ -1,10 +1,9 @@
 id = "eos.ideal_gas_cp"
 name = "Ideal-gas heat capacity from a polynomial"
+summary = "Ideal-gas heat capacity from a polynomial in temperature. Use it for gas duty and heat-exchanger screening."
 equation = "cp = cp_a + cp_b*T + cp_c*T**2 + cp_d*T**3 + cp_e*T**4"
 latex = '''C_{p}^{\mathrm{ig}} = c_{0} + c_{1}T + c_{2}T^{2} + c_{3}T^{3} + c_{4}T^{4}'''
-assumptions = ["**the coefficients are the caller's, and their range is not checked.**\n", """\
-    **the polynomial is ideal-gas `Cp`, not the real fluid's.** The departure is a separate \
-    model - `eos.pr_departure` - and a caller wanting the real heat capacity adds the two.""", "**the coefficients are per component.** Evaluating a mixture's ideal-gas heat capacity means evaluating this once per component and taking the mole-fraction weighted sum.\n"]
+assumptions = ["**the coefficients are the caller's, and their range is not checked.**\n", "**the polynomial is ideal-gas `Cp`, not the real fluid's.** The departure is a separate model - `eos.pr_departure` - and a caller wanting the real heat capacity adds the two.", "**the coefficients are per component.** Evaluating a mixture's ideal-gas heat capacity means evaluating this once per component and taking the mole-fraction weighted sum.\n"]
 references = ["NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `Component.java` line 1547."]
 [source]
 standard = "NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0"

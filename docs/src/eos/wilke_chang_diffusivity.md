@@ -4,6 +4,8 @@
 
 `eos.wilke_chang_diffusivity`
 
+Liquid binary diffusivity from the Wilke-Chang correlation. Use it for liquid-phase mass-transfer screening with an associating solvent.
+
 ## Equation
 
 $$
@@ -23,6 +25,14 @@ D = 7.4e-8 * (phi*M)**0.5 * T / (eta*VA**0.6)   [cm**2/s],  with phi the solvent
 Correlation of diffusion coefficients in dilute solutions. AIChE J. 1(2), 264-270
 
 DOI: [10.1002/aic.690010222](https://doi.org/10.1002/aic.690010222)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- `eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.
+
 
 ## Inputs
 
@@ -49,7 +59,7 @@ DOI: [10.1002/aic.690010222](https://doi.org/10.1002/aic.690010222)
 | `T > 0` | raises | An absolute temperature; zero and below are not states. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
@@ -59,9 +69,7 @@ satisfy for the result to mean what it says.
 
 - `VA` is the solute liquid molar volume at the normal boiling point; the caller gets it as `M/rho_normal`, or the Tyn-Calus estimate `0.285*Vc**1.048` when the density is unknown.
 
-- `eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.
-
-- the molar volume and viscosity are clamped to NeqSim's `[20, 600]` cm**3/mol and `[0.01, 500]` cP; the correlation is not applied outside them.
+- the molar volume and viscosity are clamped to `[20, 600]` cm**3/mol and `[0.01, 500]` cP; the correlation is not applied outside them.
 
 - the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.
 

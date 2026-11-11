@@ -1784,9 +1784,9 @@ pub fn phase_transport(
 /// ignored: this correlation reads the components' own `LIQVISC` sets and nothing about
 /// the mixture's cubic.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, molar_mass, liqvisc, liqvisc_model, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, molar_mass, liqvisc, liqvisc_model, component_names, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, classes, kij, association, molar_mass, liqvisc, liqvisc_model, T, P, z, eos = \"pr\", alpha = \"pr\")"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, molar_mass, liqvisc, liqvisc_model, component_names, T, P, z, eos = \"pr\", alpha = \"pr\")"
 )]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -1802,6 +1802,7 @@ pub fn aqueous_viscosity(
     molar_mass: Vec<f64>,
     liqvisc: Vec<f64>,
     liqvisc_model: Vec<u32>,
+    component_names: Vec<String>,
     T: f64,
     P: f64,
     z: Vec<f64>,
@@ -1828,7 +1829,11 @@ pub fn aqueous_viscosity(
         })
         .collect::<azoth_core::Result<Vec<_>>>()
         .map_err(|e| to_pyerr(py, e))?;
-    let mixture = azoth_eos::Mixture::new(components, kij).map_err(|e| to_pyerr(py, e))?;
+    let mixture = azoth_eos::Mixture::new(components, kij)
+        .map_err(|e| to_pyerr(py, e))?
+        // **The names cross so the pair table can be read**: the mixing rule's `GIJVISC`
+        // interaction is keyed by a pair of names, which a component vector does not carry.
+        .with_names(component_names);
     azoth_eos::aqueous_viscosity(&mixture, kelvins(T), pascals(P), &z)
         .map(|r| PyAqueousViscosityResult::from(&r))
         .map_err(|e| to_pyerr(py, e))

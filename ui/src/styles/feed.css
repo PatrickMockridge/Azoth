@@ -1,0 +1,196 @@
+/*
+ * The boundary rows and the feed editor.
+ *
+ * A feed is a record with a composition, so the form is a small table rather than one text box.
+ * The palette's `.entry` is borrowed for the row that selects an object; the remove control is a
+ * separate button, because a row whose click deletes is a trap for the reader.
+ */
+
+.boundary-row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--s2);
+  padding-inline: var(--s3);
+}
+
+.boundary-row .entry {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.boundary-row .remove {
+  width: var(--ctl-h);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r2);
+  background: var(--bg-raised);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.boundary-row .remove:hover {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.feed-editor {
+  padding: var(--s3) var(--s5) var(--s5);
+}
+
+.feed-editor h3 {
+  margin: var(--s4) 0 var(--s2);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+}
+
+.feed-editor .mode {
+  display: flex;
+  gap: var(--s2);
+  margin-block-end: var(--s3);
+}
+
+.feed-editor .mode button,
+.feed-editor .sum button,
+.feed-editor .feed-actions button,
+.component-picker .matches button {
+  padding: var(--s2) var(--s4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r2);
+  background: var(--bg-raised);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.feed-editor .mode button.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.feed-editor .mode button:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.component-rows {
+  margin-block-end: var(--s3);
+}
+
+.component-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content minmax(6rem, 9rem) var(--ctl-h);
+  align-items: center;
+  gap: var(--s2);
+  padding-block: var(--s1);
+}
+
+.component-row .name {
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.component-row .mass {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+}
+
+.component-row input {
+  width: 100%;
+  height: var(--ctl-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r2);
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-variant-numeric: var(--tabnum);
+}
+
+.component-row button {
+  width: var(--ctl-h);
+  height: var(--ctl-h);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r2);
+  background: var(--bg-raised);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.component-picker input {
+  width: 100%;
+  height: var(--ctl-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r2);
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+}
+
+.component-picker .matches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-block-start: var(--s2);
+}
+
+.feed-editor .sum {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-block: var(--s3);
+  color: var(--text-dim);
+}
+
+.feed-editor .sum .bad {
+  color: var(--warn);
+}
+
+.feed-editor .conditions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s3);
+}
+
+.feed-editor .conditions .field {
+  padding: 0;
+}
+
+.feed-editor .feed-actions {
+  display: flex;
+  gap: var(--s2);
+  margin-block-start: var(--s4);
+}
+
+.feed-editor .feed-actions .primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.feed-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s3) var(--s5) 0;
+  color: var(--text-strong);
+}
+
+.feed-head .button {
+  height: var(--ctl-h);
+  padding: 0 var(--s4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r3);
+  background: var(--bg-raised);
+  color: var(--text);
+  cursor: pointer;
+}

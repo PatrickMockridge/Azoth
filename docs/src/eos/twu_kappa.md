@@ -4,6 +4,8 @@
 
 `eos.twu_kappa`
 
+Twu attraction-parameter coefficient from the acentric factor. Use it when assembling a cubic EOS with the Twu kappa form.
+
 ## Equation
 
 $$
@@ -45,7 +47,7 @@ DOI: [10.1016/0378-3812(91)90024-2](https://doi.org/10.1016/0378-3812(91)90024-2
 | `kappa > 0` | warns `OUT_OF_VALID_RANGE` | The polynomial passes through zero at omega = -0.296092 and omega = 9.290661, and kappa is negative below the lower one. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

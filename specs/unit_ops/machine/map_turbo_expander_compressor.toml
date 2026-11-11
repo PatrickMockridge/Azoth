@@ -1,0 +1,67 @@
+id = "unit_ops.map_turbo_expander_compressor"
+name = "Map turbo-expander compressor"
+[source]
+standard = "NeqSim process/equipment/expander/MapTurboExpanderCompressor.java"
+[parameters.expander_out_pressure]
+required = true
+unit = "Pa"
+description = "the expander's outlet pressure"
+[parameters.expander_isentropic_efficiency]
+required = true
+unit = "dimensionless"
+description = "the expander's isentropic efficiency, between 0 and 1"
+[parameters.compressor_outlet_pressure]
+required = true
+unit = "Pa"
+description = "the isentropic compressor's outlet pressure; the palette carries no map, so the specified-pressure mode is the one it runs"
+[parameters.compressor_isentropic_efficiency]
+required = true
+unit = "dimensionless"
+description = "the isentropic compressor's efficiency, between 0 and 1"
+[parameters.shaft_mode]
+description = "which solve runs, `specified_pressures` or `balanced_speed`; the runnable palette default is the specified mode, because balanced speed needs a map"
+[parameters.mechanical_efficiency]
+unit = "dimensionless"
+description = "the expander power that reaches the shaft; the class defaults it to 0.98"
+[parameters.bearing_loss]
+unit = "W"
+description = "the bearing loss taken off the shaft power; the class defaults it to 0"
+[parameters.compressor_speed]
+unit = "dimensionless"
+description = "the speed the specified mode reports, rpm; the class defaults it to 3000"
+[[ports]]
+name = "expander_feed"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "compressor_feed"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "expander_outlet"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "compressor_outlet"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

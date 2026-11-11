@@ -1,5 +1,6 @@
 id = "eos.matcop_alpha"
 name = "Mathias-Copeman alpha function"
+summary = "Three-parameter Mathias-Copeman alpha function for a cubic equation of state. Use it when a cubic EOS needs this attraction-temperature form."
 equation = "alpha = (1 + mc1*(1 - sqrt(Tr)) + mc2*(1 - sqrt(Tr))**2 + mc3*(1 - sqrt(Tr))**3)**2"
 latex = '''\alpha = \left(1 + c_1(1 - \sqrt{T_r}) + c_2(1 - \sqrt{T_r})^2 + c_3(1 - \sqrt{T_r})^3\right)^2'''
 assumptions = ["the three coefficients are the caller's fitted Mathias-Copeman parameters, not computed from the acentric factor.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own, so one correlation serves Peng-Robinson and Soave-Redlich-Kwong alike.\n"]

@@ -4,6 +4,8 @@
 
 `eos.twucoon_param_alpha`
 
+Twu-Coon parameter alpha function. Use it when a cubic EOS needs this attraction-temperature form.
+
 ## Equation
 
 $$
@@ -48,7 +50,7 @@ DOI: [10.1016/0378-3812(94)02601-V](https://doi.org/10.1016/0378-3812(94)02601-V
 | `Tr > 0` | raises | the formula takes fractional powers of `Tr`; zero and below are not states |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

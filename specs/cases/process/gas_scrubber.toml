@@ -95,3 +95,78 @@ design_gas_load_factor = 0.07
 vapour_n = 0.7773101311100368
 liquid_n = 0.22268986888996328
 capacity_utilization = 0.0033609430039118087
+[[cases]]
+id = "the_mechanical_design_sizes_the_vertical_scrubber"
+tolerance = 0.0002
+source = "The scrubber mechanical capture's PR row: the class's own fixture at 10,000 kg/hr on the cubic this port carries, through `GasScrubberMechanicalDesign.calcDesign`. **The scrubber standard's `1.1` volume factor is the difference from the separator**: the base pass runs first with `1.0`, then this subclass re-sizes vertical (`Fg = 1`) at `1.1`, with a `5 d` length and a module `2 d` high.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-pentane"]
+feed_n = 107.40852445606174
+feed_z = [0.7, 0.1, 0.1, 0.1]
+feed_p = 2000000.0
+feed_t = 298.15
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+design_gas_load_factor = 0.11
+mechanical_design = true
+orientation = "vertical"
+[cases.expected]
+design_inner_diameter = 0.5153753093296343
+design_tantan_length = 2.5768765466481716
+design_outer_diameter = 0.5276754360439454
+design_wall_thickness = 0.00615006335715554
+max_design_gas_volume_flow = 437.0199728065295
+vessel_shell_weight = 261.3646146595328
+piping_weight = 104.54584586381311
+structural_weight = 26.13646146595328
+electrical_weight = 20.909169172762624
+internals_weight = 0.0
+total_weight = 412.9560911620618
+module_width = 1.0307506186592685
+module_length = 3.8653148199722573
+module_height = 1.0307506186592685
+vessel_volume = 0.537564660701708
+hhll = 0.4123002474637074
+hll = 0.360762716530744
+nll = 0.25768765466481713
+lll = 0.15461259279889028
+llll = 0.07730629639944514
+weir_height = 0.12884382733240857
+nil = 0.10307506186592685
+effective_length_liquid = 2.1130387682515006
+effective_length_gas = 1.6492009898548299
+inlet_nozzle_id = 0.1
+gas_outlet_nozzle_id = 0.1
+oil_outlet_nozzle_id = 0.05
+surge_volume = 0.10917994933751654
+surge_time = 394130.4984517307
+liquid_retention_time = 795631.0473858638
+
+[[cases]]
+id = "a_configured_mesh_pad_and_size_from_flow"
+tolerance = 2e-04
+source = "The scrubber mechanical capture's `port_fixture_pr_mesh_pad` row: the same PR fixture with `setMeshPad(area, 150)` and an elevation of `0.75` m on the sized vessel, then the inherited `sizeFromFlow(1.5)`. **The mesh pad is design state set after `calcDesign`**, so the row pins the configuration and the sized diameter rather than re-running the design.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-pentane"]
+feed_n = 107.40852445606174
+feed_z = [0.7, 0.1, 0.1, 0.1]
+feed_p = 2000000.0
+feed_t = 298.15
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+design_gas_load_factor = 0.11
+mechanical_design = true
+orientation = "vertical"
+internal_diameter = 0.5153753093296343
+safety_factor = 1.5
+mesh_pad_area = 0.208610948791937
+mesh_pad_thickness = 150.0
+mesh_pad_elevation = 0.75
+[cases.expected]
+has_mesh_pad = true
+mesh_pad_area = 0.208610948791937
+mesh_pad_thickness = 150.0
+mesh_pad_elevation = 0.75
+has_inlet_cyclones = false
+has_demisting_cyclones = false
+required_diameter = 0.6032413503836097

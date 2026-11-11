@@ -51,6 +51,8 @@ pub mod argon_solid;
 pub mod argon_solid_phase;
 pub mod association;
 pub mod barite_celestite_solid_solution;
+pub mod beggs_brill_segment;
+pub mod brine_mixing_scale_evaluator;
 pub mod bubble_pressure;
 pub mod bubble_temperature;
 pub mod bwrs;
@@ -63,6 +65,7 @@ pub mod cdft_surface_tension;
 pub mod chapman_enskog_diffusivity;
 pub mod chung_conductivity;
 pub mod chung_viscosity;
+pub mod closed_loop_deposition_solver;
 pub mod co2_brine_phase_equilibrium;
 pub mod co2_phase;
 pub mod co2_water_diffusivity;
@@ -70,6 +73,7 @@ pub mod costald_molar_volume;
 pub mod critical_point;
 pub mod cubic;
 pub mod databank;
+pub mod de_waard_milliams_corrosion;
 pub mod desmukh_mather_phase;
 pub mod dew_pressure;
 pub mod dew_temperature;
@@ -77,9 +81,14 @@ pub mod dual;
 pub mod effective_diffusion;
 pub mod electrolyte;
 pub mod electrolyte_cpa_statoil_phase;
+pub mod electrolyte_scale_calculator;
+pub mod emulsion_viscosity;
+pub mod entropy_state;
 pub mod eos_cg;
 mod eos_cg_data;
 pub mod eos_cg_phase;
+pub mod equilibrium_sound_speed;
+pub mod erosion_prediction;
 pub mod filippov_conductivity;
 pub mod firozabadi_ramley_interface_tension;
 pub mod flash_iteration;
@@ -110,6 +119,7 @@ pub mod gerg2008_phase;
 pub mod gt_surface_tension;
 pub mod gt_surface_tension_simple;
 pub mod hayduk_minhas_diffusivity;
+pub mod heat_capacity;
 pub mod heat_of_vaporization;
 pub mod helium_phase;
 pub mod henry;
@@ -122,6 +132,7 @@ pub mod hydrate_formation_temperature;
 pub mod hydrate_fraction;
 pub mod hydrate_inhibitor_concentration;
 pub mod hydrate_inhibitor_wt;
+pub mod hydrate_risk_map;
 pub mod hydrogen_phase;
 pub mod iapws_henry_law;
 pub mod iapws_if97;
@@ -160,8 +171,13 @@ pub mod pcsaft_rahmat_phase;
 pub mod ph_flash;
 pub mod phase_boundary;
 pub mod phase_transport;
+pub mod pipe_beggs_and_brills;
+pub mod pipeline_cooldown;
 pub mod pitzer_catalog;
 pub mod pitzer_electrostatic;
+pub mod pitzer_hydrate;
+pub mod pitzer_hydrate_formation_pressure;
+pub mod pitzer_hydrate_formation_temperature;
 pub mod pitzer_phase;
 pub mod pitzer_scale_activity;
 pub mod pr78_kappa;
@@ -176,6 +192,7 @@ pub mod pr_mass_density;
 pub mod pr_molar_volume;
 pub mod pr_peneloux_shift;
 pub mod pr_z_factor;
+pub mod production_chemical_scale_scenario;
 pub mod prsv_kappa;
 pub mod ps_flash;
 pub mod pt_flash;
@@ -196,14 +213,20 @@ pub mod saft_vr_mie_phase;
 pub mod salt_precipitation;
 pub mod saturate_with_water;
 pub mod saturation_temperature;
+pub mod scale_control_assessor;
+pub mod scale_deposition_accumulator;
+pub mod scale_inhibitor_performance;
+pub mod scale_kinetics;
 pub mod scale_mass;
 pub mod scale_prediction;
+pub mod scale_remediation_advisor;
 pub mod scale_saturation_ratio;
 pub mod schwartzentruber_alpha;
 pub mod siddiqi_lucas_diffusivity;
 pub mod solid_fugacity;
 pub mod soreide_whitson_alpha;
 pub mod soreide_whitson_phase;
+pub mod sound_speed;
 pub mod spanwagner;
 pub mod spec_gen;
 pub mod srk_alpha_ab;
@@ -218,6 +241,8 @@ pub mod srk_kappa;
 pub mod srk_peneloux_shift;
 pub mod srk_z_factor;
 pub mod stability_test;
+pub mod stream_scale_analyzer;
+pub mod surf_cooldown;
 pub mod th_flash;
 pub mod thermal_conductivity;
 pub mod tp_flash_saft;
@@ -239,6 +264,7 @@ pub mod unifac_activity_coefficients;
 pub mod unifac_psrk_activity_coefficients;
 pub mod unifac_umrpru_activity_coefficients;
 pub mod uniquac_activity_coefficients;
+pub mod valve_scale_drift;
 pub mod van_laar_acid_activity_coefficients;
 pub mod vdw1f_mix_binary;
 pub mod vega;
@@ -273,18 +299,22 @@ pub use cdft_surface_tension::cdft_surface_tension;
 pub use chapman_enskog_diffusivity::chapman_enskog_diffusivity;
 pub use chung_conductivity::chung_conductivity;
 pub use chung_viscosity::chung_viscosity;
+pub use closed_loop_deposition_solver::closed_loop_deposition_solver;
 pub use co2_brine_phase_equilibrium::co2_brine_phase_equilibrium;
 pub use co2_phase::co2_phase;
 pub use co2_water_diffusivity::co2_water_diffusivity;
 pub use costald_molar_volume::costald_molar_volume;
 pub use critical_point::critical_point;
 pub use cubic::Cubic;
+pub use de_waard_milliams_corrosion::de_waard_milliams_corrosion;
 pub use desmukh_mather_phase::desmukh_mather_phase;
 pub use dew_pressure::dew_pressure;
 pub use dew_temperature::dew_temperature;
 pub use effective_diffusion::effective_diffusion;
 pub use electrolyte_cpa_statoil_phase::electrolyte_cpa_statoil_phase;
+pub use emulsion_viscosity::emulsion_viscosity;
 pub use eos_cg_phase::eos_cg_phase;
+pub use erosion_prediction::erosion_prediction;
 pub use filippov_conductivity::filippov_conductivity;
 pub use firozabadi_ramley_interface_tension::firozabadi_ramley_interface_tension;
 pub use freezing_point::freezing_point;
@@ -367,45 +397,55 @@ pub use pv_flash::pv_flash;
 pub use rachford_rice_binary::rachford_rice_binary;
 pub use rackett_molar_volume::rackett_molar_volume;
 pub use results::{
-    AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
+    AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BeggsBrillSegmentResult,
+    BrineMixingPointRow, BrineMixingScaleEvaluatorResult, BubblePressureResult,
     BubbleTemperatureResult, BwrsPhaseResult, CalcIonicCompositionResult, CdftSurfaceTensionResult,
-    ChapmanEnskogDiffusivityResult, ChungConductivityResult, ChungViscosityResult,
-    Co2BrinePhaseEquilibriumResult, Co2PhaseResult, Co2WaterDiffusivityResult,
-    CostaldMolarVolumeResult, CriticalPointResult, DesmukhMatherPhaseResult, DewPressureResult,
-    DewTemperatureResult, EffectiveDiffusionResult, ElectrolyteCpaStatoilPhaseResult,
-    EosCgPhaseResult, FilippovConductivityResult, FirozabadiRamleyInterfaceTensionResult,
-    FreezingPointResult, FrictionTheoryConductivityResult, FrictionTheoryViscosityResult,
+    ChapmanEnskogDiffusivityResult, ChemicalWarningRow, ChungConductivityResult,
+    ChungViscosityResult, ClosedLoopDepositionSolverResult, Co2BrinePhaseEquilibriumResult,
+    Co2PhaseResult, Co2WaterDiffusivityResult, CooldownVerdict, CorrosionSeverity,
+    CostaldMolarVolumeResult, CriticalPointResult, DeWaardMilliamsCorrosionResult,
+    DepositionSegmentRow, DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult,
+    EffectiveDiffusionResult, ElectrolyteCpaStatoilPhaseResult, ElectrolyteScaleCalculatorResult,
+    EmulsionType, EmulsionViscosityResult, EosCgPhaseResult, FeSMorphology,
+    FilippovConductivityResult, FirozabadiRamleyInterfaceTensionResult, FreezingPointResult,
+    FrictionTheoryConductivityResult, FrictionTheoryViscosityResult,
     FullerSchettlerGiddingsDiffusivityResult, FurstElectrolyteMod2004PhaseResult,
     FurstElectrolytePhaseResult, GeFlashResult, GeNrtlFlashResult, GeNrtlPhaseResult,
     GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult,
     Gerg2008PhaseResult, GtSurfaceTensionResult, GtSurfaceTensionSimpleResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult, HenryStatus,
     HybridEosGeFlashResult, HydrateFormationTemperatureResult, HydrateFractionResult,
-    HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult, IapwsSaturationPressureResult,
-    IdealGasCpResult, InterfacePropertiesResult, KentEisenbergPhaseResult, LgtSurfaceTensionResult,
+    HydrateRiskLevel, HydrateRiskMapResult, HydrateRiskPoint, HydrateStructure,
+    HydrogenPhaseResult, IapwsHenryLawResult, IapwsSaturationPressureResult, IdealGasCpResult,
+    InterfacePropertiesResult, KentEisenbergPhaseResult, LgtSurfaceTensionResult,
     LiquidConductivityPolynomResult, LiquidHeatCapacityResult, LiquidViscosityPureResult,
     MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
     MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
     MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorMixtureSurfaceTensionResult, ParachorSurfaceTensionResult,
-    ParahydrogenSolidPhaseResult, Phase, PhaseTransportResult, PitzerDataset, PitzerPhaseResult,
-    Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult,
-    PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
-    PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
-    PureSaturationResult, PvRefluxFlashResult, PvfFlashResult, RachfordRiceBinaryResult,
-    RachfordRiceResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
-    RootStructure, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
-    SoreideWhitsonAlphaResult, SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkDepartureResult,
+    ParahydrogenSolidPhaseResult, Phase, PhaseTransportResult, PipeBeggsAndBrillsResult,
+    PipelineCooldownResult, PitzerDataset, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult,
+    PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
+    PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrPenelouxShiftResult, PrZFactorResult, ProductionChemicalScaleScenarioResult, PrsvKappaResult,
+    PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult,
+    PvRefluxFlashResult, PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult,
+    RackettMolarVolumeResult, RemediationOptionRow, RkAlphaAbResult, RkDepartureResult,
+    RootStructure, ScaleControlAssessorResult, ScaleControlRiskRow, ScaleControlRow,
+    ScaleDepositionAccumulatorResult, ScaleInhibitorPerformanceResult, ScaleKineticsResult,
+    ScaleRemediationAdvisorResult, ScenarioChangeRow, ScenarioIndexRow,
+    SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,
+    SoreideWhitsonPhaseResult, SoundSpeedResult, SrkAlphaAbResult, SrkDepartureResult,
     SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
-    StabilityVerdict, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
-    TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    StabilityVerdict, StreamScaleAnalyzerResult, StreamScaleMineralRow, SurfCooldownResult,
+    ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult, TwuKappaResult,
+    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
     TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
     UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
-    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
-    VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult, WilkeChangDiffusivityResult,
-    WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    ValveScaleDriftResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
+    VhFlashResult, ViscosityResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
+    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
@@ -419,6 +459,7 @@ pub use siddiqi_lucas_diffusivity::{SiddiqiLucasForm, siddiqi_lucas_diffusivity}
 pub use solid_fugacity::solid_fugacity;
 pub use soreide_whitson_alpha::soreide_whitson_alpha;
 pub use soreide_whitson_phase::soreide_whitson_phase;
+pub use sound_speed::sound_speed;
 pub use srk_alpha_ab::srk_alpha_ab;
 pub use srk_cpa_phase::{srk_cpa_phase, srk_cpa_phase_of};
 pub use srk_departure::srk_departure;

@@ -214,11 +214,87 @@ class Stream:
     @staticmethod
     def from_ph(components: list[str], z: list[float], n: float, p: float, h: float) -> Stream: ...
 
+class IncrementalZoneInput(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    zone_name: str
+    duty: float
+    hot_inlet_temp: float
+    hot_outlet_temp: float
+    cold_inlet_temp: float
+    cold_outlet_temp: float
+    tube_phase_regime: str
+    tube_density: float
+    tube_viscosity: float
+    tube_cp: float
+    tube_conductivity: float
+    tube_mass_flow: float
+    shell_phase_regime: str
+    shell_density: float
+    shell_viscosity: float
+    shell_cp: float
+    shell_conductivity: float
+    shell_mass_flow: float
+    tube_liquid_density: float | None
+    tube_vapor_density: float | None
+    tube_liquid_viscosity: float | None
+    tube_vapor_viscosity: float | None
+    tube_liquid_cp: float | None
+    tube_liquid_conductivity: float | None
+    tube_quality_in: float | None
+    tube_quality_out: float | None
+    tube_reduced_pressure: float | None
+    tube_surface_tension: float | None
+    tube_heat_of_vaporization: float | None
+
+class ZoneDefinitionRow(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    zone_name: str
+    duty_fraction: float
+    total_duty: float
+    lmtd: float
+    tube_density: float
+    tube_viscosity: float
+    tube_cp: float
+    tube_conductivity: float
+    shell_density: float
+    shell_viscosity: float
+    shell_cp: float
+    shell_conductivity: float
+
 class AssayCut(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
     declared_fraction: float
     density: float | None
+
+class FluidComponent(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    fluid: float
+    name: str
+    pseudo_component: bool
+    moles: float
+    molar_mass: float | None
+    density: float | None
+    normal_boiling_point: float | None
+    critical_temperature: float | None
+    critical_pressure: float | None
+    acentric_factor: float | None
+    critical_volume: float | None
+    racket_z: float | None
+    racket_z_cpa: float | None
+    parachor: float | None
+    critical_viscosity: float | None
+    triple_point_temperature: float | None
+    heat_of_fusion: float | None
+    ideal_gas_enthalpy_of_formation: float | None
+    cp_a: float | None
+    cp_b: float | None
+    cp_c: float | None
+    cp_d: float | None
+    attractive_m: float | None
 
 class SourceRow(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
@@ -257,6 +333,47 @@ class AssayCutDerivation(TypedDict):
     watson_characterization_factor: float | None
     standard_component_name: str | None
 
+class InteractionComponent(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    name: str
+    pseudo_component: bool
+
+class BrineAnalysis(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    calcium: float
+    barium: float
+    strontium: float
+    magnesium: float
+    sodium: float
+    potassium: float
+    chloride: float
+    sulphate: float
+    bicarbonate: float
+
+class ProductionChemicalDose(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    chemical_type: str
+    name: str
+    active_ingredient: str
+    active_wt_pct: float
+    dosage: float
+    alkalinity_capacity: float | None
+    h2s_capacity: float | None
+
+class ScaleInhibitor(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    scale_type: str
+    inhibitor_chemistry: str
+    temperature: float
+    saturation_ratio: float
+    total_dissolved_solids: float
+    calcium: float
+    available_dose: float
+
 class WaterAnalysis(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -273,6 +390,92 @@ class WaterAnalysis(TypedDict):
     pressure: float
     co2_partial_pressure: float
 
+class CompressorCurvePoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    speed: float
+    flow: float
+    head: float
+    efficiency: float
+
+class CompressorSurgePoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    flow: float
+    head: float
+
+class DepositMass(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    mechanism: str
+    mass: float
+
+class FilterDropPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    flow: float
+    drop: float
+
+class FilterBetaPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    particle_size: float
+    beta_ratio: float
+
+class MapCurvePoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    speed: float
+    flow: float
+    head: float
+    efficiency: float
+
+class PipeFitting(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    ld_ratio: float
+    count: float
+
+class PumpCurvePoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    speed: float
+    flow: float
+    head: float
+    efficiency: float
+    npsh_required: float | None
+
+class EfficiencyPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    diameter: float
+    efficiency: float
+
+class TurboUcPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    uc: float
+    efficiency: float
+
+class TurboQnPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    qn: float
+    factor: float
+
+class ExpanderMapPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    igv: float
+    uc: float
+    efficiency: float
+
+class TurboIgvPenaltyPoint(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    igv: float
+    factor: float
+
 @final
 class KComponent:
     """one row per fitting supplied, in the order they were listed"""
@@ -280,6 +483,78 @@ class KComponent:
     fitting_id: str
     n_ld: float
     k: float
+
+@final
+class IncrementalZoneRow:
+    """one row per zone, in the input order."""
+
+    zone_index: float
+    zone_name: str
+    tube_phase_regime: str
+    shell_phase_regime: str
+    tube_side_heat_transfer_coefficient: Qty
+    shell_side_heat_transfer_coefficient: Qty
+    overall_heat_transfer_coefficient: Qty
+    lmtd: Qty
+    duty: Qty
+    required_area: Qty
+    tube_side_pressure_drop: Qty
+    shell_side_pressure_drop: Qty
+    hot_inlet_temp: Qty
+    hot_outlet_temp: Qty
+    cold_inlet_temp: Qty
+    cold_outlet_temp: Qty
+
+@final
+class NaceIssueRow:
+    """The NACE assessment's issue strings."""
+
+    message: str
+
+@final
+class AppliedStandardRow:
+    """The standards the design pipeline applied."""
+
+    name: str
+
+@final
+class ZoneRatingRow:
+    """one row per zone, in the input order."""
+
+    zone_name: str
+    duty_fraction: float
+    tube_side_heat_transfer_coefficient: Qty
+    shell_side_heat_transfer_coefficient: Qty
+    overall_heat_transfer_coefficient: Qty
+    lmtd: Qty
+    required_area: Qty
+
+@final
+class CharacterizationComponent:
+    """The blended fluid's components: its merged base components first, in the fluids' order, then the combined pseudo-components in ascending cut order, named `PC1_PC`, `PC2_PC` and so on."""
+
+    name: str
+    pseudo_component: bool
+    moles: Qty
+    molar_mass: Qty | None
+    density: Qty | None
+    normal_boiling_point: Qty | None
+    critical_temperature: Qty | None
+    critical_pressure: Qty | None
+    acentric_factor: float | None
+    critical_volume: Qty | None
+    racket_z: float | None
+    racket_z_cpa: float | None
+    parachor: float | None
+    critical_viscosity: Qty | None
+    triple_point_temperature: Qty | None
+    heat_of_fusion: Qty | None
+    ideal_gas_enthalpy_of_formation: Qty | None
+    cp_a: Qty | None
+    cp_b: Qty | None
+    cp_c: Qty | None
+    cp_d: Qty | None
+    attractive_m: float | None
 
 @final
 class SubFraction:
@@ -290,6 +565,27 @@ class SubFraction:
     molar_mass: Qty
     density: Qty | None
     boiling_point: Qty | None
+
+@final
+class BrineMixingPointRow:
+    """One row per mixing fraction, from all brine A to all brine B."""
+
+    fraction_a: float
+    si_caco3: float
+    si_baso4: float
+    si_caso4: float
+    si_srso4: float
+
+@final
+class EquilibriumSoundSpeedSample:
+    """the accepted stencil's states, centre first."""
+
+    pressure: Qty
+    temperature: Qty
+    density: Qty
+    entropy_residual: Qty
+    phase: str
+    vapour_fraction: float | None
 
 @final
 class FlowlineScaleSegment:
@@ -303,6 +599,17 @@ class FlowlineScaleSegment:
     si_srso4: float | None
     si_caso4: float | None
     si_feco3: float | None
+
+@final
+class HydrateRiskPoint:
+    """One row per profile point, in the order the points were given."""
+
+    distance: Qty
+    pressure: Qty
+    actual_temperature: Qty
+    hydrate_temperature: Qty | None
+    subcooling: Qty | None
+    risk_level: str
 
 @final
 class MineralEquilibriumRow:
@@ -326,6 +633,74 @@ class ActivityCoefficientRow:
     activity_coefficient: float
 
 @final
+class ScenarioIndexRow:
+    """The treated indices, in the same order."""
+
+    mineral: str
+    saturation_index: float | None
+
+@final
+class ScenarioChangeRow:
+    """The treated minus baseline index, over the baseline's minerals."""
+
+    mineral: str
+    change: float | None
+
+@final
+class ChemicalWarningRow:
+    """The class's warning map, in insertion order."""
+
+    code: str
+    message: str
+
+@final
+class ScaleControlRow:
+    """The uninhibited indices, one row per scale in the class's order."""
+
+    scale: str
+    saturation_index: float | None
+
+@final
+class ScaleControlRiskRow:
+    """The inhibited risk index, one row per scale in the same order."""
+
+    scale: str
+    risk_index: float | None
+
+@final
+class DepositionSegmentRow:
+    """One row per evaluated segment, in the profile's order."""
+
+    saturation_index: float
+    deposition_mass: Qty
+    thickness: Qty
+
+@final
+class RemediationOptionRow:
+    """The candidate remedies, ordered by descending effectiveness."""
+
+    scale_type: str
+    category: str
+    dissolver: str
+    concentration: str
+    method: str
+    effectiveness: str
+    min_temperature: Qty
+    max_temperature: Qty
+    cautions: str
+    standard: str
+
+@final
+class StreamScaleMineralRow:
+    """One row per registered mineral, in the equilibrium's order."""
+
+    mineral: str
+    initial_si: float
+    final_si: float
+    precipitated_mass: Qty
+    scale_rate: Qty
+
+@final
 class WaterMixingResult:
     """One row per requested percentage, in the caller's order; an index is absent where its ions are."""
 
@@ -335,6 +710,106 @@ class WaterMixingResult:
     si_srso4: float | None
     si_caso4: float | None
     si_feco3: float | None
+
+@final
+class HeatExchangerMechanicalType:
+    """the five candidates in the class's enum order; empty when the design did not run."""
+
+    mechanical_type: str
+    required_area: Qty
+    required_ua: Qty
+    overall_heat_transfer_coefficient: Qty
+    approach_temperature: Qty
+    estimated_length: Qty
+    inner_diameter: Qty
+    outer_diameter: Qty
+    wall_thickness: Qty
+    tube_count: float
+    tube_passes: float
+    fin_surface_area: Qty
+    estimated_pressure_drop: float
+    estimated_weight: Qty
+    module_length: Qty
+    module_width: Qty
+    module_height: Qty
+
+@final
+class HeaterInstrument:
+    """the design's instrument list, in the class's insertion order; empty when the design did not run."""
+
+    tag: str
+    isa_symbol: str
+    service: str
+    io_type: str
+    range_unit: str | None
+    range_min: float
+    range_max: float
+    sil_rating: float
+    safety_related: bool
+
+@final
+class HeaterMechanicalType:
+    """the five candidates in the class's enum order; empty when the design did not run."""
+
+    mechanical_type: str
+    required_area: Qty
+    required_ua: Qty
+    overall_heat_transfer_coefficient: Qty
+    approach_temperature: Qty
+    estimated_length: Qty
+    inner_diameter: Qty
+    outer_diameter: Qty
+    wall_thickness: Qty
+    tube_count: float
+    tube_passes: float
+    fin_surface_area: Qty
+    estimated_pressure_drop: float
+    estimated_weight: Qty
+    module_length: Qty
+    module_width: Qty
+    module_height: Qty
+
+@final
+class HemReleaseStation:
+    """the resolved stations, upstream first: the stagnation state, the throat, the aliased exit and the receiving-pressure state. Empty on failure, and the ambient row is absent on no forward flow."""
+
+    station: str
+    pressure: Qty
+    temperature: Qty
+    density: Qty
+    molar_enthalpy: Qty
+    molar_entropy: Qty
+    velocity: Qty
+    mass_flux: Qty
+    phase: str
+    gas_mass_fraction: float
+
+@final
+class HemReleaseDiagnostic:
+    """the model's assumption and warning records, in the order it forms them."""
+
+    code: str
+    message: str
+
+@final
+class LeakBlowdownPoint:
+    """one row per visited step, in time order."""
+
+    time: Qty
+    mass_flow_rate: Qty
+    temperature: Qty
+    pressure: Qty
+    vapour_mole_fraction: float
+    jet_velocity: Qty
+    jet_momentum: Qty
+    droplet_smd: Qty
+
+@final
+class LeakBlowdownDiagnostic:
+    """the model's assumption, floor and failure records, in order."""
+
+    code: str
+    message: str
 
 # --- results --------------------------------------------------------------
 # Generated from the result dataclasses, so the stub and `azoth.core.result`
@@ -356,11 +831,25 @@ class CharacterisePlusFractionResult:
     warnings: list[Warning]
 
 @final
+class CharacterizeToCommonSlateResult:
+    components: list[CharacterizationComponent]
+    fluid_index: list[float]
+    fluid_moles: list[Qty]
+    resolved_pseudo_components: int
+    warnings: list[Warning]
+
+@final
 class CharacterizeToReferenceResult:
     reference_index: list[float]
     group_moles: list[Qty]
     group_molar_mass: list[Qty]
     group_density: list[Qty]
+    warnings: list[Warning]
+
+@final
+class CombineReservoirFluidsResult:
+    components: list[CharacterizationComponent]
+    total_moles: Qty
     warnings: list[Warning]
 
 @final
@@ -439,8 +928,36 @@ class TbpDensityResult:
     warnings: list[Warning]
 
 @final
+class TbpFractionComponentResult:
+    critical_temperature: Qty
+    critical_pressure: Qty
+    boiling_temperature: Qty
+    acentric_factor: float
+    attraction_exponent: float
+    critical_volume: Qty
+    racket_z: float
+    racket_z_cpa: float
+    parachor: float
+    critical_viscosity: Qty
+    triple_point_temperature: Qty
+    heat_of_fusion: Qty
+    ideal_gas_enthalpy_of_formation: Qty
+    cp_a: Qty
+    cp_b: Qty
+    cp_c: Qty
+    cp_d: Qty
+    lennard_jones_diameter: Qty
+    lennard_jones_energy: Qty
+    warnings: list[Warning]
+
+@final
 class TbpGroupingResult:
     group_fraction: list[float]
+    warnings: list[Warning]
+
+@final
+class TransferBinaryInteractionParametersResult:
+    target_kij: list[list[float]]
     warnings: list[Warning]
 
 @final
@@ -491,6 +1008,31 @@ class BariteCelestiteSolidSolutionResult:
     x_srso4: float
     total_saturation_index: float | None
     supersaturated: bool
+    warnings: list[Warning]
+
+@final
+class BeggsBrillSegmentResult:
+    regime: str
+    liquid_holdup: float
+    superficial_gas_velocity: Qty
+    superficial_liquid_velocity: Qty
+    superficial_mixture_velocity: Qty
+    no_slip_density: Qty
+    no_slip_viscosity: Qty
+    reynolds: float
+    friction_factor: float
+    two_phase_friction_factor: float
+    hydrostatic_drop: Qty
+    friction_drop: Qty
+    total_drop: Qty
+    warnings: list[Warning]
+
+@final
+class BrineMixingScaleEvaluatorResult:
+    points: list[BrineMixingPointRow]
+    worst_fraction_a: float
+    worst_mineral: str
+    worst_saturation_index: float
     warnings: list[Warning]
 
 @final
@@ -567,6 +1109,16 @@ class ChungViscosityResult:
     warnings: list[Warning]
 
 @final
+class ClosedLoopDepositionSolverResult:
+    iterations_taken: int
+    converged: bool
+    final_effective_diameter: Qty
+    diameter_history: list[Qty]
+    max_thickness_history: list[Qty]
+    velocity_history: list[Qty]
+    warnings: list[Warning]
+
+@final
 class Co2BrinePhaseEquilibriumResult:
     phase_count: int
     accepted_root: str
@@ -608,6 +1160,27 @@ class CriticalPointResult:
     z_c: float
     iterations: int
     residual: float
+    warnings: list[Warning]
+
+@final
+class DeWaardMilliamsCorrosionResult:
+    baseline_rate: Qty
+    ph_correction_factor: float
+    scale_correction_factor: float
+    glycol_correction_factor: float
+    flow_correction_factor: float
+    inhibitor_factor: float
+    corrected_rate: Qty
+    sulfur_rate: Qty
+    fes_rate: Qty
+    co2_corrected_rate: Qty
+    total_corrosion_rate: Qty
+    feco3_saturation_index: float
+    feco3_scale_forming: bool
+    is_sour_service: bool
+    corrosion_severity: str
+    fes_morphology: str
+    corrosion_allowance: Qty
     warnings: list[Warning]
 
 @final
@@ -656,6 +1229,30 @@ class ElectrolyteCpaStatoilPhaseResult:
     warnings: list[Warning]
 
 @final
+class ElectrolyteScaleCalculatorResult:
+    ionic_strength: Qty
+    debye_hueckel_a: float
+    divalent_activity_coefficient: float
+    monovalent_activity_coefficient: float
+    si_caco3: float
+    si_baso4: float
+    si_caso4: float
+    si_srso4: float
+    si_brucite: float
+    hydroxide_activity: float
+    warnings: list[Warning]
+
+@final
+class EmulsionViscosityResult:
+    effective_viscosity: Qty
+    relative_viscosity: float
+    viscosity_ratio: float
+    inversion_water_cut: float
+    emulsion_type: str
+    is_inverted: bool
+    warnings: list[Warning]
+
+@final
 class EosCgPhaseResult:
     z_factor: float
     u: Qty
@@ -664,6 +1261,32 @@ class EosCgPhaseResult:
     cv: Qty
     cp: Qty
     g: Qty
+    warnings: list[Warning]
+
+@final
+class EquilibriumSoundSpeedResult:
+    sound_speed: Qty | None
+    status: str
+    message: str
+    pressure_step: Qty
+    relative_step_error: float | None
+    specific_entropy: Qty
+    stencil: str
+    phase_boundary_encountered: bool
+    flash_evaluations: int
+    samples: list[EquilibriumSoundSpeedSample]
+    warnings: list[Warning]
+
+@final
+class ErosionPredictionResult:
+    erosional_velocity: Qty
+    velocity_ratio: float
+    erosion_rate: Qty
+    cumulative_erosion: Qty
+    remaining_wall_thickness: Qty
+    within_api_limits: bool
+    within_erosion_limits: bool
+    risk_level: str
     warnings: list[Warning]
 
 @final
@@ -911,6 +1534,17 @@ class HydrateInhibitorWtResult:
     warnings: list[Warning]
 
 @final
+class HydrateRiskMapResult:
+    points: list[HydrateRiskPoint]
+    overall_risk: str
+    minimum_subcooling: Qty | None
+    critical_point_count: int
+    unknown_point_count: int
+    total_points: int
+    all_points_evaluated: bool
+    warnings: list[Warning]
+
+@final
 class HydrogenPhaseResult:
     z_factor: float
     u: Qty
@@ -1117,6 +1751,46 @@ class PhaseTransportResult:
     warnings: list[Warning]
 
 @final
+class PipeBeggsAndBrillsResult:
+    pressure_profile: list[Qty]
+    pressure_drop_profile: list[Qty]
+    temperature_profile: list[Qty]
+    liquid_holdup_profile: list[float]
+    mixture_superficial_velocity_profile: list[Qty]
+    flow_regime_profile: list[str]
+    outlet_pressure: Qty
+    total_pressure_drop: Qty
+    warnings: list[Warning]
+
+@final
+class PipelineCooldownResult:
+    time: list[Qty]
+    fluid_temperature: list[Qty]
+    time_constant: Qty
+    calculated_u_value: Qty
+    effective_u_value: Qty
+    time_to_reach_target: Qty | None
+    warnings: list[Warning]
+
+@final
+class PitzerHydrateFormationPressureResult:
+    pressure: Qty
+    structure: str
+    water_activity: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
+class PitzerHydrateFormationTemperatureResult:
+    temperature: Qty
+    structure: str
+    water_activity: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class PitzerPhaseResult:
     gamma: list[float]
     ln_gamma: list[float]
@@ -1222,6 +1896,19 @@ class PrZFactorResult:
     iterations: int
     converged: bool
     residual: float
+    warnings: list[Warning]
+
+@final
+class ProductionChemicalScaleScenarioResult:
+    treated_ph: float
+    treated_bicarbonate: Qty
+    base_dose_equivalents: Qty
+    scavenger_capacity: Qty
+    residual_dissolved_h2s: Qty
+    baseline_si: list[ScenarioIndexRow]
+    treated_si: list[ScenarioIndexRow]
+    si_change: list[ScenarioChangeRow]
+    model_warnings: list[ChemicalWarningRow]
     warnings: list[Warning]
 
 @final
@@ -1398,6 +2085,44 @@ class SaturateWithWaterResult:
     warnings: list[Warning]
 
 @final
+class ScaleControlAssessorResult:
+    thermodynamic_si: list[ScaleControlRow]
+    kinetic_risk_index: list[ScaleControlRiskRow]
+    worst_kinetic_risk_index: float | None
+    kinetically_controlled: bool
+    warnings: list[Warning]
+
+@final
+class ScaleDepositionAccumulatorResult:
+    segments: list[DepositionSegmentRow]
+    total_deposition_mass: Qty
+    max_thickness: Qty
+    time_to_blockage: Qty
+    warnings: list[Warning]
+
+@final
+class ScaleInhibitorPerformanceResult:
+    minimum_inhibitor_concentration: Qty
+    recommended_dose: Qty
+    efficiency: float
+    adequate: bool
+    thermal_degradation_risk: bool
+    calcium_phosphonate_precipitation_risk: bool
+    extreme_supersaturation_risk: bool
+    low_temperature_solubility_risk: bool
+    warnings: list[Warning]
+
+@final
+class ScaleKineticsResult:
+    supersaturation_ratio: float
+    induction_time: Qty
+    surface_limited_growth: Qty
+    transport_limited_growth: Qty
+    effective_growth_rate: Qty
+    limiting_regime: str
+    warnings: list[Warning]
+
+@final
 class ScaleMassResult:
     precipitated_mass: Qty
     precipitated_moles: Qty
@@ -1440,6 +2165,12 @@ class ScalePredictionResult:
     warnings: list[Warning]
 
 @final
+class ScaleRemediationAdvisorResult:
+    canonical_key: str
+    options: list[RemediationOptionRow]
+    warnings: list[Warning]
+
+@final
 class ScaleSaturationRatioResult:
     saturation_ratio: float
     ion_activity_product: float
@@ -1470,6 +2201,13 @@ class SoreideWhitsonAlphaResult:
 class SoreideWhitsonPhaseResult:
     z_factor: float
     ln_phi: list[float]
+    warnings: list[Warning]
+
+@final
+class SoundSpeedResult:
+    sound_speed: Qty
+    system_sound_speed: Qty
+    phase: str
     warnings: list[Warning]
 
 @final
@@ -1522,6 +2260,33 @@ class StabilityTestResult:
     w: list[list[float]]
     iterations: list[int]
     min_t_over_tc: float
+    warnings: list[Warning]
+
+@final
+class StreamScaleAnalyzerResult:
+    minerals: list[StreamScaleMineralRow]
+    total_scale_mass: Qty
+    total_scale_rate: Qty
+    dominant_scale: str
+    has_scaling: bool
+    warnings: list[Warning]
+
+@final
+class SurfCooldownResult:
+    verdict: str
+    water_present: bool
+    water_mole_fraction: float
+    no_touch_time: Qty | None
+    initial_fluid_temperature: Qty
+    hydrate_equilibrium_temperature: Qty | None
+    hydrate_margin: Qty
+    seabed_temperature: Qty
+    overall_u_value: Qty
+    time_constant: Qty
+    fluid_density: Qty
+    fluid_specific_heat: Qty
+    internal_diameter: Qty
+    insulation_thickness: Qty
     warnings: list[Warning]
 
 @final
@@ -1722,6 +2487,18 @@ class UnifacUmrpruActivityCoefficientsResult:
 class UniquacActivityCoefficientsResult:
     ln_gamma: list[float]
     gamma: list[float]
+    warnings: list[Warning]
+
+@final
+class ValveScaleDriftResult:
+    deposit_thickness: Qty
+    elapsed_time: Qty
+    open_area_fraction: float
+    fouling_fraction: float
+    effective_kv: float
+    time_to_plug: Qty
+    opening_percent: float
+    time_to_pin: Qty
     warnings: list[Warning]
 
 @final
@@ -2027,6 +2804,18 @@ class AbsorptionColumnResult:
     warnings: list[Warning]
 
 @final
+class AntiSurgeRecycleResult:
+    recycle_active: bool
+    converged: bool
+    iterations: int
+    recycle_mass_flow: Qty
+    inlet_volume_flow: Qty
+    surge_flow: Qty
+    control_flow: Qty
+    distance_to_surge: float
+    warnings: list[Warning]
+
+@final
 class ComponentSplitterResult:
     overhead_n: Qty
     overhead_z: list[float]
@@ -2047,6 +2836,28 @@ class CompressorResult:
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    polytropic_head: Qty
+    polytropic_efficiency: float
+    polytropic_exponent: float | None
+    total_deposit_mass: Qty | None
+    deposit_volume: Qty | None
+    film_thickness: Qty | None
+    area_blockage_fraction: float | None
+    efficiency_multiplier: float | None
+    head_multiplier: float | None
+    degradation_factor: float | None
+    fouling_factor: float | None
+    power: Qty
+    shaft_speed: float
+    surge_flow_rate: Qty | None
+    surge_flow_rate_margin: Qty | None
+    surge_flow_rate_std: Qty | None
+    distance_to_surge: float | None
+    control_line_flow: Qty | None
+    distance_to_control_line: float | None
+    required_recycle_fraction: float | None
+    anti_surge_recycle_power: Qty | None
+    recycle_fraction: float | None
     warnings: list[Warning]
 
 @final
@@ -2057,6 +2868,8 @@ class CoolerResult:
     outlet_t: Qty
     outlet_h: Qty
     outlet_duty: Qty
+    cooling_valve_opening: float | None
+    equilibrium_outlet_temperature: Qty | None
     warnings: list[Warning]
 
 @final
@@ -2084,6 +2897,8 @@ class DistillationColumnResult:
     temperature_residual: float
     mass_residual: float
     energy_residual: float
+    top_specification_residual: float
+    bottom_specification_residual: float
     fs_factor: float
     fs_factor_utilization: float
     fs_factor_within_design_limit: bool
@@ -2124,6 +2939,23 @@ class EjectorResult:
     suction_nozzle_velocity: Qty | None
     mixing_velocity: Qty | None
     diffuser_velocity: Qty | None
+    motive_nozzle_throat_area: Qty
+    motive_nozzle_diameter: Qty
+    suction_inlet_area: Qty
+    suction_inlet_diameter: Qty
+    mixing_chamber_area: Qty
+    mixing_chamber_diameter: Qty
+    diffuser_outlet_area: Qty
+    diffuser_outlet_diameter: Qty
+    motive_nozzle_effective_length: Qty
+    suction_inlet_length: Qty
+    mixing_chamber_length: Qty
+    diffuser_outlet_length: Qty
+    body_volume: Qty
+    connected_piping_volume: Qty
+    total_volume: Qty
+    suction_connection_length: Qty
+    discharge_connection_length: Qty
     warnings: list[Warning]
 
 @final
@@ -2133,6 +2965,13 @@ class ExpanderResult:
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    power: Qty
+    recovered_power_utilization: float | None
+    max_utilization: float
+    capacity_exceeded: bool
+    hard_limit_exceeded: bool
+    bottleneck_constraint: str | None
+    reported_isentropic_efficiency: float | None
     warnings: list[Warning]
 
 @final
@@ -2142,7 +2981,38 @@ class FilterResult:
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    clean_drop: Qty
     applied_drop: Qty
+    nominal_removal_efficiency: float
+    outlet_particle_concentration: float
+    captured_rate: Qty
+    unrestricted_drop: Qty
+    bypass_fraction: float
+    loading_fraction: float
+    breakthrough_fraction: float
+    current_removal_efficiency: float
+    solids_loading: Qty
+    differential_pressure_utilization: float
+    replacement_required: bool
+    holdup_residence_time: Qty | None
+    design_pressure: Qty | None
+    design_temperature: Qty | None
+    required_elements: float | None
+    vessel_inner_diameter: Qty | None
+    vessel_outer_diameter: Qty | None
+    vessel_length: Qty | None
+    shell_thickness: Qty | None
+    head_thickness: Qty | None
+    effective_element_area: Qty | None
+    calculated_face_velocity: Qty | None
+    required_nozzle_diameter: Qty | None
+    selected_nozzle_diameter: Qty | None
+    calculated_nozzle_velocity: Qty | None
+    empty_vessel_weight: Qty | None
+    total_equipped_weight: Qty | None
+    collapse_pressure_utilization: float | None
+    differential_pressure_design_acceptable: bool | None
+    design_media_area: Qty | None
     warnings: list[Warning]
 
 @final
@@ -2154,6 +3024,15 @@ class FlareResult:
     product_h: Qty
     heat_duty: Qty
     co2_emission: Qty
+    radiation_flux: Qty | None
+    radiation_distance: Qty | None
+    exit_velocity: Qty
+    momentum_flux: Qty
+    standard_volume_rate: Qty
+    heat_utilization: float | None
+    mass_utilization: float | None
+    molar_utilization: float | None
+    overloaded: bool | None
     warnings: list[Warning]
 
 @final
@@ -2169,6 +3048,43 @@ class GasScrubberResult:
     liquid_t: Qty
     liquid_h: Qty
     capacity_utilization: float | None
+    required_diameter: Qty | None
+    has_mesh_pad: bool | None
+    mesh_pad_area: Qty | None
+    mesh_pad_thickness: Qty | None
+    mesh_pad_elevation: Qty | None
+    has_inlet_cyclones: bool | None
+    has_demisting_cyclones: bool | None
+    design_inner_diameter: Qty | None
+    design_tantan_length: Qty | None
+    design_outer_diameter: Qty | None
+    design_wall_thickness: Qty | None
+    max_design_gas_volume_flow: Qty | None
+    vessel_shell_weight: Qty | None
+    piping_weight: Qty | None
+    structural_weight: Qty | None
+    electrical_weight: Qty | None
+    internals_weight: Qty | None
+    total_weight: Qty | None
+    module_width: Qty | None
+    module_length: Qty | None
+    module_height: Qty | None
+    vessel_volume: Qty | None
+    hhll: Qty | None
+    hll: Qty | None
+    nll: Qty | None
+    lll: Qty | None
+    llll: Qty | None
+    weir_height: Qty | None
+    nil: Qty | None
+    effective_length_liquid: Qty | None
+    effective_length_gas: Qty | None
+    inlet_nozzle_id: Qty | None
+    gas_outlet_nozzle_id: Qty | None
+    oil_outlet_nozzle_id: Qty | None
+    surge_volume: Qty | None
+    surge_time: Qty | None
+    liquid_retention_time: Qty | None
     warnings: list[Warning]
 
 @final
@@ -2184,6 +3100,20 @@ class GibbsReactorResult:
     lagrange_multipliers: list[Qty]
     element_balance_difference: list[Qty]
     gibbs_energy_history: list[Qty]
+    vessel_diameter: Qty
+    vessel_length: Qty
+    shell_thickness: Qty
+    head_thickness: Qty
+    design_pressure: Qty
+    design_temperature: Qty
+    catalyst_volume: Qty
+    catalyst_mass: Qty
+    bed_pressure_drop: Qty
+    empty_vessel_weight: Qty
+    total_equipped_weight: Qty
+    reactor_type: str
+    number_of_beds: int
+    condition_number_history: list[float]
     warnings: list[Warning]
 
 @final
@@ -2204,6 +3134,34 @@ class HeatExchangerResult:
     c_min: Qty | None
     c_max: Qty | None
     capacity_ratio: float | None
+    ua_value: Qty | None
+    delta_t_side: str | None
+    wall_temperature: Qty | None
+    shell_fluid_temperature: Qty | None
+    tube_fluid_temperature: Qty | None
+    mechanical_selected_type: str | None
+    mechanical_selected_area: Qty | None
+    log_mean_temperature_difference: Qty | None
+    mechanical_approach_temperature: Qty | None
+    used_overall_heat_transfer_coefficient: Qty | None
+    calculated_ua: Qty | None
+    rating_u: Qty | None
+    rating_ua: Qty | None
+    rating_area: Qty | None
+    tube_side_pressure_drop: Qty | None
+    shell_side_pressure_drop: Qty | None
+    tube_side_heat_transfer_coefficient: Qty | None
+    shell_side_heat_transfer_coefficient: Qty | None
+    tube_side_reynolds: float | None
+    shell_side_reynolds: float | None
+    tube_side_velocity: Qty | None
+    shell_side_velocity: Qty | None
+    jc: float | None
+    jl: float | None
+    jb: float | None
+    js: float | None
+    jr: float | None
+    mechanical_types: list[HeatExchangerMechanicalType]
     warnings: list[Warning]
 
 @final
@@ -2214,6 +3172,103 @@ class HeaterResult:
     outlet_t: Qty
     outlet_h: Qty
     outlet_duty: Qty
+    max_outlet_temperature_utilization: float | None
+    min_outlet_temperature_utilization: float | None
+    max_utilization: float
+    capacity_exceeded: bool
+    hard_limit_exceeded: bool
+    bottleneck_constraint: str | None
+    instrument_count: float | None
+    analog_input_count: float | None
+    analog_output_count: float | None
+    digital_input_count: float | None
+    digital_output_count: float | None
+    total_io_count: float | None
+    safety_instrument_count: float | None
+    instruments: list[HeaterInstrument]
+    shaft_power: Qty | None
+    electrical_input_power: Qty | None
+    apparent_power: float | None
+    reactive_power: float | None
+    power_factor: float | None
+    rated_voltage: float | None
+    frequency_hz: float | None
+    full_load_current: float | None
+    starting_current: float | None
+    total_electrical_losses: Qty | None
+    motor_rated_power: Qty | None
+    motor_efficiency: float | None
+    motor_power_factor: float | None
+    motor_rated_speed: float | None
+    motor_locked_rotor_multiplier: float | None
+    total_auxiliary_power: Qty | None
+    total_connected_power: Qty | None
+    cable_length: Qty | None
+    cable_cross_section: float | None
+    cable_ampacity: float | None
+    cable_voltage_drop: float | None
+    cable_short_circuit_withstand: float | None
+    switchgear_starter: str | None
+    switchgear_type: str | None
+    switchgear_circuit_breaker: float | None
+    switchgear_fuse: float | None
+    switchgear_rated_current: float | None
+    switchgear_short_circuit: float | None
+    switchgear_weight: Qty | None
+    vfd_rated_power: Qty | None
+    vfd_rated_current: float | None
+    vfd_input_voltage: float | None
+    vfd_topology: str | None
+    vfd_pulse_configuration: str | None
+    vfd_efficiency: float | None
+    vfd_input_power_factor: float | None
+    vfd_thd_current: float | None
+    vfd_has_active_rectifier: bool | None
+    vfd_requires_input_filter: bool | None
+    vfd_heat_dissipation: Qty | None
+    vfd_cooling_method: str | None
+    vfd_weight: Qty | None
+    vfd_enclosure_rating: str | None
+    has_supply_temperature: bool | None
+    has_return_temperature: bool | None
+    has_approach_temperature: bool | None
+    has_heat_capacity_rate: bool | None
+    has_overall_heat_transfer_coefficient: bool | None
+    mechanical_selected_type: str | None
+    mechanical_selected_area: Qty | None
+    log_mean_temperature_difference: Qty | None
+    mechanical_approach_temperature: Qty | None
+    used_overall_heat_transfer_coefficient: Qty | None
+    calculated_ua: Qty | None
+    mechanical_types: list[HeaterMechanicalType]
+    warnings: list[Warning]
+
+@final
+class HemReleaseResult:
+    status: str
+    mass_flow_rate: Qty | None
+    choked: bool
+    throat_sound_speed: Qty | None
+    component_mole_fractions: list[float]
+    component_mass_fractions: list[float]
+    stations: list[HemReleaseStation]
+    diagnostics: list[HemReleaseDiagnostic]
+    diagnostic_codes: list[str]
+    warnings: list[Warning]
+
+@final
+class LeakBlowdownResult:
+    status: str
+    scenario_name: str
+    hole_diameter: Qty
+    number_of_points: int
+    recorded_points: int
+    points: list[LeakBlowdownPoint]
+    total_mass_released: Qty | None
+    peak_mass_flow_rate: Qty | None
+    time_to_empty: Qty | None
+    diagnostics: list[LeakBlowdownDiagnostic]
+    diagnostic_codes: list[str]
     warnings: list[Warning]
 
 @final
@@ -2226,11 +3281,33 @@ class ManifoldResult:
     warnings: list[Warning]
 
 @final
+class MapTurboExpanderResult:
+    expander_outlet_n: Qty
+    expander_outlet_z: list[float]
+    expander_outlet_p: Qty
+    expander_outlet_t: Qty
+    expander_outlet_h: Qty
+    compressor_outlet_n: Qty
+    compressor_outlet_z: list[float]
+    compressor_outlet_p: Qty
+    compressor_outlet_t: Qty
+    compressor_outlet_h: Qty
+    shaft_speed: float
+    available_shaft_power: Qty
+    consumed_compressor_power: Qty
+    power_balance_residual: Qty
+    speed_limited: bool
+    operating_status: str
+    warnings: list[Warning]
+
+@final
 class MixerResult:
     product_n: Qty
     product_z: list[float]
     product_p: Qty
     product_t: Qty
+    inlet_pressure_spread: Qty
+    pressure_mismatch: bool
     product_h: Qty
     warnings: list[Warning]
 
@@ -2270,6 +3347,16 @@ class PackedColumnResult:
     packing_pressure_drop: Qty
     hydraulics_ok: bool
     internal_diameter: Qty
+    k_ga: Qty
+    k_la: Qty
+    wetted_area: Qty
+    htu_g: Qty
+    htu_l: Qty
+    htu_og: Qty
+    wetting_ok: bool
+    pressure_drop_per_meter: Qty
+    resolved_packing: str
+    resolved_packing_factor: Qty
     warnings: list[Warning]
 
 @final
@@ -2279,6 +3366,7 @@ class PipeResult:
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    effective_length: Qty
     pressure_drop: Qty
     warnings: list[Warning]
 
@@ -2297,6 +3385,9 @@ class PlugFlowReactorResult:
     temperature_profile: list[Qty]
     pressure_profile: list[Qty]
     conversion_profile: list[float]
+    reaction_rate_profile: list[Qty]
+    molar_flow_profile: list[list[Qty]]
+    residence_time: Qty
     warnings: list[Warning]
 
 @final
@@ -2306,6 +3397,12 @@ class PumpResult:
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    head: Qty
+    efficiency: float
+    npsh_required: Qty
+    npsh_available: Qty
+    cavitating: bool
+    power: Qty
     warnings: list[Warning]
 
 @final
@@ -2365,6 +3462,109 @@ class SeparatorResult:
     liquid_p: Qty
     liquid_t: Qty
     liquid_h: Qty
+    capacity_utilization: float | None
+    max_allowable_gas_velocity: Qty | None
+    gas_superficial_velocity: Qty | None
+    gas_load_factor: Qty | None
+    is_overloaded: bool | None
+    gas_area_fraction: float | None
+    rated_gas_load_factor_by_phase: list[Qty] | None
+    required_diameter: Qty | None
+    design_inner_diameter: Qty | None
+    design_tantan_length: Qty | None
+    design_outer_diameter: Qty | None
+    design_wall_thickness: Qty | None
+    max_design_gas_volume_flow: Qty | None
+    vessel_shell_weight: Qty | None
+    piping_weight: Qty | None
+    structural_weight: Qty | None
+    electrical_weight: Qty | None
+    internals_weight: Qty | None
+    total_weight: Qty | None
+    module_width: Qty | None
+    module_length: Qty | None
+    module_height: Qty | None
+    vessel_volume: Qty | None
+    hhll: Qty | None
+    hll: Qty | None
+    nll: Qty | None
+    lll: Qty | None
+    llll: Qty | None
+    weir_height: Qty | None
+    nil: Qty | None
+    effective_length_liquid: Qty | None
+    effective_length_gas: Qty | None
+    inlet_nozzle_id: Qty | None
+    gas_outlet_nozzle_id: Qty | None
+    oil_outlet_nozzle_id: Qty | None
+    surge_volume: Qty | None
+    surge_time: Qty | None
+    liquid_retention_time: Qty | None
+    warnings: list[Warning]
+
+@final
+class SeparatorCapacityAssessmentResult:
+    status: str
+    diagnostic: str
+    design_basis_source: str
+    governing_capacity_basis: str
+    gas_area: Qty | None
+    gas_density: Qty | None
+    liquid_density: Qty | None
+    maximum_gas_velocity: Qty | None
+    current_gas_flow: Qty | None
+    mechanical_design_maximum_gas_flow: Qty | None
+    souders_brown_maximum_gas_flow: Qty | None
+    maximum_gas_flow: Qty | None
+    utilization: float | None
+    warnings: list[Warning]
+
+@final
+class SeparatorPerformanceResult:
+    oil_in_gas: float
+    water_in_gas: float
+    gas_in_oil: float
+    gas_in_water: float
+    oil_in_water: float
+    water_in_oil: float
+    gravity_section_efficiency: float
+    mist_eliminator_efficiency: float
+    overall_gas_liquid_efficiency: float
+    liquid_liquid_gravity_efficiency: float
+    gravity_cut_diameter: Qty
+    inlet_flow_regime: str | None
+    inlet_device_bulk_efficiency: float | None
+    inlet_device_pressure_drop: Qty | None
+    inlet_nozzle_velocity: Qty | None
+    inlet_momentum_flux: Qty | None
+    k_factor: Qty | None
+    k_factor_utilization: float | None
+    mist_eliminator_flooded: bool | None
+    gas_area: Qty | None
+    liquid_area: Qty | None
+    gas_volume: Qty | None
+    liquid_volume: Qty | None
+    total_volume: Qty | None
+    effective_gas_settling_height: Qty | None
+    effective_liquid_settling_height: Qty | None
+    gas_residence_time: Qty | None
+    liquid_residence_time: Qty | None
+    gravity_section_length: Qty | None
+    oil_pad_thickness: Qty | None
+    water_layer_height: Qty | None
+    api_gas_liquid_compliant: bool | None
+    api_liquid_compliant: bool | None
+    api_fully_compliant: bool | None
+    api_gas_liquid_comment: str | None
+    api_liquid_comment: str | None
+    api_gravity_cut_diameter: Qty | None
+    api_k_factor_utilization: float | None
+    api_max_k_factor: Qty | None
+    api_min_liquid_residence_time: Qty | None
+    post_inlet_device_characteristic_diameter: Qty | None
+    post_inlet_device_spread: float | None
+    post_inlet_d50: Qty | None
+    post_inlet_d32: Qty | None
     warnings: list[Warning]
 
 @final
@@ -2396,6 +3596,24 @@ class SplitterResult:
     products_p: list[Qty]
     products_t: list[Qty]
     products_h: list[Qty]
+    pressure_drop_value: Qty | None
+    pressure_drop_design: Qty | None
+    pressure_drop_utilization: float | None
+    velocity_value: Qty | None
+    velocity_design: Qty | None
+    velocity_utilization: float | None
+    max_utilization: float
+    capacity_exceeded: bool
+    bottleneck_constraint: str | None
+    design_header_diameter: Qty | None
+    design_branch_diameter: Qty | None
+    design_header_length: Qty | None
+    design_wall_thickness: Qty | None
+    manifold_volume: Qty | None
+    design_total_pressure_drop: Qty | None
+    header_weight: Qty | None
+    branch_weight: Qty | None
+    total_weight: Qty | None
     warnings: list[Warning]
 
 @final
@@ -2406,6 +3624,7 @@ class StirredTankReactorResult:
     product_t: Qty
     product_h: Qty
     heat_duty: Qty
+    agitator_power: Qty
     warnings: list[Warning]
 
 @final
@@ -2480,6 +3699,13 @@ class ThreePhaseSeparatorResult:
     heavy_liquid_p: Qty
     heavy_liquid_t: Qty
     heavy_liquid_h: Qty
+    water_level: Qty | None
+    oil_level: Qty | None
+    oil_thickness: Qty | None
+    oil_retention_time: Qty | None
+    water_retention_time: Qty | None
+    interface_settling_time: Qty | None
+    settling_time_sufficient: bool | None
     warnings: list[Warning]
 
 @final
@@ -2489,6 +3715,36 @@ class ThrottlingValveResult:
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    kv: float
+    cv: float
+    cg: float
+    choked: bool
+    gas_valve: bool
+    calculated_molar_flow: Qty
+    warnings: list[Warning]
+
+@final
+class TurboExpanderResult:
+    expander_outlet_n: Qty
+    expander_outlet_z: list[float]
+    expander_outlet_p: Qty
+    expander_outlet_t: Qty
+    expander_outlet_h: Qty
+    compressor_outlet_n: Qty
+    compressor_outlet_z: list[float]
+    compressor_outlet_p: Qty
+    compressor_outlet_t: Qty
+    compressor_outlet_h: Qty
+    speed: float
+    power_expander: Qty
+    power_compressor: Qty
+    expander_isentropic_efficiency: float
+    expander_design_isentropic_efficiency: float
+    compressor_polytropic_efficiency: float
+    compressor_polytropic_head: Qty
+    uc_ratio_expander: float
+    qn_ratio_compressor: float
+    igv_opening: float
     warnings: list[Warning]
 
 @final
@@ -2610,8 +3866,235 @@ class Iso6976Result:
     warnings: list[Warning]
 
 @final
+class BoilingHeatTransferResult:
+    chen_htc: Qty
+    gungor_winterton_htc: Qty
+    gungor_winterton_corrected_htc: Qty
+    average_htc: Qty
+    martinelli_parameter: float
+    chen_enhancement_factor: float
+    chen_suppression_factor: float
+    warnings: list[Warning]
+
+@final
 class ConductionPlaneWallResult:
     q: Qty
+    warnings: list[Warning]
+
+@final
+class FoulingModelResult:
+    fouling_resistance_at_time: float
+    current_fouling_resistance: float
+    asymptotic_fouling_resistance: float
+    threshold_wall_temperature: Qty
+    threshold_velocity: Qty
+    time_to_target: Qty
+    operating_time: Qty
+    fouling_rate: float
+    reynolds_number: float
+    wall_shear_stress: Qty
+    warnings: list[Warning]
+
+@final
+class IncrementalZoneAnalysisResult:
+    number_of_zones: float
+    total_required_area: Qty
+    total_duty: Qty
+    weighted_average_u: Qty
+    total_tube_side_pressure_drop: Qty
+    total_shell_side_pressure_drop: Qty
+    minimum_approach_temperature: Qty
+    zones: list[IncrementalZoneRow]
+    warnings: list[Warning]
+
+@final
+class LmtdCorrectionFactorResult:
+    r: float
+    p: float
+    ft: float
+    ft_1_shell_pass: float
+    ft_2_shell_passes: float
+    required_shell_passes: float
+    warnings: list[Warning]
+
+@final
+class ShahCondensationResult:
+    liquid_only_htc: Qty
+    liquid_only_reynolds: float
+    local_htc: Qty
+    average_htc: Qty
+    vertical_htc: Qty
+    in_valid_range: bool
+    warnings: list[Warning]
+
+@final
+class ShellAndTubeDesignResult:
+    tema_designation: str
+    tema_class: str
+    shell_inside_diameter: Qty
+    shell_outside_diameter: Qty
+    shell_wall_thickness: Qty
+    shell_material: str
+    shell_material_grade: str
+    shell_allowable_stress: Qty
+    shell_smys: Qty
+    shell_joint_efficiency: float
+    tube_count: float
+    tube_outer_diameter: Qty
+    tube_wall_thickness: Qty
+    tube_length: Qty
+    tube_passes: float
+    tube_pitch: Qty
+    tube_pitch_pattern: str
+    tube_material: str
+    tube_material_grade: str
+    tube_allowable_stress: Qty
+    tube_thermal_conductivity: Qty
+    baffle_type: str
+    baffle_count: float
+    baffle_spacing: Qty
+    baffle_cut: float
+    required_area: Qty
+    actual_area: Qty
+    area_margin: float
+    tubesheet_thickness_uhx: Qty
+    mawp_shell_side: Qty
+    mawp_tube_side: Qty
+    hydro_test_pressure_shell: Qty
+    hydro_test_pressure_tube: Qty
+    nozzle_reinforcement_area: Qty
+    nozzle_reinforcement_adequate: bool
+    sour_service_required: bool
+    h2s_partial_pressure: Qty | None
+    shell_nace_compliant: bool
+    tube_nace_compliant: bool
+    shell_max_hardness: float
+    tube_max_hardness: float
+    nace_issues: list[NaceIssueRow]
+    applied_standards: list[AppliedStandardRow]
+    tube_side_heat_transfer_coefficient: Qty | None
+    shell_side_heat_transfer_coefficient: Qty | None
+    overall_heat_transfer_coefficient: Qty | None
+    tube_side_pressure_drop: Qty | None
+    shell_side_pressure_drop: Qty | None
+    tube_side_velocity: Qty | None
+    shell_side_velocity: Qty | None
+    tube_side_reynolds: float | None
+    shell_side_reynolds: float | None
+    effective_tube_inside_diameter: Qty | None
+    outside_heat_transfer_area: Qty | None
+    tube_fouling_layer_resistance_outside: float | None
+    jc: float | None
+    jl: float | None
+    jb: float | None
+    js: float | None
+    jr: float | None
+    passed: bool | None
+    natural_frequency: Qty | None
+    vortex_shedding_frequency: Qty | None
+    vortex_shedding_ratio: float | None
+    vortex_shedding_critical: bool | None
+    critical_velocity: Qty | None
+    velocity_ratio: float | None
+    fluid_elastic_critical: bool | None
+    acoustic_frequency: Qty | None
+    acoustic_ratio: float | None
+    acoustic_critical: bool | None
+    shell_weight: Qty
+    tube_weight: Qty
+    tubesheet_weight: Qty
+    head_weight: Qty
+    baffle_weight: Qty
+    total_dry_weight: Qty
+    operating_weight: Qty
+    material_cost: float
+    fabrication_cost: float
+    total_cost: float
+    warnings: list[Warning]
+
+@final
+class ShellAndTubeRatingResult:
+    tube_side_heat_transfer_coefficient: Qty
+    shell_side_heat_transfer_coefficient: Qty
+    overall_heat_transfer_coefficient: Qty
+    tube_side_pressure_drop: Qty
+    shell_side_pressure_drop: Qty
+    tube_side_velocity: Qty
+    shell_side_velocity: Qty
+    tube_side_reynolds: float
+    shell_side_reynolds: float
+    effective_tube_inside_diameter: Qty
+    outside_heat_transfer_area: Qty
+    tube_fouling_layer_resistance_outside: float
+    jc: float
+    jl: float
+    jb: float
+    js: float
+    jr: float
+    warnings: list[Warning]
+
+@final
+class ShellAndTubeVibrationResult:
+    natural_frequency: Qty
+    vortex_shedding_frequency: Qty
+    vortex_shedding_ratio: float
+    vortex_shedding_critical: bool
+    critical_velocity: Qty
+    velocity_ratio: float
+    fluid_elastic_critical: bool
+    acoustic_frequency: Qty
+    acoustic_ratio: float
+    acoustic_critical: bool
+    passed: bool
+    warnings: list[Warning]
+
+@final
+class TemaStandardResult:
+    configuration_cost_factor: float
+    shell_pressure_drop_factor: float
+    bundle_removable: bool
+    good_thermal_expansion: bool
+    class_cost_factor: float
+    min_tube_wall_thickness: Qty
+    min_corrosion_allowance: Qty
+    tube_outer_diameter: Qty
+    tube_outer_diameter_inch: Qty
+    layout_angle: float
+    min_pitch_ratio: float
+    pitch_heat_transfer_factor: float
+    baffle_heat_transfer_factor: float
+    baffle_pressure_drop_factor: float
+    min_tube_pitch: Qty
+    estimated_tube_count: float
+    max_unsupported_span: Qty
+    min_baffle_spacing: Qty
+    max_baffle_spacing: Qty
+    recommended_designation: str
+    warnings: list[Warning]
+
+@final
+class TubeInsertModelResult:
+    heat_transfer_enhancement_ratio: float
+    pressure_drop_penalty_ratio: float
+    performance_evaluation_criteria: float
+    enhanced_heat_transfer_coefficient: Qty
+    enhanced_pressure_drop: Qty
+    warnings: list[Warning]
+
+@final
+class TwoPhasePressureDropResult:
+    friedel_gradient: Qty
+    friedel_pressure_drop: Qty
+    friedel_average_pressure_drop: Qty
+    muller_steinhagen_heck_gradient: Qty
+    gravitational_gradient: Qty
+    acceleration_pressure_drop: Qty
+    warnings: list[Warning]
+
+@final
+class ZoneRatingResult:
+    zone_count: float
+    zones: list[ZoneRatingRow]
     warnings: list[Warning]
 
 # --- calculations ---------------------------------------------------------
@@ -2627,6 +4110,11 @@ def characterise_plus_fraction(
     plus_model: str | None = None,
     number_of_lumps: float | None = None,
 ) -> CharacterisePlusFractionResult: ...
+def characterize_to_common_slate(
+    components: list[FluidComponent],
+    weights: list[float] | None = None,
+    target_pseudo_components: float | None = None,
+) -> CharacterizeToCommonSlateResult: ...
 def characterize_to_reference(
     source: list[SourceRow],
     reference: list[ReferenceRow],
@@ -2635,6 +4123,10 @@ def characterize_to_reference(
     delump_resolution: float | None = None,
     shared_imaginary_boundaries: bool | None = None,
 ) -> CharacterizeToReferenceResult: ...
+def combine_reservoir_fluids(
+    target_pseudo_components: float,
+    components: list[FluidComponent],
+) -> CombineReservoirFluidsResult: ...
 def delumping(lumps: list[Lump], resolution: float) -> DelumpingResult: ...
 def lumping(
     molar_mass: float,
@@ -2685,7 +4177,14 @@ def tbp_density(
     molar_mass: float,
     closure: str | None = None,
 ) -> TbpDensityResult: ...
+def tbp_fraction_component(molar_mass: float, density: float) -> TbpFractionComponentResult: ...
 def tbp_grouping(boiling_point: list[float], mole_fraction: list[float]) -> TbpGroupingResult: ...
+def transfer_binary_interaction_parameters(
+    reference_components: list[InteractionComponent],
+    target_components: list[InteractionComponent],
+    reference_kij: list[list[float]],
+    target_kij: list[list[float]],
+) -> TransferBinaryInteractionParametersResult: ...
 def whitson_gamma_split(
     molar_mass: float,
     density: float,
@@ -2719,6 +4218,7 @@ def aqueous_viscosity(
     molar_mass: list[float],
     liqvisc: list[float],
     liqvisc_model: list[int],
+    component_names: list[str],
     T: float,
     P: float,
     z: list[float],
@@ -2735,6 +4235,28 @@ def barite_celestite_solid_solution(
     ksp_baso4: float,
     ksp_srso4: float,
 ) -> BariteCelestiteSolidSolutionResult: ...
+def beggs_brill_segment(
+    gas_flow: float,
+    liquid_flow: float,
+    gas_density: float,
+    liquid_density: float,
+    gas_viscosity: float,
+    liquid_viscosity: float,
+    temperature: float,
+    pressure: float,
+    diameter: float,
+    length: float,
+    elevation: float,
+    roughness: float,
+) -> BeggsBrillSegmentResult: ...
+def brine_mixing_scale_evaluator(
+    brine_a: list[BrineAnalysis],
+    brine_b: list[BrineAnalysis],
+    temperature: float,
+    pressure: float,
+    ph: float,
+    steps: float,
+) -> BrineMixingScaleEvaluatorResult: ...
 def bubble_pressure(
     Tc: list[float],
     Pc: list[float],
@@ -2827,6 +4349,32 @@ def chung_viscosity(
     T: float,
     V: float,
 ) -> ChungViscosityResult: ...
+def closed_loop_deposition_solver(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: float,
+    inlet_t: float,
+    length: float,
+    diameter: float,
+    elevation: float,
+    number_of_increments: float,
+    roughness: float,
+    calcium: float,
+    bicarbonate: float,
+    sulphate: float,
+    barium: float,
+    sodium: float,
+    total_dissolved_solids: float,
+    ph: float,
+    service_time: float,
+    scale_density: float,
+    base_rate: float,
+    inhibitor_efficiency: float,
+    tolerance: float,
+    max_iterations: float,
+    eos: str | None = None,
+) -> ClosedLoopDepositionSolverResult: ...
 def co2_brine_phase_equilibrium(
     components: list[str],
     T: float,
@@ -2855,6 +4403,17 @@ def critical_point(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> CriticalPointResult: ...
+def de_waard_milliams_corrosion(
+    temperature: float,
+    co2_partial_pressure: float,
+    ph: float,
+    h2s_partial_pressure: float,
+    flow_velocity: float,
+    inhibitor_efficiency: float,
+    glycol_fraction: float,
+    sulfur_deposition_rate: float,
+    design_life: float,
+) -> DeWaardMilliamsCorrosionResult: ...
 def desmukh_mather_phase(
     components: list[str],
     T: float,
@@ -2898,7 +4457,59 @@ def electrolyte_cpa_statoil_phase(
     x: list[float],
     compressed_phase: str,
 ) -> ElectrolyteCpaStatoilPhaseResult: ...
+def electrolyte_scale_calculator(
+    calcium: float,
+    barium: float,
+    strontium: float,
+    magnesium: float,
+    sodium: float,
+    potassium: float,
+    iron: float,
+    chloride: float,
+    sulphate: float,
+    bicarbonate: float,
+    carbonate: float,
+    temperature: float,
+    pressure: float,
+    ph: float,
+) -> ElectrolyteScaleCalculatorResult: ...
+def emulsion_viscosity(
+    oil_viscosity: float,
+    water_viscosity: float,
+    oil_density: float,
+    water_density: float,
+    water_cut: float,
+    max_packing_fraction: float,
+    model: str,
+    tightness_factor: float,
+    demulsifier_present: bool,
+    demulsifier_efficiency: float,
+) -> EmulsionViscosityResult: ...
 def eos_cg_phase(components: list[str], T: float, P: float, z: list[float]) -> EosCgPhaseResult: ...
+def equilibrium_sound_speed(
+    components: list[str],
+    T: float,
+    P: float,
+    z: list[float],
+    relative_pressure_step: float | None = None,
+    specific_entropy: float | None = None,
+) -> EquilibriumSoundSpeedResult: ...
+def erosion_prediction(
+    mixture_density: float,
+    mixture_velocity: float,
+    pipe_diameter: float,
+    wall_thickness: float,
+    sand_rate: float,
+    sand_particle_diameter: float,
+    sand_particle_density: float,
+    mixture_viscosity: float,
+    geometry: str,
+    bend_radius_ratio: float,
+    pipe_material: str,
+    api_c_factor: float,
+    corrosion_allowance: float,
+    design_life: float,
+) -> ErosionPredictionResult: ...
 def filippov_conductivity(
     liquid_conductivity: list[list[float]],
     molar_mass: list[float],
@@ -3205,6 +4816,17 @@ def hydrate_inhibitor_wt(
     P: float,
     eos: str,
 ) -> HydrateInhibitorWtResult: ...
+def hydrate_risk_map(
+    components: list[str],
+    z: list[float],
+    distances: list[float],
+    pressures: list[float],
+    temperatures: list[float],
+    eos: str | None = None,
+    hydrate_model: str | None = None,
+    high_risk_subcooling: float | None = None,
+    medium_risk_subcooling: float | None = None,
+) -> HydrateRiskMapResult: ...
 def hydrogen_phase(
     T: float,
     P: float,
@@ -3436,6 +5058,58 @@ def phase_transport(
     P: float,
     z: list[float],
 ) -> PhaseTransportResult: ...
+def pipe_beggs_and_brills(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: float,
+    inlet_t: float,
+    length: float,
+    diameter: float,
+    elevation: float,
+    number_of_increments: float,
+    roughness: float,
+    eos: str | None = None,
+) -> PipeBeggsAndBrillsResult: ...
+def pipeline_cooldown(
+    internal_diameter: float,
+    wall_thickness: float,
+    insulation_thickness: float,
+    coating_thickness: float,
+    steel_density: float,
+    steel_specific_heat: float,
+    insulation_conductivity: float,
+    fluid_density: float,
+    fluid_specific_heat: float,
+    initial_fluid_temperature: float,
+    ambient_temperature: float,
+    time_step: float,
+    total_time: float,
+    overall_u_value: float | None = None,
+    use_layer_calculation: bool | None = None,
+    external_htc: float | None = None,
+    target_temperature: float | None = None,
+) -> PipelineCooldownResult: ...
+def pitzer_hydrate_formation_pressure(
+    components: list[str],
+    moles: list[float],
+    T: float,
+    cubic: str,
+    structure: str | None = None,
+    pitzer_dataset: str | None = None,
+    minimum_pressure: float | None = None,
+    maximum_pressure: float | None = None,
+) -> PitzerHydrateFormationPressureResult: ...
+def pitzer_hydrate_formation_temperature(
+    components: list[str],
+    moles: list[float],
+    P: float,
+    cubic: str,
+    structure: str | None = None,
+    pitzer_dataset: str | None = None,
+    minimum_temperature: float | None = None,
+    maximum_temperature: float | None = None,
+) -> PitzerHydrateFormationTemperatureResult: ...
 def pitzer_phase(
     components: list[str],
     T: float,
@@ -3482,6 +5156,24 @@ def pr_peneloux_shift(
     z_ra: float | None = None,
 ) -> PrPenelouxShiftResult: ...
 def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult: ...
+def production_chemical_scale_scenario(
+    calcium: float,
+    barium: float,
+    strontium: float,
+    iron: float,
+    magnesium: float,
+    sodium: float,
+    sulphate: float,
+    bicarbonate: float,
+    total_dissolved_solids: float,
+    ph: float,
+    dissolved_h2s: float,
+    temperature: float,
+    pressure: float,
+    activity_model: str,
+    chemicals: list[ProductionChemicalDose],
+    pitzer_ionic_strength_molal: float | None = None,
+) -> ProductionChemicalScaleScenarioResult: ...
 def prsv_kappa(omega: float, Tr: float, kappa1: float) -> PrsvKappaResult: ...
 def ps_flash(
     Tc: list[float],
@@ -3631,6 +5323,58 @@ def saturate_with_water(
     eos: str,
     associating: bool | None = None,
 ) -> SaturateWithWaterResult: ...
+def scale_control_assessor(
+    calcium: float,
+    barium: float,
+    strontium: float,
+    iron: float,
+    magnesium: float,
+    sodium: float,
+    bicarbonate: float,
+    sulphate: float,
+    total_dissolved_solids: float,
+    temperature: float,
+    pressure: float,
+    co2_partial_pressure: float,
+    ph: float,
+    inhibitors: list[ScaleInhibitor],
+) -> ScaleControlAssessorResult: ...
+def scale_deposition_accumulator(
+    calcium: float,
+    bicarbonate: float,
+    sulphate: float,
+    barium: float,
+    sodium: float,
+    total_dissolved_solids: float,
+    ph: float,
+    diameter: float,
+    length: float,
+    segment_temperatures: list[float],
+    segment_pressures: list[float],
+    service_time: float,
+    scale_density: float,
+    base_rate: float,
+    inhibitor_efficiency: float,
+) -> ScaleDepositionAccumulatorResult: ...
+def scale_inhibitor_performance(
+    scale_type: str,
+    inhibitor_chemistry: str,
+    temperature: float,
+    saturation_ratio: float,
+    total_dissolved_solids: float,
+    calcium: float,
+    available_dose: float,
+) -> ScaleInhibitorPerformanceResult: ...
+def scale_kinetics(
+    saturation_index: float,
+    nucleation_constant: float,
+    nucleation_shape_factor: float,
+    surface_rate_constant: float,
+    surface_reaction_order: float,
+    mass_transfer_coefficient: float,
+    bulk_concentration: float,
+    equilibrium_concentration: float,
+) -> ScaleKineticsResult: ...
 def scale_mass(
     mineral: str,
     cation_concentration: float,
@@ -3654,6 +5398,7 @@ def scale_prediction(
     auto_ph: bool,
     second_order_pressure_correction: bool,
 ) -> ScalePredictionResult: ...
+def scale_remediation_advisor(deposit: str) -> ScaleRemediationAdvisorResult: ...
 def scale_saturation_ratio(
     salt: str,
     x1: float,
@@ -3701,6 +5446,7 @@ def soreide_whitson_phase(
     salinity: float,
     compressed_phase: str,
 ) -> SoreideWhitsonPhaseResult: ...
+def sound_speed(components: list[str], T: float, P: float, z: list[float]) -> SoundSpeedResult: ...
 def srk_alpha_ab(kappa: float, Tr: float, Pr: float) -> SrkAlphaAbResult: ...
 def srk_cpa_phase(
     components: list[str],
@@ -3738,6 +5484,50 @@ def stability_test(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> StabilityTestResult: ...
+def stream_scale_analyzer(
+    calcium: float,
+    barium: float,
+    strontium: float,
+    iron: float,
+    magnesium: float,
+    sodium: float,
+    bicarbonate: float,
+    sulphate: float,
+    total_dissolved_solids: float,
+    temperature: float,
+    pressure: float,
+    co2_partial_pressure: float,
+    ph: float,
+    auto_ph: bool,
+    second_order_pressure_correction: bool,
+    activity_model: str,
+    water_flow: float,
+    bdot_ion_size: float | None = None,
+    bdot_b: float | None = None,
+    pitzer_ionic_strength_molal: float | None = None,
+) -> StreamScaleAnalyzerResult: ...
+def surf_cooldown(
+    components: list[str],
+    z: list[float],
+    operating_pressure: float,
+    flash_temperature: float,
+    internal_diameter: float,
+    wall_thickness: float,
+    insulation_thickness: float,
+    coating_thickness: float,
+    insulation_conductivity: float,
+    seabed_temperature: float,
+    operating_temperature: float | None = None,
+    overall_u_value: float | None = None,
+    external_htc: float | None = None,
+    hydrate_margin: float | None = None,
+    required_no_touch_time: float | None = None,
+    total_time: float | None = None,
+    time_step: float | None = None,
+    require_water: bool | None = None,
+    eos: str | None = None,
+    hydrate_model: str | None = None,
+) -> SurfCooldownResult: ...
 def tbp_fraction_properties(molar_mass: float, density: float) -> TbpFractionPropertiesResult: ...
 def th_flash(
     Tc: list[float],
@@ -3939,6 +5729,13 @@ def uniquac_activity_coefficients(
     x: list[float],
     aij: list[list[float]],
 ) -> UniquacActivityCoefficientsResult: ...
+def valve_scale_drift(
+    port_diameter: float,
+    growth_rate: float,
+    elapsed_time: float,
+    clean_opening_percent: float,
+    valve_kv: float,
+) -> ValveScaleDriftResult: ...
 def van_laar_acid_activity_coefficients(
     acid_index: list[int],
     T: float,
@@ -4219,6 +6016,21 @@ def absorption_column(
     material_grade: str | None = None,
     max_operation_pressure: float | None = None,
 ) -> AbsorptionColumnResult: ...
+def anti_surge_recycle(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    curve: list[CompressorCurvePoint],
+    surge_curve: list[CompressorSurgePoint],
+    speed: float | None = None,
+    surge_control_margin: float | None = None,
+    recycle_cooler_temperature: float | None = None,
+    damping: float | None = None,
+    tolerance: float | None = None,
+    max_iterations: float | None = None,
+) -> AntiSurgeRecycleResult: ...
 def component_splitter(
     components: list[str],
     feed_n: float,
@@ -4233,8 +6045,30 @@ def compressor(
     inlet_z: list[float],
     inlet_p: float,
     inlet_t: float,
-    outlet_pressure: float,
     isentropic_efficiency: float,
+    outlet_pressure: float | None = None,
+    use_polytropic_calc: bool | None = None,
+    polytropic_efficiency: float | None = None,
+    polytropic_method: str | None = None,
+    compression_ratio: float | None = None,
+    max_outlet_pressure: float | None = None,
+    power: float | None = None,
+    deposit: list[DepositMass] | None = None,
+    wetted_area: float | None = None,
+    passage_half_height: float | None = None,
+    curve: list[CompressorCurvePoint] | None = None,
+    speed: float | None = None,
+    solve_speed: bool | None = None,
+    min_speed: float | None = None,
+    max_speed: float | None = None,
+    limit_speed: bool | None = None,
+    chart_type: str | None = None,
+    chart_conditions: list[float] | None = None,
+    impeller_diameter: float | None = None,
+    surge_curve: list[CompressorSurgePoint] | None = None,
+    surge_control_margin: float | None = None,
+    anti_surge_active: bool | None = None,
+    surge_control_factor: float | None = None,
 ) -> CompressorResult: ...
 def cooler(
     components: list[str],
@@ -4245,6 +6079,18 @@ def cooler(
     outlet_temperature: float | None = None,
     duty: float | None = None,
     pressure_drop: float | None = None,
+    time_step: float | None = None,
+    dynamic_temperature_control_enabled: bool | None = None,
+    design_mass_flow: float | None = None,
+    design_inlet_temperature: float | None = None,
+    design_outlet_temperature: float | None = None,
+    cooling_medium_temperature: float | None = None,
+    design_valve_opening: float | None = None,
+    actuator_time_constant: float | None = None,
+    thermal_time_constant: float | None = None,
+    cooling_valve_opening: float | None = None,
+    requested_valve_opening: float | None = None,
+    dynamic_outlet_temperature: float | None = None,
 ) -> CoolerResult: ...
 def distillation_column(
     components: list[str],
@@ -4332,6 +6178,12 @@ def expander(
     inlet_t: float,
     outlet_pressure: float,
     isentropic_efficiency: float,
+    use_polytropic_calc: bool | None = None,
+    polytropic_efficiency: float | None = None,
+    rated_recovered_power: float | None = None,
+    number_of_steps: float | None = None,
+    shaft_power: float | None = None,
+    outlet_temperature: float | None = None,
 ) -> ExpanderResult: ...
 def filter(
     components: list[str],
@@ -4340,6 +6192,48 @@ def filter(
     inlet_p: float,
     inlet_t: float,
     pressure_drop: float,
+    pressure_drop_model: str | None = None,
+    reference_flow: float | None = None,
+    flow_exponent: float | None = None,
+    pressure_drop_curve: list[FilterDropPoint] | None = None,
+    media_area: float | None = None,
+    media_bed_depth: float | None = None,
+    media_particle_diameter: float | None = None,
+    media_void_fraction: float | None = None,
+    viscosity: float | None = None,
+    performance_curve: list[FilterBetaPoint] | None = None,
+    particle_size: float | None = None,
+    nominal_removal_efficiency: float | None = None,
+    inlet_particle_concentration: float | None = None,
+    solids_loading: float | None = None,
+    loading_capacity: float | None = None,
+    pressure_drop_increase_at_capacity: float | None = None,
+    breakthrough_start_fraction: float | None = None,
+    bypass_cracking_pressure: float | None = None,
+    terminal_pressure_drop: float | None = None,
+    time_step: float | None = None,
+    holdup_volume: float | None = None,
+    solids_loading_rate: float | None = None,
+    backwash_removal_rate: float | None = None,
+    regeneration_removal_rate: float | None = None,
+    backwash_active: bool | None = None,
+    regeneration_active: bool | None = None,
+    mechanical_design: bool | None = None,
+    filter_type: str | None = None,
+    number_of_elements: float | None = None,
+    max_face_velocity: float | None = None,
+    element_area: float | None = None,
+    max_nozzle_velocity: float | None = None,
+    min_ld_ratio: float | None = None,
+    max_ld_ratio: float | None = None,
+    design_pressure_margin: float | None = None,
+    minimum_design_pressure_margin: float | None = None,
+    design_temperature_margin: float | None = None,
+    allowable_stress: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
+    element_collapse_pressure: float | None = None,
+    element_integrity_verified: bool | None = None,
 ) -> FilterResult: ...
 def flare(
     components: list[str],
@@ -4347,6 +6241,14 @@ def flare(
     inlet_z: list[float],
     inlet_p: float,
     inlet_t: float,
+    flame_height: float | None = None,
+    radiant_fraction: float | None = None,
+    tip_diameter: float | None = None,
+    ground_distance: float | None = None,
+    radiation_flux_threshold: float | None = None,
+    design_heat_duty_capacity: float | None = None,
+    design_mass_flow_capacity: float | None = None,
+    design_molar_flow_capacity: float | None = None,
 ) -> FlareResult: ...
 def gas_scrubber(
     components: list[str],
@@ -4358,7 +6260,19 @@ def gas_scrubber(
     gas_in_liquid: float,
     internal_diameter: float | None = None,
     design_gas_load_factor: float | None = None,
+    safety_factor: float | None = None,
+    mesh_pad_area: float | None = None,
+    mesh_pad_thickness: float | None = None,
+    mesh_pad_elevation: float | None = None,
     heat_input: float | None = None,
+    mechanical_design: bool | None = None,
+    orientation: str | None = None,
+    volume_safety_factor: float | None = None,
+    design_liquid_level_fraction: float | None = None,
+    max_operation_pressure: float | None = None,
+    allowable_stress: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
 ) -> GasScrubberResult: ...
 def gibbs_reactor(
     components: list[str],
@@ -4371,6 +6285,25 @@ def gibbs_reactor(
     max_iterations: float,
     convergence_tolerance: float,
     min_iterations: float,
+    reactor_type: str | None = None,
+    catalyst_bulk_density: float | None = None,
+    catalyst_particle_diameter: float | None = None,
+    bed_void_fraction: float | None = None,
+    ghsv: float | None = None,
+    lhsv: float | None = None,
+    number_of_beds: float | None = None,
+    max_operation_pressure: float | None = None,
+    max_operation_temperature: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
+    armijo_line_search: bool | None = None,
+    armijo_c1: float | None = None,
+    armijo_rho: float | None = None,
+    armijo_max_backtracks: float | None = None,
+    adaptive_step_size: bool | None = None,
+    regularization: bool | None = None,
+    regularization_threshold: float | None = None,
+    regularization_tau: float | None = None,
 ) -> GibbsReactorResult: ...
 def heat_exchanger(
     hot_components: list[str],
@@ -4387,6 +6320,51 @@ def heat_exchanger(
     ua: float | None = None,
     hot_outlet_temperature: float | None = None,
     cold_outlet_temperature: float | None = None,
+    use_delta_t: bool | None = None,
+    delta_t: float | None = None,
+    guess_out_temperature: float | None = None,
+    mechanical_design: bool | None = None,
+    mechanical_type: str | None = None,
+    mechanical_selection: str | None = None,
+    use_rating_pressure_drop: bool | None = None,
+    rating_area: float | None = None,
+    rating_tube_side: str | None = None,
+    rating_tube_outside_diameter: float | None = None,
+    rating_tube_inside_diameter: float | None = None,
+    rating_tube_length: float | None = None,
+    rating_tube_count: float | None = None,
+    rating_tube_passes: float | None = None,
+    rating_tube_pitch: float | None = None,
+    rating_triangular_pitch: bool | None = None,
+    rating_shell_inside_diameter: float | None = None,
+    rating_baffle_spacing: float | None = None,
+    rating_baffle_count: float | None = None,
+    rating_baffle_cut: float | None = None,
+    rating_tube_wall_conductivity: float | None = None,
+    rating_fouling_tube: float | None = None,
+    rating_fouling_shell: float | None = None,
+    rating_tube_fouling_layer_thickness: float | None = None,
+    rating_tube_fouling_layer_conductivity: float | None = None,
+    rating_shell_side_method: str | None = None,
+    rating_shell_viscosity_wall: float | None = None,
+    rating_has_sealing: bool | None = None,
+    rating_sealing_pairs: float | None = None,
+    rating_tube_to_baffle_clearance: float | None = None,
+    rating_shell_to_baffle_clearance: float | None = None,
+    rating_bypass_area: float | None = None,
+    time_step: float | None = None,
+    dynamic_model_enabled: bool | None = None,
+    transient_tube_side: str | None = None,
+    wall_mass: float | None = None,
+    wall_cp: float | None = None,
+    wall_temperature: float | None = None,
+    shell_holdup_volume: float | None = None,
+    tube_holdup_volume: float | None = None,
+    shell_side_htc: float | None = None,
+    tube_side_htc: float | None = None,
+    heat_transfer_area: float | None = None,
+    shell_fluid_temperature: float | None = None,
+    tube_fluid_temperature: float | None = None,
 ) -> HeatExchangerResult: ...
 def heater(
     components: list[str],
@@ -4397,7 +6375,55 @@ def heater(
     outlet_temperature: float | None = None,
     duty: float | None = None,
     pressure_drop: float | None = None,
+    max_outlet_temperature: float | None = None,
+    min_outlet_temperature: float | None = None,
+    instrument_design: bool | None = None,
+    include_safety_instruments: bool | None = None,
+    default_sil_level: float | None = None,
+    heat_exchanger_type: str | None = None,
+    electrical_design: bool | None = None,
+    motor_sizing_margin: float | None = None,
+    motor_poles: float | None = None,
+    efficiency_class: str | None = None,
+    frequency_hz: float | None = None,
+    phases: float | None = None,
+    number_of_fans: float | None = None,
+    instrumentation_power: float | None = None,
+    cooling_water_pump_power: float | None = None,
+    cable_length: float | None = None,
+    use_vfd: bool | None = None,
+    utility_specification: bool | None = None,
+    utility_supply_temperature: float | None = None,
+    utility_return_temperature: float | None = None,
+    utility_approach_temperature: float | None = None,
+    utility_heat_capacity_rate: float | None = None,
+    utility_overall_heat_transfer_coefficient: float | None = None,
+    mechanical_design: bool | None = None,
+    mechanical_type: str | None = None,
+    mechanical_selection: str | None = None,
 ) -> HeaterResult: ...
+def hem_release(
+    components: list[str],
+    upstream_z: list[float],
+    upstream_t: float,
+    upstream_p: float,
+    diameter: float,
+    discharge_coefficient: float,
+    back_pressure: float,
+) -> HemReleaseResult: ...
+def leak_blowdown(
+    components: list[str],
+    initial_z: list[float],
+    initial_t: float,
+    initial_p: float,
+    duration: float,
+    vessel_volume: float | None = None,
+    hole_diameter: float | None = None,
+    discharge_coefficient: float | None = None,
+    back_pressure: float | None = None,
+    time_step: float | None = None,
+    scenario_name: str | None = None,
+) -> LeakBlowdownResult: ...
 def manifold(
     components: list[str],
     feed_n: list[float],
@@ -4406,6 +6432,32 @@ def manifold(
     feed_t: list[float],
     split_factors: list[float],
 ) -> ManifoldResult: ...
+def map_turbo_expander_compressor(
+    expander_components: list[str],
+    compressor_components: list[str],
+    expander_n: float,
+    expander_z: list[float],
+    expander_p: float,
+    expander_t: float,
+    compressor_n: float,
+    compressor_z: list[float],
+    compressor_p: float,
+    compressor_t: float,
+    expander_out_pressure: float,
+    expander_isentropic_efficiency: float,
+    shaft_mode: str | None = None,
+    mechanical_efficiency: float | None = None,
+    bearing_loss: float | None = None,
+    compressor_outlet_pressure: float | None = None,
+    compressor_isentropic_efficiency: float | None = None,
+    compressor_speed: float | None = None,
+    min_shaft_speed: float | None = None,
+    max_shaft_speed: float | None = None,
+    curve: list[MapCurvePoint] | None = None,
+    chart_type: str | None = None,
+    chart_conditions: list[float] | None = None,
+    impeller_diameter: float | None = None,
+) -> MapTurboExpanderResult: ...
 def mixer(
     components: list[str],
     feed_n: list[float],
@@ -4472,6 +6524,11 @@ def pipe(
     length: float,
     diameter: float,
     roughness: float,
+    fittings: list[PipeFitting] | None = None,
+    outlet_pressure: float | None = None,
+    correlation: str | None = None,
+    number_of_increments: float | None = None,
+    elevation: float | None = None,
 ) -> PipeResult: ...
 def plug_flow_reactor(
     components: list[str],
@@ -4510,8 +6567,15 @@ def pump(
     inlet_z: list[float],
     inlet_p: float,
     inlet_t: float,
-    outlet_pressure: float,
     isentropic_efficiency: float,
+    outlet_pressure: float | None = None,
+    curve: list[PumpCurvePoint] | None = None,
+    speed: float | None = None,
+    reference_density: float | None = None,
+    viscosity: float | None = None,
+    use_viscosity_correction: bool | None = None,
+    check_npsh: bool | None = None,
+    npsh_margin: float | None = None,
 ) -> PumpResult: ...
 def rate_based_packed_column(
     gas_components: list[str],
@@ -4547,7 +6611,90 @@ def separator(
     pressure_drop: float,
     gas_in_liquid: float,
     heat_input: float | None = None,
+    internal_diameter: float | None = None,
+    design_gas_load_factor: float | None = None,
+    orientation: str | None = None,
+    design_liquid_level_fraction: float | None = None,
+    separator_length: float | None = None,
+    liquid_level_fraction: float | None = None,
+    safety_factor: float | None = None,
+    mechanical_design: bool | None = None,
+    auto_size: bool | None = None,
+    fg: float | None = None,
+    volume_safety_factor: float | None = None,
+    retention_time: float | None = None,
+    max_operation_pressure: float | None = None,
+    allowable_stress: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
 ) -> SeparatorResult: ...
+def separator_capacity_assessment(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    pressure_drop: float,
+    gas_in_liquid: float,
+    internal_diameter: float,
+    design_gas_load_factor: float,
+    orientation: str,
+    design_liquid_level_fraction: float,
+    design_basis_provenance: str,
+    heat_input: float | None = None,
+    mechanical_design_max_gas_flow: float | None = None,
+) -> SeparatorCapacityAssessmentResult: ...
+def separator_performance(
+    gas_density: float,
+    oil_density: float,
+    water_density: float,
+    gas_viscosity: float,
+    oil_viscosity: float,
+    water_viscosity: float,
+    gas_velocity: float,
+    vessel_diameter: float,
+    vessel_length: float,
+    orientation: str,
+    liquid_level_fraction: float,
+    mist_position: float | None = None,
+    weir_position: float | None = None,
+    gas_liquid_distribution: str | None = None,
+    gas_liquid_characteristic_diameter: float | None = None,
+    gas_liquid_spread: float | None = None,
+    gas_bubble_distribution: str | None = None,
+    gas_bubble_characteristic_diameter: float | None = None,
+    gas_bubble_spread: float | None = None,
+    oil_in_water_distribution: str | None = None,
+    oil_in_water_characteristic_diameter: float | None = None,
+    oil_in_water_spread: float | None = None,
+    water_in_oil_distribution: str | None = None,
+    water_in_oil_characteristic_diameter: float | None = None,
+    water_in_oil_spread: float | None = None,
+    mist_eliminator: str | None = None,
+    mist_eliminator_cut_diameter: float | None = None,
+    mist_eliminator_sharpness: float | None = None,
+    mist_eliminator_max_efficiency: float | None = None,
+    mist_eliminator_points: list[EfficiencyPoint] | None = None,
+    oil_water_coalescer: str | None = None,
+    oil_water_coalescer_cut_diameter: float | None = None,
+    oil_water_coalescer_max_efficiency: float | None = None,
+    oil_water_coalescer_points: list[EfficiencyPoint] | None = None,
+    include_gravity_section: bool | None = None,
+    liquid_in_gas_calibration_factor: float | None = None,
+    gas_carry_under_calibration_factor: float | None = None,
+    liquid_liquid_calibration_factor: float | None = None,
+    enhanced: bool | None = None,
+    inlet_pipe_diameter: float | None = None,
+    surface_tension: float | None = None,
+    oil_water_interfacial_tension: float | None = None,
+    oil_volume_fraction: float | None = None,
+    apply_turbulence_correction: bool | None = None,
+    inlet_device: str | None = None,
+    override_bulk_efficiency: float | None = None,
+    override_dsd_multiplier: float | None = None,
+    design_k_factor: float | None = None,
+    liquid_liquid_residence_time: float | None = None,
+) -> SeparatorPerformanceResult: ...
 def shortcut_distillation_column(
     components: list[str],
     feed_n: float,
@@ -4569,6 +6716,16 @@ def splitter(
     feed_p: float,
     feed_t: float,
     split_factors: list[float],
+    design_pressure_drop: float | None = None,
+    max_design_velocity: float | None = None,
+    header_diameter: float | None = None,
+    capacity_analysis_enabled: bool | None = None,
+    mechanical_design: bool | None = None,
+    design_velocity: float | None = None,
+    max_operation_pressure: float | None = None,
+    tensile_strength: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
 ) -> SplitterResult: ...
 def stirred_tank_reactor(
     components: list[str],
@@ -4583,6 +6740,9 @@ def stirred_tank_reactor(
     reactor_temperature: float | None = None,
     reactor_pressure: float | None = None,
     pressure_drop: float | None = None,
+    vessel_volume: float | None = None,
+    residence_time: float | None = None,
+    agitator_power_per_volume: float | None = None,
 ) -> StirredTankReactorResult: ...
 def stripping_column(
     stripping_gas_components: list[str],
@@ -4652,7 +6812,16 @@ def three_phase_separator(
     oil_in_gas: float,
     aqueous_in_gas: float,
     aqueous_in_oil: float,
+    gas_outlet_flow_fraction: float | None = None,
+    oil_outlet_flow_fraction: float | None = None,
+    water_outlet_flow_fraction: float | None = None,
     heat_input: float | None = None,
+    internal_diameter: float | None = None,
+    separator_length: float | None = None,
+    nll_fraction: float | None = None,
+    nil_fraction: float | None = None,
+    water_level: float | None = None,
+    oil_level: float | None = None,
 ) -> ThreePhaseSeparatorResult: ...
 def throttling_valve(
     components: list[str],
@@ -4661,7 +6830,47 @@ def throttling_valve(
     inlet_p: float,
     inlet_t: float,
     outlet_pressure: float,
+    valve_opening: float | None = None,
+    kv: float | None = None,
+    fouling_fraction: float | None = None,
+    valve_characterization: str | None = None,
+    xt: float | None = None,
+    allow_choked: bool | None = None,
+    is_calc_pressure: bool | None = None,
+    is_isothermal: bool | None = None,
+    sizing_standard: str | None = None,
 ) -> ThrottlingValveResult: ...
+def turbo_expander_compressor(
+    expander_components: list[str],
+    compressor_components: list[str],
+    expander_n: float,
+    expander_z: list[float],
+    expander_p: float,
+    expander_t: float,
+    compressor_n: float,
+    compressor_z: list[float],
+    compressor_p: float,
+    compressor_t: float,
+    expander_out_pressure: float,
+    impeller_diameter: float,
+    design_speed: float,
+    design_uc: float,
+    design_qn: float,
+    igv_opening: float | None = None,
+    igv_control_mode: bool | None = None,
+    maximum_igv_area: float | None = None,
+    igv_area_increase_factor: float | None = None,
+    bearing_loss: float | None = None,
+    expander_design_isentropic_efficiency: float | None = None,
+    compressor_design_polytropic_efficiency: float | None = None,
+    compressor_design_polytropic_head: float | None = None,
+    expander_out_temperature: float | None = None,
+    uc_curve: list[TurboUcPoint] | None = None,
+    qn_efficiency_curve: list[TurboQnPoint] | None = None,
+    qn_head_curve: list[TurboQnPoint] | None = None,
+    chart: list[ExpanderMapPoint] | None = None,
+    igv_penalty_curve: list[TurboIgvPenaltyPoint] | None = None,
+) -> TurboExpanderResult: ...
 def chemical_equilibrium(
     a_matrix: list[list[float]],
     b: list[float],
@@ -4755,7 +6964,238 @@ def iso6976(
     volumetric_reference_temperature: float,
     energy_reference_temperature: float,
 ) -> Iso6976Result: ...
+def boiling_heat_transfer(
+    mass_flux: float,
+    tube_inner_diameter: float,
+    liquid_density: float,
+    vapor_density: float,
+    liquid_viscosity: float,
+    vapor_viscosity: float,
+    liquid_cp: float,
+    liquid_conductivity: float,
+    surface_tension: float,
+    heat_of_vaporization: float,
+    wall_superheat: float,
+    saturation_pressure_difference: float,
+    heat_flux: float,
+    vapor_quality: float,
+    quality_in: float,
+    quality_out: float,
+    intervals: float | None = None,
+    horizontal: bool | None = None,
+) -> BoilingHeatTransferResult: ...
 def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
+def fouling_model(
+    model: str,
+    velocity: float,
+    fluid_density: float,
+    fluid_viscosity: float,
+    wall_temperature: float,
+    tube_inner_diameter: float,
+    alpha: float,
+    beta: float,
+    activation_energy: float,
+    gamma: float,
+    fixed_fouling_resistance: float,
+    rf_max: float,
+    time_constant: float,
+    time_hours: float,
+    target_fouling_resistance: float,
+    threshold_rate: float,
+    euler_steps: float | None = None,
+    euler_step_hours: float | None = None,
+) -> FoulingModelResult: ...
+def incremental_zone_analysis(
+    tube_inside_diameter: float,
+    tube_outside_diameter: float,
+    tube_length: float,
+    tube_count: float,
+    tube_passes: float,
+    shell_inside_diameter: float,
+    baffle_spacing: float,
+    tube_pitch: float,
+    triangular_pitch: bool,
+    tube_wall_conductivity: float,
+    fouling_tube: float,
+    fouling_shell: float,
+    zones: list[IncrementalZoneInput],
+) -> IncrementalZoneAnalysisResult: ...
+def lmtd_correction_factor(
+    hot_inlet_temperature: float,
+    hot_outlet_temperature: float,
+    cold_inlet_temperature: float,
+    cold_outlet_temperature: float,
+    shell_passes: float | None = None,
+) -> LmtdCorrectionFactorResult: ...
+def shah_condensation(
+    mass_flux: float,
+    tube_inner_diameter: float,
+    liquid_density: float,
+    liquid_viscosity: float,
+    liquid_cp: float,
+    liquid_conductivity: float,
+    vapor_density: float,
+    reduced_pressure: float,
+    vapor_quality: float,
+    quality_in: float,
+    quality_out: float,
+    intervals: float | None = None,
+) -> ShahCondensationResult: ...
+def shell_and_tube_design(
+    tema_designation: str,
+    tema_class: str,
+    required_area: float,
+    shell_side_pressure: float,
+    tube_side_pressure: float,
+    design_temperature: float,
+    shell_material_grade: str,
+    tube_material_grade: str,
+    tube_size: str,
+    tube_length: float,
+    tube_passes: float,
+    shell_joint_efficiency: float,
+    nozzle_diameter: float,
+    nozzle_wall_thickness: float,
+    sour_service_assessment: bool,
+    h2s_partial_pressure: float | None = None,
+    fouling_tube: float | None = None,
+    fouling_shell: float | None = None,
+    shell_side_method: str | None = None,
+    tube_side_density: float | None = None,
+    tube_side_viscosity: float | None = None,
+    tube_side_cp: float | None = None,
+    tube_side_conductivity: float | None = None,
+    tube_side_mass_flow: float | None = None,
+    shell_side_density: float | None = None,
+    shell_side_viscosity: float | None = None,
+    shell_side_cp: float | None = None,
+    shell_side_conductivity: float | None = None,
+    shell_side_mass_flow: float | None = None,
+) -> ShellAndTubeDesignResult: ...
+def shell_and_tube_rating(
+    tube_outside_diameter: float,
+    tube_inside_diameter: float,
+    tube_length: float,
+    tube_count: float,
+    tube_passes: float,
+    tube_pitch: float,
+    triangular_pitch: bool,
+    shell_inside_diameter: float,
+    baffle_spacing: float,
+    baffle_count: float,
+    baffle_cut: float,
+    tube_wall_conductivity: float,
+    tube_density: float,
+    tube_viscosity: float,
+    tube_cp: float,
+    tube_conductivity: float,
+    tube_mass_flow: float,
+    shell_density: float,
+    shell_viscosity: float,
+    shell_cp: float,
+    shell_conductivity: float,
+    shell_mass_flow: float,
+    fouling_tube: float,
+    fouling_shell: float,
+    shell_side_method: str,
+    tube_fouling_layer_thickness: float | None = None,
+    tube_fouling_layer_conductivity: float | None = None,
+    shell_viscosity_wall: float | None = None,
+    has_sealing: bool | None = None,
+    sealing_pairs: float | None = None,
+    tube_to_baffle_clearance: float | None = None,
+    shell_to_baffle_clearance: float | None = None,
+    bypass_area: float | None = None,
+) -> ShellAndTubeRatingResult: ...
+def shell_and_tube_vibration(
+    tube_outside_diameter: float,
+    tube_inside_diameter: float,
+    unsupported_span: float,
+    tube_pitch: float,
+    tube_material_e: float,
+    tube_density: float,
+    crossflow_velocity: float,
+    shell_fluid_density: float,
+    tube_fluid_density: float,
+    shell_inside_diameter: float,
+    sonic_velocity: float,
+    damping_ratio: float,
+    triangular_pitch: bool,
+) -> ShellAndTubeVibrationResult: ...
+def tema_standard(
+    front_head: str,
+    shell: str,
+    rear_head: str,
+    tema_class: str,
+    tube_size: str,
+    pitch_pattern: str,
+    baffle_type: str,
+    shell_inside_diameter: float,
+    tube_pitch: float,
+    tube_passes: float,
+    needs_cleanable: bool,
+    large_temperature_difference: bool,
+    high_pressure: bool,
+    hazardous: bool,
+    tube_material: str | None = None,
+) -> TemaStandardResult: ...
+def tube_insert_model(
+    insert: str,
+    reynolds_number: float,
+    prandtl_number: float,
+    plain_heat_transfer_coefficient: float,
+    plain_pressure_drop: float,
+    twist_ratio: float | None = None,
+    tape_thickness: float | None = None,
+    tape_width_fraction: float | None = None,
+    wire_diameter: float | None = None,
+    wire_coil_pitch: float | None = None,
+    matrix_density: float | None = None,
+    roughness_ratio: float | None = None,
+    helix_angle: float | None = None,
+) -> TubeInsertModelResult: ...
+def two_phase_pressure_drop(
+    mass_flux: float,
+    vapor_quality: float,
+    tube_inner_diameter: float,
+    tube_length: float,
+    liquid_density: float,
+    vapor_density: float,
+    liquid_viscosity: float,
+    vapor_viscosity: float,
+    surface_tension: float,
+    quality_in: float,
+    quality_out: float,
+    intervals: float | None = None,
+) -> TwoPhasePressureDropResult: ...
+def zone_rating(
+    tube_outside_diameter: float,
+    tube_inside_diameter: float,
+    tube_length: float,
+    tube_count: float,
+    tube_passes: float,
+    tube_pitch: float,
+    triangular_pitch: bool,
+    shell_inside_diameter: float,
+    baffle_spacing: float,
+    baffle_count: float,
+    baffle_cut: float,
+    tube_wall_conductivity: float,
+    tube_mass_flow: float,
+    shell_mass_flow: float,
+    fouling_tube: float,
+    fouling_shell: float,
+    shell_side_method: str,
+    zones: list[ZoneDefinitionRow],
+    tube_fouling_layer_thickness: float | None = None,
+    tube_fouling_layer_conductivity: float | None = None,
+    shell_viscosity_wall: float | None = None,
+    has_sealing: bool | None = None,
+    sealing_pairs: float | None = None,
+    tube_to_baffle_clearance: float | None = None,
+    shell_to_baffle_clearance: float | None = None,
+    bypass_area: float | None = None,
+) -> ZoneRatingResult: ...
 
 # --- introspection --------------------------------------------------------
 

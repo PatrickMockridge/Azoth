@@ -66,6 +66,79 @@ class FlowRegime(StrEnum):
         return self is FlowRegime.TRANSITIONAL
 
 
+class BeggsBrillRegime(StrEnum):
+    """The flow regime a Beggs-and-Brill pipe segment is in.
+
+    Five values rather than the four of the two-phase map: a segment carrying one phase
+    does not sit on the map at all, and which phase it is decides the no-slip properties.
+    ``TRANSITION`` is the band where the literature blends segregated and intermittent
+    holdups rather than a regime of its own.
+    """
+
+    SINGLE_PHASE = "single_phase"
+    SEGREGATED = "segregated"
+    TRANSITION = "transition"
+    INTERMITTENT = "intermittent"
+    DISTRIBUTED = "distributed"
+
+
+class CorrosionSeverity(StrEnum):
+    """The NORSOK M-001 severity band a corrected corrosion rate falls in."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    VERY_HIGH = "very_high"
+
+
+class CooldownVerdict(StrEnum):
+    """The screening verdict a surface-cooldown analysis reports."""
+
+    OK = "ok"
+    MARGINAL = "marginal"
+    CRITICAL = "critical"
+    NO_HYDRATE_RISK = "no_hydrate_risk"
+
+
+class HydrateRiskLevel(StrEnum):
+    """The hydrate risk band one profile point falls in."""
+
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    UNKNOWN = "unknown"
+
+
+class EmulsionType(StrEnum):
+    """Which phase is continuous in an oil-water emulsion."""
+
+    WATER_IN_OIL = "water_in_oil"
+    OIL_IN_WATER = "oil_in_water"
+
+
+class ErosionRiskLevel(StrEnum):
+    """The rate-and-ratio risk band an erosion screen reports."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class FeSMorphology(StrEnum):
+    """The iron-sulfide morphology the temperature band predicts.
+
+    The morphology is what decides whether the sulfide film protects the steel: mackinawite
+    is porous, the cubic FeS/troilite band is partly protective, and pyrrhotite is dense.
+    """
+
+    NONE = "none"
+    MACKINAWITE = "mackinawite"
+    CUBIC_FES_TROILITE = "cubic_fes_troilite"
+    PYRRHOTITE = "pyrrhotite"
+
+
 class RootStructure(StrEnum):
     """How many admissible real roots a cubic equation of state had.
 

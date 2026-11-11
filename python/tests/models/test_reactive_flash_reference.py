@@ -207,15 +207,15 @@ def test_the_driver_reproduces_the_captured_state() -> None:
     assert outcome.solution is not None
     overall = [sum(phase[i] for phase in outcome.solution.phase_moles) for i in range(len(NAMES))]
     captured = [
-        0.079_140_502_548_023_4,
-        0.079_140_502_560_693_7,
-        0.420_859_061_906_977_14,
-        0.420_859_061_880_687_67,
+        0.079_120_948_086_210_83,
+        0.079_120_948_160_501_98,
+        0.420_877_601_471_954_97,
+        0.420_877_601_314_960_3,
     ]
     for index, (got, want) in enumerate(zip(overall, captured, strict=True)):
         assert abs(got - want) / abs(want) < 1.0e-5, (index, got, want)
 
-    captured_gibbs = -2.259_535_542_715_054_7
+    captured_gibbs = -2.259_405_858_361_138_7
     assert abs(outcome.gibbs_energy - captured_gibbs) / abs(captured_gibbs) < 1.0e-5
 
 

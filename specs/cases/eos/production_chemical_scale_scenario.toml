@@ -1,0 +1,553 @@
+model = "eos.production_chemical_scale_scenario"
+
+# The capture's `production_chemical_scenario` rows. mg/L to kg/m3 by 1e-3, bar to Pa
+# by 1e5, C to K by +273.15, mol/L to mol/m3 by 1000. An absent index is an omitted row field.
+
+[[cases]]
+id = "caustic_100"
+tolerance = 1.0e-09
+source = "The capture's `caustic_100` row: 100 mg/L of 50 wt% caustic raises the pH to 6.612 and the calcite index by 0.152, inside the 0.25 risk threshold.\n"
+[cases.inputs]
+calcium = 2.0
+barium = 0.05
+strontium = 0.1
+iron = 0.005
+magnesium = 0.5
+sodium = 20.0
+sulphate = 0.5
+bicarbonate = 0.8
+total_dissolved_solids = 80.0
+ph = 6.5
+dissolved_h2s = 0.02
+temperature = 333.15
+pressure = 1.0e7
+activity_model = "davies"
+chemicals = [{ chemical_type = "ph_adjuster", name = "caustic", active_ingredient = "NaOH", active_wt_pct = 50.0, dosage = 0.1 }]
+[cases.expected]
+treated_ph = 6.612286718254484
+treated_bicarbonate = 0.8761187807037203
+base_dose_equivalents = 1.2500937570317774
+scavenger_capacity = 0.0
+residual_dissolved_h2s = 0.02
+baseline_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+treated_si = [
+    { mineral = "BaSO4", saturation_index = 2.423208147780234 },
+    { mineral = "SrSO4", saturation_index = -1.6564148549680096 },
+    { mineral = "CaSO4", saturation_index = -0.4632431345215311 },
+    { mineral = "CaCO3", saturation_index = -0.24836279383147514 },
+    { mineral = "FeCO3", saturation_index = -0.516801978049319 },
+]
+si_change = [
+    { mineral = "BaSO4", change = 0.0033453720183884705 },
+    { mineral = "SrSO4", change = 0.0033453720183882485 },
+    { mineral = "CaSO4", change = -0.0009388765418312239 },
+    { mineral = "CaCO3", change = 0.1517345028756344 },
+    { mineral = "FeCO3", change = 0.15601875143585409 },
+]
+
+[[cases]]
+id = "mdea_200"
+tolerance = 1.0e-09
+source = "The capture's `mdea_200` row: 200 mg/L of 50 wt% MDEA raises the pH to 6.574 and calcite by 0.101.\n"
+[cases.inputs]
+calcium = 2.0
+barium = 0.05
+strontium = 0.1
+iron = 0.005
+magnesium = 0.5
+sodium = 20.0
+sulphate = 0.5
+bicarbonate = 0.8
+total_dissolved_solids = 80.0
+ph = 6.5
+dissolved_h2s = 0.02
+temperature = 333.15
+pressure = 1.0e7
+activity_model = "davies"
+chemicals = [{ chemical_type = "ph_adjuster", name = "mdea", active_ingredient = "MDEA", active_wt_pct = 50.0, dosage = 0.2 }]
+[cases.expected]
+treated_ph = 6.574404485391451
+treated_bicarbonate = 0.8511049682652292
+base_dose_equivalents = 0.839186660288848
+scavenger_capacity = 0.0
+residual_dissolved_h2s = 0.02
+baseline_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+treated_si = [
+    { mineral = "BaSO4", saturation_index = 2.422109565057132 },
+    { mineral = "SrSO4", saturation_index = -1.6575134376911118 },
+    { mineral = "CaSO4", saturation_index = -0.4629334211803143 },
+    { mineral = "CaCO3", saturation_index = -0.29881657410294227 },
+    { mineral = "FeCO3", saturation_index = -0.5686640543851054 },
+]
+si_change = [
+    { mineral = "BaSO4", change = 0.0022467892952864332 },
+    { mineral = "SrSO4", change = 0.002246789295285989 },
+    { mineral = "CaSO4", change = -0.0006291632006144021 },
+    { mineral = "CaCO3", change = 0.10128072260416726 },
+    { mineral = "FeCO3", change = 0.10415667510006776 },
+]
+
+[[cases]]
+id = "hcl_100"
+tolerance = 1.0e-09
+source = "The capture's `hcl_100` row: 100 mg/L of 15 wt% HCl lowers the pH to 6.465 and calcite by 0.049.\n"
+[cases.inputs]
+calcium = 2.0
+barium = 0.05
+strontium = 0.1
+iron = 0.005
+magnesium = 0.5
+sodium = 20.0
+sulphate = 0.5
+bicarbonate = 0.8
+total_dissolved_solids = 80.0
+ph = 6.5
+dissolved_h2s = 0.02
+temperature = 333.15
+pressure = 1.0e7
+activity_model = "davies"
+chemicals = [{ chemical_type = "acid", name = "acid", active_ingredient = "HCl", active_wt_pct = 15.0, dosage = 0.1 }]
+[cases.expected]
+treated_ph = 6.464653452086296
+treated_bicarbonate = 0.7749387898370603
+base_dose_equivalents = -0.41139848056827844
+scavenger_capacity = 0.0
+residual_dissolved_h2s = 0.02
+baseline_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+treated_si = [
+    { mineral = "BaSO4", saturation_index = 2.418759793057685 },
+    { mineral = "SrSO4", saturation_index = -1.6608632096905587 },
+    { mineral = "CaSO4", saturation_index = -0.46199742905131225 },
+    { mineral = "CaCO3", saturation_index = -0.4492581867413085 },
+    { mineral = "FeCO3", saturation_index = -0.7233914311519204 },
+]
+si_change = [
+    { mineral = "BaSO4", change = -0.0011029827041606488 },
+    { mineral = "SrSO4", change = -0.0011029827041608709 },
+    { mineral = "CaSO4", change = 0.00030682892838762577 },
+    { mineral = "CaCO3", change = -0.04916089003419899 },
+    { mineral = "FeCO3", change = -0.050570701666747264 },
+]
+
+[[cases]]
+id = "triazine_100"
+tolerance = 1.0e-09
+source = "The capture's `triazine_100` row: 100 mg/L of 40 wt% MEA-triazine consumes 7.20 mg/L of the 20 mg/L H2S and warns that the spent product is not mineral equilibrium.\n"
+[cases.inputs]
+calcium = 2.0
+barium = 0.05
+strontium = 0.1
+iron = 0.005
+magnesium = 0.5
+sodium = 20.0
+sulphate = 0.5
+bicarbonate = 0.8
+total_dissolved_solids = 80.0
+ph = 6.5
+dissolved_h2s = 0.02
+temperature = 333.15
+pressure = 1.0e7
+activity_model = "davies"
+chemicals = [{ chemical_type = "h2s_scavenger", name = "scavenger", active_ingredient = "MEA-triazine", active_wt_pct = 40.0, dosage = 0.1 }]
+[cases.expected]
+treated_ph = 6.5
+treated_bicarbonate = 0.8
+base_dose_equivalents = 0.0
+scavenger_capacity = 0.007202789812955723
+residual_dissolved_h2s = 0.01279721018704428
+baseline_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+treated_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+si_change = [
+    { mineral = "BaSO4", change = 0.0 },
+    { mineral = "SrSO4", change = 0.0 },
+    { mineral = "CaSO4", change = 0.0 },
+    { mineral = "CaCO3", change = 0.0 },
+    { mineral = "FeCO3", change = 0.0 },
+]
+model_warnings = [
+    { code = "triazine_spent_product", message = "Check dithiazine/amorphous spent-product deposition; scavenger removal is not mineral equilibrium" },
+    { code = "h2s_scavenger_under_capacity", message = "Calculated dissolved-H2S load exceeds the practical active scavenger capacity" },
+]
+
+[[cases]]
+id = "triazine_10"
+tolerance = 1.0e-09
+source = "The capture's `triazine_10` row: 10 mg/L of the same scavenger consumes 0.72 mg/L, leaving 19.28.\n"
+[cases.inputs]
+calcium = 2.0
+barium = 0.05
+strontium = 0.1
+iron = 0.005
+magnesium = 0.5
+sodium = 20.0
+sulphate = 0.5
+bicarbonate = 0.8
+total_dissolved_solids = 80.0
+ph = 6.5
+dissolved_h2s = 0.02
+temperature = 333.15
+pressure = 1.0e7
+activity_model = "davies"
+chemicals = [{ chemical_type = "h2s_scavenger", name = "scavenger", active_ingredient = "MEA-triazine", active_wt_pct = 40.0, dosage = 0.01 }]
+[cases.expected]
+treated_ph = 6.5
+treated_bicarbonate = 0.8
+base_dose_equivalents = 0.0
+scavenger_capacity = 0.0007202789812955722
+residual_dissolved_h2s = 0.01927972101870443
+baseline_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+treated_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+si_change = [
+    { mineral = "BaSO4", change = 0.0 },
+    { mineral = "SrSO4", change = 0.0 },
+    { mineral = "CaSO4", change = 0.0 },
+    { mineral = "CaCO3", change = 0.0 },
+    { mineral = "FeCO3", change = 0.0 },
+]
+model_warnings = [
+    { code = "triazine_spent_product", message = "Check dithiazine/amorphous spent-product deposition; scavenger removal is not mineral equilibrium" },
+    { code = "h2s_scavenger_under_capacity", message = "Calculated dissolved-H2S load exceeds the practical active scavenger capacity" },
+]
+
+[[cases]]
+id = "scale_inhibitor_10"
+tolerance = 1.0e-09
+source = "The capture's `scale_inhibitor_10` row: A phosphonate scale inhibitor changes no index and carries the kinetic-control warning.\n"
+[cases.inputs]
+calcium = 2.0
+barium = 0.05
+strontium = 0.1
+iron = 0.005
+magnesium = 0.5
+sodium = 20.0
+sulphate = 0.5
+bicarbonate = 0.8
+total_dissolved_solids = 80.0
+ph = 6.5
+dissolved_h2s = 0.02
+temperature = 333.15
+pressure = 1.0e7
+activity_model = "davies"
+chemicals = [{ chemical_type = "scale_inhibitor", name = "si", active_ingredient = "phosphonate", active_wt_pct = 30.0, dosage = 0.01 }]
+[cases.expected]
+treated_ph = 6.5
+treated_bicarbonate = 0.8
+base_dose_equivalents = 0.0
+scavenger_capacity = 0.0
+residual_dissolved_h2s = 0.02
+baseline_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+treated_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+si_change = [
+    { mineral = "BaSO4", change = 0.0 },
+    { mineral = "SrSO4", change = 0.0 },
+    { mineral = "CaSO4", change = 0.0 },
+    { mineral = "CaCO3", change = 0.0 },
+    { mineral = "FeCO3", change = 0.0 },
+]
+model_warnings = [
+    { code = "inhibitor_is_kinetic", message = "Scale inhibitor does not change thermodynamic SI; evaluate MIC and growth control separately with ScaleControlAssessor" },
+]
+
+[[cases]]
+id = "corrosion_inhibitor_10"
+tolerance = 1.0e-09
+source = "The capture's `corrosion_inhibitor_10` row: An imidazoline corrosion inhibitor is retained in the audit trail with a no-effect warning.\n"
+[cases.inputs]
+calcium = 2.0
+barium = 0.05
+strontium = 0.1
+iron = 0.005
+magnesium = 0.5
+sodium = 20.0
+sulphate = 0.5
+bicarbonate = 0.8
+total_dissolved_solids = 80.0
+ph = 6.5
+dissolved_h2s = 0.02
+temperature = 333.15
+pressure = 1.0e7
+activity_model = "davies"
+chemicals = [{ chemical_type = "other", name = "ci", active_ingredient = "imidazoline", active_wt_pct = 20.0, dosage = 0.01 }]
+[cases.expected]
+treated_ph = 6.5
+treated_bicarbonate = 0.8
+base_dose_equivalents = 0.0
+scavenger_capacity = 0.0
+residual_dissolved_h2s = 0.02
+baseline_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+treated_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+si_change = [
+    { mineral = "BaSO4", change = 0.0 },
+    { mineral = "SrSO4", change = 0.0 },
+    { mineral = "CaSO4", change = 0.0 },
+    { mineral = "CaCO3", change = 0.0 },
+    { mineral = "FeCO3", change = 0.0 },
+]
+model_warnings = [
+    { code = "no_equilibrium_effect_ci", message = "Chemical retained in audit trail; no supported stoichiometric effect on this aqueous scale scenario" },
+]
+
+[[cases]]
+id = "huge_caustic"
+tolerance = 1.0e-09
+source = "The capture's `huge_caustic` row: 5000 mg/L of caustic drives the pH to 12.52 and the calcite index up by 3.85, which raises the chemical-induced risk warning.\n"
+[cases.inputs]
+calcium = 2.0
+barium = 0.05
+strontium = 0.1
+iron = 0.005
+magnesium = 0.5
+sodium = 20.0
+sulphate = 0.5
+bicarbonate = 0.8
+total_dissolved_solids = 80.0
+ph = 6.5
+dissolved_h2s = 0.02
+temperature = 333.15
+pressure = 1.0e7
+activity_model = "davies"
+chemicals = [{ chemical_type = "ph_adjuster", name = "caustic", active_ingredient = "NaOH", active_wt_pct = 50.0, dosage = 5.0 }]
+[cases.expected]
+treated_ph = 12.52246120309228
+treated_bicarbonate = 0.005387695012895745
+base_dose_equivalents = 62.504687851588855
+scavenger_capacity = 0.0
+residual_dissolved_h2s = 0.02
+baseline_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+treated_si = [
+    { mineral = "BaSO4", saturation_index = 2.593267701220774 },
+    { mineral = "SrSO4", saturation_index = -1.4863553015274698 },
+    { mineral = "CaSO4", saturation_index = -0.7516010698859693 },
+    { mineral = "CaCO3", saturation_index = 3.445865139181771 },
+    { mineral = "FeCO3", saturation_index = 3.635843443768905 },
+]
+si_change = [
+    { mineral = "BaSO4", change = 0.17340492545892827 },
+    { mineral = "SrSO4", change = 0.17340492545892805 },
+    { mineral = "CaSO4", change = -0.28929681190626944 },
+    { mineral = "CaCO3", change = 3.8459624358888806 },
+    { mineral = "FeCO3", change = 4.308664173254078 },
+]
+model_warnings = [
+    { code = "chemical_induced_calcite_risk", message = "Base-equivalent dosing increased calcite SI by 3.85" },
+]
+
+[[cases]]
+id = "bdot"
+tolerance = 1.0e-09
+source = "The capture's `bdot` row: The MDEA dose under the B-dot activity model: the same treated pH and bicarbonate, different indices.\n"
+[cases.inputs]
+calcium = 2.0
+barium = 0.05
+strontium = 0.1
+iron = 0.005
+magnesium = 0.5
+sodium = 20.0
+sulphate = 0.5
+bicarbonate = 0.8
+total_dissolved_solids = 80.0
+ph = 6.5
+dissolved_h2s = 0.02
+temperature = 333.15
+pressure = 1.0e7
+activity_model = "bdot"
+chemicals = [{ chemical_type = "ph_adjuster", name = "mdea", active_ingredient = "MDEA", active_wt_pct = 50.0, dosage = 0.05 }]
+[cases.expected]
+treated_ph = 6.51828261991834
+treated_bicarbonate = 0.8127783997063651
+base_dose_equivalents = 0.209796665072212
+scavenger_capacity = 0.0
+residual_dissolved_h2s = 0.02
+baseline_si = [
+    { mineral = "BaSO4", saturation_index = 0.6669205869710103 },
+    { mineral = "SrSO4", saturation_index = -3.4127024157772334 },
+    { mineral = "CaSO4", saturation_index = -2.2152464467705353 },
+    { mineral = "CaCO3", saturation_index = -2.153039485497945 },
+    { mineral = "FeCO3", saturation_index = -2.4257629182760083 },
+]
+treated_si = [
+    { mineral = "BaSO4", saturation_index = 0.6674826794323343 },
+    { mineral = "SrSO4", saturation_index = -3.412140323315909 },
+    { mineral = "CaSO4", saturation_index = -2.215403321590899 },
+    { mineral = "CaCO3", saturation_index = -2.127878914054967 },
+    { mineral = "FeCO3", saturation_index = -2.399883379551343 },
+]
+si_change = [
+    { mineral = "BaSO4", change = 0.000562092461323993 },
+    { mineral = "SrSO4", change = 0.0005620924613243261 },
+    { mineral = "CaSO4", change = -0.00015687482036375044 },
+    { mineral = "CaCO3", change = 0.025160571442977897 },
+    { mineral = "FeCO3", change = 0.02587953872466553 },
+]
+
+[[cases]]
+id = "pitzer"
+tolerance = 1.0e-09
+source = "The capture's `pitzer` row: The MDEA dose under the binary Pitzer model at an explicit strength of 1.2.\n"
+[cases.inputs]
+calcium = 2.0
+barium = 0.05
+strontium = 0.1
+iron = 0.005
+magnesium = 0.5
+sodium = 20.0
+sulphate = 0.5
+bicarbonate = 0.8
+total_dissolved_solids = 80.0
+ph = 6.5
+dissolved_h2s = 0.02
+temperature = 333.15
+pressure = 1.0e7
+activity_model = "pitzer_binary"
+pitzer_ionic_strength_molal = 1.2
+chemicals = [{ chemical_type = "ph_adjuster", name = "mdea", active_ingredient = "MDEA", active_wt_pct = 50.0, dosage = 0.05 }]
+[cases.expected]
+treated_ph = 6.51828261991834
+treated_bicarbonate = 0.8127783997063651
+base_dose_equivalents = 0.209796665072212
+scavenger_capacity = 0.0
+residual_dissolved_h2s = 0.02
+baseline_si = [
+    { mineral = "BaSO4", saturation_index = 0.26048251916882753 },
+    { mineral = "SrSO4", saturation_index = -3.7575856531386673 },
+    { mineral = "CaSO4", saturation_index = -2.56233740129713 },
+    { mineral = "CaCO3", saturation_index = -2.3766734311564868 },
+    { mineral = "FeCO3", saturation_index = -2.678533528887676 },
+]
+treated_si = [
+    { mineral = "BaSO4", saturation_index = 0.2610446116301516 },
+    { mineral = "SrSO4", saturation_index = -3.7570235606773434 },
+    { mineral = "CaSO4", saturation_index = -2.5624942761174943 },
+    { mineral = "CaCO3", saturation_index = -2.351512859713509 },
+    { mineral = "FeCO3", saturation_index = -2.6526539901630106 },
+]
+si_change = [
+    { mineral = "BaSO4", change = 0.0005620924613240486 },
+    { mineral = "SrSO4", change = 0.000562092461323882 },
+    { mineral = "CaSO4", change = -0.00015687482036419453 },
+    { mineral = "CaCO3", change = 0.025160571442977897 },
+    { mineral = "FeCO3", change = 0.02587953872466553 },
+]
+
+[[cases]]
+id = "unsupported_adjuster"
+tolerance = 1.0e-09
+source = "The capture's `unsupported_adjuster` row: KOH has no name-based equivalent, so no dose is applied and the unsupported-adjuster warning names it.\n"
+[cases.inputs]
+calcium = 2.0
+barium = 0.05
+strontium = 0.1
+iron = 0.005
+magnesium = 0.5
+sodium = 20.0
+sulphate = 0.5
+bicarbonate = 0.8
+total_dissolved_solids = 80.0
+ph = 6.5
+dissolved_h2s = 0.02
+temperature = 333.15
+pressure = 1.0e7
+activity_model = "davies"
+chemicals = [{ chemical_type = "ph_adjuster", name = "bespoke", active_ingredient = "KOH", active_wt_pct = 45.0, dosage = 0.1 }]
+[cases.expected]
+treated_ph = 6.5
+treated_bicarbonate = 0.8
+base_dose_equivalents = 0.0
+scavenger_capacity = 0.0
+residual_dissolved_h2s = 0.02
+baseline_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+treated_si = [
+    { mineral = "BaSO4", saturation_index = 2.4198627757618456 },
+    { mineral = "SrSO4", saturation_index = -1.6597602269863978 },
+    { mineral = "CaSO4", saturation_index = -0.4623042579796999 },
+    { mineral = "CaCO3", saturation_index = -0.40009729670710953 },
+    { mineral = "FeCO3", saturation_index = -0.6728207294851731 },
+]
+si_change = [
+    { mineral = "BaSO4", change = 0.0 },
+    { mineral = "SrSO4", change = 0.0 },
+    { mineral = "CaSO4", change = 0.0 },
+    { mineral = "CaCO3", change = 0.0 },
+    { mineral = "FeCO3", change = 0.0 },
+]
+model_warnings = [
+    { code = "unsupported_ph_adjuster_bespoke", message = "No acid/base-equivalent model for active ingredient KOH" },
+]

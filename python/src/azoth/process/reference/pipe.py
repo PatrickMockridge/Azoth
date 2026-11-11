@@ -38,7 +38,7 @@ from dataclasses import dataclass
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import Phase, PipeResult
-from azoth.core.units import Q, from_si, input_to_si
+from azoth.core.units import Q, from_si, input_records_to_si, input_to_si, quantity
 from azoth.core.warnings import Warning
 from azoth.eos import components as _databank
 from azoth.eos.mixture import Mixture
@@ -46,6 +46,7 @@ from azoth.eos.reference._mixture_state import reduced_parameters
 from azoth.eos.reference.aqueous_viscosity import aqueous_viscosity as aqueous_viscosity_solve
 from azoth.eos.reference.hydrate_inhibitor_wt import AQUEOUS, GAS, phase_label
 from azoth.eos.reference.ph_flash import enthalpy_at
+from azoth.eos.reference.pipe_beggs_and_brills import pipe_beggs_and_brills as beg_gas_march
 from azoth.eos.reference.pr_molar_volume import pr_molar_volume
 from azoth.eos.reference.pt_flash import pt_flash as pt_flash_solve
 from azoth.eos.reference.viscosity import viscosity as viscosity_solve
@@ -67,6 +68,11 @@ def pipe(
     length: Q,
     diameter: Q,
     roughness: Q,
+    fittings: list[dict[str, Q]] | None = None,
+    outlet_pressure: Q | None = None,
+    correlation: str | None = None,
+    number_of_increments: int | None = None,
+    elevation: Q | None = None,
 ) -> PipeResult:
     """Drop a stream's pressure along a line.
 
@@ -79,9 +85,14 @@ def pipe(
         length: the pipe's length.
         diameter: the internal diameter.
         roughness: the sand-grain roughness height.
+        fittings: the line's L/D rows.
+        outlet_pressure: a stated outlet pressure, which solves the flow.
+        correlation: ``adiabatic`` or ``beggs_and_brills``.
+        number_of_increments: the B&B march's segment count.
+        elevation: the B&B march's total elevation change.
 
     Returns:
-        The outlet's record and the pressure drop the line implies.
+        The outlet's record, the effective length and the pressure drop the line implies.
 
     Raises:
         InvalidInputError: where the geometry is not positive.
@@ -113,6 +124,9 @@ def pipe(
     length_si = input_to_si(spec, "length", length)
     diameter_si = input_to_si(spec, "diameter", diameter)
     roughness_si = input_to_si(spec, "roughness", roughness)
+    outlet_si = (
+        None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure)
+    )
 
     apply_checks(
         checks.on_input,
@@ -121,19 +135,86 @@ def pipe(
             "length": length_si,
             "diameter": diameter_si,
             "roughness": roughness_si,
+            "outlet_pressure": outlet_si,
         }.get,
         warnings,
     )
 
-    states = _route(components, n, inlet_z, p, t, length_si, diameter_si, roughness_si)
+    rows: list[dict[str, float]] = (
+        [] if fittings is None else input_records_to_si(spec, "fittings", fittings)
+    )
+    total_ld = 0.0
+    for index, row in enumerate(rows):
+        ld_ratio = float(row["ld_ratio"])
+        count = float(row["count"])
+        if not ld_ratio >= 0.0:
+            raise InvalidInputError(
+                "fittings",
+                f"row {index}'s L/D is {ld_ratio}, and an equivalent length is non-negative",
+            )
+        if not count >= 0.0:
+            raise InvalidInputError(
+                "fittings", f"row {index}'s count is {count}, and a count is non-negative"
+            )
+        total_ld += ld_ratio * count
+    effective = length_si + total_ld * diameter_si
+
+    # **The inlet state is built before the branch, as the Rust entry's `Stream::from_pt`
+    # is.** A zero pressure or a composition that does not sum to one is refused there before
+    # any dispatch, so the twin makes the same flash here rather than letting one branch
+    # divide by a zero molar mass and the other reach the calculator's own check.
+    mixture, ideal_gas = _databank.mixture_of(components, eos="pr")
+    pt_flash_solve(mixture, quantity(t, "K"), quantity(p, "Pa"), list(inlet_z))
+
+    correlation = "adiabatic" if correlation is None else correlation
+    if correlation == "beggs_and_brills":
+        if outlet_si is not None:
+            raise InvalidInputError(
+                "outlet_pressure",
+                "the flow solve is `AdiabaticPipe.calcFlow`'s, and the Beggs-and-Brills "
+                "correlation has no such inverse here",
+            )
+        march = beg_gas_march(
+            components,
+            quantity(n, "mol/s"),
+            inlet_z,
+            quantity(p, "Pa"),
+            quantity(t, "K"),
+            quantity(effective, "m"),
+            quantity(diameter_si, "m"),
+            quantity(0.0 if elevation is None else input_to_si(spec, "elevation", elevation), "m"),
+            5 if number_of_increments is None else int(number_of_increments),
+            quantity(roughness_si, "m"),
+            eos="pr",
+        )
+        p_out = march.outlet_pressure.to("Pa").magnitude
+        h_out, _ = enthalpy_at(mixture, ideal_gas, t, p_out, inlet_z)
+        outlet_n = n
+    elif correlation == "adiabatic":
+        if outlet_si is not None:
+            outlet_n = _calc_flow(
+                components, n, inlet_z, p, t, effective, diameter_si, roughness_si, outlet_si
+            )
+            p_out = outlet_si
+            h_out, _ = enthalpy_at(mixture, ideal_gas, t, p_out, inlet_z)
+        else:
+            states = _route(components, n, inlet_z, p, t, effective, diameter_si, roughness_si)
+            outlet_n = n
+            p_out = states.p_out
+            h_out = states.h_out
+    else:
+        raise InvalidInputError(
+            "correlation", f"{correlation} is not one of adiabatic or beggs_and_brills"
+        )
 
     return PipeResult(
-        outlet_n=from_si(n, "mol/s"),
+        outlet_n=from_si(outlet_n, "mol/s"),
         outlet_z=tuple(inlet_z),
-        outlet_p=from_si(states.p_out, "Pa"),
+        outlet_p=from_si(p_out, "Pa"),
         outlet_t=from_si(t, "K"),
-        outlet_h=from_si(states.h_out, "J/mol"),
-        pressure_drop=from_si(p - states.p_out, "Pa"),
+        outlet_h=from_si(h_out, "J/mol"),
+        effective_length=from_si(effective, "m"),
+        pressure_drop=from_si(p - p_out, "Pa"),
         warnings=tuple(warnings),
     )
 
@@ -365,3 +446,95 @@ def _spec() -> dict[str, object]:
     from azoth._models_gen import model
 
     return model("process.pipe")
+
+
+def _pressure_out_at(
+    components: list[str],
+    n: float,
+    inlet_z: list[float],
+    inlet_t: float,
+    inlet_p: float,
+    length: float,
+    diameter: float,
+    roughness: float,
+) -> float:
+    """The outlet pressure one flow implies, at the inlet state - ``calcPressureOut``."""
+    mixture, _ideal_gas = _databank.mixture_of(components, eos="pr")
+    area = math.pi / 4.0 * diameter * diameter
+    state = _pass(mixture, n, inlet_z, inlet_t, inlet_p, area, diameter, roughness / diameter)
+    return _outlet_pressure(state, inlet_p, length, diameter)
+
+
+def _calc_flow(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: float,
+    inlet_t: float,
+    length: float,
+    diameter: float,
+    roughness: float,
+    outlet_pressure: float,
+) -> float:
+    """``calcFlow``'s bisection: the molar flow that lands on the stated outlet pressure."""
+    for name, value in (
+        ("length", length),
+        ("diameter", diameter),
+        ("roughness", roughness),
+        ("outlet_pressure", outlet_pressure),
+    ):
+        if not value > 0.0:
+            raise InvalidInputError(
+                name, f"the flow solve needs a positive {name}, and {value} is not"
+            )
+    mixture, _ideal_gas = _databank.mixture_of(components, eos="pr")
+    masses: list[float] = []
+    for zi, component in zip(inlet_z, mixture.components, strict=True):
+        if component.molar_mass is None:
+            raise InvalidInputError(
+                "components",
+                "a component of this stream carries no molar mass, so the mixture has none",
+            )
+        masses.append(zi * component.molar_mass.to("kg/mol").magnitude)
+    molar_mass = sum(masses)
+    seed = inlet_n * molar_mass if inlet_n * molar_mass > 0.0 else 1.0
+
+    def outlet(mass: float) -> float:
+        return _pressure_out_at(
+            components,
+            mass / molar_mass,
+            inlet_z,
+            inlet_t,
+            inlet_p,
+            length,
+            diameter,
+            roughness,
+        )
+
+    low, high = seed * 0.001, seed * 100.0
+    p_low, p_high = outlet(low), outlet(high)
+    for _ in range(20):
+        if p_low >= outlet_pressure:
+            break
+        low /= 10.0
+        p_low = outlet(low)
+    for _ in range(20):
+        if p_high <= outlet_pressure:
+            break
+        high *= 10.0
+        p_high = outlet(high)
+
+    tolerance = 1.0e-4
+    mid = 0.5 * (low + high)
+    for _ in range(50):
+        mid = 0.5 * (low + high)
+        p_mid = outlet(mid)
+        if abs(p_mid - outlet_pressure) / outlet_pressure < tolerance:
+            break
+        if p_mid > outlet_pressure:
+            low = mid
+        else:
+            high = mid
+        if abs(high - low) / mid < tolerance:
+            break
+    return mid / molar_mass

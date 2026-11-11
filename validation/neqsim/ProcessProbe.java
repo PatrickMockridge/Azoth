@@ -30,8 +30,28 @@
 //     javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe pump > captures/process_pump.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe splitter > captures/process_splitter.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe splitter_capacity \
+//       > captures/process_splitter_capacity.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe splitter_mechanical_design \
+//       > captures/process_splitter_mechanical_design.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe mixer > captures/process_mixer.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe separator > captures/process_separator.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity \
+//       > captures/process_separator_capacity.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity_assessment \
+//       > captures/process_separator_capacity_assessment.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_sizing \
+//       > captures/process_separator_sizing.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_mechanical \
+//       > captures/process_separator_mechanical_design.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe gas_scrubber_mechanical \
+//       > captures/process_gas_scrubber_mechanical_design.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe three_phase_settling \
+//       > captures/process_three_phase_settling.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe separator_performance_enhanced \
+//       > captures/process_separator_performance_enhanced.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge_recycle \
+//       > captures/process_anti_surge_recycle.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve \
 //       > captures/process_throttling_valve.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger \
@@ -93,6 +113,14 @@ import neqsim.process.equipment.util.AccelerationMethod;
 import neqsim.process.equipment.stream.StreamInterface;
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPrEos;
+import neqsim.thermo.system.SystemSrkEos;
+import neqsim.process.safety.release.HomogeneousEquilibriumReleaseModel;
+import neqsim.process.safety.release.LeakModel;
+import neqsim.process.safety.release.ReleaseFlowRequest;
+import neqsim.process.safety.release.ReleaseFlowResult;
+import neqsim.process.safety.release.ReleaseState;
+import neqsim.process.safety.release.SourceTermResult;
+import java.util.Map;
 
 public class ProcessProbe {
   public static void main(String[] args) {
@@ -104,11 +132,44 @@ public class ProcessProbe {
       case "splitter":
         splitter();
         break;
+      case "splitter_capacity":
+        splitterCapacity();
+        break;
+      case "splitter_mechanical_design":
+        splitterMechanicalDesign();
+        break;
       case "mixer":
         mixer();
         break;
       case "separator":
         separator();
+        break;
+      case "separator_capacity":
+        separatorCapacityRows();
+        break;
+      case "separator_capacity_assessment":
+        separatorCapacityAssessmentRows();
+        break;
+      case "separator_sizing":
+        separatorSizingRows();
+        break;
+      case "separator_mechanical":
+        separatorMechanicalRows();
+        break;
+      case "separator_autosize":
+        separatorAutosizeRows();
+        break;
+      case "gas_scrubber_mechanical":
+        gasScrubberMechanicalRows();
+        break;
+      case "three_phase_settling":
+        threePhaseSettlingRows();
+        break;
+      case "separator_performance_enhanced":
+        separatorPerformanceEnhancedRows();
+        break;
+      case "separator_performance":
+        separatorPerformanceRows();
         break;
       case "throttling_valve":
         throttlingValve();
@@ -116,8 +177,41 @@ public class ProcessProbe {
       case "heat_exchanger":
         heatExchanger();
         break;
+      case "heat_exchanger_delta_t":
+        heatExchangerDeltaT();
+        break;
+      case "heat_exchanger_rating":
+        heatExchangerRating();
+        break;
+      case "heat_exchanger_mechanical":
+        heatExchangerMechanicalRows();
+        break;
+      case "heat_exchanger_transient":
+        heatExchangerTransientRows();
+        break;
+      case "cooler_transient":
+        coolerTransientRows();
+        break;
       case "heater":
         heatRows("Heater");
+        break;
+      case "heater_capacity":
+        heaterCapacity();
+        break;
+      case "heater_instruments":
+        heaterInstrumentRows();
+        break;
+      case "heater_electrical":
+        heaterElectricalRows();
+        break;
+      case "heater_vfd":
+        heaterVfdRows();
+        break;
+      case "heater_utility":
+        heaterUtilityRows();
+        break;
+      case "heater_mechanical":
+        heaterMechanicalRows();
         break;
       case "cooler":
         heatRows("Cooler");
@@ -125,14 +219,86 @@ public class ProcessProbe {
       case "filter":
         filterRows();
         break;
+      case "filter_models":
+        filterModelRows();
+        break;
+      case "filter_loading":
+        filterLoadingRows();
+        break;
+      case "filter_dynamic":
+        filterDynamicRows();
+        break;
+      case "filter_mechanical_design":
+        filterMechanicalDesignRows();
+        break;
       case "compressor":
         isentropicRows("Compressor");
+        break;
+      case "compressor_polytropic":
+        compressorPolytropicRows();
+        break;
+      case "compressor_modes":
+        compressorModeRows();
+        break;
+      case "compressor_deposit":
+        compressorDepositRows();
+        break;
+      case "compressor_curve":
+        compressorCurveRows();
+        break;
+      case "compressor_speed_solve":
+        compressorSpeedSolveRows();
+        break;
+      case "equilibrium_sound_speed":
+        equilibriumSoundSpeedRows();
+        break;
+      case "hem_release":
+        hemReleaseRows();
+        break;
+      case "leak_blowdown":
+        leakBlowdownRows();
+        break;
+      case "expander_steps":
+        expanderStepRows();
+        break;
+      case "expander_chart":
+        expanderChartRows();
+        break;
+      case "turbo_expander":
+        turboExpanderRows();
+        break;
+      case "anti_surge":
+        antiSurgeRows();
+        break;
+      case "anti_surge_recycle":
+        antiSurgeRecycleRows();
+        break;
+      case "compressor_map_lookup":
+        compressorMapLookupRows();
+        break;
+      case "sound_speed":
+        soundSpeedRows();
+        break;
+      case "compressor_khader":
+        compressorKhaderRows();
+        break;
+      case "map_turbo_expander":
+        mapTurboExpanderRows();
         break;
       case "expander":
         isentropicRows("Expander");
         break;
+      case "expander_capacity":
+        expanderCapacityRows();
+        break;
+      case "expander_power_modes":
+        expanderPowerModeRows();
+        break;
       case "pipe":
         pipeRows();
+        break;
+      case "pipe_modes":
+        pipeModeRows();
         break;
       case "manifold":
         manifoldRows();
@@ -167,6 +333,15 @@ public class ProcessProbe {
       case "gibbs_steps":
         gibbsReactorSteps();
         break;
+      case "gibbs_algorithms":
+        gibbsAlgorithmRows();
+        break;
+      case "valve_sizing":
+        valveSizingRows();
+        break;
+      case "pump_curve":
+        pumpCurveRows();
+        break;
       case "flowsheet":
         flowsheetRows();
         break;
@@ -199,6 +374,9 @@ public class ProcessProbe {
         break;
       case "mechanical":
         mechanicalRows();
+        break;
+      case "reactor_mechanical":
+        reactorMechanicalRows();
         break;
       case "packed_column":
         packedColumnRows();
@@ -360,6 +538,662 @@ public class ProcessProbe {
     System.out.println();
   }
 
+  /// **`Heater`'s bounded outlet temperatures**, the two HARD constraints its limits create.
+  ///
+  /// The maximum is a plain `value / design`; the minimum is the inverse, `min / value`, and
+  /// the class's `isHardLimitExceeded` reads `maxValue` for the maximum constraint - which
+  /// `setMaxOutletTemperature` never sets - so only the minimum can trip it. The mechanical
+  /// design's duty and pressure-drop constraints are absent while `maxDesignDuty` and
+  /// `maxDesignPressureDrop` are zero.
+  static void heaterCapacity() {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    heaterCapacityRow("no_limits", names, z, 380.0, null, null);
+    heaterCapacityRow("max_above", names, z, 380.0, 400.0, null);
+    heaterCapacityRow("max_below", names, z, 380.0, 350.0, null);
+    heaterCapacityRow("min_below", names, z, 380.0, null, 300.0);
+    heaterCapacityRow("min_above", names, z, 380.0, null, 400.0);
+    heaterCapacityRow("both", names, z, 380.0, 400.0, 300.0);
+    heaterCapacityRow("min_zero", names, z, 380.0, null, 0.0);
+    heaterCapacityRow("min_capped", names, z, 380.0, null, 1.0e6);
+    heaterCapacityRow("duty_specified", names, z, null, 400.0, 300.0);
+  }
+
+  static void heaterCapacityRow(String label, String[] names, double[] z, Double outletK,
+      Double maxLimitK, Double minLimitK) {
+    Stream inlet = feed(names, z, 320.0, 30.0, 1.0);
+    neqsim.process.equipment.heatexchanger.Heater unit =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+    if (outletK != null) {
+      unit.setOutletTemperature(outletK);
+    } else {
+      unit.setDuty(5000.0);
+    }
+    if (maxLimitK != null) {
+      unit.setMaxOutletTemperature(maxLimitK);
+    }
+    if (minLimitK != null) {
+      unit.setMinOutletTemperature(minLimitK);
+    }
+    unit.run();
+
+    System.out.println("case=" + label);
+    print("inlet", inlet);
+    print("outlet", unit.getOutletStream());
+    System.out.println("duty_W=" + unit.getDuty());
+    System.out.println("outlet_temperature_k=" + unit.getOutletStream().getTemperature());
+    System.out.println("max_outlet_temperature_limit_k=" + unit.getMaxOutletTemperature());
+    System.out.println("min_outlet_temperature_limit_k=" + unit.getMinOutletTemperature());
+    System.out.println("has_max=" + unit.hasMaxOutletTemperatureLimit());
+    System.out.println("has_min=" + unit.hasMinOutletTemperatureLimit());
+
+    Map<String, neqsim.process.equipment.capacity.CapacityConstraint> constraints =
+        unit.getCapacityConstraints();
+    System.out.println("constraint_count=" + constraints.size());
+    for (Map.Entry<String, neqsim.process.equipment.capacity.CapacityConstraint> entry :
+        constraints.entrySet()) {
+      neqsim.process.equipment.capacity.CapacityConstraint constraint = entry.getValue();
+      String name = entry.getKey();
+      System.out.println("constraint_" + name + "_type=" + constraint.getType());
+      System.out.println("constraint_" + name + "_current=" + constraint.getCurrentValue());
+      System.out.println("constraint_" + name + "_design=" + constraint.getDesignValue());
+      System.out.println("constraint_" + name + "_min=" + constraint.getMinValue());
+      System.out.println("constraint_" + name + "_max=" + constraint.getMaxValue());
+      System.out.println("constraint_" + name + "_utilization=" + constraint.getUtilization());
+      System.out.println("constraint_" + name + "_violated=" + constraint.isViolated());
+      System.out.println(
+          "constraint_" + name + "_hard_exceeded=" + constraint.isHardLimitExceeded());
+    }
+    System.out.println("max_utilization=" + unit.getMaxUtilization());
+    System.out.println("capacity_exceeded=" + unit.isCapacityExceeded());
+    System.out.println("hard_limit_exceeded=" + unit.isHardLimitExceeded());
+    neqsim.process.equipment.capacity.CapacityConstraint bottleneck = unit
+        .getBottleneckConstraint();
+    System.out.println(
+        "bottleneck_constraint=" + (bottleneck == null ? "none" : bottleneck.getName()));
+    System.out.println();
+  }
+
+  /// `Heater`'s instrument design: the static list, its I/O counts and its three types.
+  ///
+  /// **The list is not physics.** A heater's design is eight instruments by default - process
+  /// inlet/outlet temperature and pressure, a differential pressure, two SIL trips and the
+  /// element's own temperature - and the only branch is the type. The estimated costs are USD
+  /// and are printed as evidence, not carried.
+  static void heaterInstrumentRows() {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    for (boolean safety : new boolean[] {true, false}) {
+      Stream inlet = feed(names, z, 320.0, 30.0, 1.0);
+      neqsim.process.equipment.heatexchanger.Heater heater =
+          new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+      heater.setOutletTemperature(340.0);
+      heater.run();
+      neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign design =
+          heater.getInstrumentDesign();
+      design.setIncludeSafetyInstruments(safety);
+      design.calcDesign();
+      System.out.println("include_safety=" + safety);
+      printInstrumentDesign(design);
+    }
+
+    for (neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign.HeatExchangerType type :
+        new neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign.HeatExchangerType[] {
+            neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign.HeatExchangerType.SHELL_AND_TUBE,
+            neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign.HeatExchangerType.AIR_COOLER,
+            neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign.HeatExchangerType.ELECTRIC_HEATER}) {
+      Stream inlet = feed(names, z, 320.0, 30.0, 1.0);
+      neqsim.process.equipment.heatexchanger.Heater heater =
+          new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+      heater.setOutletTemperature(340.0);
+      heater.run();
+      neqsim.process.instrumentdesign.heatexchanger.HeatExchangerInstrumentDesign design =
+          heater.getInstrumentDesign();
+      design.setHeatExchangerType(type);
+      design.calcDesign();
+      System.out.println("heat_exchanger_type=" + type.name());
+      printInstrumentDesign(design);
+    }
+  }
+
+  static void printInstrumentDesign(
+      neqsim.process.instrumentdesign.InstrumentDesign design) {
+    System.out.println("instrument_count=" + design.getInstrumentList().size());
+    System.out.println("analog_input_count=" + design.getInstrumentList().getAnalogInputCount());
+    System.out.println(
+        "analog_output_count=" + design.getInstrumentList().getAnalogOutputCount());
+    System.out.println(
+        "digital_input_count=" + design.getInstrumentList().getDigitalInputCount());
+    System.out.println(
+        "digital_output_count=" + design.getInstrumentList().getDigitalOutputCount());
+    System.out.println("total_io_count=" + design.getTotalIOCount());
+    System.out.println(
+        "safety_instrument_count=" + design.getInstrumentList().getSafetyInstrumentCount());
+    System.out.println("estimated_cost_usd=" + design.getEstimatedCostUSD());
+    System.out.println("hazardous_area_zone=" + design.getHazardousAreaZone());
+    System.out.println("protection_concept=" + design.getProtectionConcept());
+    System.out.println("instrument_standard=" + design.getInstrumentStandard());
+    System.out.println("include_safety_instruments=" + design.isIncludeSafetyInstruments());
+    System.out.println("default_sil_level=" + design.getDefaultSilLevel());
+    int index = 0;
+    for (neqsim.process.instrumentdesign.InstrumentSpecification instrument :
+        design.getInstrumentList().getAll()) {
+      System.out.println("instrument_" + index + "_tag=" + instrument.getTagNumber());
+      System.out.println("instrument_" + index + "_isa_symbol=" + instrument.getIsaSymbol());
+      System.out.println("instrument_" + index + "_service=" + instrument.getService());
+      System.out.println("instrument_" + index + "_range_min=" + instrument.getRangeMin());
+      System.out.println("instrument_" + index + "_range_max=" + instrument.getRangeMax());
+      System.out.println("instrument_" + index + "_range_unit=" + instrument.getRangeUnit());
+      System.out.println("instrument_" + index + "_io_type=" + instrument.getIoType());
+      System.out.println("instrument_" + index + "_sil_rating=" + instrument.getSilRating());
+      System.out.println(
+          "instrument_" + index + "_safety_related=" + instrument.isSafetyRelated());
+      System.out.println(
+          "instrument_" + index + "_device_class=" + instrument.getDeviceClassName());
+      System.out.println(
+          "instrument_" + index + "_estimated_cost_usd=" + instrument.getEstimatedCostUSD());
+      index++;
+    }
+    System.out.println();
+  }
+
+  /// `Heater`'s electrical design: the duty as shaft power, the motor table, and the type branches.
+  ///
+  /// **The electric heater's "motor" is the element bank.** `getProcessShaftPowerKW` returns the
+  /// duty in kW, the base class sizes a standard IEC motor on it, and the motor's tabulated
+  /// efficiency and power factor are what the electrical input and current come from. A
+  /// shell-and-tube heater has no motor: its shaft power is zero and only the auxiliary load is
+  /// left. The air-cooler branch sizes fan power at `max(2 x fans, 1% duty)`.
+  static void heaterElectricalRows() {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    for (double dutyKW : new double[] {5.0, 100.0, 500.0}) {
+      Stream inlet = feed(names, z, 320.0, 30.0, dutyKW <= 5.0 ? 1.0 : 100.0);
+      neqsim.process.equipment.heatexchanger.Heater heater =
+          new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+      heater.setDuty(dutyKW * 1000.0);
+      heater.run();
+      neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign design =
+          heater.getElectricalDesign();
+      design.calcDesign();
+      printHeaterElectrical("electric_" + (int) dutyKW + "kw", design);
+    }
+
+    Stream shellInlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater shell =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", shellInlet);
+    shell.setDuty(100_000.0);
+    shell.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign shellDesign =
+        shell.getElectricalDesign();
+    shellDesign.setHeatExchangerType(
+        neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign.HeatExchangerType.SHELL_AND_TUBE);
+    shellDesign.setCoolingWaterPumpKW(3.0);
+    shellDesign.calcDesign();
+    printHeaterElectrical("shell_and_tube_aux", shellDesign);
+
+    Stream airInlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater air =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", airInlet);
+    air.setDuty(100_000.0);
+    air.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign airDesign =
+        air.getElectricalDesign();
+    airDesign.setHeatExchangerType(
+        neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign.HeatExchangerType.AIR_COOLER);
+    airDesign.calcDesign();
+    printHeaterElectrical("air_cooler_fans", airDesign);
+
+    Stream ie4Inlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater ie4 =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", ie4Inlet);
+    ie4.setDuty(100_000.0);
+    ie4.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign ie4Design =
+        ie4.getElectricalDesign();
+    ie4Design.getMotor().setEfficiencyClass("IE4");
+    ie4Design.calcDesign();
+    printHeaterElectrical("ie4_100kw", ie4Design);
+
+    Stream polesInlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater poles =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", polesInlet);
+    poles.setDuty(100_000.0);
+    poles.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign polesDesign =
+        poles.getElectricalDesign();
+    polesDesign.getMotor().setPoles(2);
+    polesDesign.calcDesign();
+    printHeaterElectrical("two_pole_100kw", polesDesign);
+
+    Stream singleInlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater single =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", singleInlet);
+    single.setDuty(100_000.0);
+    single.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign singleDesign =
+        single.getElectricalDesign();
+    singleDesign.setPhases(1);
+    singleDesign.calcDesign();
+    printHeaterElectrical("single_phase_100kw", singleDesign);
+
+    Stream hzInlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater hz =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", hzInlet);
+    hz.setDuty(100_000.0);
+    hz.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign hzDesign =
+        hz.getElectricalDesign();
+    hzDesign.setFrequencyHz(60.0);
+    hzDesign.calcDesign();
+    printHeaterElectrical("sixty_hz_100kw", hzDesign);
+
+    for (double lengthM : new double[] {500.0, 2000.0}) {
+      Stream inlet = feed(names, z, 320.0, 30.0, 100.0);
+      neqsim.process.equipment.heatexchanger.Heater cable =
+          new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+      cable.setDuty(100_000.0);
+      cable.run();
+      neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign cableDesign =
+          cable.getElectricalDesign();
+      cableDesign.getPowerCable().setLengthM(lengthM);
+      cableDesign.calcDesign();
+      printHeaterElectrical("cable_" + (int) lengthM + "m", cableDesign);
+    }
+  }
+
+  /// `useVFD = true` on the heater's electrical design: the topology arms and their tables.
+  ///
+  /// The electric-heater voltage taps make the 2-level AFE arm (P > 250 kW at 3300 V or less)
+  /// unreachable from a heater, so that block is an air cooler sized to 300 kW of fan power at
+  /// 690 V. The rated current is the motor's, and `calcDesign` sets the motor's rated voltage
+  /// after it sizes the motor, so it is computed at the motor's own 400 V default.
+  static void heaterVfdRows() {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    double[] dutiesKW = new double[] {5.0, 100.0, 500.0, 2500.0};
+    for (double dutyKW : dutiesKW) {
+      double flow = dutyKW <= 5.0 ? 1.0 : (dutyKW >= 2500.0 ? 1000.0 : 100.0);
+      Stream inlet = feed(names, z, 320.0, 30.0, flow);
+      neqsim.process.equipment.heatexchanger.Heater heater =
+          new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+      heater.setDuty(dutyKW * 1000.0);
+      heater.run();
+      neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign design =
+          heater.getElectricalDesign();
+      design.setUseVFD(true);
+      design.calcDesign();
+      printHeaterElectrical("electric_" + (int) dutyKW + "kw_vfd", design);
+    }
+
+    Stream airInlet = feed(names, z, 320.0, 30.0, 10000.0);
+    neqsim.process.equipment.heatexchanger.Heater air =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", airInlet);
+    air.setDuty(30_000_000.0);
+    air.run();
+    neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign airDesign =
+        air.getElectricalDesign();
+    airDesign.setHeatExchangerType(
+        neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign.HeatExchangerType.AIR_COOLER);
+    airDesign.setUseVFD(true);
+    airDesign.calcDesign();
+    printHeaterElectrical("air_cooler_30mw_vfd", airDesign);
+  }
+
+  static void printHeaterElectrical(String label,
+      neqsim.process.electricaldesign.heatexchanger.HeatExchangerElectricalDesign design) {
+    System.out.println("label=" + label);
+    System.out.println("electrical_type=" + design.getHeatExchangerType().name());
+    System.out.println("shaft_power_kw=" + design.getShaftPowerKW());
+    System.out.println("electrical_input_kw=" + design.getElectricalInputKW());
+    System.out.println("apparent_power_kva=" + design.getApparentPowerKVA());
+    System.out.println("reactive_power_kvar=" + design.getReactivePowerKVAR());
+    System.out.println("power_factor=" + design.getPowerFactor());
+    System.out.println("rated_voltage_v=" + design.getRatedVoltageV());
+    System.out.println("frequency_hz=" + design.getFrequencyHz());
+    System.out.println("phases=" + design.getPhases());
+    System.out.println("full_load_current_a=" + design.getFullLoadCurrentA());
+    System.out.println("starting_current_a=" + design.getStartingCurrentA());
+    System.out.println("total_electrical_losses_kw=" + design.getTotalElectricalLossesKW());
+    System.out.println("motor_rated_power_kw=" + design.getMotor().getRatedPowerKW());
+    System.out.println("motor_efficiency_percent=" + design.getMotor().getEfficiencyPercent());
+    System.out.println("motor_power_factor_fl=" + design.getMotor().getPowerFactorFL());
+    System.out.println("motor_rated_speed_rpm=" + design.getMotor().getRatedSpeedRPM());
+    System.out.println("motor_poles=" + design.getMotor().getPoles());
+    System.out.println("motor_efficiency_class=" + design.getMotor().getEfficiencyClass());
+    System.out.println(
+        "motor_locked_rotor_multiplier=" + design.getMotor().getLockedRotorCurrentMultiplier());
+    System.out.println("motor_frame=" + design.getMotor().getFrameSize());
+    System.out.println("total_auxiliary_kw=" + design.getTotalAuxiliaryKW());
+    System.out.println("total_connected_load_kw=" + design.getTotalConnectedLoadKW());
+    System.out.println("cable_length_m=" + design.getPowerCable().getLengthM());
+    System.out.println("cable_cross_section_mm2=" + design.getPowerCable().getCrossSectionMM2());
+    System.out.println("cable_ampacity_a=" + design.getPowerCable().getAmpacityA());
+    System.out.println("cable_voltage_drop_percent="
+        + design.getPowerCable().getVoltageDropPercent());
+    System.out.println("cable_short_circuit_withstand_ka="
+        + design.getPowerCable().getShortCircuitWithstandKA());
+    System.out.println("switchgear_starter=" + design.getSwitchgear().getStarterType());
+    System.out.println("switchgear_type=" + design.getSwitchgear().getSwitchgearType());
+    System.out.println("switchgear_circuit_breaker_a="
+        + design.getSwitchgear().getCircuitBreakerRatingA());
+    System.out.println("switchgear_fuse_a=" + design.getSwitchgear().getFuseRatingA());
+    System.out.println("switchgear_rated_current_a=" + design.getSwitchgear().getRatedCurrentA());
+    System.out.println("switchgear_short_circuit_ka="
+        + design.getSwitchgear().getShortCircuitCurrentKA());
+    System.out.println("switchgear_weight_kg=" + design.getSwitchgear().getWeightKg());
+    if (design.isUseVFD() && design.getVfd() != null) {
+      neqsim.process.electricaldesign.components.VariableFrequencyDrive vfd = design.getVfd();
+      System.out.println("vfd_rated_power_kw=" + vfd.getRatedPowerKW());
+      System.out.println("vfd_rated_current_a=" + vfd.getRatedCurrentA());
+      System.out.println("vfd_input_voltage_v=" + vfd.getInputVoltageV());
+      System.out.println("vfd_topology=" + vfd.getTopologyType());
+      System.out.println("vfd_pulse_configuration=" + vfd.getPulseConfiguration());
+      System.out.println("vfd_efficiency_percent=" + vfd.getEfficiencyPercent());
+      System.out.println("vfd_input_power_factor=" + vfd.getInputPowerFactor());
+      System.out.println("vfd_thd_current_percent=" + vfd.getThdCurrentPercent());
+      System.out.println("vfd_has_active_rectifier=" + vfd.isHasActiveRectifier());
+      System.out.println("vfd_requires_input_filter=" + vfd.isRequiresInputFilter());
+      System.out.println("vfd_heat_dissipation_kw=" + vfd.getHeatDissipationKW());
+      System.out.println("vfd_cooling_method=" + vfd.getCoolingMethod());
+      System.out.println("vfd_weight_kg=" + vfd.getWeightKg());
+      System.out.println("vfd_enclosure_rating=" + vfd.getEnclosureRating());
+    }
+    System.out.println();
+  }
+
+  /// `Heater`'s utility specification: five optional values and their `has*` predicates.
+  ///
+  /// **No arithmetic.** The class stores a supply and a return temperature, an approach, a
+  /// heat-capacity rate and an overall heat-transfer coefficient, each `NaN` until set. The
+  /// temperatures and the approach are "specified" when not `NaN`; the two rates are specified
+  /// only when they are also positive.
+  static void heaterUtilityRows() {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    String[] labels = new String[] {
+        "default", "supply_450", "return_350", "approach_20", "heat_capacity_500",
+        "heat_capacity_0", "u_value_100", "u_value_negative"};
+    for (String label : labels) {
+      Stream inlet = feed(names, z, 320.0, 30.0, 1.0);
+      neqsim.process.equipment.heatexchanger.Heater heater =
+          new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+      heater.run();
+      neqsim.process.equipment.heatexchanger.UtilityStreamSpecification utility =
+          heater.getUtilitySpecification();
+      switch (label) {
+        case "supply_450":
+          utility.setSupplyTemperature(450.0);
+          break;
+        case "return_350":
+          utility.setReturnTemperature(350.0);
+          break;
+        case "approach_20":
+          utility.setApproachTemperature(20.0);
+          break;
+        case "heat_capacity_500":
+          utility.setHeatCapacityRate(500.0);
+          break;
+        case "heat_capacity_0":
+          utility.setHeatCapacityRate(0.0);
+          break;
+        case "u_value_100":
+          utility.setOverallHeatTransferCoefficient(100.0);
+          break;
+        case "u_value_negative":
+          utility.setOverallHeatTransferCoefficient(-1.0);
+          break;
+        default:
+          break;
+      }
+      System.out.println("case=" + label);
+      System.out.println("supply_temperature_k=" + utility.getSupplyTemperature());
+      System.out.println("return_temperature_k=" + utility.getReturnTemperature());
+      System.out.println("approach_temperature_k=" + utility.getApproachTemperature());
+      System.out.println("heat_capacity_rate_w_per_k=" + utility.getHeatCapacityRate());
+      System.out.println("overall_heat_transfer_coefficient="
+          + utility.getOverallHeatTransferCoefficient());
+      System.out.println("has_supply_temperature=" + utility.hasSupplyTemperature());
+      System.out.println("has_return_temperature=" + utility.hasReturnTemperature());
+      System.out.println("has_approach_temperature=" + utility.hasApproachTemperature());
+      System.out.println("has_heat_capacity_rate=" + utility.hasHeatCapacityRate());
+      System.out.println("has_overall_heat_transfer_coefficient="
+          + utility.hasOverallHeatTransferCoefficient());
+      System.out.println();
+    }
+  }
+
+  /// `HeatExchangerMechanicalDesign`'s single-stream thermal estimate.
+  ///
+  /// The heater path: the utility specification's supply and return temperatures and the
+  /// process temperatures give an LMTD and an approach; UA is duty/LMTD; the five candidate
+  /// types turn that into a required area with their own allowable approach and typical U. The
+  /// detailed calculator and the two-stream exchanger branch are separate.
+  static void heaterMechanicalRows() {
+    heaterMechanicalRow("no_utility", 100_000.0, false, null, null, null, null, null);
+    heaterMechanicalRow("supply_450", 100_000.0, true, 450.0, null, null, null, null);
+    heaterMechanicalRow("supply_and_capacity", 100_000.0, true, 450.0, 5000.0, null, null, null);
+    heaterMechanicalRow("supply_and_u", 100_000.0, true, 450.0, null, 300.0, null, null);
+    heaterMechanicalRow("approach_and_capacity", 100_000.0, true, null, 6000.0, null, 20.0, null);
+    heaterMechanicalRow("manual_plate", 100_000.0, true, 450.0, null, null, null,
+        neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerType.PLATE_AND_FRAME);
+    heaterMechanicalRow("cooling", -100_000.0, true, 250.0, null, null, null, null);
+  }
+
+  static void heaterMechanicalRow(String label, double dutyW, boolean utility, Double supplyK,
+      Double capacityWK, Double uValue, Double approachK,
+      neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerType manual) {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    Stream inlet = feed(names, z, 320.0, 30.0, 100.0);
+    neqsim.process.equipment.heatexchanger.Heater heater =
+        new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+    heater.setDuty(dutyW);
+    if (utility) {
+      neqsim.process.equipment.heatexchanger.UtilityStreamSpecification spec =
+          heater.getUtilitySpecification();
+      if (supplyK != null) {
+        spec.setSupplyTemperature(supplyK);
+      }
+      if (capacityWK != null) {
+        spec.setHeatCapacityRate(capacityWK);
+      }
+      if (uValue != null) {
+        spec.setOverallHeatTransferCoefficient(uValue);
+      }
+      if (approachK != null) {
+        spec.setApproachTemperature(approachK);
+      }
+    }
+    heater.run();
+    neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerMechanicalDesign design =
+        heater.getMechanicalDesign();
+    if (manual != null) {
+      design.setManualSelection(manual);
+    }
+    design.calcDesign();
+
+    System.out.println("case=" + label);
+    System.out.println("duty_w=" + dutyW);
+    System.out.println("process_in_k=" + inlet.getTemperature("K"));
+    System.out.println("process_out_k=" + heater.getOutletStream().getTemperature("K"));
+    System.out.println("utility_supply_k="
+        + heater.getUtilitySpecification().getSupplyTemperature());
+    System.out.println("utility_return_k="
+        + heater.getUtilitySpecification().getReturnTemperature());
+    System.out.println("log_mean_temperature_difference_k="
+        + design.getLogMeanTemperatureDifference());
+    System.out.println("approach_temperature_k=" + design.getApproachTemperature());
+    System.out.println("used_u_w_per_m2k=" + design.getUsedOverallHeatTransferCoefficient());
+    System.out.println("calculated_ua_w_per_k=" + design.getCalculatedUA());
+    for (neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerSizingResult result :
+        design.getSizingResults()) {
+      String type = result.getType().name().toLowerCase(java.util.Locale.ROOT);
+      System.out.println("type_" + type + "_required_area_m2=" + result.getRequiredArea());
+      System.out.println("type_" + type + "_required_ua_w_per_k=" + result.getRequiredUA());
+      System.out.println("type_" + type + "_u_w_per_m2k="
+          + result.getOverallHeatTransferCoefficient());
+      System.out.println("type_" + type + "_approach_k=" + result.getApproachTemperature());
+      System.out.println("type_" + type + "_inner_diameter_m=" + result.getInnerDiameter());
+      System.out.println("type_" + type + "_outer_diameter_m=" + result.getOuterDiameter());
+      System.out.println("type_" + type + "_wall_thickness_m=" + result.getWallThickness());
+      System.out.println("type_" + type + "_length_m=" + result.getEstimatedLength());
+      System.out.println("type_" + type + "_tube_count=" + result.getTubeCount());
+      System.out.println("type_" + type + "_tube_passes=" + result.getTubePasses());
+      System.out.println("type_" + type + "_fin_surface_area_m2=" + result.getFinSurfaceArea());
+      System.out.println("type_" + type + "_estimated_pressure_drop="
+          + result.getEstimatedPressureDrop());
+      System.out.println("type_" + type + "_estimated_weight_kg=" + result.getEstimatedWeight());
+      System.out.println("type_" + type + "_module_length_m=" + result.getModuleLength());
+      System.out.println("type_" + type + "_module_width_m=" + result.getModuleWidth());
+      System.out.println("type_" + type + "_module_height_m=" + result.getModuleHeight());
+    }
+    neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerSizingResult selected =
+        design.getSelectedSizingResult();
+    System.out.println("selected_type="
+        + (selected == null ? "none" : selected.getType().name().toLowerCase(java.util.Locale.ROOT)));
+    System.out.println("selected_area_m2="
+        + (selected == null ? "none" : selected.getRequiredArea()));
+    System.out.println();
+  }
+
+  /// `HeatExchangerMechanicalDesign.calcDesign`'s two-stream branch.
+  ///
+  /// **The branch is selected by the equipment, not by an input**: `calcDesign` asks
+  /// `instanceof HeatExchanger` first, so a two-stream exchanger takes it and a `Heater`
+  /// takes the single-stream one. The temperatures are the exchanger's own four stream
+  /// temperatures, ordered by their mean; the UA the estimate starts from is
+  /// `getUAvalue()`; and the sizing coefficient is the **type's typical** U rather than the
+  /// larger of the type's and a used U - the flag the heater branch calls with `false`.
+  ///
+  /// **Three things the rows are here to settle.** `calcDesign` resets
+  /// `usedOverallHeatTransferCoefficient` to the class's 500 and the two-stream handler
+  /// never touches it, so the printed used U is 500 even when the exchanger's UA is 100.
+  /// The effectiveness-derived UA branch (`cmin * -ln(1 - effectiveness)`) only replaces
+  /// the starting UA when it is **larger**, which the rating that produced it makes
+  /// impossible; a pinned or delta-T run leaves the effectiveness field at zero, so the
+  /// branch is skipped there. And the pinned rows read the exchanger's `UAvalue` - the
+  /// stated one, or the class's 500 default when none was stated - even though `run`
+  /// itself never reads it in that mode.
+  static void heatExchangerMechanicalRows() {
+    hxMechanicalRow("rating_ua_100", 100.0, true, null, null, null, false);
+    hxMechanicalRow("rating_ua_300", 300.0, true, null, null, null, false);
+    // Near-saturated: the effectiveness is above 0.999 and the approach is 8.5e-5 K, so this
+    // row is evidence for the arm's skip rather than a case.
+    hxMechanicalRow("rating_ua_1000", 1000.0, true, null, null, null, false);
+    // The manual pick is not the area winner here: plate-and-frame is.
+    hxMechanicalRow("manual_shell_and_tube", 100.0, true, "SHELL_AND_TUBE", null, null, false);
+    hxMechanicalRow("min_weight", 100.0, true, null, "MIN_WEIGHT", null, false);
+    hxMechanicalRow("min_pressure_drop", 100.0, true, null, "MIN_PRESSURE_DROP", null, false);
+    // A pinned hot outlet: `run` never recomputes `UAvalue`, so the estimate reads the
+    // class's 500 default when the caller stated none.
+    hxMechanicalRow("pinned_hot_outlet_default_ua", 0.0, false, null, null, 350.0, false);
+    hxMechanicalRow("pinned_hot_outlet_stated_ua", 200.0, true, null, null, 350.0, false);
+    // The delta-T closure writes `UAvalue = duty / (T_out,set - T_in,set)` and leaves
+    // `thermalEffectiveness` at zero; this row is what the estimate reads there. The
+    // equal-capacity fluids keep the closure's state non-degenerate.
+    hxMechanicalRow("delta_t", 0.0, false, null, null, null, true);
+  }
+
+  static void hxMechanicalRow(String label, double ua, boolean setUa, String manual,
+      String criterion, Double pinnedK, boolean equalCapacity) {
+    Stream hot;
+    Stream cold;
+    if (equalCapacity) {
+      hot = feed(new String[] {"methane", "n-butane"}, new double[] {0.5, 0.5}, 400.0, 20.0, 1.0);
+      cold = feed(new String[] {"methane", "n-butane"}, new double[] {0.5, 0.5}, 300.0, 20.0, 1.0);
+    } else {
+      hot = feed(new String[] {"methane", "n-butane"}, new double[] {0.8, 0.2}, 400.0, 20.0, 1.0);
+      cold = feed(new String[] {"n-butane", "n-pentane"}, new double[] {0.5, 0.5}, 300.0, 5.0,
+          1.0);
+    }
+    hot.setName("hot");
+    cold.setName("cold");
+
+    neqsim.process.equipment.heatexchanger.HeatExchanger hx =
+        new neqsim.process.equipment.heatexchanger.HeatExchanger("hx1", hot, cold);
+    if (setUa) {
+      hx.setUAvalue(ua);
+    }
+    if (pinnedK != null) {
+      // **The reference state, not `runSpecifiedStream`'s.** That method clones an
+      // already-flashed fluid and lands its enthalpy elsewhere, so the port's own pinned solve
+      // reaches the fresh-fluid state instead - and this block hands the class exactly the two
+      // outlets the port carries: the pin, and the other side at the duty's enthalpy.
+      Stream pinned = feed(new String[] {"methane", "n-butane"}, new double[] {0.8, 0.2}, pinnedK,
+          20.0, 1.0);
+      double hotSwing = duty(hot, pinned);
+      SystemInterface coldIn = cold.getThermoSystem();
+      SystemInterface coldOut = phFlash(new String[] {"n-butane", "n-pentane"},
+          new double[] {0.5, 0.5}, 300.0, 5.0, 1.0,
+          coldIn.getEnthalpy() / coldIn.getTotalNumberOfMoles() - hotSwing);
+      hx.getOutStream(0).setThermoSystem(pinned.getThermoSystem());
+      hx.getOutStream(1).setThermoSystem(coldOut);
+    } else {
+      if ("delta_t".equals(label)) {
+        hx.setDeltaT(1.0);
+      }
+      hx.run();
+    }
+
+    hx.initMechanicalDesign();
+    neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerMechanicalDesign design =
+        hx.getMechanicalDesign();
+    if (manual != null) {
+      design.setManualSelection(
+          neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerType.valueOf(manual));
+    }
+    if (criterion != null) {
+      design.setSelectionCriterion(
+          neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerMechanicalDesign.SelectionCriterion
+              .valueOf(criterion));
+    }
+    design.calcDesign();
+
+    System.out.println("case=" + label);
+    System.out.println("duty_w=" + Math.abs(hx.getDuty()));
+    System.out.println("hot_in_k=" + hx.getInTemperature(0));
+    System.out.println("hot_out_k=" + hx.getOutTemperature(0));
+    System.out.println("cold_in_k=" + hx.getInTemperature(1));
+    System.out.println("cold_out_k=" + hx.getOutTemperature(1));
+    System.out.println("ua_value_w_per_k=" + hx.getUAvalue());
+    System.out.println("thermal_effectiveness=" + hx.getThermalEffectiveness());
+    System.out.println("log_mean_temperature_difference_k="
+        + design.getLogMeanTemperatureDifference());
+    System.out.println("approach_temperature_k=" + design.getApproachTemperature());
+    System.out.println("used_u_w_per_m2k=" + design.getUsedOverallHeatTransferCoefficient());
+    System.out.println("calculated_ua_w_per_k=" + design.getCalculatedUA());
+    for (neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerSizingResult result :
+        design.getSizingResults()) {
+      String type = result.getType().name().toLowerCase(java.util.Locale.ROOT);
+      System.out.println("type_" + type + "_required_area_m2=" + result.getRequiredArea());
+      System.out.println("type_" + type + "_required_ua_w_per_k=" + result.getRequiredUA());
+      System.out.println("type_" + type + "_u_w_per_m2k="
+          + result.getOverallHeatTransferCoefficient());
+      System.out.println("type_" + type + "_approach_k=" + result.getApproachTemperature());
+      System.out.println("type_" + type + "_inner_diameter_m=" + result.getInnerDiameter());
+      System.out.println("type_" + type + "_outer_diameter_m=" + result.getOuterDiameter());
+      System.out.println("type_" + type + "_wall_thickness_m=" + result.getWallThickness());
+      System.out.println("type_" + type + "_length_m=" + result.getEstimatedLength());
+      System.out.println("type_" + type + "_tube_count=" + result.getTubeCount());
+      System.out.println("type_" + type + "_tube_passes=" + result.getTubePasses());
+      System.out.println("type_" + type + "_fin_surface_area_m2=" + result.getFinSurfaceArea());
+      System.out.println("type_" + type + "_estimated_pressure_drop="
+          + result.getEstimatedPressureDrop());
+      System.out.println("type_" + type + "_estimated_weight_kg=" + result.getEstimatedWeight());
+      System.out.println("type_" + type + "_module_length_m=" + result.getModuleLength());
+      System.out.println("type_" + type + "_module_width_m=" + result.getModuleWidth());
+      System.out.println("type_" + type + "_module_height_m=" + result.getModuleHeight());
+    }
+    neqsim.process.mechanicaldesign.heatexchanger.HeatExchangerSizingResult selected =
+        design.getSelectedSizingResult();
+    System.out.println("selected_type="
+        + (selected == null ? "none" : selected.getType().name().toLowerCase(java.util.Locale.ROOT)));
+    System.out.println("selected_area_m2="
+        + (selected == null ? "none" : selected.getRequiredArea()));
+    System.out.println();
+  }
+
   /// `Filter`, whose steady state is a pressure drop and a flash - and two things the class
   /// does that a kernel written from its name would not.
   ///
@@ -402,6 +1236,1934 @@ public class ProcessProbe {
     System.out.println();
   }
 
+  /// `FilterPressureDropModel`'s four branches and the particle-capture update.
+  ///
+  /// **The rows are `FilterTest`'s states re-cased on PR methane**, because the port's fluid is
+  /// PR. The drop models are fluid-free except the Ergun branch, which reads the density and
+  /// viscosity the class's system reports; those are printed and the port takes the viscosity
+  /// as an input, because azoth's viscosity dispatch is its own calculation.
+  static void filterModelRows() {
+    neqsim.process.equipment.filter.Filter fixed = new neqsim.process.equipment.filter.Filter(
+        "fixed", filterPrFeed(1000.0));
+    fixed.setDeltaP(0.10);
+    fixed.run();
+    printFilterRow("fixed_methane_1000_kg_per_hr", fixed.getInletStream(), fixed);
+
+    for (double kgPerHour : new double[] {1000.0, 2000.0}) {
+      Stream inlet = filterPrFeed(kgPerHour);
+      neqsim.process.equipment.filter.Filter filter =
+          new neqsim.process.equipment.filter.Filter("flow scaled", inlet);
+      filter.setFilterServiceType(neqsim.process.equipment.filter.FilterType.Y_STRAINER);
+      filter.setDeltaP(0.10);
+      filter.setReferenceFlowRate(flowM3Hr(filterPrFeed(1000.0)));
+      filter.run();
+      printFilterRow("flow_scaled_methane_" + (int) kgPerHour + "_kg_per_hr",
+          filter.getInletStream(), filter);
+    }
+
+    Stream tabulatedInlet = filterPrFeed(1000.0);
+    double tabulatedFlow = flowM3Hr(tabulatedInlet);
+    neqsim.process.equipment.filter.FilterPressureDropCurve curve =
+        new neqsim.process.equipment.filter.FilterPressureDropCurve(
+            new double[] {0.5 * tabulatedFlow, 1.5 * tabulatedFlow}, new double[] {0.10, 0.50});
+    curve.setTestStandard("ISO 3968:2017");
+    neqsim.process.equipment.filter.Filter tabulated =
+        new neqsim.process.equipment.filter.Filter("tested cartridge", tabulatedInlet);
+    tabulated.setPressureDropCurve(curve);
+    tabulated.run();
+    printFilterRow("tabulated_methane_1000_kg_per_hr", tabulated.getInletStream(), tabulated);
+
+    for (double kgPerHour : new double[] {1000.0, 2000.0}) {
+      Stream inlet = filterPrFeed(kgPerHour);
+      neqsim.process.equipment.filter.Filter filter =
+          new neqsim.process.equipment.filter.Filter("granular guard bed", inlet);
+      filter.setFilterServiceType(neqsim.process.equipment.filter.FilterType.GRANULAR_MEDIA);
+      filter.setMediaGeometry(1.0, 1.5, 0.002, 0.40);
+      filter.run();
+      printFilterRow("ergun_methane_" + (int) kgPerHour + "_kg_per_hr",
+          filter.getInletStream(), filter);
+    }
+
+    Stream captureInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.FilterPerformanceCurve performance =
+        new neqsim.process.equipment.filter.FilterPerformanceCurve(
+            new double[] {5.0, 10.0, 20.0}, new double[] {2.0, 100.0, 1000.0});
+    performance.setTestStandard("ISO 16889:2022");
+    neqsim.process.equipment.filter.Filter capture =
+        new neqsim.process.equipment.filter.Filter("beta rated filter", captureInlet);
+    capture.setPerformanceCurve(performance);
+    capture.setParticleSize(10.0);
+    capture.setInletParticleConcentration(100.0);
+    capture.run();
+    System.out.println("capture_beta_ratio_methane_1000_kg_per_hr");
+    System.out.println("inlet_m3_per_hr=" + flowM3Hr(captureInlet));
+    System.out.println("inlet_density_kg_per_m3="
+        + captureInlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("inlet_viscosity_pa_s="
+        + captureInlet.getThermoSystem().getViscosity("kg/msec"));
+    System.out.println("particle_size_micrometre=" + capture.getParticleSize());
+    System.out.println("inlet_particle_concentration_mg_per_kg="
+        + capture.getInletParticleConcentration());
+    System.out.println("nominal_removal_efficiency=" + capture.getNominalRemovalEfficiency());
+    System.out.println("outlet_particle_concentration_mg_per_kg="
+        + capture.getOutletParticleConcentration());
+    System.out.println("captured_rate_kg_per_hr=" + capture.getCalculatedCapturedRate());
+    print("inlet", captureInlet);
+    print("outlet", capture.getOutletStream());
+    System.out.println();
+  }
+
+  /// `Filter`'s steady loaded state: `run()` reading the carried loading, with no time step.
+  ///
+  /// **The blocks are `FilterTest`'s scenarios re-cased on PR methane**, as `filterModelRows`'
+  /// are, because the port's fluid is PR. The loaded block is the test's pre-step state, the
+  /// bypass block is `testBypassLimitsPressureDropAndReducesCapture`, and the replacement blocks
+  /// reach the two branches of `isReplacementRequired`. The last block is evidence and is not
+  /// cased: the clean drop exceeds the inlet, so `run` clamps the bypass-limited drop to the
+  /// inlet ceiling and no cubic flash the port carries survives there.
+  static void filterLoadingRows() {
+    Stream loadedInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter loaded =
+        new neqsim.process.equipment.filter.Filter("loaded", loadedInlet);
+    loaded.setDeltaP(0.2);
+    loaded.setLoadingCapacity(10.0);
+    loaded.setPressureDropIncreaseAtCapacity(1.0);
+    loaded.setBreakthroughStartFraction(0.5);
+    loaded.setSolidsLoading(9.0);
+    loaded.run();
+    printFilterLoading("loaded_run", loadedInlet, loaded);
+
+    Stream bypassInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter bypass =
+        new neqsim.process.equipment.filter.Filter("bypass", bypassInlet);
+    bypass.setDeltaP(0.2);
+    bypass.setNominalRemovalEfficiency(0.99);
+    bypass.setInletParticleConcentration(100.0);
+    bypass.setLoadingCapacity(10.0);
+    bypass.setPressureDropIncreaseAtCapacity(3.6);
+    bypass.setSolidsLoading(5.0);
+    bypass.setBypassCrackingDeltaP(0.5);
+    bypass.run();
+    printFilterLoading("bypass_run", bypassInlet, bypass);
+
+    Stream disabledInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter disabled =
+        new neqsim.process.equipment.filter.Filter("disabled", disabledInlet);
+    disabled.setDeltaP(0.2);
+    disabled.setPressureDropIncreaseAtCapacity(1.0);
+    disabled.setBreakthroughStartFraction(0.5);
+    disabled.setSolidsLoading(9.0);
+    disabled.setLoadingCapacity(0.0);
+    disabled.run();
+    printFilterLoading("capacity_disabled", disabledInlet, disabled);
+
+    Stream terminalInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter terminal =
+        new neqsim.process.equipment.filter.Filter("terminal", terminalInlet);
+    terminal.setDeltaP(0.2);
+    terminal.setLoadingCapacity(10.0);
+    terminal.setPressureDropIncreaseAtCapacity(3.6);
+    terminal.setSolidsLoading(5.0);
+    terminal.setBypassCrackingDeltaP(0.5);
+    terminal.setTerminalDeltaP(0.5);
+    terminal.run();
+    printFilterLoading("terminal_drop", terminalInlet, terminal);
+
+    Stream overInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter over =
+        new neqsim.process.equipment.filter.Filter("over", overInlet);
+    over.setDeltaP(0.2);
+    over.setLoadingCapacity(10.0);
+    over.setPressureDropIncreaseAtCapacity(1.0);
+    over.setBreakthroughStartFraction(0.5);
+    over.setSolidsLoading(11.0);
+    over.run();
+    printFilterLoading("loading_beyond_capacity", overInlet, over);
+
+    Stream boundaryInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter boundary =
+        new neqsim.process.equipment.filter.Filter("boundary", boundaryInlet);
+    boundary.setDeltaP(0.2);
+    boundary.setLoadingCapacity(10.0);
+    boundary.setPressureDropIncreaseAtCapacity(1.0);
+    boundary.setBreakthroughStartFraction(0.5);
+    boundary.setSolidsLoading(5.0);
+    boundary.run();
+    printFilterLoading("breakthrough_boundary", boundaryInlet, boundary);
+
+    Stream clampInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter clamp =
+        new neqsim.process.equipment.filter.Filter("clamp", clampInlet);
+    clamp.setDeltaP(26.0);
+    clamp.setBypassCrackingDeltaP(25.0);
+    clamp.run();
+    printFilterLoading("clamp_after_bypass_uncased", clampInlet, clamp);
+  }
+
+  static void printFilterLoading(String label, StreamInterface inlet,
+      neqsim.process.equipment.filter.Filter filter) {
+    System.out.println(label);
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("clean_deltaP_pa=" + filter.getCalculatedCleanDeltaP() * 1.0e5);
+    System.out.println("unrestricted_deltaP_pa=" + filter.getUnrestrictedDeltaP() * 1.0e5);
+    System.out.println("applied_deltaP_pa=" + filter.getDeltaP() * 1.0e5);
+    System.out.println("bypass_enabled=" + filter.isBypassEnabled());
+    System.out.println("bypass_fraction=" + filter.getBypassFraction());
+    System.out.println("loading_fraction=" + filter.getLoadingFraction());
+    System.out.println("breakthrough_fraction=" + filter.getBreakthroughFraction());
+    System.out.println("current_removal_efficiency=" + filter.getCurrentRemovalEfficiency());
+    System.out.println("nominal_removal_efficiency=" + filter.getNominalRemovalEfficiency());
+    System.out.println("solids_loading_kg=" + filter.getSolidsLoading());
+    System.out.println("differential_pressure_utilization="
+        + filter.getDifferentialPressureUtilization());
+    System.out.println("replacement_required=" + filter.isReplacementRequired());
+    System.out.println("outlet_particle_concentration_mg_per_kg="
+        + filter.getOutletParticleConcentration());
+    System.out.println("captured_rate_kg_per_hr=" + filter.getCalculatedCapturedRate());
+    System.out.println("holdup_residence_time_s=" + filter.getHoldupResidenceTime());
+    print("inlet", inlet);
+    print("outlet", filter.getOutletStream());
+    System.out.println();
+  }
+
+  /// `Filter.runTransient`'s `calculateSteadyState=false` branch, one step at a time.
+  ///
+  /// **The accretion uses the pre-step efficiency and the closing `run` reports the post-step
+  /// one**, so each block prints the state before and after its step. The fourth block pins
+  /// that sequencing with a concentration model whose breakthrough is live before the step; the
+  /// fifth adds a bypass, whose pre-step fraction is in the accretion's efficiency too. The last
+  /// block is evidence and is not cased: a zero-flow feed makes the residence time `+Infinity`,
+  /// which the port publishes as absent.
+  static void filterDynamicRows() {
+    Stream firstInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter first =
+        new neqsim.process.equipment.filter.Filter("first", firstInlet);
+    first.setDeltaP(0.1);
+    first.setHoldupVolume(1.0);
+    first.setSolidsLoadingRate(5.0);
+    first.setLoadingCapacity(10.0);
+    first.setPressureDropIncreaseAtCapacity(1.0);
+    first.setBreakthroughStartFraction(0.5);
+    first.setCalculateSteadyState(false);
+    printFilterLoading("dynamic_before_step", firstInlet, first);
+    first.runTransient(3600.0, java.util.UUID.randomUUID());
+    printFilterLoading("dynamic_first_step_3600", firstInlet, first);
+    first.runTransient(1800.0, java.util.UUID.randomUUID());
+    printFilterLoading("dynamic_second_step_1800", firstInlet, first);
+
+    Stream regenInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter regen =
+        new neqsim.process.equipment.filter.Filter("regen", regenInlet);
+    regen.setDeltaP(0.2);
+    regen.setSolidsLoading(9.0);
+    regen.setLoadingCapacity(10.0);
+    regen.setPressureDropIncreaseAtCapacity(1.0);
+    regen.setBreakthroughStartFraction(0.5);
+    regen.setSolidsLoadingRate(0.0);
+    regen.setBackwashRemovalRate(4.0);
+    regen.setRegenerationRemovalRate(2.0);
+    regen.setCalculateSteadyState(false);
+    printFilterLoading("backwash_before_step", regenInlet, regen);
+    regen.startBackwash();
+    regen.startRegeneration();
+    regen.runTransient(1800.0, java.util.UUID.randomUUID());
+    printFilterLoading("backwash_after_step", regenInlet, regen);
+
+    Stream concentrationInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter concentration =
+        new neqsim.process.equipment.filter.Filter("concentration", concentrationInlet);
+    concentration.setDeltaP(0.1);
+    concentration.setNominalRemovalEfficiency(0.99);
+    concentration.setInletParticleConcentration(100.0);
+    concentration.setSolidsLoading(7.9);
+    concentration.setLoadingCapacity(10.0);
+    concentration.setPressureDropIncreaseAtCapacity(1.0);
+    concentration.setBreakthroughStartFraction(0.5);
+    concentration.setCalculateSteadyState(false);
+    printFilterLoading("concentration_before_step", concentrationInlet, concentration);
+    concentration.runTransient(28800.0, java.util.UUID.randomUUID());
+    printFilterLoading("concentration_after_8h", concentrationInlet, concentration);
+
+    Stream bypassInlet = filterPrFeed(1000.0);
+    neqsim.process.equipment.filter.Filter bypass =
+        new neqsim.process.equipment.filter.Filter("bypass dynamic", bypassInlet);
+    bypass.setDeltaP(0.2);
+    bypass.setNominalRemovalEfficiency(0.99);
+    bypass.setInletParticleConcentration(100.0);
+    bypass.setSolidsLoading(5.0);
+    bypass.setLoadingCapacity(10.0);
+    bypass.setPressureDropIncreaseAtCapacity(3.6);
+    bypass.setBypassCrackingDeltaP(0.5);
+    bypass.setCalculateSteadyState(false);
+    printFilterLoading("dynamic_bypass_before_step", bypassInlet, bypass);
+    bypass.runTransient(3600.0, java.util.UUID.randomUUID());
+    printFilterLoading("dynamic_bypass_after_step", bypassInlet, bypass);
+
+    Stream zeroInlet = filterPrFeed(0.0);
+    neqsim.process.equipment.filter.Filter zero =
+        new neqsim.process.equipment.filter.Filter("zero", zeroInlet);
+    zero.setDeltaP(0.1);
+    zero.setHoldupVolume(1.0);
+    zero.setSolidsLoadingRate(1.0);
+    zero.setLoadingCapacity(10.0);
+    zero.setCalculateSteadyState(false);
+    zero.runTransient(3600.0, java.util.UUID.randomUUID());
+    printFilterLoading("zero_flow_residence_uncased", zeroInlet, zero);
+  }
+
+  /// `FilterMechanicalDesign.calcDesign`: the element count, vessel, pressure boundary and weights.
+  ///
+  /// **The blocks re-case `FilterMechanicalDesignTest` on PR methane**, because the port's fluid
+  /// is PR and the design reads the inlet's volumetric flow and density. The overrides block states
+  /// every settable margin; the long-bed block exists to make the L/D maximum bind rather than the
+  /// minimum; the liquid block crosses the nozzle velocity's density switch at `200` kg/m3.
+  static void filterMechanicalDesignRows() {
+    Stream coalescerInlet = filterDesignFeed(10000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter coalescer =
+        new neqsim.process.equipment.filter.Filter("coalescer", coalescerInlet);
+    coalescer.setFilterServiceType(neqsim.process.equipment.filter.FilterType.COALESCER);
+    coalescer.setDeltaP(0.15);
+    coalescer.setTerminalDeltaP(1.0);
+    coalescer.setElementCollapsePressure(5.0);
+    coalescer.setElementIntegrityVerified(true);
+    neqsim.process.equipment.filter.FilterPerformanceCurve performance =
+        new neqsim.process.equipment.filter.FilterPerformanceCurve(
+            new double[] {1.0, 3.0, 10.0}, new double[] {10.0, 1000.0, 10000.0});
+    coalescer.setPerformanceCurve(performance);
+    coalescer.run();
+    coalescer.getMechanicalDesign().calcDesign();
+    printFilterDesign("coalescer_default", coalescerInlet, coalescer,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) coalescer
+            .getMechanicalDesign());
+
+    Stream basketInlet = filterDesignFeed(10000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter basket =
+        new neqsim.process.equipment.filter.Filter("basket", basketInlet);
+    basket.setFilterServiceType(neqsim.process.equipment.filter.FilterType.BASKET_STRAINER);
+    basket.setDeltaP(2.0);
+    basket.setTerminalDeltaP(1.0);
+    basket.setElementCollapsePressure(1.5);
+    basket.run();
+    basket.getMechanicalDesign().calcDesign();
+    printFilterDesign("basket_strainer_warnings", basketInlet, basket,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) basket
+            .getMechanicalDesign());
+
+    Stream carbonInlet = filterDesignFeed(10000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter carbon =
+        new neqsim.process.equipment.filter.Filter("carbon", carbonInlet);
+    carbon.setFilterServiceType(neqsim.process.equipment.filter.FilterType.ACTIVATED_CARBON);
+    carbon.setElementIntegrityVerified(true);
+    carbon.setNominalRemovalEfficiency(0.9);
+    carbon.run();
+    carbon.getMechanicalDesign().calcDesign();
+    printFilterDesign("activated_carbon_granular", carbonInlet, carbon,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) carbon
+            .getMechanicalDesign());
+
+    Stream highInlet = filterDesignFeed(50000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter high =
+        new neqsim.process.equipment.filter.Filter("high", highInlet);
+    high.setDeltaP(0.1);
+    high.setElementIntegrityVerified(true);
+    high.run();
+    high.getMechanicalDesign().calcDesign();
+    printFilterDesign("cartridge_high_flow", highInlet, high,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) high
+            .getMechanicalDesign());
+
+    Stream lowInlet = filterDesignFeed(1000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter low =
+        new neqsim.process.equipment.filter.Filter("low", lowInlet);
+    low.setFilterServiceType(neqsim.process.equipment.filter.FilterType.Y_STRAINER);
+    low.setElementIntegrityVerified(true);
+    low.run();
+    low.getMechanicalDesign().calcDesign();
+    printFilterDesign("y_strainer_low_flow", lowInlet, low,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) low
+            .getMechanicalDesign());
+
+    Stream twoInlet = filterDesignFeed(1000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter two =
+        new neqsim.process.equipment.filter.Filter("two", twoInlet);
+    two.setFilterServiceType(neqsim.process.equipment.filter.FilterType.Y_STRAINER);
+    two.setNumberOfElements(2);
+    two.setElementIntegrityVerified(true);
+    two.run();
+    two.getMechanicalDesign().calcDesign();
+    printFilterDesign("two_initial_elements", twoInlet, two,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) two
+            .getMechanicalDesign());
+
+    Stream overrideInlet = filterDesignFeed(10000.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter override =
+        new neqsim.process.equipment.filter.Filter("override", overrideInlet);
+    override.setElementIntegrityVerified(true);
+    override.run();
+    neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign overrideDesign =
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) override
+            .getMechanicalDesign();
+    overrideDesign.setMaxFaceVelocity(0.05);
+    overrideDesign.setElementArea(0.5);
+    overrideDesign.setMaxNozzleVelocity(10.0);
+    overrideDesign.setMinLDRatio(1.5);
+    overrideDesign.setMaxLDRatio(3.0);
+    overrideDesign.setDesignPressureMargin(1.2);
+    overrideDesign.setMinimumDesignPressureMarginBar(5.0);
+    overrideDesign.setDesignTemperatureMarginC(15.0);
+    overrideDesign.setAllowableStress(100.0);
+    overrideDesign.setJointEfficiency(0.7);
+    overrideDesign.setCorrosionAllowanceMm(6.0);
+    overrideDesign.calcDesign();
+    printFilterDesign("overrides", overrideInlet, override, overrideDesign);
+
+    Stream bedInlet = filterDesignFeed(500.0, 303.15, 50.0, false);
+    neqsim.process.equipment.filter.Filter bed =
+        new neqsim.process.equipment.filter.Filter("bed", bedInlet);
+    bed.setFilterServiceType(neqsim.process.equipment.filter.FilterType.GRANULAR_MEDIA);
+    bed.setMediaGeometry(1.0, 4.0, 0.002, 0.40);
+    bed.setElementIntegrityVerified(true);
+    bed.run();
+    bed.getMechanicalDesign().calcDesign();
+    printFilterDesign("granular_long_bed", bedInlet, bed,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) bed
+            .getMechanicalDesign());
+
+    Stream liquidInlet = filterDesignFeed(5000.0, 300.0, 5.0, true);
+    neqsim.process.equipment.filter.Filter liquid =
+        new neqsim.process.equipment.filter.Filter("liquid", liquidInlet);
+    liquid.setFilterServiceType(neqsim.process.equipment.filter.FilterType.BAG);
+    liquid.setElementIntegrityVerified(true);
+    liquid.run();
+    liquid.getMechanicalDesign().calcDesign();
+    printFilterDesign("liquid_bag_nozzle_density", liquidInlet, liquid,
+        (neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign) liquid
+            .getMechanicalDesign());
+  }
+
+  static Stream filterDesignFeed(double kgPerHour, double kelvin, double bara, boolean liquid) {
+    SystemInterface fluid = new SystemPrEos(kelvin, bara);
+    fluid.addComponent(liquid ? "n-butane" : "methane", 1.0);
+    fluid.setMixingRule(2);
+    Stream stream = new Stream("feed", fluid);
+    stream.setFlowRate(kgPerHour, "kg/hr");
+    stream.run();
+    return stream;
+  }
+
+  static void printFilterDesign(String label, Stream inlet,
+      neqsim.process.equipment.filter.Filter filter,
+      neqsim.process.mechanicaldesign.filter.FilterMechanicalDesign design) {
+    neqsim.process.equipment.filter.FilterType type = filter.getFilterServiceType();
+    System.out.println(label);
+    System.out.println("filter_type=" + type.name());
+    System.out.println("type_face_velocity_mps=" + type.getDefaultMaximumFaceVelocity());
+    System.out.println("type_element_area_m2=" + type.getDefaultElementArea());
+    System.out.println("type_element_diameter_m=" + type.getDefaultElementDiameter());
+    System.out.println("type_element_length_m=" + type.getDefaultElementLength());
+    System.out.println("type_backwash_supported=" + type.isBackwashSupported());
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("design_pressure_bara=" + design.getDesignPressure());
+    System.out.println("design_temperature_c=" + design.getDesignTemperatureC());
+    System.out.println("required_elements=" + design.getRequiredElements());
+    System.out.println("inner_diameter_m=" + design.getInnerDiameter());
+    System.out.println("outer_diameter_m=" + design.getOuterDiameter());
+    System.out.println("vessel_length_m=" + design.getVesselLength());
+    System.out.println("shell_thickness_m=" + design.getShellThickness());
+    System.out.println("head_thickness_m=" + design.getHeadThickness());
+    System.out.println("element_area_m2=" + design.getElementArea());
+    System.out.println("filter_media_area_m2=" + filter.getMediaArea());
+    System.out.println("calculated_face_velocity_mps=" + design.getCalculatedFaceVelocity());
+    System.out.println("required_nozzle_diameter_m=" + design.getRequiredNozzleDiameter());
+    System.out.println("selected_nozzle_diameter_mm=" + design.getSelectedNozzleDiameterMm());
+    System.out.println("calculated_nozzle_velocity_mps=" + design.getCalculatedNozzleVelocity());
+    System.out.println("empty_vessel_weight_kg=" + design.getEmptyVesselWeight());
+    System.out.println("total_equipped_weight_kg=" + design.getTotalEquippedWeight());
+    System.out.println("terminal_dp_utilization="
+        + design.getTerminalDifferentialPressureUtilization());
+    System.out.println("collapse_pressure_utilization="
+        + design.getElementCollapsePressureUtilization());
+    System.out.println("differential_pressure_design_acceptable="
+        + design.isDifferentialPressureDesignAcceptable());
+    System.out.println("design_warning_count=" + design.getDesignWarnings().size());
+    for (String warning : design.getDesignWarnings()) {
+      System.out.println("design_warning=" + warning);
+    }
+    print("inlet", inlet);
+    print("outlet", filter.getOutletStream());
+    System.out.println();
+  }
+
+  static Stream filterPrFeed(double kgPerHour) {
+    SystemInterface fluid = new SystemPrEos(298.15, 20.0);
+    fluid.addComponent("methane", 1.0);
+    fluid.setMixingRule(2);
+    Stream stream = new Stream("feed", fluid);
+    stream.setFlowRate(kgPerHour, "kg/hr");
+    stream.run();
+    return stream;
+  }
+
+  static double flowM3Hr(Stream stream) {
+    return stream.getFlowRate("m3/hr");
+  }
+
+  static void printFilterRow(String label, StreamInterface inlet,
+      neqsim.process.equipment.filter.Filter filter) {
+    System.out.println(label);
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("inlet_viscosity_pa_s="
+        + inlet.getThermoSystem().getViscosity("kg/msec"));
+    System.out.println("clean_delta_p_bar=" + filter.getCalculatedCleanDeltaP());
+    System.out.println("delta_p_bar=" + filter.getDeltaP());
+    print("inlet", inlet);
+    print("outlet", filter.getOutletStream());
+    System.out.println();
+  }
+
+  /// `AdiabaticPipe`'s fittings and `setPressureOut` mode, and `PipeBeggsAndBrills`.
+  ///
+  /// **The rows are `AdiabaticPipeTest`'s 50 km gas state re-cased on PR** - 95/5
+  /// methane/ethane at 100 bara and 25 C - because the port's fluid is PR. The fittings row
+  /// adds two standard 90-degree elbows (Crane L/D 30 each), so the effective length grows by
+  /// `60 D = 30` m; the pressure-out row states 80 bara and lets `calcFlow` bisect the flow.
+  static void pipeModeRows() {
+    pipeAdiabaticRow("adiabatic_50km", false, null);
+    pipeAdiabaticRow("adiabatic_50km_two_elbows", true, null);
+    pipeAdiabaticRow("adiabatic_pressure_out_80_bara", false, 80.0);
+
+    Stream inlet = pipeFeed();
+    neqsim.process.equipment.pipeline.PipeBeggsAndBrills pipe =
+        new neqsim.process.equipment.pipeline.PipeBeggsAndBrills("bb", inlet);
+    pipe.setLength(50000.0);
+    pipe.setDiameter(0.5);
+    pipe.setPipeWallRoughness(1.0e-5);
+    pipe.setElevation(0.0);
+    pipe.setNumberOfIncrements(5);
+    pipe.run();
+
+    System.out.println("beggs_and_brills_50km");
+    System.out.println("inlet_m3_per_day=" + inlet.getFlowRate("m3/day"));
+    System.out.println("inlet_mol_per_sec=" + inlet.getFlowRate("mol/sec"));
+    print("inlet", inlet);
+    print("outlet", pipe.getOutletStream());
+    System.out.println("outlet_p_bara=" + pipe.getOutletStream().getPressure("bara"));
+    System.out.println("pressure_drop_bar=" + pipe.getPressureDrop());
+    System.out.println("pressure_drop_profile=" + pipe.getPressureDropProfile());
+    System.out.println();
+  }
+
+  static Stream pipeFeed() {
+    SystemInterface fluid = new SystemPrEos(278.15, 100.0);
+    fluid.addComponent("methane", 95.0);
+    fluid.addComponent("ethane", 5.0);
+    fluid.setMixingRule(2);
+    Stream stream = new Stream("inlet", fluid);
+    stream.setPressure(100.0, "bara");
+    stream.setTemperature(25.0, "C");
+    stream.setFlowRate(10.0, "MSm3/day");
+    stream.run();
+    return stream;
+  }
+
+  static void pipeAdiabaticRow(String label, boolean fittings, Double outletBara) {
+    Stream inlet = pipeFeed();
+    neqsim.process.equipment.pipeline.AdiabaticPipe pipe =
+        new neqsim.process.equipment.pipeline.AdiabaticPipe(label, inlet);
+    pipe.setLength(50000.0);
+    pipe.setDiameter(0.5);
+    pipe.setPipeWallRoughness(1.0e-5);
+    if (fittings) {
+      pipe.addStandardFittings("elbow_90_standard", 2);
+    }
+    if (outletBara != null) {
+      pipe.setOutletPressure(outletBara);
+    }
+    pipe.run();
+
+    System.out.println(label);
+    System.out.println("inlet_m3_per_day=" + inlet.getFlowRate("m3/day"));
+    System.out.println("inlet_kg_per_hr=" + inlet.getFlowRate("kg/hr"));
+    System.out.println("inlet_mol_per_sec=" + inlet.getFlowRate("mol/sec"));
+    System.out.println("inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("inlet_viscosity_pa_s="
+        + inlet.getThermoSystem().getViscosity("kg/msec"));
+    System.out.println("effective_length_m=" + pipe.getEffectiveLength());
+    System.out.println("equivalent_length_m=" + pipe.getEquivalentLength());
+    System.out.println("total_fittings_ld=" + pipe.getTotalFittingsLdRatio());
+    System.out.println("outlet_p_bara=" + pipe.getOutletStream().getPressure("bara"));
+    System.out.println("pressure_drop_bar=" + pipe.getPressureDrop());
+    System.out.println("velocity_m_per_s=" + pipe.getVelocity());
+    System.out.println("reynolds=" + pipe.getReynoldsNumber());
+    System.out.println("friction_factor=" + pipe.getFrictionFactor());
+    System.out.println("flow_kg_per_hr_after=" + inlet.getFlowRate("kg/hr"));
+    print("inlet", inlet);
+    print("outlet", pipe.getOutletStream());
+    System.out.println();
+  }
+
+  /// `ExpanderChartKhader`, the 2-D IGV/U-C map, on the enhancement test's table.
+  static void expanderChartRows() {
+    double[] igv = {0.6, 1.0};
+    double[][] uc = {{0.5, 0.6, 0.7, 0.8, 0.9}, {0.5, 0.6, 0.7, 0.8, 0.9}};
+    double[][] eta = {{0.72, 0.80, 0.84, 0.82, 0.76}, {0.78, 0.85, 0.88, 0.86, 0.80}};
+    double[][] head = {{30.0, 32.0, 33.0, 32.5, 31.0}, {34.0, 36.0, 37.0, 36.5, 35.0}};
+
+    neqsim.process.equipment.expander.ExpanderChartKhader chart =
+        new neqsim.process.equipment.expander.ExpanderChartKhader();
+    chart.setCurves(igv, uc, eta, head);
+
+    System.out.println("chart_no_reference");
+    System.out.println("map_defined=" + chart.isMapDefined());
+    System.out.println("efficiency_07_10=" + chart.getEfficiency(0.7, 1.0));
+    System.out.println("efficiency_07_06=" + chart.getEfficiency(0.7, 0.6));
+    System.out.println("efficiency_07_08=" + chart.getEfficiency(0.7, 0.8));
+    System.out.println("efficiency_04_10=" + chart.getEfficiency(0.4, 1.0));
+    System.out.println("efficiency_095_10=" + chart.getEfficiency(0.95, 1.0));
+    System.out.println("optimum_uc_10=" + chart.getOptimumVelocityRatio(1.0));
+    System.out.println("optimum_uc_06=" + chart.getOptimumVelocityRatio(0.6));
+    System.out.println("head_07_10=" + chart.getStageHeadDrop(0.7, 1.0, null));
+    System.out.println("head_07_06=" + chart.getStageHeadDrop(0.7, 0.6, null));
+    System.out.println("head_07_08=" + chart.getStageHeadDrop(0.7, 0.8, null));
+    System.out.println("head_04_10=" + chart.getStageHeadDrop(0.4, 1.0, null));
+    System.out.println("head_095_10=" + chart.getStageHeadDrop(0.95, 1.0, null));
+    System.out.println();
+
+    SystemInterface reference = new neqsim.thermo.system.SystemSrkEos(298.15, 50.0);
+    reference.addComponent("methane", 0.9);
+    reference.addComponent("ethane", 0.1);
+    reference.setMixingRule(2);
+    reference.init(0);
+    reference.initThermoProperties();
+    neqsim.process.equipment.expander.ExpanderChartKhader withReference =
+        new neqsim.process.equipment.expander.ExpanderChartKhader(reference, 0.424);
+    withReference.setCurves(igv, uc, eta, head);
+
+    SystemInterface co2 = new neqsim.thermo.system.SystemSrkEos(283.15, 50.0);
+    co2.addComponent("CO2", 0.9);
+    co2.addComponent("methane", 0.1);
+    co2.setMixingRule(2);
+    co2.init(0);
+    co2.initThermoProperties();
+
+    System.out.println("chart_with_reference");
+    System.out.println("reference_sound_speed=" + withReference.getReferenceSoundSpeed());
+    System.out.println("reference_system_sound_speed=" + reference.getSoundSpeed());
+    System.out.println("reference_phase_sound_speed=" + reference.getPhase(0).getSoundSpeed());
+    System.out.println("process_sound_speed=" + co2.getSoundSpeed());
+    System.out.println("process_phase_sound_speed=" + co2.getPhase(0).getSoundSpeed());
+    System.out.println("head_ref_fluid=" + withReference.getStageHeadDrop(0.7, 1.0, reference));
+    System.out.println("head_co2_fluid=" + withReference.getStageHeadDrop(0.7, 1.0, co2));
+    System.out.println();
+  }
+
+  /// `TurboExpanderCompressor`, the coupled expander-compressor.
+  static void turboExpanderRows() {
+    turboExpanderRow("turbo_expander_run", 456000.0, 60.95, -23.0, 423448.0, 42.0, 17.0);
+    turboExpanderRow("turbo_expander_low_expander_pressure", 426000.0, 55.95, -23.0, 423448.0,
+        42.0, 17.0);
+    turboExpanderMassRow("turbo_expander_mass_balance");
+    turboExpanderInverseRow("turbo_expander_outlet_temperature");
+    turboExpanderChartRow("turbo_expander_igv_penalty");
+  }
+
+  static Stream turboFeed(double kgPerHour, double bara, double celsius) {
+    SystemInterface fluid = new SystemPrEos(273.15 + 42.0, 10.0);
+    fluid.addComponent("nitrogen", 0.006);
+    fluid.addComponent("CO2", 0.014);
+    fluid.addComponent("methane", 0.862);
+    fluid.addComponent("ethane", 0.08);
+    fluid.addComponent("propane", 0.03);
+    fluid.addComponent("i-butane", 0.0024);
+    fluid.addComponent("n-butane", 0.004);
+    fluid.addComponent("n-hexane", 0.0015);
+    fluid.setMixingRule(2);
+    fluid.init(0);
+    Stream stream = new Stream("feed", fluid);
+    stream.setFlowRate(kgPerHour, "kg/hr");
+    stream.setTemperature(celsius, "C");
+    stream.setPressure(bara, "bara");
+    stream.run();
+    return stream;
+  }
+
+  static neqsim.process.equipment.expander.TurboExpanderCompressor turboMachine(
+      Stream expanderFeed, Stream compressorFeed) {
+    neqsim.process.equipment.expander.TurboExpanderCompressor machine =
+        new neqsim.process.equipment.expander.TurboExpanderCompressor("TurboExpander",
+            expanderFeed);
+    machine.setCompressorFeedStream(compressorFeed);
+    machine.setUCcurve(
+        new double[] {0.9964751359624449, 0.7590835113213541, 0.984295619176559,
+            0.8827799803397821, 0.9552460269880922, 1.0},
+        new double[] {0.984090909090909, 0.796590909090909, 0.9931818181818183,
+            0.9363636363636364, 0.9943181818181818, 1.0});
+    machine.setQNEfficiencycurve(new double[] {0.5, 0.7, 0.85, 1.0, 1.2, 1.4, 1.6},
+        new double[] {0.88, 0.91, 0.95, 1.0, 0.97, 0.85, 0.6});
+    machine.setQNHeadcurve(new double[] {0.5, 0.8, 1.0, 1.2, 1.4, 1.6},
+        new double[] {1.1, 1.05, 1.0, 0.9, 0.7, 0.4});
+    machine.setImpellerDiameter(0.424);
+    machine.setDesignSpeed(6850.0);
+    machine.setExpanderDesignIsentropicEfficiency(0.88);
+    machine.setDesignUC(0.7);
+    machine.setDesignQn(0.03328);
+    machine.setExpanderOutPressure(42.0);
+    machine.setCompressorDesignPolytropicEfficiency(0.81);
+    machine.setCompressorDesignPolytropicHead(20.47);
+    machine.setMaximumIGVArea(1.637e4);
+    return machine;
+  }
+
+  static void printTurboRow(String label,
+      neqsim.process.equipment.expander.TurboExpanderCompressor machine, Stream expanderFeed,
+      Stream compressorFeed) {
+    System.out.println(label);
+    System.out.println("expander_inlet_m3_per_hr=" + expanderFeed.getFlowRate("m3/hr"));
+    System.out.println("expander_inlet_kg_per_hr=" + expanderFeed.getFlowRate("kg/hr"));
+    System.out.println("compressor_inlet_m3_per_hr=" + compressorFeed.getFlowRate("m3/hr"));
+    System.out.println("compressor_inlet_kg_per_hr=" + compressorFeed.getFlowRate("kg/hr"));
+    System.out.println("speed_rpm=" + machine.getSpeed());
+    System.out.println("power_expander_w=" + machine.getPowerExpander());
+    System.out.println("power_compressor_w=" + machine.getPowerCompressor());
+    System.out.println("expander_isentropic_efficiency="
+        + machine.getExpanderIsentropicEfficiency());
+    System.out.println("compressor_polytropic_efficiency="
+        + machine.getCompressorPolytropicEfficiency());
+    System.out.println("compressor_polytropic_head_kj_per_kg="
+        + machine.getCompressorPolytropicHead());
+    System.out.println("uc_ratio_expander=" + machine.getUCratioexpander());
+    System.out.println("qn_ratio_compressor=" + machine.getQNratiocompressor());
+    System.out.println("igv_opening=" + machine.getIGVopening());
+    System.out.println("expander_outlet_p_bara="
+        + machine.getExpanderOutletStream().getPressure("bara"));
+    System.out.println("expander_outlet_t_k="
+        + machine.getExpanderOutletStream().getTemperature("K"));
+    System.out.println("compressor_outlet_p_bara="
+        + machine.getCompressorOutletStream().getPressure("bara"));
+    System.out.println("compressor_outlet_t_k="
+        + machine.getCompressorOutletStream().getTemperature("K"));
+    print("expander_inlet", expanderFeed);
+    print("expander_outlet", machine.getExpanderOutletStream());
+    print("compressor_inlet", compressorFeed);
+    print("compressor_outlet", machine.getCompressorOutletStream());
+    System.out.println();
+  }
+
+  static void turboExpanderRow(String label, double expanderKgHr, double expanderBara,
+      double expanderC, double compressorKgHr, double compressorBara, double compressorC) {
+    Stream expanderFeed = turboFeed(expanderKgHr, expanderBara, expanderC);
+    Stream compressorFeed = turboFeed(compressorKgHr, compressorBara, compressorC);
+    neqsim.process.equipment.expander.TurboExpanderCompressor machine =
+        turboMachine(expanderFeed, compressorFeed);
+    machine.run();
+    printTurboRow(label, machine, expanderFeed, compressorFeed);
+  }
+
+  static void turboExpanderMassRow(String label) {
+    SystemInterface fluid = new SystemPrEos(293.15, 50.0);
+    fluid.addComponent("methane", 0.95);
+    fluid.addComponent("ethane", 0.05);
+    fluid.setMixingRule(2);
+    fluid.init(0);
+    Stream expanderFeed = new Stream("expander feed", fluid);
+    expanderFeed.setFlowRate(10000.0, "kg/hr");
+    expanderFeed.setTemperature(20.0, "C");
+    expanderFeed.setPressure(50.0, "bara");
+    expanderFeed.run();
+    Stream compressorFeed = new Stream("compressor feed", fluid.clone());
+    compressorFeed.setFlowRate(7500.0, "kg/hr");
+    compressorFeed.setTemperature(5.0, "C");
+    compressorFeed.setPressure(30.0, "bara");
+    compressorFeed.run();
+
+    neqsim.process.equipment.expander.TurboExpanderCompressor machine =
+        turboMachine(expanderFeed, compressorFeed);
+    machine.setExpanderOutPressure(25.0);
+    machine.setCompressorDesignPolytropicEfficiency(0.8);
+    machine.setCompressorDesignPolytropicHead(10.0);
+    machine.run();
+    System.out.println("mass_balance_expander_kg_per_hr=" + machine.getMassBalance("kg/hr"));
+    printTurboRow(label, machine, expanderFeed, compressorFeed);
+  }
+
+  static void turboExpanderInverseRow(String label) {
+    Stream expanderFeed = turboFeed(456000.0, 60.95, -23.0);
+    Stream compressorFeed = turboFeed(423448.0, 42.0, 17.0);
+    neqsim.process.equipment.expander.TurboExpanderCompressor forward =
+        turboMachine(expanderFeed, compressorFeed);
+    forward.run();
+    double targetC = forward.getExpanderOutletStream().getTemperature("C");
+
+    Stream expanderFeed2 = turboFeed(456000.0, 60.95, -23.0);
+    Stream compressorFeed2 = turboFeed(423448.0, 42.0, 17.0);
+    neqsim.process.equipment.expander.TurboExpanderCompressor inverse =
+        turboMachine(expanderFeed2, compressorFeed2);
+    inverse.setExpanderOutTemperature(targetC, "C");
+    inverse.run();
+
+    System.out.println(label);
+    System.out.println("target_outlet_t_c=" + targetC);
+    System.out.println("forward_design_efficiency="
+        + forward.getExpanderDesignIsentropicEfficiency());
+    System.out.println("inverse_design_efficiency="
+        + inverse.getExpanderDesignIsentropicEfficiency());
+    System.out.println("inverse_isentropic_efficiency="
+        + inverse.getExpanderIsentropicEfficiency());
+    printTurboRow(label + "_state", inverse, expanderFeed2, compressorFeed2);
+  }
+
+  static void turboExpanderChartRow(String label) {
+    Stream expanderFeed = turboFeed(456000.0, 60.95, -23.0);
+    Stream compressorFeed = turboFeed(423448.0, 42.0, 17.0);
+    neqsim.process.equipment.expander.TurboExpanderCompressor machine =
+        turboMachine(expanderFeed, compressorFeed);
+
+    double[] igv = {0.6, 1.0};
+    double[][] uc = {{0.5, 0.6, 0.7, 0.8, 0.9}, {0.5, 0.6, 0.7, 0.8, 0.9}};
+    double[][] eta = {{0.72, 0.80, 0.84, 0.82, 0.76}, {0.78, 0.85, 0.88, 0.86, 0.80}};
+    double[][] head = {{30.0, 32.0, 33.0, 32.5, 31.0}, {34.0, 36.0, 37.0, 36.5, 35.0}};
+    neqsim.process.equipment.expander.ExpanderChartKhader chart =
+        new neqsim.process.equipment.expander.ExpanderChartKhader();
+    chart.setCurves(igv, uc, eta, head);
+    machine.setExpanderChart(chart);
+    machine.setIgvControlMode(true);
+    machine.setIGVopening(1.0);
+    machine.run();
+    double noPenalty = machine.getExpanderIsentropicEfficiency();
+
+    machine.setIgvEfficiencyPenaltyCurve(new double[] {0.4, 1.0}, new double[] {0.85, 0.90});
+    machine.setIGVopening(1.0);
+    machine.run();
+
+    System.out.println(label);
+    System.out.println("efficiency_no_penalty=" + noPenalty);
+    System.out.println("efficiency_with_penalty=" + machine.getExpanderIsentropicEfficiency());
+    System.out.println("igv_opening=" + machine.getIGVopening());
+    System.out.println("igv_penalty_at_10=" + machine.getIgvEfficiencyPenalty(1.0));
+    printTurboRow(label + "_state", machine, expanderFeed, compressorFeed);
+  }
+
+  /// `MapTurboExpanderCompressor`, the map-based single shaft, re-cased on PR.
+  ///
+  /// The three states of `MapTurboExpanderCompressorTest` - the balanced-speed mode, the
+  /// specified-pressure mode (whose compressor is isentropic, not the map) and the turndown
+  /// row whose expander drop is too small to drive the brake compressor. Each prints the
+  /// speeds, both powers, the residual and the operating status.
+  static void mapTurboExpanderRows() {
+    mapTurboExpanderRow("map_turbo_expander_balanced", 25.0, 60.0,
+        neqsim.process.equipment.expander.MapTurboExpanderCompressor.ShaftMode.BALANCED_SPEED,
+        true, 58.0);
+    mapTurboExpanderRow("map_turbo_expander_specified", 25.0, 60.0,
+        neqsim.process.equipment.expander.MapTurboExpanderCompressor.ShaftMode.SPECIFIED_PRESSURES,
+        false, 58.0);
+    mapTurboExpanderRow("map_turbo_expander_turndown", 25.0, 31.0,
+        neqsim.process.equipment.expander.MapTurboExpanderCompressor.ShaftMode.BALANCED_SPEED,
+        true, 58.0);
+  }
+
+  static SystemInterface mapTurboGas(double celsius, double bara) {
+    SystemInterface fluid = new SystemPrEos(273.15 + celsius, bara);
+    fluid.addComponent("nitrogen", 1.205);
+    fluid.addComponent("CO2", 1.340);
+    fluid.addComponent("methane", 87.974);
+    fluid.addComponent("ethane", 5.258);
+    fluid.addComponent("propane", 3.283);
+    fluid.addComponent("i-butane", 0.082);
+    fluid.addComponent("n-butane", 0.487);
+    fluid.setMixingRule(2);
+    fluid.setTemperature(celsius, "C");
+    fluid.setPressure(bara, "bara");
+    return fluid;
+  }
+
+  static void mapTurboExpanderRow(String label, double expanderCelsius, double expanderBara,
+      neqsim.process.equipment.expander.MapTurboExpanderCompressor.ShaftMode mode,
+      boolean attachChart, double compressorOutletBara) {
+    Stream expanderFeed = new Stream("expFeed", mapTurboGas(expanderCelsius, expanderBara));
+    expanderFeed.setFlowRate(3.0, "MSm3/day");
+    expanderFeed.run();
+    Stream compressorFeed = new Stream("compFeed", mapTurboGas(20.0, 48.0));
+    compressorFeed.setFlowRate(3.0, "MSm3/day");
+    compressorFeed.run();
+
+    neqsim.process.equipment.expander.MapTurboExpanderCompressor machine =
+        new neqsim.process.equipment.expander.MapTurboExpanderCompressor("TEC", expanderFeed,
+            compressorFeed);
+    machine.setExpanderOutletPressure(30.0);
+    machine.setExpanderIsentropicEfficiency(0.85);
+    machine.setMechanicalEfficiency(0.98);
+    if (attachChart) {
+      machine.getCompressor().setCompressorChart(
+          mapTurboChart(compressorFeed));
+      machine.getCompressor().getCompressorChart().setHeadUnit("kJ/kg");
+      machine.getCompressor().setUsePolytropicCalc(true);
+    } else {
+      machine.setCompressorOutletPressure(compressorOutletBara);
+      machine.getCompressor().setIsentropicEfficiency(0.78);
+    }
+    machine.setShaftMode(mode);
+    machine.run(java.util.UUID.randomUUID());
+
+    System.out.println(label);
+    System.out.println("shaft_mode=" + machine.getShaftMode());
+    System.out.println("shaft_speed_rpm=" + machine.getShaftSpeed());
+    System.out.println("available_shaft_power_w=" + machine.getAvailableShaftPower());
+    System.out.println("consumed_compressor_power_w=" + machine.getConsumedCompressorPower());
+    System.out.println("power_balance_residual_w=" + machine.getPowerBalanceResidual());
+    System.out.println("speed_limited=" + machine.isSpeedLimited());
+    System.out.println("operating_status=" + machine.getOperatingStatus());
+    System.out.println("feasible=" + machine.isFeasible());
+    System.out.println("expander_outlet_p_bara="
+        + machine.getExpanderOutStream().getPressure("bara"));
+    System.out.println("expander_outlet_t_k="
+        + machine.getExpanderOutStream().getTemperature("K"));
+    System.out.println("compressor_outlet_p_bara="
+        + machine.getCompressorOutStream().getPressure("bara"));
+    System.out.println("compressor_outlet_t_k="
+        + machine.getCompressorOutStream().getTemperature("K"));
+    System.out.println("compressor_flow_m3_per_hr="
+        + compressorFeed.getFlowRate("m3/hr"));
+    print("expander_inlet", expanderFeed);
+    print("expander_outlet", machine.getExpanderOutStream());
+    print("compressor_inlet", compressorFeed);
+    print("compressor_outlet", machine.getCompressorOutStream());
+    System.out.println();
+  }
+
+  static neqsim.process.equipment.compressor.CompressorChartKhader2015 mapTurboChart(
+      Stream compressorFeed) {
+    double[] chartConditions = new double[] {25.0, 50.0, 50.0, 20.0};
+    double[] speed = new double[] {12913, 12298, 11683, 11098, 10453, 9224, 8609, 8200};
+    double[][] flow = new double[][] {
+        {2789.1285, 3174.0375, 3689.2288, 4179.4503, 4570.2768, 4954.7728, 5246.0329, 5661.0331},
+        {2571.1753, 2943.7254, 3440.2675, 3837.4448, 4253.0898, 4668.6643, 4997.1926, 5387.4952},
+        {2415.3793, 2763.0706, 3141.7095, 3594.7436, 4047.6467, 4494.1889, 4853.7353, 5138.7858},
+        {2247.2043, 2799.7342, 3178.3428, 3656.1551, 4102.778, 4394.1591, 4648.3224, 4840.4998},
+        {2072.8397, 2463.9483, 2836.4078, 3202.5266, 3599.6333, 3978.0203, 4257.0022, 4517.345},
+        {1835.9552, 2208.455, 2618.1322, 2940.8034, 3244.7852, 3530.1279, 3753.3738, 3895.9746},
+        {1711.3386, 1965.8848, 2356.9431, 2685.9247, 3008.5154, 3337.2855, 3591.5092},
+        {1636.5807, 2002.8708, 2338.0319, 2642.1245, 2896.4894, 3113.6264, 3274.8764, 3411.2977}};
+    double[][] head = new double[][] {{80.0375, 78.8934, 76.2142, 71.8678, 67.0062, 60.6061, 53.0499, 39.728},
+        {72.2122, 71.8369, 68.9009, 65.8341, 60.7167, 54.702, 47.2749, 35.7471},
+        {65.1576, 64.5253, 62.6118, 59.1619, 54.0455, 47.0059, 39.195, 31.6387},
+        {58.6154, 56.9627, 54.6647, 50.4462, 44.4322, 38.4144, 32.9084, 28.8109},
+        {52.3295, 51.0573, 49.5283, 46.3326, 42.3685, 37.2502, 31.4884, 25.598},
+        {40.6578, 39.6416, 37.6008, 34.6603, 30.9503, 27.1116, 23.2713, 20.4546},
+        {35.2705, 34.6359, 32.7228, 31.0645, 27.0985, 22.7482, 18.0113},
+        {32.192, 31.1756, 29.1329, 26.833, 23.8909, 21.3324, 18.7726, 16.3403}};
+    double[][] polyEff = new double[][] {{77.245, 79.415, 80.738, 80.523, 79.221, 75.472, 69.603, 58.732},
+        {77.011, 79.307, 80.894, 80.719, 79.531, 75.591, 69.685, 60.004},
+        {77.004, 79.169, 80.804, 80.654, 78.853, 73.666, 66.274, 57.672},
+        {77.072, 80.463, 81.139, 79.637, 75.381, 69.533, 63.800, 58.812},
+        {76.971, 79.834, 80.947, 80.581, 78.046, 73.040, 66.557, 59.862},
+        {77.506, 80.206, 81.034, 79.609, 76.381, 70.803, 64.644, 60.530},
+        {77.818, 80.065, 81.063, 79.896, 76.198, 69.290, 60.857},
+        {78.092, 80.935, 80.790, 78.864, 75.217, 70.311, 65.551, 61.039}};
+    neqsim.process.equipment.compressor.CompressorChartKhader2015 chart =
+        new neqsim.process.equipment.compressor.CompressorChartKhader2015(compressorFeed, 0.9);
+    chart.setCurves(chartConditions, speed, flow, head, flow, polyEff);
+    return chart;
+  }
+
+  /// `CompressorChartKhader2015`, the Mach-number normalised map, re-cased on PR.
+  ///
+  /// **`CompressorChartKhader2015Test`'s two states and its numbers**, with the sound speeds the
+  /// class uses printed beside them: the reference fluid's *phase* value (which fits the map)
+  /// and the process fluid's *system* value (which reads it). The pinned test asserts
+  /// `41.56192413` kJ/kg on the first state and `75.11224727` bara on its machine run.
+  static void compressorKhaderRows() {
+    double[] chartConditions = new double[] {25.0, 50.0, 50.0, 20.0};
+    double[] speed = new double[] {12913, 12298, 11683, 11098, 10453, 9224, 8609, 8200};
+    double[][] flow = new double[][] {
+        {2789.1285, 3174.0375, 3689.2288, 4179.4503, 4570.2768, 4954.7728, 5246.0329, 5661.0331},
+        {2571.1753, 2943.7254, 3440.2675, 3837.4448, 4253.0898, 4668.6643, 4997.1926, 5387.4952},
+        {2415.3793, 2763.0706, 3141.7095, 3594.7436, 4047.6467, 4494.1889, 4853.7353, 5138.7858},
+        {2247.2043, 2799.7342, 3178.3428, 3656.1551, 4102.778, 4394.1591, 4648.3224, 4840.4998},
+        {2072.8397, 2463.9483, 2836.4078, 3202.5266, 3599.6333, 3978.0203, 4257.0022, 4517.345},
+        {1835.9552, 2208.455, 2618.1322, 2940.8034, 3244.7852, 3530.1279, 3753.3738, 3895.9746},
+        {1711.3386, 1965.8848, 2356.9431, 2685.9247, 3008.5154, 3337.2855, 3591.5092},
+        {1636.5807, 2002.8708, 2338.0319, 2642.1245, 2896.4894, 3113.6264, 3274.8764, 3411.2977}};
+    double[][] head = new double[][] {
+        {80.0375, 78.8934, 76.2142, 71.8678, 67.0062, 60.6061, 53.0499, 39.728},
+        {72.2122, 71.8369, 68.9009, 65.8341, 60.7167, 54.702, 47.2749, 35.7471},
+        {65.1576, 64.5253, 62.6118, 59.1619, 54.0455, 47.0059, 39.195, 31.6387},
+        {58.6154, 56.9627, 54.6647, 50.4462, 44.4322, 38.4144, 32.9084, 28.8109},
+        {52.3295, 51.0573, 49.5283, 46.3326, 42.3685, 37.2502, 31.4884, 25.598},
+        {40.6578, 39.6416, 37.6008, 34.6603, 30.9503, 27.1116, 23.2713, 20.4546},
+        {35.2705, 34.6359, 32.7228, 31.0645, 27.0985, 22.7482, 18.0113},
+        {32.192, 31.1756, 29.1329, 26.833, 23.8909, 21.3324, 18.7726, 16.3403}};
+    double[][] polyEff = new double[][] {
+        {77.2452238409573, 79.4154186459363, 80.737960012489, 80.5229826589649, 79.2210931638144,
+            75.4719133864634, 69.6034181197298, 58.7322388482707},
+        {77.0107837113504, 79.3069974136389, 80.8941189021135, 80.7190194665918, 79.5313242980328,
+            75.5912622896367, 69.6846136362097, 60.0043057990909},
+        {77.0043065299874, 79.1690958847856, 80.8038169975675, 80.6543975614197, 78.8532389102705,
+            73.6664774270613, 66.2735600426727, 57.671664571658},
+        {77.0716623789093, 80.4629750233093, 81.1390811169072, 79.6374242667478, 75.380928428817,
+            69.5332969549779, 63.7997587622339, 58.8120614497758},
+        {76.9705872525642, 79.8335492585324, 80.9468133671171, 80.5806471927835, 78.0462158225426,
+            73.0403707523258, 66.5572286338589, 59.8624822515064},
+        {77.5063036680357, 80.2056198362559, 81.0339108025933, 79.6085962687939, 76.3814534404405,
+            70.8027503005902, 64.6437367160571, 60.5299349982342},
+        {77.8175271586685, 80.065165942218, 81.0631362122632, 79.8955051771299, 76.1983240929369,
+            69.289982774309, 60.8567149372229},
+        {78.0924334304045, 80.9353551568667, 80.7904437766234, 78.8639325223295, 75.2170936751143,
+            70.3105081673411, 65.5507568533569, 61.0391468300337}};
+
+    // The nine-component gas, 24 C and 48 bara, at 3 MSm3/day and speed 10000.
+    Stream stream = khaderFeed(new SystemPrEos(298.15, 48.0),
+        new String[] {"nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+            "i-pentane", "n-pentane"},
+        new double[] {1.205, 1.340, 87.974, 5.258, 3.283, 0.082, 0.487, 0.056, 0.053},
+        24.0, 48.0);
+    khaderRow("khader_nine_component", stream, chartConditions, speed, flow, head, polyEff, 10000.0);
+
+    // The three-component reference-like gas, 25 C and 50 bara, at 3 MSm3/day.
+    Stream reference = khaderFeed(new SystemPrEos(298.15, 50.0),
+        new String[] {"methane", "ethane", "propane"},
+        new double[] {8.35736E-1, 4.64298E-2, 1.17835E-1}, 25.0, 50.0);
+    khaderRow("khader_three_component", reference, chartConditions, speed, flow, head, polyEff,
+        10000.0);
+  }
+
+  static Stream khaderFeed(SystemInterface fluid, String[] names, double[] z, double celsius,
+      double bara) {
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    fluid.setTemperature(celsius, "C");
+    fluid.setPressure(bara, "bara");
+    fluid.setTotalFlowRate(3.0, "MSm3/day");
+    Stream stream = new Stream("stream_1", fluid);
+    stream.run();
+    return stream;
+  }
+
+  static void khaderRow(String label, Stream stream, double[] chartConditions, double[] speed,
+      double[][] flow, double[][] head, double[][] polyEff, double compSpeed) {
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor("comp1", stream);
+    compressor.setSpeed(compSpeed);
+    neqsim.process.equipment.compressor.CompressorChartKhader2015 chart =
+        new neqsim.process.equipment.compressor.CompressorChartKhader2015(stream, 0.9);
+    chart.setCurves(chartConditions, speed, flow, head, flow, polyEff);
+    compressor.setCompressorChart(chart);
+    compressor.getCompressorChart().setHeadUnit("kJ/kg");
+
+    double inlet = stream.getFlowRate("m3/hr");
+    System.out.println(label);
+    System.out.println("inlet_m3_per_hr=" + inlet);
+    System.out.println("compressor_speed_rpm=" + compSpeed);
+    System.out.println("process_sound_speed=" + stream.getFluid().getSoundSpeed());
+    System.out.println("process_phase_sound_speed=" + stream.getFluid().getPhase(0).getSoundSpeed());
+    System.out.println("reference_sound_speed="
+        + chart.getReferenceFluid().getPhase(0).getSoundSpeed());
+    System.out.println("reference_temperature_k=" + chart.getReferenceFluid().getTemperature());
+    System.out.println("reference_pressure_bara=" + chart.getReferenceFluid().getPressure("bara"));
+    System.out.println("reference_molar_mass=" + chart.getReferenceFluid().getMolarMass() * 1000.0);
+    System.out.println("head_kj_per_kg=" + chart.getPolytropicHead(inlet, compSpeed));
+    System.out.println("efficiency_percent=" + chart.getPolytropicEfficiency(inlet, compSpeed));
+    System.out.println("corrected_flow_factor_first="
+        + chart.getCorrectedCurves(chartConditions, speed, flow, head, polyEff, polyEff).get(0)
+            .correctedFlowFactor[0]);
+    System.out.println("real_curve_flow_first=" + chart.getRealCurves().get(0).flow[0]);
+    System.out.println("real_curve_head_first=" + chart.getRealCurves().get(0).head[0]);
+    compressor.run();
+    System.out.println("outlet_p_bara=" + compressor.getOutletStream().getPressure("bara"));
+    System.out.println("outlet_t_k=" + compressor.getOutletStream().getTemperature("K"));
+    System.out.println("polytropic_head_kj_per_kg=" + compressor.getPolytropicFluidHead());
+    System.out.println("polytropic_efficiency_fraction=" + compressor.getPolytropicEfficiency());
+    System.out.println("power_w=" + compressor.getPower("W"));
+    print("inlet", stream);
+    print("outlet", compressor.getOutletStream());
+    System.out.println();
+  }
+
+  /// `PhaseEos.getSoundSpeed` and `SystemThermo.getSoundSpeed`, on flashed states.
+  ///
+  /// **The system value is a beta-weighted sum, and an unflashed system doubles it** - two
+  /// phase objects with `beta = 1.0` each. Every row here flashes through a `Stream`, so the
+  /// system value is the phase value on a single phase and the weighted mean on two. The
+  /// phase's own `Cp`, `Cv`, `Z` and density are printed beside it so the port's cubic
+  /// derivatives can be held to the same state.
+  static void soundSpeedRows() {
+    soundSpeedRow("gas_nine_component", new SystemPrEos(298.15, 48.0),
+        new String[] {"nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+            "i-pentane", "n-pentane"},
+        new double[] {1.205, 1.340, 87.974, 5.258, 3.283, 0.082, 0.487, 0.056, 0.053},
+        24.0, 48.0, 1.0);
+    soundSpeedRow("gas_nine_component_hot", new SystemPrEos(298.15, 48.0),
+        new String[] {"nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane",
+            "i-pentane", "n-pentane"},
+        new double[] {1.205, 1.340, 87.974, 5.258, 3.283, 0.082, 0.487, 0.056, 0.053},
+        -23.0, 60.95, 1.0);
+    soundSpeedRow("two_phase_methane_butane", new SystemPrEos(298.15, 50.0),
+        new String[] {"methane", "n-butane"}, new double[] {0.5, 0.5}, -23.15, 30.0, 0.0);
+    soundSpeedRow("liquid_propane", new SystemPrEos(298.15, 50.0),
+        new String[] {"propane"}, new double[] {1.0}, 20.0, 100.0, 0.0);
+    soundSpeedRow("gas_methane_low_pressure", new SystemPrEos(298.15, 50.0),
+        new String[] {"methane"}, new double[] {1.0}, 27.0, 1.0, 0.0);
+  }
+
+  static void soundSpeedRow(String label, SystemInterface fluid, String[] names, double[] z,
+      double celsius, double bara, double msm3PerDay) {
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule("classic");
+    fluid.setTemperature(celsius, "C");
+    fluid.setPressure(bara, "bara");
+    if (msm3PerDay > 0.0) {
+      fluid.setTotalFlowRate(msm3PerDay, "MSm3/day");
+    }
+    Stream stream = new Stream(label, fluid);
+    stream.run();
+    SystemInterface system = stream.getThermoSystem();
+    system.initProperties();
+
+    System.out.println(label);
+    System.out.println("phase=" + system.getPhase(0).getType());
+    System.out.println("number_of_phases=" + system.getNumberOfPhases());
+    for (int i = 0; i < system.getNumberOfPhases(); i++) {
+      System.out.println("beta_" + i + "=" + system.getBeta(i));
+      System.out.println("sound_speed_phase_" + i + "=" + system.getPhase(i).getSoundSpeed());
+    }
+    System.out.println("sound_speed_system=" + system.getSoundSpeed());
+    System.out.println("sound_speed_phase_0=" + system.getPhase(0).getSoundSpeed());
+    System.out.println("phase0_z=" + system.getPhase(0).getZ());
+    System.out.println("phase0_density_kg_per_m3=" + system.getPhase(0).getDensity("kg/m3"));
+    double moles = system.getPhase(0).getNumberOfMolesInPhase();
+    System.out.println("phase0_cp_j_per_mol_k=" + system.getPhase(0).getCp() / moles);
+    System.out.println("phase0_cv_j_per_mol_k=" + system.getPhase(0).getCv() / moles);
+    System.out.println("phase0_molar_mass_kg_per_mol=" + system.getPhase(0).getMolarMass());
+    System.out.println("temperature_k=" + system.getTemperature());
+    System.out.println("pressure_pa=" + system.getPressure("Pa"));
+    System.out.println();
+  }
+
+  /// The two alternative compressor map lookups, and a machine run on the extrapolating one.
+  ///
+  /// **The speed-interpolation block is `CompressorChartSpeedInterpolationTest`'s table**, read
+  /// at the points that test asserts (the linear-in-speed head, the zero-speed short circuit,
+  /// the two ends scaled by the speed ratio, the single line at `7000/6000`). The base lookup
+  /// has no extrapolation: its spline throws outside the flow knots, and the block prints that
+  /// exception beside the extrapolating class's answer. The machine row re-cases
+  /// `CompressorChartTest.runCurveTest` on PR - twelve components, 29.96 C, 75.73 bara, speed
+  /// 8765, the nine-speed table - on both classes.
+  static void compressorMapLookupRows() {
+    double[] conditions = new double[] {0.3, 1.0, 1.0, 1.0};
+    double[] speed = new double[] {6000, 7000, 8000};
+    double[][] flow = new double[][] {
+        {1000, 2000, 3000}, {1000, 2000, 3000}, {1000, 2000, 3000}};
+    double[][] head = new double[][] {
+        {65, 60, 50}, {85, 80, 70}, {105, 100, 90}};
+    double[][] efficiency = new double[][] {
+        {75, 80, 75}, {75, 80, 75}, {75, 80, 75}};
+
+    neqsim.process.equipment.compressor.CompressorChartAlternativeMapLookupExtrapolate extrapolate =
+        new neqsim.process.equipment.compressor.CompressorChartAlternativeMapLookupExtrapolate();
+    extrapolate.setCurves(conditions, speed, flow, head, efficiency);
+    System.out.println("speed_interpolation_extrapolate");
+    for (double rpm : new double[] {6001, 6500, 7000, 7500, 8000}) {
+      System.out.println("head_2000_at_" + rpm + "=" + extrapolate.getPolytropicHead(2000.0, rpm));
+    }
+    System.out.println("head_2000_at_0=" + extrapolate.getPolytropicHead(2000.0, 0.0));
+    System.out.println("head_2000_at_5000=" + extrapolate.getPolytropicHead(2000.0, 5000.0));
+    System.out.println("head_2000_at_9000=" + extrapolate.getPolytropicHead(2000.0, 9000.0));
+    System.out.println("efficiency_2000_at_7000="
+        + extrapolate.getPolytropicEfficiency(2000.0, 7000.0));
+    System.out.println("head_500_at_7000=" + extrapolate.getPolytropicHead(500.0, 7000.0));
+
+    neqsim.process.equipment.compressor.CompressorChartAlternativeMapLookupExtrapolate single =
+        new neqsim.process.equipment.compressor.CompressorChartAlternativeMapLookupExtrapolate();
+    single.setCurves(conditions, new double[] {6000}, new double[][] {{1000, 2000, 3000}},
+        new double[][] {{65, 60, 50}}, new double[][] {{75, 80, 75}});
+    System.out.println("single_line_head_2000_at_7000=" + single.getPolytropicHead(2000.0, 7000.0));
+    System.out.println();
+
+    neqsim.process.equipment.compressor.CompressorChartAlternativeMapLookup lookup =
+        new neqsim.process.equipment.compressor.CompressorChartAlternativeMapLookup();
+    lookup.setCurves(conditions, speed, flow, head, efficiency);
+    System.out.println("map_lookup");
+    for (double rpm : new double[] {6000, 6500, 7000, 8000, 12000}) {
+      System.out.println("head_2000_at_" + rpm + "=" + lookup.getPolytropicHead(2000.0, rpm));
+    }
+    System.out.println("efficiency_2000_at_6500=" + lookup.getPolytropicEfficiency(2000.0, 6500.0));
+    try {
+      System.out.println("head_500_at_7000=" + lookup.getPolytropicHead(500.0, 7000.0));
+    } catch (RuntimeException refused) {
+      System.out.println("head_500_at_7000=" + refused.getClass().getSimpleName());
+    }
+    System.out.println();
+
+    compressorMapRunRow("map_lookup_run_extrapolate", "interpolate and extrapolate");
+    compressorMapRunRow("map_lookup_run_lookup", "interpolate");
+  }
+
+  static void compressorMapRunRow(String label, String chartType) {
+    SystemInterface fluid = new SystemPrEos(273.15 + 29.96, 75.73);
+    String[] names = new String[] {"nitrogen", "CO2", "methane", "ethane", "propane", "i-butane",
+        "n-butane", "i-pentane", "n-pentane", "n-hexane", "n-heptane", "n-octane", "water"};
+    double[] z = new double[] {0.7823, 1.245, 88.4681, 4.7652, 2.3669, 0.3848, 0.873, 0.243,
+        0.2947, 0.2455, 0.1735, 0.064, 0.076};
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule("classic");
+    fluid.setTemperature(29.96, "C");
+    fluid.setPressure(75.73, "bara");
+    fluid.setTotalFlowRate(559401.418270102, "kg/hr");
+    Stream inlet = new Stream("Stream1", fluid);
+    inlet.run();
+
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor("compressor 1", inlet);
+    compressor.setCompressorChartType(chartType);
+    compressor.setUsePolytropicCalc(true);
+    compressor.setSpeed(8765);
+    double[] conditions = new double[] {0.3, 1.0, 1.0, 1.0};
+    double[] speed = new double[] {7000, 7500, 8000, 8500, 9000, 9500, 9659, 10000, 10500};
+    double[][] flow = new double[][] {{4512.7, 5120.8, 5760.9, 6401, 6868.27},
+        {4862.47, 5486.57, 6172.39, 6858.21, 7550.89}, {5237.84, 5852.34, 6583.88, 7315.43, 8046.97, 8266.43},
+        {5642.94, 6218.11, 6995.38, 7772.64, 8549.9, 9000.72}, {6221.77, 6583.88, 7406.87, 8229.85, 9052.84, 9768.84},
+        {6888.85, 6949.65, 7818.36, 8687.07, 9555.77, 10424.5, 10546.1},
+        {7109.83, 7948.87, 8832.08, 9715.29, 10598.5, 10801.6}, {7598.9, 8229.85, 9144.28, 10058.7, 10973.1, 11338.9},
+        {8334.1, 8641.35, 9601.5, 10561.6, 11521.8, 11963.5}};
+    double[][] head = new double[][] {{61.885, 59.639, 56.433, 52.481, 49.132},
+        {71.416, 69.079, 65.589, 61.216, 55.858}, {81.621, 79.311, 75.545, 70.727, 64.867, 62.879,},
+        {92.493, 90.312, 86.3, 81.079, 74.658, 70.216}, {103.512, 102.073, 97.83, 92.254, 85.292, 77.638},
+        {114.891, 114.632, 110.169, 104.221, 96.727, 87.002, 85.262},
+        {118.595, 114.252, 108.203, 100.55, 90.532, 87.54}, {126.747, 123.376, 117.113, 109.056, 98.369, 92.632},
+        {139.082, 137.398, 130.867, 122.264, 110.548, 103.247},};
+    double[][] polyEff = new double[][] {{78.3, 78.2, 77.2, 75.4, 73.4},
+        {78.3, 78.3, 77.5, 75.8, 73}, {78.2, 78.4, 77.7, 76.1, 73.5, 72.5}, {78.2, 78.4, 77.9, 76.4, 74, 71.9},
+        {78.3, 78.4, 78, 76.7, 74.5, 71.2}, {78.3, 78.4, 78.1, 77, 74.9, 71.3, 70.5},
+        {78.4, 78.1, 77.1, 75, 71.4, 70.2}, {78.3, 78.2, 77.2, 75.2, 71.7, 69.5}, {78.2, 78.2, 77.3, 75.5, 72.2, 69.6}};
+    compressor.getCompressorChart().setCurves(conditions, speed, flow, head, polyEff);
+    compressor.getCompressorChart().setHeadUnit("kJ/kg");
+    compressor.getCompressorChart().getSurgeCurve().setCurve(conditions,
+        new double[] {4512.7, 4862.47, 5237.84, 5642.94, 6221.77, 6888.85, 7109.83, 7598.9},
+        new double[] {61.885, 71.416, 81.621, 92.493, 103.512, 114.891, 118.595, 126.747});
+    compressor.getAntiSurge().setSurgeControlFactor(1.0);
+    compressor.run();
+
+    System.out.println(label);
+    System.out.println("chart_type=" + chartType);
+    System.out.println("inlet_m3_per_hr=" + compressor.getInletStream().getFlowRate("m3/hr"));
+    System.out.println("polytropic_head_kj_per_kg=" + compressor.getPolytropicFluidHead());
+    System.out.println("polytropic_efficiency_fraction=" + compressor.getPolytropicEfficiency());
+    System.out.println("outlet_p_bara=" + compressor.getOutletStream().getPressure("bara"));
+    System.out.println("outlet_t_k=" + compressor.getOutletStream().getTemperature("K"));
+    System.out.println("power_w=" + compressor.getPower("W"));
+    System.out.println("distance_to_surge=" + compressor.getDistanceToSurge());
+    print("inlet", inlet);
+    print("outlet", compressor.getOutletStream());
+    System.out.println();
+  }
+
+  /// The anti-surge surface: the boundary splines, the chart's generators, the read-outs, and
+  /// `Compressor.run`'s own recycle block.
+  ///
+  /// **The spline rows are `SafeSplineSurgeCurveTest.testSurgeCurve10250`'s**, read at the
+  /// points that test asserts. The chart rows call the class's own `generateSurgeCurve` and
+  /// `generateStoneWallCurve` on the eight-speed `CompressorChartTest` table, so the generator
+  /// is held as well as the curve. The machine rows re-case the same nine-component gas at
+  /// 24 C and 48 bara: one state read out with a 10% control margin, then the 0.30 and
+  /// 4.00 MSm3/day states of `AntiSurgeRecycleCalculatorTest` with `AntiSurge` active and the
+  /// default 1.05 surge-control factor - one inside surge, one far above it.
+  static void antiSurgeRows() {
+    double[] flow10250 = new double[] {9758.49, 9578.11, 9397.9, 9248.64, 9006.93, 8749.97,
+        8508.5, 8179.81, 7799.81, 7111.75, 6480.26, 6007.91, 5607.45};
+    double[] head10250 = new double[] {112.65, 121.13, 127.56, 132.13, 137.29, 140.73, 142.98,
+        144.76, 146.14, 148.05, 148.83, 149.54, 150.0};
+    neqsim.process.equipment.compressor.SafeSplineSurgeCurve curve =
+        new neqsim.process.equipment.compressor.SafeSplineSurgeCurve(flow10250, head10250);
+    System.out.println("spline_10250");
+    System.out.println("surge_flow_at_130=" + curve.getSurgeFlow(130.0));
+    System.out.println("surge_flow_at_190=" + curve.getSurgeFlow(190.0));
+    System.out.println("surge_flow_at_10=" + curve.getSurgeFlow(10.0));
+    System.out.println("surge_head_at_9321_84315=" + curve.getSurgeHead(9321.84315));
+    System.out.println("surge_head_at_6000=" + curve.getSurgeHead(6000.0));
+    System.out.println("surge_head_at_9500=" + curve.getSurgeHead(9500.0));
+    System.out.println();
+
+    neqsim.process.equipment.compressor.CompressorChart chart = compressorChart();
+    chart.generateSurgeCurve();
+    chart.generateStoneWallCurve();
+    System.out.println("generated_boundaries");
+    for (double head : new double[] {31.0, 50.0, 80.0}) {
+      System.out.println("surge_flow_at_" + head + "=" + chart.getSurgeCurve().getSurgeFlow(head));
+    }
+    for (double head : new double[] {31.0, 50.0, 80.0}) {
+      System.out.println(
+          "stonewall_flow_at_" + head + "=" + chart.getStoneWallCurve().getStoneWallFlow(head));
+    }
+    System.out.println("surge_flow_at_speed_11683=" + chart.getSurgeFlowAtSpeed(11683.0));
+    System.out.println("stonewall_flow_at_speed_11683=" + chart.getStoneWallFlowAtSpeed(11683.0));
+    System.out.println();
+
+    antiSurgeReadoutRow("anti_surge_readout");
+    antiSurgeRunRow("anti_surge_run_in_surge", 0.30);
+    antiSurgeRunRow("anti_surge_run_above_surge", 4.00);
+  }
+
+  static neqsim.process.equipment.compressor.Compressor antiSurgeMachine(double msm3PerDay) {
+    SystemInterface fluid = new SystemPrEos(298.15, 50.0);
+    String[] names = new String[] {"nitrogen", "CO2", "methane", "ethane", "propane", "i-butane",
+        "n-butane", "i-pentane", "n-pentane"};
+    double[] z = new double[] {1.205, 1.340, 87.974, 5.258, 3.283, 0.082, 0.487, 0.056, 0.053};
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    fluid.setMultiPhaseCheck(true);
+    fluid.setTemperature(24.0, "C");
+    fluid.setPressure(48.0, "bara");
+    fluid.setTotalFlowRate(msm3PerDay, "MSm3/day");
+    Stream inlet = new Stream("suction", fluid);
+    inlet.run();
+
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor("export", inlet);
+    compressor.setUsePolytropicCalc(true);
+    compressor.setSpeed(11918);
+    compressor.getCompressorChart().setCurves(compressorChart().getChartConditions(),
+        compressorChart().getSpeeds(), compressorChart().getFlows(),
+        compressorChart().getHeads(), compressorChart().getPolytropicEfficiencies());
+    compressor.getCompressorChart().setHeadUnit("kJ/kg");
+    compressor.getCompressorChart().setUseCompressorChart(true);
+    compressor.getCompressorChart().getSurgeCurve().setCurve(
+        compressorChart().getChartConditions(), new double[] {2789.0, 2550.0, 2500.0, 2200.0},
+        new double[] {80.0, 72.0, 70.0, 65.0});
+    return compressor;
+  }
+
+  static void printAntiSurge(String label,
+      neqsim.process.equipment.compressor.Compressor compressor) {
+    System.out.println(label);
+    System.out.println("speed_rpm=" + compressor.getSpeed());
+    System.out.println("polytropic_head_kj_per_kg=" + compressor.getPolytropicHead());
+    System.out.println("polytropic_fluid_head=" + compressor.getPolytropicFluidHead());
+    System.out.println("polytropic_efficiency_fraction=" + compressor.getPolytropicEfficiency());
+    System.out.println("power_w=" + compressor.getPower("W"));
+    System.out.println("outlet_p_bara=" + compressor.getOutletStream().getPressure("bara"));
+    System.out.println("outlet_t_k=" + compressor.getOutletStream().getTemperature("K"));
+    System.out.println("inlet_m3_per_hr=" + compressor.getInletStream().getFlowRate("m3/hr"));
+    System.out.println("surge_flow_m3_per_hr=" + compressor.getSurgeFlowRate());
+    System.out.println("surge_flow_margin_m3_per_hr=" + compressor.getSurgeFlowRateMargin());
+    System.out.println("surge_flow_std_m3_per_hr=" + compressor.getSurgeFlowRateStd());
+    System.out.println("distance_to_surge=" + compressor.getDistanceToSurge());
+    System.out.println("control_line_flow_m3_per_hr=" + compressor.getControlLineFlow());
+    System.out.println("distance_to_control_line=" + compressor.getDistanceToControlLine());
+    System.out.println(
+        "required_recycle_fraction=" + compressor.getRequiredRecycleFractionToControlLine());
+    System.out.println("surge_fraction=" + compressor.getAntiSurge().getCurrentSurgeFraction());
+    System.out.println("recycle_power_kw="
+        + compressor.getAntiSurgeRecyclePower(
+            compressor.getAntiSurge().getCurrentSurgeFraction(), "kW"));
+    print("inlet", compressor.getInletStream());
+    print("outlet", compressor.getOutletStream());
+    System.out.println();
+  }
+
+  // === process.anti_surge_recycle =============================================
+
+  /// `AntiSurgeRecycleCalculator.solve` on the charted machine `antiSurgeMachine` builds - the
+  /// pinned `AntiSurgeRecycleCalculatorTest` states, re-cased on PR.
+  ///
+  /// The natural suction is the machine's own inlet; `solve` runs it, and when its inlet volume
+  /// flow is below the control line it wires a cooled clone of the suction through a mixer and
+  /// converges the recycle mass with the calculator's damped fixed point. The class reports
+  /// m3/hr for the flows and kg/hr for the recycle mass.
+  static void antiSurgeRecycleRows() {
+    antiSurgeRecycleRow("low_flow_margin_005", 0.30, 0.05);
+    antiSurgeRecycleRow("high_flow_no_recycle", 4.00, 0.05);
+    antiSurgeRecycleRow("low_flow_margin_010", 0.30, 0.10);
+  }
+
+  static void antiSurgeRecycleRow(String label, double msm3PerDay, double margin) {
+    neqsim.process.equipment.compressor.Compressor compressor = antiSurgeMachine(msm3PerDay);
+    Stream suction = (Stream) compressor.getInletStream();
+    neqsim.process.equipment.compressor.AntiSurgeRecycleCalculator calculator =
+        new neqsim.process.equipment.compressor.AntiSurgeRecycleCalculator(compressor, suction);
+    calculator.setSurgeControlMargin(margin);
+    calculator.setRecycleCoolerTemperature(40.0, "C");
+    neqsim.process.equipment.compressor.AntiSurgeRecycleCalculator.Result result =
+        calculator.solve();
+
+    System.out.println(label);
+    System.out.println("surge_control_margin=" + margin);
+    System.out.println("recycle_cooler_temperature_c=40.0");
+    System.out.println("recycle_active=" + result.isRecycleActive());
+    System.out.println("converged=" + result.isConverged());
+    System.out.println("iterations=" + result.getIterations());
+    System.out.println("recycle_mass_flow_kg_hr=" + result.getRecycleMassFlow());
+    System.out.println("inlet_volume_flow_m3_hr=" + result.getInletVolumeFlow());
+    System.out.println("surge_flow_m3_hr=" + result.getSurgeFlow());
+    System.out.println("control_flow_m3_hr=" + result.getControlFlow());
+    System.out.println("distance_to_surge=" + result.getDistanceToSurge());
+    System.out.println("compressor_inlet_m3_hr="
+        + compressor.getInletStream().getFlowRate("m3/hr"));
+    System.out.println("compressor_inlet_kg_hr="
+        + compressor.getInletStream().getFlowRate("kg/hr"));
+    System.out.println("compressor_power_kw=" + compressor.getPower("kW"));
+    System.out.println("compressor_outlet_p_bara="
+        + compressor.getOutletStream().getPressure("bara"));
+    print("compressor_inlet", compressor.getInletStream());
+    print("compressor_outlet", compressor.getOutletStream());
+    System.out.println();
+  }
+
+  static void antiSurgeReadoutRow(String label) {
+    neqsim.process.equipment.compressor.Compressor compressor = antiSurgeMachine(1.0);
+    compressor.setSurgeControlMargin(0.10);
+    compressor.run();
+    printAntiSurge(label, compressor);
+  }
+
+  static void antiSurgeRunRow(String label, double msm3PerDay) {
+    neqsim.process.equipment.compressor.Compressor compressor = antiSurgeMachine(msm3PerDay);
+    compressor.getAntiSurge().setActive(true);
+    compressor.getAntiSurge().setSurgeControlFactor(1.05);
+    compressor.run();
+    printAntiSurge(label, compressor);
+  }
+
+  /// `CompressorChart`, the default fan-law class, and `Compressor.run`'s chart branch.
+  ///
+  /// **The chart's own rows are fluid-free**, so they compare the reduced fit and the two
+  /// inverses alone. The run row re-cases `CompressorCalculationTest.testRun` on PR: its
+  /// 9-component gas at 24 C, 48 bara and 1 MSm3/day, the eight-speed `CompressorChartTest`
+  /// table in kJ/kg and speed 11918.
+  static void compressorCurveRows() {
+    neqsim.process.equipment.compressor.CompressorChart chart = compressorChart();
+
+    for (double[] state : new double[][] {{3974.8455, 12913.0}, {3599.6333, 10453.0},
+        {1636.5807, 8200.0}, {6000.0, 12913.0}, {100.0, 12913.0}}) {
+      System.out.println("chart_row");
+      System.out.println("flow_m3_per_hr=" + state[0]);
+      System.out.println("speed_rpm=" + state[1]);
+      System.out.println("polytropic_head_kj_per_kg=" + chart.getPolytropicHead(state[0], state[1]));
+      System.out.println("polytropic_efficiency_percent="
+          + chart.getPolytropicEfficiency(state[0], state[1]));
+      System.out.println();
+    }
+
+    System.out.println("speed_inverse");
+    System.out.println("flow_m3_per_hr=3974.8455");
+    System.out.println("head_kj_per_kg=70.0");
+    System.out.println("speed_rounded=" + chart.getSpeed(3974.8455, 70.0));
+    System.out.println("speed_value=" + chart.getSpeedValue(3974.8455, 70.0));
+    System.out.println();
+
+    System.out.println("flow_inverse");
+    System.out.println("head_kj_per_kg=70.0");
+    System.out.println("speed_rpm=12913.0");
+    System.out.println("guess_flow_m3_per_hr=4000.0");
+    System.out.println("flow_m3_per_hr=" + chart.getFlow(70.0, 12913.0, 4000.0));
+    System.out.println();
+
+    double speed = 11683.0;
+    double surge = chart.getSurgeFlowAtSpeed(speed);
+    double stonewall = chart.getStonewallFlowAtSpeed(speed);
+    System.out.println("range_status");
+    System.out.println("speed_rpm=" + speed);
+    System.out.println("surge_flow_m3_per_hr=" + surge);
+    System.out.println("stonewall_flow_m3_per_hr=" + stonewall);
+    System.out.println("surge_head_kj_per_kg=" + chart.getSurgeHeadAtSpeed(speed));
+    System.out.println("stonewall_head_kj_per_kg=" + chart.getStoneWallHeadAtSpeed(speed));
+    System.out.println("status_mid=" + chart.getFlowRangeStatus(0.5 * (surge + stonewall), speed));
+    System.out.println("status_low=" + chart.getFlowRangeStatus(surge - 500.0, speed));
+    System.out.println("status_high=" + chart.getFlowRangeStatus(stonewall + 500.0, speed));
+    System.out.println();
+
+    compressorRunRow("compressor_chart_run", chart);
+  }
+
+  /**
+   * `EquilibriumSoundSpeedTest`'s states on the pinned class.
+   *
+   * The test disables `useVolumeCorrection`; this probe keeps the default, because azoth's PR
+   * carries the Peneloux shift and the capture is only comparable on the same convention.
+   */
+  static void equilibriumSoundSpeedRows() {
+    eqSpeedRow("dense_co2", eqCo2Feed(null), 1.0e-3);
+    eqSpeedRow("dilute_nitrogen", eqIdealGas(), 1.0e-3);
+
+    SystemInterface twoPhase = eqCo2Feed(null);
+    double entropy = twoPhase.getEntropy("J/kgK");
+    twoPhase.setPressure(40.0);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(twoPhase).PSflash(entropy, "J/kgK");
+    twoPhase.init(3);
+    eqSpeedRow("two_phase_co2", twoPhase, 1.0e-3);
+
+    for (double pressure : new double[] {50.0, 40.0, 20.0}) {
+      SystemInterface mixture = eqReferenceTpRoot(eqCo2Feed("nitrogen"), pressure,
+          eqCo2Feed("nitrogen").getEntropy("J/kgK"));
+      eqSpeedRow("mixture_nitrogen_" + (int) pressure, mixture, 1.0e-3);
+    }
+    SystemInterface hydrogen = eqReferenceTpRoot(eqCo2Feed("hydrogen"), 40.0,
+        eqCo2Feed("hydrogen").getEntropy("J/kgK"));
+    eqSpeedRow("mixture_hydrogen_40", hydrogen, 1.0e-3);
+
+    // **Through a Stream, because a bare setT/setP + TPflash + init(3) leaves `s` stale** -
+    // the state the pinned test hands the class reads the feed's entropy at the new T and P.
+    // The class's own closure cannot see that; the probe can, by building the state the way a
+    // solver does.
+    SystemInterface boundaryFluid = eqCo2Feed(null);
+    boundaryFluid.setPressure(46.5);
+    boundaryFluid.setTemperature(284.3849043789973);
+    Stream boundaryStream = new Stream("boundary", boundaryFluid);
+    boundaryStream.run();
+    eqSpeedRow("phase_entry_46_5", boundaryStream.getThermoSystem(), 0.05);
+
+    SystemInterface steps = eqReferenceTpRoot(eqCo2Feed("nitrogen"), 40.0,
+        eqCo2Feed("nitrogen").getEntropy("J/kgK"));
+    eqSpeedRow("step_0_0002", steps, 2.0e-4);
+    eqSpeedRow("step_0_002", steps, 2.0e-3);
+    eqSpeedRow("step_0_01", steps, 1.0e-2);
+  }
+
+  static SystemInterface eqCo2Feed(String impurity) {
+    SystemInterface fluid = new SystemPrEos(298.15, 150.0);
+    fluid.addComponent("CO2", impurity == null ? 1.0 : 0.98);
+    if (impurity != null) {
+      fluid.addComponent(impurity, 0.02);
+    }
+    fluid.setMixingRule(2);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(fluid).TPflash();
+    fluid.init(3);
+    return fluid;
+  }
+
+  static SystemInterface eqIdealGas() {
+    SystemInterface gas = new SystemPrEos(350.0, 0.001);
+    gas.addComponent("nitrogen", 1.0);
+    gas.setMixingRule(2);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(gas).TPflash();
+    gas.init(3);
+    return gas;
+  }
+
+  static SystemInterface eqReferenceTpRoot(SystemInterface original, double pressure,
+      double entropy) {
+    double lower = 200.0;
+    double upper = 350.0;
+    SystemInterface trial = null;
+    for (int i = 0; i < 60; i++) {
+      trial = original.clone();
+      trial.setPressure(pressure);
+      trial.setTemperature((lower + upper) / 2.0);
+      new neqsim.thermodynamicoperations.ThermodynamicOperations(trial).TPflash();
+      trial.init(3);
+      double error = trial.getEntropy("J/kgK") - entropy;
+      if (Math.abs(error) < 1.0e-9) {
+        break;
+      }
+      if (error > 0.0) {
+        upper = trial.getTemperature();
+      } else {
+        lower = trial.getTemperature();
+      }
+    }
+    return trial;
+  }
+
+  static void eqSpeedRow(String label, SystemInterface fluid, double step) {
+    double targetEntropy = fluid.getEntropy("J/kgK");
+    double phaseSpeed = fluid.getSoundSpeed();
+    double temperature = fluid.getTemperature();
+    double pressure = fluid.getPressure();
+    int phases = fluid.getNumberOfPhases();
+    StringBuilder types = new StringBuilder();
+    StringBuilder fractions = new StringBuilder();
+    for (int i = 0; i < phases; i++) {
+      types.append(i == 0 ? "" : ",").append(fluid.getPhase(i).getType().name());
+      fractions.append(i == 0 ? "" : ",").append(fluid.getBeta(i));
+    }
+    StringBuilder z = new StringBuilder();
+    for (int i = 0; i < fluid.getPhase(0).getNumberOfComponents(); i++) {
+      z.append(i == 0 ? "" : ",")
+          .append(fluid.getPhase(0).getComponent(i).getName()).append(":")
+          .append(fluid.getPhase(0).getComponent(i).getz());
+    }
+
+    neqsim.thermo.util.EquilibriumSoundSpeed.Result result =
+        neqsim.thermo.util.EquilibriumSoundSpeed.calculate(fluid, step);
+
+    System.out.println(label);
+    System.out.println("input_p_bara=" + pressure);
+    System.out.println("input_t_k=" + temperature);
+    System.out.println("input_z=" + z);
+    System.out.println("input_phase_count=" + phases);
+    System.out.println("input_phase_types=" + types);
+    System.out.println("input_phase_fractions=" + fractions);
+    System.out.println("specific_entropy_j_per_kgk=" + targetEntropy);
+    System.out.println("phase_sound_speed_m_per_s=" + phaseSpeed);
+    System.out.println("relative_pressure_step=" + step);
+    System.out.println("status=" + result.getStatus());
+    System.out.println("message=" + result.getMessage());
+    System.out.println("sound_speed_m_per_s=" + result.getSoundSpeed());
+    System.out.println("pressure_step_pa=" + result.getPressureStepPa());
+    System.out.println("relative_step_error=" + result.getRelativeStepError());
+    System.out.println("stencil=" + result.getStencil());
+    System.out.println("phase_boundary_encountered=" + result.isPhaseBoundaryEncountered());
+    System.out.println("flash_evaluations=" + result.getFlashEvaluations());
+    int sample = 0;
+    for (neqsim.thermo.util.EquilibriumSoundSpeed.State state : result.getSamples()) {
+      StringBuilder phaseTypes = new StringBuilder();
+      StringBuilder phaseFractions = new StringBuilder();
+      for (int i = 0; i < state.getPhaseTypes().length; i++) {
+        phaseTypes.append(i == 0 ? "" : ",").append(state.getPhaseTypes()[i]);
+        phaseFractions.append(i == 0 ? "" : ",").append(state.getPhaseFractions()[i]);
+      }
+      System.out.println("sample_" + sample + "_p_pa=" + state.getPressurePa());
+      System.out.println("sample_" + sample + "_t_k=" + state.getTemperatureK());
+      System.out.println("sample_" + sample + "_density_kg_per_m3=" + state.getDensity());
+      System.out.println("sample_" + sample + "_entropy_residual=" + state.getEntropyResidual());
+      System.out.println("sample_" + sample + "_component_residual=" + state.getComponentResidual());
+      System.out.println("sample_" + sample + "_fugacity_residual=" + state.getFugacityResidual());
+      System.out.println("sample_" + sample + "_phase_types=" + phaseTypes);
+      System.out.println("sample_" + sample + "_phase_fractions=" + phaseFractions);
+      sample++;
+    }
+    System.out.println();
+  }
+
+  /** `CompressorChartTest.runCurveTestMaxMinSpeed`'s five runs, on the pinned class. */
+  static void compressorSpeedSolveRows() {
+    double[] chartConditions = new double[] {0.3, 1.0, 1.0, 1.0};
+    double[] speed = new double[] {7000, 7500, 8000, 8500, 9000, 9500, 9659, 10000, 10500};
+    double[][] flow = new double[][] {{4512.7, 5120.8, 5760.9, 6401, 6868.27},
+        {4862.47, 5486.57, 6172.39, 6858.21, 7550.89},
+        {5237.84, 5852.34, 6583.88, 7315.43, 8046.97, 8266.43},
+        {5642.94, 6218.11, 6995.38, 7772.64, 8549.9, 9000.72},
+        {6221.77, 6583.88, 7406.87, 8229.85, 9052.84, 9768.84},
+        {6888.85, 6949.65, 7818.36, 8687.07, 9555.77, 10424.5, 10546.1},
+        {7109.83, 7948.87, 8832.08, 9715.29, 10598.5, 10801.6},
+        {7598.9, 8229.85, 9144.28, 10058.7, 10973.1, 11338.9},
+        {8334.1, 8641.35, 9601.5, 10561.6, 11521.8, 11963.5}};
+    double[][] head = new double[][] {{61.885, 59.639, 56.433, 52.481, 49.132},
+        {71.416, 69.079, 65.589, 61.216, 55.858},
+        {81.621, 79.311, 75.545, 70.727, 64.867, 62.879},
+        {92.493, 90.312, 86.3, 81.079, 74.658, 70.216},
+        {103.512, 102.073, 97.83, 92.254, 85.292, 77.638},
+        {114.891, 114.632, 110.169, 104.221, 96.727, 87.002, 85.262},
+        {118.595, 114.252, 108.203, 100.55, 90.532, 87.54},
+        {126.747, 123.376, 117.113, 109.056, 98.369, 92.632},
+        {139.082, 137.398, 130.867, 122.264, 110.548, 103.247}};
+    double[][] polyEff = new double[][] {{78.3, 78.2, 77.2, 75.4, 73.4},
+        {78.3, 78.3, 77.5, 75.8, 73},
+        {78.2, 78.4, 77.7, 76.1, 73.5, 72.5},
+        {78.2, 78.4, 77.9, 76.4, 74, 71.9},
+        {78.3, 78.4, 78, 76.7, 74.5, 71.2},
+        {78.3, 78.4, 78.1, 77, 74.9, 71.3, 70.5},
+        {78.4, 78.1, 77.1, 75, 71.4, 70.2},
+        {78.3, 78.2, 77.2, 75.2, 71.7, 69.5},
+        {78.2, 78.2, 77.3, 75.5, 72.2, 69.6}};
+    double[] surgeflow =
+        new double[] {4512.7, 4862.47, 5237.84, 5642.94, 6221.77, 6888.85, 7109.83, 7598.9};
+    double[] surgehead =
+        new double[] {61.885, 71.416, 81.621, 92.493, 103.512, 114.891, 118.595, 126.747};
+
+    SystemInterface fluid = new SystemPrEos(273.15 + 29.96, 75.73);
+    fluid.addComponent("nitrogen", 0.7823);
+    fluid.addComponent("CO2", 1.245);
+    fluid.addComponent("methane", 88.4681);
+    fluid.addComponent("ethane", 4.7652);
+    fluid.addComponent("propane", 2.3669);
+    fluid.addComponent("i-butane", 0.3848);
+    fluid.addComponent("n-butane", 0.873);
+    fluid.setMixingRule("classic");
+
+    Stream inlet = new Stream("Stream1", fluid);
+    inlet.setTemperature(29.96, "C");
+    inlet.setPressure(75.73, "bara");
+    inlet.setFlowRate(559401.4, "kg/hr");
+    inlet.run();
+
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor("compressor 1", inlet);
+    compressor.setUsePolytropicCalc(true);
+    compressor.setPolytropicEfficiency(0.85);
+    compressor.setSpeed(9000);
+    compressor.getCompressorChart().setCurves(chartConditions, speed, flow, head, polyEff);
+    compressor.getCompressorChart().setHeadUnit("kJ/kg");
+    compressor.getCompressorChart().getSurgeCurve().setCurve(chartConditions, surgeflow, surgehead);
+    compressor.getAntiSurge().setSurgeControlFactor(1.0);
+    compressor.getCompressorChart().setUseCompressorChart(true);
+    compressor.setSolveSpeed(true);
+
+    // The pinned test's sequence, run in order on one machine.
+    double[][] rows = new double[][] {{240.0, 7000.0, 10500.0, 0.0},
+        {240.0, 7000.0, 10500.0, 1.0}, {100.0, 7000.0, 10500.0, 1.0},
+        {100.0, 7000.0, 10500.0, 0.0}, {90.0, 0.0, 10500.0, 0.0}};
+    double[] initial = new double[] {9000.0, 9000.0, 9000.0, 15000.0, 3000.0};
+
+    for (int i = 0; i < rows.length; i++) {
+      if (i == 3) {
+        compressor.setSpeed(initial[i]);
+      }
+      if (i == 4) {
+        compressor.setMinimumSpeed(rows[i][1]);
+        compressor.setSpeed(initial[i]);
+      }
+      compressor.setOutletPressure(rows[i][0], "bara");
+      compressor.setMaximumSpeed(rows[i][2]);
+      if (i != 4) {
+        compressor.setMinimumSpeed(rows[i][1]);
+      }
+      compressor.setLimitSpeed(rows[i][3] > 0.5);
+      double ranFrom = compressor.getSpeed();
+      compressor.run();
+
+      System.out.println("speed_solve_row_" + (i + 1));
+      System.out.println("target_outlet_p_bara=" + rows[i][0]);
+      System.out.println("min_speed_rpm=" + rows[i][1]);
+      System.out.println("max_speed_rpm=" + rows[i][2]);
+      System.out.println("limit_speed=" + (rows[i][3] > 0.5));
+      System.out.println("initial_speed_rpm=" + ranFrom);
+      System.out.println("inlet_n_mol_per_s=" + inlet.getThermoSystem().getTotalNumberOfMoles());
+      System.out.println("speed_rpm=" + compressor.getSpeed());
+      System.out.println("outlet_p_bara=" + compressor.getOutletStream().getPressure("bara"));
+      System.out.println("outlet_t_k=" + compressor.getOutletStream().getTemperature("K"));
+      System.out.println("outlet_h_j_per_mol="
+          + compressor.getOutletStream().getThermoSystem().getEnthalpy()
+              / compressor.getOutletStream().getThermoSystem().getTotalNumberOfMoles());
+      System.out.println("power_w=" + compressor.getPower());
+      System.out.println("polytropic_head_kj_per_kg=" + compressor.getPolytropicFluidHead());
+      System.out.println("polytropic_head_m=" + compressor.getPolytropicHeadMeter());
+      System.out.println("polytropic_efficiency_fraction=" + compressor.getPolytropicEfficiency());
+      print("inlet", inlet);
+      print("outlet", compressor.getOutletStream());
+      System.out.println();
+    }
+  }
+
+  static neqsim.process.equipment.compressor.CompressorChart compressorChart() {
+    double[] chartConditions = new double[] {0.3, 1.0, 1.0, 1.0};
+    double[] speed = new double[] {12913, 12298, 11683, 11098, 10453, 9224, 8609, 8200};
+    double[][] flow = new double[][] {
+        {2789.1285, 3174.0375, 3689.2288, 4179.4503, 4570.2768, 4954.7728, 5246.0329, 5661.0331},
+        {2571.1753, 2943.7254, 3440.2675, 3837.4448, 4253.0898, 4668.6643, 4997.1926, 5387.4952},
+        {2415.3793, 2763.0706, 3141.7095, 3594.7436, 4047.6467, 4494.1889, 4853.7353, 5138.7858},
+        {2247.2043, 2799.7342, 3178.3428, 3656.1551, 4102.778, 4394.1591, 4648.3224, 4840.4998},
+        {2072.8397, 2463.9483, 2836.4078, 3202.5266, 3599.6333, 3978.0203, 4257.0022, 4517.345},
+        {1835.9552, 2208.455, 2618.1322, 2940.8034, 3244.7852, 3530.1279, 3753.3738, 3895.9746},
+        {1711.3386, 1965.8848, 2356.9431, 2685.9247, 3008.5154, 3337.2855, 3591.5092},
+        {1636.5807, 2002.8708, 2338.0319, 2642.1245, 2896.4894, 3113.6264, 3274.8764, 3411.2977}};
+    double[][] head = new double[][] {
+        {80.0375, 78.8934, 76.2142, 71.8678, 67.0062, 60.6061, 53.0499, 39.728},
+        {72.2122, 71.8369, 68.9009, 65.8341, 60.7167, 54.702, 47.2749, 35.7471},
+        {65.1576, 64.5253, 62.6118, 59.1619, 54.0455, 47.0059, 39.195, 31.6387},
+        {58.6154, 56.9627, 54.6647, 50.4462, 44.4322, 38.4144, 32.9084, 28.8109},
+        {52.3295, 51.0573, 49.5283, 46.3326, 42.3685, 37.2502, 31.4884, 25.598},
+        {40.6578, 39.6416, 37.6008, 34.6603, 30.9503, 27.1116, 23.2713, 20.4546},
+        {35.2705, 34.6359, 32.7228, 31.0645, 27.0985, 22.7482, 18.0113},
+        {32.192, 31.1756, 29.1329, 26.833, 23.8909, 21.3324, 18.7726, 16.3403}};
+    double[][] polyEff = new double[][] {
+        {77.2452238409573, 79.4154186459363, 80.737960012489, 80.5229826589649, 79.2210931638144,
+            75.4719133864634, 69.6034181197298, 58.7322388482707},
+        {77.0107837113504, 79.3069974136389, 80.8941189021135, 80.7190194665918, 79.5313242980328,
+            75.5912622896367, 69.6846136362097, 60.0043057990909},
+        {77.0043065299874, 79.1690958847856, 80.8038169975675, 80.6543975614197, 78.8532389102705,
+            73.6664774270613, 66.2735600426727, 57.671664571658},
+        {77.0716623789093, 80.4629750233093, 81.1390811169072, 79.6374242667478, 75.380928428817,
+            69.5332969549779, 63.7997587622339, 58.8120614497758},
+        {76.9705872525642, 79.8335492585324, 80.9468133671171, 80.5806471927835, 78.0462158225426,
+            73.0403707523258, 66.5572286338589, 59.8624822515064},
+        {77.5063036680357, 80.2056198362559, 81.0339108025933, 79.6085962687939, 76.3814534404405,
+            70.8027503005902, 64.6437367160571, 60.5299349982342},
+        {77.8175271586685, 80.065165942218, 81.0631362122632, 79.8955051771299, 76.1983240929369,
+            69.289982774309, 60.8567149372229},
+        {78.0924334304045, 80.9353551568667, 80.7904437766234, 78.8639325223295, 75.2170936751143,
+            70.3105081673411, 65.5507568533569, 61.0391468300337}};
+    neqsim.process.equipment.compressor.CompressorChart chart =
+        new neqsim.process.equipment.compressor.CompressorChart();
+    chart.setCurves(chartConditions, speed, flow, head, polyEff);
+    chart.setHeadUnit("kJ/kg");
+    return chart;
+  }
+
+  static void compressorRunRow(String label,
+      neqsim.process.equipment.compressor.CompressorChart chart) {
+    SystemInterface fluid = new SystemPrEos(298.15, 50.0);
+    String[] names = new String[] {"nitrogen", "CO2", "methane", "ethane", "propane", "i-butane",
+        "n-butane", "i-pentane", "n-pentane"};
+    double[] z = new double[] {1.205, 1.340, 87.974, 5.258, 3.283, 0.082, 0.487, 0.056, 0.053};
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    fluid.setMultiPhaseCheck(true);
+    fluid.setTemperature(24.0, "C");
+    fluid.setPressure(48.0, "bara");
+    fluid.setTotalFlowRate(1.0, "MSm3/day");
+    Stream inlet = new Stream("Stream1", fluid);
+    inlet.run();
+
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor("cmp1", inlet);
+    compressor.setUsePolytropicCalc(true);
+    compressor.setSpeed(11918);
+    compressor.getCompressorChart().setCurves(chart.getChartConditions(), chart.getSpeeds(),
+        chart.getFlows(), chart.getHeads(), chart.getPolytropicEfficiencies());
+    compressor.getCompressorChart().setHeadUnit("kJ/kg");
+    compressor.run();
+
+    System.out.println(label);
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_z=" + inlet.getThermoSystem().getZ());
+    System.out.println("inlet_gamma2=" + inlet.getThermoSystem().getGamma2());
+    System.out.println("inlet_molar_mass_gr_per_mol="
+        + inlet.getThermoSystem().getMolarMass("gr/mol"));
+    System.out.println("inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("speed_rpm=" + compressor.getSpeed());
+    System.out.println("polytropic_head_chart_kj_per_kg=" + compressor.getPolytropicHead());
+    System.out.println("polytropic_efficiency_fraction="
+        + compressor.getPolytropicEfficiency());
+    System.out.println("power_w=" + compressor.getPower());
+    System.out.println("outlet_p_bara=" + compressor.getOutletStream().getPressure("bara"));
+    System.out.println("outlet_t_k=" + compressor.getOutletStream().getTemperature("K"));
+    print("inlet", inlet);
+    print("outlet", compressor.getOutletStream());
+    System.out.println();
+  }
+
+  /// `Expander`'s stepped polytropic branch, 5 and 40 steps, and the isentropic power.
+  static void expanderStepRows() {
+    for (int steps : new int[] {5, 40}) {
+      Stream inlet = expanderFeed();
+      neqsim.process.equipment.expander.Expander expander =
+          new neqsim.process.equipment.expander.Expander("expander", inlet);
+      expander.setOutletPressure(30.0, "bara");
+      expander.setPolytropicEfficiency(0.80);
+      expander.setUsePolytropicCalc(true);
+      expander.setNumberOfCompressorCalcSteps(steps);
+      expander.run();
+
+      System.out.println("polytropic_steps=" + steps);
+      System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+      System.out.println("inlet_molar_mass_gr_per_mol="
+          + inlet.getThermoSystem().getMolarMass("gr/mol"));
+      System.out.println("power_w=" + expander.getPower());
+      System.out.println("outlet_p_bara=" + expander.getOutletStream().getPressure("bara"));
+      System.out.println("outlet_t_k=" + expander.getOutletStream().getTemperature("K"));
+      print("inlet", inlet);
+      print("outlet", expander.getOutletStream());
+      System.out.println();
+    }
+
+    Stream inlet = expanderFeed();
+    neqsim.process.equipment.expander.Expander expander =
+        new neqsim.process.equipment.expander.Expander("expander", inlet);
+    expander.setOutletPressure(30.0, "bara");
+    expander.setIsentropicEfficiency(0.80);
+    expander.run();
+    System.out.println("isentropic_efficiency=0.80");
+    System.out.println("power_w=" + expander.getPower());
+    System.out.println("outlet_p_bara=" + expander.getOutletStream().getPressure("bara"));
+    System.out.println("outlet_t_k=" + expander.getOutletStream().getTemperature("K"));
+    print("inlet", inlet);
+    print("outlet", expander.getOutletStream());
+    System.out.println();
+  }
+
+  /// `Expander`'s two remaining steady surfaces: the stated power and the outlet-temperature solve.
+  ///
+  /// **`setPower` states the total enthalpy change the run applies**, and the class then
+  /// back-computes `isentropicEfficiency = dH / (h_isentropic - h_in)` - a value above one is
+  /// allowed. **The outlet-temperature surface is the inherited `solveEfficiency`**, a secant
+  /// over the efficiency with a one-hundredth first step and a 50-iteration cap; the expander's
+  /// own `run` never reads `useOutTemperature`, so the solve is a method rather than a mode.
+  static void expanderPowerModeRows() {
+    Stream baseInlet = expanderFeed();
+    neqsim.process.equipment.expander.Expander base =
+        new neqsim.process.equipment.expander.Expander("base", baseInlet);
+    base.setOutletPressure(30.0);
+    base.setIsentropicEfficiency(0.80);
+    base.run();
+    double basePower = base.getPower();
+    System.out.println("base_power_w=" + basePower);
+    System.out.println("base_outlet_t_k=" + base.getOutletStream().getTemperature("K"));
+    print("inlet", baseInlet);
+    print("outlet", base.getOutletStream());
+    System.out.println();
+
+    for (double fraction : new double[] {1.0, 0.5, 0.0, 0.25}) {
+      Stream inlet = expanderFeed();
+      neqsim.process.equipment.expander.Expander expander =
+          new neqsim.process.equipment.expander.Expander("set power", inlet);
+      expander.setOutletPressure(30.0);
+      expander.setIsentropicEfficiency(0.80);
+      expander.setPower(basePower * fraction);
+      expander.run();
+      System.out.println("power_set_fraction=" + fraction);
+      System.out.println("power_w=" + expander.getPower());
+      System.out.println("isentropic_efficiency=" + expander.getIsentropicEfficiency());
+      System.out.println("outlet_t_k=" + expander.getOutletStream().getTemperature("K"));
+      print("inlet", inlet);
+      print("outlet", expander.getOutletStream());
+      System.out.println();
+    }
+
+    Stream warmInlet = expanderFeed();
+    neqsim.process.equipment.expander.Expander warm =
+        new neqsim.process.equipment.expander.Expander("warm", warmInlet);
+    warm.setOutletPressure(30.0);
+    warm.setIsentropicEfficiency(0.80);
+    warm.setPower(-basePower * 0.1);
+    warm.run();
+    System.out.println("power_set_fraction=-0.1");
+    System.out.println("power_w=" + warm.getPower());
+    System.out.println("isentropic_efficiency=" + warm.getIsentropicEfficiency());
+    System.out.println("outlet_t_k=" + warm.getOutletStream().getTemperature("K"));
+    print("inlet", warmInlet);
+    print("outlet", warm.getOutletStream());
+    System.out.println();
+
+    for (double target : new double[] {280.0, 250.0, 240.0}) {
+      Stream inlet = expanderFeed();
+      neqsim.process.equipment.expander.Expander expander =
+          new neqsim.process.equipment.expander.Expander("solve", inlet);
+      expander.setOutletPressure(30.0);
+      expander.setIsentropicEfficiency(0.80);
+      double solved = expander.solveEfficiency(target);
+      expander.run();
+      System.out.println("solve_target_t_k=" + target);
+      System.out.println("solved_efficiency=" + solved);
+      System.out.println("power_w=" + expander.getPower());
+      System.out.println("outlet_t_k=" + expander.getOutletStream().getTemperature("K"));
+      print("inlet", inlet);
+      print("outlet", expander.getOutletStream());
+      System.out.println();
+    }
+  }
+
+  static Stream expanderFeed() {
+    SystemInterface fluid = new SystemPrEos(298.15, 90.0);
+    fluid.addComponent("methane", 0.82);
+    fluid.addComponent("ethane", 0.10);
+    fluid.addComponent("propane", 0.05);
+    fluid.addComponent("n-butane", 0.03);
+    fluid.setMixingRule(2);
+    fluid.setTotalFlowRate(50000.0, "kg/hr");
+    Stream stream = new Stream("feed", fluid);
+    stream.setTemperature(25.0, "C");
+    stream.setPressure(90.0, "bara");
+    stream.run();
+    return stream;
+  }
+
   /// `Compressor` and `Expander`, which are one machine's route with the efficiency on the
   /// other side of the division.
   ///
@@ -420,6 +3182,189 @@ public class ProcessProbe {
   ///
   /// `getEntropyProduction` is the second-law statement of the same step, and the only other
   /// number either class exposes about its interior.
+  /// `CompressorDeposit`'s mass-to-multiplier mapping and its run-time effect.
+  static void compressorDepositRows() {
+    depositRow("clean", 0.0, 0.0);
+    depositRow("sulfur5_salt2", 5.0, 2.0);
+    depositRow("saturated", 200.0, 0.0);
+    // The class's own inverse: the S8 mass that yields a 0.77 efficiency multiplier.
+    neqsim.process.equipment.compressor.CompressorDeposit inverse =
+        new neqsim.process.equipment.compressor.CompressorDeposit(0.6, 0.02);
+    double inverseMass = inverse.depositMassForEfficiencyMultiplier(
+        neqsim.process.equipment.compressor.DepositMechanism.SULFUR_S8, 0.77);
+    depositRow("inverse_0_77", inverseMass, 0.0);
+
+    // The machine: clean against 3 kg of S8, both on the deposit test's polytropic machine.
+    System.out.println("machine_clean");
+    printMachineDeposit(null);
+    System.out.println("machine_fouled_3kg");
+    printMachineDeposit(3.0);
+  }
+
+  static void depositRow(String label, double sulfurKg, double saltKg) {
+    neqsim.process.equipment.compressor.CompressorDeposit deposit =
+        new neqsim.process.equipment.compressor.CompressorDeposit(0.6, 0.02);
+    deposit.addDeposit(neqsim.process.equipment.compressor.DepositMechanism.SULFUR_S8, sulfurKg);
+    deposit.addDeposit(neqsim.process.equipment.compressor.DepositMechanism.SALT_NACL, saltKg);
+    System.out.println(label);
+    System.out.println("total_mass_kg=" + deposit.getTotalDepositMass());
+    System.out.println("volume_m3=" + deposit.getDepositVolume());
+    System.out.println("film_thickness_m=" + deposit.getFilmThickness());
+    System.out.println("blockage=" + deposit.getAreaBlockageFraction());
+    System.out.println("efficiency_multiplier=" + deposit.getEfficiencyMultiplier());
+    System.out.println("head_multiplier=" + deposit.getHeadMultiplier());
+    System.out.println();
+  }
+
+  static void printMachineDeposit(Double sulfurKg) {
+    neqsim.thermo.system.SystemInterface gas =
+        new neqsim.thermo.system.SystemPrEos(273.15 + 30.0, 18.8);
+    gas.addComponent("methane", 0.86);
+    gas.addComponent("ethane", 0.07);
+    gas.addComponent("propane", 0.03);
+    gas.addComponent("CO2", 0.02);
+    gas.addComponent("nitrogen", 0.02);
+    gas.setMixingRule(2);
+    Stream feed = new Stream("suction", gas);
+    feed.setFlowRate(100000.0, "kg/hr");
+    feed.setTemperature(30.0, "C");
+    feed.setPressure(18.8, "bara");
+    feed.run();
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor("KA03B", feed);
+    compressor.setOutletPressure(42.0);
+    compressor.setUsePolytropicCalc(true);
+    compressor.setPolytropicEfficiency(0.60);
+    if (sulfurKg != null) {
+      neqsim.process.equipment.compressor.CompressorDeposit deposit =
+          neqsim.process.equipment.compressor.CompressorDeposit.fromCompressor(compressor);
+      deposit.addDeposit(neqsim.process.equipment.compressor.DepositMechanism.SULFUR_S8, sulfurKg);
+      compressor.setDepositModel(deposit);
+      System.out.println("inlet_volume_flow_m3_s=" + feed.getFlowRate("m3/sec"));
+      System.out.println("wetted_area_m2=" + deposit.getWettedArea());
+      System.out.println("passage_half_height_m=" + deposit.getPassageHalfHeight());
+    }
+    compressor.run();
+    System.out.println("power_kw=" + compressor.getPower() / 1000.0);
+    System.out.println("polytropic_efficiency_out=" + compressor.getPolytropicEfficiency());
+    System.out.println("degradation_factor=" + compressor.getDegradationFactor());
+    System.out.println("fouling_factor=" + compressor.getFoulingFactor());
+    System.out.println();
+  }
+
+  /// `setCompressionRatio` and `setPower` on the deposit test's machine.
+  static void compressorModeRows() {
+    compressorModeRow("pr_ratio_2_2", null, 2.2, null, null, null, false, null);
+    compressorModeRow("pr_ratio_3_capped_40", null, 3.0, 40.0, null, null, false, null);
+    compressorModeRow("pr_power_3mw", 42.0, null, null, 3.0e6, 0.8, false, null);
+    compressorModeRow("pr_power_3mw_polytropic", 42.0, null, null, 3.0e6, 0.8, true, 0.75);
+  }
+
+  static void compressorModeRow(String label, Double outletBara, Double ratioBara,
+      Double maximumBara, Double powerW, Double isentropicEfficiency, boolean polytropic,
+      Double polytropicEfficiency) {
+    neqsim.thermo.system.SystemInterface gas =
+        new neqsim.thermo.system.SystemPrEos(273.15 + 30.0, 18.8);
+    gas.addComponent("methane", 0.86);
+    gas.addComponent("ethane", 0.07);
+    gas.addComponent("propane", 0.03);
+    gas.addComponent("CO2", 0.02);
+    gas.addComponent("nitrogen", 0.02);
+    gas.setMixingRule(2);
+    Stream feed = new Stream("suction", gas);
+    feed.setFlowRate(100000.0, "kg/hr");
+    feed.setTemperature(30.0, "C");
+    feed.setPressure(18.8, "bara");
+    feed.run();
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor(label, feed);
+    if (outletBara != null) {
+      compressor.setOutletPressure(outletBara);
+    }
+    if (ratioBara != null) {
+      compressor.setCompressionRatio(ratioBara);
+    }
+    if (maximumBara != null) {
+      compressor.setMaxOutletPressure(maximumBara);
+    }
+    if (powerW != null) {
+      compressor.setPower(powerW);
+    }
+    if (polytropic) {
+      compressor.setUsePolytropicCalc(true);
+      compressor.setPolytropicEfficiency(polytropicEfficiency);
+    } else if (isentropicEfficiency != null) {
+      compressor.setIsentropicEfficiency(isentropicEfficiency);
+    }
+    compressor.run();
+
+    System.out.println(label);
+    print("inlet", feed);
+    print("outlet", compressor.getOutletStream());
+    System.out.println("power_kw=" + compressor.getPower() / 1000.0);
+    System.out.println("isentropic_efficiency_out=" + compressor.getIsentropicEfficiency());
+    System.out.println("polytropic_efficiency_out=" + compressor.getPolytropicEfficiency());
+    System.out.println();
+  }
+
+  /// `Compressor.run`'s no-chart polytropic branch on `CompressorDepositTest`'s machine.
+  static void compressorPolytropicRows() {
+    compressorPolytropicRow("srk_eta_0_60", true, 0.60);
+    compressorPolytropicRow("pr_eta_0_60", false, 0.60);
+    compressorPolytropicRow("pr_eta_0_75", false, 0.75);
+  }
+
+  static void compressorPolytropicRow(String label, boolean srk, double efficiency) {
+    neqsim.thermo.system.SystemInterface gas = srk
+        ? new neqsim.thermo.system.SystemSrkEos(273.15 + 30.0, 18.8)
+        : new neqsim.thermo.system.SystemPrEos(273.15 + 30.0, 18.8);
+    gas.addComponent("methane", 0.86);
+    gas.addComponent("ethane", 0.07);
+    gas.addComponent("propane", 0.03);
+    gas.addComponent("CO2", 0.02);
+    gas.addComponent("nitrogen", 0.02);
+    gas.setMixingRule(2);
+    Stream feed = new Stream("suction", gas);
+    feed.setFlowRate(100000.0, "kg/hr");
+    feed.setTemperature(30.0, "C");
+    feed.setPressure(18.8, "bara");
+    feed.run();
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor(label, feed);
+    compressor.setOutletPressure(42.0);
+    compressor.setUsePolytropicCalc(true);
+    compressor.setPolytropicEfficiency(efficiency);
+    compressor.run();
+
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    System.out.println("polytropic_efficiency_in=" + efficiency);
+    print("inlet", feed);
+    print("outlet", compressor.getOutletStream());
+    System.out.println("power_kw=" + compressor.getPower() / 1000.0);
+    System.out.println("polytropic_efficiency_out=" + compressor.getPolytropicEfficiency());
+    System.out.println("polytropic_exponent=" + compressor.getPolytropicExponent());
+    // The branch's own intermediates, reproduced so the capture shows what it divides by.
+    neqsim.thermo.system.SystemInterface inletSystem = feed.getThermoSystem();
+    double densIn = inletSystem.getDensity();
+    double pInBara = inletSystem.getPressure();
+    double entropyIn = inletSystem.getEntropy();
+    neqsim.thermo.system.SystemInterface isentropic = inletSystem.clone();
+    isentropic.setPressure(42.0, "bara");
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(isentropic).PSflash(entropyIn);
+    isentropic.initProperties();
+    double densOut = isentropic.getDensity();
+    double hOutIsentropic = isentropic.getEnthalpy();
+    double hIn = inletSystem.getEnthalpy();
+    double k = Math.log(42.0 / pInBara) / Math.log(densOut / densIn);
+    System.out.println("inlet_density_kg_m3=" + densIn);
+    System.out.println("isentropic_density_kg_m3=" + densOut);
+    System.out.println("inlet_enthalpy_total=" + hIn);
+    System.out.println("isentropic_enthalpy_total=" + hOutIsentropic);
+    System.out.println("isenthalpic_exponent=" + k);
+    System.out.println();
+  }
+
   static void isentropicRows(String which) {
     String[] names = new String[] { "methane", "n-butane" };
     double[] z = new double[] { 0.9, 0.1 };
@@ -442,6 +3387,69 @@ public class ProcessProbe {
       System.out.println("entropy_production_kJ_per_molK=" + unit.getEntropyProduction("kJ/molK"));
       System.out.println();
     }
+  }
+
+  /// **`Expander`'s recovered-power constraint**, the one capacity limit the expander adds.
+  ///
+  /// The parent's consumed-power constraints are removed and, when a rating is set, one HARD
+  /// `recoveredPower` constraint is added: design = the rating, max = 1.1 x the rating, value =
+  /// `|getPower("kW")|`. `isCapacityExceeded` is utilization above 1, so the recovered power is
+  /// over its rating; `isHardLimitExceeded` is the same value above the 1.1 x rating, a
+  /// narrower band than the utilization's own 1.0.
+  static void expanderCapacityRows() {
+    String[] names = new String[] {"methane", "n-butane"};
+    double[] z = new double[] {0.9, 0.1};
+    expanderCapacityRow("no_rating", names, z, null);
+    expanderCapacityRow("rating_2_kw", names, z, 2.0);
+    expanderCapacityRow("rating_1_2_kw", names, z, 1.2);
+    expanderCapacityRow("rating_1_kw", names, z, 1.0);
+    expanderCapacityRow("rating_zero", names, z, 0.0);
+  }
+
+  static void expanderCapacityRow(String label, String[] names, double[] z, Double ratingKW) {
+    Stream inlet = feed(names, z, 320.0, 60.0, 1.0);
+    neqsim.process.equipment.expander.Expander expander =
+        new neqsim.process.equipment.expander.Expander("e1", inlet);
+    expander.setOutletPressure(30.0);
+    expander.setIsentropicEfficiency(0.75);
+    if (ratingKW != null) {
+      expander.setRatedRecoveredPower(ratingKW);
+    }
+    expander.run();
+
+    System.out.println("case=" + label);
+    print("inlet", inlet);
+    print("outlet", expander.getOutletStream());
+    System.out.println("power_kW=" + expander.getPower("kW"));
+    System.out.println("recovered_power_kW=" + Math.abs(expander.getPower("kW")));
+    System.out.println("rated_recovered_power_kW=" + expander.getRatedRecoveredPower());
+
+    Map<String, neqsim.process.equipment.capacity.CapacityConstraint> constraints =
+        expander.getCapacityConstraints();
+    System.out.println("constraint_count=" + constraints.size());
+    for (Map.Entry<String, neqsim.process.equipment.capacity.CapacityConstraint> entry :
+        constraints.entrySet()) {
+      String name = entry.getKey();
+      neqsim.process.equipment.capacity.CapacityConstraint constraint = entry.getValue();
+      System.out.println("constraint_" + name + "_type=" + constraint.getType());
+      System.out.println("constraint_" + name + "_enabled=" + constraint.isEnabled());
+      System.out.println("constraint_" + name + "_current=" + constraint.getCurrentValue());
+      System.out.println("constraint_" + name + "_design=" + constraint.getDesignValue());
+      System.out.println("constraint_" + name + "_min=" + constraint.getMinValue());
+      System.out.println("constraint_" + name + "_max=" + constraint.getMaxValue());
+      System.out.println("constraint_" + name + "_utilization=" + constraint.getUtilization());
+      System.out.println("constraint_" + name + "_violated=" + constraint.isViolated());
+      System.out.println(
+          "constraint_" + name + "_hard_exceeded=" + constraint.isHardLimitExceeded());
+    }
+    System.out.println("max_utilization=" + expander.getMaxUtilization());
+    System.out.println("capacity_exceeded=" + expander.isCapacityExceeded());
+    System.out.println("hard_limit_exceeded=" + expander.isHardLimitExceeded());
+    neqsim.process.equipment.capacity.CapacityConstraint bottleneck = expander
+        .getBottleneckConstraint();
+    System.out.println(
+        "bottleneck_constraint=" + (bottleneck == null ? "none" : bottleneck.getName()));
+    System.out.println();
   }
 
   /// `AdiabaticPipe`, which is a different shape of unit operation: **its outlet pressure is
@@ -1011,14 +4019,24 @@ public class ProcessProbe {
   /// renames the same two inlets. Both rows here are the classes' own tests, re-cased on PR:
   /// each pins **every tray** to one temperature, because an isothermal absorber is what those
   /// tests solve, and each is printed on the class's own product getters.
+  /// **The hydrocarbon stripper's two compositions, in one place.** The product capture's
+  /// `hydrocarbon_stripper` row and the mechanical capture's stripper row are two readings of one
+  /// state, so they share the recipe rather than copying it.
+  static final String[] STRIPPER_COMPONENTS =
+      new String[] { "methane", "propane", "n-butane", "n-pentane", "n-heptane" };
+  static final double[] STRIPPER_GAS_Z =
+      new double[] { 0.9900, 0.0080, 0.0015, 0.0005, 0.0 };
+  static final double[] STRIPPER_LIQUID_Z =
+      new double[] { 0.02, 0.08, 0.12, 0.15, 0.63 };
+
   static void absorberRows() {
     String[] gas = new String[] { "methane", "ethane", "propane", "n-butane", "n-pentane",
         "n-heptane" };
     double[] gasZ = new double[] { 0.920, 0.040, 0.025, 0.010, 0.005, 0.0 };
     double[] pureHeptane = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
-    String[] strip = new String[] { "methane", "propane", "n-butane", "n-pentane", "n-heptane" };
-    double[] stripZ = new double[] { 0.9900, 0.0080, 0.0015, 0.0005, 0.0 };
-    double[] richZ = new double[] { 0.02, 0.08, 0.12, 0.15, 0.63 };
+    String[] strip = STRIPPER_COMPONENTS;
+    double[] stripZ = STRIPPER_GAS_Z;
+    double[] richZ = STRIPPER_LIQUID_Z;
 
     // **Three rows per machine, and the difference between them is the gate.**
     // `AbsorptionColumnTest` and `StrippingColumnTest` both solve an isothermal column: they
@@ -1103,12 +4121,27 @@ public class ProcessProbe {
         0.0);
   }
 
-  /// The full row, with the Murphree pair the efficiency rows carry and every other row leaves
-  /// null.
-  static void absorberRow(String label, String[] gasNames, double[] gasZ, double gasKgPerHour,
-      double gasC, String[] solventNames, double[] solventZ, double solventKgPerHour,
-      double solventC, int trays, double bara, double stageC, double tolerance, String solver,
-      boolean reactive, Double murphree, String componentName, double componentEfficiency) {
+  /// One absorber or stripper state, held so two readings of it - the product capture and the
+  /// mechanical design - are the same run rather than two copies of one recipe.
+  static final class AbsorberCase {
+    final Stream gas;
+    final Stream solvent;
+    final neqsim.process.equipment.absorber.AbsorptionColumn column;
+
+    AbsorberCase(Stream gas, Stream solvent,
+        neqsim.process.equipment.absorber.AbsorptionColumn column) {
+      this.gas = gas;
+      this.solvent = solvent;
+      this.column = column;
+    }
+  }
+
+  /// The construction and the run, separated from the printing.
+  static AbsorberCase runAbsorber(String label, String[] gasNames, double[] gasZ,
+      double gasKgPerHour, double gasC, String[] solventNames, double[] solventZ,
+      double solventKgPerHour, double solventC, int trays, double bara, double stageC,
+      double tolerance, String solver, boolean reactive, Double murphree, String componentName,
+      double componentEfficiency) {
     Stream gas = feedMass("gas", gasNames, gasZ, gasC + 273.15, bara, gasKgPerHour);
     Stream solvent = feedMass("solvent", solventNames, solventZ, solventC + 273.15, bara,
         solventKgPerHour);
@@ -1164,6 +4197,21 @@ public class ProcessProbe {
     process.add(solvent);
     process.add(column);
     process.run();
+    return new AbsorberCase(gas, solvent, column);
+  }
+
+  /// The full row, with the Murphree pair the efficiency rows carry and every other row leaves
+  /// null.
+  static void absorberRow(String label, String[] gasNames, double[] gasZ, double gasKgPerHour,
+      double gasC, String[] solventNames, double[] solventZ, double solventKgPerHour,
+      double solventC, int trays, double bara, double stageC, double tolerance, String solver,
+      boolean reactive, Double murphree, String componentName, double componentEfficiency) {
+    AbsorberCase unit = runAbsorber(label, gasNames, gasZ, gasKgPerHour, gasC, solventNames,
+        solventZ, solventKgPerHour, solventC, trays, bara, stageC, tolerance, solver, reactive,
+        murphree, componentName, componentEfficiency);
+    Stream gas = unit.gas;
+    Stream solvent = unit.solvent;
+    neqsim.process.equipment.absorber.AbsorptionColumn column = unit.column;
 
     System.out.println(label);
     System.out.println("trays=" + trays);
@@ -2644,6 +5692,11 @@ public class ProcessProbe {
     shortcutColumnRow("binary_methane_nbutane", new String[] { "methane", "n-butane" },
         new double[] { 0.5, 0.5 }, 300.0, 20.0, 1.0, "methane", "n-butane", 0.99, 0.99, 1.2,
         null, null);
+    // **The fix's own regression state**: an asymmetric ethane/propane split whose material
+    // balance the class's test writes out by hand (D = 32.9, B = 67.1 kmol/h).
+    shortcutColumnRow("asymmetric_kirkbride_regression", new String[] { "ethane", "propane" },
+        new double[] { 0.3, 0.7 }, 303.15, 20.0, 100.0 / 3.6, "ethane", "propane", 0.98, 0.95,
+        1.5, null, null);
     // **The refusal**: the light key is the heavy component, so `alpha_LK/HK` is below one.
     shortcutColumnRow("light_key_heavier_than_heavy_key", names, z, 300.0, 20.0, 1.0,
         "n-butane", "propane", 0.98, 0.98, 1.2, null, null);
@@ -2819,10 +5872,63 @@ public class ProcessProbe {
     double[] dryZ = new double[] { 0.7, 0.3 };
     runThreePhase("dry_feed pressure_drop_bara=0 heat_input_W=0 entrainment=none", dry, dryZ,
         feed(dry, dryZ, 300.0, 20.0, 1.0), 0.0, null, null, null, 0.0);
+
+    // The three outlet valve fractions are stored and clamped; the steady split ignores
+    // them, and `getMassBalance` is the report that reads the split's outlets.
+    threePhaseValves("valve_fractions_010_020_030", names, z,
+        feed(names, z, 300.0, 20.0, 1.0));
+
+    // The vessel rows. **Retention is a mechanical-design read**: NLL and NIL are fractions
+    // of the internal diameter (0.5 and 0.2 by default) and the effective liquid length is
+    // `0.82 * separatorLength`, so the geometry is what makes the numbers exist.
+    threePhaseVessel("vessel_d1000_l3000_retention", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 1.0, 3.0, null, null);
+    // The level setters clamp at zero; a stated level does not move the retention times,
+    // which read the mechanical design's NLL/NIL rather than these fields.
+    threePhaseVessel("levels_water_030_oil_060", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 1.0, 3.0, 0.3, 0.6);
+    threePhaseVessel("levels_negative_clamped", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 1.0, 3.0, -1.0, -0.5);
+    threePhaseVessel("vessel_dry_feed", dry, dryZ, feed(dry, dryZ, 300.0, 20.0, 1.0), 1.0, 3.0,
+        null, null);
+  }
+
+  static void threePhaseValves(String label, String[] names, double[] z, Stream inlet) {
+    neqsim.process.equipment.separator.ThreePhaseSeparator separator =
+        new neqsim.process.equipment.separator.ThreePhaseSeparator("sep3", inlet);
+    separator.setGasOutletFlowFraction(0.1);
+    separator.setOilOutletFlowFraction(0.2);
+    separator.setWaterOutletFlowFraction(0.3);
+    separator.run();
+    System.out.println(label);
+    print("feed", inlet);
+    printOrEmpty("vapour", separator.getGasOutStream());
+    printOrEmpty("light_liquid", separator.getOilOutStream());
+    printOrEmpty("heavy_liquid", separator.getWaterOutStream());
+    System.out.println("gas_outlet_fraction=" + separator.getGasOutletFlowFraction());
+    System.out.println("oil_outlet_fraction=" + separator.getOilOutletFlowFraction());
+    System.out.println("water_outlet_fraction=" + separator.getWaterOutletFlowFraction());
+    System.out.println("mass_balance_kg_hr=" + separator.getMassBalance("kg/hr"));
+    System.out.println();
   }
 
   static void runThreePhase(String label, String[] names, double[] z, Stream inlet, double dropBara,
       Double heatInputW, String fromPhase, String toPhase, double entrainment) {
+    threePhase(label, names, z, inlet, dropBara, heatInputW, fromPhase, toPhase, entrainment, null,
+        null, null, null);
+  }
+
+  /// A row that also states the vessel: geometry for the retention times, and the levels the
+  /// class's setters clamp.
+  static void threePhaseVessel(String label, String[] names, double[] z, Stream inlet,
+      double diameterM, double lengthM, Double waterLevelM, Double oilLevelM) {
+    threePhase(label, names, z, inlet, 0.0, null, null, null, 0.0, diameterM, lengthM,
+        waterLevelM, oilLevelM);
+  }
+
+  static void threePhase(String label, String[] names, double[] z, Stream inlet, double dropBara,
+      Double heatInputW, String fromPhase, String toPhase, double entrainment, Double diameterM,
+      Double lengthM, Double waterLevelM, Double oilLevelM) {
     neqsim.process.equipment.separator.ThreePhaseSeparator separator =
         new neqsim.process.equipment.separator.ThreePhaseSeparator("sep3", inlet);
     if (dropBara != 0.0) {
@@ -2837,12 +5943,48 @@ public class ProcessProbe {
       // per direction, and a direction it does not name is silently ignored upstream.
       separator.setEntrainment(entrainment, "mole", "feed", fromPhase, toPhase);
     }
+    if (diameterM != null) {
+      separator.setInternalDiameter(diameterM);
+    }
+    if (lengthM != null) {
+      separator.setSeparatorLength(lengthM);
+    }
+    if (waterLevelM != null) {
+      separator.setWaterLevel(waterLevelM);
+    }
+    if (oilLevelM != null) {
+      separator.setOilLevel(oilLevelM);
+    }
     separator.run();
     System.out.println(label);
     print("feed", inlet);
     printOrEmpty("vapour", separator.getGasOutStream());
     printOrEmpty("light_liquid", separator.getOilOutStream());
     printOrEmpty("heavy_liquid", separator.getWaterOutStream());
+    System.out.println("mass_balance_kg_hr=" + separator.getMassBalance("kg/hr"));
+    if (diameterM != null || waterLevelM != null || oilLevelM != null) {
+      System.out.println("water_level_m=" + separator.getWaterLevel());
+      System.out.println("oil_level_m=" + separator.getOilLevel());
+      System.out.println("oil_thickness_m=" + separator.getOilThickness());
+    }
+    if (diameterM != null) {
+      SystemInterface system = separator.getThermoSystem();
+      System.out.println("nll_m=" + separator.getMechanicalDesign().getNLL());
+      System.out.println("nil_m=" + separator.getMechanicalDesign().getNIL());
+      System.out.println("effective_liquid_length_m="
+          + separator.getMechanicalDesign().getEffectiveLengthLiquid());
+      for (String phase : new String[] {"oil", "aqueous"}) {
+        if (system.hasPhaseType(phase)) {
+          System.out.println(phase + "_density_kg_m3="
+              + system.getPhase(phase).getDensity("kg/m3"));
+          System.out.println(phase + "_flow_m3_hr="
+              + system.getPhase(phase).getFlowRate("m3/hr"));
+        }
+      }
+      System.out.println("oil_retention_time_min=" + separator.calcOilRetentionTime());
+      System.out.println("water_retention_time_min=" + separator.calcWaterRetentionTime());
+      System.out.println("interface_settling_time_min=" + separator.calcInterfaceSettlingTime());
+    }
     System.out.println();
   }
 
@@ -2933,6 +6075,7 @@ public class ProcessProbe {
     System.out.println();
   }
 
+  /// **`Tank.autoSize`'s residence-time sizing and the three constraints it initializes.**
   static void splitter() {
     // **A single-phase liquid, so the branch flash is a formality.** `Splitter.run` clones
     // the inlet fluid, subtracts `(1 - f) n` from every component and runs a `TPflash` on
@@ -2983,17 +6126,220 @@ public class ProcessProbe {
     }
   }
 
+  // **Nine rows, one per branch of the class's lazy capacity map.** The splitter's map is
+  // created by `setDesignPressureDrop`, `setMaxDesignVelocity`, or `setCapacityAnalysisEnabled
+  // (true)` on an empty map - not by the constructor and not by `setHeaderDiameter` - so the
+  // rows walk each trigger, both non-positive suppressions, the 9.99 cap, and a two-phase feed.
+  // The last uses a one-outlet split (`[1.0]`): the class's branch path subtracts zero moles,
+  // which keeps the measurement away from its known-broken `clone/init(0)/addComponent` route.
+  static void splitterCapacity() {
+    splitterCapacityRow("no_setters", new double[] { 0.3, 0.7 }, null, null, null, false,
+        10.0, 300.0);
+    splitterCapacityRow("header_alone", new double[] { 0.3, 0.7 }, 0.02, null, null, false,
+        10.0, 300.0);
+    splitterCapacityRow("enabled_defaults", new double[] { 0.3, 0.7 }, null, null, null, true,
+        10.0, 300.0);
+    splitterCapacityRow("sized_header_design_drop", new double[] { 0.3, 0.7 }, 0.02, 0.02, null,
+        true, 10.0, 300.0);
+    splitterCapacityRow("tight_velocity_disabled", new double[] { 0.3, 0.7 }, 0.02, null, 0.1,
+        false, 10.0, 300.0);
+    splitterCapacityRow("zero_design_drop", new double[] { 0.3, 0.7 }, 0.02, 0.0, null, false,
+        10.0, 300.0);
+    splitterCapacityRow("zero_max_velocity", new double[] { 0.3, 0.7 }, 0.02, null, 0.0, false,
+        10.0, 300.0);
+    splitterCapacityRow("cap_9_99", new double[] { 0.3, 0.7 }, 0.02, null, 0.01, false, 10.0,
+        300.0);
+    splitterCapacityRow("two_phase_one_outlet", new double[] { 1.0 }, 0.05, null, null, true,
+        1.5, 300.0);
+  }
+
+  static void splitterCapacityRow(String name, double[] factors, Double headerDiameter,
+      Double designPressureDropBar, Double maxDesignVelocity, boolean analysisEnabled,
+      double pressureBara, double temperatureK) {
+    Stream inlet = feed(new String[] { "n-butane", "n-pentane" }, new double[] { 0.6, 0.4 },
+        temperatureK, pressureBara, 1.0);
+    neqsim.process.equipment.splitter.Splitter splitter =
+        new neqsim.process.equipment.splitter.Splitter("sp1", inlet);
+    splitter.setSplitFactors(factors);
+
+    neqsim.process.mechanicaldesign.splitter.SplitterMechanicalDesign design =
+        (neqsim.process.mechanicaldesign.splitter.SplitterMechanicalDesign) splitter
+            .getMechanicalDesign();
+    if (headerDiameter != null) {
+      design.setHeaderDiameter(headerDiameter);
+    }
+    if (designPressureDropBar != null) {
+      splitter.setDesignPressureDrop(designPressureDropBar);
+    }
+    if (maxDesignVelocity != null) {
+      splitter.setMaxDesignVelocity(maxDesignVelocity);
+    }
+    if (analysisEnabled) {
+      splitter.setCapacityAnalysisEnabled(true);
+    }
+    splitter.run();
+
+    System.out.println("case=" + name);
+    print("feed", inlet);
+    System.out.println("feed_phases=" + inlet.getThermoSystem().getNumberOfPhases());
+    for (int i = 0; i < inlet.getThermoSystem().getNumberOfPhases(); i++) {
+      System.out.println("feed_phase" + i + "_type=" + inlet.getThermoSystem().getPhase(i).getType()
+          + " feed_phase" + i + "_beta=" + inlet.getThermoSystem().getPhase(i).getBeta());
+    }
+    System.out.println("feed_volume_flow_m3_s=" + inlet.getFlowRate("m3/sec"));
+    System.out.println("header_diameter_m=" + design.getHeaderDiameter());
+    System.out.println("design_pressure_drop_pa=" + splitter.getDesignPressureDrop() * 1.0e5);
+    System.out.println("max_design_velocity_m_s=" + splitter.getMaxDesignVelocity());
+    System.out.println("capacity_analysis_enabled=" + splitter.isCapacityAnalysisEnabled());
+
+    // The map is unmodifiable: iterate it, never write to it. The pressure-drop constraint's
+    // values are bar, so they are printed in pascals under the spec's own unit.
+    Map<String, neqsim.process.equipment.capacity.CapacityConstraint> constraints =
+        splitter.getCapacityConstraints();
+    System.out.println("constraint_count=" + constraints.size());
+    for (Map.Entry<String, neqsim.process.equipment.capacity.CapacityConstraint> entry :
+        constraints.entrySet()) {
+      String constraintName = entry.getKey();
+      neqsim.process.equipment.capacity.CapacityConstraint constraint = entry.getValue();
+      if ("pressureDrop".equals(constraintName)) {
+        System.out.println("pressure_drop_value_pa=" + constraint.getCurrentValue() * 1.0e5);
+        System.out.println("pressure_drop_design_pa=" + constraint.getDesignValue() * 1.0e5);
+        System.out.println("pressure_drop_utilization=" + constraint.getUtilization());
+      } else if ("velocity".equals(constraintName)) {
+        System.out.println("velocity_value_m_s=" + constraint.getCurrentValue());
+        System.out.println("velocity_design_m_s=" + constraint.getDesignValue());
+        System.out.println("velocity_utilization=" + constraint.getUtilization());
+      }
+      System.out.println("constraint_" + constraintName + "_type=" + constraint.getType());
+      System.out.println("constraint_" + constraintName + "_enabled=" + constraint.isEnabled());
+    }
+
+    System.out.println("max_utilization=" + splitter.getMaxUtilization());
+    System.out.println("capacity_exceeded=" + splitter.isCapacityExceeded());
+    neqsim.process.equipment.capacity.CapacityConstraint bottleneck = splitter
+        .getBottleneckConstraint();
+    System.out.println(
+        "bottleneck_constraint=" + (bottleneck == null ? "none" : bottleneck.getName()));
+    System.out.println();
+  }
+
+  // `SplitterMechanicalDesign.calcDesign` is the caller's explicit call: `run` never reaches
+  // it, and it creates no capacity constraint. Each block moves one of its inputs so the
+  // capture holds the sizing, the wall formula's units, the discarded joint efficiency and
+  // the capacity map's read of the sized diameter.
+  static void splitterMechanicalDesign() {
+    splitterDesignRow("default_design", 1.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, null, null,
+        null, null, false);
+    splitterDesignRow("twenty_mol", 20.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, null, null,
+        null, null, false);
+    splitterDesignRow("design_velocity_ten", 69.0, 10.0, 300.0, new double[] {0.3, 0.7}, 10.0, null,
+        null, null, null, false);
+    splitterDesignRow("high_pressure", 20.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, 300.0, null,
+        null, null, false);
+    splitterDesignRow("low_tensile", 20.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, null, 300.0,
+        null, null, false);
+    splitterDesignRow("corrosion", 20.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, null, null, null,
+        1.5, false);
+    splitterDesignRow("joint_efficiency", 20.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, null, null,
+        0.7, null, false);
+    splitterDesignRow("two_phase", 1.0, 1.5, 300.0, new double[] {1.0}, null, null, null, null, null,
+        false);
+    splitterDesignRow("design_with_capacity", 1.0, 10.0, 300.0, new double[] {0.3, 0.7}, null, null,
+        null, null, null, true);
+  }
+
+  static void splitterDesignRow(String name, double flow, double pressureBara, double temperatureK,
+      double[] factors, Double designVelocity, Double maxOperationPressureBara,
+      Double tensileStrengthMpa, Double jointEfficiency, Double corrosionAllowanceMm,
+      boolean capacityEnabled) {
+    Stream inlet = feed(new String[] {"n-butane", "n-pentane"}, new double[] {0.6, 0.4}, temperatureK,
+        pressureBara, flow);
+    neqsim.process.equipment.splitter.Splitter splitter =
+        new neqsim.process.equipment.splitter.Splitter("sp1", inlet);
+    splitter.setSplitFactors(factors);
+    neqsim.process.mechanicaldesign.splitter.SplitterMechanicalDesign design =
+        (neqsim.process.mechanicaldesign.splitter.SplitterMechanicalDesign) splitter
+            .getMechanicalDesign();
+    if (designVelocity != null) {
+      design.setDesignVelocity(designVelocity);
+    }
+    if (maxOperationPressureBara != null) {
+      design.setMaxOperationPressure(maxOperationPressureBara, "bara");
+    }
+    if (tensileStrengthMpa != null) {
+      design.setTensileStrength(tensileStrengthMpa);
+    }
+    if (jointEfficiency != null) {
+      design.setJointEfficiency(jointEfficiency);
+    }
+    if (corrosionAllowanceMm != null) {
+      design.setCorrosionAllowance(corrosionAllowanceMm);
+    }
+    if (capacityEnabled) {
+      splitter.setCapacityAnalysisEnabled(true);
+    }
+    splitter.run();
+    design.calcDesign();
+
+    System.out.println("case=" + name);
+    print("feed", inlet);
+    System.out.println("feed_phases=" + inlet.getThermoSystem().getNumberOfPhases());
+    System.out.println("feed_volume_flow_m3_s=" + inlet.getFlowRate("m3/sec"));
+    System.out.println("mechanical_design=true");
+    System.out.println("design_velocity_m_s=" + design.getDesignVelocity());
+    System.out.println("max_operation_pressure_pa=" + design.getMaxOperationPressure() * 1.0e5);
+    System.out.println("tensile_strength_pa=" + design.getTensileStrength() * 1.0e6);
+    System.out.println("joint_efficiency=" + design.getJointEfficiency());
+    System.out.println("corrosion_allowance_mm=" + design.getCorrosionAllowance());
+    System.out.println("design_header_diameter_m=" + design.getHeaderDiameter());
+    System.out.println("design_branch_diameter_m=" + design.getBranchDiameter());
+    System.out.println("design_header_length_m=" + design.getHeaderLength());
+    System.out.println("design_wall_thickness_m=" + design.getHeaderWallThickness() / 1000.0);
+    System.out.println("manifold_volume_m3=" + design.getManifoldVolume());
+    System.out.println("design_total_pressure_drop_pa=" + design.getTotalPressureDrop() * 1.0e5);
+    System.out.println("header_weight_kg=" + design.weigthVesselShell);
+    System.out.println("branch_weight_kg=" + design.weightPiping);
+    System.out.println("total_weight_kg=" + design.getWeightTotal());
+
+    if (capacityEnabled) {
+      // The map reads the sized diameter live, so these are the post-design answers.
+      Map<String, neqsim.process.equipment.capacity.CapacityConstraint> constraints =
+          splitter.getCapacityConstraints();
+      System.out.println("constraint_count=" + constraints.size());
+      for (Map.Entry<String, neqsim.process.equipment.capacity.CapacityConstraint> entry :
+          constraints.entrySet()) {
+        String constraintName = entry.getKey();
+        neqsim.process.equipment.capacity.CapacityConstraint constraint = entry.getValue();
+        if ("velocity".equals(constraintName)) {
+          System.out.println("velocity_value_m_s=" + constraint.getCurrentValue());
+          System.out.println("velocity_design_m_s=" + constraint.getDesignValue());
+          System.out.println("velocity_utilization=" + constraint.getUtilization());
+        }
+      }
+      System.out.println("max_utilization=" + splitter.getMaxUtilization());
+      System.out.println("capacity_exceeded=" + splitter.isCapacityExceeded());
+      neqsim.process.equipment.capacity.CapacityConstraint bottleneck = splitter
+          .getBottleneckConstraint();
+      System.out.println(
+          "bottleneck_constraint=" + (bottleneck == null ? "none" : bottleneck.getName()));
+    }
+    System.out.println();
+  }
+
   static void mixer() {
     // **Two inlets at different pressures and different compositions.** `Mixer.run` sets
     // the outlet to the lowest active inlet pressure and flashes the joined fluid to the
     // flow-weighted enthalpy, so both rules are exercised: a composition that is not
     // either feed's, and a pressure that is neither inlet's when the outlet is stated.
     // The palette declares the outlet pressure optional, so the second row states one.
-    for (Double specified : new Double[] { null, 8.0 }) {
+    double[][] pairs = new double[][] {{10.0, 6.0}, {10.0, 6.0}, {10.0, 9.6}};
+    Double[] specifieds = new Double[] { null, 8.0, null };
+    for (int row = 0; row < pairs.length; row++) {
+      Double specified = specifieds[row];
       Stream first = feed(new String[] { "n-butane", "n-pentane" }, new double[] { 0.6, 0.4 },
-          300.0, 10.0, 1.0);
+          300.0, pairs[row][0], 1.0);
       Stream second = feed(new String[] { "n-butane", "n-pentane" }, new double[] { 0.3, 0.7 },
-          300.0, 6.0, 2.0);
+          300.0, pairs[row][1], 2.0);
 
       neqsim.process.equipment.mixer.Mixer mixer =
           new neqsim.process.equipment.mixer.Mixer("mx1");
@@ -3022,6 +6368,8 @@ public class ProcessProbe {
       // evidence about the class, not a layer of the mix.
       System.out.println("mix_pressure_bara=" + mixer.getMinInletPressure());
       System.out.println("mixed_enthalpy_W=" + mixer.calcMixStreamEnthalpy());
+      System.out.println("inlet_pressure_spread_bara=" + mixer.getInletPressureSpread());
+      System.out.println("pressure_mismatch=" + mixer.isPressureMismatch());
       System.out.println();
     }
   }
@@ -3077,6 +6425,1411 @@ public class ProcessProbe {
     System.out.println();
   }
 
+  // === process.separator capacity ==============================================
+
+  /// The five steady capacity getters on the vessel `Separator.run` leaves behind.
+  ///
+  /// **`getCapacityUtilization` and `getGasLoadFactor()` are two density rules and not
+  /// one.** The sizing family (`getMaxAllowableGasVelocity`, and the utilisation over it)
+  /// reads the liquid's own density and falls back to `1000.0` when there is no liquid - no
+  /// floor. The load factor reads the same phases and then substitutes `1000.0` whenever
+  /// `rho_l - rho_g < 10.0`. A near-dry state therefore makes the two disagree by design,
+  /// which the near-dry rows are here to pin.
+  ///
+  /// **The PR rows are the oracle**, because azoth's databank route resolves
+  /// Peng-Robinson. The SRK rows re-case `SeparatorTest`'s own states as evidence, and the
+  /// scrubber row prints the defaults the port deliberately does not adopt.
+  static void separatorCapacityRows() {
+    // The two-phase fluid of `process_separator.tsv`, so the capacity rows sit on a state
+    // the port already carries.
+    separatorCapacityRow("pr_two_phase_vertical_d1000_k011", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 0.0, 0.0);
+    separatorCapacityRow("pr_two_phase_horizontal_d1000_k011", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "horizontal", 0.8, 0.0, 0.0);
+    // Issue #3154: vertical capacity is the full cross-section, whatever the design liquid
+    // fraction says; horizontal derates it by `1 - Fg`.
+    separatorCapacityRow("pr_two_phase_vertical_fg08", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 0.0, 0.0);
+    separatorCapacityRow("pr_two_phase_vertical_fg02", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.2, 0.0, 0.0);
+    separatorCapacityRow("pr_two_phase_horizontal_fg02", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "horizontal", 0.2, 0.0, 0.0);
+    // Dry gas: the sizing rule's `1000.0` fallback, and `getMaxAllowableGasVelocity`'s
+    // `50.0` only applies where there is no gas at all - a state utilisation answers `0.0`
+    // for before it reaches the velocity.
+    separatorCapacityRow("pr_dry_gas_vertical_d1000_k011", false, false, null,
+        new String[] {"methane"}, new double[] {1.0}, 300.0, 50.0, 1.0, null, 1.0, 0.11,
+        "vertical", 0.8, 0.0, 0.0);
+    // The pin's near-dry scrubber state: a trace heavy end at 90 bara, where the two-phase
+    // densities sit close enough for the load factor's `10.0` floor to decide.
+    separatorCapacityRow("pr_near_dry_96_3_005_vertical_d3000", false, true, null,
+        new String[] {"methane", "ethane", "n-heptane"}, new double[] {96.0, 3.0, 0.05}, 298.15,
+        90.0, null, 400000.0, 3.0, 0.11, "vertical", 0.8, 0.0, 0.0);
+    // A vessel far too small for its flow, so utilisation crosses one and the overload flag
+    // is reachable.
+    separatorCapacityRow("pr_overloaded_vertical_d020_k011", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 50.0, null,
+        0.2, 0.11, "vertical", 0.8, 0.0, 0.0);
+    // Entrainment moves moles into the liquid before the getters read, so the liquid density
+    // is the entrained composition's.
+    separatorCapacityRow("pr_entrained_gas_in_liquid_005_vertical_d1000", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 0.05, 0.0);
+    // The metric is at the outlet state, which a pressure drop moves.
+    separatorCapacityRow("pr_pressure_drop_outlet_state_vertical_d1000", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 0.0, 2.0);
+
+    // SRK evidence, re-casing the pin's own tests.
+    separatorCapacityRow("srk_two_phase_vertical_d1000_k011", true, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 0.0, 0.0);
+    separatorCapacityRow("srk_near_dry_bounded_vertical_d3000", true, true, null,
+        new String[] {"methane", "ethane", "n-heptane"}, new double[] {96.0, 3.0, 0.05}, 298.15,
+        90.0, null, 400000.0, 3.0, 0.11, "vertical", 0.8, 0.0, 0.0);
+    separatorCapacityRow("srk_orientation_vertical_d3000", true, true, null,
+        new String[] {"methane", "ethane", "n-heptane"}, new double[] {90.0, 6.0, 4.0}, 298.15,
+        80.0, null, 300000.0, 3.0, 0.11, "vertical", 0.8, 0.0, 0.0);
+    separatorCapacityRow("srk_orientation_horizontal_d3000", true, true, null,
+        new String[] {"methane", "ethane", "n-heptane"}, new double[] {90.0, 6.0, 4.0}, 298.15,
+        80.0, null, 300000.0, 3.0, 0.11, "horizontal", 0.8, 0.0, 0.0);
+
+    // `GasScrubber` at minimum setup - a diameter and nothing else - which is where the
+    // class's own vertical orientation and 0.1 design liquid level come from. The port
+    // adopts neither default and refuses a half-stated vessel.
+    scrubberCapacityDefaultsRow("srk_gas_scrubber_minimum_setup_d1200", true, true, null,
+        new String[] {"methane", "ethane", "n-hexane"}, new double[] {90.0, 5.0, 5.0}, 303.15,
+        50.0, null, 50000.0, 1.2);
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void separatorCapacityRow(String label, boolean srk, boolean multiPhase,
+      Double heatInputW, String[] names, double[] amounts, double temperature, double pressureBar,
+      Double molPerSecond, Double kgPerHour, double diameter, double kFactor, String orientation,
+      double designLiquidLevelFraction, double gasInLiquid, double pressureDropBar) {
+    Stream inlet = capacityFeed(srk, multiPhase, names, amounts, temperature, pressureBar,
+        molPerSecond, kgPerHour);
+    neqsim.process.equipment.separator.Separator separator =
+        new neqsim.process.equipment.separator.Separator("sep1", inlet);
+    if (heatInputW != null) {
+      separator.setHeatInput(heatInputW);
+    }
+    if (pressureDropBar != 0.0) {
+      separator.setPressureDrop(pressureDropBar);
+    }
+    if (gasInLiquid != 0.0) {
+      separator.setEntrainment(gasInLiquid, "mole", "feed", "gas", "liquid");
+    }
+    separator.setInternalDiameter(diameter);
+    separator.setDesignGasLoadFactor(kFactor);
+    separator.setOrientation(orientation);
+    separator.setDesignLiquidLevelFraction(designLiquidLevelFraction);
+    separator.run();
+    printCapacity(label, srk, inlet, separator, diameter, kFactor, orientation,
+        designLiquidLevelFraction, gasInLiquid, pressureDropBar);
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void scrubberCapacityDefaultsRow(String label, boolean srk, boolean multiPhase,
+      Double heatInputW, String[] names, double[] amounts, double temperature, double pressureBar,
+      Double molPerSecond, Double kgPerHour, double diameter) {
+    Stream inlet = capacityFeed(srk, multiPhase, names, amounts, temperature, pressureBar,
+        molPerSecond, kgPerHour);
+    neqsim.process.equipment.separator.GasScrubber scrubber =
+        new neqsim.process.equipment.separator.GasScrubber("gs1", inlet);
+    scrubber.setInternalDiameter(diameter);
+    scrubber.run();
+    printCapacity(label, srk, inlet, scrubber, diameter, scrubber.getDesignGasLoadFactor(),
+        scrubber.getOrientation(), scrubber.getDesignLiquidLevelFraction(), 0.0, 0.0);
+  }
+
+  static Stream capacityFeed(boolean srk, boolean multiPhase, String[] names, double[] amounts,
+      double temperature, double pressureBar, Double molPerSecond, Double kgPerHour) {
+    SystemInterface fluid =
+        srk ? new SystemSrkEos(temperature, pressureBar) : new SystemPrEos(temperature, pressureBar);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], amounts[i]);
+    }
+    fluid.setMixingRule(2);
+    if (multiPhase) {
+      fluid.setMultiPhaseCheck(true);
+    }
+    Stream stream = new Stream("feed", fluid);
+    if (molPerSecond != null) {
+      stream.setFlowRate(molPerSecond, "mol/sec");
+    } else {
+      stream.setFlowRate(kgPerHour, "kg/hr");
+    }
+    stream.run();
+    return stream;
+  }
+
+  /// The five getters, the phases they read, and the geometry they divide by.
+  ///
+  /// `gas_area_m2` is printed as the instrument computes it - full cross-section vertical,
+  /// `(1 - Fg)` of it horizontal - rather than read back, because the class has no getter
+  /// for it. `max_allowable_gas_flow_m3_s` is the getter itself.
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void printCapacity(String label, boolean srk, Stream inlet,
+      neqsim.process.equipment.separator.Separator separator, double diameter,
+      double kFactor, String orientation, double designLiquidLevelFraction, double gasInLiquid,
+      double pressureDropBar) {
+    SystemInterface system = separator.getThermoSystem();
+    // **`run` leaves the densities stale where it entrained**: the phase labels are not
+    // revisited but `initPhysicalProperties` recomputes the density of the oil that
+    // absorbed the carried moles, and every capacity getter calls it. Doing it here means
+    // the printed phase densities are the ones the getters below actually read.
+    system.initPhysicalProperties();
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    System.out.println("temperature_k=" + inlet.getTemperature("K"));
+    System.out.println("pressure_bara=" + inlet.getPressure("bara"));
+    System.out.println("flow_mol_s=" + inlet.getFlowRate("mol/sec"));
+    System.out.println("flow_kg_hr=" + inlet.getFlowRate("kg/hr"));
+    StringBuilder z = new StringBuilder();
+    for (int i = 0; i < system.getPhase(0).getNumberOfComponents(); i++) {
+      z.append(i == 0 ? "" : ",").append(system.getPhase(0).getComponent(i).getName())
+          .append(":").append(system.getMolarComposition()[i]);
+    }
+    System.out.println("z=" + z);
+    System.out.println("internal_diameter_m=" + diameter);
+    System.out.println("design_gas_load_factor_m_per_s=" + kFactor);
+    System.out.println("orientation=" + orientation);
+    System.out.println("design_liquid_level_fraction=" + designLiquidLevelFraction);
+    System.out.println("gas_in_liquid=" + gasInLiquid);
+    System.out.println("pressure_drop_bara=" + pressureDropBar);
+    System.out.println("phase_count=" + system.getNumberOfPhases());
+    StringBuilder types = new StringBuilder();
+    StringBuilder densities = new StringBuilder();
+    for (int i = 0; i < system.getNumberOfPhases(); i++) {
+      types.append(i == 0 ? "" : ",").append(system.getPhase(i).getType().name());
+      densities.append(i == 0 ? "" : ",")
+          .append(system.getPhase(i).getPhysicalProperties().getDensity());
+    }
+    System.out.println("phase_types=" + types);
+    System.out.println("phase_densities_kg_m3=" + densities);
+    System.out.println("has_gas=" + system.hasPhaseType("gas"));
+    System.out.println("has_oil=" + system.hasPhaseType("oil"));
+    System.out.println("has_aqueous=" + system.hasPhaseType("aqueous"));
+    System.out.println("gas_density_kg_m3=" + system.getPhase(0).getPhysicalProperties().getDensity());
+    System.out.println("liquid_density_kg_m3="
+        + (system.getNumberOfPhases() < 2 ? "none"
+            : system.getPhase(1).getPhysicalProperties().getDensity()));
+    System.out.println("gas_volumetric_flow_m3_s=" + system.getPhase(0).getFlowRate("m3/sec"));
+    double area = Math.PI * diameter * diameter / 4.0;
+    double gasArea = orientation.equals("horizontal") ? area * (1.0 - designLiquidLevelFraction)
+        : area;
+    System.out.println("gas_area_m2=" + gasArea);
+    System.out.println("max_allowable_gas_velocity_m_per_s="
+        + separator.getMaxAllowableGasVelocity());
+    System.out.println("max_allowable_gas_flow_m3_s=" + separator.getMaxAllowableGasFlowRate());
+    System.out.println("gas_superficial_velocity_m_per_s=" + separator.getGasSuperficialVelocity());
+    System.out.println("gas_load_factor_m_per_s=" + separator.getGasLoadFactor());
+    System.out.println("capacity_utilization=" + separator.getCapacityUtilization());
+    System.out.println("is_overloaded=" + separator.isOverloaded());
+    System.out.println();
+  }
+
+  // === process.separator sizing and derating ==================================
+
+  /// `Separator`'s sizing and derating getters, on the state `run` leaves behind.
+  ///
+  /// **The phase-number overload is not the no-argument one.** It divides the Souders-Brown
+  /// term by the horizontal gas-area fraction `1 - liquidVolume / separatorVolume` and reads
+  /// the stated phase's density; the no-argument form reads phase 1 and the design liquid
+  /// level fraction. Both are printed on every row, so a state where they agree (vertical, or
+  /// a level equal to the design fraction) does not hide the difference.
+  ///
+  /// **The derating is the interphase surface tension's**: `1 - 0.5 (10e-3 - sigma)/10e-3`
+  /// below `10e-3` N/m, applied to the superficial velocity. The rows include a near-critical
+  /// light gas where the tension falls under the threshold, and print the tension each
+  /// overload reads.
+  ///
+  /// **`sizeFromFlow` is a closed form and it mutates the vessel.** It runs last, after every
+  /// getter has read the stated diameter, and the answer is printed beside that diameter.
+  static void separatorSizingRows() {
+    separatorSizingRow("pr_two_phase_vertical", false, false,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, 5.0,
+        0.5, "vertical", 0.8, 0.11, 1.0);
+    separatorSizingRow("pr_two_phase_horizontal", false, false,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, 5.0,
+        0.5, "horizontal", 0.8, 0.11, 1.0);
+    separatorSizingRow("pr_two_phase_horizontal_level_02", false, false,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, 5.0,
+        0.2, "horizontal", 0.2, 0.11, 1.0);
+    // A near-critical light gas: the interphase tension is the row's measurement, and the
+    // derating branch is reachable only where it falls under 10 mN/m.
+    separatorSizingRow("pr_near_critical_derating", false, false,
+        new String[] {"methane", "ethane"}, new double[] {0.9, 0.1}, 200.0, 40.0, 1.0, 5.0,
+        0.5, "horizontal", 0.8, 0.11, 1.0);
+    separatorSizingRow("srk_near_critical_derating", true, false,
+        new String[] {"methane", "ethane"}, new double[] {0.9, 0.1}, 200.0, 40.0, 1.0, 5.0,
+        0.5, "horizontal", 0.8, 0.11, 1.0);
+    // Three phases: the indexed overloads read the oil and the aqueous density separately.
+    separatorSizingRow("pr_three_phase_horizontal", false, true,
+        new String[] {"methane", "n-butane", "water"}, new double[] {0.5, 0.4, 0.1}, 300.0, 20.0,
+        1.0, 5.0, 0.5, "horizontal", 0.8, 0.11, 1.0);
+    // A dry gas: the sizing rule's 1000 kg/m3 liquid fallback and the derating's own.
+    separatorSizingRow("pr_dry_gas_vertical", false, false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 1.0, 5.0, 0.5, "vertical", 0.8, 0.11, 1.0);
+    // No gas at all: `sizeFromFlow` returns without sizing, which is the class's own branch.
+    separatorSizingRow("pr_liquid_only_no_sizing", false, false, new String[] {"n-butane"},
+        new double[] {1.0}, 300.0, 20.0, 1.0, 5.0, 0.5, "vertical", 0.8, 0.11, 1.0);
+    // The safety factor is the one input `sizeFromFlow` takes; the same state at 1.5.
+    separatorSizingRow("pr_sizing_safety_15", false, false,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, 5.0,
+        0.5, "horizontal", 0.8, 0.11, 1.5);
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void separatorSizingRow(String label, boolean srk, boolean multiPhase, String[] names,
+      double[] amounts, double temperature, double pressureBar, double diameter, double length,
+      double liquidLevelFraction, String orientation, double designLiquidLevelFraction,
+      double kFactor, double safetyFactor) {
+    Stream inlet = capacityFeed(srk, multiPhase, names, amounts, temperature, pressureBar, 1.0,
+        null);
+    neqsim.process.equipment.separator.Separator separator =
+        new neqsim.process.equipment.separator.Separator("sep1", inlet);
+    separator.setOrientation(orientation);
+    separator.setInternalDiameter(diameter);
+    separator.setSeparatorLength(length);
+    separator.setLiquidLevel(liquidLevelFraction);
+    separator.setDesignLiquidLevelFraction(designLiquidLevelFraction);
+    separator.setDesignGasLoadFactor(kFactor);
+    separator.run();
+    printSizing(label, srk, inlet, separator, diameter, length, liquidLevelFraction, orientation,
+        designLiquidLevelFraction, kFactor, safetyFactor);
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void printSizing(String label, boolean srk, Stream inlet,
+      neqsim.process.equipment.separator.Separator separator, double diameter, double length,
+      double liquidLevelFraction, String orientation, double designLiquidLevelFraction,
+      double kFactor, double safetyFactor) {
+    SystemInterface system = separator.getThermoSystem();
+    system.initPhysicalProperties();
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    System.out.println("temperature_k=" + inlet.getTemperature("K"));
+    System.out.println("pressure_bara=" + inlet.getPressure("bara"));
+    System.out.println("flow_mol_s=" + inlet.getFlowRate("mol/sec"));
+    StringBuilder z = new StringBuilder();
+    for (int i = 0; i < system.getPhase(0).getNumberOfComponents(); i++) {
+      z.append(i == 0 ? "" : ",").append(system.getPhase(0).getComponent(i).getName())
+          .append(":").append(system.getMolarComposition()[i]);
+    }
+    System.out.println("z=" + z);
+    System.out.println("orientation=" + orientation);
+    System.out.println("internal_diameter_m=" + diameter);
+    System.out.println("separator_length_m=" + length);
+    System.out.println("liquid_level_fraction=" + liquidLevelFraction);
+    System.out.println("design_liquid_level_fraction=" + designLiquidLevelFraction);
+    System.out.println("design_gas_load_factor_m_per_s=" + kFactor);
+    System.out.println("safety_factor=" + safetyFactor);
+    System.out.println("has_geometry=" + separator.hasGeometry());
+    System.out.println("phase_count=" + system.getNumberOfPhases());
+    StringBuilder types = new StringBuilder();
+    StringBuilder densities = new StringBuilder();
+    for (int i = 0; i < system.getNumberOfPhases(); i++) {
+      types.append(i == 0 ? "" : ",").append(system.getPhase(i).getType().name());
+      densities.append(i == 0 ? "" : ",")
+          .append(system.getPhase(i).getPhysicalProperties().getDensity());
+    }
+    System.out.println("phase_types=" + types);
+    System.out.println("phase_densities_kg_m3=" + densities);
+    System.out.println("has_gas=" + system.hasPhaseType("gas"));
+    System.out.println("has_oil=" + system.hasPhaseType("oil"));
+    System.out.println("has_aqueous=" + system.hasPhaseType("aqueous"));
+    // The tension each derating overload reads: the no-argument one reads the (0, 1) pair.
+    double classSigma = 0.0;
+    for (int i = 0; i + 1 < system.getNumberOfPhases(); i++) {
+      double sigma = system.getInterphaseProperties().getSurfaceTension(i, i + 1);
+      if (i == 0) {
+        classSigma = sigma;
+      }
+      System.out.println("surface_tension_" + i + "_" + (i + 1) + "_n_per_m=" + sigma);
+    }
+    // **The class's interphase model is a clone of the pre-flash system.** It carries zero
+    // densities, so the Parachor it computes is 0.0 whatever the live state - and the
+    // derating is therefore `1 - 0.5` on every row. A fresh model over the live system
+    // measures what the formula would answer if it read this state, which is the difference
+    // the spec records.
+    double liveSigma = Double.NaN;
+    if (system.getNumberOfPhases() >= 2) {
+      try {
+        liveSigma =
+            new neqsim.physicalproperties.interfaceproperties.surfacetension.ParachorSurfaceTension(
+                system).calcSurfaceTension(0, 1);
+      } catch (Exception ex) {
+        liveSigma = Double.NaN;
+      }
+    }
+    System.out.println("live_parachor_surface_tension_n_per_m=" + liveSigma);
+    System.out.println("class_derating_factor="
+        + (classSigma < 10.0e-3 ? 1.0 - 0.5 * (10.0e-3 - classSigma) / 10.0e-3 : 1.0));
+    System.out.println("intended_derating_factor="
+        + (!Double.isNaN(liveSigma) && liveSigma < 10.0e-3
+            ? 1.0 - 0.5 * (10.0e-3 - liveSigma) / 10.0e-3
+            : 1.0));
+    double area = Math.PI * diameter * diameter / 4.0;
+    double vesselVolume = area * length;
+    double liquidVolume = separator.calcLiquidVolume();
+    System.out.println("separator_volume_m3=" + vesselVolume);
+    System.out.println("liquid_volume_m3=" + liquidVolume);
+    System.out.println("gas_area_fraction="
+        + (orientation.equals("horizontal") ? 1.0 - liquidVolume / vesselVolume : 1.0));
+    System.out.println("gas_superficial_velocity_m_per_s="
+        + separator.getGasSuperficialVelocity());
+    System.out.println("gas_load_factor_m_per_s=" + separator.getGasLoadFactor());
+    for (int i = 1; i < system.getNumberOfPhases(); i++) {
+      System.out.println("gas_load_factor_phase_" + i + "_m_per_s="
+          + separator.getGasLoadFactor(i));
+    }
+    System.out.println("derated_gas_load_factor_m_per_s="
+        + separator.getDeRatedGasLoadFactor());
+    for (int i = 1; i < system.getNumberOfPhases(); i++) {
+      System.out.println("derated_gas_load_factor_phase_" + i + "_m_per_s="
+          + separator.getDeRatedGasLoadFactor(i));
+    }
+    System.out.println("reported_design_gas_load_factor_m_per_s="
+        + separator.getDesignGasLoadFactor());
+    // `sizeFromFlow` mutates the vessel, so it is the row's last read.
+    separator.sizeFromFlow(safetyFactor);
+    System.out.println("sized_diameter_m=" + separator.getInternalDiameter());
+    System.out.println();
+  }
+
+  // === process.separator mechanical design ====================================
+
+  /// `SeparatorMechanicalDesign.calcDesign` on the class's own test fixture.
+  ///
+  /// **The fixture is `SeparatorMechanicalDesignTest.setUp`**: an SRK
+  /// methane/ethane/propane/n-pentane fluid at 298.15 K and 20 bara, 10,000 kg/hr at
+  /// 25 C, run through a `Separator` and then `calcDesign` with no company standard set.
+  /// The row prints the design-standard keys the class finds, the response record's own
+  /// fields and the getters the response does not carry, and any exception with its stack
+  /// - because whether a default standard exists is the first question this slice has to
+  /// answer, and a probe that swallowed it would answer nothing.
+  static void separatorMechanicalRows() {
+    // **Two rows, because the class's test is SRK and the port's separator is PR.** The SRK
+    // row is the class's own fixture; the PR row is the fluid `Stream::mixture()` resolves,
+    // so it is the oracle the port can be held to. The arithmetic is cubic-agnostic; only
+    // the densities and the viscosity move.
+    separatorMechanicalRow("class_test_fixture_srk", true);
+    separatorMechanicalRow("port_fixture_pr", false);
+  }
+
+  /// `Separator.autoSize(safetyFactor)` on the PR fixture, at the class's no-argument
+  /// `1.2` and at an overridden `1.5`.
+  static void separatorAutosizeRows() {
+    separatorAutosizeRow("pr_fixture_safety_1_2", 1.2);
+    separatorAutosizeRow("pr_fixture_safety_1_5", 1.5);
+  }
+
+  static void separatorAutosizeRow(String label, double safetyFactor) {
+    SystemInterface fluid = new SystemPrEos(298.15, 20.0);
+    fluid.addComponent("methane", 0.7);
+    fluid.addComponent("ethane", 0.1);
+    fluid.addComponent("propane", 0.1);
+    fluid.addComponent("n-pentane", 0.1);
+    fluid.setMixingRule(2);
+    Stream feed = new Stream("Feed", fluid);
+    feed.setFlowRate(10000.0, "kg/hr");
+    feed.setTemperature(25.0, "C");
+    feed.setPressure(20.0, "bara");
+    feed.run();
+    neqsim.process.equipment.separator.Separator separator =
+        new neqsim.process.equipment.separator.Separator("TestSeparator", feed);
+    separator.run();
+    separator.autoSize(safetyFactor);
+    System.out.println(label);
+    System.out.println("safety_factor=" + safetyFactor);
+    System.out.println("auto_sized=" + separator.isAutoSized());
+    System.out.println("design_inner_diameter_m=" + separator.getInternalDiameter());
+    System.out.println("design_separator_length_m=" + separator.getSeparatorLength());
+    System.out.println("design_wall_thickness_m="
+        + separator.getMechanicalDesign().getWallThickness());
+    System.out.println("design_outer_diameter_m="
+        + separator.getMechanicalDesign().getOuterDiameter());
+    System.out.println("design_vessel_volume_m3="
+        + separator.getMechanicalDesign().getVolumeTotal());
+    System.out.println("liquid_retention_time_s="
+        + separator.getMechanicalDesign().calcLiquidRetentionTime());
+    System.out.println("design_gas_load_factor_m_per_s="
+        + separator.getMechanicalDesign().getGasLoadFactor());
+    System.out.println("fg=" + separator.getMechanicalDesign().getFg());
+    System.out.println("volume_safety_factor="
+        + separator.getMechanicalDesign().getVolumeSafetyFactor());
+    System.out.println("max_design_volume_flow_m3_hr="
+        + separator.getMechanicalDesign().getMaxDesignVolumeFlow());
+    System.out.println("max_design_gas_volume_flow_m3_hr="
+        + separator.getMechanicalDesign().getMaxDesignGassVolumeFlow());
+    System.out.println();
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength"})
+  static void separatorMechanicalRow(String label, boolean srk) {
+    SystemInterface fluid = srk ? new SystemSrkEos(298.15, 20.0) : new SystemPrEos(298.15, 20.0);
+    fluid.addComponent("methane", 0.7);
+    fluid.addComponent("ethane", 0.1);
+    fluid.addComponent("propane", 0.1);
+    fluid.addComponent("n-pentane", 0.1);
+    if (srk) {
+      fluid.setMixingRule("classic");
+    } else {
+      fluid.setMixingRule(2);
+    }
+    Stream feed = new Stream("Feed", fluid);
+    feed.setFlowRate(10000.0, "kg/hr");
+    feed.setTemperature(25.0, "C");
+    feed.setPressure(20.0, "bara");
+    feed.run();
+    neqsim.process.equipment.separator.Separator separator =
+        new neqsim.process.equipment.separator.Separator("TestSeparator", feed);
+    feed.setTemperature(25.0, "C");
+    separator.run();
+    neqsim.process.mechanicaldesign.separator.SeparatorMechanicalDesign design =
+        (neqsim.process.mechanicaldesign.separator.SeparatorMechanicalDesign) separator
+            .getMechanicalDesign();
+
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    System.out.println("standard_keys=" + design.getDesignStandard().keySet());
+    for (String key : design.getDesignStandard().keySet()) {
+      Object standard = design.getDesignStandard().get(key);
+      System.out.println("standard_" + key.replace(' ', '_') + "="
+          + (standard == null ? "null" : standard.getClass().getSimpleName()));
+    }
+    try {
+      design.calcDesign();
+      System.out.println("calc_design=ok");
+    } catch (Exception ex) {
+      System.out.println("calc_design_error=" + ex);
+      ex.printStackTrace(System.out);
+    }
+    // **`super.calcDesign()` installs the default company standards when none were set**,
+    // so the keys are read again here rather than before the call.
+    // **The key names only, never the set's `toString`.** A `DesignStandard` value's string
+    // form reaches `MechanicalDesign.hashCode`, which recurses through the cost estimator's
+    // own `hashCode` and overflows the stack - the class's defect, and not this probe's.
+    System.out.println("standard_keys_after=" + design.getDesignStandard().size());
+    for (String key : design.getDesignStandard().keySet()) {
+      Object standard = design.getDesignStandard().get(key);
+      System.out.println("standard_after_" + key.replace(' ', '_') + "="
+          + (standard == null ? "null" : standard.getClass().getSimpleName()));
+    }
+    // The default standards' own numbers, which is what a port has to declare as inputs.
+    neqsim.process.mechanicaldesign.designstandards.SeparatorDesignStandard separatorStandard =
+        (neqsim.process.mechanicaldesign.designstandards.SeparatorDesignStandard) design
+            .getDesignStandard().get("separator process design");
+    neqsim.process.mechanicaldesign.designstandards.MaterialPlateDesignStandard materialStandard =
+        (neqsim.process.mechanicaldesign.designstandards.MaterialPlateDesignStandard) design
+            .getDesignStandard().get("material plate design codes");
+    neqsim.process.mechanicaldesign.designstandards.JointEfficiencyPlateStandard jointStandard =
+        (neqsim.process.mechanicaldesign.designstandards.JointEfficiencyPlateStandard) design
+            .getDesignStandard().get("plate Joint Efficiency design codes");
+    neqsim.process.mechanicaldesign.designstandards.PressureVesselDesignStandard vesselStandard =
+        (neqsim.process.mechanicaldesign.designstandards.PressureVesselDesignStandard) design
+            .getDesignStandard().get("pressure vessel design code");
+    System.out.println("separator_standard_name=" + separatorStandard.getClass().getSimpleName());
+    System.out.println("separator_standard_gas_load_factor=" + separatorStandard.getGasLoadFactor());
+    System.out.println("separator_standard_fg=" + separatorStandard.getFg());
+    System.out.println("separator_standard_volume_safety_factor="
+        + separatorStandard.getVolumetricDesignFactor());
+    System.out.println("separator_standard_retention_s="
+        + separatorStandard.getLiquidRetentionTime("API12J", design));
+    System.out.println("material_standard_division_class=" + materialStandard.getDivisionClass());
+    System.out.println("joint_efficiency=" + jointStandard.getJEFactor());
+    System.out.println("vessel_standard_name=" + vesselStandard.getClass().getSimpleName());
+    System.out.println("max_operation_pressure_bara=" + design.getMaxOperationPressure());
+    System.out.println("max_operation_temperature_k=" + design.getMaxOperationTemperature());
+    System.out.println("corrosion_allowance=" + design.getCorrosionAllowance());
+    System.out.println("orientation=" + separator.getOrientation());
+    // The sizing intermediates: the two densities, the two raw volumes the class divides by
+    // `1e5`, and the two volume flows it forms from them.
+    System.out.println("gas_density_kg_m3="
+        + separator.getThermoSystem().getPhase(0).getPhysicalProperties().getDensity());
+    System.out.println("liquid_density_kg_m3="
+        + separator.getThermoSystem().getPhase(1).getPhysicalProperties().getDensity());
+    System.out.println("liquid_viscosity_pa_s="
+        + separator.getThermoSystem().getPhase(1).getPhysicalProperties().getViscosity());
+    System.out.println("phase0_volume_raw="
+        + separator.getThermoSystem().getPhase(0).getVolume());
+    System.out.println("liquid_volume_raw=" + separator.getThermoSystem().getLiquidVolume());
+    System.out.println("max_design_volume_flow_m3_hr=" + design.getMaxDesignVolumeFlow());
+    System.out.println("max_design_gas_volume_flow_m3_hr=" + design.getMaxDesignGassVolumeFlow());
+    System.out.println("inner_diameter_m=" + design.getInnerDiameter());
+    System.out.println("outer_diameter_m=" + design.getOuterDiameter());
+    System.out.println("vessel_shell_weight_kg=" + design.getWeigthVesselShell());
+    System.out.println("internals_weight_kg=" + design.getWeigthInternals());
+    System.out.println("piping_weight_kg=" + design.getWeightPiping());
+    System.out.println("structural_weight_kg=" + design.getWeightStructualSteel());
+    System.out.println("electrical_weight_kg=" + design.getWeightElectroInstrument());
+    System.out.println("total_weight_kg=" + design.getWeightTotal());
+    System.out.println("module_width_m=" + design.getModuleWidth());
+    System.out.println("module_length_m=" + design.getModuleLength());
+    System.out.println("module_height_m=" + design.getModuleHeight());
+    System.out.println("vessel_volume_m3=" + design.getVolumeTotal());
+    System.out.println("tantan_length_m=" + design.getTantanLength());
+    System.out.println("wall_thickness_m=" + design.getWallThickness());
+    System.out.println("gas_load_factor_m_per_s=" + design.getGasLoadFactor());
+    System.out.println("fg=" + design.getFg());
+    System.out.println("volume_safety_factor=" + design.getVolumeSafetyFactor());
+    System.out.println("retention_time_s=" + design.getRetentionTime());
+    System.out.println("hhll_m=" + design.getHHLL());
+    System.out.println("hll_m=" + design.getHLL());
+    System.out.println("nll_m=" + design.getNLL());
+    System.out.println("lll_m=" + design.getLLL());
+    System.out.println("llll_m=" + design.getLLLL());
+    System.out.println("weir_height_m=" + design.getWeirHeight());
+    System.out.println("hil_m=" + design.getHIL());
+    System.out.println("nil_m=" + design.getNIL());
+    System.out.println("lil_m=" + design.getLIL());
+    System.out.println("effective_length_liquid_m=" + design.getEffectiveLengthLiquid());
+    System.out.println("effective_length_gas_m=" + design.getEffectiveLengthGas());
+    System.out.println("calc_liquid_retention_time_s=" + design.calcLiquidRetentionTime());
+    System.out.println("calc_surge_volume_m3=" + design.calcSurgeVolume());
+    System.out.println("calc_surge_time_s=" + design.calcSurgeTime());
+    System.out.println("calc_inlet_nozzle_id_m=" + design.calcInletNozzleID());
+    System.out.println("calc_gas_outlet_nozzle_id_m=" + design.calcGasOutletNozzleID());
+    System.out.println("calc_oil_outlet_nozzle_id_m=" + design.calcOilOutletNozzleID());
+    neqsim.process.mechanicaldesign.separator.SeparatorMechanicalDesignResponse response =
+        design.getResponse();
+    if (response != null) {
+      System.out.println("response_orientation=" + response.getOrientation());
+      System.out.println("response_separator_type=" + response.getSeparatorType());
+      System.out.println("response_gas_load_factor=" + response.getGasLoadFactor());
+      System.out.println("response_volume_safety_factor=" + response.getVolumeSafetyFactor());
+      System.out.println("response_liquid_level_fraction=" + response.getLiquidLevelFraction());
+      System.out.println("response_retention_time=" + response.getRetentionTime());
+      System.out.println("response_demister_type=" + response.getDemisterType());
+      System.out.println("response_demister_efficiency=" + response.getDemisterEfficiency());
+      System.out.println("response_inlet_nozzles=" + response.getNumberOfInletNozzles());
+      System.out.println("response_inlet_nozzle_diameter=" + response.getInletNozzleDiameter());
+      System.out.println("response_gas_outlet_nozzle_diameter="
+          + response.getGasOutletNozzleDiameter());
+      System.out.println("response_liquid_outlet_nozzle_diameter="
+          + response.getLiquidOutletNozzleDiameter());
+      System.out.println("response_water_outlet_nozzle_diameter="
+          + response.getWaterOutletNozzleDiameter());
+      System.out.println("response_head_type=" + response.getHeadType());
+      System.out.println("response_head_thickness=" + response.getHeadThickness());
+      System.out.println("response_shell_thickness=" + response.getShellThickness());
+      System.out.println("response_design_code=" + response.getDesignCode());
+      System.out.println("response_gas_design_velocity=" + response.getGasDesignVelocity());
+      System.out.println("response_actual_gas_velocity=" + response.getActualGasVelocity());
+      System.out.println("response_allowable_gas_velocity=" + response.getAllowableGasVelocity());
+      System.out.println("response_design_gas_flow=" + response.getDesignGasFlow());
+      System.out.println("response_design_liquid_flow=" + response.getDesignLiquidFlow());
+      System.out.println("response_design_water_flow=" + response.getDesignWaterFlow());
+      System.out.println("response_normal_liquid_level=" + response.getNormalLiquidLevel());
+      System.out.println("response_high_liquid_level=" + response.getHighLiquidLevel());
+      System.out.println("response_low_liquid_level=" + response.getLowLiquidLevel());
+      System.out.println("response_interface_level=" + response.getInterfaceLevel());
+      System.out.println("response_surge_volume=" + response.getSurgeVolume());
+    }
+    System.out.println();
+  }
+
+  // === process.gas_scrubber mechanical design =================================
+
+  /// `GasScrubberMechanicalDesign.calcDesign` on the same two-cubic fixture.
+  ///
+  /// **The subclass is a second sizing machine.** It calls the separator's `calcDesign` first
+  /// - which installs the default standards and sizes a horizontal-vessel diameter - and then
+  /// re-sizes with the scrubber's own vertical `Fg = 1.0` (or `1 - design level fraction`)
+  /// and `length = 5 d`, replacing the diameter while the levels the base pass set stay on
+  /// the base pass's diameter. The row prints both bases' K and safety factor and the levels
+  /// beside the final diameter, so that staleness is visible rather than inferred.
+  static void gasScrubberMechanicalRows() {
+    gasScrubberMechanicalRow("class_fixture_srk", true, false);
+    gasScrubberMechanicalRow("port_fixture_pr", false, false);
+    // The mesh pad's configuration is design state, set after `calcDesign` sizes the vessel.
+    gasScrubberMechanicalRow("port_fixture_pr_mesh_pad", false, true);
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength"})
+  static void gasScrubberMechanicalRow(String label, boolean srk, boolean meshPad) {
+    SystemInterface fluid = srk ? new SystemSrkEos(298.15, 20.0) : new SystemPrEos(298.15, 20.0);
+    fluid.addComponent("methane", 0.7);
+    fluid.addComponent("ethane", 0.1);
+    fluid.addComponent("propane", 0.1);
+    fluid.addComponent("n-pentane", 0.1);
+    if (srk) {
+      fluid.setMixingRule("classic");
+    } else {
+      fluid.setMixingRule(2);
+    }
+    Stream feed = new Stream("Feed", fluid);
+    feed.setFlowRate(10000.0, "kg/hr");
+    feed.setTemperature(25.0, "C");
+    feed.setPressure(20.0, "bara");
+    feed.run();
+    neqsim.process.equipment.separator.GasScrubber scrubber =
+        new neqsim.process.equipment.separator.GasScrubber("TestScrubber", feed);
+    feed.setTemperature(25.0, "C");
+    scrubber.run();
+    neqsim.process.mechanicaldesign.separator.GasScrubberMechanicalDesign design =
+        (neqsim.process.mechanicaldesign.separator.GasScrubberMechanicalDesign) scrubber
+            .getMechanicalDesign();
+
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    try {
+      design.calcDesign();
+      System.out.println("calc_design=ok");
+    } catch (Exception ex) {
+      System.out.println("calc_design_error=" + ex);
+      ex.printStackTrace(System.out);
+    }
+    if (meshPad) {
+      double area = Math.PI * Math.pow(design.getInnerDiameter() / 2.0, 2);
+      design.setMeshPad(area, 150.0);
+      design.setMeshPadElevationM(0.75);
+    }
+    System.out.println("standard_keys_after=" + design.getDesignStandard().size());
+    for (String key : design.getDesignStandard().keySet()) {
+      Object standard = design.getDesignStandard().get(key);
+      System.out.println("standard_after_" + key.replace(' ', '_') + "="
+          + (standard == null ? "null" : standard.getClass().getSimpleName()));
+    }
+    neqsim.process.mechanicaldesign.designstandards.GasScrubberDesignStandard scrubberStandard =
+        (neqsim.process.mechanicaldesign.designstandards.GasScrubberDesignStandard) design
+            .getDesignStandard().get("gas scrubber process design");
+    neqsim.process.mechanicaldesign.designstandards.SeparatorDesignStandard separatorStandard =
+        (neqsim.process.mechanicaldesign.designstandards.SeparatorDesignStandard) design
+            .getDesignStandard().get("separator process design");
+    System.out.println("scrubber_standard_gas_load_factor="
+        + scrubberStandard.getGasLoadFactor());
+    System.out.println("scrubber_standard_volume_safety_factor="
+        + scrubberStandard.getVolumetricDesignFactor());
+    System.out.println("separator_standard_gas_load_factor="
+        + separatorStandard.getGasLoadFactor());
+    System.out.println("separator_standard_volume_safety_factor="
+        + separatorStandard.getVolumetricDesignFactor());
+    System.out.println("orientation=" + scrubber.getOrientation());
+    System.out.println("design_liquid_level_fraction="
+        + scrubber.getDesignLiquidLevelFraction());
+    System.out.println("gas_density_kg_m3="
+        + scrubber.getThermoSystem().getPhase(0).getPhysicalProperties().getDensity());
+    System.out.println("liquid_density_kg_m3="
+        + scrubber.getThermoSystem().getPhase(1).getPhysicalProperties().getDensity());
+    System.out.println("phase0_volume_raw=" + scrubber.getThermoSystem().getPhase(0).getVolume());
+    System.out.println("liquid_volume_raw=" + scrubber.getThermoSystem().getLiquidVolume());
+    System.out.println("max_design_volume_flow_m3_hr=" + design.getMaxDesignVolumeFlow());
+    System.out.println("max_design_gas_volume_flow_m3_hr=" + design.getMaxDesignGassVolumeFlow());
+    System.out.println("inner_diameter_m=" + design.getInnerDiameter());
+    System.out.println("tantan_length_m=" + design.getTantanLength());
+    System.out.println("outer_diameter_m=" + design.getOuterDiameter());
+    System.out.println("wall_thickness_m=" + design.getWallThickness());
+    System.out.println("vessel_shell_weight_kg=" + design.getWeigthVesselShell());
+    System.out.println("internals_weight_kg=" + design.getWeigthInternals());
+    System.out.println("piping_weight_kg=" + design.getWeightPiping());
+    System.out.println("structural_weight_kg=" + design.getWeightStructualSteel());
+    System.out.println("electrical_weight_kg=" + design.getWeightElectroInstrument());
+    System.out.println("total_weight_kg=" + design.getWeightTotal());
+    System.out.println("module_width_m=" + design.getModuleWidth());
+    System.out.println("module_length_m=" + design.getModuleLength());
+    System.out.println("module_height_m=" + design.getModuleHeight());
+    System.out.println("vessel_volume_m3=" + design.getVolumeTotal());
+    System.out.println("gas_load_factor_m_per_s=" + design.getGasLoadFactor());
+    System.out.println("fg=" + design.getFg());
+    System.out.println("volume_safety_factor=" + design.getVolumeSafetyFactor());
+    System.out.println("retention_time_s=" + design.getRetentionTime());
+    System.out.println("hhll_m=" + design.getHHLL());
+    System.out.println("hll_m=" + design.getHLL());
+    System.out.println("nll_m=" + design.getNLL());
+    System.out.println("lll_m=" + design.getLLL());
+    System.out.println("llll_m=" + design.getLLLL());
+    System.out.println("weir_height_m=" + design.getWeirHeight());
+    System.out.println("hil_m=" + design.getHIL());
+    System.out.println("nil_m=" + design.getNIL());
+    System.out.println("lil_m=" + design.getLIL());
+    System.out.println("effective_length_liquid_m=" + design.getEffectiveLengthLiquid());
+    System.out.println("effective_length_gas_m=" + design.getEffectiveLengthGas());
+    System.out.println("calc_liquid_retention_time_s=" + design.calcLiquidRetentionTime());
+    System.out.println("calc_surge_volume_m3=" + design.calcSurgeVolume());
+    System.out.println("calc_surge_time_s=" + design.calcSurgeTime());
+    System.out.println("calc_inlet_nozzle_id_m=" + design.calcInletNozzleID());
+    System.out.println("calc_gas_outlet_nozzle_id_m=" + design.calcGasOutletNozzleID());
+    System.out.println("calc_oil_outlet_nozzle_id_m=" + design.calcOilOutletNozzleID());
+    System.out.println("has_mesh_pad=" + design.hasMeshPad());
+    System.out.println("mesh_pad_area_m2=" + design.getMeshPadAreaM2());
+    System.out.println("mesh_pad_thickness_mm=" + design.getMeshPadThicknessMm());
+    System.out.println("mesh_pad_elevation_m=" + design.getMeshPadElevationM());
+    System.out.println("has_inlet_cyclones=" + design.hasInletCyclones());
+    System.out.println("has_demisting_cyclones=" + design.hasDemistingCyclones());
+    if (meshPad) {
+      // `sizeFromFlow` is inherited from `Separator`; it mutates the vessel, so it is last.
+      scrubber.sizeFromFlow(1.5);
+      System.out.println("sized_diameter_m=" + scrubber.getInternalDiameter());
+    }
+    System.out.println();
+  }
+
+  // === process.three_phase_separator interface settling ======================
+
+  /// `ThreePhaseSeparator.calcInterfaceSettlingTime` on the two vessel states.
+  ///
+  /// The class settles a **150 µm water droplet** through the oil layer, Stokes on the oil's
+  /// own viscosity, and answers **minutes**; `isWithinAllLimits` requires at least `1.0`.
+  /// The levels are the mechanical design's, with `0.20`/`0.50` of the diameter and
+  /// `0.82 * length` as fallbacks, which is what a vessel that never ran `calcDesign` reads.
+  /// The valve fractions are set on the second state and the mass balance printed: they are
+  /// read by that report alone, which is why they are not model inputs.
+  static void threePhaseSettlingRows() {
+    String[] names = new String[] {"methane", "n-butane", "water"};
+    double[] z = new double[] {0.5, 0.3, 0.2};
+    threePhaseSettlingRow("vessel_d1000_l3000", names, z, 1.0, 3.0, false);
+    threePhaseSettlingRow("vessel_d1200_l4000_valves", names, z, 1.2, 4.0, true);
+  }
+
+  static void threePhaseSettlingRow(String label, String[] names, double[] z, double diameterM,
+      double lengthM, boolean valves) {
+    Stream inlet = feed(names, z, 300.0, 20.0, 1.0);
+    neqsim.process.equipment.separator.ThreePhaseSeparator separator =
+        new neqsim.process.equipment.separator.ThreePhaseSeparator("sep3", inlet);
+    separator.setInternalDiameter(diameterM);
+    separator.setSeparatorLength(lengthM);
+    if (valves) {
+      separator.setGasOutletFlowFraction(0.10);
+      separator.setOilOutletFlowFraction(0.20);
+      separator.setWaterOutletFlowFraction(0.30);
+    }
+    separator.run();
+    neqsim.process.mechanicaldesign.separator.SeparatorMechanicalDesign design =
+        (neqsim.process.mechanicaldesign.separator.SeparatorMechanicalDesign) separator
+            .getMechanicalDesign();
+    System.out.println(label);
+    System.out.println("phase_count=" + separator.getThermoSystem().getNumberOfPhases());
+    System.out.println("has_oil=" + separator.getThermoSystem().hasPhaseType("oil"));
+    System.out.println("has_aqueous=" + separator.getThermoSystem().hasPhaseType("aqueous"));
+    System.out.println("internal_diameter_m=" + separator.getInternalDiameter());
+    System.out.println("separator_length_m=" + separator.getSeparatorLength());
+    System.out.println("nil_m=" + design.getNIL());
+    System.out.println("nll_m=" + design.getNLL());
+    System.out.println("effective_length_liquid_m=" + design.getEffectiveLengthLiquid());
+    System.out.println("oil_density_kg_m3="
+        + separator.getThermoSystem().getPhase("oil").getDensity("kg/m3"));
+    System.out.println("water_density_kg_m3="
+        + separator.getThermoSystem().getPhase("aqueous").getDensity("kg/m3"));
+    System.out.println("oil_viscosity_pa_s="
+        + separator.getThermoSystem().getPhase("oil").getPhysicalProperties().getViscosity());
+    // **The class's own call reads the aqueous density before the phase has initialised it.**
+    // On a freshly run separator that is `0.0`, the settling velocity is negative and the
+    // answer is `Infinity`. The same call after `initPhysicalProperties()` is the state the
+    // method means; both are printed because the difference is the finding.
+    System.out.println("interface_settling_time_uninitialised_min="
+        + separator.calcInterfaceSettlingTime());
+    System.out.println("within_all_limits_uninitialised=" + separator.isWithinAllLimits());
+    separator.getThermoSystem().initPhysicalProperties();
+    System.out.println("water_density_initialised_kg_m3="
+        + separator.getThermoSystem().getPhase("aqueous").getDensity("kg/m3"));
+    System.out.println("oil_viscosity_initialised_pa_s="
+        + separator.getThermoSystem().getPhase("oil").getPhysicalProperties().getViscosity());
+    System.out.println("interface_settling_time_initialised_min="
+        + separator.calcInterfaceSettlingTime());
+    System.out.println("within_all_limits_initialised=" + separator.isWithinAllLimits());
+    if (valves) {
+      System.out.println("gas_outlet_fraction=" + separator.getGasOutletFlowFraction());
+      System.out.println("oil_outlet_fraction=" + separator.getOilOutletFlowFraction());
+      System.out.println("water_outlet_fraction=" + separator.getWaterOutletFlowFraction());
+      System.out.println("mass_balance_kg_hr=" + separator.getMassBalance("kg/hr"));
+    }
+    System.out.println();
+  }
+
+  // === process.separator_performance, the enhanced chain =====================
+
+  /// `SeparatorPerformanceCalculator.calculateEnhanced` on the class's own test states.
+  ///
+  /// The chain is flow regime -> inlet device -> geometry -> gravity -> mist eliminator ->
+  /// liquid-liquid. **Every row prints each stage's intermediates**, because the enhanced
+  /// path is a second solver and a capture of the final efficiency cannot say which stage
+  /// moved. The constants are `EnhancedPerformanceCalculatorTest`'s own.
+  static void separatorPerformanceEnhancedRows() {
+    double gasDensity = 50.0;
+    double oilDensity = 750.0;
+    double waterDensity = 1025.0;
+    double gasViscosity = 1.2e-5;
+    double oilViscosity = 2.0e-3;
+    double waterViscosity = 8.0e-4;
+    double velocity = 2.0;
+    double diameter = 2.4;
+    double length = 7.0;
+    double level = 0.5;
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator twoPhase =
+        enhancedCalculator();
+    twoPhase.setInletPipeDiameter(0.2);
+    twoPhase.setSurfaceTension(0.025);
+    twoPhase.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            500e-6, 2.0));
+    runEnhanced("two_phase_horizontal", twoPhase, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, velocity, diameter, length, "horizontal", level);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator threePhase =
+        enhancedCalculator();
+    threePhase.setInletPipeDiameter(0.25);
+    threePhase.setSurfaceTension(0.025);
+    threePhase.setOilWaterInterfacialTension(0.030);
+    threePhase.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            500e-6, 2.0));
+    threePhase.setWaterInOilDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.logNormal(
+            200e-6, 0.6));
+    threePhase.setOilInWaterDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.logNormal(
+            150e-6, 0.5));
+    runEnhanced("three_phase_horizontal", threePhase, gasDensity, oilDensity, waterDensity,
+        gasViscosity, oilViscosity, waterViscosity, velocity, diameter, length, "horizontal",
+        level);
+
+    // The two geometry positions the class exposes as setters. The inlet device's is a
+    // private constant with no setter, so the gravity-section length is the read-back.
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator mistShift =
+        enhancedCalculator();
+    neqsim.process.equipment.separator.entrainment.SeparatorGeometryCalculator mistGeometry =
+        new neqsim.process.equipment.separator.entrainment.SeparatorGeometryCalculator();
+    mistGeometry.setMistEliminatorPosition(0.80);
+    mistShift.setGeometryCalculator(mistGeometry);
+    runEnhanced("mist_position_0_80", mistShift, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, velocity, diameter, length, "horizontal", level);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator weirShift =
+        enhancedCalculator();
+    neqsim.process.equipment.separator.entrainment.SeparatorGeometryCalculator weirGeometry =
+        new neqsim.process.equipment.separator.entrainment.SeparatorGeometryCalculator();
+    weirGeometry.setWeirPosition(0.50);
+    weirShift.setGeometryCalculator(weirGeometry);
+    runEnhanced("weir_position_0_50", weirShift, gasDensity, oilDensity, waterDensity,
+        gasViscosity, oilViscosity, waterViscosity, velocity, diameter, length, "horizontal",
+        level);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator vertical =
+        enhancedCalculator();
+    vertical.setInletPipeDiameter(0.15);
+    vertical.setSurfaceTension(0.025);
+    runEnhanced("two_phase_vertical", vertical, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, velocity, 1.5, 5.0, "vertical", 0.4);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator none =
+        enhancedCalculator();
+    none.setInletDeviceModel(
+        new neqsim.process.equipment.separator.entrainment.InletDeviceModel(
+            neqsim.process.equipment.separator.entrainment.InletDeviceModel.InletDeviceType.NONE));
+    runEnhanced("inlet_device_none", none, gasDensity, oilDensity, 0.0, gasViscosity, oilViscosity,
+        0.0, velocity, diameter, length, "horizontal", level);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator cyclone =
+        enhancedCalculator();
+    cyclone.setInletDeviceModel(
+        new neqsim.process.equipment.separator.entrainment.InletDeviceModel(
+            neqsim.process.equipment.separator.entrainment.InletDeviceModel.InletDeviceType.INLET_CYCLONE));
+    runEnhanced("inlet_device_cyclone", cyclone, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, velocity, diameter, length, "horizontal", level);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator flooding =
+        enhancedCalculator();
+    runEnhanced("high_velocity_flooding", flooding, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, 15.0, diameter, length, "horizontal", level);
+
+    // The internals database's other two default records, whose design K the calculator reads
+    // when none is stated.
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator vane =
+        enhancedCalculator();
+    vane.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.vanePackDefault());
+    vane.setInletPipeDiameter(0.2);
+    vane.setSurfaceTension(0.025);
+    vane.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            500e-6, 2.0));
+    runEnhanced("vane_pack_design_k", vane, gasDensity, oilDensity, 0.0, gasViscosity, oilViscosity,
+        0.0, velocity, diameter, length, "horizontal", level);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator overrides =
+        enhancedCalculator();
+    neqsim.process.equipment.separator.entrainment.InletDeviceModel overrideDevice =
+        new neqsim.process.equipment.separator.entrainment.InletDeviceModel(
+            neqsim.process.equipment.separator.entrainment.InletDeviceModel.InletDeviceType
+                .HALF_PIPE);
+    overrideDevice.setOverrideBulkEfficiency(0.5);
+    overrideDevice.setOverrideDsdMultiplier(1.5);
+    overrides.setInletDeviceModel(overrideDevice);
+    overrides.setInletPipeDiameter(0.2);
+    overrides.setSurfaceTension(0.025);
+    runEnhanced("inlet_device_overrides", overrides, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, velocity, diameter, length, "horizontal", level);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator axial =
+        enhancedCalculator();
+    axial.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve
+            .axialCycloneDefault());
+    axial.setInletPipeDiameter(0.2);
+    axial.setSurfaceTension(0.025);
+    axial.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            500e-6, 2.0));
+    runEnhanced("axial_cyclone_design_k", axial, gasDensity, oilDensity, 0.0, gasViscosity,
+        oilViscosity, 0.0, velocity, diameter, length, "horizontal", level);
+  }
+
+  static neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator
+      enhancedCalculator() {
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator calc =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    calc.setUseEnhancedCalculation(true);
+    calc.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.wireMeshDefault());
+    return calc;
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void runEnhanced(String label,
+      neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator calc,
+      double gasDensity, double oilDensity, double waterDensity, double gasViscosity,
+      double oilViscosity, double waterViscosity, double gasVelocity, double diameter,
+      double length, String orientation, double level) {
+    calc.calculate(gasDensity, oilDensity, waterDensity, gasViscosity, oilViscosity,
+        waterViscosity, gasVelocity, diameter, length, orientation, level);
+    System.out.println(label);
+    System.out.println("gas_density_kg_m3=" + gasDensity);
+    System.out.println("oil_density_kg_m3=" + oilDensity);
+    System.out.println("water_density_kg_m3=" + waterDensity);
+    System.out.println("gas_velocity_m_per_s=" + gasVelocity);
+    System.out.println("diameter_m=" + diameter);
+    System.out.println("length_m=" + length);
+    System.out.println("orientation=" + orientation);
+    System.out.println("liquid_level_fraction=" + level);
+    System.out.println("inlet_pipe_diameter_m=" + calc.getInletPipeDiameter());
+    System.out.println("surface_tension_n_per_m=" + calc.getSurfaceTension());
+    System.out.println("oil_water_interfacial_tension_n_per_m="
+        + calc.getOilWaterInterfacialTension());
+    System.out.println("overall_gas_liquid_efficiency=" + calc.getOverallGasLiquidEfficiency());
+    System.out.println("gravity_section_efficiency=" + calc.getGravitySectionEfficiency());
+    System.out.println("mist_eliminator_efficiency=" + calc.getMistEliminatorEfficiency());
+    System.out.println("gravity_cut_diameter_m=" + calc.getGravityCutDiameter());
+    System.out.println("liquid_liquid_gravity_efficiency="
+        + calc.getLiquidLiquidGravityEfficiency());
+    System.out.println("oil_in_gas_fraction=" + calc.getOilInGasFraction());
+    System.out.println("water_in_gas_fraction=" + calc.getWaterInGasFraction());
+    System.out.println("gas_in_oil_fraction=" + calc.getGasInOilFraction());
+    System.out.println("gas_in_water_fraction=" + calc.getGasInWaterFraction());
+    System.out.println("oil_in_water_fraction=" + calc.getOilInWaterFraction());
+    System.out.println("water_in_oil_fraction=" + calc.getWaterInOilFraction());
+    System.out.println("k_factor_m_per_s=" + calc.getKFactor());
+    System.out.println("k_factor_utilization=" + calc.getKFactorUtilization());
+    System.out.println("inlet_flow_regime="
+        + (calc.getInletFlowRegime() == null ? "null" : calc.getInletFlowRegime().name()));
+    System.out.println("inlet_device_bulk_efficiency=" + calc.getInletDeviceBulkEfficiency());
+    neqsim.process.equipment.separator.entrainment.InletDeviceModel device =
+        calc.getInletDeviceModel();
+    if (device != null) {
+      System.out.println("inlet_device_type=" + device.getDeviceType().name());
+      System.out.println("inlet_device_bulk_separation_efficiency="
+          + device.getBulkSeparationEfficiency());
+      System.out.println("inlet_device_pressure_drop_pa=" + device.getPressureDrop());
+      System.out.println("inlet_nozzle_velocity_m_per_s=" + device.getNozzleVelocity());
+      System.out.println("inlet_momentum_flux_pa=" + device.getMomentumFlux());
+      neqsim.process.equipment.separator.entrainment.DropletSizeDistribution downstreamDsd =
+          device.getDownstreamDSD();
+      if (downstreamDsd != null) {
+        System.out.println("post_inlet_d50_m=" + downstreamDsd.getD50());
+        System.out.println("post_inlet_d32_m=" + downstreamDsd.getSauterMeanDiameter());
+      }
+    }
+    neqsim.process.equipment.separator.entrainment.SeparatorGeometryCalculator geometry =
+        calc.getGeometryCalculator();
+    if (geometry != null) {
+      System.out.println("geometry_gas_area_m2=" + geometry.getGasArea());
+      System.out.println("geometry_liquid_area_m2=" + geometry.getLiquidArea());
+      System.out.println("geometry_gas_volume_m3=" + geometry.getGasVolume());
+      System.out.println("geometry_liquid_volume_m3=" + geometry.getLiquidVolume());
+      System.out.println("geometry_total_volume_m3="
+          + (geometry.getGasVolume() + geometry.getLiquidVolume()));
+      System.out.println("geometry_gas_settling_height_m="
+          + geometry.getEffectiveGasSettlingHeight());
+      System.out.println("geometry_liquid_settling_height_m="
+          + geometry.getEffectiveLiquidSettlingHeight());
+      System.out.println("geometry_gas_residence_time_s=" + geometry.getGasResidenceTime());
+      System.out.println("geometry_liquid_residence_time_s=" + geometry.getLiquidResidenceTime());
+      System.out.println("geometry_gravity_section_length_m="
+          + geometry.getGravitySectionLength());
+      System.out.println("geometry_oil_pad_thickness_m=" + geometry.getOilPadThickness());
+      System.out.println("geometry_water_layer_height_m=" + geometry.getWaterLayerHeight());
+    }
+    neqsim.process.equipment.separator.entrainment.DropletSettlingCalculator.ApiComplianceResult
+        api = calc.getApiComplianceResult();
+    if (api != null) {
+      System.out.println("api_gas_liquid_compliant=" + api.gasLiquidSectionCompliant);
+      System.out.println("api_liquid_compliant=" + api.liquidSectionCompliant);
+      System.out.println("api_fully_compliant=" + api.isFullyCompliant());
+      System.out.println("api_gravity_cut_diameter_um=" + api.gravityCutDiameter_um);
+      System.out.println("api_k_factor_utilization=" + api.kFactorUtilization);
+      System.out.println("api_gas_liquid_comment=" + api.gasLiquidComment);
+      System.out.println("api_liquid_comment=" + api.liquidComment);
+    }
+    System.out.println();
+  }
+
+  // === process.separator_performance ==========================================
+
+  /// `SeparatorPerformanceCalculator`'s standard path.
+  ///
+  /// **The configurations are the class's own test states**, so the capture pins the
+  /// arithmetic the test only bounds: the two-phase wire mesh, the vertical vane-pack scrubber,
+  /// the three-phase state, gravity alone, the gas-bubble carry-under and the plate-pack
+  /// coalescer with no gas-liquid distribution. Two rows follow the calibration test's base and
+  /// tuned machines, one turns the gravity section off, and one uses a log-normal distribution
+  /// with custom lookup tables on both internals and coalescer.
+  static void separatorPerformanceRows() {
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator twoPhase =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    twoPhase.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            100.0e-6, 2.6));
+    twoPhase.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.wireMeshDefault());
+    runSeparatorPerformance("two_phase_horizontal_wire_mesh", twoPhase, 50.0, 800.0, 0.0, 1.5e-5,
+        2.0e-3, 0.0, 1.0, 2.0, 8.0, "horizontal", 0.5, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator vertical =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    vertical.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            30.0e-6, 2.6));
+    vertical.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.vanePackDefault());
+    runSeparatorPerformance("vertical_scrubber_vane_pack", vertical, 60.0, 850.0, 0.0, 1.5e-5,
+        3.0e-3, 0.0, 2.0, 1.0, 4.0, "vertical", 0.1, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator threePhase =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    threePhase.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            80.0e-6, 2.6));
+    threePhase.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.wireMeshDefault());
+    threePhase.setWaterInOilDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            300.0e-6, 2.0));
+    threePhase.setOilInWaterDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            200.0e-6, 2.0));
+    runSeparatorPerformance("three_phase_horizontal", threePhase, 40.0, 800.0, 1020.0, 1.5e-5,
+        5.0e-3, 8.0e-4, 1.5, 2.5, 10.0, "horizontal", 0.6, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator gravityOnly =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    gravityOnly.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            20.0e-6, 2.6));
+    runSeparatorPerformance("gravity_only_no_mist_eliminator", gravityOnly, 30.0, 750.0, 0.0,
+        1.2e-5, 2.0e-3, 0.0, 0.5, 3.0, 12.0, "horizontal", 0.5, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator bubble =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    bubble.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            100.0e-6, 2.6));
+    bubble.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.wireMeshDefault());
+    bubble.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            500.0e-6, 2.0));
+    runSeparatorPerformance("gas_bubble_carry_under", bubble, 50.0, 800.0, 0.0, 1.5e-5, 3.0e-3,
+        0.0, 1.0, 2.0, 8.0, "horizontal", 0.5, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator plate =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    plate.setWaterInOilDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            100.0e-6, 2.0));
+    plate.setOilInWaterDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            80.0e-6, 2.0));
+    plate.setOilWaterCoalescerCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.platePack(30.0e-6,
+            0.98));
+    runSeparatorPerformance("liquid_liquid_plate_pack_no_gas_liquid", plate, 40.0, 800.0, 1020.0,
+        1.5e-5, 5.0e-3, 8.0e-4, 1.5, 2.5, 10.0, "horizontal", 0.6, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator calibrationBase =
+        calibrationMachine();
+    runSeparatorPerformance("calibration_base", calibrationBase, 50.0, 800.0, 1020.0, 1.5e-5,
+        3.0e-3, 8.0e-4, 1.2, 2.0, 8.0, "horizontal", 0.5, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator calibrationTuned =
+        calibrationMachine();
+    runSeparatorPerformance("calibration_tuned", calibrationTuned, 50.0, 800.0, 1020.0, 1.5e-5,
+        3.0e-3, 8.0e-4, 1.2, 2.0, 8.0, "horizontal", 0.5, 1.5, 1.25, 0.8);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator custom =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    custom.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.logNormal(50.0e-6,
+            0.8));
+    custom.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.custom(
+            new double[] {1.0e-6, 10.0e-6, 100.0e-6}, new double[] {0.1, 0.5, 0.99}));
+    custom.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.logNormal(400.0e-6,
+            0.7));
+    custom.setWaterInOilDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.logNormal(150.0e-6,
+            0.7));
+    custom.setOilInWaterDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.logNormal(100.0e-6,
+            0.9));
+    custom.setOilWaterCoalescerCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.custom(
+            new double[] {5.0e-6, 50.0e-6, 500.0e-6}, new double[] {0.05, 0.4, 0.95}));
+    runSeparatorPerformance("log_normal_custom_curves", custom, 40.0, 820.0, 1010.0, 1.4e-5,
+        2.5e-3, 9.0e-4, 0.8, 2.2, 9.0, "horizontal", 0.55, null, null, null);
+
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator noGravity =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    noGravity.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            100.0e-6, 2.6));
+    noGravity.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.wireMeshDefault());
+    noGravity.setIncludeGravitySection(false);
+    runSeparatorPerformance("gravity_section_off", noGravity, 50.0, 800.0, 0.0, 1.5e-5, 2.0e-3,
+        0.0, 1.0, 2.0, 8.0, "horizontal", 0.5, null, null, null);
+  }
+
+  /// The calibration test's machine, before either factor is set.
+  static neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator
+      calibrationMachine() {
+    neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator calc =
+        new neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator();
+    calc.setGasLiquidDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            120.0e-6, 2.2));
+    calc.setMistEliminatorCurve(
+        neqsim.process.equipment.separator.entrainment.GradeEfficiencyCurve.vanePackDefault());
+    calc.setGasBubbleDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            400.0e-6, 2.0));
+    calc.setWaterInOilDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            120.0e-6, 2.0));
+    calc.setOilInWaterDSD(
+        neqsim.process.equipment.separator.entrainment.DropletSizeDistribution.rosinRammler(
+            120.0e-6, 2.0));
+    return calc;
+  }
+
+  static void runSeparatorPerformance(String label,
+      neqsim.process.equipment.separator.entrainment.SeparatorPerformanceCalculator calc,
+      double gasDensity, double oilDensity, double waterDensity, double gasViscosity,
+      double oilViscosity, double waterViscosity, double gasVelocity, double diameter,
+      double length, String orientation, double level, Double liquidInGasFactor,
+      Double gasCarryUnderFactor, Double liquidLiquidFactor) {
+    if (liquidInGasFactor != null) {
+      calc.setLiquidInGasCalibrationFactor(liquidInGasFactor);
+    }
+    if (gasCarryUnderFactor != null) {
+      calc.setGasCarryUnderCalibrationFactor(gasCarryUnderFactor);
+    }
+    if (liquidLiquidFactor != null) {
+      calc.setLiquidLiquidCalibrationFactor(liquidLiquidFactor);
+    }
+    calc.calculate(gasDensity, oilDensity, waterDensity, gasViscosity, oilViscosity,
+        waterViscosity, gasVelocity, diameter, length, orientation, level);
+    System.out.println(label);
+    System.out.println("gas_density_kg_m3=" + gasDensity);
+    System.out.println("oil_density_kg_m3=" + oilDensity);
+    System.out.println("water_density_kg_m3=" + waterDensity);
+    System.out.println("gas_viscosity_Pa_s=" + gasViscosity);
+    System.out.println("oil_viscosity_Pa_s=" + oilViscosity);
+    System.out.println("water_viscosity_Pa_s=" + waterViscosity);
+    System.out.println("gas_velocity_m_per_s=" + gasVelocity);
+    System.out.println("vessel_diameter_m=" + diameter);
+    System.out.println("vessel_length_m=" + length);
+    System.out.println("orientation=" + orientation);
+    System.out.println("liquid_level_fraction=" + level);
+    System.out.println("oil_in_gas_fraction=" + calc.getOilInGasFraction());
+    System.out.println("water_in_gas_fraction=" + calc.getWaterInGasFraction());
+    System.out.println("gas_in_oil_fraction=" + calc.getGasInOilFraction());
+    System.out.println("gas_in_water_fraction=" + calc.getGasInWaterFraction());
+    System.out.println("oil_in_water_fraction=" + calc.getOilInWaterFraction());
+    System.out.println("water_in_oil_fraction=" + calc.getWaterInOilFraction());
+    System.out.println("gravity_section_efficiency=" + calc.getGravitySectionEfficiency());
+    System.out.println("mist_eliminator_efficiency=" + calc.getMistEliminatorEfficiency());
+    System.out.println("overall_gas_liquid_efficiency=" + calc.getOverallGasLiquidEfficiency());
+    System.out.println(
+        "liquid_liquid_gravity_efficiency=" + calc.getLiquidLiquidGravityEfficiency());
+    System.out.println("gravity_cut_diameter_m=" + calc.getGravityCutDiameter());
+    System.out.println();
+  }
+
+  // === process.separator_capacity_assessment ==================================
+
+  /// `Separator.getCapacityAssessment`, the detached fail-closed snapshot.
+  ///
+  /// **The mechanical limit is stated as a fraction of the Souders-Brown flow**, because it
+  /// is the one number the pin's test derives rather than states: its `0.8` limit is
+  /// `0.8 * getSoudersBrownMaximumGasFlowM3PerS()`. The probe computes it after the run and
+  /// prints the absolute m3/s it set, which is what a case states.
+  ///
+  /// The failing states - a zero diameter, an orientation that is neither of the two, a
+  /// liquid level of one, a liquid-only feed, a blank provenance - are the class's own
+  /// `UNASSESSED` answers, not exceptions; each prints its diagnostic.
+  static void separatorCapacityAssessmentRows() {
+    assessmentRow("pr_feasible_sb_governs", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, null, "design basis A");
+    assessmentRow("pr_infeasible", false, false, null, new String[] {"methane", "n-butane"},
+        new double[] {0.7, 0.3}, 300.0, 20.0, 50.0, null, 0.2, 0.11, "vertical", 0.8, null,
+        "an undersized vessel");
+    assessmentRow("pr_mechanical_governs", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 0.8, "mechanical design basis");
+    assessmentRow("pr_mechanical_above_sb", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, 1.2, "a mechanical limit that does not bind");
+    assessmentRow("pr_blank_provenance", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 0.8, null, " ");
+    assessmentRow("pr_liquid_only", false, false, null, new String[] {"n-butane"},
+        new double[] {1.0}, 250.0, 5.0, 1.0, null, 1.0, 0.11, "vertical", 0.8, null,
+        "liquid only");
+    // The class checks the gas phase before the liquid level, so this answers the geometry
+    // sentence rather than the level's.
+    assessmentRow("pr_liquid_only_level_one", false, false, null, new String[] {"n-butane"},
+        new double[] {1.0}, 250.0, 5.0, 1.0, null, 1.0, 0.11, "vertical", 1.0, null,
+        "liquid only");
+    assessmentRow("pr_zero_k", false, false, null, new String[] {"methane", "n-butane"},
+        new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null, 1.0, 0.0, "vertical", 0.8, null,
+        "design basis A");
+    // `1e308 * sqrt((rho_l - rho_g)/rho_g)` overflows, which is the class's non-finite
+    // evidence branch rather than a geometry refusal.
+    assessmentRow("pr_overflowing_k", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 1.0e308, "vertical", 0.8, null, "design basis A");
+    assessmentRow("pr_horizontal_feasible", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "horizontal", 0.8, null, "design basis A");
+    assessmentRow("pr_zero_diameter", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        0.0, 0.11, "vertical", 0.8, null, "design basis A");
+    assessmentRow("pr_invalid_orientation", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "inclined", 0.8, null, "design basis A");
+    assessmentRow("pr_level_one", false, false, null,
+        new String[] {"methane", "n-butane"}, new double[] {0.7, 0.3}, 300.0, 20.0, 1.0, null,
+        1.0, 0.11, "vertical", 1.0, null, "design basis A");
+
+    // The pin's #3154 state, mirrored on PR: 3 m vertical, methane/ethane at 50000 kg/hr.
+    assessmentRow("pr_3154_feasible", false, false, null,
+        new String[] {"methane", "ethane"}, new double[] {95.0, 5.0}, 303.15, 50.0, null,
+        50000.0, 3.0, 0.11, "vertical", 0.8, null, "Issue #3154 design basis");
+    assessmentRow("pr_3154_mechanical", false, false, null,
+        new String[] {"methane", "ethane"}, new double[] {95.0, 5.0}, 303.15, 50.0, null,
+        50000.0, 3.0, 0.11, "vertical", 0.8, 0.8, "Issue #3154 mechanical design basis");
+    assessmentRow("pr_3154_blank_provenance", false, false, null,
+        new String[] {"methane", "ethane"}, new double[] {95.0, 5.0}, 303.15, 50.0, null,
+        50000.0, 3.0, 0.11, "vertical", 0.8, null, " ");
+
+    // SRK evidence, the cubic `SeparatorTest` itself uses.
+    assessmentRow("srk_3154_feasible", true, false, null,
+        new String[] {"methane", "ethane"}, new double[] {95.0, 5.0}, 303.15, 50.0, null,
+        50000.0, 3.0, 0.11, "vertical", 0.8, null, "Issue #3154 design basis");
+    assessmentRow("srk_3154_mechanical", true, false, null,
+        new String[] {"methane", "ethane"}, new double[] {95.0, 5.0}, 303.15, 50.0, null,
+        50000.0, 3.0, 0.11, "vertical", 0.8, 0.8, "Issue #3154 mechanical design basis");
+    assessmentRow("srk_3154_blank_provenance", true, false, null,
+        new String[] {"methane", "ethane"}, new double[] {95.0, 5.0}, 303.15, 50.0, null,
+        50000.0, 3.0, 0.11, "vertical", 0.8, null, " ");
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void assessmentRow(String label, boolean srk, boolean multiPhase, Double heatInputW,
+      String[] names, double[] amounts, double temperature, double pressureBar,
+      Double molPerSecond, Double kgPerHour, double diameter, double kFactor, String orientation,
+      double designLiquidLevelFraction, Double mechanicalFraction, String provenance) {
+    Stream inlet = capacityFeed(srk, multiPhase, names, amounts, temperature, pressureBar,
+        molPerSecond, kgPerHour);
+    neqsim.process.equipment.separator.Separator separator =
+        new neqsim.process.equipment.separator.Separator("sep1", inlet);
+    separator.setInternalDiameter(diameter);
+    separator.setDesignGasLoadFactor(kFactor);
+    separator.setOrientation(orientation);
+    separator.setDesignLiquidLevelFraction(designLiquidLevelFraction);
+    separator.run();
+
+    Double mechanicalLimit = null;
+    if (mechanicalFraction != null) {
+      mechanicalLimit = mechanicalFraction * separator.getMaxAllowableGasFlowRate();
+      // The class stores m3/hr; the snapshot reports m3/s, which is the port's input unit.
+      separator.getMechanicalDesign().setMaxDesignGassVolumeFlow(mechanicalLimit * 3600.0);
+    }
+    neqsim.process.equipment.separator.SeparatorCapacityAssessment assessment =
+        separator.getCapacityAssessment(provenance);
+
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    System.out.println("temperature_k=" + inlet.getTemperature("K"));
+    System.out.println("pressure_bara=" + inlet.getPressure("bara"));
+    System.out.println("flow_mol_s=" + inlet.getFlowRate("mol/sec"));
+    System.out.println("flow_kg_hr=" + inlet.getFlowRate("kg/hr"));
+    StringBuilder z = new StringBuilder();
+    for (int i = 0; i < inlet.getThermoSystem().getPhase(0).getNumberOfComponents(); i++) {
+      z.append(i == 0 ? "" : ",")
+          .append(inlet.getThermoSystem().getPhase(0).getComponent(i).getName()).append(":")
+          .append(inlet.getThermoSystem().getMolarComposition()[i]);
+    }
+    System.out.println("z=" + z);
+    System.out.println("internal_diameter_m=" + diameter);
+    System.out.println("design_gas_load_factor_m_per_s=" + kFactor);
+    System.out.println("orientation=" + orientation);
+    System.out.println("design_liquid_level_fraction=" + designLiquidLevelFraction);
+    System.out.println("mechanical_design_max_gas_flow_m3_s="
+        + (mechanicalLimit == null ? "none" : mechanicalLimit));
+    System.out.println("design_basis_provenance=" + provenance);
+    System.out.println("status=" + assessment.getStatus());
+    System.out.println("is_feasible=" + assessment.isFeasible());
+    System.out.println("diagnostic=" + assessment.getDiagnostic());
+    System.out.println("design_basis_provenance_echo=" + assessment.getDesignBasisProvenance());
+    System.out.println("design_basis_source=" + assessment.getDesignBasisSource());
+    System.out.println("design_basis_confidence=" + assessment.getDesignBasisConfidence());
+    System.out.println("governing_capacity_basis=" + assessment.getGoverningCapacityBasis());
+    System.out.println("assessment_orientation=" + assessment.getOrientation());
+    System.out.println("assessment_internal_diameter_m="
+        + assessment.getInternalDiameterM());
+    System.out.println("assessment_design_liquid_level_fraction="
+        + assessment.getDesignLiquidLevelFraction());
+    System.out.println("gas_area_m2=" + assessment.getGasAreaM2());
+    System.out.println("gas_density_kg_m3=" + assessment.getGasDensityKgM3());
+    System.out.println("liquid_density_kg_m3=" + assessment.getLiquidDensityKgM3());
+    System.out.println("design_gas_load_factor_assessed_m_per_s="
+        + assessment.getDesignGasLoadFactorMPerS());
+    System.out.println("maximum_gas_velocity_m_per_s="
+        + assessment.getMaximumGasVelocityMPerS());
+    System.out.println("current_gas_flow_m3_s=" + assessment.getCurrentGasFlowM3PerS());
+    System.out.println("mechanical_design_maximum_gas_flow_m3_s="
+        + assessment.getMechanicalDesignMaximumGasFlowM3PerS());
+    System.out.println("souders_brown_maximum_gas_flow_m3_s="
+        + assessment.getSoudersBrownMaximumGasFlowM3PerS());
+    System.out.println("maximum_gas_flow_m3_s=" + assessment.getMaximumGasFlowM3PerS());
+    System.out.println("utilization=" + assessment.getUtilization());
+    String trimmedProvenance = provenance.trim();
+    System.out.println("json_has_provenance="
+        + (trimmedProvenance.isEmpty() ? "n/a" : assessment.toJson().contains(trimmedProvenance)));
+    System.out.println();
+  }
+
   static void throttlingValve() {
     // **Three rows, and the third is the one a port gets wrong - in the other direction
     // than it first looks.** A pressure *above* the inlet is not clamped: `acceptNegativeDP`
@@ -3116,6 +7869,15 @@ public class ProcessProbe {
     System.out.println(label);
     print("inlet", inlet);
     print("outlet", valve.getOutletStream());
+    System.out.println("kv=" + valve.getKv());
+    System.out.println("cv=" + valve.getCv());
+    System.out.println("cg=" + valve.getCg());
+    System.out.println("gas_valve=" + valve.isGasValve());
+    neqsim.thermo.system.SystemInterface inFluid = inlet.getThermoSystem();
+    System.out.println("inlet_gamma2=" + inFluid.getGamma2());
+    System.out.println("inlet_density_kg_m3=" + inFluid.getDensity("kg/m3"));
+    System.out.println("inlet_molar_mass_kg_mol=" + inFluid.getMolarMass());
+    System.out.println("inlet_z_factor=" + inFluid.getPhase(0).getZ());
     System.out.println();
   }
 
@@ -3163,6 +7925,336 @@ public class ProcessProbe {
     // balance moves - and the case is pinned to these rather than to the rows above.
     pinReferenceRow("reference_pin_hot_350", hotNames, hotZ, 1.0, coldNames, coldZ, 1.0, 350.0, 0);
     pinReferenceRow("reference_pin_cold_320", hotNames, hotZ, 1.0, coldNames, coldZ, 1.0, 320.0, 1);
+  }
+
+  /// `HeatExchanger.runDeltaT`, which `setDeltaT` enables.
+  static void heatExchangerDeltaT() {
+    String[] hotNames = new String[] { "methane", "n-butane" };
+    double[] hotZ = new double[] { 0.8, 0.2 };
+    String[] coldNames = new String[] { "n-butane", "n-pentane" };
+    double[] coldZ = new double[] { 0.5, 0.5 };
+
+    // **The class's own test fluid on PR.** The rating capture's 100 K approach is
+    // degenerate here: the closure asks the hot side for more enthalpy than it has and the
+    // class answers a 0 K outlet with a NaN enthalpy, which no port should reproduce.
+    Stream prHot = prTestFluid(333.15, 20.0, new String[] {"methane", "ethane", "n-heptane"},
+        new double[] {120.0, 120.0, 3.0}, "Stream1");
+    Stream prCold = prTestFluid(313.15, 20.0, new String[] {"methane", "ethane"},
+        new double[] {220.0, 120.0}, "Stream2");
+    deltaTRow("pr_test_run2_delta_t_1", prHot, prCold, 1.0);
+    // The streams swapped: the class's `sign` and its swap are index-based, not hot/cold.
+    deltaTRow("pr_test_run2_swapped_delta_t_1",
+        prTestFluid(313.15, 20.0, new String[] {"methane", "ethane"}, new double[] {220.0, 120.0},
+            "Stream2"),
+        prTestFluid(333.15, 20.0, new String[] {"methane", "ethane", "n-heptane"},
+            new double[] {120.0, 120.0, 3.0}, "Stream1"),
+        1.0);
+    // A near-equal-capacity pair: both sides are the same fluid at the same flow.
+    deltaTRow("pr_near_equal_cr_delta_t_1",
+        feed(hotNames, new double[] {0.5, 0.5}, 400.0, 20.0, 1.0),
+        feed(hotNames, new double[] {0.5, 0.5}, 300.0, 20.0, 1.0), 1.0);
+
+    // The class's own `HeatExchangerTest.testRun2` fluid, SRK. Its expected UA is
+    // `15780.77130` to `1e-3`; this row is that number's control and is not a PR case.
+    neqsim.thermo.system.SystemInterface hotFluid = new neqsim.thermo.system.SystemSrkEos(
+        273.15 + 60.0, 20.00);
+    hotFluid.addComponent("methane", 120.00);
+    hotFluid.addComponent("ethane", 120.0);
+    hotFluid.addComponent("n-heptane", 3.0);
+    hotFluid.createDatabase(true);
+    hotFluid.setMixingRule(2);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(hotFluid).TPflash();
+    Stream srkHot = new Stream("Stream1", hotFluid);
+
+    neqsim.thermo.system.SystemInterface coldFluid = new neqsim.thermo.system.SystemSrkEos(
+        273.15 + 40.0, 20.00);
+    coldFluid.addComponent("methane", 220.0);
+    coldFluid.addComponent("ethane", 120.0);
+    coldFluid.setMixingRule(2);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(coldFluid).TPflash();
+    Stream srkCold = new Stream("Stream2", coldFluid);
+
+    deltaTRow("srk_test_run2_delta_t_1", srkHot, srkCold, 1.0);
+  }
+
+  /// `HeatExchanger.runThermalHydraulicRating`, which `setUseRatingPressureDrop` enables.
+  ///
+  /// **The class's own fouling-rating test, re-cased on PR.** The class test is SRK
+  /// (`SystemSrkEos`); every row here is `SystemPrEos` with the databank's kij, because that
+  /// is the cubic `azoth_process::Stream` builds. The SRK row is printed separately as the
+  /// class's control and is never presented as a PR case.
+  static void heatExchangerRating() {
+    String[] names = new String[] {"n-heptane", "n-octane"};
+    double[] z = new double[] {0.7, 0.3};
+
+    // The two orientations, the equal-inlet state, the deposit, and Bell-Delaware.
+    hxRatingRow("tube_30_shell_110", names, z, 303.15, 383.15, 0.0, 0.0, false);
+    hxRatingRow("tube_110_shell_30", names, z, 383.15, 303.15, 0.0, 0.0, false);
+    hxRatingRow("equal_inlets_60", names, z, 333.15, 333.15, 0.0, 0.0, false);
+    hxRatingRow("deposit_layer", names, z, 303.15, 383.15, 0.001, 0.2, false);
+    hxRatingRow("bell_delaware", names, z, 303.15, 383.15, 0.0, 0.0, true);
+
+    // The class's own SRK control row.
+    hxRatingSrkControl();
+
+    // The refusals the class's own tests assert.
+    hxRatingMultiphaseRefusal();
+    hxRatingPhaseCrossingRefusal();
+    hxRatingConfigurationRefusal("missing_calculator", "none");
+    hxRatingConfigurationRefusal("zero_area", "zero_area");
+    hxRatingConfigurationRefusal("conflicting_pin", "pin");
+  }
+
+  static void hxRatingRow(String label, String[] names, double[] z, double tubeT, double shellT,
+      double depositThickness, double depositConductivity, boolean bellDelaware) {
+    Stream tube = feedMass("tube feed", names, z, tubeT, 20.0, 8.0 * 3600.0);
+    Stream shell = feedMass("shell feed", names, z, shellT, 20.0, 10.0 * 3600.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger exchanger =
+        new neqsim.process.equipment.heatexchanger.HeatExchanger("feed preheater", tube, shell);
+    neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator calculator =
+        new neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator();
+    calculator.setTubeIDm(0.020);
+    calculator.setTubeODm(0.025);
+    calculator.setTubePitchm(0.032);
+    calculator.setTubeCount(100);
+    calculator.setTubePasses(2);
+    calculator.setTubeLengthm(4.0);
+    calculator.setFoulingTube(0.0);
+    calculator.setFoulingShell(0.0);
+    if (depositThickness > 0.0) {
+      calculator.setTubeFoulingLayer(depositThickness, depositConductivity);
+    }
+    if (bellDelaware) {
+      calculator.setShellSideMethod(
+          neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator.ShellSideMethod
+              .BELL_DELAWARE);
+    }
+    exchanger.setRatingCalculator(calculator);
+    exchanger.setRatingArea(Math.PI * 0.025 * 4.0 * 100);
+    exchanger.setUseRatingPressureDrop(true);
+
+    System.out.println(label);
+    try {
+      exchanger.run();
+    } catch (RuntimeException ex) {
+      System.out.println("run_exception=" + ex.getClass().getSimpleName());
+      System.out.println("run_message=" + ex.getMessage());
+      System.out.println();
+      return;
+    }
+    printHxRating(exchanger, calculator);
+    System.out.println();
+  }
+
+  /// The class's own `HeatExchangerTest` fluid, SRK: the control row, not a PR case.
+  static void hxRatingSrkControl() {
+    String[] names = new String[] {"n-heptane", "n-octane"};
+    double[] z = new double[] {0.7, 0.3};
+    Stream tube = srkMassFeed("tube feed", names, z, 303.15, 20.0, 8.0 * 3600.0);
+    Stream shell = srkMassFeed("shell feed", names, z, 383.15, 20.0, 10.0 * 3600.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger exchanger =
+        new neqsim.process.equipment.heatexchanger.HeatExchanger("srk control", tube, shell);
+    neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator calculator =
+        new neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator();
+    calculator.setTubeIDm(0.020);
+    calculator.setTubeODm(0.025);
+    calculator.setTubePitchm(0.032);
+    calculator.setTubeCount(100);
+    calculator.setTubePasses(2);
+    calculator.setTubeLengthm(4.0);
+    calculator.setFoulingTube(0.0);
+    calculator.setFoulingShell(0.0);
+    exchanger.setRatingCalculator(calculator);
+    exchanger.setRatingArea(Math.PI * 0.025 * 4.0 * 100);
+    exchanger.setUseRatingPressureDrop(true);
+    System.out.println("srk_control");
+    try {
+      exchanger.run();
+    } catch (RuntimeException ex) {
+      System.out.println("run_exception=" + ex.getClass().getSimpleName());
+      System.out.println("run_message=" + ex.getMessage());
+      System.out.println();
+      return;
+    }
+    printHxRating(exchanger, calculator);
+    System.out.println();
+  }
+
+  static Stream srkMassFeed(String name, String[] names, double[] z, double temperatureK,
+      double pressureBara, double kgPerHour) {
+    SystemInterface fluid = new SystemSrkEos(temperatureK, pressureBara);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream stream = new Stream(name, fluid);
+    stream.setFlowRate(kgPerHour, "kg/hr");
+    stream.run();
+    return stream;
+  }
+
+  static void printHxRating(neqsim.process.equipment.heatexchanger.HeatExchanger exchanger,
+      neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator calculator) {
+    print("tube_in", exchanger.getInStream(0));
+    print("shell_in", exchanger.getInStream(1));
+    print("tube_out", exchanger.getOutStream(0));
+    print("shell_out", exchanger.getOutStream(1));
+    System.out.println("duty_w_java=" + exchanger.getDuty());
+    System.out.println("rating_u_w_per_m2k=" + exchanger.getRatingU());
+    System.out.println("rating_area_m2=" + exchanger.getRatingArea());
+    System.out.println("ua_value_w_per_k=" + exchanger.getUAvalue());
+    System.out.println("thermal_effectiveness=" + exchanger.getThermalEffectiveness());
+    double t0 = exchanger.getInTemperature(0);
+    double t1 = exchanger.getInTemperature(1);
+    double span = t0 - t1;
+    double c0 = span == 0.0 ? 0.0
+        : Math.abs((ratingLimitEnthalpy(exchanger.getInStream(0), t1)
+            - exchanger.getInStream(0).getThermoSystem().getEnthalpy()) / span);
+    double c1 = span == 0.0 ? 0.0
+        : Math.abs((ratingLimitEnthalpy(exchanger.getInStream(1), t0)
+            - exchanger.getInStream(1).getThermoSystem().getEnthalpy()) / span);
+    double cMin = Math.min(c0, c1);
+    System.out.println("derived_c_tube_w_per_k=" + c0);
+    System.out.println("derived_c_shell_w_per_k=" + c1);
+    System.out.println("derived_c_min_w_per_k=" + cMin);
+    System.out.println("derived_ntu=" + (cMin > 0.0 ? exchanger.getUAvalue() / cMin : 0.0));
+    // The five properties the calculator received, so a divergence is localised to the
+    // property layer rather than read as a correlation error.
+    for (int side = 0; side < 2; side++) {
+      SystemInterface fluid = exchanger.getInStream(side).getThermoSystem();
+      String prefix = side == 0 ? "tube_props" : "shell_props";
+      System.out.println(prefix + "_density_kg_per_m3=" + fluid.getDensity("kg/m3"));
+      System.out.println(prefix + "_viscosity_Pa_s=" + fluid.getViscosity("kg/msec"));
+      System.out.println(prefix + "_cp_J_per_kgK=" + fluid.getCp("J/kgK"));
+      System.out.println(prefix + "_conductivity_W_per_mK=" + fluid.getThermalConductivity("W/mK"));
+      System.out.println(prefix + "_mass_flow_kg_per_s=" + fluid.getFlowRate("kg/sec"));
+    }
+    // The calculator's own quantities, which the equipment result publishes.
+    System.out.println("calc_tube_side_htc=" + calculator.getTubeSideHTC());
+    System.out.println("calc_shell_side_htc=" + calculator.getShellSideHTC());
+    System.out.println("calc_overall_u=" + calculator.getOverallU());
+    System.out.println("calc_tube_side_pressure_drop_Pa=" + calculator.getTubeSidePressureDrop());
+    System.out.println("calc_shell_side_pressure_drop_Pa=" + calculator.getShellSidePressureDrop());
+    System.out.println("calc_tube_side_velocity=" + calculator.getTubeSideVelocity());
+    System.out.println("calc_shell_side_velocity=" + calculator.getShellSideVelocity());
+    System.out.println("calc_tube_side_re=" + calculator.getTubeSideRe());
+    System.out.println("calc_shell_side_re=" + calculator.getShellSideRe());
+  }
+
+  static double ratingLimitEnthalpy(StreamInterface inlet, double temperatureK) {
+    SystemInterface limit = inlet.getThermoSystem().clone();
+    limit.setTemperature(temperatureK);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(limit).TPflash();
+    return limit.getEnthalpy();
+  }
+
+  static void hxRatingMultiphaseRefusal() {
+    Stream tube = feedMass("tube feed", new String[] {"n-heptane", "n-octane"},
+        new double[] {0.7, 0.3}, 303.15, 20.0, 8.0 * 3600.0);
+    Stream shell = feedMass("shell feed", new String[] {"n-heptane", "n-octane"},
+        new double[] {0.7, 0.3}, 383.15, 20.0, 10.0 * 3600.0);
+    SystemInterface wet = new SystemPrEos(303.15, 20.0);
+    wet.addComponent("methane", 0.5);
+    wet.addComponent("n-heptane", 0.5);
+    wet.setMixingRule(2);
+    tube.setThermoSystem(wet);
+    tube.setFlowRate(8.0 * 3600.0, "kg/hr");
+    tube.run();
+    hxRatingRefusal("multiphase_feed", tube, shell, null);
+  }
+
+  /// The class's own `singlePhaseEndpointsOnOppositeSidesOfBoilingAreRejected`: pure
+  /// n-heptane at 1 bara, 30 C against 200 C.
+  static void hxRatingPhaseCrossingRefusal() {
+    Stream tube = feedMass("tube feed", new String[] {"n-heptane"}, new double[] {1.0}, 303.15,
+        1.0, 8.0 * 3600.0);
+    Stream shell = feedMass("shell feed", new String[] {"n-heptane"}, new double[] {1.0}, 473.15,
+        1.0, 1.0 * 3600.0);
+    hxRatingRefusal("phase_crossing", tube, shell, null);
+  }
+
+  static void hxRatingConfigurationRefusal(String label, String mode) {
+    Stream tube = feedMass("tube feed", new String[] {"n-heptane", "n-octane"},
+        new double[] {0.7, 0.3}, 303.15, 20.0, 8.0 * 3600.0);
+    Stream shell = feedMass("shell feed", new String[] {"n-heptane", "n-octane"},
+        new double[] {0.7, 0.3}, 383.15, 20.0, 10.0 * 3600.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger exchanger =
+        new neqsim.process.equipment.heatexchanger.HeatExchanger(label, tube, shell);
+    exchanger.setUseRatingPressureDrop(true);
+    if (!"none".equals(mode)) {
+      neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator calculator =
+          new neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator();
+      calculator.setTubeIDm(0.020);
+      calculator.setTubeODm(0.025);
+      calculator.setTubePitchm(0.032);
+      calculator.setTubeCount(100);
+      calculator.setTubePasses(2);
+      calculator.setTubeLengthm(4.0);
+      exchanger.setRatingCalculator(calculator);
+      exchanger.setRatingArea("zero_area".equals(mode) ? 0.0 : Math.PI * 0.025 * 4.0 * 100);
+    }
+    if ("pin".equals(mode)) {
+      exchanger.setOutTemperature(60.0, "C");
+    }
+    hxRatingRefusal(label, tube, shell, exchanger);
+  }
+
+  static void hxRatingRefusal(String label, Stream tube, Stream shell,
+      neqsim.process.equipment.heatexchanger.HeatExchanger prepared) {
+    System.out.println(label);
+    try {
+      neqsim.process.equipment.heatexchanger.HeatExchanger exchanger = prepared;
+      if (exchanger == null) {
+        exchanger = new neqsim.process.equipment.heatexchanger.HeatExchanger(label, tube, shell);
+        neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator calculator =
+            new neqsim.process.mechanicaldesign.heatexchanger.ThermalDesignCalculator();
+        calculator.setTubeIDm(0.020);
+        calculator.setTubeODm(0.025);
+        calculator.setTubePitchm(0.032);
+        calculator.setTubeCount(100);
+        calculator.setTubePasses(2);
+        calculator.setTubeLengthm(4.0);
+        exchanger.setRatingCalculator(calculator);
+        exchanger.setRatingArea(Math.PI * 0.025 * 4.0 * 100);
+        exchanger.setUseRatingPressureDrop(true);
+      }
+      exchanger.run();
+      System.out.println("run_result=accepted");
+    } catch (RuntimeException ex) {
+      System.out.println("run_exception=" + ex.getClass().getSimpleName());
+      System.out.println("run_message=" + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  static Stream prTestFluid(double temperature, double pressureBar, String[] names,
+      double[] amounts, String streamName) {
+    neqsim.thermo.system.SystemInterface fluid = new neqsim.thermo.system.SystemPrEos(temperature,
+        pressureBar);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], amounts[i]);
+    }
+    fluid.setMixingRule(2);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(fluid).TPflash();
+    return new Stream(streamName, fluid);
+  }
+
+  static void deltaTRow(String label, Stream firstIn, Stream secondIn, double deltaT) {
+    neqsim.process.equipment.heatexchanger.HeatExchanger exchanger =
+        new neqsim.process.equipment.heatexchanger.HeatExchanger("hx", firstIn, secondIn);
+    exchanger.setDeltaT(deltaT);
+    exchanger.run();
+
+    System.out.println(label);
+    print("first_in", firstIn);
+    print("second_in", secondIn);
+    print("first_out", exchanger.getOutStream(0));
+    print("second_out", exchanger.getOutStream(1));
+    System.out.println("delta_t_k=" + deltaT);
+    // `getDuty` carries the class's sign: the enthalpy change of the side it set.
+    System.out.println("duty_w_java=" + exchanger.getDuty());
+    System.out.println("ua_value_w_per_k=" + exchanger.getUAvalue());
+    System.out.println();
   }
 
   static void pinReferenceRow(String label, String[] hotNames, double[] hotZ, double hotFlow,
@@ -3299,6 +8391,412 @@ public class ProcessProbe {
     return out - in;
   }
 
+  // === process.heat_exchanger, runTransient =====================================
+
+  /// `HeatExchanger.runTransient`'s enabled branch, one step at a time.
+  ///
+  /// **The wall ODE is flow-independent** while no holdup is stated - it reads only the two
+  /// inlet temperatures - so the wall trajectory is the same at every flow. The flow moves only
+  /// the outlet enthalpy shift, and the class applies that shift as a **power where a joule
+  /// belongs**: `outH = inH - q`, not `q * dt`, despite the comment in the source. The upstream
+  /// `1000 kg/hr` rows are therefore printed as evidence, and the cased wall rows use
+  /// `100 000 kg/hr` so the PH flash stays in the range both libraries can evaluate.
+  ///
+  /// **The two CSTR temperatures have no getters**, so they are read by reflection; the capture
+  /// prints them before and after every step, which is what lets a stateless one-step port
+  /// replay the trajectory. The class's stream 0 is the **shell** and stream 1 the **tube** -
+  /// the reverse of the thermal-hydraulic rating's stream-0-is-tube convention.
+  static void heatExchangerTransientRows() {
+    String[] methane = new String[] {"methane"};
+    double[] pure = new double[] {1.0};
+
+    // 1. The gate: a disabled dynamic model delegates to Heater.runTransient, the steady run.
+    Stream steadyHot = feedMass("steady_hot", methane, pure, 353.15, 10.0, 100000.0);
+    Stream steadyCold = feedMass("steady_cold", methane, pure, 293.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger steady = dynamicExchanger(
+        "gate_disabled", steadyHot, steadyCold, 200.0, 20.0, 500.0, 800.0);
+    steady.setDynamicModelEnabled(false);
+    transientStep("gate_disabled_default", steady, steadyHot, steadyCold, 1.0);
+
+    // The class's other two gates.
+    Stream massZeroHot = feedMass("mass_zero_hot", methane, pure, 353.15, 10.0, 100000.0);
+    Stream massZeroCold = feedMass("mass_zero_cold", methane, pure, 293.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger massZero = dynamicExchanger(
+        "gate_wall_mass_zero", massZeroHot, massZeroCold, 0.0, 20.0, 500.0, 800.0);
+    transientStep("gate_wall_mass_zero", massZero, massZeroHot, massZeroCold, 1.0);
+
+    Stream areaZeroHot = feedMass("area_zero_hot", methane, pure, 353.15, 10.0, 100000.0);
+    Stream areaZeroCold = feedMass("area_zero_cold", methane, pure, 293.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger areaZero = dynamicExchanger(
+        "gate_area_zero", areaZeroHot, areaZeroCold, 200.0, 0.0, 500.0, 800.0);
+    transientStep("gate_area_zero", areaZero, areaZeroHot, areaZeroCold, 1.0);
+
+    // 2. The first-step seed and ten steps of the wall-only ODE, at the cased flow.
+    Stream wallHot = feedMass("wall_hot", methane, pure, 353.15, 10.0, 100000.0);
+    Stream wallCold = feedMass("wall_cold", methane, pure, 293.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger wall = dynamicExchanger(
+        "wall_ten_steps", wallHot, wallCold, 200.0, 20.0, 500.0, 800.0);
+    java.util.UUID wallId = java.util.UUID.randomUUID();
+    for (int step = 1; step <= 10; step++) {
+      transientStep("wall_only_step_" + step, wall, wallHot, wallCold, 1.0, wallId);
+    }
+
+    // 3. The same trajectory at the upstream test's flow. Evidence only: the rate-as-joules
+    //    shift is about -17 kJ/mol here, which neither cubic's PH flash is meaningful over.
+    Stream upstreamHot = feedMass("upstream_hot", methane, pure, 353.15, 10.0, 1000.0);
+    Stream upstreamCold = feedMass("upstream_cold", methane, pure, 293.15, 10.0, 1000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger upstream = dynamicExchanger(
+        "wall_upstream", upstreamHot, upstreamCold, 200.0, 20.0, 500.0, 800.0);
+    for (int step = 1; step <= 10; step++) {
+      try {
+        transientStep("wall_upstream_1000kg_step_" + step, upstream, upstreamHot, upstreamCold, 1.0,
+            wallId);
+      } catch (RuntimeException failure) {
+        System.out.println("wall_upstream_1000kg_step_" + step + "_outcome=threw:"
+            + failure.getClass().getSimpleName());
+        System.out.println();
+        break;
+      }
+    }
+
+    // 4. A stated wall is carried, not seeded.
+    Stream statedHot = feedMass("stated_hot", methane, pure, 353.15, 10.0, 100000.0);
+    Stream statedCold = feedMass("stated_cold", methane, pure, 293.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger stated = dynamicExchanger(
+        "stated_wall", statedHot, statedCold, 200.0, 20.0, 500.0, 800.0);
+    stated.setWallTemperature(323.15);
+    transientStep("first_step_stated_wall", stated, statedHot, statedCold, 1.0);
+
+    // 5. The outlet shift does not scale with dt; the wall does.
+    for (double dt : new double[] {0.0, 0.5, 1.0}) {
+      Stream quirkHot = feedMass("quirk_hot_" + dt, methane, pure, 353.15, 10.0, 100000.0);
+      Stream quirkCold = feedMass("quirk_cold_" + dt, methane, pure, 293.15, 10.0, 100000.0);
+      neqsim.process.equipment.heatexchanger.HeatExchanger quirk = dynamicExchanger(
+          "dt_quirk_" + dt, quirkHot, quirkCold, 200.0, 20.0, 500.0, 800.0);
+      quirk.setWallTemperature(323.15);
+      transientStep("dt_quirk_" + dt, quirk, quirkHot, quirkCold, dt);
+    }
+
+    // 6. The two CSTR states, and the zero-holdup control.
+    for (boolean holdup : new boolean[] {true, false}) {
+      String label = holdup ? "holdup" : "holdup_zero";
+      Stream cstrHot = feedMass(label + "_hot", methane, pure, 423.15, 30.0, 100000.0);
+      Stream cstrCold = feedMass(label + "_cold", methane, pure, 303.15, 30.0, 100000.0);
+      neqsim.process.equipment.heatexchanger.HeatExchanger cstr = dynamicExchanger(
+          label, cstrHot, cstrCold, 400.0, 2.0, 500.0, 800.0);
+      if (holdup) {
+        cstr.setShellHoldupVolume(40.0);
+        cstr.setTubeHoldupVolume(30.0);
+      }
+      java.util.UUID cstrId = java.util.UUID.randomUUID();
+      for (int step = 1; step <= 5; step++) {
+        transientStep(label + "_step_" + step, cstr, cstrHot, cstrCold, 1.0, cstrId);
+      }
+    }
+
+    // 7. The setters' clamps.
+    Stream clampHot = feedMass("clamp_hot", methane, pure, 353.15, 10.0, 1000.0);
+    Stream clampCold = feedMass("clamp_cold", methane, pure, 293.15, 10.0, 1000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger clamp = dynamicExchanger(
+        "clamp", clampHot, clampCold, 200.0, 20.0, 500.0, 800.0);
+    clamp.setWallMass(-10.0);
+    clamp.setShellHoldupVolume(-1.0);
+    clamp.setTubeHoldupVolume(-1.0);
+    clamp.setHeatTransferArea(-5.0);
+    System.out.println("clamp_getters");
+    System.out.println("wall_mass_kg=" + clamp.getWallMass());
+    System.out.println("shell_holdup_volume_m3=" + clamp.getShellHoldupVolume());
+    System.out.println("tube_holdup_volume_m3=" + clamp.getTubeHoldupVolume());
+    System.out.println("heat_transfer_area_m2=" + clamp.getHeatTransferArea());
+    System.out.println();
+
+    // 8. The side mapping: the class's stream 0 is the shell, so constructing it with the cold
+    //    stream first reverses the two sides and the class's duty sign follows.
+    Stream mappingCold = feedMass("mapping_cold", methane, pure, 293.15, 10.0, 100000.0);
+    Stream mappingHot = feedMass("mapping_hot", methane, pure, 353.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger mapping = dynamicExchanger(
+        "tube_hot", mappingCold, mappingHot, 200.0, 20.0, 500.0, 800.0);
+    transientStep("tube_hot_mapping", mapping, mappingCold, mappingHot, 1.0);
+
+    // 9. Evidence that is not cased.
+    Stream zeroHot = feedMass("zero_hot", methane, pure, 353.15, 10.0, 0.0);
+    Stream zeroCold = feedMass("zero_cold", methane, pure, 293.15, 10.0, 100000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger zero = dynamicExchanger(
+        "zero_flow", zeroHot, zeroCold, 200.0, 20.0, 500.0, 800.0);
+    try {
+      zero.runTransient(1.0, java.util.UUID.randomUUID());
+      System.out.println("zero_flow_uncased=answered");
+      System.out.println("wall_temperature_K=" + zero.getWallTemperature());
+    } catch (RuntimeException failure) {
+      System.out.println("zero_flow_uncased=threw:" + failure.getClass().getSimpleName());
+    }
+    System.out.println();
+
+    String[] mix = new String[] {"methane", "n-butane"};
+    double[] half = new double[] {0.5, 0.5};
+    Stream twoPhaseHot = feedMass("two_phase_hot", mix, half, 250.0, 5.0, 1000.0);
+    Stream twoPhaseCold = feedMass("two_phase_cold", methane, pure, 293.15, 5.0, 1000.0);
+    System.out.println("two_phase_uncased");
+    System.out.println("shell_phases=" + twoPhaseHot.getThermoSystem().getNumberOfPhases());
+    neqsim.process.equipment.heatexchanger.HeatExchanger twoPhase = dynamicExchanger(
+        "two_phase", twoPhaseHot, twoPhaseCold, 200.0, 20.0, 500.0, 800.0);
+    try {
+      twoPhase.runTransient(1.0, java.util.UUID.randomUUID());
+      System.out.println("two_phase_outcome=answered");
+      System.out.println("wall_temperature_K=" + twoPhase.getWallTemperature());
+      print("shell_out", twoPhase.getOutStream(0));
+    } catch (RuntimeException failure) {
+      System.out.println("two_phase_outcome=threw:" + failure.getClass().getSimpleName());
+    }
+    System.out.println();
+
+    // 10. calculateSteadyState=false: Heater.runTransient copies the outlet pressure to the
+    //     inlet before re-running. On the ordinary (pressure-drop-free) rating this is a no-op;
+    //     it is printed so the non-port has its evidence.
+    Stream cssHot = feedMass("css_hot", methane, pure, 353.15, 10.0, 1000.0);
+    Stream cssCold = feedMass("css_cold", methane, pure, 293.15, 10.0, 1000.0);
+    neqsim.process.equipment.heatexchanger.HeatExchanger css = dynamicExchanger(
+        "steady_state_false", cssHot, cssCold, 200.0, 20.0, 500.0, 800.0);
+    css.setDynamicModelEnabled(false);
+    css.run();
+    System.out.println("calculate_steady_state_false_uncased");
+    System.out.println("shell_in_pressure_bara_before=" + cssHot.getPressure("bara"));
+    System.out.println("shell_out_pressure_bara_before=" + css.getOutStream(0).getPressure("bara"));
+    css.setCalculateSteadyState(false);
+    try {
+      css.runTransient(1.0, java.util.UUID.randomUUID());
+      System.out.println("calculate_steady_state_false_outcome=answered");
+    } catch (RuntimeException failure) {
+      System.out.println("calculate_steady_state_false_outcome=threw:"
+          + failure.getClass().getSimpleName());
+    }
+    System.out.println("shell_in_pressure_bara_after=" + cssHot.getPressure("bara"));
+    System.out.println();
+  }
+
+  /// One step of the dynamic exchanger, with the carried state printed before and after it.
+  static void transientStep(String label,
+      neqsim.process.equipment.heatexchanger.HeatExchanger hx, StreamInterface shellIn,
+      StreamInterface tubeIn, double dt) {
+    transientStep(label, hx, shellIn, tubeIn, dt, java.util.UUID.randomUUID());
+  }
+
+  static void transientStep(String label,
+      neqsim.process.equipment.heatexchanger.HeatExchanger hx, StreamInterface shellIn,
+      StreamInterface tubeIn, double dt, java.util.UUID id) {
+    System.out.println(label);
+    System.out.println("time_step_s=" + dt);
+    System.out.println("in_wall_temperature_K=" + hx.getWallTemperature());
+    System.out.println(
+        "in_shell_fluid_temperature_K=" + privateDouble(hx, "shellFluidTemperature"));
+    System.out.println(
+        "in_tube_fluid_temperature_K=" + privateDouble(hx, "tubeFluidTemperature"));
+    hx.runTransient(dt, id);
+    System.out.println("out_wall_temperature_K=" + hx.getWallTemperature());
+    System.out.println(
+        "out_shell_fluid_temperature_K=" + privateDouble(hx, "shellFluidTemperature"));
+    System.out.println(
+        "out_tube_fluid_temperature_K=" + privateDouble(hx, "tubeFluidTemperature"));
+    print("shell_in", shellIn);
+    print("tube_in", tubeIn);
+    print("shell_out", hx.getOutStream(0));
+    print("tube_out", hx.getOutStream(1));
+    System.out.println("shell_duty_W=" + duty(shellIn, hx.getOutStream(0)));
+    System.out.println("tube_duty_W=" + duty(tubeIn, hx.getOutStream(1)));
+    System.out.println("duty_W_java=" + hx.getDuty());
+    System.out.println();
+  }
+
+  /// A dynamic exchanger with the class's own defaults for the fields the capture varies.
+  static neqsim.process.equipment.heatexchanger.HeatExchanger dynamicExchanger(String name,
+      StreamInterface shellIn, StreamInterface tubeIn, double wallMass, double area,
+      double shellHtc, double tubeHtc) {
+    neqsim.process.equipment.heatexchanger.HeatExchanger hx =
+        new neqsim.process.equipment.heatexchanger.HeatExchanger(name, shellIn, tubeIn);
+    hx.setUAvalue(100.0);
+    hx.setWallMass(wallMass);
+    hx.setWallCp(500.0);
+    hx.setHeatTransferArea(area);
+    hx.setShellSideHtc(shellHtc);
+    hx.setTubeSideHtc(tubeHtc);
+    hx.setDynamicModelEnabled(true);
+    return hx;
+  }
+
+  /// A private field with no getter, which is how the two CSTR temperatures are reached.
+  static double privateDouble(Object target, String name) {
+    try {
+      java.lang.reflect.Field field = target.getClass().getDeclaredField(name);
+      field.setAccessible(true);
+      return field.getDouble(target);
+    } catch (ReflectiveOperationException failure) {
+      throw new IllegalStateException("no private double " + name, failure);
+    }
+  }
+
+  // === process.cooler, runTransient ============================================
+
+  /// `Cooler.runTransient`'s dynamic temperature-control branch, one step at a time.
+  ///
+  /// The enabled branch is a first-order valve model: the requested opening moves the valve
+  /// by `dt / (tau_actuator + dt)`, an NTU scaled by opening and inverse mass flow gives the
+  /// equilibrium outlet, and a second first-order lag moves the outlet toward it. Without a
+  /// controller the requested opening is the step-initial one, so the valve does not move and
+  /// only the thermal lag acts; the manual-controller rows supply the requested opening.
+  static void coolerTransientRows() {
+    // 1. The gate: no dynamic configuration -> Heater.runTransient, the steady run.
+    neqsim.process.equipment.heatexchanger.Cooler steady =
+        new neqsim.process.equipment.heatexchanger.Cooler("cooler_gate_disabled",
+            coolerFeed("cooler_gate_disabled", 353.15));
+    steady.setOutTemperature(35.0, "C");
+    steady.run();
+    steady.setCalculateSteadyState(false);
+    coolerStep("cooler_gate_disabled", steady, 2.0);
+
+    // 2. Configured, no controller: the requested opening is the step-initial one.
+    neqsim.process.equipment.heatexchanger.Cooler configured =
+        new neqsim.process.equipment.heatexchanger.Cooler("cooler_configured",
+            coolerFeed("cooler_configured", 353.15));
+    configured.setOutTemperature(35.0, "C");
+    configured.configureDynamicTemperatureControl(10000.0, 80.0, 35.0, 20.0, "C");
+    configured.setDynamicTimeConstants(5.0, 10.0);
+    configured.run();
+    configured.setCalculateSteadyState(false);
+    coolerStep("cooler_configured_no_controller", configured, 2.0);
+
+    // 2b. A hotter inlet: the design point no longer matches, and the thermal lag moves the
+    //     outlet toward the equilibrium the current opening reaches.
+    neqsim.process.equipment.heatexchanger.Cooler hotter =
+        new neqsim.process.equipment.heatexchanger.Cooler("cooler_hotter_inlet",
+            coolerFeed("cooler_hotter_inlet", 353.15));
+    hotter.setOutTemperature(35.0, "C");
+    hotter.configureDynamicTemperatureControl(10000.0, 80.0, 35.0, 20.0, "C");
+    hotter.setDynamicTimeConstants(5.0, 10.0);
+    hotter.run();
+    hotter.setCalculateSteadyState(false);
+    hotter.getInletStream().setTemperature(100.0, "C");
+    hotter.getInletStream().run();
+    coolerStep("cooler_configured_hotter_inlet", hotter, 2.0);
+
+    // 2c. Two steps: the second call's inputs are the first call's outputs.
+    neqsim.process.equipment.heatexchanger.Cooler twoSteps =
+        coolerController("cooler_two_steps", 353.15, 100.0);
+    coolerStep("cooler_manual_100_step_1", twoSteps, 2.0);
+    coolerStep("cooler_manual_100_step_2", twoSteps, 2.0);
+
+    // 3. A manual controller at 100%: the actuator moves the valve before the thermal lag.
+    coolerStep("cooler_manual_100", coolerController("cooler_manual_100", 353.15, 100.0), 2.0);
+
+    // 4. Manual at 0%: the valve closes and the equilibrium is the inlet.
+    coolerStep("cooler_manual_0", coolerController("cooler_manual_0", 353.15, 0.0), 2.0);
+
+    // 5. Zero time constants and a feed colder than the medium: the outlet is the inlet.
+    neqsim.process.equipment.heatexchanger.Cooler cold =
+        new neqsim.process.equipment.heatexchanger.Cooler("cooler_cold",
+            coolerFeed("cooler_cold", 283.15));
+    cold.setOutTemperature(35.0, "C");
+    cold.configureDynamicTemperatureControl(10000.0, 80.0, 35.0, 20.0, "C");
+    cold.setDynamicTimeConstants(0.0, 0.0);
+    cold.run();
+    cold.setCalculateSteadyState(false);
+    cold.getInletStream().setTemperature(10.0, "C");
+    cold.getInletStream().run();
+    coolerStep("cooler_cold_feed_zero_taus", cold, 1.0);
+
+    // 6. The opening clamp: a requested 150 or -10 is clamped to [0, 100].
+    coolerStep(
+        "cooler_manual_150_clamped", coolerController("cooler_manual_150", 353.15, 150.0), 2.0);
+    coolerStep(
+        "cooler_manual_negative_clamped", coolerController("cooler_manual_neg", 353.15, -10.0), 2.0);
+
+    // 7. The NTU clamp: a low flow with the valve open reaches the 20 cap.
+    neqsim.process.equipment.heatexchanger.Cooler lowFlow =
+        new neqsim.process.equipment.heatexchanger.Cooler("cooler_low_flow",
+            coolerFeed("cooler_low_flow", 353.15, 100.0));
+    lowFlow.setOutTemperature(35.0, "C");
+    lowFlow.configureDynamicTemperatureControl(10000.0, 80.0, 35.0, 20.0, "C");
+    lowFlow.setDynamicTimeConstants(5.0, 10.0);
+    lowFlow.run();
+    lowFlow.setCalculateSteadyState(false);
+    lowFlow.setCoolingValveOpening(100.0);
+    coolerStep("cooler_ntu_clamp_low_flow", lowFlow, 2.0);
+
+    // 8. Evidence: the same UUID does not advance the state twice. That cache is session
+    //    state, and this one-step id has no step identity; the capture records it uncased.
+    neqsim.process.equipment.heatexchanger.Cooler cached =
+        coolerController("cooler_cached", 353.15, 100.0);
+    java.util.UUID shared = java.util.UUID.randomUUID();
+    System.out.println("cooler_same_uuid_first");
+    cached.runTransient(2.0, shared);
+    System.out.println("out_cooling_valve_opening_percent=" + cached.getCoolingValveOpening());
+    System.out.println("out_outlet_temperature_K=" + cached.getOutletStream().getTemperature("K"));
+    System.out.println("cooler_same_uuid_second");
+    cached.runTransient(2.0, shared);
+    System.out.println("out_cooling_valve_opening_percent=" + cached.getCoolingValveOpening());
+    System.out.println("out_outlet_temperature_K=" + cached.getOutletStream().getTemperature("K"));
+    System.out.println();
+
+    // 9. An invalid design point is the class's own IllegalArgumentException.
+    try {
+      neqsim.process.equipment.heatexchanger.Cooler invalid =
+          new neqsim.process.equipment.heatexchanger.Cooler("cooler_invalid",
+              coolerFeed("cooler_invalid", 353.15));
+      invalid.configureDynamicTemperatureControl(10000.0, 80.0, 15.0, 20.0, "C");
+      System.out.println("cooler_invalid_design=answered");
+    } catch (RuntimeException failure) {
+      System.out.println("cooler_invalid_design=threw:" + failure.getClass().getSimpleName());
+    }
+    System.out.println();
+  }
+
+  static Stream coolerFeed(String name, double kelvin) {
+    return coolerFeed(name, kelvin, 10000.0);
+  }
+
+  static Stream coolerFeed(String name, double kelvin, double kgPerHour) {
+    return feedMass(name, new String[] {"methane"}, new double[] {1.0}, kelvin, 50.0, kgPerHour);
+  }
+
+  /// A configured cooler with a manual controller, which is how a requested opening differs
+  /// from the step-initial one.
+  static neqsim.process.equipment.heatexchanger.Cooler coolerController(
+      String name, double kelvin, double manualOutput) {
+    neqsim.process.equipment.heatexchanger.Cooler cooler =
+        new neqsim.process.equipment.heatexchanger.Cooler(name, coolerFeed(name, kelvin));
+    cooler.setOutTemperature(35.0, "C");
+    cooler.configureDynamicTemperatureControl(10000.0, 80.0, 35.0, 20.0, "C");
+    cooler.setDynamicTimeConstants(5.0, 10.0);
+    neqsim.process.controllerdevice.ControllerDeviceBaseClass controller =
+        new neqsim.process.controllerdevice.ControllerDeviceBaseClass(name + " controller");
+    controller.setTransmitter(
+        new neqsim.process.measurementdevice.TemperatureTransmitter(name + " outlet",
+            cooler.getOutletStream()));
+    controller.setMode(
+        neqsim.process.controllerdevice.ControllerDeviceInterface.ControllerMode.MANUAL);
+    // The limits are wider than the class's own, so the clamp rows exercise the class's.
+    controller.setOutputLimits(-20.0, 200.0);
+    controller.setManualOutput(manualOutput);
+    cooler.setController(controller);
+    cooler.run();
+    cooler.setCalculateSteadyState(false);
+    return cooler;
+  }
+
+  /// One dynamic-cooler step, with the carried opening and outlet printed before and after it.
+  static void coolerStep(String label, neqsim.process.equipment.heatexchanger.Cooler cooler,
+      double dt) {
+    System.out.println(label);
+    System.out.println("time_step_s=" + dt);
+    System.out.println("in_cooling_valve_opening_percent=" + cooler.getCoolingValveOpening());
+    System.out.println("in_outlet_temperature_K=" + cooler.getOutletStream().getTemperature("K"));
+    cooler.runTransient(dt, java.util.UUID.randomUUID());
+    System.out.println("out_cooling_valve_opening_percent=" + cooler.getCoolingValveOpening());
+    System.out.println("out_outlet_temperature_K=" + cooler.getOutletStream().getTemperature("K"));
+    System.out.println("out_duty_W_java=" + cooler.getDuty());
+    print("outlet", cooler.getOutletStream());
+    System.out.println();
+  }
+
   static void stream() {
     // **The stream's own properties, which no port field carries.** `s` is derived from
     // `(T, P, z)` exactly as `h` is, and density and viscosity come from the state rather
@@ -3371,9 +8869,17 @@ public class ProcessProbe {
     reactorRow("adiabatic", false, null, null);
     reactorRow("isothermal_800K", true, 800.0, null);
     reactorRow("isothermal_800K_3bara", true, 800.0, 3.0);
+    // The three stored fields are unread by `run`; this row moves all three so the capture
+    // shows `toMap`'s echo and `getAgitatorPower`'s product rather than only the defaults.
+    reactorRow("stored_fields_set", false, null, null, 20.0, 0.5, 2.0);
   }
 
   static void reactorRow(String label, boolean isothermal, Double reactorT, Double reactorP) {
+    reactorRow(label, isothermal, reactorT, reactorP, null, null, null);
+  }
+
+  static void reactorRow(String label, boolean isothermal, Double reactorT, Double reactorP,
+      Double vesselVolumeM3, Double residenceHours, Double agitatorPowerPerVolume) {
     String[] names = new String[] { "methane", "oxygen", "CO2", "water", "nitrogen" };
     double[] z = new double[] { 0.05, 0.10, 0.02, 0.03, 0.80 };
     Stream inlet = feed(names, z, 500.0, 5.0, 1.0);
@@ -3385,6 +8891,15 @@ public class ProcessProbe {
     }
     if (reactorP != null) {
       reactor.setReactorPressure(reactorP);
+    }
+    if (vesselVolumeM3 != null) {
+      reactor.setVesselVolume(vesselVolumeM3);
+    }
+    if (residenceHours != null) {
+      reactor.setResidenceTime(residenceHours, "hr");
+    }
+    if (agitatorPowerPerVolume != null) {
+      reactor.setAgitatorPowerPerVolume(agitatorPowerPerVolume);
     }
     neqsim.process.equipment.reactor.StoichiometricReaction reaction =
         new neqsim.process.equipment.reactor.StoichiometricReaction("methanecombustion");
@@ -3400,6 +8915,10 @@ public class ProcessProbe {
     print("feed", inlet);
     printOrEmpty("product", reactor.getOutletStream());
     System.out.println("heat_duty_W=" + reactor.getHeatDuty());
+    System.out.println("vessel_volume_m3=" + reactor.getVesselVolume());
+    System.out.println("residence_time_hr=" + reactor.getResidenceTime());
+    System.out.println("agitator_power_per_volume_kW_per_m3=" + reactor.getAgitatorPowerPerVolume());
+    System.out.println("agitator_power_kW=" + reactor.getAgitatorPower());
     System.out.println();
   }
 
@@ -3584,6 +9103,89 @@ public class ProcessProbe {
     runFlare("sales_gas", sales, salesZ);
     runFlare("sour_gas", sour, sourZ);
     runFlare("heavy", heavy, heavyZ);
+    flarePerformanceRows(binary, binaryZ, sales, salesZ);
+  }
+
+  /// The radiation model, the dispersion surrogate and the capacity check.
+  ///
+  /// **The radiation model is a point source at the flame height**:
+  /// `radiantFraction * duty / (4 pi (d^2 + h^2))`, and its inverse for a threshold. The
+  /// surrogate is the tip's exit velocity and momentum flux from the inlet's own density;
+  /// the capacity check divides the operating point by three optional design limits. **Each
+  /// limit is stated as a multiple of the state it is checked against**, so the printed
+  /// design value is the oracle the port is held to rather than a typed number.
+  static void flarePerformanceRows(String[] binary, double[] binaryZ, String[] sales,
+      double[] salesZ) {
+    runFlarePerformance("performance_defaults", binary, binaryZ, 1.0, null, null, null, 30.0,
+        4000.0, null, null, null);
+    runFlarePerformance("performance_design_capacities", binary, binaryZ, 1.0, null, null, null,
+        50.0, 1500.0, 0.8, 0.5, 0.5);
+    runFlarePerformance("performance_hot_flame", sales, salesZ, 1.0, 60.0, 0.3, 0.6, 10.0, 2000.0,
+        null, null, null);
+    // **A threshold the horizontal distance can satisfy**: at 1 mol/s the 30 m flame height
+    // puts every contour inside its own sphere, so the inverse answers zero. A hundredfold
+    // flow and a 1 kW/m2 threshold put the contour outside it.
+    runFlarePerformance("performance_high_duty", binary, binaryZ, 100.0, null, null, null, 60.0,
+        1000.0, null, null, null);
+    // The class's setters clamp rather than refuse: a negative height is zero, a fraction
+    // above one is one, and a zero tip diameter is 1e-4 m.
+    runFlarePerformance("performance_clamped_fields", binary, binaryZ, 1.0, -5.0, 5.0, 0.0, 30.0,
+        4000.0, null, null, null);
+  }
+
+  static void runFlarePerformance(String label, String[] names, double[] z, double molPerSecond,
+      Double flameHeight, Double radiantFraction, Double tipDiameter, double groundDistance,
+      double fluxThreshold, Double heatFactor, Double massFactor, Double molarFactor) {
+    Stream inlet = feed(names, z, 288.15, 1.01325, molPerSecond);
+    neqsim.process.equipment.flare.Flare flare =
+        new neqsim.process.equipment.flare.Flare("flare", inlet);
+    if (flameHeight != null) {
+      flare.setFlameHeight(flameHeight);
+    }
+    if (radiantFraction != null) {
+      flare.setRadiantFraction(radiantFraction);
+    }
+    if (tipDiameter != null) {
+      flare.setTipDiameter(tipDiameter);
+    }
+    flare.run();
+    if (heatFactor != null) {
+      flare.setDesignHeatDutyCapacity(heatFactor * flare.getHeatDuty(), "W");
+    }
+    if (massFactor != null) {
+      flare.setDesignMassFlowCapacity(massFactor * inlet.getFlowRate("kg/sec"), "kg/sec");
+    }
+    if (molarFactor != null) {
+      flare.setDesignMolarFlowCapacity(molarFactor * inlet.getFlowRate("mole/sec"), "mole/sec");
+    }
+    neqsim.process.equipment.flare.Flare.CapacityCheckResult capacity = flare.evaluateCapacity();
+    neqsim.process.equipment.flare.dto.FlareDispersionSurrogateDTO dispersion =
+        flare.getDispersionSurrogate();
+
+    System.out.println(label);
+    print("inlet", inlet);
+    System.out.println("heat_duty_W=" + flare.getHeatDuty());
+    System.out.println("co2_emission_kg_per_s=" + flare.getCO2Emission());
+    System.out.println("ground_distance_m=" + groundDistance);
+    System.out.println("radiation_flux_W_per_m2=" + flare.estimateRadiationHeatFlux(groundDistance));
+    System.out.println("radiation_flux_threshold_W_per_m2=" + fluxThreshold);
+    System.out.println("radiation_distance_m=" + flare.radiationDistanceForFlux(fluxThreshold));
+    System.out.println("dispersion_exit_velocity_m_per_s=" + dispersion.getExitVelocityMs());
+    System.out.println("dispersion_momentum_flux_Pa=" + dispersion.getMomentumFlux());
+    System.out.println("dispersion_momentum_per_mass=" + dispersion.getMomentumPerMass());
+    System.out.println(
+        "dispersion_standard_volume_m3_per_s=" + dispersion.getStandardVolumeSm3PerSec());
+    System.out.println("capacity_heat_duty_W=" + capacity.getHeatDutyW());
+    System.out.println("capacity_design_heat_duty_W=" + capacity.getDesignHeatDutyW());
+    System.out.println("capacity_heat_utilization=" + capacity.getHeatUtilization());
+    System.out.println("capacity_mass_rate_kg_s=" + capacity.getMassRateKgS());
+    System.out.println("capacity_design_mass_rate_kg_s=" + capacity.getDesignMassRateKgS());
+    System.out.println("capacity_mass_utilization=" + capacity.getMassUtilization());
+    System.out.println("capacity_molar_rate_mole_s=" + capacity.getMolarRateMoleS());
+    System.out.println("capacity_design_molar_rate_mole_s=" + capacity.getDesignMolarRateMoleS());
+    System.out.println("capacity_molar_utilization=" + capacity.getMolarUtilization());
+    System.out.println("capacity_overloaded=" + capacity.isOverloaded());
+    System.out.println();
   }
 
   static void runFlare(String label, String[] names, double[] z) {
@@ -3649,6 +9251,24 @@ public class ProcessProbe {
     System.out.println("expansion_ratio=" + ejector.getExpansionRatio());
     System.out.println("area_ratio=" + ejector.getAreaRatio());
     System.out.println("critical_back_pressure=" + ejector.getCriticalBackPressure());
+    neqsim.process.mechanicaldesign.ejector.EjectorMechanicalDesign design = ejector.getMechanicalDesign();
+    System.out.println("design_motive_nozzle_throat_area_m2=" + design.getMotiveNozzleThroatArea());
+    System.out.println("design_motive_nozzle_diameter_m=" + design.getMotiveNozzleDiameter());
+    System.out.println("design_suction_inlet_area_m2=" + design.getSuctionInletArea());
+    System.out.println("design_suction_inlet_diameter_m=" + design.getSuctionInletDiameter());
+    System.out.println("design_mixing_chamber_area_m2=" + design.getMixingChamberArea());
+    System.out.println("design_mixing_chamber_diameter_m=" + design.getMixingChamberDiameter());
+    System.out.println("design_diffuser_outlet_area_m2=" + design.getDiffuserOutletArea());
+    System.out.println("design_diffuser_outlet_diameter_m=" + design.getDiffuserOutletDiameter());
+    System.out.println("design_motive_nozzle_effective_length_m=" + design.getMotiveNozzleEffectiveLength());
+    System.out.println("design_suction_inlet_length_m=" + design.getSuctionInletLength());
+    System.out.println("design_mixing_chamber_length_m=" + design.getMixingChamberLength());
+    System.out.println("design_diffuser_outlet_length_m=" + design.getDiffuserOutletLength());
+    System.out.println("design_body_volume_m3=" + design.getBodyVolume());
+    System.out.println("design_connected_piping_volume_m3=" + design.getConnectedPipingVolume());
+    System.out.println("design_total_volume_m3=" + design.getTotalVolume());
+    System.out.println("design_suction_connection_length_m=" + design.getSuctionConnectionLength());
+    System.out.println("design_discharge_connection_length_m=" + design.getDischargeConnectionLength());
     System.out.println("motive_nozzle_mach=" + ejector.getMotiveNozzleMach());
     System.out.println("suction_mach=" + ejector.getSuctionMach());
     System.out.println("mixing_mach=" + ejector.getMixingMach());
@@ -3716,6 +9336,127 @@ public class ProcessProbe {
         new double[] { 1.0, 1.0, 0.0, 0.0 }, 1000.0, 1.0, false, 0.05, 5000, 1e-3);
     gibbsReactorRow("argon_in_feed", new String[] { "hydrogen", "oxygen", "water", "argon" },
         new double[] { 0.1, 1.0, 0.0, 0.05 }, 298.15, 50.0, true, 0.05, 5000, 1e-3);
+  }
+
+  /// **The step controls, on the states `GibbsReactorAlgorithmTest` solves.**
+  ///
+  /// `useArmijoLineSearch` and `useAdaptiveStepSize` are both `false` by default, so no row in
+  /// `process_gibbs_reactor.tsv` reaches either. The class's own test drives them, and this
+  /// capture prints the whole path rather than the assertion: the iteration count, the final
+  /// error, the outlet and both diagnostic histories, so a port is held to the trajectory and
+  /// not only to "it converged".
+  ///
+  /// **The fixed-damping row is the baseline the class's own test compares against**: the same
+  /// feed, damping and gate as `armijo_methane_adiabatic`, with the line search off. The two
+  /// must reach the same equilibrium, and printing both is what makes that checkable.
+  static void gibbsAlgorithmRows() {
+    gibbsAlgorithmRow("armijo_methane_adiabatic",
+        new String[] { "methane", "oxygen", "CO2", "water" }, new double[] { 0.05, 0.5, 0.0, 0.0 },
+        298.15, 100.0, true, 0.01, 10000, 1.0e-3, true, false);
+    gibbsAlgorithmRow("fixed_methane_adiabatic",
+        new String[] { "methane", "oxygen", "CO2", "water" }, new double[] { 0.05, 0.5, 0.0, 0.0 },
+        298.15, 100.0, true, 0.01, 10000, 1.0e-3, false, false);
+    gibbsAlgorithmRow("adaptive_hydrogen",
+        new String[] { "hydrogen", "oxygen", "water" }, new double[] { 0.1, 1.0, 0.0 }, 298.15,
+        1.0, false, 0.05, 5000, 1.0e-3, false, true);
+    gibbsAlgorithmRow("armijo_adaptive_hydrogen",
+        new String[] { "hydrogen", "oxygen", "water" }, new double[] { 0.1, 1.0, 0.0 }, 298.15,
+        1.0, false, 0.05, 5000, 1.0e-3, true, true);
+    // **An undamped step under the line search**, which is where the backtracks are: the class's
+    // own Armijo row caps alpha at its `0.01` damping, so it accepts that alpha every pass.
+    gibbsAlgorithmRow("armijo_ammonia_undamped",
+        new String[] { "hydrogen", "nitrogen", "ammonia" }, new double[] { 1.5, 0.5, 0.0 }, 450.0,
+        300.0, false, 1.0, 5000, 1.0e-3, true, false);
+    // **Two rows on a state every species stays significant in**, which is what a case needs:
+    // the reverse water-gas shift at 1000 K carries four species against three active elements,
+    // so nothing sits on the `1e-6` floor and the comparison can be relative.
+    gibbsAlgorithmRow("armijo_rwgs_undamped",
+        new String[] { "CO2", "hydrogen", "CO", "water" }, new double[] { 1.0, 1.0, 0.0, 0.0 },
+        1000.0, 1.0, false, 1.0, 5000, 1.0e-3, true, false);
+    gibbsAlgorithmRow("adaptive_rwgs",
+        new String[] { "CO2", "hydrogen", "CO", "water" }, new double[] { 1.0, 1.0, 0.0, 0.0 },
+        1000.0, 1.0, false, 0.05, 5000, 1.0e-3, false, true);
+    // **The two states `GibbsReactorAlgorithmTest` uses for the regularisation and the
+    // diagnostic.** The flag is on in the first and off in the second; the condition history is
+    // recorded on the first five passes either way.
+    gibbsAlgorithmRow("regularized_methane",
+        new String[] { "methane", "oxygen", "CO2", "CO", "water" },
+        new double[] { 0.05, 0.5, 0.0, 0.0, 0.0 }, 298.15, 100.0, true, 0.01, 10000, 1.0e-3,
+        false, false, true, 1.0e10, 1.0e-6);
+    gibbsAlgorithmRow("diagnostic_ammonia",
+        new String[] { "hydrogen", "nitrogen", "ammonia" }, new double[] { 1.5, 0.5, 0.0 }, 450.0,
+        300.0, false, 0.05, 5000, 1.0e-3, false, false, false, 1.0e10, 1.0e-6);
+  }
+
+  static void gibbsAlgorithmRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, boolean adiabatic, double damping, int maxIterations, double tolerance,
+      boolean armijo, boolean adaptive) {
+    gibbsAlgorithmRow(label, names, z, temperatureK, pressureBara, adiabatic, damping,
+        maxIterations, tolerance, armijo, adaptive, false, 1.0e10, 1.0e-6);
+  }
+
+  static void gibbsAlgorithmRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, boolean adiabatic, double damping, int maxIterations, double tolerance,
+      boolean armijo, boolean adaptive, boolean regularization, double threshold, double tau) {
+    Stream inlet = feed(names, z, temperatureK, pressureBara, 1.0);
+
+    neqsim.process.equipment.reactor.GibbsReactor reactor =
+        new neqsim.process.equipment.reactor.GibbsReactor("gibbs " + label, inlet);
+    reactor.setUseAllDatabaseSpecies(false);
+    reactor.setDampingComposition(damping);
+    reactor.setMaxIterations(maxIterations);
+    reactor.setConvergenceTolerance(tolerance);
+    reactor.setUseArmijoLineSearch(armijo);
+    reactor.setUseAdaptiveStepSize(adaptive);
+    reactor.setUseRegularization(regularization);
+    reactor.setRegularizationThreshold(threshold);
+    reactor.setRegularizationTau(tau);
+    reactor.setEnergyMode(adiabatic
+        ? neqsim.process.equipment.reactor.GibbsReactor.EnergyMode.ADIABATIC
+        : neqsim.process.equipment.reactor.GibbsReactor.EnergyMode.ISOTHERMAL);
+
+    reactor.run();
+    StreamInterface outlet = reactor.getOutletStream();
+
+    System.out.println(label);
+    print("feed", inlet);
+    print("product", outlet);
+    // **What the solve carried, beside what the outlet stream published.** The two are not the
+    // same object in the class, and a row where they disagree says which one moved.
+    StringBuilder moles = new StringBuilder("outlet_moles=");
+    for (int i = 0; i < reactor.getOutletMole().size(); i++) {
+      moles.append(inlet.getThermoSystem().getComponent(i).getComponentName()).append(":")
+          .append(reactor.getOutletMole().get(i));
+      if (i + 1 < reactor.getOutletMole().size()) {
+        moles.append(" ");
+      }
+    }
+    System.out.println(moles);
+    System.out.println("energy_mode=" + reactor.getEnergyMode() + "\tdamping=" + damping
+        + "\tmax_iterations=" + maxIterations + "\ttolerance=" + tolerance
+        + "\tarmijo=" + armijo + "\tadaptive=" + adaptive);
+    System.out.println("converged=" + reactor.hasConverged() + "\titerations="
+        + reactor.getActualIterations() + "\tfinal_error=" + reactor.getFinalConvergenceError()
+        + "\tmass_balance_converged=" + reactor.getMassBalanceConverged());
+    System.out.println("gibbs_history=" + joined(reactor.getGibbsEnergyHistory()));
+    System.out.println("step_size_history=" + joined(reactor.getStepSizeHistory()));
+    System.out.println("regularization=" + regularization + "\tthreshold=" + threshold
+        + "\ttau=" + tau);
+    System.out.println("condition_number_history="
+        + joined(reactor.getConditionNumberHistory()));
+    System.out.println();
+  }
+
+  /// One history as the space-separated list the capture's other rows use.
+  static String joined(java.util.List<Double> values) {
+    StringBuilder text = new StringBuilder();
+    for (int i = 0; i < values.size(); i++) {
+      if (i > 0) {
+        text.append(' ');
+      }
+      text.append(values.get(i));
+    }
+    return text.toString();
   }
 
   static void gibbsReactorRow(String label, String[] names, double[] z, double temperatureK,
@@ -4078,13 +9819,20 @@ public class ProcessProbe {
 
   /// **`BILLET_SCHULTES_1999` in one capture, beside its own `ONDA_1968` baseline.** The class's
   /// second "correlation" is not one: it multiplies the two film coefficients by constants taken
-  /// off the packing row, so one state run twice is the whole measurement. `Pall-Ring-50`
-  /// resolves to the plastic row, `cp = 0.698` and `ch = 2.725`, so the pair is `1.1354166` on
-  /// `kGa` and `0.698` on `kLa` - neither floored at the class's `0.1`.
+  /// off the packing row, so one state run twice is the whole measurement. **Two rows of packings
+  /// are needed since upstream PR #4405**: on the built-in `Pall-Ring-50` the constants are `1.0`
+  /// and `0.40`, so the two correlations are the identity, while `Pall-Ring-50-plastic` carries
+  /// `cp = 0.698` and `ch = 2.725` - the pair is `1.1354166` on `kGa` and `0.698` on `kLa`,
+  /// neither floored at the class's `0.1`. The plastic pair is the state the pin's `Pall-Ring-50`
+  /// resolved to.
   static void rateBasedBilletRows() {
     rateBasedCo2WaterRow("billet_onda", 0.10, 0.0, 6.0, "Pall-Ring-50", true, false,
         neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation.ONDA_1968);
     rateBasedCo2WaterRow("billet_schultes", 0.10, 0.0, 6.0, "Pall-Ring-50", true, false,
+        neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation.BILLET_SCHULTES_1999);
+    rateBasedCo2WaterRow("plastic_onda", 0.10, 0.0, 6.0, "Pall-Ring-50-plastic", true, false,
+        neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation.ONDA_1968);
+    rateBasedCo2WaterRow("plastic_schultes", 0.10, 0.0, 6.0, "Pall-Ring-50-plastic", true, false,
         neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation.BILLET_SCHULTES_1999);
   }
 
@@ -4224,7 +9972,8 @@ public class ProcessProbe {
     column.setColumnDiameter(1.0);
     column.setPackedHeight(height);
     column.setNumberOfSegments(4);
-    column.setMaxIterations(20);
+    // 60 rather than the class's 20: the packing fix moves the stripper to 21 passes.
+    column.setMaxIterations(60);
     column.setPackingType(packing);
     column.setTransferComponents("CO2");
     column.setMassTransferCorrectionFactor(3.0);
@@ -4267,7 +10016,8 @@ public class ProcessProbe {
     column.setColumnDiameter(1.2);
     column.setPackedHeight(height);
     column.setNumberOfSegments(segments);
-    column.setMaxIterations(25);
+    // 60 rather than the class's 25: the packing fix moves this profile to 33 passes.
+    column.setMaxIterations(60);
     column.setPackingType("Mellapak-250Y");
     column.setTransferComponents("water");
     column.setMassTransferCorrectionFactor(correction);
@@ -4872,6 +10622,21 @@ public class ProcessProbe {
     // `DistillationColumn`, throws `ClassCastException` from `PressureVesselDesignStandard:36`.
     // The class is the separator family's sizing for a machine this port does not carry, which is
     // why `process.absorption_column`'s mechanical design is the *column's* design and not this.
+    // **And the stripper's own row**, appended last so the four rows above keep their indices. It
+    // is the same state as the product capture's `hydrocarbon_stripper` row - the same subclass,
+    // the same two feeds, the same gate - and it exists because the stripper inherits every
+    // getter and overrides none: one absorber row cannot settle a second reading.
+    mechanicalStripperRow("hydrocarbon_stripper_mechanical");
+  }
+
+  /// **The stripper's mechanical row**, on the state `absorberRows()` captures as
+  /// `hydrocarbon_stripper`.
+  static void mechanicalStripperRow(String label) {
+    AbsorberCase unit = runAbsorber(label, STRIPPER_COMPONENTS, STRIPPER_GAS_Z, 150.0, 70.0,
+        STRIPPER_COMPONENTS, STRIPPER_LIQUID_Z, 900.0, 70.0, 5, 12.0, 0.0, 1.0e-4,
+        "DIRECT_SUBSTITUTION", false, null, null, 0.0);
+    mechanicalRow(label, "stripping_column",
+        (neqsim.process.equipment.distillation.DistillationColumn) unit.column, null, null);
   }
 
   /// The port's own binary column, at the class's own constructor defaults.
@@ -5014,6 +10779,472 @@ public class ProcessProbe {
     System.out.println("internals_total_pressure_drop_pa=" + internals.getTotalPressureDrop());
     System.out.println("column_diameter_override_m=" + design.getColumnDiameterOverride());
     System.out.println("max_contactor_pressure_drop_bar=" + design.getMaxContactorPressureDropBar());
+    System.out.println();
+  }
+
+  /// **`ReactorMechanicalDesign`, which is the reactor vessel's own sizing.**
+  ///
+  /// `calcDesign` reads the **inlet** stream of a `TwoPortInterface` and nothing else: its
+  /// pressure, temperature, volumetric flow and the fluid's density, then sizes a catalyst volume
+  /// from a space velocity, a vessel from a bed fill fraction and a target L/D, an ASME VIII Div 1
+  /// shell and head, an Ergun bed drop and a weight. **No capture in this directory held the
+  /// class.**
+  ///
+  /// **Three rows, and between them every branch that changes an answer.** The defaults row is
+  /// the ammonia feed at 300 bara, where the GHSV division floors the catalyst volume at `0.01`
+  /// m3 and the shell is thick. The CSTR row takes the LHSV branch instead, which is the only
+  /// place `reactorType` is read, and its `1.5` 1/hr is chosen so the vessel is **above** the
+  /// `0.5` m diameter floor: at these flows every default-GHSV row floors it, and a capture that
+  /// only ever reads `0.5` does not measure the cube root. The high-pressure row feeds 1 bara with a stated
+  /// `maxOperationPressure` of `150.0`, so `max(inlet, maxOperation)` takes the max branch, and
+  /// its 299 m3/hr over the default `5000` keeps the GHSV division **above** the floor.
+  ///
+  /// **Five configured parameters have no getter.** `ghsv`, `lhsv`, `catalystBulkDensity`,
+  /// `catalystParticleDiameter` and `bedVoidFraction` are setters only, so each row prints what
+  /// it asked for under `requested_` - the class's own initialisers on the defaults row.
+  static void reactorMechanicalRows() {
+    reactorMechanicalRow("gibbs_fixed_bed_defaults",
+        new String[] { "hydrogen", "nitrogen", "ammonia" }, new double[] { 1.5, 0.5, 0.0 },
+        450.0, 300.0, 1.0, null, null, null);
+    reactorMechanicalRow("gibbs_cstr",
+        new String[] { "hydrogen", "nitrogen", "ammonia" }, new double[] { 1.5, 0.5, 0.0 },
+        450.0, 300.0, 1.0, "CSTR", 1.5, null);
+    reactorMechanicalRow("gibbs_high_pressure",
+        new String[] { "CO2", "hydrogen", "CO", "water" }, new double[] { 1.0, 1.0, 0.0, 0.0 },
+        1000.0, 1.0, 1.0, null, null, 150.0);
+  }
+
+  /// One reactor mechanical row: the feed the class's own Gibbs rows state, the reactor run,
+  /// then the design on the inlet it read.
+  static void reactorMechanicalRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, double molPerSecond, String reactorType, Double lhsv,
+      Double maxOperationPressure) {
+    Stream inlet = feed(names, z, temperatureK, pressureBara, molPerSecond);
+    neqsim.process.equipment.reactor.GibbsReactor reactor =
+        new neqsim.process.equipment.reactor.GibbsReactor("gibbs", inlet);
+    reactor.setUseAllDatabaseSpecies(false);
+    reactor.run();
+
+    neqsim.process.mechanicaldesign.reactor.ReactorMechanicalDesign design =
+        reactor.getMechanicalDesign();
+    if (reactorType != null) {
+      design.setReactorType(reactorType);
+    }
+    if (lhsv != null) {
+      design.setLHSV(lhsv);
+    }
+    if (maxOperationPressure != null) {
+      design.setMaxOperationPressure(maxOperationPressure);
+    }
+    design.calcDesign();
+
+    System.out.println(label);
+    // ---- What it reads: the inlet's own state, which is the whole of its input surface.
+    System.out.println("inlet_p_bara=" + inlet.getPressure("bara"));
+    System.out.println("inlet_t_c=" + inlet.getTemperature("C"));
+    System.out.println("inlet_flow_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3=" + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println(
+        "inlet_molar_mass_kg_per_mol=" + inlet.getThermoSystem().getMolarMass());
+    System.out.println("inlet_moles_per_sec=" + inlet.getFlowRate("mol/sec"));
+    // ---- The configuration, from the getters where the class has one and from the probe where
+    // it does not.
+    System.out.println("requested_reactor_type="
+        + (reactorType == null ? "FIXED_BED" : reactorType));
+    System.out.println("requested_ghsv_per_hr=5000.0");
+    System.out.println("requested_lhsv_per_hr=" + (lhsv == null ? 1.0 : lhsv));
+    System.out.println("requested_catalyst_bulk_density_kg_per_m3=800.0");
+    System.out.println("requested_catalyst_particle_diameter_mm=3.0");
+    System.out.println("requested_bed_void_fraction=0.4");
+    System.out.println("class_reactor_type=" + design.getReactorType());
+    System.out.println("class_number_of_beds=" + design.getNumberOfBeds());
+    System.out.println("class_max_operation_pressure=" + design.getMaxOperationPressure());
+    System.out.println("class_max_operation_temperature=" + design.getMaxOperationTemperature());
+    System.out.println("class_joint_efficiency=" + design.getJointEfficiency());
+    System.out.println("class_corrosion_allowance=" + design.getCorrosionAllowance());
+    // ---- And what it answers.
+    System.out.println("vessel_diameter_m=" + design.getVesselDiameter());
+    System.out.println("vessel_length_m=" + design.getVesselLength());
+    System.out.println("shell_thickness_mm=" + design.getShellThickness());
+    System.out.println("head_thickness_mm=" + design.getHeadThickness());
+    System.out.println("design_pressure_bara=" + design.getDesignPressureBara());
+    System.out.println("design_temperature_c=" + design.getDesignTemperatureC());
+    System.out.println("catalyst_volume_m3=" + design.getCatalystVolume());
+    System.out.println("catalyst_mass_kg=" + design.getCatalystMass());
+    System.out.println("bed_pressure_drop_bar=" + design.getBedPressureDrop());
+    System.out.println("empty_vessel_weight_kg=" + design.getEmptyVesselWeight());
+    System.out.println("total_equipped_weight_kg=" + design.getTotalEquippedWeight());
+    System.out.println("reactor_type=" + design.getReactorType());
+    System.out.println("number_of_beds=" + design.getNumberOfBeds());
+    System.out.println();
+  }
+
+  /// **`ControlValveSizing`, the `ValveMechanicalDesign` default, and the two solve modes.**
+  ///
+  /// The class's own sizing tests re-cased on PR: the rich-gas regression state
+  /// (`ThrottlingValveSizingStateRegressionTest`), the methane state and a water liquid. Each row
+  /// runs the valve unsized - the first `run` calls `calcKv` through `getMechanicalDesign()` -
+  /// then prints what the sizing reads and what it answers, and then drives the two modes with the
+  /// Kv it produced: `isCalcPressure` solves the outlet pressure from the trim, and the flow mode
+  /// solves the mole flow from the drop.
+  static void valveSizingRows() {
+    String[] rich = new String[] { "methane", "ethane", "propane", "n-butane" };
+    valveSizingRow("sizing_gas_rich", rich, new double[] { 0.1, 0.2, 0.4, 0.3 }, 296.25, 1.82925,
+        14942.5, 1.41325, 100.0, false, false);
+    valveSizingRow("sizing_gas_rich_isothermal", rich, new double[] { 0.1, 0.2, 0.4, 0.3 },
+        296.25, 1.82925, 14942.5, 1.41325, 100.0, true, false);
+    valveSizingRow("sizing_gas_rich_choked_cap", rich, new double[] { 0.1, 0.2, 0.4, 0.3 },
+        296.25, 1.82925, 14942.5, 1.41325, 100.0, false, true);
+    valveSizingRow("sizing_methane", new String[] { "methane" }, new double[] { 1.0 }, 293.15,
+        10.0, 4749.1, 9.0, 100.0, false, false);
+    valveSizingRow("sizing_water_liquid", new String[] { "water" }, new double[] { 1.0 }, 289.15,
+        14.8, 1.69272e6, 4.46, 100.0, false, false);
+  }
+
+  static void valveSizingRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, double kgPerHour, double outletBara, double openingPercent,
+      boolean isothermal, boolean allowChoked) {
+    Stream inlet = feedMass("inlet", names, z, temperatureK, pressureBara, kgPerHour);
+
+    neqsim.process.equipment.valve.ThrottlingValve valve =
+        new neqsim.process.equipment.valve.ThrottlingValve(label, inlet);
+    valve.setOutletPressure(outletBara);
+    valve.setPercentValveOpening(openingPercent);
+    valve.setIsoThermal(isothermal);
+    valve.getMechanicalDesign().getValveSizingMethod().setAllowChoked(allowChoked);
+
+    System.out.println(label);
+    // ---- What the sizing reads.
+    System.out.println("inlet_p_bara=" + inlet.getPressure("bara"));
+    System.out.println("inlet_t_k=" + inlet.getTemperature("K"));
+    System.out.println("inlet_mol_per_sec=" + inlet.getFlowRate("mol/sec"));
+    System.out.println("inlet_kg_per_hr=" + inlet.getFlowRate("kg/hr"));
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("inlet_z=" + inlet.getThermoSystem().getZ());
+    System.out.println("inlet_gamma2=" + inlet.getThermoSystem().getGamma2());
+    System.out.println("inlet_molar_mass_gr_per_mol="
+        + inlet.getThermoSystem().getMolarMass("gr/mol"));
+    StringBuilder feedZ = new StringBuilder("feed_z=");
+    for (int i = 0; i < inlet.getThermoSystem().getNumberOfComponents(); i++) {
+      feedZ.append(inlet.getThermoSystem().getComponent(i).getComponentName()).append(":")
+          .append(inlet.getThermoSystem().getComponent(i).getz());
+      if (i + 1 < inlet.getThermoSystem().getNumberOfComponents()) {
+        feedZ.append(" ");
+      }
+    }
+    System.out.println(feedZ);
+    System.out.println("outlet_p_stated_bara=" + outletBara);
+    System.out.println("opening_percent=" + openingPercent);
+    System.out.println("is_isothermal=" + isothermal);
+    System.out.println("allow_choked=" + allowChoked);
+
+    // ---- The first run sizes the valve, because no Kv was set.
+    valve.run();
+    System.out.println("gas_valve=" + valve.isGasValve());
+    System.out.println("kv=" + valve.getKv());
+    System.out.println("cv=" + valve.getCv());
+    System.out.println("cg=" + valve.getCg());
+    java.util.Map<String, Object> sized =
+        ((neqsim.process.mechanicaldesign.valve.ValveMechanicalDesign) valve.getMechanicalDesign())
+            .calcValveSize();
+    System.out.println("choked=" + sized.get("choked"));
+    System.out.println("outlet_stream_p_bara=" + valve.getOutletStream().getPressure("bara"));
+    System.out.println("outlet_stream_t_k=" + valve.getOutletStream().getTemperature("K"));
+    System.out.println("calculated_molar_flow=" + valve.calculateMolarFlow());
+
+    // ---- The pressure mode: the drop from the trim, at the same opening.
+    valve.setIsCalcOutPressure(true);
+    valve.run();
+    System.out.println("solved_outlet_p_bara=" + valve.getOutletPressure());
+    System.out.println("solved_outlet_stream_p_bara="
+        + valve.getOutletStream().getPressure("bara"));
+    System.out.println("solved_outlet_stream_t_k=" + valve.getOutletStream().getTemperature("K"));
+
+    // ---- The flow mode, with the Kv the sizing produced stated explicitly.
+    double sizedKv = valve.getKv();
+    valve.setIsCalcOutPressure(false);
+    valve.setKv(sizedKv);
+    valve.setOutletPressure(outletBara);
+    valve.run();
+    System.out.println("stated_kv=" + valve.getKv());
+    System.out.println("flow_mode_molar_flow=" + valve.calculateMolarFlow());
+    System.out.println();
+  }
+
+  /// ``PumpChart`` and ``Pump``'s chart branch.
+  ///
+  /// **The chart's own arithmetic is fluid-free**, so those rows compare a reduced-polynomial
+  /// fit and nothing else: the eight-speed table ``PumpChartTest`` states, read at the flow
+  /// and speed its own ``Pump.run`` reaches, at both edges of the measured reduced-flow range,
+  /// and past both. The density, NPSH and viscosity rows are ``PumpDensityCorrectionTest``,
+  /// ``PumpNPSHCurveTest`` and ``PumpViscosityCorrectionTest``'s states.
+  ///
+  /// **The run rows use PR water, not the SRK water the class tests build.** The chart branch
+  /// multiplies the head by the inlet density, and the port's fluid is PR; a row on SRK water
+  /// would price the equation of state rather than the chart.
+  static void pumpCurveRows() {
+    neqsim.process.equipment.pump.PumpChart test =
+        chartTest(new double[] {0.3, 1.0, 1.0, 1.0});
+
+    chartFitRow("chart_test_run_point", test, 3974.8455, 12913.0);
+    chartFitRow("chart_test_second_speed", test, 3599.6333, 10453.0);
+    chartFitRow("chart_test_lowest_speed", test, 1636.5807, 8200.0);
+    chartFitRow("chart_test_above_reduced_range", test, 6000.0, 12913.0);
+    chartFitRow("chart_test_below_reduced_range", test, 100.0, 12913.0);
+    System.out.println("chart_bep_flow_at_reference=" + test.getBestEfficiencyFlowRate());
+    System.out.println("chart_bep_flow_at_1500=" + test.getBestEfficiencyFlowRate(1500.0));
+    System.out.println();
+
+    // The class's two head units are one specific energy, so the same three-point curve in
+    // metre and in kJ/kg has to give one pressure rise. `testHeadUnitKJkg`'s own factor.
+    neqsim.process.equipment.pump.PumpChart metre = threePointChart("meter");
+    neqsim.process.equipment.pump.PumpChart kJkg = threePointChart("kJ/kg");
+    System.out.println("head_unit_meter_at_40=" + metre.getHead(40.0, 500.0));
+    System.out.println("head_unit_kjkg_at_40=" + kJkg.getHead(40.0, 500.0));
+    System.out.println("head_unit_meter_delta_p_pa="
+        + metre.getHead(40.0, 500.0) * 1000.0 * 9.80665);
+    System.out.println("head_unit_kjkg_delta_p_pa="
+        + kJkg.getHead(40.0, 500.0) * 1000.0 * 1000.0);
+    System.out.println();
+
+    neqsim.process.equipment.pump.PumpChart density =
+        simpleChart(new double[] {18.0, 298.15, 1.0, 1.0, 998.0});
+    System.out.println("density_reference=" + density.getReferenceDensity());
+    System.out.println("density_has_correction=" + density.hasDensityCorrection());
+    System.out.println("density_chart_head_at_40=" + density.getHead(40.0, 1000.0));
+    System.out.println("density_corrected_at_998="
+        + density.getCorrectedHead(40.0, 1000.0, 998.0));
+    System.out.println("density_corrected_at_800="
+        + density.getCorrectedHead(40.0, 1000.0, 800.0));
+    System.out.println("density_corrected_at_1200="
+        + density.getCorrectedHead(40.0, 1000.0, 1200.0));
+    neqsim.process.equipment.pump.PumpChart noDensity =
+        simpleChart(new double[] {18.0, 298.15, 1.0, 1.0});
+    System.out.println("density_absent_reference=" + noDensity.getReferenceDensity());
+    System.out.println("density_absent_has_correction=" + noDensity.hasDensityCorrection());
+    System.out.println("density_absent_corrected_at_800="
+        + noDensity.getCorrectedHead(40.0, 1000.0, 800.0));
+    System.out.println();
+
+    neqsim.process.equipment.pump.PumpChart npsh = npshChart();
+    npsh.setNPSHCurve(new double[][] {{2.0, 2.2, 2.5, 3.0, 3.8, 4.8, 6.2, 8.0},
+        {4.5, 4.95, 5.625, 6.75, 8.55, 10.8, 13.95, 18.0}});
+    System.out.println("npsh_has_curve=" + npsh.hasNPSHCurve());
+    System.out.println("npsh_at_40_1000=" + npsh.getNPSHRequired(40.0, 1000.0));
+    System.out.println("npsh_at_60_1500=" + npsh.getNPSHRequired(60.0, 1500.0));
+    System.out.println("npsh_at_35_1000=" + npsh.getNPSHRequired(35.0, 1000.0));
+    System.out.println("npsh_at_150_1000=" + npsh.getNPSHRequired(150.0, 1000.0));
+    System.out.println("npsh_at_1_1000=" + npsh.getNPSHRequired(1.0, 1000.0));
+    System.out.println();
+
+    neqsim.process.equipment.pump.PumpChart viscous =
+        simpleChart(new double[] {18.0, 298.15, 1.0, 1.0, 998.0});
+    viscous.setUseViscosityCorrection(true);
+    for (double viscosity : new double[] {1.0, 50.0, 75.0, 100.0, 500.0}) {
+      viscous.calculateViscosityCorrection(viscosity, 30.0, 88.0, 1000.0);
+      System.out.println("viscosity=" + viscosity);
+      System.out.println("viscosity_cq=" + viscous.getFlowCorrectionFactor());
+      System.out.println("viscosity_ch=" + viscous.getHeadCorrectionFactor());
+      System.out.println("viscosity_ceta=" + viscous.getEfficiencyCorrectionFactor());
+      System.out.println("viscosity_base_head=" + viscous.getHead(30.0, 1000.0));
+      System.out.println("viscosity_base_efficiency=" + viscous.getEfficiency(30.0, 1000.0));
+      System.out.println("viscosity_corrected_head="
+          + viscous.getViscosityCorrectedHead(viscous.getHead(30.0, 1000.0)));
+      System.out.println("viscosity_corrected_efficiency="
+          + viscous.getViscosityCorrectedEfficiency(viscous.getEfficiency(30.0, 1000.0)));
+      System.out.println("viscosity_corrected_efficiency_method="
+          + viscous.getCorrectedEfficiency(30.0, 1000.0, viscosity));
+      // **A fresh chart, because the factors are cached.** `getFullyCorrectedHead` recalculates
+      // them only when the viscosity moved by more than 0.1, so on the chart above it would
+      // reuse the `flowBEP = 30, headBEP = 88` factors the loop seeded. A chart that has never
+      // been corrected recomputes them at its own best-efficiency point, which is what
+      // `Pump.run` meets - that is the row the port is held to.
+      neqsim.process.equipment.pump.PumpChart fresh =
+          simpleChart(new double[] {18.0, 298.15, 1.0, 1.0, 998.0});
+      fresh.setUseViscosityCorrection(true);
+      System.out.println("viscosity_run_fully_corrected_head="
+          + fresh.getFullyCorrectedHead(30.0, 1000.0, 850.0, viscosity));
+      System.out.println("viscosity_run_corrected_efficiency="
+          + fresh.getCorrectedEfficiency(30.0, 1000.0, viscosity));
+      System.out.println();
+    }
+
+    runChartRow("run_chart", new double[] {0.3, 1.0, 1.0, 1.0}, 12913.0);
+    runChartRow("run_chart_reference_density", new double[] {18.0, 298.15, 1.0, 1.0, 998.0},
+        12913.0);
+
+    npshAvailableRow("npsh_available_water_25c_2bara", new String[] {"water"}, 298.15, 2.0);
+    npshAvailableRow("npsh_available_water_60c_1p5bara", new String[] {"water"}, 333.15, 1.5);
+    npshAvailableRow("npsh_available_water_80c_1p5bara", new String[] {"water"}, 353.15, 1.5);
+    npshAvailableRow("npsh_available_hexane", new String[] {"n-hexane"}, 298.15, 2.0);
+
+    Stream inlet = feedMass("inlet", new String[] {"water"}, new double[] {1.0}, 298.15, 2.0,
+        39900.0);
+    neqsim.process.equipment.pump.Pump pump =
+        new neqsim.process.equipment.pump.Pump("p npsh", inlet);
+    pump.getPumpChart().setCurves(new double[] {}, new double[] {1000.0, 1500.0},
+        new double[][] {{10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0},
+            {15.0, 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0}},
+        new double[][] {{120.0, 118.0, 115.0, 110.0, 103.0, 94.0, 83.0, 70.0},
+            {270.0, 265.5, 258.8, 247.5, 231.8, 211.5, 186.8, 157.5}},
+        new double[][] {{60.0, 70.0, 78.0, 82.0, 81.0, 76.0, 68.0, 55.0},
+            {62.0, 71.0, 79.0, 83.0, 82.0, 77.0, 69.0, 56.0}});
+    pump.getPumpChart().setHeadUnit("meter");
+    pump.getPumpChart().setNPSHCurve(new double[][] {{2.0, 2.2, 2.5, 3.0, 3.8, 4.8, 6.2, 8.0},
+        {4.5, 4.95, 5.625, 6.75, 8.55, 10.8, 13.95, 18.0}});
+    pump.setSpeed(1000.0);
+    pump.setCheckNPSH(true);
+    pump.setNPSHMargin(1.3);
+    pump.run();
+    System.out.println("npsh_run_label=npsh_curve_run");
+    System.out.println("npsh_run_inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("npsh_run_inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("npsh_run_head_m=" + pump.getPumpChart().getCorrectedHead(
+        inlet.getFlowRate("m3/hr"), 1000.0, inlet.getThermoSystem().getDensity("kg/m3")));
+    System.out.println("npsh_run_efficiency_percent="
+        + pump.getPumpChart().getEfficiency(inlet.getFlowRate("m3/hr"), 1000.0));
+    print("inlet", inlet);
+    print("outlet", pump.getOutletStream());
+    System.out.println("npsh_run_power_kW=" + pump.getPower("kW"));
+    System.out.println("npsh_run_required=" + pump.getNPSHRequired());
+    System.out.println("npsh_run_available=" + pump.getNPSHAvailable());
+    System.out.println("npsh_run_cavitating=" + pump.isCavitating());
+    System.out.println("npsh_run_margin=" + pump.getNPSHMargin());
+    System.out.println();
+  }
+
+  static neqsim.process.equipment.pump.PumpChart chartTest(double[] conditions) {
+    neqsim.process.equipment.pump.PumpChart chart = new neqsim.process.equipment.pump.PumpChart();
+    setChartTest(chart, conditions);
+    return chart;
+  }
+
+  static void setChartTest(neqsim.process.equipment.pump.PumpChart chart, double[] conditions) {
+    double[] speed = new double[] {12913, 12298, 11683, 11098, 10453, 9224, 8609, 8200};
+    double[][] flow = new double[][] {
+        {2789.1285, 3174.0375, 3689.2288, 4179.4503, 4570.2768, 4954.7728, 5246.0329, 5661.0331},
+        {2571.1753, 2943.7254, 3440.2675, 3837.4448, 4253.0898, 4668.6643, 4997.1926, 5387.4952},
+        {2415.3793, 2763.0706, 3141.7095, 3594.7436, 4047.6467, 4494.1889, 4853.7353, 5138.7858},
+        {2247.2043, 2799.7342, 3178.3428, 3656.1551, 4102.778, 4394.1591, 4648.3224, 4840.4998},
+        {2072.8397, 2463.9483, 2836.4078, 3202.5266, 3599.6333, 3978.0203, 4257.0022, 4517.345},
+        {1835.9552, 2208.455, 2618.1322, 2940.8034, 3244.7852, 3530.1279, 3753.3738, 3895.9746},
+        {1711.3386, 1965.8848, 2356.9431, 2685.9247, 3008.5154, 3337.2855, 3591.5092},
+        {1636.5807, 2002.8708, 2338.0319, 2642.1245, 2896.4894, 3113.6264, 3274.8764, 3411.2977}};
+    double[][] head = new double[][] {
+        {80.0375, 78.8934, 76.2142, 71.8678, 67.0062, 60.6061, 53.0499, 39.728},
+        {72.2122, 71.8369, 68.9009, 65.8341, 60.7167, 54.702, 47.2749, 35.7471},
+        {65.1576, 64.5253, 62.6118, 59.1619, 54.0455, 47.0059, 39.195, 31.6387},
+        {58.6154, 56.9627, 54.6647, 50.4462, 44.4322, 38.4144, 32.9084, 28.8109},
+        {52.3295, 51.0573, 49.5283, 46.3326, 42.3685, 37.2502, 31.4884, 25.598},
+        {40.6578, 39.6416, 37.6008, 34.6603, 30.9503, 27.1116, 23.2713, 20.4546},
+        {35.2705, 34.6359, 32.7228, 31.0645, 27.0985, 22.7482, 18.0113},
+        {32.192, 31.1756, 29.1329, 26.833, 23.8909, 21.3324, 18.7726, 16.3403}};
+    double[][] efficiency = new double[][] {
+        {77.2452238409573, 79.4154186459363, 80.737960012489, 80.5229826589649, 79.2210931638144,
+            75.4719133864634, 69.6034181197298, 58.7322388482707},
+        {77.0107837113504, 79.3069974136389, 80.8941189021135, 80.7190194665918, 79.5313242980328,
+            75.5912622896367, 69.6846136362097, 60.0043057990909},
+        {77.0043065299874, 79.1690958847856, 80.8038169975675, 80.6543975614197, 78.8532389102705,
+            73.6664774270613, 66.2735600426727, 57.671664571658},
+        {77.0716623789093, 80.4629750233093, 81.1390811169072, 79.6374242667478, 75.380928428817,
+            69.5332969549779, 63.7997587622339, 58.8120614497758},
+        {76.9705872525642, 79.8335492585324, 80.9468133671171, 80.5806471927835, 78.0462158225426,
+            73.0403707523258, 66.5572286338589, 59.8624822515064},
+        {77.5063036680357, 80.2056198362559, 81.0339108025933, 79.6085962687939, 76.3814534404405,
+            70.8027503005902, 64.6437367160571, 60.5299349982342},
+        {77.8175271586685, 80.065165942218, 81.0631362122632, 79.8955051771299, 76.1983240929369,
+            69.289982774309, 60.8567149372229},
+        {78.0924334304045, 80.9353551568667, 80.7904437766234, 78.8639325223295, 75.2170936751143,
+            70.3105081673411, 65.5507568533569, 61.0391468300337}};
+    chart.setCurves(conditions, speed, flow, head, efficiency);
+    chart.setHeadUnit("meter");
+  }
+
+  static neqsim.process.equipment.pump.PumpChart simpleChart(double[] conditions) {
+    neqsim.process.equipment.pump.PumpChart chart = new neqsim.process.equipment.pump.PumpChart();
+    chart.setCurves(conditions, new double[] {1000.0},
+        new double[][] {{10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0}},
+        new double[][] {{120.0, 118.0, 115.0, 110.0, 103.0, 94.0, 83.0, 70.0}},
+        new double[][] {{60.0, 70.0, 78.0, 82.0, 81.0, 76.0, 68.0, 55.0}});
+    chart.setHeadUnit("meter");
+    return chart;
+  }
+
+  static neqsim.process.equipment.pump.PumpChart threePointChart(String headUnit) {
+    double factor = headUnit.equals("kJ/kg") ? 0.00981 : 1.0;
+    neqsim.process.equipment.pump.PumpChart chart = new neqsim.process.equipment.pump.PumpChart();
+    chart.setCurves(new double[] {}, new double[] {500.0}, new double[][] {{30.0, 40.0, 50.0}},
+        new double[][] {{80.0 * factor, 70.0 * factor, 60.0 * factor}},
+        new double[][] {{80.0, 80.0, 75.0}});
+    chart.setHeadUnit(headUnit);
+    return chart;
+  }
+
+  static neqsim.process.equipment.pump.PumpChart npshChart() {
+    neqsim.process.equipment.pump.PumpChart chart = new neqsim.process.equipment.pump.PumpChart();
+    chart.setCurves(new double[] {}, new double[] {1000.0, 1500.0},
+        new double[][] {{10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0},
+            {15.0, 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0}},
+        new double[][] {{120.0, 118.0, 115.0, 110.0, 103.0, 94.0, 83.0, 70.0},
+            {270.0, 265.5, 258.8, 247.5, 231.8, 211.5, 186.8, 157.5}},
+        new double[][] {{60.0, 70.0, 78.0, 82.0, 81.0, 76.0, 68.0, 55.0},
+            {62.0, 71.0, 79.0, 83.0, 82.0, 77.0, 69.0, 56.0}});
+    chart.setHeadUnit("meter");
+    return chart;
+  }
+
+  static void chartFitRow(String label, neqsim.process.equipment.pump.PumpChart chart,
+      double flow, double speed) {
+    System.out.println(label);
+    System.out.println("flow_m3_per_hr=" + flow);
+    System.out.println("speed_rpm=" + speed);
+    System.out.println("head_m=" + chart.getHead(flow, speed));
+    System.out.println("efficiency_percent=" + chart.getEfficiency(flow, speed));
+    System.out.println();
+  }
+
+  static void runChartRow(String label, double[] conditions, double speed) {
+    Stream inlet = feedMass("inlet", new String[] {"water"}, new double[] {1.0}, 293.15, 1.0,
+        4.0e6);
+    neqsim.process.equipment.pump.Pump pump =
+        new neqsim.process.equipment.pump.Pump(label, inlet);
+    setChartTest((neqsim.process.equipment.pump.PumpChart) pump.getPumpChart(), conditions);
+    pump.setSpeed(speed);
+    pump.run();
+
+    System.out.println(label);
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3="
+        + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("head_m=" + pump.getPumpChart().getCorrectedHead(
+        inlet.getFlowRate("m3/hr"), speed, inlet.getThermoSystem().getDensity("kg/m3")));
+    System.out.println("efficiency_percent=" + pump.getPumpChart().getEfficiency(
+        inlet.getFlowRate("m3/hr"), speed));
+    print("inlet", inlet);
+    print("outlet", pump.getOutletStream());
+    System.out.println("power_kW=" + pump.getPower("kW"));
+    System.out.println();
+  }
+
+  static void npshAvailableRow(String label, String[] names, double temperatureK,
+      double pressureBara) {
+    Stream inlet = feedMass("inlet", names, new double[] {1.0}, temperatureK, pressureBara,
+        1000.0);
+    neqsim.process.equipment.pump.Pump pump =
+        new neqsim.process.equipment.pump.Pump(label, inlet);
+    pump.setOutletPressure(5.0);
+    pump.setIsentropicEfficiency(0.75);
+    pump.setCheckNPSH(true);
+    pump.run();
+
+    System.out.println(label);
+    System.out.println("npsh_available_m=" + pump.getNPSHAvailable());
+    System.out.println("npsh_required_m=" + pump.getNPSHRequired());
+    System.out.println("npsh_cavitating=" + pump.isCavitating());
+    System.out.println("npsh_margin=" + pump.getNPSHMargin());
     System.out.println();
   }
 
@@ -5241,5 +11472,283 @@ public class ProcessProbe {
       }
     }
     System.out.println(composition);
+  }
+
+  // === process.hem_release =====================================================
+
+  static void hemReleaseRows() {
+    // PR rows are the oracle: azoth's databank route resolves Peng-Robinson.
+    hemRow("methane_50bara_choked", false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        50.0, 0.01, 0.62, 101325.0);
+    hemRow("methane_dilute_0_1bara", false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        0.1, 0.01, 0.62, 500.0);
+    for (double ratio : new double[] {0.05, 0.30, 0.70, 0.90, 0.98}) {
+      hemRow("methane_dilute_back_" + ratio, false, new String[] {"methane"}, new double[] {1.0},
+          300.0, 0.1, 0.01, 0.62, ratio * 10000.0);
+    }
+    hemRow("methane_5bara_unchoked", false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        5.0, 0.01, 0.62, 490000.0);
+    hemRow("methane_5bara_no_flow_at", false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        5.0, 0.01, 0.62, 500000.0);
+    hemRow("methane_5bara_no_flow_above", false, new String[] {"methane"}, new double[] {1.0},
+        300.0, 5.0, 0.01, 0.62, 600000.0);
+    hemRow("methane_ethane_5bara", false, new String[] {"methane", "ethane"},
+        new double[] {1.0, 0.1}, 300.0, 5.0, 0.01, 0.62, 100000.0);
+    hemRow("propane_20bara", false, new String[] {"propane"}, new double[] {1.0}, 300.0, 20.0,
+        0.01, 0.62, 300000.0);
+    hemRow("dense_co2_120bara", false, new String[] {"CO2"}, new double[] {1.0}, 310.0, 120.0,
+        0.01, 0.62, 110.0e5);
+    hemRow("cold_co2_unsupported", false, new String[] {"CO2"}, new double[] {1.0}, 210.0, 20.0,
+        0.01, 0.62, 100000.0);
+    hemRow("methane_scale_d01_cd050", false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        5.0, 0.01, 0.5, 100000.0);
+    hemRow("methane_scale_d02_cd100", false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        5.0, 0.02, 1.0, 100000.0);
+    hemRow("propane_butane_20bara", false, new String[] {"propane", "n-butane"},
+        new double[] {0.8, 0.2}, 300.0, 20.0, 0.01, 0.62, 300000.0);
+
+    // SRK rows are the pinned tests' own EOS, and evidence beside the PR oracle.
+    hemRow("srk_methane_50bara_choked", true, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        50.0, 0.01, 0.62, 101325.0);
+    hemRow("srk_propane_20bara", true, new String[] {"propane"}, new double[] {1.0}, 300.0, 20.0,
+        0.01, 0.62, 300000.0);
+    hemRow("srk_cold_co2_unsupported", true, new String[] {"CO2"}, new double[] {1.0}, 210.0,
+        20.0, 0.01, 0.62, 100000.0);
+    hemRow("srk_propane_butane_20bara", true, new String[] {"propane", "n-butane"},
+        new double[] {0.8, 0.2}, 300.0, 20.0, 0.01, 0.62, 300000.0);
+
+    // The two states no azoth input can express: an empty fluid and the hydrate flag.
+    hemLifecycleRow("pr_empty_fluid", new SystemPrEos(300.0, 5.0), 0.01, 0.62, 100000.0);
+    SystemInterface hydrate = hemFluid(false, new String[] {"methane"}, new double[] {1.0}, 300.0,
+        5.0);
+    hydrate.setHydrateCheck(true);
+    hemLifecycleRow("pr_hydrate_flag", hydrate, 0.01, 0.62, 100000.0);
+  }
+
+  static SystemInterface hemFluid(boolean srk, String[] names, double[] amounts, double temperature,
+      double pressureBar) {
+    SystemInterface fluid =
+        srk ? new SystemSrkEos(temperature, pressureBar) : new SystemPrEos(temperature, pressureBar);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], amounts[i]);
+    }
+    if (srk) {
+      fluid.setMixingRule("classic");
+    } else {
+      fluid.setMixingRule(2);
+    }
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(fluid).TPflash();
+    fluid.init(3);
+    return fluid;
+  }
+
+  static void hemRow(String label, boolean srk, String[] names, double[] amounts,
+      double temperature, double pressureBar, double diameter, double coefficient, double back) {
+    SystemInterface fluid = hemFluid(srk, names, amounts, temperature, pressureBar);
+    ReleaseFlowRequest request = new ReleaseFlowRequest(fluid, diameter, coefficient, back);
+    hemPrint(label, srk ? "srk" : "pr", fluid, request);
+  }
+
+  static void hemLifecycleRow(String label, SystemInterface fluid, double diameter,
+      double coefficient, double back) {
+    ReleaseFlowRequest request = new ReleaseFlowRequest(fluid, diameter, coefficient, back);
+    hemPrint(label, "pr", fluid, request);
+  }
+
+  static void hemPrint(String label, String eos, SystemInterface fluid,
+      ReleaseFlowRequest request) {
+    ReleaseFlowResult result = new HomogeneousEquilibriumReleaseModel().calculate(request);
+    System.out.println(label);
+    System.out.println("eos=" + eos);
+    System.out.println("input_t_k=" + fluid.getTemperature());
+    System.out.println("input_p_bara=" + fluid.getPressure());
+    double[] overall = fluid.getMolarComposition();
+    StringBuilder z = new StringBuilder();
+    for (int i = 0; i < overall.length; i++) {
+      z.append(i == 0 ? "" : ",")
+          .append(fluid.getPhase(0).getComponent(i).getName()).append(":").append(overall[i]);
+    }
+    System.out.println("input_z=" + z);
+    System.out.println("diameter_m=" + request.getDiameterM());
+    System.out.println("discharge_coefficient=" + request.getDischargeCoefficient());
+    System.out.println("back_pressure_pa=" + request.getBackPressurePa());
+    System.out.println("status=" + result.getStatus());
+    System.out.println("model_id=" + result.getModelId());
+    System.out.println("mass_flow_kg_s=" + (result.isUsable() ? result.getMassFlowRateKgS() : ""));
+    System.out.println("choked=" + result.isChoked());
+    System.out.println("throat_sound_speed_m_per_s="
+        + (result.getThroatSoundSpeedMs() == null ? "" : result.getThroatSoundSpeedMs()));
+    int d = 0;
+    for (ReleaseFlowResult.Diagnostic diagnostic : result.getDiagnostics()) {
+      System.out.println("diagnostic_" + d + "_code=" + diagnostic.getCode());
+      System.out.println("diagnostic_" + d + "_message=" + diagnostic.getMessage());
+      d++;
+    }
+    int i = 0;
+    for (Map.Entry<ReleaseFlowResult.Station, ReleaseState> entry : result.getStations().entrySet()) {
+      ReleaseState state = entry.getValue();
+      String prefix = "station_" + i + "_";
+      System.out.println(prefix + "name=" + entry.getKey().name());
+      System.out.println(prefix + "p_pa=" + state.getPressurePa());
+      System.out.println(prefix + "t_k=" + state.getTemperatureK());
+      System.out.println(prefix + "density_kg_m3=" + state.getDensityKgM3());
+      System.out.println(prefix + "h_j_per_kg=" + state.getEnthalpyJkg());
+      System.out.println(prefix + "s_j_per_kgk=" + state.getEntropyJkgK());
+      System.out.println(prefix + "velocity_m_per_s=" + state.getVelocityMs());
+      System.out.println(prefix + "mass_flux_kg_m2_s=" + state.getMassFluxKgM2s());
+      System.out.println(prefix + "gas_mass_fraction=" + state.getGasMassFraction());
+      System.out.println(prefix + "component_mole_fractions="
+          + hemFractions(state.getComponentMoleFractions()));
+      System.out.println(prefix + "component_mass_fractions="
+          + hemFractions(state.getComponentMassFractions()));
+      System.out.println(prefix + "phase_mass_fractions="
+          + hemFractions(state.getPhaseMassFractions()));
+      i++;
+    }
+    System.out.println();
+  }
+
+  static String hemFractions(Map<String, Double> values) {
+    StringBuilder out = new StringBuilder();
+    for (Map.Entry<String, Double> entry : values.entrySet()) {
+      if (out.length() > 0) {
+        out.append(",");
+      }
+      out.append(entry.getKey()).append(":").append(entry.getValue());
+    }
+    return out.toString();
+  }
+
+  // === process.leak_blowdown ===================================================
+
+  static void leakBlowdownRows() {
+    leakBlowdownRow("pr_methane_50bara_10s_1s", false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 1.0, 0.01, 0.62, 101325.0, 10.0, 1.0);
+    leakBlowdownRow("pr_methane_50bara_60s_1s", false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 1.0, 0.01, 0.62, 101325.0, 60.0, 1.0);
+    leakBlowdownRow("pr_methane_export_30s_1s", false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 5.0, 0.02, 0.62, 101325.0, 30.0, 1.0);
+    leakBlowdownRow("pr_propane_11bara_10s_1s", false, new String[] {"propane"},
+        new double[] {1.0}, 300.0, 11.0, 0.01, 0.01, 0.62, 101325.0, 10.0, 1.0);
+    leakBlowdownRow("pr_methane_no_forward_flow_3s", false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 5.0, 1.0, 0.01, 0.62, 600000.0, 3.0, 1.0);
+    leakBlowdownRow("pr_methane_2bara_subsonic_1s", false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 2.0, 1.0, 0.01, 0.62, 190000.0, 1.0, 1.0);
+    leakBlowdownRow("pr_methane_ethane_50bara_5s", false,
+        new String[] {"methane", "ethane"}, new double[] {0.9, 0.1}, 300.0, 50.0, 1.0, 0.01, 0.62,
+        101325.0, 5.0, 1.0);
+    leakBlowdownRow("pr_single_step_depletion_100s", false, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 1.0, 0.01, 0.62, 101325.0, 100.0, 100.0);
+    // SRK rows are the pinned tests' own EOS, and evidence beside the PR oracle.
+    leakBlowdownRow("srk_methane_50bara_60s_1s", true, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 1.0, 0.01, 0.62, 101325.0, 60.0, 1.0);
+    leakBlowdownRow("srk_methane_export_30s_1s", true, new String[] {"methane"},
+        new double[] {1.0}, 300.0, 50.0, 5.0, 0.02, 0.62, 101325.0, 30.0, 1.0);
+    leakBlowdownRow("srk_propane_11bara_10s_1s", true, new String[] {"propane"},
+        new double[] {1.0}, 300.0, 11.0, 0.01, 0.01, 0.62, 101325.0, 10.0, 1.0);
+  }
+
+  static SystemInterface leakFluid(boolean srk, String[] names, double[] amounts,
+      double temperature, double pressureBar) {
+    SystemInterface fluid =
+        srk ? new SystemSrkEos(temperature, pressureBar) : new SystemPrEos(temperature, pressureBar);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], amounts[i]);
+    }
+    if (srk) {
+      fluid.setMixingRule("classic");
+    } else {
+      fluid.setMixingRule(2);
+    }
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(fluid).TPflash();
+    fluid.init(3);
+    fluid.initPhysicalProperties();
+    return fluid;
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void leakBlowdownRow(String label, boolean srk, String[] names, double[] amounts,
+      double temperature, double pressureBar, double volume, double diameter, double coefficient,
+      double back, double duration, double step) {
+    SystemInterface fluid = leakFluid(srk, names, amounts, temperature, pressureBar);
+    LeakModel leak = LeakModel.builder().fluid(fluid).holeDiameter(diameter).vesselVolume(volume)
+        .dischargeCoefficient(coefficient).backPressure(back).scenarioName(label).build();
+    SourceTermResult result = leak.calculateSourceTerm(duration, step);
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    System.out.println("input_t_k=" + fluid.getTemperature());
+    System.out.println("input_p_bara=" + fluid.getPressure());
+    double[] overall = fluid.getMolarComposition();
+    StringBuilder z = new StringBuilder();
+    for (int i = 0; i < overall.length; i++) {
+      z.append(i == 0 ? "" : ",")
+          .append(fluid.getPhase(0).getComponent(i).getName()).append(":").append(overall[i]);
+    }
+    System.out.println("input_z=" + z);
+    System.out.println("vessel_volume_m3=" + volume);
+    System.out.println("hole_diameter_m=" + diameter);
+    System.out.println("discharge_coefficient=" + coefficient);
+    System.out.println("back_pressure_pa=" + back);
+    System.out.println("duration_s=" + duration);
+    System.out.println("time_step_s=" + step);
+    System.out.println("declared_points=" + result.getNumberOfPoints());
+    System.out.println("initial_density_kg_m3=" + fluid.getDensity("kg/m3"));
+    System.out.println("initial_gamma=" + fluid.getGamma());
+    System.out.println("initial_beta=" + fluid.getBeta());
+    System.out.println("initial_phase_count=" + fluid.getNumberOfPhases());
+    System.out.println("initial_mass_flow_kg_s=" + leak.calculateMassFlowRate(fluid));
+    System.out.println("initial_jet_velocity_m_per_s=" + leak.calculateJetVelocity(fluid));
+    System.out.println("initial_jet_momentum_n=" + leak.calculateJetMomentum(fluid));
+    System.out.println("initial_droplet_smd_m=" + leak.calculateDropletSMD(fluid));
+    System.out.println("total_mass_released_kg=" + result.getTotalMassReleased());
+    System.out.println("peak_mass_flow_kg_s=" + result.getPeakMassFlowRate());
+    System.out.println("time_to_empty_s=" + result.getTimeToEmpty());
+    double[] time = result.getTime();
+    double[] rate = result.getMassFlowRate();
+    double[] temp = result.getTemperature();
+    double[] pressure = result.getPressure();
+    double[] beta = result.getVaporMassFraction();
+    double[] velocity = result.getJetVelocity();
+    double[] momentum = result.getJetMomentum();
+    double[] smd = result.getLiquidDropletSMD();
+    int recorded = 0;
+    for (int i = 0; i < time.length; i++) {
+      if (temp[i] != 0.0) {
+        recorded = i + 1;
+      }
+    }
+    System.out.println("recorded_points=" + recorded);
+    double area = Math.PI * diameter * diameter / 4.0;
+    for (int i = 0; i < recorded; i++) {
+      String prefix = "point_" + i + "_";
+      System.out.println(prefix + "t_s=" + time[i]);
+      System.out.println(prefix + "mass_flow_kg_s=" + rate[i]);
+      System.out.println(prefix + "temperature_k=" + temp[i]);
+      System.out.println(prefix + "pressure_pa=" + pressure[i]);
+      System.out.println(prefix + "beta=" + beta[i]);
+      System.out.println(prefix + "jet_velocity_m_per_s=" + velocity[i]);
+      System.out.println(prefix + "jet_momentum_n=" + momentum[i]);
+      System.out.println(prefix + "droplet_smd_m=" + smd[i]);
+      SystemInterface probe = fluid.clone();
+      probe.setTemperature(temp[i]);
+      probe.setPressure(pressure[i] / 1e5);
+      new neqsim.thermodynamicoperations.ThermodynamicOperations(probe).TPflash();
+      probe.init(3);
+      probe.initPhysicalProperties();
+      System.out.println(prefix + "gamma=" + probe.getGamma());
+      System.out.println(prefix + "phase_count=" + probe.getNumberOfPhases());
+      StringBuilder types = new StringBuilder();
+      StringBuilder densities = new StringBuilder();
+      for (int j = 0; j < probe.getNumberOfPhases(); j++) {
+        types.append(j == 0 ? "" : ",").append(probe.getPhase(j).getType().name());
+        densities.append(j == 0 ? "" : ",").append(probe.getPhase(j).getDensity("kg/m3"));
+      }
+      System.out.println(prefix + "phase_types=" + types);
+      System.out.println(prefix + "phase_densities_kg_m3=" + densities);
+      System.out.println(prefix + "fresh_density_kg_m3=" + probe.getDensity("kg/m3"));
+      double implied = velocity[i] > 0.0 ? rate[i] / (velocity[i] * area * coefficient) : Double.NaN;
+      System.out.println(prefix + "implied_velocity_density_kg_m3=" + implied);
+    }
+    System.out.println();
   }
 }

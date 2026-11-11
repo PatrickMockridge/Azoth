@@ -13,6 +13,7 @@ rule arriving.
 from __future__ import annotations
 
 from azoth.process.reference.absorption_column import absorption_column
+from azoth.process.reference.anti_surge_recycle import anti_surge_recycle
 from azoth.process.reference.component_splitter import component_splitter
 from azoth.process.reference.compressor import compressor
 from azoth.process.reference.cooler import cooler
@@ -42,6 +43,7 @@ from azoth.process.reference.throttling_valve import throttling_valve
 
 __all__ = [
     "absorption_column",
+    "anti_surge_recycle",
     "component_splitter",
     "compressor",
     "cooler",

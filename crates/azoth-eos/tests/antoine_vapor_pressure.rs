@@ -80,7 +80,8 @@ fn every_case_in_the_spec() {
 /// `log`, which names the two-term exponential instead. Reading the label alone returns
 /// `i-pentane` at 8.3e38 bar where the correlation gives 0.918, so the selection takes
 /// the fifth coefficient as well - NeqSim's own rule,
-/// `Component.usesDipprVaporPressureCorrelation`.
+/// `Component.usesDipprVaporPressureCorrelation`. Upstream #3768: the branch was unreachable
+/// and twenty components came out `1e38`-`1e96` bar.
 #[test]
 fn a_non_zero_exponent_selects_the_dippr_form() {
     use azoth_eos::AntoineForm::*;
@@ -181,4 +182,44 @@ fn the_wagner_form_is_refused_above_the_critical_temperature() {
             "{error}"
         );
     }
+}
+
+/// **A correlation that extrapolates past `Pc` is unavailable**, as upstream PR #4106 makes it:
+/// methane's `pow10` at 300 K gives `56.25` MPa against a `4.599` MPa critical pressure, and
+/// the gate is the *evaluated value's*, not the temperature's - the same coefficients at 150 K
+/// give `0.93` MPa and are admitted. Clipping to `Pc` would report a state the fluid is not in,
+/// so the refusal is an error rather than the critical pressure.
+#[test]
+fn an_extrapolation_past_the_critical_pressure_is_refused() {
+    let methane = |temperature: f64| {
+        antoine_vapor_pressure(
+            5.23243,
+            891.0098,
+            332.0975,
+            0.0,
+            0.0,
+            "pow10".parse().unwrap(),
+            kelvins(190.56),
+            pascals(4_599_000.0),
+            kelvins(temperature),
+        )
+    };
+    let error = methane(300.0).expect_err("the extrapolation is above Pc");
+    assert!(
+        error.to_string().contains("critical"),
+        "the refusal names the critical pressure: {error}"
+    );
+    let admitted = methane(150.0).expect("inside Pc");
+    assert!((admitted.p_sat.value - 929_295.952_300_307_3).abs() < 1e-6);
+}
+
+/// **A `none` row is unavailable, not Wagner's `Pc`** (upstream #3771, whose rows upstream now
+/// marks `none`): the label is an absence rather than a form, so a row carrying it is refused
+/// rather than evaluated from zeros.
+#[test]
+fn a_none_label_is_an_absence() {
+    assert!(
+        azoth_eos::form_from_type("none", 0.0).is_none(),
+        "`none` is a marker, not a form"
+    );
 }

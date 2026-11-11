@@ -17,9 +17,9 @@
 
 use azoth_cli::cli::{
     CheckArgs, Cli, Command, CrosscheckArgs, EditArgs, FormsArgs, McpArgs, PipeArgs, RunArgs,
-    ServeArgs,
+    ServeArgs, SheetsArgs,
 };
-use azoth_cli::{check, crosscheck, edit, forms, mcp, pipe, report, run, serve};
+use azoth_cli::{check, crosscheck, edit, forms, mcp, pipe, report, run, serve, sheets};
 use clap::Parser;
 
 fn main() -> std::process::ExitCode {
@@ -36,6 +36,7 @@ fn main() -> std::process::ExitCode {
         Command::Edit(args) => run_edit(args),
         Command::Mcp(args) => run_mcp(args),
         Command::Serve(args) => run_serve(args),
+        Command::Sheets(args) => run_sheets(args),
         Command::Crosscheck(args) => run_crosscheck(args),
     }
 }
@@ -58,6 +59,7 @@ fn run_serve(args: ServeArgs) -> std::process::ExitCode {
     match serve::serve(
         &args.flowsheet,
         &args.palette,
+        args.calc_book.as_deref(),
         args.port,
         &args.allow_origins,
     ) {
@@ -67,6 +69,23 @@ fn run_serve(args: ServeArgs) -> std::process::ExitCode {
             if let Some(field) = error.field() {
                 eprintln!("  offending input: {field}");
             }
+            std::process::ExitCode::from(2)
+        }
+    }
+}
+
+fn run_sheets(args: SheetsArgs) -> std::process::ExitCode {
+    match sheets::run(
+        &args.book,
+        args.command.as_deref(),
+        args.calculate.as_deref(),
+    ) {
+        Ok(text) => {
+            println!("{text}");
+            std::process::ExitCode::SUCCESS
+        }
+        Err(error) => {
+            eprintln!("azoth: {error}");
             std::process::ExitCode::from(2)
         }
     }

@@ -5,7 +5,7 @@
  * `two_port`, `separator`, `column`, and so on — and which the *library* names, in `Form.family`.
  *
  * **The grouping is not read off the id, and the difference is a defect this file used to have.**
- * Every id is `unit_ops.<leaf>`, so a split on `.` takes the leaf for a family: all twenty-nine
+ * Every id is `unit_ops.<leaf>`, so a split on `.` takes the leaf for a family: all thirty
  * entries came out in one group called `other`. `Form.source` cannot supply it either — that is
  * NeqSim's taxonomy, where `cooler` is a `two_port` entry inside NeqSim's `heatexchanger/`
  * directory.
@@ -41,17 +41,24 @@ export function Palette({ forms, onAdd }: PaletteProps) {
         <div className="group" key={name}>
           <div className="label">{familyLabel(name)}</div>
           {entries.map((form) => (
-            <button
-              key={form.id}
-              type="button"
-              className={`entry${form.runnable ? "" : " refused"}`}
-              title={form.refusal ?? form.source ?? form.id}
-              disabled={!form.runnable}
-              onClick={() => onAdd(form.id)}
-            >
-              <span className="name">{form.name}</span>
-              <span className="tag">{form.parameters.length}</span>
-            </button>
+            <div key={form.id} className="palette-row">
+              <button
+                type="button"
+                className={`entry${form.runnable ? "" : " refused"}`}
+                title={
+                  form.runnable
+                    ? `add ${form.name} to the flowsheet`
+                    : (form.refusal ?? "the executor refuses this entry")
+                }
+                disabled={!form.runnable}
+                onClick={() => onAdd(form.id)}
+              >
+                <span className="name">{form.name}</span>
+              </button>
+              {form.runnable ? null : (
+                <p className="refusal">{form.refusal ?? "the executor refuses this entry"}</p>
+              )}
+            </div>
           ))}
         </div>
       ))}

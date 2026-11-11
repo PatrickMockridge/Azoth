@@ -83,7 +83,20 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: 59 -> 60 when `eos.interface_properties` moved: its kernel now takes a `Mixture` and
 #: the interaction matrix, the same two reasons as LGT, so the generated wrapper it had
 #: could no longer be derived.
-KNOWN_HAND_WRITTEN = 60
+#: 60 -> 59 when the generator learned an `interval = true` input:
+#: `thermal.conduction_plane_wall`'s `dT` is a `TemperatureInterval` it had refused, so
+#: that binding - and the hand-written `thermal.rs` module with it - could go.
+#: 59 -> 60 when `process.pump`'s `curve` became an optional `record_list`: the generator
+#: refuses an `Option<&[Row]>` (a record slice it can derive, an absent one it cannot), so
+#: the binding moved into the process module where the row is built by hand.
+#: 60 -> 61 when `process.filter` gained two optional `record_list`s for the same reason.
+#: 61 -> 62 when `process.pipe`'s `fittings` did too.
+#: 62 -> 63 when `process.compressor`'s `curve` did too.
+#: 63 -> 64 when `process.turbo_expander_compressor` brought four optional record lists at
+#: once - the UC curve, the two Q/N curves, the map and the IGV penalty curve.
+#: 64 -> 65 when `process.map_turbo_expander_compressor` brought the same optional `curve`.
+#: 65 -> 66 when `process.separator_performance` brought its two optional curve tables.
+KNOWN_HAND_WRITTEN = 66
 
 
 def _tools_module(name: str) -> ModuleType:

@@ -17,33 +17,36 @@
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 pub use uom::si::f64::{
-    AmountOfSubstance, Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, Energy,
-    HeatTransfer, Length, Mass, MassDensity, MassRate, Molality, MolarConcentration, MolarEnergy,
-    MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure, SpecificHeatCapacity,
-    SurfaceTension, TemperatureInterval, ThermalConductance, ThermalConductivity,
-    ThermodynamicTemperature, Velocity, Volume, VolumeRate,
+    AmountOfSubstance, Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, Energy, Force,
+    Frequency, HeatFluxDensity, HeatTransfer, Length, Mass, MassDensity, MassFlux, MassRate,
+    Molality, MolarConcentration, MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power,
+    Pressure, SpecificHeatCapacity, SurfaceTension, TemperatureInterval, ThermalConductance,
+    ThermalConductivity, ThermodynamicTemperature, Time, Velocity, Volume, VolumeRate,
+    VolumetricPowerDensity,
 };
 pub use uom::si::{
     acceleration::standard_gravity, amount_of_substance::kilomole, amount_of_substance::mole,
     area::square_meter, diffusion_coefficient::square_meter_per_second,
     dynamic_viscosity::pascal_second, electric_charge::coulomb, energy::btu_it, energy::joule,
-    energy::kilojoule, energy::megajoule, heat_transfer::watt_per_square_meter_kelvin,
+    energy::kilojoule, energy::megajoule, force::newton, frequency::hertz,
+    heat_flux_density::watt_per_square_meter, heat_transfer::watt_per_square_meter_kelvin,
     length::angstrom, length::centimeter, length::foot, length::inch, length::meter,
     length::millimeter, mass::kilogram, mass::ton, mass_density::kilogram_per_cubic_meter,
-    mass_rate::kilogram_per_hour, mass_rate::kilogram_per_second, mass_rate::ton_per_hour,
-    molality::mole_per_kilogram, molar_concentration::kilomole_per_cubic_meter,
-    molar_concentration::mole_per_cubic_meter, molar_energy::joule_per_mole,
-    molar_energy::kilojoule_per_mole, molar_heat_capacity::joule_per_kelvin_mole,
-    molar_mass::kilogram_per_mole, molar_volume::cubic_meter_per_mole, power::kilowatt,
-    power::megawatt, power::watt, pressure::atmosphere, pressure::bar, pressure::kilopascal,
-    pressure::megapascal, pressure::pascal, specific_heat_capacity::joule_per_kilogram_kelvin,
+    mass_flux::kilogram_per_square_meter_second, mass_rate::kilogram_per_hour,
+    mass_rate::kilogram_per_second, mass_rate::ton_per_hour, molality::mole_per_kilogram,
+    molar_concentration::kilomole_per_cubic_meter, molar_concentration::mole_per_cubic_meter,
+    molar_energy::joule_per_mole, molar_energy::kilojoule_per_mole,
+    molar_heat_capacity::joule_per_kelvin_mole, molar_mass::kilogram_per_mole,
+    molar_volume::cubic_meter_per_mole, power::kilowatt, power::megawatt, power::watt,
+    pressure::atmosphere, pressure::bar, pressure::kilopascal, pressure::megapascal,
+    pressure::pascal, specific_heat_capacity::joule_per_kilogram_kelvin,
     specific_heat_capacity::kilojoule_per_kilogram_kelvin, surface_tension::newton_per_meter,
     temperature_interval::degree_fahrenheit, temperature_interval::kelvin as kelvin_interval,
     thermal_conductance::watt_per_kelvin, thermal_conductivity::watt_per_meter_kelvin,
-    thermodynamic_temperature::kelvin, time::hour, time::minute, velocity::foot_per_second,
-    velocity::meter_per_second, volume::cubic_meter, volume::liter,
+    thermodynamic_temperature::kelvin, time::hour, time::minute, time::second,
+    velocity::foot_per_second, velocity::meter_per_second, volume::cubic_meter, volume::liter,
     volume_rate::cubic_meter_per_hour, volume_rate::cubic_meter_per_second,
-    volume_rate::liter_per_minute,
+    volume_rate::liter_per_minute, volumetric_power_density::watt_per_cubic_meter,
 };
 
 /// A length in metres.
@@ -89,6 +92,12 @@ pub fn meters_per_second(value: f64) -> Velocity {
     Velocity::new::<meter_per_second>(value)
 }
 
+/// A frequency in hertz, which is `1/s`.
+#[must_use]
+pub fn per_second(value: f64) -> Frequency {
+    Frequency::new::<hertz>(value)
+}
+
 /// A diffusion coefficient in square metres per second.
 #[must_use]
 pub fn square_meters_per_second(value: f64) -> DiffusionCoefficient {
@@ -99,6 +108,12 @@ pub fn square_meters_per_second(value: f64) -> DiffusionCoefficient {
 #[must_use]
 pub fn kilograms_per_cubic_meter(value: f64) -> MassDensity {
     MassDensity::new::<kilogram_per_cubic_meter>(value)
+}
+
+/// A mass flux in kilograms per square metre second.
+#[must_use]
+pub fn kilograms_per_square_meter_second(value: f64) -> MassFlux {
+    MassFlux::new::<kilogram_per_square_meter_second>(value)
 }
 
 /// A mass in kilograms.
@@ -134,6 +149,12 @@ pub fn pascals(value: f64) -> Pressure {
 #[must_use]
 pub fn kelvins(value: f64) -> ThermodynamicTemperature {
     ThermodynamicTemperature::new::<kelvin>(value)
+}
+
+/// A duration in seconds.
+#[must_use]
+pub fn seconds(value: f64) -> Time {
+    Time::new::<second>(value)
 }
 
 /// A temperature *interval* in kelvin: a difference between two temperatures,
@@ -214,6 +235,16 @@ pub fn watts_per_square_meter_kelvin(value: f64) -> HeatTransfer {
     HeatTransfer::new::<watt_per_square_meter_kelvin>(value)
 }
 
+/// A heat flux density in watts per square metre.
+///
+/// The radiant flux a flare's point source delivers at a ground distance; `uom` carries it
+/// as `HeatFluxDensity`, the same exponents as a heat-transfer coefficient without the
+/// temperature.
+#[must_use]
+pub fn watts_per_square_meter(value: f64) -> HeatFluxDensity {
+    HeatFluxDensity::new::<watt_per_square_meter>(value)
+}
+
 /// A thermal conductance in watts per kelvin.
 ///
 /// `UA`, the heat exchanger rating's whole parameter: a heat-transfer coefficient times
@@ -221,6 +252,12 @@ pub fn watts_per_square_meter_kelvin(value: f64) -> HeatTransfer {
 #[must_use]
 pub fn watts_per_kelvin(value: f64) -> ThermalConductance {
     ThermalConductance::new::<watt_per_kelvin>(value)
+}
+
+/// A force in newtons.
+#[must_use]
+pub fn newtons(value: f64) -> Force {
+    Force::new::<newton>(value)
 }
 
 /// A surface tension in newtons per metre.
@@ -470,6 +507,18 @@ pub fn megawatts(value: f64) -> Power {
     Power::new::<megawatt>(value)
 }
 
+/// A volumetric power density in watts per cubic metre.
+#[must_use]
+pub fn watts_per_cubic_meter(value: f64) -> VolumetricPowerDensity {
+    VolumetricPowerDensity::new::<watt_per_cubic_meter>(value)
+}
+
+/// A time in hours.
+#[must_use]
+pub fn hours(value: f64) -> Time {
+    Time::new::<hour>(value)
+}
+
 /// A length in feet.
 #[must_use]
 pub fn feet(value: f64) -> Length {
@@ -703,6 +752,93 @@ impl Div<f64> for MolarFlow {
     }
 }
 
+/// **The second dimension in the library with a type of its own.** `uom` carries a molar
+/// concentration and a molar flow and no quantity for one over a volume over a time, so the
+/// reactor's volumetric reaction rate - `mol/(m**3*s)` - converts through this type, exactly as
+/// a molar flow converts through [`MolarFlow`].
+///
+/// The arithmetic is the bound, as it is there: rates add, subtract and compare, and a rate
+/// scales by a scalar. There is no product of two rates, because no calculation here has one.
+#[derive(Debug, Clone, Copy, Default, PartialEq, PartialOrd)]
+pub struct MolarRateDensity {
+    /// The SI base magnitude, in `mol/(m**3*s)`.
+    pub value: f64,
+}
+
+impl MolarRateDensity {
+    /// A rate from its SI base magnitude.
+    #[must_use]
+    pub fn from_si(value: f64) -> Self {
+        Self { value }
+    }
+
+    /// A rate in moles per cubic metre per second, which is the dimension's SI base.
+    #[must_use]
+    pub fn moles_per_cubic_meter_second(value: f64) -> Self {
+        Self { value }
+    }
+}
+
+impl Add for MolarRateDensity {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            value: self.value + other.value,
+        }
+    }
+}
+
+impl Sub for MolarRateDensity {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            value: self.value - other.value,
+        }
+    }
+}
+
+impl Neg for MolarRateDensity {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        Self { value: -self.value }
+    }
+}
+
+impl AddAssign for MolarRateDensity {
+    fn add_assign(&mut self, other: Self) {
+        self.value += other.value;
+    }
+}
+
+impl SubAssign for MolarRateDensity {
+    fn sub_assign(&mut self, other: Self) {
+        self.value -= other.value;
+    }
+}
+
+impl Mul<f64> for MolarRateDensity {
+    type Output = Self;
+
+    fn mul(self, scale: f64) -> Self {
+        Self {
+            value: self.value * scale,
+        }
+    }
+}
+
+impl Div<f64> for MolarRateDensity {
+    type Output = Self;
+
+    fn div(self, scale: f64) -> Self {
+        Self {
+            value: self.value / scale,
+        }
+    }
+}
+
 /// A molar flow rate in kilomoles per hour.
 ///
 /// The vocabulary's constructor for `kmol/h`, and the reason the generated
@@ -721,6 +857,15 @@ pub fn kilomoles_per_hour(value: f64) -> MolarFlow {
 #[must_use]
 pub fn moles_per_second(value: f64) -> MolarFlow {
     MolarFlow::moles_per_second(value)
+}
+
+/// A volumetric reaction rate in moles per cubic metre per second, the dimension's SI base.
+///
+/// The constructor is `MolarRateDensity`'s own, kept here because the generated conversion
+/// table calls a free function for every unit whose dimension `uom` does not carry.
+#[must_use]
+pub fn moles_per_cubic_meter_second(value: f64) -> MolarRateDensity {
+    MolarRateDensity::moles_per_cubic_meter_second(value)
 }
 
 /// The canonical unit strings the spec schema permits.

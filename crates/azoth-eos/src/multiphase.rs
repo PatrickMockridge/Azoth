@@ -151,6 +151,21 @@ pub(crate) fn coefficients(
     reduced: &ReducedParameters,
     phases: &[MultiphasePhase],
 ) -> Result<Vec<Vec<f64>>> {
+    coefficients_with_dataset(
+        mixture,
+        reduced,
+        phases,
+        crate::pitzer_phase::PitzerDatasetSelection::Auto,
+    )
+}
+
+/// The same dispatch over a stated Pitzer dataset, which the hydrate flash needs.
+pub(crate) fn coefficients_with_dataset(
+    mixture: &Mixture,
+    reduced: &ReducedParameters,
+    phases: &[MultiphasePhase],
+    dataset: crate::pitzer_phase::PitzerDatasetSelection,
+) -> Result<Vec<Vec<f64>>> {
     let mut out = Vec::with_capacity(phases.len());
     for phase in phases {
         match phase.kind {
@@ -159,7 +174,12 @@ pub(crate) fn coefficients(
                 out.push(state.ln_phi.iter().map(|value| value.exp()).collect());
             }
             PhaseKind::Wax => out.push(wax_coefficients(mixture, reduced)?),
-            PhaseKind::Ge => out.push(ge_coefficients(mixture, reduced, &phase.composition)?),
+            PhaseKind::Ge => out.push(ge_coefficients_with_dataset(
+                mixture,
+                reduced,
+                &phase.composition,
+                dataset,
+            )?),
         }
     }
     Ok(out)
@@ -175,10 +195,11 @@ pub(crate) fn coefficients(
 /// * [`AzothError::InvalidInput`] if the mixture carries no names, which is what the
 ///   parameter datasets are keyed by, or if the brine's topology is one the loaded dataset
 ///   does not cover.
-fn ge_coefficients(
+fn ge_coefficients_with_dataset(
     mixture: &Mixture,
     reduced: &ReducedParameters,
     composition: &[f64],
+    dataset: crate::pitzer_phase::PitzerDatasetSelection,
 ) -> Result<Vec<f64>> {
     let names = mixture.names().ok_or_else(|| {
         AzothError::invalid_input(
@@ -189,8 +210,13 @@ fn ge_coefficients(
         )
     })?;
     let borrowed: Vec<&str> = names.iter().map(String::as_str).collect();
-    let coefficients =
-        crate::pitzer_phase(&borrowed, reduced.t_kelvin, reduced.pressure, composition)?;
+    let coefficients = crate::pitzer_phase::pitzer_phase_with_dataset(
+        &borrowed,
+        reduced.t_kelvin,
+        reduced.pressure,
+        composition,
+        dataset,
+    )?;
     Ok(coefficients
         .ln_phi
         .iter()

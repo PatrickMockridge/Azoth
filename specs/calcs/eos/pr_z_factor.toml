@@ -1,5 +1,6 @@
 id = "eos.pr_z_factor"
 name = "Peng-Robinson compressibility factor"
+summary = "Peng-Robinson compressibility factor at a temperature and pressure. Use it for gas and liquid density and volumetric-flow estimates with a cubic EOS."
 equation = """\
     z**3 - (1 - b_reduced)*z**2 + (a_reduced - 3*b_reduced**2 - 2*b_reduced)*z - \
     (a_reduced*b_reduced - b_reduced**2 - b_reduced**3) = 0"""

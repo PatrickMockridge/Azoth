@@ -22,6 +22,7 @@ product_p = 500000.0
 product_t = 498.5366986205672
 product_h = 6861.2392872763785
 heat_duty = 0.0
+agitator_power = 10.0
 
 [[cases]]
 id = "isothermal_800_k"
@@ -46,6 +47,7 @@ product_p = 500000.0
 product_t = 800.0
 product_h = 16686.180909326755
 heat_duty = 9824.941623206952
+agitator_power = 10.0
 
 [[cases]]
 id = "isothermal_800_k_3bara"
@@ -71,3 +73,31 @@ product_p = 300000.0
 product_t = 800.0
 product_h = 16685.47174570607
 heat_duty = 9824.232459586266
+agitator_power = 10.0
+
+[[cases]]
+id = "the_stored_fields_echo_and_their_product"
+tolerance = 0.0005
+source = "The capture's fourth row: the adiabatic reaction with `setVesselVolume(20)`, `setResidenceTime(0.5, \"hr\")` and `setAgitatorPowerPerVolume(2)`. **`run` reads none of the three** - the product state is the first row's to every printed digit - and what moves is `getAgitatorPower`, `20 * 2 = 40` kW, and `toMap`'s echo of the stored values.\n"
+[cases.inputs]
+components = ["methane", "oxygen", "CO2", "water", "nitrogen"]
+feed_n = 1.0
+feed_z = [0.05, 0.10, 0.02, 0.03, 0.80]
+feed_p = 500000.0
+feed_t = 500.0
+reaction = "methanecombustion"
+limiting_reactant = "oxygen"
+conversion = 0.5
+isothermal = false
+pressure_drop = 0.0
+vessel_volume = 20.0
+residence_time = 0.5
+agitator_power_per_volume = 2000.0
+[cases.expected]
+product_n = 1.0
+product_z = [0.025, 0.05, 0.045, 0.08, 0.8]
+product_p = 500000.0
+product_t = 498.5366986205672
+product_h = 6861.2392872763785
+heat_duty = 0.0
+agitator_power = 40.0

@@ -35,6 +35,7 @@ use azoth_process::middleware::session::Workspace;
 use azoth_process::middleware::{catalogue, envelope};
 use azoth_process::palette_gen::PALETTE;
 use azoth_process::{ExecutionOrder, UnitOpSpec};
+use azoth_sheets::workspace::{Command as SheetCommand, SheetWorkspace};
 
 /// The palette the module carries.
 fn palette() -> Vec<UnitOpSpec> {
@@ -162,6 +163,65 @@ impl Editor {
     #[must_use]
     pub fn dirty(&self) -> bool {
         self.workspace.dirty()
+    }
+}
+
+/// A calculation book: sheets, their inputs, and their results.
+///
+/// **A second document, not a second flowsheet.** It has its own envelope and its own commands;
+/// the calculation catalogue rides the one `palette_json` call because both are facts about the
+/// library rather than about a document.
+#[wasm_bindgen]
+pub struct SheetEditor {
+    workspace: SheetWorkspace,
+}
+
+#[wasm_bindgen]
+impl SheetEditor {
+    /// Open a book from its TOML. An empty document is a blank book.
+    ///
+    /// # Errors
+    /// A JS exception on a document the schema does not read.
+    #[wasm_bindgen(constructor)]
+    pub fn new(document: &str) -> Result<SheetEditor, JsValue> {
+        SheetWorkspace::open(document)
+            .map(|workspace| SheetEditor { workspace })
+            .map_err(failed)
+    }
+
+    /// Apply one command and answer with the sheet envelope.
+    ///
+    /// # Errors
+    /// A JS exception for a command that is not one or cannot take effect.
+    pub fn apply(&mut self, command: &str) -> Result<String, JsValue> {
+        let command: SheetCommand = serde_json::from_str(command).map_err(failed)?;
+        self.workspace.apply(&command).map_err(failed)?;
+        self.envelope()
+    }
+
+    /// Calculate one sheet, or every stale sheet when `sheet` is absent.
+    ///
+    /// # Errors
+    /// A JS exception for a sheet id the book does not carry.
+    pub fn calculate(&mut self, sheet: Option<String>) -> Result<String, JsValue> {
+        self.workspace.calculate(sheet.as_deref()).map_err(failed)?;
+        self.envelope()
+    }
+
+    /// The envelope as it stands.
+    ///
+    /// # Errors
+    /// A JS exception if the book cannot be written.
+    pub fn envelope(&self) -> Result<String, JsValue> {
+        self.workspace.to_json().map_err(failed)
+    }
+
+    /// The book as TOML, which is what a save writes.
+    ///
+    /// # Errors
+    /// A JS exception if the book cannot be written.
+    pub fn document(&self) -> Result<String, JsValue> {
+        self.workspace.document().map_err(failed)
     }
 }
 

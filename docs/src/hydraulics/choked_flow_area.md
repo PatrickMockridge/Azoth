@@ -4,6 +4,8 @@
 
 `hydraulics.choked_flow_area`
 
+Sizes the minimum flow area for choked gas flow through a restriction from mass flow, upstream density, pressure and heat-capacity ratio. Use it for relief and vent-path screening.
+
 ## Equation
 
 $$
@@ -48,7 +50,7 @@ A = m_dot / (sqrt(k * rho0 * P0) * (2 / (k + 1))**((k + 1) / (2 * (k - 1))))
 | `k <= 1.66667` | warns `OUT_OF_VALID_RANGE` | No known gas has an isentropic exponent above 5/3, the monatomic limit. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

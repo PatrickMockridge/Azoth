@@ -2,10 +2,15 @@
 //!
 //! `PackingSpecificationLibrary` and `PackingSpecification`, which `PackingHydraulicsCalculator`
 //! takes its geometry from. The table is 22 built-ins - thirteen random and nine structured,
-//! written into the class - **and the CSV is loaded after them, so a CSV row wins a name
-//! collision**: measured, `Pall-Ring-50` resolves to the file's *plastic* row (111.1 m**2/m**3,
-//! 0.919, factor 180) rather than the built-in's metal one (120.0, 0.96, 66), because both
-//! normalize to `pallring50` and the later registration replaces the earlier.
+//! written into the class - registered under their name and a `name-material` alias. The CSV then
+//! adds **material-qualified** entries and never replaces a built-in (upstream PR #4405, #4380):
+//! `Pall-Ring-50` is the built-in metal estimate (120.0 m**2/m**3, 0.96, factor 66),
+//! `Pall-Ring-50-metal` the same, and `Pall-Ring-50-plastic` the file's plastic row (111.1 m**2/m**3,
+//! 0.919, factor 180). Before the fix the file was keyed by display name alone, so the plastic row's
+//! later line overwrote the built-in's geometry.
+//!
+//! A row whose category is not `random` or `structured` is not a packing at all - the file's
+//! `placeholder` rows are stand-ins - and an unknown name is refused rather than defaulted.
 //!
 //! The file is `data/packing/packing.csv`, compiled from NeqSim's `designdata/Packing.csv` by
 //! `tools/gen_databank.py`'s sibling for this table; `databank/manifest.toml` records every one of
@@ -196,66 +201,112 @@ const STRUCTURED: &[StructuredRow] = &[
 const PACKING_CSV: &str = include_str!("../../../data/packing/packing.csv");
 
 /// The registry, built once: the built-ins first, then the file.
-static PACKINGS: LazyLock<HashMap<String, PackingSpecification>> = LazyLock::new(|| {
-    let mut table = HashMap::new();
-    for (name, material, size, area, void, factor, liquid, gas) in RANDOM {
-        register(
-            &mut table,
-            PackingSpecification {
-                name: (*name).to_string(),
-                category: "random".to_string(),
-                material: (*material).to_string(),
-                nominal_size_mm: *size,
-                specific_surface_area: *area,
-                void_fraction: *void,
-                packing_factor: *factor,
-                critical_surface_tension: critical_surface_tension(material),
-                billet_liquid_constant: *liquid,
-                billet_gas_constant: *gas,
-            },
-        );
-    }
-    for (name, material, area, void, factor, liquid, gas) in STRUCTURED {
-        register(
-            &mut table,
-            PackingSpecification {
-                name: (*name).to_string(),
-                category: "structured".to_string(),
-                material: (*material).to_string(),
-                nominal_size_mm: 0.0,
-                specific_surface_area: *area,
-                void_fraction: *void,
-                packing_factor: *factor,
-                critical_surface_tension: critical_surface_tension(material),
-                billet_liquid_constant: *liquid,
-                billet_gas_constant: *gas,
-            },
-        );
-    }
-    load_csv(&mut table);
-    table
-});
-
-/// Register one specification under its normalized name.
-fn register(
-    table: &mut HashMap<String, PackingSpecification>,
-    specification: PackingSpecification,
-) {
-    table.insert(normalize(&specification.name), specification);
+///
+/// `display_names` is `PackingSpecificationLibrary.DISPLAY_NAMES` - the names `register` was called
+/// with, in registration order, so the aliases are keys without being listed.
+struct Registry {
+    by_key: HashMap<String, PackingSpecification>,
+    display_names: Vec<String>,
 }
 
-/// Load the compiled CSV **after** the built-ins, which is what lets a file row replace one.
+static PACKINGS: LazyLock<Registry> = LazyLock::new(|| {
+    let mut registry = Registry {
+        by_key: HashMap::new(),
+        display_names: Vec::new(),
+    };
+    let built_in = |name: &str,
+                    material: &str,
+                    category: &str,
+                    size: f64,
+                    area: f64,
+                    void: f64,
+                    factor: f64,
+                    liquid: f64,
+                    gas: f64| {
+        PackingSpecification {
+            name: name.to_string(),
+            category: category.to_string(),
+            material: material.to_string(),
+            nominal_size_mm: size,
+            specific_surface_area: area,
+            void_fraction: void,
+            packing_factor: factor,
+            critical_surface_tension: critical_surface_tension(material),
+            billet_liquid_constant: liquid,
+            billet_gas_constant: gas,
+        }
+    };
+    for (name, material, size, area, void, factor, liquid, gas) in RANDOM {
+        let specification = built_in(
+            name, material, "random", *size, *area, *void, *factor, *liquid, *gas,
+        );
+        register(&mut registry, specification.clone());
+        register_alias(&mut registry, &format!("{name}-{material}"), &specification);
+    }
+    for (name, material, area, void, factor, liquid, gas) in STRUCTURED {
+        let specification = built_in(
+            name,
+            material,
+            "structured",
+            0.0,
+            *area,
+            *void,
+            *factor,
+            *liquid,
+            *gas,
+        );
+        register(&mut registry, specification.clone());
+        register_alias(&mut registry, &format!("{name}-{material}"), &specification);
+    }
+    load_csv(&mut registry);
+    registry
+});
+
+/// Register one specification under its normalized name, and list it as a display name.
+fn register(registry: &mut Registry, specification: PackingSpecification) {
+    let name = specification.name.clone();
+    register_alias(registry, &name, &specification);
+    registry.display_names.push(name);
+}
+
+/// Register an extra alias for an existing specification.
+fn register_alias(registry: &mut Registry, alias: &str, specification: &PackingSpecification) {
+    registry
+        .by_key
+        .insert(normalize(alias), specification.clone());
+}
+
+/// Whether a name or alias resolves.
+fn contains(registry: &Registry, name: &str) -> bool {
+    registry.by_key.contains_key(&normalize(name))
+}
+
+/// Load the compiled CSV **after** the built-ins, **without replacing any of them**.
 ///
-/// `loadCsvPackings`, including its two derivations: the Billet liquid constant is the `Cp`
-/// column where it is positive and one where it is not, and the gas constant is `Ch` divided by
-/// six, floored at 0.4. A row whose area, void fraction or factor is not positive is skipped
-/// rather than carried, which is the class's own `parseCsvLine`.
-fn load_csv(table: &mut HashMap<String, PackingSpecification>) {
+/// `loadCsvPackings` as upstream PR #4405 left it: the display name carries the material -
+/// `Pall-Ring-50-plastic` - and a row whose qualified name is already registered is skipped, so
+/// the file's metal 50 mm ring (`112.6`, `0.951`, factor `85`) does not displace the built-in
+/// metal estimate (`120.0`, `0.96`, `66`). A qualified name that is new is also registered under
+/// its unqualified form, unless that name already exists - which is how `Pall-Ring-35` and
+/// `Pall-Ring-15` are reachable and `Pall-Ring-50` stays the built-in.
+///
+/// The two derivations are the class's: the Billet liquid constant is the `Cp` column where it is
+/// positive and one where it is not, and the gas constant is `Ch` divided by six, floored at 0.4.
+/// A row whose category is neither `random` nor `structured` - the file's four `placeholder`
+/// rows - is not a packing, and a row whose area, void fraction or factor is not positive is
+/// skipped rather than carried; both are `parseCsvLine`'s own checks.
+fn load_csv(registry: &mut Registry) {
     for line in PACKING_CSV.lines().skip(1) {
         let fields: Vec<&str> = line.split(',').collect();
         if fields.len() < 9 {
             continue;
         }
+        let category = fields[1].trim();
+        if !category.eq_ignore_ascii_case("random") && !category.eq_ignore_ascii_case("structured")
+        {
+            continue;
+        }
+        let material = fields[2].trim().to_lowercase();
         let Ok(size) = fields[3].trim().parse::<f64>() else {
             continue;
         };
@@ -271,48 +322,56 @@ fn load_csv(table: &mut HashMap<String, PackingSpecification>) {
         }
         let cp = fields[7].trim().parse::<f64>().unwrap_or(1.0);
         let ch = fields[8].trim().parse::<f64>().unwrap_or(0.4);
-        let category = fields[1].trim();
-        let material = fields[2].trim();
-        register(
-            table,
-            PackingSpecification {
-                name: display_name(fields[0].trim(), category, size),
-                category: category.to_string(),
-                material: material.to_string(),
-                nominal_size_mm: size,
-                specific_surface_area: area,
-                void_fraction: void,
-                packing_factor: factor,
-                critical_surface_tension: critical_surface_tension(material),
-                billet_liquid_constant: if cp > 0.0 { cp } else { 1.0 },
-                billet_gas_constant: if ch > 0.0 { ch / 6.0 } else { 0.4 },
-            },
+        let name = format!(
+            "{}-{material}",
+            display_name(fields[0].trim(), category, size)
         );
+        if contains(registry, &name) {
+            continue;
+        }
+        let specification = PackingSpecification {
+            name: name.clone(),
+            category: category.to_string(),
+            material: material.clone(),
+            nominal_size_mm: size,
+            specific_surface_area: area,
+            void_fraction: void,
+            packing_factor: factor,
+            critical_surface_tension: critical_surface_tension(&material),
+            billet_liquid_constant: if cp > 0.0 { cp } else { 1.0 },
+            billet_gas_constant: if ch > 0.0 { ch / 6.0 } else { 0.4 },
+        };
+        register(registry, specification.clone());
+        let suffix = format!("-{material}");
+        let legacy = name.strip_suffix(&suffix).unwrap_or(&name);
+        if !contains(registry, legacy) {
+            register_alias(registry, legacy, &specification);
+        }
     }
 }
 
 /// A packing by name or alias, or `None`.
 #[must_use]
 pub fn packing(name: &str) -> Option<&'static PackingSpecification> {
-    PACKINGS.get(&normalize(name))
+    PACKINGS.by_key.get(&normalize(name))
 }
 
-/// A packing by name, falling back to `Pall-Ring-50`, which is the class's own default.
+/// A packing by name, or `None` - **the class's own refusal**, since upstream PR #4405.
 ///
-/// # Panics
-/// Never in practice: the fallback's own row is a built-in, so it is registered by construction.
+/// NeqSim's `getOrDefault` used to answer an unknown preset with `Pall-Ring-50`; #4380 replaced
+/// it with `require`, whose `IllegalArgumentException` this reports as `None` and the caller
+/// turns into an `InvalidInput`. A default would make a misspelt packing a silent geometry
+/// change, which is the defect the fix is about.
 #[must_use]
-pub fn packing_or_default(name: &str) -> &'static PackingSpecification {
+pub fn required_packing(name: &str) -> Option<&'static PackingSpecification> {
     packing(name)
-        .or_else(|| packing("Pall-Ring-50"))
-        .expect("Pall-Ring-50 is a built-in packing")
 }
 
-/// Every registered packing's name, sorted - the class's own `getPackingNames` reports them in
-/// registration order, and a sorted list is the same set without depending on a `HashMap`'s.
+/// Every registered packing's display name, in registration order - `getPackingNames`' own list.
+///
+/// Aliases are lookup keys and are not listed; `Pall-Ring-50-plastic` is a display name because
+/// the file registered it, while a built-in's `Pall-Ring-50-metal` is an alias.
 #[must_use]
-pub fn packing_names() -> Vec<&'static str> {
-    let mut names: Vec<&'static str> = PACKINGS.values().map(|p| p.name.as_str()).collect();
-    names.sort_unstable();
-    names
+pub fn packing_names() -> Vec<String> {
+    PACKINGS.display_names.clone()
 }

@@ -161,10 +161,65 @@ export function toDisplayUnit(units: Units, value: number, unit: string): number
   return (value + shown.offset) * shown.factor;
 }
 
+/**
+ * The SI magnitude a value the spec wrote in its own declared unit stands for.
+ *
+ * **Not `toDisplayUnit`, because the declared unit is not the display unit.** A spec may declare
+ * `mm` while the set in force reads lengths in `m`; a worked example is the spec's own number and
+ * has to become the SI magnitude a sheet stores before the catalogue's display conversion applies.
+ */
+export function declaredToSI(units: Units, value: number, declared: string): number {
+  const declaration = units.declared[declared];
+  const factor = declaration?.factor;
+  if (factor === undefined || factor === null || !(factor > 0)) {
+    return value;
+  }
+  return (value + (declaration?.offset ?? 0)) * factor;
+}
+
 /** The unit a value declared in `unit` is shown and typed in. */
 export function displayUnitOf(units: Units | null, unit: string | null): string | null {
   if (unit === null || units === null) {
     return unit;
   }
   return displayOf(units, unit).unit;
+}
+
+/**
+ * A unit as an engineer reads it, from the vocabulary's ASCII spelling.
+ *
+ * **The catalogue's units are machine-readable, not typography.** `kg/m**3` is the one string the
+ * conversion, the CSV and the wire can agree on; the screen can say `kg/m³` without a second
+ * vocabulary. This is display only and must never be fed back into `displayOf`.
+ */
+export function engineeringUnit(unit: string): string {
+  const superscript: Record<string, string> = {
+    "-": "⁻",
+    "0": "⁰",
+    "1": "¹",
+    "2": "²",
+    "3": "³",
+    "4": "⁴",
+    "5": "⁵",
+    "6": "⁶",
+    "7": "⁷",
+    "8": "⁸",
+    "9": "⁹",
+  };
+  return unit
+    .replace(/\*\*(-?\d+)/g, (_match, exponent: string) =>
+      [...exponent].map((character) => superscript[character] ?? character).join(""),
+    )
+    .replace(/\*/g, "·")
+    .replace(/\bdegC\b/g, "°C")
+    .replace(/\bdegF\b/g, "°F");
+}
+
+/** The display unit, formatted for a field or a result line; a dimensionless unit is no label. */
+export function unitLabelOf(units: Units | null, unit: string | null): string | null {
+  const shown = displayUnitOf(units, unit);
+  if (shown === null || shown === "dimensionless") {
+    return null;
+  }
+  return engineeringUnit(shown);
 }

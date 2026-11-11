@@ -1,17 +1,10 @@
 id = "eos.tbp_fraction_properties"
 name = "TBP pseudo-component properties"
+summary = "Pseudo-component properties for a TBP cut from its boiling point, density and molar mass. Use it to build a characterised oil fraction."
 equation = "Pedersen's TBP correlations: mw = molar_mass*1000 (g/mol), d = density/1000 (g/cm3), then\n\n  oil = mw < 1120\n  tc  = c_tc[oil][0]*d + c_tc[oil][1]*ln(mw) + c_tc[oil][2]*mw + c_tc[oil][3]/mw                        [K]\n  pc  = exp(0.01325 + c_pc[oil][0] + c_pc[oil][1]*d**c_pc[oil][4] + c_pc[oil][2]/mw + c_pc[oil][3]/mw**2)  [bar]\n  tb  = 2e-6*mw**3 - 0.0035*mw**2 + 2.4003*mw + 171.74          if mw < 540                             [K]\n  tb  = 97.58*mw**0.3323*d**0.04609                            otherwise                                [K]\n  m   = c_m[oil][0] + c_m[oil][1]*mw + c_m[oil][2]*d + c_m[oil][3]*mw**2\n  omega = 3/7 * log10(pc / 1.01325) / (tc/tb - 1) - 1"
 latex = '''T_{c} = c_{0}d + c_{1}\ln M + c_{2}M + \frac{c_{3}}{M}, \qquad P_{c} = \exp\left(0.01325 + c_{0} + c_{1}d^{c_{4}} + \frac{c_{2}}{M} + \frac{c_{3}}{M^{2}}\right), \qquad \omega = \frac{3}{7}\frac{\log_{10}(P_{c}/1.01325)}{T_{c}/T_{b} - 1} - 1'''
-assumptions = [
-    "**this is NeqSim's default TBP model, `PedersenSRK`** - `Characterise.TBPFractionModelName`. The class holds eight models and this is the one `addTBPfraction` runs; `RiaziDaubert`, `Lee-Kesler`, `Twu`, `Cavett`, `Standing` and the two heavy-oil variants are carried by name.",
-    "**a cut is two numbers**, a molar mass and a normal liquid density, and everything a cubic needs follows from them. That is what `addTBPfraction` is: it evaluates these correlations and hands the results to a component.",
-    "the correlation is written in **g/mol and g/cm3** and this states SI, so the conversion is at the boundary and the coefficients keep NeqSim's own scale. `pc` is computed in **bar** - its coefficients and `0.01325` (= ln 1.01325) say so - and reported in pascals.",
-    "**the coefficient set switches at `mw = 1120` and the boiling-point correlation at `mw = 540`**, both in g/mol. The two crossings are pinned by tests, because a port that read either threshold in kg/mol would agree at every light cut and diverge only at heavy ones.",
-    "**above `mw = 1120` the acentric factor is unphysical and is returned anyway.** Measured at `mw = 1121`, `d = 1.0`: `tb = 1006.34005439028` K against `tc = 994.658850370848` K, so `omega` is `-44.6358323245519`. The correlation's behaviour, reproduced rather than repaired; the range warns.",
-    "**`racketZ` - the Peneloux shift `addTBPfraction` also fits - is carried**, and is not a function of these two numbers: it takes a flashed reference system. `PhaseSrkEos` never applies it either - its only callers are the density models.",
-    "`calcCriticalVolume`, `calcParachorParameter`, `calcCriticalViscosity` and `calcWatsonCharacterizationFactor` are the same class's neighbours and are carried by name: nothing in the ported families reads them.",
-    "the correlations are fits to petroleum assays, so this is a property of a *cut* and not of a substance, and no databank is involved.",
-]
+assumptions = ["**a cut is two numbers**, a molar mass and a normal liquid density, and everything a cubic needs follows from them. That is what `addTBPfraction` is: it evaluates these correlations and hands the results to a component.", "the correlations are fits to petroleum assays, so this is a property of a *cut* and not of a substance, and no databank is involved."]
+notes = ["**this is NeqSim's default TBP model, `PedersenSRK`** - `Characterise.TBPFractionModelName`. The class holds eight models and this is the one `addTBPfraction` runs; `RiaziDaubert`, `Lee-Kesler`, `Twu`, `Cavett`, `Standing` and the two heavy-oil variants are carried by name.", "the correlation is written in **g/mol and g/cm3** and this states SI, so the conversion is at the boundary and the coefficients keep NeqSim's own scale. `pc` is computed in **bar** - its coefficients and `0.01325` (= ln 1.01325) say so - and reported in pascals.", "**the coefficient set switches at `mw = 1120` and the boiling-point correlation at `mw = 540`**, both in g/mol. The two crossings are pinned by tests, because a port that read either threshold in kg/mol would agree at every light cut and diverge only at heavy ones.", "**above `mw = 1120` the acentric factor is unphysical and is returned anyway.** Measured at `mw = 1121`, `d = 1.0`: `tb = 1006.34005439028` K against `tc = 994.658850370848` K, so `omega` is `-44.6358323245519`. The correlation's behaviour, reproduced rather than repaired; the range warns.", "**`racketZ` - the Peneloux shift `addTBPfraction` also fits - is carried**, and is not a function of these two numbers: it takes a flashed reference system. `PhaseSrkEos` never applies it either - its only callers are the density models.", "`calcCriticalVolume`, `calcParachorParameter`, `calcCriticalViscosity` and `calcWatsonCharacterizationFactor` are the same class's neighbours and are carried by name: nothing in the ported families reads them."]
 references = [
     "Pedersen, K. S.; Thomassen, P.; Fredenslund, A. (1989). \"Characterization of gas condensate mixtures.\" Advances in Thermodynamics 1, 137-152.",
     "Pedersen, K. S.; Christensen, P. L. (2007). \"Phase Behavior of Petroleum Reservoir Fluids.\", CRC Press.",
@@ -33,7 +26,7 @@ unit = "K"
 description = "Critical temperature.\n"
 [outputs.pc]
 unit = "Pa"
-description = "Critical pressure. NeqSim's correlation is written in bar and this reports pascals.\n"
+description = "Critical pressure, in pascals.\n"
 [outputs.boiling_temperature]
 unit = "K"
 description = "Normal boiling point. Two correlations meet at `mw = 540` g/mol and the switch is pinned by a test.\n"
@@ -42,7 +35,7 @@ unit = "dimensionless"
 description = "Pitzer's acentric factor, from Edmister's three-parameter form rather than from a vapour-pressure fit.\n"
 [outputs.attraction_exponent]
 unit = "dimensionless"
-description = "The `m` of the cubic's alpha function, which for a pseudo-component **replaces** the acentric-factor correlation `eos.srk_kappa` makes. NeqSim's `addTBPfraction` sets it on the component's attractive term.\n"
+description = "The `m` of the cubic's alpha function. For a pseudo-component it replaces the acentric-factor correlation.\n"
 [[valid_range]]
 quantity = "molar_mass"
 min = 0

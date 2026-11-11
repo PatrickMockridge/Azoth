@@ -63,3 +63,98 @@ outlet_z = [1.0]
 outlet_p = 499992.6009196372
 outlet_t = 300.0
 pressure_drop = 7.399080362802124
+
+[[cases]]
+id = "the_adiabatic_line_drops_by_its_friction"
+tolerance = 0.0005
+source = "`process_pipe_modes.tsv`'s `adiabatic_50km` row: `AdiabaticPipeTest`'s 50 km state re-cased on PR - 95/5 methane/ethane at 100 bara, 25 C and 10 MSm3/day - through the compressible branch. The class drops `10.539` bar and lands at `89.461`; the effective length is the physical 50 km, the row the fittings case is measured against.\n"
+[cases.inputs]
+components = ["methane", "ethane"]
+inlet_n = 4894.970603565765
+inlet_z = [0.95, 0.05]
+inlet_p = 10000000.0
+inlet_t = 298.15
+length = 50000.0
+diameter = 0.5
+roughness = 1.0e-05
+[cases.expected]
+outlet_n = 4894.970603565765
+outlet_z = [0.95, 0.05]
+outlet_p = 8946088.253356122
+outlet_t = 298.15
+outlet_h = -863.4836271943127
+effective_length = 50000.0
+pressure_drop = 1053911.746643878
+
+[[cases]]
+id = "the_fittings_add_their_equivalent_length"
+tolerance = 0.0005
+source = "The same line with two standard 90-degree elbows, Crane L/D `30` each: the effective length is `50000 + 60 D = 50030` m and the drop rises to `10.546` bar. **The row is the fittings' whole arithmetic** - `sum(L/D) D` added to the physical length - and the elbow's own L/D is stated by the caller rather than resolved from a table.\n"
+[cases.inputs]
+components = ["methane", "ethane"]
+inlet_n = 4894.970603565765
+inlet_z = [0.95, 0.05]
+inlet_p = 10000000.0
+inlet_t = 298.15
+length = 50000.0
+diameter = 0.5
+roughness = 1.0e-05
+fittings = [
+    { ld_ratio = 30.0, count = 2.0 },
+]
+[cases.expected]
+outlet_n = 4894.970603565765
+outlet_z = [0.95, 0.05]
+outlet_p = 8945407.149292042
+outlet_t = 298.15
+outlet_h = -863.3563051686726
+effective_length = 50030.0
+pressure_drop = 1054592.850707958
+
+[[cases]]
+id = "the_stated_outlet_pressure_solves_the_flow"
+tolerance = 0.002
+source = "`AdiabaticPipeTest.testSetOutletPressureMode`'s state: the same 50 km line asked for 80 bara. `calcFlow` bisects the flow - the class's own seed of the inlet flow, a `0.001` to `100` bracket, decades widened until it straddles, then fifty passes - and lands on `6656.09` mol/s, `36%` above the inlet's. **The result's `outlet_n` is the solved flow**, which the class writes back onto its inlet stream; the inlet's own flow is only the seed.\n"
+[cases.inputs]
+components = ["methane", "ethane"]
+inlet_n = 4894.970603565765
+inlet_z = [0.95, 0.05]
+inlet_p = 10000000.0
+inlet_t = 298.15
+length = 50000.0
+diameter = 0.5
+roughness = 1.0e-05
+outlet_pressure = 8000000.0
+[cases.expected]
+outlet_n = 6656.090851893372
+outlet_z = [0.95, 0.05]
+outlet_p = 8000000.0
+outlet_t = 298.15
+outlet_h = -684.2417400868012
+effective_length = 50000.0
+pressure_drop = 2000000.0
+
+[[cases]]
+id = "the_beggs_and_brills_march_over_the_same_geometry"
+tolerance = 0.0005
+source = "`process_pipe_modes.tsv`'s `beggs_and_brills_50km` row: `PipeBeggsAndBrills` over the same 50 km, 0.5 m line at five segments and zero elevation. The isothermal march drops `10.578` bar and lands at `89.422`, which is `0.04` bar more than the adiabatic single-phase form - the two are different correlations over one geometry, and the model states which one it ran.\n"
+[cases.inputs]
+components = ["methane", "ethane"]
+inlet_n = 4894.970603565765
+inlet_z = [0.95, 0.05]
+inlet_p = 10000000.0
+inlet_t = 298.15
+length = 50000.0
+diameter = 0.5
+roughness = 1.0e-05
+correlation = "beggs_and_brills"
+number_of_increments = 5
+elevation = 0.0
+[cases.expected]
+outlet_n = 4894.970603565765
+outlet_z = [0.95, 0.05]
+outlet_p = 8942233.52757637
+outlet_t = 298.15
+outlet_h = -862.7630099376822
+effective_length = 50000.0
+pressure_drop = 1057766.47242363

@@ -1,5 +1,6 @@
 id = "eos.srk_z_factor"
 name = "Soave-Redlich-Kwong compressibility factor"
+summary = "Soave-Redlich-Kwong compressibility factor at a temperature and pressure. Use it for gas and liquid density and volumetric-flow estimates with an SRK EOS."
 equation = """\
     z**3 - z**2 + (a_reduced - b_reduced - b_reduced**2)*z - a_reduced*b_reduced = 0"""
 latex = """\

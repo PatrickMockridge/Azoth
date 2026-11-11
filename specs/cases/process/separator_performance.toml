@@ -1,0 +1,587 @@
+model = "process.separator_performance"
+
+# The rows are `validation/neqsim/captures/process_separator_performance.tsv`: the class's own
+# `SeparatorPerformanceCalculatorTest` states, plus a log-normal/custom-curve row, the
+# calibration test's base and tuned machines, and the gravity section switched off.
+
+[[cases]]
+id = "two_phase_horizontal_wire_mesh"
+tolerance = 1.0e-09
+source = "`process_separator_performance.tsv`'s `two_phase_horizontal_wire_mesh` row - the class's own two-phase test state. The gravity section removes the large droplets and the wire mesh takes the rest, so `overall_gas_liquid_efficiency` is 0.99696 and `oil_in_gas` is 0.003038. `mist_eliminator_efficiency` is the class's default 5 um, 2.5, 0.998 curve."
+[cases.inputs]
+gas_density = 50.0
+oil_density = 800.0
+water_density = 0.0
+gas_viscosity = 1.5e-05
+oil_viscosity = 0.002
+water_viscosity = 0.0
+gas_velocity = 1.0
+vessel_diameter = 2.0
+vessel_length = 8.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+gas_liquid_distribution = "rosin_rammler"
+gas_liquid_characteristic_diameter = 1.0e-04
+gas_liquid_spread = 2.6
+mist_eliminator = "wire_mesh"
+[cases.expected]
+oil_in_gas = 0.0030383004536480573
+water_in_gas = 0.0
+gas_in_oil = 0.0
+gas_in_water = 0.0
+oil_in_water = 0.0
+water_in_oil = 0.0
+gravity_section_efficiency = 0.5431962998374725
+mist_eliminator_efficiency = 0.9958746771661382
+overall_gas_liquid_efficiency = 0.9969616995463519
+liquid_liquid_gravity_efficiency = 0.0
+gravity_cut_diameter = 1.2162572181754543e-04
+
+[[cases]]
+id = "vertical_scrubber_vane_pack"
+tolerance = 1.0e-09
+source = "`process_separator_performance.tsv`'s `vertical_scrubber_vane_pack` row - the class's own vertical-scrubber test state. A 30 um distribution in a vertical vessel: the gravity section removes almost nothing (1.2e-5) and the vane pack, at its 12 um default, carries the separation to 0.8535."
+[cases.inputs]
+gas_density = 60.0
+oil_density = 850.0
+water_density = 0.0
+gas_viscosity = 1.5e-05
+oil_viscosity = 0.003
+water_viscosity = 0.0
+gas_velocity = 2.0
+vessel_diameter = 1.0
+vessel_length = 4.0
+orientation = "vertical"
+liquid_level_fraction = 0.1
+gas_liquid_distribution = "rosin_rammler"
+gas_liquid_characteristic_diameter = 3.0e-05
+gas_liquid_spread = 2.6
+mist_eliminator = "vane_pack"
+[cases.expected]
+oil_in_gas = 0.14653509872260384
+water_in_gas = 0.0
+gas_in_oil = 0.0
+gas_in_water = 0.0
+oil_in_water = 0.0
+water_in_oil = 0.0
+gravity_section_efficiency = 1.2157531898705872e-05
+mist_eliminator_efficiency = 0.8534643843100664
+overall_gas_liquid_efficiency = 0.8534649012773962
+liquid_liquid_gravity_efficiency = 0.0
+gravity_cut_diameter = 0.008249584875114034
+
+[[cases]]
+id = "three_phase_horizontal"
+tolerance = 1.0e-09
+source = "`process_separator_performance.tsv`'s `three_phase_horizontal` row - the class's own three-phase test state. **`water_in_gas` equals `oil_in_gas`**: the class writes the whole entrainment to both liquid phases despite the comment saying it is split. The liquid-liquid stages also differ: 300 um water drops in oil leave 0.4195, and 200 um oil drops in water leave 0.1962."
+[cases.inputs]
+gas_density = 40.0
+oil_density = 800.0
+water_density = 1020.0
+gas_viscosity = 1.5e-05
+oil_viscosity = 0.005
+water_viscosity = 0.0008
+gas_velocity = 1.5
+vessel_diameter = 2.5
+vessel_length = 10.0
+orientation = "horizontal"
+liquid_level_fraction = 0.6
+gas_liquid_distribution = "rosin_rammler"
+gas_liquid_characteristic_diameter = 8.0e-05
+gas_liquid_spread = 2.6
+water_in_oil_distribution = "rosin_rammler"
+water_in_oil_characteristic_diameter = 3.0e-04
+water_in_oil_spread = 2.0
+oil_in_water_distribution = "rosin_rammler"
+oil_in_water_characteristic_diameter = 2.0e-04
+oil_in_water_spread = 2.0
+mist_eliminator = "wire_mesh"
+[cases.expected]
+oil_in_gas = 0.003803059260048869
+water_in_gas = 0.003803059260048869
+gas_in_oil = 0.0
+gas_in_water = 0.0
+oil_in_water = 0.1962038083148172
+water_in_oil = 0.4195181703144115
+gravity_section_efficiency = 0.3233769747237307
+mist_eliminator_efficiency = 0.9955487704761212
+overall_gas_liquid_efficiency = 0.9961969407399511
+liquid_liquid_gravity_efficiency = 0.8037961916851828
+gravity_cut_diameter = 1.3417872301260995e-04
+
+[[cases]]
+id = "gravity_only_no_mist_eliminator"
+tolerance = 1.0e-09
+source = "`process_separator_performance.tsv`'s `gravity_only_no_mist_eliminator` row - the class's own gravity-only test state. Without a curve the mist efficiency is zero and the overall is the gravity section's own 0.11523, so the fine 20 um distribution mostly passes."
+[cases.inputs]
+gas_density = 30.0
+oil_density = 750.0
+water_density = 0.0
+gas_viscosity = 1.2e-05
+oil_viscosity = 0.002
+water_viscosity = 0.0
+gas_velocity = 0.5
+vessel_diameter = 3.0
+vessel_length = 12.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+gas_liquid_distribution = "rosin_rammler"
+gas_liquid_characteristic_diameter = 2.0e-05
+gas_liquid_spread = 2.6
+[cases.expected]
+oil_in_gas = 0.8847696957771931
+water_in_gas = 0.0
+gas_in_oil = 0.0
+gas_in_water = 0.0
+oil_in_water = 0.0
+water_in_oil = 0.0
+gravity_section_efficiency = 0.11523030422280685
+mist_eliminator_efficiency = 0.0
+overall_gas_liquid_efficiency = 0.11523030422280685
+liquid_liquid_gravity_efficiency = 0.0
+gravity_cut_diameter = 5.649112071169077e-05
+
+[[cases]]
+id = "gas_bubble_carry_under"
+tolerance = 1.0e-09
+source = "`process_separator_performance.tsv`'s `gas_bubble_carry_under` row - the class's own bubble test state. The 500 um bubble distribution settles poorly enough that 0.9224 of the gas is carried under, and **both liquid phases report that same fraction**, which is the class's one fraction written twice."
+[cases.inputs]
+gas_density = 50.0
+oil_density = 800.0
+water_density = 0.0
+gas_viscosity = 1.5e-05
+oil_viscosity = 0.003
+water_viscosity = 0.0
+gas_velocity = 1.0
+vessel_diameter = 2.0
+vessel_length = 8.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+gas_liquid_distribution = "rosin_rammler"
+gas_liquid_characteristic_diameter = 1.0e-04
+gas_liquid_spread = 2.6
+gas_bubble_distribution = "rosin_rammler"
+gas_bubble_characteristic_diameter = 5.0e-04
+gas_bubble_spread = 2.0
+mist_eliminator = "wire_mesh"
+[cases.expected]
+oil_in_gas = 0.0030383004536480573
+water_in_gas = 0.0
+gas_in_oil = 0.9223975499514979
+gas_in_water = 0.9223975499514979
+oil_in_water = 0.0
+water_in_oil = 0.0
+gravity_section_efficiency = 0.5431962998374725
+mist_eliminator_efficiency = 0.9958746771661382
+overall_gas_liquid_efficiency = 0.9969616995463519
+liquid_liquid_gravity_efficiency = 0.0
+gravity_cut_diameter = 1.2162572181754543e-04
+
+[[cases]]
+id = "liquid_liquid_plate_pack_no_gas_liquid"
+tolerance = 1.0e-09
+source = "`process_separator_performance.tsv`'s `liquid_liquid_plate_pack_no_gas_liquid` row - the class's own plate-pack test state. **No gas-liquid distribution is stated**, so the gas-liquid branch does not run: the six gas fractions and the cut diameter are zero while the liquid-liquid stages still answer, with the plate pack cutting both."
+[cases.inputs]
+gas_density = 40.0
+oil_density = 800.0
+water_density = 1020.0
+gas_viscosity = 1.5e-05
+oil_viscosity = 0.005
+water_viscosity = 0.0008
+gas_velocity = 1.5
+vessel_diameter = 2.5
+vessel_length = 10.0
+orientation = "horizontal"
+liquid_level_fraction = 0.6
+water_in_oil_distribution = "rosin_rammler"
+water_in_oil_characteristic_diameter = 1.0e-04
+water_in_oil_spread = 2.0
+oil_in_water_distribution = "rosin_rammler"
+oil_in_water_characteristic_diameter = 8.0e-05
+oil_in_water_spread = 2.0
+oil_water_coalescer = "plate_pack"
+oil_water_coalescer_cut_diameter = 3.0e-05
+oil_water_coalescer_max_efficiency = 0.98
+[cases.expected]
+oil_in_gas = 0.0
+water_in_gas = 0.0
+gas_in_oil = 0.0
+gas_in_water = 0.0
+oil_in_water = 0.12453781637645772
+water_in_oil = 0.12144400558351058
+gravity_section_efficiency = 0.0
+mist_eliminator_efficiency = 0.0
+overall_gas_liquid_efficiency = 0.0
+liquid_liquid_gravity_efficiency = 0.3319435744052491
+gravity_cut_diameter = 0.0
+
+[[cases]]
+id = "calibration_base"
+tolerance = 1.0e-09
+source = "`process_separator_performance.tsv`'s `calibration_base` row - the class's calibration test machine with every factor at its 1.0 default. It is the base the tuned row scales."
+[cases.inputs]
+gas_density = 50.0
+oil_density = 800.0
+water_density = 1020.0
+gas_viscosity = 1.5e-05
+oil_viscosity = 0.003
+water_viscosity = 0.0008
+gas_velocity = 1.2
+vessel_diameter = 2.0
+vessel_length = 8.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+gas_liquid_distribution = "rosin_rammler"
+gas_liquid_characteristic_diameter = 1.2e-04
+gas_liquid_spread = 2.2
+gas_bubble_distribution = "rosin_rammler"
+gas_bubble_characteristic_diameter = 4.0e-04
+gas_bubble_spread = 2.0
+water_in_oil_distribution = "rosin_rammler"
+water_in_oil_characteristic_diameter = 1.2e-04
+water_in_oil_spread = 2.0
+oil_in_water_distribution = "rosin_rammler"
+oil_in_water_characteristic_diameter = 1.2e-04
+oil_in_water_spread = 2.0
+mist_eliminator = "vane_pack"
+[cases.expected]
+oil_in_gas = 0.013040694671475617
+water_in_gas = 0.013040694671475617
+gas_in_oil = 0.9656287513244058
+gas_in_water = 0.9656287513244058
+oil_in_water = 0.31755270242074984
+water_in_oil = 0.6824246549656048
+gravity_section_efficiency = 0.531216242003503
+mist_eliminator_efficiency = 0.9842000304208024
+overall_gas_liquid_efficiency = 0.9869593053285244
+liquid_liquid_gravity_efficiency = 0.6824472975792502
+gravity_cut_diameter = 1.4565733448423167e-04
+
+[[cases]]
+id = "calibration_tuned"
+tolerance = 1.0e-09
+source = "`process_separator_performance.tsv`'s `calibration_tuned` row - the same machine with 1.5, 1.25 and 0.8. The gas carry-under product, 0.96563 * 1.25, is above one and is clamped: `gas_in_oil` and `gas_in_water` report 1.0."
+[cases.inputs]
+gas_density = 50.0
+oil_density = 800.0
+water_density = 1020.0
+gas_viscosity = 1.5e-05
+oil_viscosity = 0.003
+water_viscosity = 0.0008
+gas_velocity = 1.2
+vessel_diameter = 2.0
+vessel_length = 8.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+gas_liquid_distribution = "rosin_rammler"
+gas_liquid_characteristic_diameter = 1.2e-04
+gas_liquid_spread = 2.2
+gas_bubble_distribution = "rosin_rammler"
+gas_bubble_characteristic_diameter = 4.0e-04
+gas_bubble_spread = 2.0
+water_in_oil_distribution = "rosin_rammler"
+water_in_oil_characteristic_diameter = 1.2e-04
+water_in_oil_spread = 2.0
+oil_in_water_distribution = "rosin_rammler"
+oil_in_water_characteristic_diameter = 1.2e-04
+oil_in_water_spread = 2.0
+mist_eliminator = "vane_pack"
+liquid_in_gas_calibration_factor = 1.5
+gas_carry_under_calibration_factor = 1.25
+liquid_liquid_calibration_factor = 0.8
+[cases.expected]
+oil_in_gas = 0.019561042007213425
+water_in_gas = 0.019561042007213425
+gas_in_oil = 1.0
+gas_in_water = 1.0
+oil_in_water = 0.2540421619365999
+water_in_oil = 0.5459397239724838
+gravity_section_efficiency = 0.531216242003503
+mist_eliminator_efficiency = 0.9842000304208024
+overall_gas_liquid_efficiency = 0.9869593053285244
+liquid_liquid_gravity_efficiency = 0.6824472975792502
+gravity_cut_diameter = 1.4565733448423167e-04
+
+[[cases]]
+id = "log_normal_custom_curves"
+tolerance = 1.0e-09
+source = "`process_separator_performance.tsv`'s `log_normal_custom_curves` row - a state with log-normal distributions and a lookup table on both internals and coalescer. It exercises the class's Winitzki inverse and its linear interpolation, which the Rosin-Rammler rows do not."
+[cases.inputs]
+gas_density = 40.0
+oil_density = 820.0
+water_density = 1010.0
+gas_viscosity = 1.4e-05
+oil_viscosity = 0.0025
+water_viscosity = 0.0009
+gas_velocity = 0.8
+vessel_diameter = 2.2
+vessel_length = 9.0
+orientation = "horizontal"
+liquid_level_fraction = 0.55
+gas_liquid_distribution = "log_normal"
+gas_liquid_characteristic_diameter = 5.0e-05
+gas_liquid_spread = 0.8
+gas_bubble_distribution = "log_normal"
+gas_bubble_characteristic_diameter = 4.0e-04
+gas_bubble_spread = 0.7
+water_in_oil_distribution = "log_normal"
+water_in_oil_characteristic_diameter = 1.5e-04
+water_in_oil_spread = 0.7
+oil_in_water_distribution = "log_normal"
+oil_in_water_characteristic_diameter = 1.0e-04
+oil_in_water_spread = 0.9
+mist_eliminator = "custom"
+mist_eliminator_points = [
+    { diameter = 1.0e-06, efficiency = 0.1 },
+    { diameter = 1.0e-05, efficiency = 0.5 },
+    { diameter = 1.0e-04, efficiency = 0.99 },
+]
+oil_water_coalescer = "custom"
+oil_water_coalescer_points = [
+    { diameter = 5.0e-06, efficiency = 0.05 },
+    { diameter = 5.0e-05, efficiency = 0.4 },
+    { diameter = 5.0e-04, efficiency = 0.95 },
+]
+[cases.expected]
+oil_in_gas = 0.19148639315261573
+water_in_gas = 0.19148639315261573
+gas_in_oil = 0.769060497268381
+gas_in_water = 0.769060497268381
+oil_in_water = 0.22689536366103713
+water_in_oil = 0.21064887488385575
+gravity_section_efficiency = 0.4997419408647944
+mist_eliminator_efficiency = 0.7447599796719904
+overall_gas_liquid_efficiency = 0.8085136068473843
+liquid_liquid_gravity_efficiency = 0.5605204397471661
+gravity_cut_diameter = 7.935145000664933e-05
+
+[[cases]]
+id = "gravity_section_off"
+tolerance = 1.0e-09
+source = "`process_separator_performance.tsv`'s `gravity_section_off` row - the two-phase state with `includeGravitySection(false)`. The gravity efficiency is zero and the overall is the mist curve alone, but **the cut diameter is still computed and reported**, which is what the class does."
+[cases.inputs]
+gas_density = 50.0
+oil_density = 800.0
+water_density = 0.0
+gas_viscosity = 1.5e-05
+oil_viscosity = 0.002
+water_viscosity = 0.0
+gas_velocity = 1.0
+vessel_diameter = 2.0
+vessel_length = 8.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+gas_liquid_distribution = "rosin_rammler"
+gas_liquid_characteristic_diameter = 1.0e-04
+gas_liquid_spread = 2.6
+mist_eliminator = "wire_mesh"
+include_gravity_section = false
+[cases.expected]
+oil_in_gas = 0.0041253228338618
+water_in_gas = 0.0
+gas_in_oil = 0.0
+gas_in_water = 0.0
+oil_in_water = 0.0
+water_in_oil = 0.0
+gravity_section_efficiency = 0.0
+mist_eliminator_efficiency = 0.9958746771661382
+overall_gas_liquid_efficiency = 0.9958746771661382
+liquid_liquid_gravity_efficiency = 0.0
+gravity_cut_diameter = 1.2162572181754543e-04
+[[cases]]
+id = "the_enhanced_two_phase_chain"
+tolerance = 0.0002
+source = "The enhanced capture's `two_phase_horizontal` row: `calculateEnhanced` on the class's own constants, with the wire-mesh eliminator and no explicit gas-liquid distribution, so the slug regime's generated one is used. **The chain is a second solver**: the regime is SLUG, the default HALF_PIPE device takes 41% in bulk, the geometry is a half-full 2.4 m x 7 m vessel, and the K factor's `4.9955` utilisation floods the eliminator, leaving the gravity stage's 0.5644 as the downstream efficiency. The API 12J record is non-compliant on both sections. The boolean flags are asserted in the kernel's own test, not here.\n"
+[cases.inputs]
+gas_density = 50.0
+oil_density = 750.0
+water_density = 0.0
+gas_viscosity = 1.2e-5
+oil_viscosity = 2.0e-3
+water_viscosity = 0.0
+gas_velocity = 2.0
+vessel_diameter = 2.4
+vessel_length = 7.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+gas_bubble_distribution = "rosin_rammler"
+gas_bubble_characteristic_diameter = 500e-6
+gas_bubble_spread = 2.0
+mist_eliminator = "wire_mesh"
+enhanced = true
+[cases.expected]
+oil_in_gas = 0.256985226502344
+water_in_gas = 0.0
+post_inlet_d50 = 3.3940611451290263e-4
+post_inlet_d32 = 7.159084011231289e-4
+gas_in_oil = 0.9898906618240089
+gas_in_water = 0.9898906618240089
+oil_in_water = 0.0
+water_in_oil = 0.0
+gravity_section_efficiency = 0.5644318193517143
+mist_eliminator_efficiency = 0.0
+overall_gas_liquid_efficiency = 0.743014773497656
+liquid_liquid_gravity_efficiency = 0.0
+gravity_cut_diameter = 4.351226637396398e-4
+inlet_flow_regime = "SLUG"
+inlet_device_bulk_efficiency = 0.4100000001840002
+inlet_device_pressure_drop = 3199.9999990799993
+inlet_nozzle_velocity = 3.9999999995999995
+inlet_momentum_flux = 6399.9999981599985
+k_factor = 0.5345224838248488
+k_factor_utilization = 4.9955372320079325
+gas_area = 2.261946710584651
+liquid_area = 2.261946710584651
+gas_volume = 15.833626974092558
+liquid_volume = 15.833626974092558
+total_volume = 31.667253948185117
+effective_gas_settling_height = 1.2
+effective_liquid_settling_height = 1.2
+gas_residence_time = 2.975
+liquid_residence_time = 3.5000000007
+gravity_section_length = 5.95
+oil_pad_thickness = 0.0
+water_layer_height = 0.0
+api_gas_liquid_comment = "NON-COMPLIANT: cut=435 um (max 100 um), K=0.535 m/s (max 0.250 m/s)"
+api_liquid_comment = "NON-COMPLIANT: liquid residence time = 4 s (min 180 s)"
+api_gravity_cut_diameter = 4.351226637396398e-4
+api_k_factor_utilization = 2.138089935299395
+api_max_k_factor = 0.25
+api_min_liquid_residence_time = 180.0
+[[cases]]
+id = "the_mist_position_shortens_the_gravity_section"
+tolerance = 0.0002
+source = "The enhanced capture's `mist_position_0_80` row: the two-phase horizontal state with the geometry calculator's mist-eliminator position set to `0.80`. **The gravity section is `7 (0.80 - 0.05) = 5.25` m**, and the shorter run cuts the gravity efficiency from the default row's 0.5644 to 0.4955 while the vessel's volumes are unchanged.\n"
+[cases.inputs]
+gas_density = 50.0
+oil_density = 750.0
+water_density = 0.0
+gas_viscosity = 1.2e-5
+oil_viscosity = 2.0e-3
+water_viscosity = 0.0
+gas_velocity = 2.0
+vessel_diameter = 2.4
+vessel_length = 7.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+mist_eliminator = "wire_mesh"
+enhanced = true
+mist_position = 0.8
+[cases.expected]
+gravity_section_efficiency = 0.4955309260221628
+gravity_cut_diameter = 5.06509366728639e-4
+overall_gas_liquid_efficiency = 0.7023632464458984
+oil_in_gas = 0.2976367535541016
+gas_volume = 15.833626974092558
+liquid_volume = 15.833626974092558
+total_volume = 31.667253948185117
+gravity_section_length = 5.25
+gas_residence_time = 2.625
+[[cases]]
+id = "the_weir_position_shortens_the_gravity_section"
+tolerance = 0.0002
+source = "The enhanced capture's `weir_position_0_50` row: the three-phase horizontal state with the geometry calculator's weir position set to `0.50`. **The gravity section is `7 (0.50 - 0.05) = 3.15` m**, the oil pad and water layer remain `0.6` m each, and the shorter run cuts the gravity efficiency to 0.1084.\n"
+[cases.inputs]
+gas_density = 50.0
+oil_density = 750.0
+water_density = 1025.0
+gas_viscosity = 1.2e-5
+oil_viscosity = 2.0e-3
+water_viscosity = 8.0e-4
+gas_velocity = 2.0
+vessel_diameter = 2.4
+vessel_length = 7.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+mist_eliminator = "wire_mesh"
+enhanced = true
+weir_position = 0.5
+[cases.expected]
+gravity_section_efficiency = 0.10836994352171457
+gravity_cut_diameter = 0.0013920046818095017
+overall_gas_liquid_efficiency = 0.4739382668418717
+oil_in_gas = 0.5260617331581283
+water_in_gas = 0.5260617331581283
+gravity_section_length = 3.15
+gas_residence_time = 1.575
+oil_pad_thickness = 0.6
+water_layer_height = 0.6
+[[cases]]
+id = "the_vane_pack_design_k_is_the_database_record"
+tolerance = 0.0002
+source = "The enhanced capture's `vane_pack_design_k` row. **The shipped `SeparatorInternals.csv`'s first vane-pack record is `0.15`**, so the utilisation is `0.534522 / 0.15 = 3.5635`; the class's `0.12` fallback is read only when the resource is missing. The vane pack's default curve takes nothing at this cut diameter, so the overall is the gravity section's own.\n"
+[cases.inputs]
+gas_density = 50.0
+oil_density = 750.0
+water_density = 0.0
+gas_viscosity = 1.2e-5
+oil_viscosity = 2.0e-3
+water_viscosity = 0.0
+gas_velocity = 2.0
+vessel_diameter = 2.4
+vessel_length = 7.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+gas_bubble_distribution = "rosin_rammler"
+gas_bubble_characteristic_diameter = 500e-6
+gas_bubble_spread = 2.0
+mist_eliminator = "vane_pack"
+enhanced = true
+[cases.expected]
+k_factor_utilization = 3.563483225498992
+mist_eliminator_efficiency = 0.0
+overall_gas_liquid_efficiency = 0.743014773497656
+gravity_cut_diameter = 4.351226637396398e-4
+[[cases]]
+id = "the_axial_cyclone_design_k_is_the_database_record"
+tolerance = 0.0002
+source = "The enhanced capture's `axial_cyclone_design_k` row: the same state with the axial cyclone's default curve. **Its database record is `0.30`**, so the utilisation is `0.534522 / 0.30 = 1.7817`, and the cyclone's default curve removes 0.1087 of the gravity section's carry-over.\n"
+[cases.inputs]
+gas_density = 50.0
+oil_density = 750.0
+water_density = 0.0
+gas_viscosity = 1.2e-5
+oil_viscosity = 2.0e-3
+water_viscosity = 0.0
+gas_velocity = 2.0
+vessel_diameter = 2.4
+vessel_length = 7.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+gas_bubble_distribution = "rosin_rammler"
+gas_bubble_characteristic_diameter = 500e-6
+gas_bubble_spread = 2.0
+mist_eliminator = "axial_cyclone"
+enhanced = true
+[cases.expected]
+k_factor_utilization = 1.781741612749496
+mist_eliminator_efficiency = 0.1086925973342776
+overall_gas_liquid_efficiency = 0.7709471652427334
+oil_in_gas = 0.22905283475726657
+[[cases]]
+id = "the_inlet_device_overrides_replace_the_type_defaults"
+tolerance = 0.0002
+source = "The enhanced capture's `inlet_device_overrides` row: the half-pipe device with the class's two setters. **The bulk efficiency is the stated `0.5` instead of the type's 0.41**, and the DSD multiplier `1.5` doubles the downstream d50 from the default row's 3.394e-4 to 6.788e-4; the post-inlet d32 follows to 1.4318e-3.\n"
+[cases.inputs]
+gas_density = 50.0
+oil_density = 750.0
+water_density = 0.0
+gas_viscosity = 1.2e-5
+oil_viscosity = 2.0e-3
+water_viscosity = 0.0
+gas_velocity = 2.0
+vessel_diameter = 2.4
+vessel_length = 7.0
+orientation = "horizontal"
+liquid_level_fraction = 0.5
+enhanced = true
+inlet_device = "half_pipe"
+override_bulk_efficiency = 0.5
+override_dsd_multiplier = 1.5
+[cases.expected]
+inlet_device_bulk_efficiency = 0.5
+post_inlet_d50 = 6.788122290258053e-4
+post_inlet_d32 = 0.0014318168022462595
+gravity_section_efficiency = 0.8080138202702482
+overall_gas_liquid_efficiency = 0.904006910135124
+oil_in_gas = 0.09599308986487598

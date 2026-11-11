@@ -1,0 +1,103 @@
+id = "eos.pitzer_hydrate_formation_temperature"
+name = "Hydrate formation temperature of a Pitzer brine"
+kind = "procedure"
+assumptions = [
+    "**the inner flash is `eos.hybrid_eos_ge_flash`**, the EoS/GE flash `SystemPitzer` runs: SRK gas and oil, a Pitzer aqueous phase, and only the roles the feed supports. The aqueous role's `x_i exp(ln_phi_i) P` is the guests' fugacity, which is what `setRefFug` copies in.\n",
+    "**the hydrate's water reference is the pure-water Antoine vapour pressure**, not the empty lattice: `f_w^hydrate/P = exp(deltaMu/RT + sum -n_cav ln(1 + sum C f)) pSat(T)/P`, the `ComponentHydratePitzer` override.\n",
+    "**the scan and the bisection are the class's**: the lower bound is `max(273.15 K, the guests' Henry floor)`, the step +5 K to 323.15 K, then at most 70 midpoints, stopping on `|ln(f_hydrate/f_aq)| <= 1e-8`.\n",
+    "**the Henry floor is the largest fitted minimum over the present guests**: CO2 274.19 K and methane 275.46 K; a guest with no IAPWS row contributes none, as `isSupportedSpecies` does.\n",
+    "**the structure is the lower of the two water fugacity coefficients** unless the caller pins one; a pinned structure is evaluated alone, as `setRequestedStructure` does.\n",
+    "the water activity `f_aq^water/pSat(T)` is reported and must lie in `(0, 1]`; outside it NeqSim rejects the state.\n",
+    "the feed is the class's moles system - a one-kilogram water basis with excess guest - so the aqueous composition, and with it the water activity, is the ratio that matters. A cubic over the ions is never built; the hybrid flash confines them itself.\n",
+    "no hydrate amount is solved: this is the incipient state, and `eos.hydrate_fraction` is the model that grows the solid.\n",
+    "**a salty CO2 state runs the manual PHREEQC CO2-chloride dataset**: its ion and lambda rows come from the catalogue, and the CO2-cation-Cl zeta rows the catalogue lacks are zero, the upstream caller's screening assumption. `auto` is the class's own selection.\n",
+]
+references = [
+    "NeqSim master, `thermodynamicoperations/flashops/saturationops/PitzerHydrateFlash.java` and `thermo/component/ComponentHydratePitzer.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/pitzer_hydrate_probe.tsv` and `pitzer_hydrate_salinity_probe.tsv` - the temperature and pressure solves over CO2/water, NaCl, MgCl2 and CaCl2 brines, methane and a CO2/methane mixture, the structure requests, the public-operations round trip and the refusals.",
+    "Burgass, R.; Chapoy, A.; Tohidi, B. (2023). The salinity's effect on CO2 hydrate dissociation, the upstream validation's reference.",
+]
+[source]
+standard = "NeqSim master `PitzerHydrateFlash`"
+edition = "`run`, `evaluate`, `validateFeed`, `minimumHenryTemperature`, `bisect` and `accept`, with `ComponentHydratePitzer.fugcoef`. The Gson report is not."
+[algorithm]
+scheme = "pitzer_hydrate_scan_bisection"
+initialisation = "henry_floor"
+convergence = "absolute"
+tolerance = 1e-08
+max_iterations = 70
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the brine's substances, by name, ions included. The hydrate's guests and the aqueous phase's Pitzer surface are both resolved from these.\n"
+[inputs.moles]
+type = "vector"
+unit = "mol"
+length = "one per component"
+description = "the feed's mole numbers. **Moles and not mole fractions**: the water-to-salt ratio is what the water activity is a function of.\n"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure at which the formation temperature is wanted.\n"
+[inputs.cubic]
+type = "enum"
+values = ["pr", "srk", "rk", "tst"]
+description = "the cubic the hybrid flash's gas and oil roles run. `srk` is `SystemPitzer`'s own and the faithful choice.\n"
+[inputs.structure]
+type = "enum"
+values = ["auto", "si", "sii"]
+optional = true
+description = "the hydrate structure to evaluate; absent is `auto`, the lower of the two coefficients.\n"
+[inputs.pitzer_dataset]
+type = "enum"
+values = ["auto", "phreeqc_co2_chloride"]
+optional = true
+description = "the aqueous phase's Pitzer parameter dataset; absent is `auto`, NeqSim's own selection. `phreeqc_co2_chloride` is the manual CO2-chloride dataset the upstream hydrate test applies, with its zero zeta rows.\n"
+[inputs.minimum_temperature]
+unit = "K"
+optional = true
+description = "the scan's lower bound; absent is the class's 273.15 K, raised to the guests' Henry floor.\n"
+[inputs.maximum_temperature]
+unit = "K"
+optional = true
+description = "the scan's upper bound; absent is the class's 323.15 K.\n"
+[outputs]
+[outputs.temperature]
+unit = "K"
+description = "the temperature at which the hydrate's water fugacity equals the aqueous phase's.\n"
+[outputs.structure]
+type = "enum"
+values = ["structure_i", "structure_ii"]
+description = "the structure the coefficient comparison chose, or the one the caller pinned.\n"
+[outputs.water_activity]
+unit = "dimensionless"
+description = "`f_aq^water / pSat_water(T)` at the answer.\n"
+[outputs.iterations]
+unit = "dimensionless"
+description = "flash evaluations taken, the scan's and the bisection's together.\n"
+[outputs.residual]
+unit = "dimensionless"
+description = "`ln(f_hydrate^water / f_aq^water)` at the answer.\n"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+max = 1.0e8
+max_inclusive = true
+severity = "error"
+rationale = "The class's own window: 0 < P <= 1000 bara.\n"
+[[valid_range]]
+quantity = "minimum_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature.\n"
+[[valid_range]]
+quantity = "maximum_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature.\n"
+[implementations]
+python = "azoth.eos.pitzer_hydrate_formation_temperature"
+rust = "azoth_eos::pitzer_hydrate_formation_temperature"

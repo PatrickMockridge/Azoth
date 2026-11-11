@@ -4,6 +4,7 @@ import { kindOf, tabFor, tabsFor, type Kind, type TabId } from "../../state/layo
 import { resultOf, resultTabs } from "../../state/results";
 import type { Units } from "../../state/units";
 import type { EditorCommand } from "../../wire/commands";
+import { removeCommandFor } from "../../wire/nodes";
 import type {
   Catalogue,
   Envelope,
@@ -35,7 +36,7 @@ const LABELS: Record<TabId, string> = {
   profiles: "Profiles",
   performance: "Performance",
   results: "Results",
-  provenance: "Provenance",
+  provenance: "Checks",
 };
 
 /**
@@ -81,6 +82,14 @@ export function PropertyView({
    * its streams publishes no result, so it offers none either.
    */
   const result = kind === "instance" ? resultOf(envelope, node?.data.name ?? "") : undefined;
+  const removal: EditorCommand | null =
+    node !== null
+      ? removeCommandFor(node.id)
+      : edge === null
+        ? null
+        : edge.data.kind === "recycle"
+          ? { command: "remove_recycle", stream: edge.data.path }
+          : { command: "disconnect", from: edge.data.from, to: edge.data.to };
   const available = tabsFor(kind, edge, resultTabs(result));
   const active = tabFor(kind, remembered, available);
   const form: Form | undefined =
@@ -91,6 +100,19 @@ export function PropertyView({
       <div className="prop-header">
         <h2>{title(kind, node, edge)}</h2>
         <p className="note">{subtitle(kind, node, edge, form)}</p>
+        {removal === null ? null : (
+          <button
+            type="button"
+            className="remove"
+            title="remove this object and every connection that names it"
+            onClick={() => {
+              onCommand(removal);
+              onSelect(null);
+            }}
+          >
+            Remove
+          </button>
+        )}
       </div>
       <DockTabs
         label={title(kind, node, edge)}
@@ -163,7 +185,13 @@ function sheet(
       return result === undefined ? null : <StagesSheet result={result} units={units} />;
     case "conditions":
       return node === null ? null : (
-        <ConditionsSheet envelope={envelope} node={node} units={units} onCommand={onCommand} />
+        <ConditionsSheet
+          catalogue={catalogue}
+          envelope={envelope}
+          node={node}
+          units={units}
+          onCommand={onCommand}
+        />
       );
     case "composition":
       return node === null ? null : (

@@ -76,9 +76,11 @@ def _model_cases() -> list[tuple[dict[str, Any], dict[str, Any]]]:
 MODEL_CASES = _model_cases()
 
 
-def _convergence_tolerance(spec_: dict[str, Any]) -> float | None:
+def _convergence_tolerance(
+    spec_: dict[str, Any], case: dict[str, Any] | None = None
+) -> float | None:
     """See :func:`_helpers.convergence_tolerance`; kept for this module's own callers."""
-    return h.convergence_tolerance(spec_)
+    return h.convergence_tolerance(spec_, case)
 
 
 @pytest.mark.parametrize(
@@ -104,7 +106,7 @@ def test_python_and_rust_agree_on_models(model: dict[str, Any], case: dict[str, 
         rs = resolve(model["id"])(**kwargs)
 
     h.assert_results_equal(
-        py, rs, tolerance, context, diagnostic_bound=_convergence_tolerance(model)
+        py, rs, tolerance, context, diagnostic_bound=_convergence_tolerance(model, case)
     )
 
 

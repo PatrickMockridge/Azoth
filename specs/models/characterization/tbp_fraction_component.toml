@@ -1,0 +1,104 @@
+id = "characterization.tbp_fraction_component"
+name = "The component card NeqSim builds from a TBP cut"
+kind = "direct"
+assumptions = [
+    "**this is `addTBPfraction`'s card for one cut.** Everything a cubic, a viscosity model and a wax model read about a pseudo-component, from the two numbers the cut is: its molar mass and its normal liquid gravity.",
+    "**the model's acentric factor and the component's are different numbers.** The Edmister form is what the critical volume uses; the fitted `m`, which does not imply it, is what `setm` turns back into the acentric factor the component carries.",
+    "**the Rackett compressibility is a liquid-root solve, not a correlation.** A one-component SRK phase at 15 C and one atmosphere, built from the cut's constants and fitted `m`, gives the molar volume the Peneloux constant is a difference of.",
+    "**NeqSim's gas constant `8.3144621`** appears in both the reference volume and the Rackett formula; the subtraction is of two volumes, so the library's CODATA constant would move the twelfth digit.",
+    "**the critical volume is cm3/mol in the class and m3/mol here.** The class multiplies by ten to turn `R Tc/Pc` from `J/(mol bar)` into `cm3/mol`, and this divides the answer back.",
+    "**the heat-capacity polynomial is the class's own four-coefficient fit**, on `Kwatson = (1.8 Tb)^(1/3)/SG` and the correction factor built on the acentric factor. `cp_d` is zero stored; the card states the getter's `1e-10`.",
+    "**the fusion and formation data are correlations, not fits to the cut**: the triple point is `374.5 + 0.02617 M - 20172/M`, the heat of fusion `0.1426/0.238845 M Ttrip`, and the formation enthalpy `-1462600 M - 47566`.",
+    "**the Lennard-Jones pair is Tee-Gotoh-Stewart's**, from the critical constants. The class writes it over water's table row, so a cut and a hydrocarbon agree and a water row does not.",
+    "**one model, and it is the class's default.** `PedersenTBPModelSRK` is what `Characterise` runs and what `addTBPfraction` calls unless the caller selected another; the other nine models' cards are their own arithmetic and are not this id.",
+    "the correlations are fits to assays, so a card describes a *cut* and not a substance; nothing here is measured.",
+]
+references = [
+    "Pedersen, K. S.; Thomassen, P.; Fredenslund, A. (1989). \"Characterization of gas condensate mixtures.\" Advances in Thermodynamics 1, 137-152.",
+    "Pedersen, K. S.; Christensen, P. L. (2007). \"Phase Behavior of Petroleum Reservoir Fluids.\", CRC Press. The TBP correlations and the Peneloux translation.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/system/SystemThermo.addTBPfraction` and `thermo/characterization/TBPfractionModel.java`'s `PedersenTBPModelSRK` are the port source.",
+    "`validation/neqsim/captures/tbp_fraction_component_probe.tsv` - six cuts from `validation/neqsim/TbpFractionComponentProbe.java`, spanning the boiling-point and heavy-coefficient switches.",
+]
+[source]
+standard = "NeqSim master `SystemThermo.addTBPfraction`"
+edition = "Its reference-system flash and `calcRacketZ`, and the block after it that sets the critical volume, parachor, critical viscosity, triple point, heat of fusion, formation enthalpy, heat-capacity coefficients and Lennard-Jones pair, composed over `TBPFractionModel.PedersenTBPModelSRK`."
+[inputs]
+[inputs.molar_mass]
+unit = "kg/mol"
+description = "The cut's molar mass. Its correlations take g/mol and this multiplies by 1000 at the boundary.\n"
+[inputs.density]
+unit = "kg/m**3"
+description = "The cut's normal liquid density at 15 C and 1 atm - the specific gravity a thousand times larger.\n"
+[[valid_range]]
+quantity = "molar_mass"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a molar mass; the triple-point and formation correlations divide by it\n"
+[[valid_range]]
+quantity = "density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a normal liquid density; the Rackett constant divides by the gravity\n"
+[outputs]
+[outputs.critical_temperature]
+unit = "K"
+description = "Critical temperature, from the TBP model's correlation.\n"
+[outputs.critical_pressure]
+unit = "Pa"
+description = "Critical pressure. The correlation is written in bar and this states pascals.\n"
+[outputs.boiling_temperature]
+unit = "K"
+description = "Normal boiling point, from the model's two-branch correlation.\n"
+[outputs.acentric_factor]
+unit = "dimensionless"
+description = "The acentric factor the component carries: the root `AttractiveTermSrk.setm` solves from the fitted `m`, not the model's Edmister value.\n"
+[outputs.attraction_exponent]
+unit = "dimensionless"
+description = "The fitted coefficient of the Soave alpha function, `0.7431 + 0.0048122 M + 0.0096707 SG - 3.7184e-6 M**2` in g/mol and g/cm3.\n"
+[outputs.critical_volume]
+unit = "m**3/mol"
+description = "Critical volume, `(0.2918 - 0.0928 w_model) R Tc/Pc`, from the **model's** acentric factor. The class's own unit is cm3/mol and this is the same volume in SI.\n"
+[outputs.racket_z]
+unit = "dimensionless"
+description = "The Peneloux Rackett compressibility, from the reference SRK phase's liquid root at 15 C and one atmosphere.\n"
+[outputs.racket_z_cpa]
+unit = "dimensionless"
+description = "The same compressibility on the CPA basis, which the class sets to the same number.\n"
+[outputs.parachor]
+unit = "dimensionless"
+description = "The parachor, `59.3 + 2.34 M` in g/mol, in NeqSim's mixed `(mN/m)**(1/4) * cm**3/mol`.\n"
+[outputs.critical_viscosity]
+unit = "Pa*s"
+description = "Critical viscosity, `7.94830 sqrt(M) Pc^(2/3) / Tc^(1/6) 1e-7` with `M` in g/mol and `Pc` in bar.\n"
+[outputs.triple_point_temperature]
+unit = "K"
+description = "The triple-point temperature, `374.5 + 0.02617 M - 20172/M` in g/mol.\n"
+[outputs.heat_of_fusion]
+unit = "J/mol"
+description = "The heat of fusion, `0.1426/0.238845 M Ttrip` in g/mol.\n"
+[outputs.ideal_gas_enthalpy_of_formation]
+unit = "J/mol"
+description = "The ideal-gas enthalpy of formation, `-1462600 M - 47566` with `M` in kg/mol.\n"
+[outputs.cp_a]
+unit = "J/(mol*K)"
+description = "The constant term of the ideal-gas heat capacity.\n"
+[outputs.cp_b]
+unit = "J/(mol*K**2)"
+description = "The coefficient of `T`.\n"
+[outputs.cp_c]
+unit = "J/(mol*K**3)"
+description = "The coefficient of `T**2`.\n"
+[outputs.cp_d]
+unit = "J/(mol*K**4)"
+description = "The coefficient of `T**3`, as `getCpD()` states it: the stored zero plus `1e-10`.\n"
+[outputs.lennard_jones_diameter]
+unit = "angstrom"
+description = "The Lennard-Jones collision diameter, Tee-Gotoh-Stewart's correlation on the critical constants.\n"
+[outputs.lennard_jones_energy]
+unit = "K"
+description = "The Lennard-Jones energy over Boltzmann's constant, in kelvin.\n"
+[implementations]
+python = "azoth.characterization.tbp_fraction_component"
+rust = "azoth_characterization::tbp_fraction_component"

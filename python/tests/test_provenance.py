@@ -142,7 +142,16 @@ def test_the_block_exists_for_every_registered_id() -> None:
     registered = {entry["id"] for entry in [*CALCS, *MODELS]}
 
     assert set(PROVENANCE) == registered
-    assert len(registered) == 234
+    # 260 -> 262: the sound speed and the map machine (2026-10-28); 263: the
+    # equilibrium sound speed; 264: the homogeneous-equilibrium release; 265: the
+    # vessel blowdown; 266: the separator capacity assessment; 267: the anti-surge
+    # recycle calculator; 268: the separator performance calculator; 269: the
+    # shell-and-tube thermal-hydraulic rating; 270: the tube-vibration screen; 271: the
+    # LMTD correction factor; 272: the Shah condensation correlations; 273: the boiling
+    # correlations; 274: the two-phase pressure drop; 275: the fouling model; 276: the tube-insert
+    # enhancement; 277: the TEMA standard; 278: the zone-by-zone rating; 279: the
+    # incremental zone analysis; 280: the detailed TEMA design.
+    assert len(registered) == 280
 
 
 def test_the_rust_table_carries_exactly_the_same_ids() -> None:
@@ -173,7 +182,7 @@ def test_an_unknown_id_is_refused_rather_than_answered_with_an_empty_block() -> 
 
 
 def test_every_block_is_complete_and_well_formed() -> None:
-    """The shape, for all 216, so the contract is the block's rather than one sample's."""
+    """The shape, for all 259, so the contract is the block's rather than one sample's."""
     for calc_id, block in PROVENANCE.items():
         assert set(block) == {
             "calc_id",

@@ -33,7 +33,9 @@ which fixes those two and rules out Pa, kPa and m**3/mol.
 `COMPONENT_COLUMNS` below is the list. The reasons are not here: every one of
 `COMP.csv`'s 170 columns and `INTER.csv`'s 39 is dispositioned in
 `databank/manifest.toml`, and this tool asserts at startup that the two agree.
-`COMP_EXT.csv` (86 MB, 76,705 rows) is not vendored at all, and the manifest says why.
+`COMP_EXT.csv` (86 MB, 76,705 rows) is vendored whole and is **not compiled into the component
+table**: `components.csv` comes from `COMP.csv` alone, and the manifest disposes the extended
+file's columns as unread.
 """
 
 from __future__ import annotations
@@ -54,6 +56,21 @@ import manifest as manifest_module
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "databank" / "sources" / "neqsim"
 OUT_DIR = ROOT / "data" / "components"
+HEAT_EXCHANGER_DIR = ROOT / "data" / "heat_exchanger"
+
+#: The tube-material table behind `ShellAndTubeDesignCalculator`'s grade lookup. Its
+#: `NACECompliant` column is carried as the file text, not a boolean: the class tests it
+#: against `Yes`, which no row holds, and the port reproduces that.
+TUBE_MATERIALS = ("HeatExchangerTubeMaterials.csv", "tube_materials.csv")
+TUBE_MATERIALS_HEADER = (
+    "material_grade",
+    "specification",
+    "material_type",
+    "smys_mpa",
+    "allowable_stress_mpa",
+    "thermal_conductivity_wpm_k",
+    "nace_compliant",
+)
 CHARACTERIZATION_DIR = ROOT / "data" / "characterization"
 
 #: The small tables carried verbatim, re-rendered like the component and interaction
@@ -287,6 +304,22 @@ def _upstream(key: str) -> str:
 
 NEQSIM_VERSION = _upstream("version")
 NEQSIM_COMMIT = _upstream("commit")
+
+
+def _file_upstream(file_id: str, key: str) -> str:
+    """One field of one vendored file, which may state its own revision (manifest schema 2)."""
+    found, problems = manifest_module.read()
+    if problems:
+        raise SystemExit("gen_databank: " + "\n  ".join(problems))
+    for entry in found.files():
+        if entry.id == file_id:
+            value = str(getattr(entry, key))
+            if not value:
+                raise SystemExit(f"gen_databank: {file_id} states no {key}")
+            return value
+    raise SystemExit(f"gen_databank: the manifest declares no file {file_id}")
+
+
 #: **The revision, named by the commit rather than the version.** The manifest's `version`
 #: is NeqSim's own `pom.xml` property, which reads the same at the release tag and on master
 #: - fifty commits apart - so a citation built from it names two different trees. The commit
@@ -307,8 +340,9 @@ GIBBS_REACTOR_CITATION = (
 )
 
 CITATION = (
-    f"NeqSim master ({NEQSIM_COMMIT[:7]}) COMP.csv (Equinor/NTNU), Apache-2.0, "
-    f"retrieved {_upstream('retrieved')}"
+    f"NeqSim master ({_file_upstream('neqsim/COMP.csv', 'commit')[:7]}) COMP.csv "
+    f"(Equinor/NTNU), Apache-2.0, "
+    f"retrieved {_file_upstream('neqsim/COMP.csv', 'retrieved')}"
 )
 
 #: Output column -> (NeqSim column, conversion). The conversions are the ones
@@ -530,6 +564,29 @@ def build_components(source: Path) -> list[dict[str, str]]:
         values["citation"] = CITATION
         out.append(values)
     return out
+
+
+def build_tube_materials(source: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
+    """`data/heat_exchanger/tube_materials.csv`, one row per material grade.
+
+    The vendored CSV is NeqSim's own `designdata` table, read whole: the design
+    calculator looks a grade up by exact equality and this is every row it can find.
+    """
+    with source.open(newline="", encoding="utf-8") as handle:
+        source_rows = list(csv.DictReader(handle))
+    rows = [
+        {
+            "material_grade": row["MaterialGrade"].strip(),
+            "specification": row["Specification"].strip(),
+            "material_type": row["MaterialType"].strip(),
+            "smys_mpa": row["SMYS_MPa"].strip(),
+            "allowable_stress_mpa": row["AllowableStress_MPa"].strip(),
+            "thermal_conductivity_wpm_k": row["ThermalConductivity_WpmK"].strip(),
+            "nace_compliant": row["NACECompliant"].strip(),
+        }
+        for row in source_rows
+    ]
+    return TUBE_MATERIALS_HEADER, rows
 
 
 def build_kij(source: Path, known: set[str]) -> list[dict[str, str]]:
@@ -1180,6 +1237,10 @@ def main(argv: list[str] | None = None) -> int:
         (STANDARDS_DIR / ISO6976_CONSTANTS[1], *iso6976),
         (REACTORS_DIR / GIBBS_REACTOR[1], *reactor),
         (REACTORS_DIR / GIBBS_COEFFS[1], *coeffs),
+        (
+            HEAT_EXCHANGER_DIR / TUBE_MATERIALS[1],
+            *build_tube_materials(SOURCES / TUBE_MATERIALS[0]),
+        ),
     ]
 
     if args.check:
@@ -1195,8 +1256,10 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"gen_databank: {len(components)} component(s), {len(kij)} kij row(s), "
             f"{len(phreeqc[1])} PHREEQC Pitzer row(s), {len(furst[1])} Furst "
-            f"constant(s), {len(reactor[1])} Gibbs reactor species and "
-            f"{len(coeffs[1])} coefficient row(s) up to date"
+            f"constant(s), {len(reactor[1])} Gibbs reactor species, "
+            f"{len(coeffs[1])} coefficient row(s) and "
+            f"{len(build_tube_materials(SOURCES / TUBE_MATERIALS[0])[1])} material "
+            f"row(s) up to date"
         )
         return 0
 

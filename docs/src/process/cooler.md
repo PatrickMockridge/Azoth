@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/heatexchanger/Cooler.java**
 
-No `run` of its own: the port is `Heater.run` reached through `Cooler`, on the three setters this palette entry declares.
+No `run` of its own: the port is `Heater.run` reached through `Cooler`, on the three setters this palette entry declares, **and `runTransient`'s configured dynamic branch as one step**.
 
 
 ## What this model is
@@ -27,6 +27,18 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `outlet_temperature` | K | *Optional.* the temperature the stream is cooled to, which is `unit_ops.cooler`'s own parameter. Giving it beside a `duty` is refused rather than resolved. |
 | `duty` | W | *Optional.* the heat removed, as a negative number, which sets the outlet enthalpy as `inlet_h + duty / inlet_n`. Nothing checks the sign: a positive value heats. |
 | `pressure_drop` | Pa | *Optional.* the pressure loss across the cooler, taken off the inlet pressure before the flash. When omitted the outlet is at the inlet's pressure. |
+| `time_step` | s | *Optional.* one `runTransient(dt, id)` step. Absent is the steady `run`; a stated one is a call, including zero. The clock and the session loop are outside the id. |
+| `dynamic_temperature_control_enabled` | - | *Optional.* the class's `dynamicTemperatureControlEnabled`, set by `configureDynamicTemperatureControl`. Absent is false, so a stated `time_step` takes `Heater.runTransient`'s steady fallback. |
+| `design_mass_flow` | kg/h | *Optional.* the design process mass flow the configuration takes. Required on the active branch, where it scales the design NTU against the current flow. |
+| `design_inlet_temperature` | K | *Optional.* the design inlet temperature. Required on the active branch; the design point is `inlet > outlet > medium`. |
+| `design_outlet_temperature` | K | *Optional.* the design outlet temperature, on the same terms. |
+| `cooling_medium_temperature` | K | *Optional.* the cooling medium's supply temperature. Required on the active branch; an inlet at or below it receives no cooling. |
+| `design_valve_opening` | dimensionless | *Optional.* the valve opening at the design point, in percent. Absent is the class's `50`; a value outside `(0, 100]` is refused. |
+| `actuator_time_constant` | s | *Optional.* the utility-valve actuator's first-order constant. Absent is 10; zero moves the valve in one step. |
+| `thermal_time_constant` | s | *Optional.* the process side's first-order constant. Absent is 20; zero moves the outlet in one step. |
+| `cooling_valve_opening` | dimensionless | *Optional.* the carried valve opening, in percent. Absent is the design opening; the setter clamps to `[0, 100]`. |
+| `requested_valve_opening` | dimensionless | *Optional.* the controller's response for this step, in percent. Absent is the step-initial opening, the class's no-controller path; the class clamps to `[0, 100]`. |
+| `dynamic_outlet_temperature` | K | *Optional.* the carried outlet temperature. **Absent or NaN seeds to the design outlet, the state the configuration sets**; the result carries the post-step value for the next call. |
 
 
 ## Outputs
@@ -39,11 +51,24 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `outlet_t` | K | the outlet temperature: `outlet_temperature` when it is given, and otherwise the one the mixture reaches at the outlet pressure carrying `outlet_h`. |
 | `outlet_h` | J/mol | the outlet molar enthalpy: the inlet's plus `duty / inlet_n`, or the enthalpy of the state at `outlet_temperature`. |
 | `outlet_duty` | W | the duty the cooler moved, as `inlet_n * (outlet_h - inlet_h)`. Negative when heat was removed, which is the usual case for this entry. |
+| `cooling_valve_opening` | dimensionless | *Optional.* the post-step valve opening, in percent. Present only on the dynamic branch. |
+| `equilibrium_outlet_temperature` | K | *Optional.* the equilibrium the thermal lag moved toward. Present only on the dynamic branch, as evidence. |
 
 | Bound | On violation | Why |
 |---|---|---|
 | `outlet_temperature > 0` | raises | an absolute temperature; zero and below are not states |
 | `inlet_t > 0` | raises | an absolute temperature |
+| `time_step >= 0` | raises | a forward-Euler interval; a negative one moves the valve and the outlet backwards. |
+| `design_mass_flow > 0` | raises | the design point needs a positive mass flow and the class refuses one that is not. |
+| `design_inlet_temperature > 0` | raises | an absolute temperature. |
+| `design_outlet_temperature > 0` | raises | an absolute temperature. |
+| `cooling_medium_temperature > 0` | raises | an absolute temperature. |
+| `design_valve_opening > 0 and design_valve_opening <= 100` | raises | the configuration refuses an opening outside (0, 100]. |
+| `actuator_time_constant >= 0` | raises | the setter refuses a negative time constant. |
+| `thermal_time_constant >= 0` | raises | the setter refuses a negative time constant. |
+| `cooling_valve_opening >= 0 and cooling_valve_opening <= 100` | warns `OUT_OF_VALID_RANGE` | the setter clamps the opening to [0, 100] rather than refusing it. |
+| `requested_valve_opening >= 0 and requested_valve_opening <= 100` | warns `OUT_OF_VALID_RANGE` | the class clamps the controller's requested opening to [0, 100]. |
+| `dynamic_outlet_temperature > 0` | raises | an absolute temperature; a carried sub-zero state is not one the ODE moves. |
 
 ## Assumptions
 
@@ -54,8 +79,24 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **a temperature and a `duty` together are refused**: `Heater`'s two setters clear each other's flags, so the class's answer to both is the order they were called in - a state these inputs cannot express.
 - **`outlet_duty` is the state's number and not the caller's.** `run` overwrites its own `energyInput` with the enthalpy the flash reached, in every branch.
 - **with neither specification the drop is isothermal**, because `run`'s else branch is `T_in + dT` with `dT` defaulting to zero and `dT` is not a palette parameter.
-- `Cooler`'s own 258 lines are a bounded dynamic temperature-control model - a utility-valve opening, an NTU scaled by it and first-order actuator and thermal time constants - and **none of it is ported**: it reaches the outlet only through `runTransient`.
+- `Cooler`'s own 258 lines are a bounded dynamic temperature-control model - a utility-valve opening, an NTU scaled by it and first-order actuator and thermal time constants - **and its configured branch is the one-step surface below**.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
+- **`runTransient`'s configured branch is one step here.** A stated `time_step` with `dynamic_temperature_control_enabled` is a call, including zero; otherwise the steady `run` is the fallback. The clock and the session loop are outside the id.
+
+- **the design point is `configureDynamicTemperatureControl`'s.** `design_ntu = -ln((T_out - T_medium)/(T_in - T_medium))` with `T_in > T_out > T_medium`; a positive design mass flow and opening are required, and the class's unconfigured zero defaults are not modelled.
+
+- **the controller is outside the id.** `requested_valve_opening` is the response it would have produced; absent is the step-initial opening, the class's no-controller path. The per-UUID step cache is session state; one call is one step.
+
+- **the valve is a first-order actuator.** `opening += dt/(tau_a + dt) * (requested - opening)`, with a zero constant moving it in one step; the requested and carried openings are clamped to `[0, 100]`.
+
+- **the NTU is scaled by opening and inverse mass flow, clamped to `[0, 20]`.** `ntu = design_ntu * opening/design_opening * design_mass/current_mass`; the mass flow floors at `1e-12` kg/h as the class does.
+
+- **the outlet is the class's second first-order lag.** `outlet = previous + dt/(tau_t + dt) * (equilibrium - previous)`, clamped to `[min(medium, inlet), inlet]`; an inlet at or below the medium is the equilibrium, so the model never heats.
+
+- **the carried state is the opening and the outlet.** `dynamic_outlet_temperature` absent or NaN seeds to the design outlet, the state the configuration sets; the result publishes the post-step opening and outlet. The outlet is the steady heater run at the computed temperature.
+
+- **a non-positive inlet flow is refused**, because the mass-flow scale divides by it; the heater arithmetic also refuses a duty on no flow.
+
 
 ## Cases
 
@@ -67,11 +108,19 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `duty_minus_5000_watts` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, duty = -5000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 248.0677292845227, outlet_h = -3764.242030067413, outlet_duty = -4999.999996461522 |
 | `no_specification_is_isothermal` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 320.0, outlet_h = 1235.7579663941092, outlet_duty = 0.0 |
 | `no_specification_with_a_drop_is_isothermal_and_not_isenthalpic` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, pressure_drop = 200000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 2800000.0, outlet_t = 320.0, outlet_h = 1285.3807981097964, outlet_duty = 49.6228317156872 |
+| `the_dynamic_gate_falls_back_to_the_steady_run` | components = ['methane'], inlet_n = 173.14578182246325, inlet_z = [1.0], inlet_p = 5000000.0, inlet_t = 353.15, outlet_temperature = 308.15, time_step = 2.0, dynamic_temperature_control_enabled = False | outlet_t = 308.15, outlet_duty = -323067.28168942 |
+| `the_design_point_is_the_equilibrium` | components = ['methane'], inlet_n = 173.14578182246325, inlet_z = [1.0], inlet_p = 5000000.0, inlet_t = 353.15, time_step = 2.0, dynamic_temperature_control_enabled = True, design_mass_flow = 10000.0, design_inlet_temperature = 353.15, design_outlet_temperature = 308.15, cooling_medium_temperature = 293.15, design_valve_opening = 50.0, actuator_time_constant = 5.0, thermal_time_constant = 10.0 | outlet_t = 308.15, outlet_duty = -323067.28168942, cooling_valve_opening = 50.0 |
+| `the_hotter_inlet_moves_the_outlet` | components = ['methane'], inlet_n = 173.14578182246325, inlet_z = [1.0], inlet_p = 5000000.0, inlet_t = 373.15, time_step = 2.0, dynamic_temperature_control_enabled = True, design_mass_flow = 10000.0, design_inlet_temperature = 353.15, design_outlet_temperature = 308.15, cooling_medium_temperature = 293.15, design_valve_opening = 50.0, actuator_time_constant = 5.0, thermal_time_constant = 10.0 | outlet_t = 308.9833333333333, outlet_duty = -462538.50654017075, cooling_valve_opening = 50.0 |
+| `the_manual_controller_opens_the_valve` | components = ['methane'], inlet_n = 173.14578182246325, inlet_z = [1.0], inlet_p = 5000000.0, inlet_t = 353.15, time_step = 2.0, dynamic_temperature_control_enabled = True, design_mass_flow = 10000.0, design_inlet_temperature = 353.15, design_outlet_temperature = 308.15, cooling_medium_temperature = 293.15, design_valve_opening = 50.0, actuator_time_constant = 5.0, thermal_time_constant = 10.0, requested_valve_opening = 100.0 | outlet_t = 307.33237524079044, outlet_duty = -328929.8734058788, cooling_valve_opening = 64.28571428571428 |
+| `the_closed_valve_moves_the_outlet_to_the_inlet` | components = ['methane'], inlet_n = 173.14578182246325, inlet_z = [1.0], inlet_p = 5000000.0, inlet_t = 353.15, time_step = 2.0, dynamic_temperature_control_enabled = True, design_mass_flow = 10000.0, design_inlet_temperature = 353.15, design_outlet_temperature = 308.15, cooling_medium_temperature = 293.15, design_valve_opening = 50.0, actuator_time_constant = 5.0, thermal_time_constant = 10.0, requested_valve_opening = 0.0 | outlet_t = 309.36498572284233, outlet_duty = -314357.67138525937, cooling_valve_opening = 35.714285714285715 |
+| `a_cold_feed_receives_no_heating` | components = ['methane'], inlet_n = 173.14578182246325, inlet_z = [1.0], inlet_p = 5000000.0, inlet_t = 283.15, time_step = 1.0, dynamic_temperature_control_enabled = True, design_mass_flow = 10000.0, design_inlet_temperature = 353.15, design_outlet_temperature = 308.15, cooling_medium_temperature = 293.15, design_valve_opening = 50.0, actuator_time_constant = 0.0, thermal_time_constant = 0.0 | outlet_t = 283.15, outlet_duty = 0.0, cooling_valve_opening = 50.0 |
+| `the_second_step_carries_the_opening` | components = ['methane'], inlet_n = 173.14578182246325, inlet_z = [1.0], inlet_p = 5000000.0, inlet_t = 353.15, time_step = 2.0, dynamic_temperature_control_enabled = True, design_mass_flow = 10000.0, design_inlet_temperature = 353.15, design_outlet_temperature = 308.15, cooling_medium_temperature = 293.15, design_valve_opening = 50.0, actuator_time_constant = 5.0, thermal_time_constant = 10.0, cooling_valve_opening = 64.28571428571428, dynamic_outlet_temperature = 307.33237524079044, requested_valve_opening = 100.0 | outlet_t = 306.2364540177012, outlet_duty = -336789.9670992062, cooling_valve_opening = 74.48979591836734 |
+| `the_ntu_clamp_floors_the_equilibrium` | components = ['methane'], inlet_n = 1.7314578182246327, inlet_z = [1.0], inlet_p = 5000000.0, inlet_t = 353.15, time_step = 2.0, dynamic_temperature_control_enabled = True, design_mass_flow = 10000.0, design_inlet_temperature = 353.15, design_outlet_temperature = 308.15, cooling_medium_temperature = 293.15, design_valve_opening = 50.0, actuator_time_constant = 5.0, thermal_time_constant = 10.0, cooling_valve_opening = 100.0 | outlet_t = 305.6500000206115, outlet_duty = -3409.971305187907, cooling_valve_opening = 100.0 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 6 declared, every one run
+- Tests: 14 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

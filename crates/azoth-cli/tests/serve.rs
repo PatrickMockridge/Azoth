@@ -91,13 +91,23 @@ impl Server {
 
     /// One request, and the status and body it answers with.
     fn request(&self, method: &str, body: Option<&str>, origin: Option<&str>) -> (u16, Value) {
+        self.request_to("/rpc", method, body, origin)
+    }
+
+    fn request_to(
+        &self,
+        path: &str,
+        method: &str,
+        body: Option<&str>,
+        origin: Option<&str>,
+    ) -> (u16, Value) {
         let mut stream = TcpStream::connect(("127.0.0.1", self.port)).expect("it is listening");
         let body = body.unwrap_or_default();
         let origin = origin
             .map(|origin| format!("Origin: {origin}\r\n"))
             .unwrap_or_default();
         let request = format!(
-            "{method} /rpc HTTP/1.1\r\nHost: 127.0.0.1\r\n{origin}\
+            "{method} {path} HTTP/1.1\r\nHost: 127.0.0.1\r\n{origin}\
              Content-Type: application/json\r\nContent-Length: {}\r\n\r\n{body}",
             body.len()
         );
@@ -152,6 +162,14 @@ impl Server {
     fn envelope(&self, body: Value) -> Value {
         let (status, answer) = self.call(body);
         assert_eq!(status, 200, "the call is served: {answer}");
+        answer
+    }
+
+    /// One calculation-book call, at its own route.
+    fn sheet(&self, body: Value) -> Value {
+        let text = body.to_string();
+        let (status, answer) = self.request_to("/sheets", "POST", Some(&text), None);
+        assert_eq!(status, 200, "the sheet call is served: {answer}");
         answer
     }
 }
@@ -226,7 +244,7 @@ fn the_catalogue_is_the_palette_the_process_loaded() {
     assert_eq!(status, 200);
     assert_eq!(
         catalogue["unit_ops"].as_array().map(Vec::len),
-        Some(29),
+        Some(31),
         "the shipped palette, entry by entry"
     );
     // A form carries the parameters a unit-op window is drawn from, which is the whole point of
@@ -251,8 +269,8 @@ fn the_catalogue_is_the_palette_the_process_loaded() {
     assert_eq!(status, 200);
     assert_eq!(
         catalogue["tools"].as_array().map(Vec::len),
-        Some(15),
-        "the fifteen commands, which `/mcp` serves the same way"
+        Some(16),
+        "the sixteen commands, which `/mcp` serves the same way"
     );
 
     // **A body that asks for two things has two answers**, so it is a request this server cannot
@@ -448,4 +466,38 @@ fn only_an_allowed_origin_is_given_the_cors_header() {
         head.contains("Connection: close"),
         "every response says so: {head}"
     );
+}
+
+#[test]
+fn the_calculation_book_is_a_second_route() {
+    let server = Server::start(&[]);
+    let opened = server.sheet(json!({ "command": null }));
+    assert_eq!(
+        opened["book"]["sheets"].as_array().map(Vec::len),
+        Some(0),
+        "a server started without --calc-book serves a blank book"
+    );
+
+    server.sheet(json!({
+        "command": {
+            "command": "add_sheet",
+            "id": "pump_1",
+            "calculation": "hydraulics.pump_power"
+        }
+    }));
+    for (name, value) in [("rho", 998.0), ("q", 0.01), ("H", 30.0), ("eta", 0.75)] {
+        server.sheet(json!({
+            "command": {
+                "command": "set_input",
+                "sheet": "pump_1",
+                "input": name,
+                "value": value
+            }
+        }));
+    }
+    let calculated = server.sheet(json!({ "calculate": "pump_1" }));
+    let power = &calculated["book"]["sheets"][0]["result"]["outputs"]["power"]["magnitude_si"];
+    let power = power.as_f64().expect("a quantity");
+    assert!((power - 3914.81468).abs() < 1e-6, "{power}");
+    assert_eq!(calculated["book"]["sheets"][0]["stale"], false);
 }

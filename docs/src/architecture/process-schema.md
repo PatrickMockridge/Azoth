@@ -161,7 +161,8 @@ rather than measured, and its loop stops at one pass.
 - an input's record could be a stream — one mole fraction per substance, and a fluid that
   names at least one;
 - **linearity** — a `one` port is consumed/produced exactly once, a `many` port at
-  least once, and every feed/product is used exactly once;
+  least its declared `min_streams` (one by default; a mixer's feed declares two), and every
+  feed/product is used exactly once;
 - no name is used for two things a reader has to tell apart — an instance and a feed, an instance
   and a product, or a feed and a product;
 - **a connection and a tear may each be declared once**: a connection is identified by its two
@@ -221,8 +222,8 @@ the checker's `UnknownInstance` explains, and which is reported rather than repa
 
 ## The kernels
 
-A kernel is a unit operation's arithmetic, a pure function of its inlets. **Twenty-eight of the
-29 palette entries carry a registered `process.*` id** — a spec, a kernel, a Python reference, a
+A kernel is a unit operation's arithmetic, a pure function of its inlets. **Thirty of the
+31 palette entries carry a registered `process.*` id** — a spec, a kernel, a Python reference, a
 case set and a NeqSim capture — composing the calculations in `azoth-eos` rather than adding new
 physics. One does not: `unit_ops.simple_absorber` is refused on measured evidence, because a
 faithful port needs the amine electrolyte chemistry P8 declined.
@@ -232,10 +233,8 @@ faithful port needs the amine electrolyte chemistry P8 declined.
 tolerances, a session whose every value has a stable path, a JSON codec and structured
 diagnostics. It runs `specs/flowsheets/demo.toml` and converges its recycle, held to a NeqSim
 `ProcessSystem` capture, and the document runs from three places — the library, `azoth run
---flowsheet` and `azoth.process.run_flowsheet` — with no argument but the file. **One entry it
-refuses by name**: `unit_ops.packed_column` has a kernel
-and a registered id, and its declaration describes the packing rather than the column, so the
-executor says so rather than running a machine the declaration does not describe. What is still
-owed is named in `ROADMAP.md`.
+--flowsheet` and `azoth.process.run_flowsheet` — with no argument but the file. The one entry it refuses by name is
+`unit_ops.simple_absorber`, whose fixed-point loop over MDEA/CO₂ loading needs the amine
+electrolyte chemistry P8 declined. What is still owed is named in `ROADMAP.md`.
 
 *Enforcement: construction — the Rust type is the schema: `crates/azoth-process/src/channel.rs` declares the port record and `crates/azoth-process/src/flowsheet.rs` the document, so a flowsheet that disagrees with the declaration cannot be read, and `crates/azoth-process/src/check.rs`'s `validate` rules on what was read.*

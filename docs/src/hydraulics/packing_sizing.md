@@ -4,6 +4,8 @@
 
 `hydraulics.packing_sizing`
 
+The column diameter a packed bed needs to stay below a chosen fraction of flooding. Use it for packed-column diameter sizing from vapour and liquid loads.
+
 ## Equation
 
 $$
@@ -22,18 +24,38 @@ u_design = u_flood * f; q_v = m_v / max(rho_v, 0.01); A = q_v / u_design; d_raw 
 
 `sizeColumnDiameter` and `roundToStandardDiameter`, ported verbatim, over the packing table `hydraulics.packing_hydraulics` already carries. The class returns only the diameter; the four intermediates are the arithmetic it performs inline, which the probe prints as derived.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **the trial diameter does not enter the flooding velocity.** The class sets `columnDiameter = 1.0` and then calls `calculateFloodingVelocity`, which reads neither the diameter nor any area - so the trial is inert and the sizing is a closed form rather than an iteration.
+
+- **the rounding is up, over a fixed table of thirty-one sizes** - the one the equation lists - so a raw `0.2893` m answers `0.3` m and never `0.2893`. The vessel is bought rather than machined, and the raw diameter is reported beside it.
+
+- **the table's floor is `0.3` m, and it is reached.** A raw diameter of `0.0930` m answers `0.3` m - the capture's light-load row - so the floor is a real bound on the answer rather than a formality.
+
+- **`FLV` is clamped to `[0.005, 5.0]`, and the ceiling binds.** The capture's high-liquid row (`L/V = 34.3`) and its light-load row (`L/V = 175`) saturate at `5.0` and answer the same flooding velocity to sixteen digits.
+
+- **the sizing reads the packing's factor and the liquid's viscosity, and nothing else.** The capture carries the vapour's viscosity and the surface tension because the same probe prints the full hydraulics beside the size; this method reads neither.
+
+- **a zero vapour flow does not reach the guard, and a zero capacity factor does.** `FLV` clamps to `0.005` rather than to zero, so no vapour still gets a positive flood, an area of zero and the `0.3` m floor; only a zero capacity factor makes `uDesign <= 0`, where the answer is the `1.0` m trial.
+
+- the vapour density is floored at `0.01` kg/m**3 in the volumetric flow, and the mass flows are the tray's own: a packing does not change them.
+
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
-| `packing` | - | the packing's name or an alias, which the library resolves; a name nothing matches is `Pall-Ring-50`. Only its factor is read here. |
+| `packing` | - | The packing's name or an alias; an unknown name is refused. Only its factor is read here. |
 | `design_flood_fraction` | dimensionless | the fraction of the flooding velocity the column is designed to run at, so the design velocity is `u_flood * f`. |
 | `vapor_mass_flow` | kg/s | the vapour's mass flow at the sizing state. |
 | `liquid_mass_flow` | kg/s | the liquid's mass flow at the sizing state, which enters only through `FLV`. |
 | `vapor_density` | kg/m**3 | the vapour's mass density, which the volumetric flow divides by. |
 | `liquid_density` | kg/m**3 | the liquid's mass density, which `FLV` and the density factor read. |
 | `liquid_viscosity` | Pa*s | the liquid's dynamic viscosity, which the `(mu_L/mu_water)**0.1` factor reads. |
-| `hydraulic_capacity_factor` | dimensionless | the packing's relative hydraulic capacity factor, which scales the flooding velocity. One is the class's default. |
+| `hydraulic_capacity_factor` | dimensionless | The packing's relative hydraulic capacity factor, which scales the flooding velocity. Defaults to one. |
 
 
 ## Outputs
@@ -46,7 +68,7 @@ u_design = u_flood * f; q_v = m_v / max(rho_v, 0.01); A = q_v / u_design; d_raw 
 | `required_area` | m**2 | the cross-sectional area the vapour needs at the design velocity. |
 | `required_diameter` | m | `sqrt(4 A / pi)`, **before** rounding - the number the standard size is chosen from. |
 | `column_diameter` | m | the required internal diameter, rounded up to the next standard vessel size. |
-| `packing_name` | - | the packing the name resolved to, which is `Pall-Ring-50` where nothing matched - so a misspelt packing is visible rather than silent. |
+| `packing_name` | - | the packing the name resolved to; a misspelt packing is refused rather than defaulted. |
 | `packing_factor` | dimensionless | the resolved packing factor in 1/m, the only geometry this calculation reads. Reported as `dimensionless` because the vocabulary has no `1/m`; `hydraulics.packing_hydraulics` declares the same field the same way. |
 
 
@@ -61,25 +83,11 @@ u_design = u_flood * f; q_v = m_v / max(rho_v, 0.01); A = q_v / u_design; d_raw 
 | `vapor_mass_flow >= 0` | warns `OUT_OF_VALID_RANGE` | no vapour flow gives an area of zero and therefore the table's `0.3` m floor: a real answer to a degenerate question, so this is a warning rather than an error. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
-
-- **the trial diameter does not enter the flooding velocity.** The class sets `columnDiameter = 1.0` and then calls `calculateFloodingVelocity`, which reads neither the diameter nor any area - so the trial is inert and the sizing is a closed form rather than an iteration.
-
-- **the rounding is up, over a fixed table of thirty-one sizes** - the one the equation lists - so a raw `0.3717` m answers `0.4` m and never `0.3717`. The vessel is bought rather than machined, and the raw diameter is reported beside it.
-
-- **the table's floor is `0.3` m, and it is reached.** A raw diameter of `0.1195` m answers `0.3` m - the capture's light-load row - so the floor is a real bound on the answer rather than a formality.
-
-- **`FLV` is clamped to `[0.005, 5.0]`, and the ceiling binds.** The capture's high-liquid row (`L/V = 34.3`) and its light-load row (`L/V = 175`) saturate at `5.0` and answer the same flooding velocity to sixteen digits.
-
-- **the sizing reads the packing's factor and the liquid's viscosity, and nothing else.** The capture carries the vapour's viscosity and the surface tension because the same probe prints the full hydraulics beside the size; this method reads neither.
-
-- **a zero vapour flow does not reach the guard, and a zero capacity factor does.** `FLV` clamps to `0.005` rather than to zero, so no vapour still gets a positive flood, an area of zero and the `0.3` m floor; only a zero capacity factor makes `uDesign <= 0`, where the answer is the `1.0` m trial.
-
-- the vapour density is floored at `0.01` kg/m**3 in the volumetric flow, and the mass flows are the tray's own: a packing does not change them.
 
 - **the sizing is not a design check.** It returns the narrowest standard vessel that keeps the vapour at the design fraction of flood; whether that is a *good* design is `hydraulics.packing_hydraulics`'s `design_ok`.
 
@@ -103,16 +111,16 @@ Source: derived from the equation above
 
 | Output | Expected |
 |---|---|
-| `flooding_velocity` | 0.10238615607703111 |
-| `design_velocity` | 0.07167030925392177 |
+| `flooding_velocity` | 0.16908517183707505 |
+| `design_velocity` | 0.11835962028595252 |
 | `vapor_volumetric_flow` | 0.0077777777777777776 |
-| `required_area` | 0.10852161597659327 |
-| `required_diameter` | 0.3717176521500718 |
-| `column_diameter` | 0.4 |
+| `required_area` | 0.06571310180775293 |
+| `required_diameter` | 0.2892551120185065 |
+| `column_diameter` | 0.3 |
 
 Relative tolerance: `1e-09`
 
-The absorber state of the capture's first row: Pall-Ring-50, 0.35 kg/s of vapour at 45 kg/m**3, 3.5 kg/s of liquid at 990 kg/m**3 and 6.5e-4 Pa*s, designed at 70% of flood. The flooding velocity from the Eckert fit at this state is 0.10238615607703111 m/s. u_design = 0.10238615607703111 * 0.7 = 0.07167030925392177 m/s q_v = 0.35 / 45.0 = 0.0077777777777777776 m**3/s A = 0.0077777777777777776 / 0.07167030925392177 = 0.10852161597659327 m**2 d_raw = sqrt(4 * 0.10852161597659327 / pi) = 0.3717176521500718 m d = the first standard size >= 0.3717176521500718 = 0.4 m The raw diameter is 0.3717 m and the vessel is bought at 0.4 m; the pair is reported separately because the rounding is the class's, not the caller's.
+The absorber state of the capture's first row: Pall-Ring-50, 0.35 kg/s of vapour at 45 kg/m**3, 3.5 kg/s of liquid at 990 kg/m**3 and 6.5e-4 Pa*s, designed at 70% of flood. The flooding velocity from the Eckert fit at this state is 0.16908517183707505 m/s. u_design = 0.16908517183707505 * 0.7 = 0.11835962028595252 m/s q_v = 0.35 / 45.0 = 0.0077777777777777776 m**3/s A = 0.0077777777777777776 / 0.11835962028595252 = 0.06571310180775293 m**2 d_raw = sqrt(4 * 0.06571310180775293 / pi) = 0.2892551120185065 m d = the first standard size >= 0.2892551120185065 = 0.3 m The raw diameter is 0.2893 m and the vessel is bought at 0.3 m; the pair is reported separately because the rounding is the class's, not the caller's.
 
 
 ## Tests

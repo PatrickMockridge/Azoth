@@ -109,6 +109,7 @@ pub fn pipe(
     let mut state = State::at(
         &mixture,
         feed,
+        feed.n,
         pressure,
         area,
         diameter.value,
@@ -126,6 +127,7 @@ pub fn pipe(
         state = State::at(
             &mixture,
             feed,
+            feed.n,
             pressure,
             area,
             diameter.value,
@@ -152,6 +154,117 @@ pub fn pipe(
     })
 }
 
+/// The outlet pressure one flow implies, at the inlet state - `calcPressureOut`.
+///
+/// **This is the function `calcFlow` bisects**, and it is the class's own: the state is the
+/// inlet's, not an iterated outlet, because `calcPressureOut` reads `system` where `run` left
+/// it, at the inlet pressure.
+///
+/// # Errors
+/// Whatever the flash, the density, the viscosity or the label refuses.
+pub fn pressure_out_at(
+    feed: &Stream,
+    n: f64,
+    length: Length,
+    diameter: Length,
+    roughness: Length,
+) -> Result<f64> {
+    let (mixture, _) = feed.mixture()?;
+    let area = std::f64::consts::PI / 4.0 * diameter.value * diameter.value;
+    let state = State::at(
+        &mixture,
+        feed,
+        n,
+        feed.p.value,
+        area,
+        diameter.value,
+        roughness.value / diameter.value,
+    )?;
+    Ok(state.outlet_pressure(feed.p.value, length.value, diameter.value))
+}
+
+/// The molar flow that lands the line on a stated outlet pressure, `calcFlow`'s bisection.
+///
+/// **The class's own bounds and stops**: a seed mass flow of the inlet's, low at `0.001` and
+/// high at `100` times it, each widened by a decade up to twenty times until the bracket
+/// straddles the target, then fifty bisection passes to a `1e-4` relative pressure tolerance
+/// or a `1e-4` relative flow width. The answer is a **mass** flow in the class; this returns
+/// the molar one, because that is the record's field.
+///
+/// # Errors
+/// [`azoth_core::AzothError::InvalidInput`] if the geometry is not positive or the target is
+/// not positive, and whatever the flash, the density, the viscosity or the label refuses.
+pub fn calc_flow(
+    feed: &Stream,
+    outlet_pressure: Pressure,
+    length: Length,
+    diameter: Length,
+    roughness: Length,
+) -> Result<f64> {
+    for (name, value) in [
+        ("length", length.value),
+        ("diameter", diameter.value),
+        ("roughness", roughness.value),
+        ("outlet_pressure", outlet_pressure.value),
+    ] {
+        if value.is_nan() || value <= 0.0 {
+            return Err(AzothError::invalid_input(
+                name,
+                format!("the flow solve needs a positive {name}, and {value} is not"),
+            ));
+        }
+    }
+    let (mixture, _) = feed.mixture()?;
+    let molar_mass = molar_mass_of(&mixture, &feed.z)?;
+    let seed = {
+        let mass = feed.n * molar_mass;
+        if mass > 0.0 { mass } else { 1.0 }
+    };
+    let target = outlet_pressure.value;
+
+    let outlet = |mass: f64| -> Result<f64> {
+        pressure_out_at(feed, mass / molar_mass, length, diameter, roughness)
+    };
+
+    let mut low = seed * 0.001;
+    let mut high = seed * 100.0;
+    let mut p_low = outlet(low)?;
+    let mut p_high = outlet(high)?;
+    for _ in 0..20 {
+        if p_low >= target {
+            break;
+        }
+        low /= 10.0;
+        p_low = outlet(low)?;
+    }
+    for _ in 0..20 {
+        if p_high <= target {
+            break;
+        }
+        high *= 10.0;
+        p_high = outlet(high)?;
+    }
+
+    const TOLERANCE: f64 = 1.0e-4;
+    let mut mid = 0.5 * (low + high);
+    for _ in 0..50 {
+        mid = 0.5 * (low + high);
+        let p_mid = outlet(mid)?;
+        if ((p_mid - target) / target).abs() < TOLERANCE {
+            break;
+        }
+        if p_mid > target {
+            low = mid;
+        } else {
+            high = mid;
+        }
+        if ((high - low) / mid).abs() < TOLERANCE {
+            break;
+        }
+    }
+    Ok(mid / molar_mass)
+}
+
 /// One pass's state, and the outlet pressure it implies.
 struct State {
     /// The velocity the drop was computed at, m/s.
@@ -176,10 +289,11 @@ struct State {
 
 impl State {
     /// Evaluate the line at one pressure.
-    #[allow(clippy::too_many_arguments)] // one per quantity the class reads, and there are six
+    #[allow(clippy::too_many_arguments)] // one per quantity the class reads
     fn at(
         mixture: &azoth_eos::Mixture,
         feed: &Stream,
+        n: f64,
         pressure: f64,
         area: f64,
         diameter: f64,
@@ -236,10 +350,10 @@ impl State {
         // same number in the limit and not otherwise, which is why both are written out.
         let molar_mass = molar_mass_of(mixture, &feed.z)?;
         let velocity = if is_gas {
-            let volume_rate = feed.n * z_factor * R * feed.t.value / pressure;
+            let volume_rate = n * z_factor * R * feed.t.value / pressure;
             volume_rate / area
         } else {
-            feed.n * molar_mass / density / area
+            n * molar_mass / density / area
         };
 
         let reynolds = velocity * diameter / kinematic;
@@ -254,7 +368,7 @@ impl State {
             z_factor,
             molar_mass,
             temperature: feed.t.value,
-            moles: feed.n,
+            moles: n,
             density,
         })
     }

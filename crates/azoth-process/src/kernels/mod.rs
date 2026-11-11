@@ -7,6 +7,7 @@
 //! `azoth-eos` rather than adding new physics.
 
 pub mod absorption_column;
+pub mod anti_surge_recycle;
 pub mod component_splitter;
 pub mod compressor;
 pub mod cooler;
@@ -14,12 +15,16 @@ pub mod distillation_column;
 pub mod ejector;
 pub mod expander;
 pub mod filter;
+pub mod filter_design;
 pub mod flare;
 pub mod gas_scrubber;
 pub mod gibbs_reactor;
 pub mod heat_exchanger;
 pub mod heater;
+pub mod heater_electrical;
+pub mod heater_mechanical;
 pub mod manifold;
+pub mod map_turbo_expander_compressor;
 pub mod mixer;
 pub mod packed_column;
 pub mod pipe;
@@ -27,6 +32,7 @@ pub mod plug_flow_reactor;
 pub mod pump;
 pub mod rate_based_packed_column;
 pub mod separator;
+pub mod separator_performance;
 pub mod shortcut_distillation_column;
 pub mod splitter;
 pub mod stirred_tank_reactor;
@@ -34,6 +40,7 @@ pub mod stripping_column;
 pub mod tank;
 pub mod three_phase_separator;
 pub mod throttling_valve;
+pub mod turbo_expander_compressor;
 
 pub use component_splitter::component_splitter;
 pub use compressor::compressor;
@@ -56,9 +63,16 @@ pub use mixer::mixer;
 pub use pipe::{FlowRegime, PipeOutcome, pipe};
 pub use pump::pump;
 pub use separator::separator;
+pub use separator_performance::{
+    CurveSettings, DistributionKind, DropletDistribution, Internals, LookupPoint, Orientation,
+    PerformanceOutcome, PerformanceSettings, separator_performance,
+};
 pub use shortcut_distillation_column::{ShortcutColumn, shortcut_distillation_column};
 pub use splitter::splitter;
-pub use stirred_tank_reactor::{ReactorSetup, stirred_tank_reactor};
+pub use stirred_tank_reactor::{
+    DEFAULT_AGITATOR_POWER_PER_VOLUME_W_PER_M3, DEFAULT_RESIDENCE_TIME_H, DEFAULT_VESSEL_VOLUME_M3,
+    ReactorSetup, agitator_power, stirred_tank_reactor,
+};
 pub use tank::tank;
 pub use three_phase_separator::{Entrainment, three_phase_separator};
 pub use throttling_valve::throttling_valve;

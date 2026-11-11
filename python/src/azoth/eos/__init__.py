@@ -75,6 +75,8 @@ from azoth.core.result import (
     AqueousViscosityResult,
     ArgonSolidPhaseResult,
     BariteCelestiteSolidSolutionResult,
+    BeggsBrillSegmentResult,
+    BrineMixingScaleEvaluatorResult,
     BubblePressureResult,
     BubbleTemperatureResult,
     BwrsPhaseResult,
@@ -84,17 +86,23 @@ from azoth.core.result import (
     ChapmanEnskogDiffusivityResult,
     ChungConductivityResult,
     ChungViscosityResult,
+    ClosedLoopDepositionSolverResult,
     Co2BrinePhaseEquilibriumResult,
     Co2PhaseResult,
     Co2WaterDiffusivityResult,
     CostaldMolarVolumeResult,
     CriticalPointResult,
     DesmukhMatherPhaseResult,
+    DeWaardMilliamsCorrosionResult,
     DewPressureResult,
     DewTemperatureResult,
     EffectiveDiffusionResult,
     ElectrolyteCpaStatoilPhaseResult,
+    ElectrolyteScaleCalculatorResult,
+    EmulsionViscosityResult,
     EosCgPhaseResult,
+    EquilibriumSoundSpeedResult,
+    ErosionPredictionResult,
     FilippovConductivityResult,
     FirozabadiRamleyInterfaceTensionResult,
     FlowlineScaleProfileResult,
@@ -124,6 +132,7 @@ from azoth.core.result import (
     HydrateFractionResult,
     HydrateInhibitorConcentrationResult,
     HydrateInhibitorWtResult,
+    HydrateRiskMapResult,
     HydrogenPhaseResult,
     IapwsHenryLawResult,
     IapwsSaturationPressureResult,
@@ -152,6 +161,10 @@ from azoth.core.result import (
     PcsaftRahmatPhaseResult,
     PhaseTransportResult,
     PhFlashResult,
+    PipeBeggsAndBrillsResult,
+    PipelineCooldownResult,
+    PitzerHydrateFormationPressureResult,
+    PitzerHydrateFormationTemperatureResult,
     PitzerPhaseResult,
     PitzerScaleActivityResult,
     Pr78KappaResult,
@@ -165,6 +178,7 @@ from azoth.core.result import (
     PrLeeKeslerAlphaResult,
     PrMassDensityResult,
     PrMolarVolumeResult,
+    ProductionChemicalScaleScenarioResult,
     PrPenelouxShiftResult,
     PrsvKappaResult,
     PrZFactorResult,
@@ -184,14 +198,20 @@ from azoth.core.result import (
     SaftVrMiePhaseResult,
     SaltPrecipitationResult,
     SaturateWithWaterResult,
+    ScaleControlAssessorResult,
+    ScaleDepositionAccumulatorResult,
+    ScaleInhibitorPerformanceResult,
+    ScaleKineticsResult,
     ScaleMassResult,
     ScalePredictionResult,
+    ScaleRemediationAdvisorResult,
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
     SolidFugacityResult,
     SoreideWhitsonAlphaResult,
     SoreideWhitsonPhaseResult,
+    SoundSpeedResult,
     SrkAlphaAbResult,
     SrkCpaPhaseResult,
     SrkDepartureResult,
@@ -199,6 +219,8 @@ from azoth.core.result import (
     SrkPenelouxShiftResult,
     SrkZFactorResult,
     StabilityTestResult,
+    StreamScaleAnalyzerResult,
+    SurfCooldownResult,
     TbpFractionPropertiesResult,
     ThermalConductivityResult,
     ThFlashResult,
@@ -221,6 +243,7 @@ from azoth.core.result import (
     UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
+    ValveScaleDriftResult,
     VanLaarAcidActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
     VhFlashResult,
@@ -290,6 +313,7 @@ __all__ = [
     "effective_diffusion",
     "electrolyte_cpa_statoil_phase",
     "eos_cg_phase",
+    "equilibrium_sound_speed",
     "from_model",
     "from_names",
     "fuller_schettler_giddings_diffusivity",
@@ -362,6 +386,7 @@ __all__ = [
     "siddiqi_lucas_diffusivity",
     "solid_fugacity",
     "soreide_whitson_phase",
+    "sound_speed",
     "srk_alpha_ab",
     "srk_cpa_phase",
     "srk_departure",
@@ -514,6 +539,8 @@ _PR_GASSEM2001_ALPHA = "eos.pr_gassem2001_alpha"
 _PR_LEE_KESLER_ALPHA = "eos.pr_lee_kesler_alpha"
 _PR_DEPARTURE = "eos.pr_departure"
 _PR_Z_FACTOR = "eos.pr_z_factor"
+_EQUILIBRIUM_SOUND_SPEED = "eos.equilibrium_sound_speed"
+_SOUND_SPEED = "eos.sound_speed"
 _PRSV_KAPPA = "eos.prsv_kappa"
 _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
@@ -555,6 +582,278 @@ _SRK_Z_FACTOR = "eos.srk_z_factor"
 _SRK_DEPARTURE = "eos.srk_departure"
 _RK_ALPHA_AB = "eos.rk_alpha_ab"
 _RK_DEPARTURE = "eos.rk_departure"
+
+
+def closed_loop_deposition_solver(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    length: Q,
+    diameter: Q,
+    elevation: Q,
+    number_of_increments: int,
+    roughness: Q,
+    calcium: Q,
+    bicarbonate: Q,
+    sulphate: Q,
+    barium: Q,
+    sodium: Q,
+    total_dissolved_solids: Q,
+    ph: float,
+    service_time: Q,
+    scale_density: Q,
+    base_rate: Q,
+    inhibitor_efficiency: float,
+    tolerance: Q,
+    max_iterations: int,
+    eos: str | None = None,
+) -> ClosedLoopDepositionSolverResult:
+    """The coupled deposition-and-flow solve over a Beggs-and-Brills line.
+
+    NeqSim's ``ClosedLoopDepositionSolver``: the pipe is re-run at a shrinking effective
+    diameter, the accumulator evaluates at that diameter, and the worst segment's thickness
+    sets the next diameter until the diameter stops moving, the iteration cap is reached, or
+    the line blocks.
+
+    Args:
+        eos: ``srk`` (the default) or ``pr``.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+        InvalidInputError: if the pipe refuses a segment's negative outlet pressure.
+
+    See :func:`azoth.eos.reference.closed_loop_deposition_solver`.
+    """
+    return resolve("eos.closed_loop_deposition_solver")(  # type: ignore[no-any-return]
+        components=components,
+        inlet_n=inlet_n,
+        inlet_z=inlet_z,
+        inlet_p=inlet_p,
+        inlet_t=inlet_t,
+        length=length,
+        diameter=diameter,
+        elevation=elevation,
+        number_of_increments=number_of_increments,
+        roughness=roughness,
+        calcium=calcium,
+        bicarbonate=bicarbonate,
+        sulphate=sulphate,
+        barium=barium,
+        sodium=sodium,
+        total_dissolved_solids=total_dissolved_solids,
+        ph=ph,
+        service_time=service_time,
+        scale_density=scale_density,
+        base_rate=base_rate,
+        inhibitor_efficiency=inhibitor_efficiency,
+        tolerance=tolerance,
+        max_iterations=max_iterations,
+        eos=eos,
+    )
+
+
+def de_waard_milliams_corrosion(
+    temperature: Q,
+    co2_partial_pressure: Q,
+    ph: float,
+    h2s_partial_pressure: Q,
+    flow_velocity: Q,
+    inhibitor_efficiency: float,
+    glycol_fraction: float,
+    sulfur_deposition_rate: Q,
+    design_life: Q,
+) -> DeWaardMilliamsCorrosionResult:
+    """The de Waard-Milliams CO2/H2S/S8 corrosion rate and its corrections.
+
+    NeqSim's ``DeWaardMilliamsCorrosion``: the 1991 CO2 baseline with the de Waard-Lotz pH,
+    protective-scale, glycol and flow corrections, the elemental-sulfur and FeS contributions,
+    the FeCO3 index, the NORSOK M-001 severity band and the design-life allowance.
+
+    See :func:`azoth.eos.reference.de_waard_milliams_corrosion`.
+    """
+    return resolve("eos.de_waard_milliams_corrosion")(  # type: ignore[no-any-return]
+        temperature=temperature,
+        co2_partial_pressure=co2_partial_pressure,
+        ph=ph,
+        h2s_partial_pressure=h2s_partial_pressure,
+        flow_velocity=flow_velocity,
+        inhibitor_efficiency=inhibitor_efficiency,
+        glycol_fraction=glycol_fraction,
+        sulfur_deposition_rate=sulfur_deposition_rate,
+        design_life=design_life,
+    )
+
+
+def emulsion_viscosity(
+    oil_viscosity: Q,
+    water_viscosity: Q,
+    oil_density: Q,
+    water_density: Q,
+    water_cut: float,
+    max_packing_fraction: float,
+    model: str,
+    tightness_factor: float,
+    demulsifier_present: bool,
+    demulsifier_efficiency: float,
+) -> EmulsionViscosityResult:
+    """The oil-water emulsion viscosity and its inversion point.
+
+    NeqSim's ``EmulsionViscosityCalculator``: the Arirachakaran inversion correlation with
+    the class's two clamps, one of six relative-viscosity models, and the tightness and
+    demulsifier corrections.
+
+    See :func:`azoth.eos.reference.emulsion_viscosity`.
+    """
+    return resolve("eos.emulsion_viscosity")(  # type: ignore[no-any-return]
+        oil_viscosity=oil_viscosity,
+        water_viscosity=water_viscosity,
+        oil_density=oil_density,
+        water_density=water_density,
+        water_cut=water_cut,
+        max_packing_fraction=max_packing_fraction,
+        model=model,
+        tightness_factor=tightness_factor,
+        demulsifier_present=demulsifier_present,
+        demulsifier_efficiency=demulsifier_efficiency,
+    )
+
+
+def erosion_prediction(
+    mixture_density: Q,
+    mixture_velocity: Q,
+    pipe_diameter: Q,
+    wall_thickness: Q,
+    sand_rate: Q,
+    sand_particle_diameter: Q,
+    sand_particle_density: Q,
+    mixture_viscosity: Q,
+    geometry: str,
+    bend_radius_ratio: float,
+    pipe_material: str,
+    api_c_factor: float,
+    corrosion_allowance: Q,
+    design_life: Q,
+) -> ErosionPredictionResult:
+    """The API RP 14E erosional velocity and DNV RP O501 sand-erosion screen.
+
+    NeqSim's ``ErosionPredictionCalculator``: the erosional velocity at the mixture density,
+    the sand-erosion rate at the chosen geometry and material, the cumulative wall loss over
+    the design life, the remaining wall and the rate-and-ratio risk band.
+
+    See :func:`azoth.eos.reference.erosion_prediction`.
+    """
+    return resolve("eos.erosion_prediction")(  # type: ignore[no-any-return]
+        mixture_density=mixture_density,
+        mixture_velocity=mixture_velocity,
+        pipe_diameter=pipe_diameter,
+        wall_thickness=wall_thickness,
+        sand_rate=sand_rate,
+        sand_particle_diameter=sand_particle_diameter,
+        sand_particle_density=sand_particle_density,
+        mixture_viscosity=mixture_viscosity,
+        geometry=geometry,
+        bend_radius_ratio=bend_radius_ratio,
+        pipe_material=pipe_material,
+        api_c_factor=api_c_factor,
+        corrosion_allowance=corrosion_allowance,
+        design_life=design_life,
+    )
+
+
+def pipe_beggs_and_brills(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    length: Q,
+    diameter: Q,
+    elevation: Q,
+    number_of_increments: int,
+    roughness: Q,
+    eos: str | None = None,
+) -> PipeBeggsAndBrillsResult:
+    """The isothermal pressure profile of a Beggs-and-Brills pipeline.
+
+    NeqSim's ``PipeBeggsAndBrills`` in its default isothermal march: each segment is flashed
+    at the inlet temperature and its own pressure, its phase densities and viscosities feed
+    the Beggs-and-Brill segment correlation, and the drop sets the next segment's pressure.
+    The class's profile shapes are reproduced - the temperature list is one value, and the
+    segment lists are one longer than the pressure profile's segments.
+
+    Args:
+        inlet_n: the inlet's molar flow.
+        eos: ``srk`` (the default) or ``pr``.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+        InvalidInputError: if a segment's outlet pressure is not positive.
+
+    See :func:`azoth.eos.reference.pipe_beggs_and_brills`.
+    """
+    return resolve("eos.pipe_beggs_and_brills")(  # type: ignore[no-any-return]
+        components=components,
+        inlet_n=inlet_n,
+        inlet_z=inlet_z,
+        inlet_p=inlet_p,
+        inlet_t=inlet_t,
+        length=length,
+        diameter=diameter,
+        elevation=elevation,
+        number_of_increments=number_of_increments,
+        roughness=roughness,
+        eos=eos,
+    )
+
+
+def pipeline_cooldown(
+    internal_diameter: Q,
+    wall_thickness: Q,
+    insulation_thickness: Q,
+    coating_thickness: Q,
+    steel_density: Q,
+    steel_specific_heat: Q,
+    insulation_conductivity: Q,
+    fluid_density: Q,
+    fluid_specific_heat: Q,
+    initial_fluid_temperature: Q,
+    ambient_temperature: Q,
+    time_step: Q,
+    total_time: Q,
+    overall_u_value: Q | None = None,
+    use_layer_calculation: bool | None = None,
+    external_htc: Q | None = None,
+    target_temperature: Q | None = None,
+) -> PipelineCooldownResult:
+    """The lumped pipeline cooldown march after shutdown.
+
+    NeqSim's ``PipelineCooldownCalculator``: an explicit-Euler march over one thermal mass,
+    with the U value supplied or computed from the steel, insulation and external-convection
+    layers, and the optional target crossing interpolated between nodes.
+
+    See :func:`azoth.eos.reference.pipeline_cooldown`.
+    """
+    return resolve("eos.pipeline_cooldown")(  # type: ignore[no-any-return]
+        internal_diameter=internal_diameter,
+        wall_thickness=wall_thickness,
+        insulation_thickness=insulation_thickness,
+        coating_thickness=coating_thickness,
+        steel_density=steel_density,
+        steel_specific_heat=steel_specific_heat,
+        insulation_conductivity=insulation_conductivity,
+        fluid_density=fluid_density,
+        fluid_specific_heat=fluid_specific_heat,
+        initial_fluid_temperature=initial_fluid_temperature,
+        ambient_temperature=ambient_temperature,
+        time_step=time_step,
+        total_time=total_time,
+        overall_u_value=overall_u_value,
+        use_layer_calculation=use_layer_calculation,
+        external_htc=external_htc,
+        target_temperature=target_temperature,
+    )
 
 
 def pr_kappa(omega: float) -> PrKappaResult:
@@ -724,6 +1023,68 @@ def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:
     See :func:`azoth.eos.reference.pr_alpha_ab`.
     """
     return resolve(_PR_ALPHA_AB)(kappa=kappa, Tr=Tr, Pr=Pr)  # type: ignore[no-any-return]
+
+
+def sound_speed(components: list[str], T: Q, P: Q, z: list[float]) -> SoundSpeedResult:
+    """The speed of sound in a mixture at a state.
+
+    The cubic's isentrope: ``c^2 = -gamma (v^2/M) (dP/dv)_T`` with ``gamma = cp/cv``, the
+    phase's molar volume and molar mass, and the two derivatives closed forms of the same
+    residual the departure functions evaluate. **The system value is the class's
+    beta-weighted mean of the phase speeds**, which equals the phase value on a flashed
+    single phase and is an arithmetic mean - not a mixture speed - on two.
+
+    Args:
+        components: the substances, by name.
+        T: the state's absolute temperature.
+        P: the state's absolute pressure.
+        z: the mixture's mole fractions.
+
+    Raises:
+        InvalidInputError: if the composition's length disagrees or the state is unstable.
+        OutOfRangeError: for a non-positive temperature or pressure.
+
+    See :func:`azoth.eos.reference.sound_speed`.
+    """
+    return resolve(_SOUND_SPEED)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, z=z
+    )
+
+
+def equilibrium_sound_speed(
+    components: list[str],
+    T: Q,
+    P: Q,
+    z: list[float],
+    relative_pressure_step: float | None = None,
+    specific_entropy: Q | None = None,
+) -> EquilibriumSoundSpeedResult:
+    """The homogeneous-equilibrium acoustic speed of a mixture at a state.
+
+    ``c^2 = (dp/drho)`` at fixed specific entropy and total composition: each pressure
+    sample is re-equilibrated at fixed ``s`` and differentiated on a central or one-sided
+    stencil that stays on the centre state's phase branch. **This is not
+    :func:`sound_speed`**: that is the frozen phase speed off one phase, while this one lets
+    the phase split relax with pressure.
+
+    ``specific_entropy`` is the fixed state variable; absent takes the equilibrium flash's
+    value. A pure fluid on its saturation line has no unique temperature at a pressure, so
+    its entropy has to be stated.
+
+    Raises:
+        InvalidInputError: for a step outside ``[1e-6, 0.05]``, a non-positive state, or a
+            composition of the wrong length.
+
+    See :func:`azoth.eos.reference.equilibrium_sound_speed`.
+    """
+    return resolve(_EQUILIBRIUM_SOUND_SPEED)(  # type: ignore[no-any-return]
+        components=components,
+        T=T,
+        P=P,
+        z=z,
+        relative_pressure_step=relative_pressure_step,
+        specific_entropy=specific_entropy,
+    )
 
 
 def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
@@ -904,6 +1265,35 @@ def rk_departure(a_reduced: float, b_reduced: float, z: float) -> RkDepartureRes
     """
     return resolve(_RK_DEPARTURE)(  # type: ignore[no-any-return]
         a_reduced=a_reduced, b_reduced=b_reduced, z=z
+    )
+
+
+def valve_scale_drift(
+    port_diameter: Q,
+    growth_rate: Q,
+    elapsed_time: Q,
+    clean_opening_percent: float,
+    valve_kv: float,
+) -> ValveScaleDriftResult:
+    """The trim fouling a deposit growth rate produces at an elapsed time.
+
+    NeqSim's ``ValveScaleDrift``: a uniform radial deposit on a circular trim port, so the
+    open-area fraction is ``((d0 - 2t)/d0)^2``, the fouling fraction its complement capped
+    at ``0.999999``, and the effective Kv the clean Kv times the open area. The valve
+    coupling is the boundary: this returns the fouling fraction, and setting it on a
+    ``ThrottlingValve`` is the process layer's step.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+
+    See :func:`azoth.eos.reference.valve_scale_drift`.
+    """
+    return resolve("eos.valve_scale_drift")(  # type: ignore[no-any-return]
+        port_diameter=port_diameter,
+        growth_rate=growth_rate,
+        elapsed_time=elapsed_time,
+        clean_opening_percent=clean_opening_percent,
+        valve_kv=valve_kv,
     )
 
 
@@ -2347,6 +2737,81 @@ def bwrs_phase(coeffs: Sequence[BwrsCoefficients], T: Q, P: Q, z: list[float]) -
     )
 
 
+def beggs_brill_segment(
+    gas_flow: Q,
+    liquid_flow: Q,
+    gas_density: Q,
+    liquid_density: Q,
+    gas_viscosity: Q,
+    liquid_viscosity: Q,
+    temperature: Q,
+    pressure: Q,
+    diameter: Q,
+    length: Q,
+    elevation: Q,
+    roughness: Q,
+) -> BeggsBrillSegmentResult:
+    """One pipe segment's Beggs-and-Brill state.
+
+    NeqSim's ``PipeBeggsAndBrills`` segment correlation: the flow regime from the Froude
+    number and no-slip liquid fraction, the liquid holdup with its inclination correction,
+    the no-slip density and viscosity, the Reynolds number, the Haaland friction factor with
+    the Beggs-Brill two-phase multiplier, and the hydrostatic and friction drops. The
+    class's field-unit constants are reproduced internally; the inputs and outputs are SI.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+        InvalidInputError: if neither phase flows.
+
+    See :func:`azoth.eos.reference.beggs_brill_segment`.
+    """
+    return resolve("eos.beggs_brill_segment")(  # type: ignore[no-any-return]
+        gas_flow=gas_flow,
+        liquid_flow=liquid_flow,
+        gas_density=gas_density,
+        liquid_density=liquid_density,
+        gas_viscosity=gas_viscosity,
+        liquid_viscosity=liquid_viscosity,
+        temperature=temperature,
+        pressure=pressure,
+        diameter=diameter,
+        length=length,
+        elevation=elevation,
+        roughness=roughness,
+    )
+
+
+def brine_mixing_scale_evaluator(
+    brine_a: list[dict[str, Q]],
+    brine_b: list[dict[str, Q]],
+    temperature: Q,
+    pressure: Q,
+    ph: float,
+    steps: int,
+) -> BrineMixingScaleEvaluatorResult:
+    """The mineral saturation of two brines across their mixing range.
+
+    NeqSim's ``BrineMixingScaleEvaluator``: each ion blended linearly at ``steps`` fractions
+    from all ``brine_a`` to all ``brine_b``, every blend evaluated by
+    :func:`electrolyte_scale_calculator`, and the worst index reported with its fraction and
+    mineral. ``steps`` is floored at two, as the class's ``setSteps`` floors it.
+
+    Raises:
+        InvalidInputError: for a brine list that is not exactly one row.
+        OutOfRangeError: for a negative ion, or a non-positive temperature or pressure.
+
+    See :func:`azoth.eos.reference.brine_mixing_scale_evaluator`.
+    """
+    return resolve("eos.brine_mixing_scale_evaluator")(  # type: ignore[no-any-return]
+        brine_a=brine_a,
+        brine_b=brine_b,
+        temperature=temperature,
+        pressure=pressure,
+        ph=ph,
+        steps=steps,
+    )
+
+
 def ammonia_phase(T: Q, P: Q) -> AmmoniaPhaseResult:
     """The ammonia reference phase state at a temperature and pressure.
 
@@ -2390,6 +2855,81 @@ def helium_phase(T: Q, P: Q) -> HeliumPhaseResult:
     See :func:`azoth.eos.reference.helium_phase`.
     """
     return resolve(_HELIUM_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
+
+
+def pitzer_hydrate_formation_temperature(
+    components: list[str],
+    cubic: str,
+    moles: list[Q],
+    P: Q,
+    structure: str | None = None,
+    minimum_temperature: Q | None = None,
+    maximum_temperature: Q | None = None,
+    pitzer_dataset: str | None = None,
+) -> PitzerHydrateFormationTemperatureResult:
+    """The temperature at which a Pitzer brine's hydrate appears, at a pressure.
+
+    NeqSim's ``PitzerHydrateFlash``: each trial is the hybrid EoS/GE flash on a
+    ``SystemPitzer``, and the hydrate's water reference is ``ComponentHydratePitzer``'s -
+    the pure-water Antoine vapour pressure, with the structure the lower of the two
+    coefficients. A salty CO2 state runs the manual PHREEQC CO2-chloride dataset.
+
+    Raises:
+        InvalidInputError: for an unknown structure or dataset name, or a feed with no water
+            or no hydrate former.
+        OutOfRangeError: for a pressure outside the class's window, or a water activity
+            outside ``(0, 1]``.
+        SolverNotConvergedError: if the scan finds no bracket or the bisection hits its cap.
+
+    See :func:`azoth.eos.reference.pitzer_hydrate_formation_temperature`.
+    """
+    return resolve("eos.pitzer_hydrate_formation_temperature")(  # type: ignore[no-any-return]
+        components=components,
+        cubic=cubic,
+        moles=moles,
+        P=P,
+        structure=structure,
+        minimum_temperature=minimum_temperature,
+        maximum_temperature=maximum_temperature,
+        pitzer_dataset=pitzer_dataset,
+    )
+
+
+def pitzer_hydrate_formation_pressure(
+    components: list[str],
+    cubic: str,
+    moles: list[Q],
+    T: Q,
+    structure: str | None = None,
+    minimum_pressure: Q | None = None,
+    maximum_pressure: Q | None = None,
+    pitzer_dataset: str | None = None,
+) -> PitzerHydrateFormationPressureResult:
+    """The pressure at which a Pitzer brine's hydrate appears, at a temperature.
+
+    The same saturation as :func:`pitzer_hydrate_formation_temperature` with the pressure
+    solved: the class's ``max(P*1.3, P+0.5 bara)`` scan from 1 bara, then a bisection on
+    ``ln(f_hydrate^water / f_aq^water)``.
+
+    Raises:
+        InvalidInputError: for an unknown structure or dataset name, or a feed with no water
+            or no hydrate former.
+        OutOfRangeError: for a temperature outside 273.15-323.15 K or below the guests'
+            Henry floor, or a water activity outside ``(0, 1]``.
+        SolverNotConvergedError: if the scan finds no bracket or the bisection hits its cap.
+
+    See :func:`azoth.eos.reference.pitzer_hydrate_formation_pressure`.
+    """
+    return resolve("eos.pitzer_hydrate_formation_pressure")(  # type: ignore[no-any-return]
+        components=components,
+        cubic=cubic,
+        moles=moles,
+        T=T,
+        structure=structure,
+        minimum_pressure=minimum_pressure,
+        maximum_pressure=maximum_pressure,
+        pitzer_dataset=pitzer_dataset,
+    )
 
 
 def hydrate_formation_temperature(
@@ -2748,6 +3288,176 @@ def tp_solid_flash(
     )
 
 
+def scale_control_assessor(
+    calcium: Q,
+    barium: Q,
+    strontium: Q,
+    iron: Q,
+    magnesium: Q,
+    sodium: Q,
+    bicarbonate: Q,
+    sulphate: Q,
+    total_dissolved_solids: Q,
+    temperature: Q,
+    pressure: Q,
+    co2_partial_pressure: Q,
+    ph: float,
+    inhibitors: list[dict[str, object]],
+) -> ScaleControlAssessorResult:
+    """The residual scaling risk after threshold inhibition.
+
+    NeqSim's ``ScaleControlAssessor``: the scale predictor's five saturation indices with
+    each registered inhibitor's efficiency folded into a kinetic risk index,
+    ``SI + log10(max(1e-6, 1 - efficiency))``, the efficiency capped at 0.999. An absent
+    mineral keeps its absent index, and a scale with no inhibitor carries its index
+    unchanged. **The risk index is not a thermodynamic saturation index.**
+
+    Args:
+        inhibitors: record rows of ``scale_type``, ``inhibitor_chemistry``,
+            ``temperature``, ``saturation_ratio``, ``total_dissolved_solids``,
+            ``calcium`` and ``available_dose``.
+
+    Raises:
+        OutOfRangeError: if an input is outside its declared range.
+        InvalidInputError: for an unknown scale type or chemistry in an inhibitor row.
+
+    See :func:`azoth.eos.reference.scale_control_assessor`.
+    """
+    return resolve("eos.scale_control_assessor")(  # type: ignore[no-any-return]
+        calcium=calcium,
+        barium=barium,
+        strontium=strontium,
+        iron=iron,
+        magnesium=magnesium,
+        sodium=sodium,
+        bicarbonate=bicarbonate,
+        sulphate=sulphate,
+        total_dissolved_solids=total_dissolved_solids,
+        temperature=temperature,
+        pressure=pressure,
+        co2_partial_pressure=co2_partial_pressure,
+        ph=ph,
+        inhibitors=inhibitors,
+    )
+
+
+def scale_deposition_accumulator(
+    calcium: Q,
+    bicarbonate: Q,
+    sulphate: Q,
+    barium: Q,
+    sodium: Q,
+    total_dissolved_solids: Q,
+    ph: float,
+    diameter: Q,
+    length: Q,
+    segment_temperatures: list[Q],
+    segment_pressures: list[Q],
+    service_time: Q,
+    scale_density: Q,
+    base_rate: Q,
+    inhibitor_efficiency: float,
+) -> ScaleDepositionAccumulatorResult:
+    """The segmented deposition of a pipeline temperature and pressure profile.
+
+    NeqSim's ``ScaleDepositionAccumulator``: the CaCO3 index at each segment, a deposit mass
+    from ``max(0, 10^SI - 1)`` times the base rate and the inhibitor's complement, its
+    thickness over the segment's wall area, the total, and the time for the worst segment to
+    occlude half the pipe cross-section. The pipe is its profile: the segment temperatures
+    and pressures are stated directly, and the shorter list governs.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+
+    See :func:`azoth.eos.reference.scale_deposition_accumulator`.
+    """
+    return resolve("eos.scale_deposition_accumulator")(  # type: ignore[no-any-return]
+        calcium=calcium,
+        bicarbonate=bicarbonate,
+        sulphate=sulphate,
+        barium=barium,
+        sodium=sodium,
+        total_dissolved_solids=total_dissolved_solids,
+        ph=ph,
+        diameter=diameter,
+        length=length,
+        segment_temperatures=segment_temperatures,
+        segment_pressures=segment_pressures,
+        service_time=service_time,
+        scale_density=scale_density,
+        base_rate=base_rate,
+        inhibitor_efficiency=inhibitor_efficiency,
+    )
+
+
+def scale_inhibitor_performance(
+    scale_type: str,
+    inhibitor_chemistry: str,
+    temperature: Q,
+    saturation_ratio: float,
+    total_dissolved_solids: Q,
+    calcium: Q,
+    available_dose: Q,
+) -> ScaleInhibitorPerformanceResult:
+    """The screening performance of an inhibitor at the stated dose.
+
+    NeqSim's ``ScaleInhibitorPerformance``: a base MIC per mineral and chemistry, four
+    multiplicative factors over temperature, TDS, saturation ratio and calcium, and the
+    efficiency at the dose available. The class's four warnings are reported as flags -
+    thermal degradation, calcium-phosphonate precipitation, extreme supersaturation and
+    low-temperature phosphate-ester solubility.
+
+    Raises:
+        OutOfRangeError: if an input is outside its declared range.
+        InvalidInputError: for an unknown scale type or chemistry.
+
+    See :func:`azoth.eos.reference.scale_inhibitor_performance`.
+    """
+    return resolve("eos.scale_inhibitor_performance")(  # type: ignore[no-any-return]
+        scale_type=scale_type,
+        inhibitor_chemistry=inhibitor_chemistry,
+        temperature=temperature,
+        saturation_ratio=saturation_ratio,
+        total_dissolved_solids=total_dissolved_solids,
+        calcium=calcium,
+        available_dose=available_dose,
+    )
+
+
+def scale_kinetics(
+    saturation_index: float,
+    nucleation_constant: Q,
+    nucleation_shape_factor: float,
+    surface_rate_constant: Q,
+    surface_reaction_order: float,
+    mass_transfer_coefficient: Q,
+    bulk_concentration: Q,
+    equilibrium_concentration: Q,
+) -> ScaleKineticsResult:
+    """The screening kinetics of a supersaturated solution.
+
+    NeqSim's ``ScaleKinetics``: a classical-nucleation induction time, a parabolic
+    surface-growth rate and a mass-transport rate over ``S = 10^SI``, with the smaller
+    rate reported as effective and its regime named ``REACTION``, ``TRANSPORT`` or
+    ``NONE``. The class's setters clamp a negative rate to zero, and so does this.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+
+    See :func:`azoth.eos.reference.scale_kinetics`.
+    """
+    return resolve("eos.scale_kinetics")(  # type: ignore[no-any-return]
+        saturation_index=saturation_index,
+        nucleation_constant=nucleation_constant,
+        nucleation_shape_factor=nucleation_shape_factor,
+        surface_rate_constant=surface_rate_constant,
+        surface_reaction_order=surface_reaction_order,
+        mass_transfer_coefficient=mass_transfer_coefficient,
+        bulk_concentration=bulk_concentration,
+        equilibrium_concentration=equilibrium_concentration,
+    )
+
+
 def scale_prediction(
     calcium: Q,
     barium: Q,
@@ -2878,6 +3588,24 @@ def pitzer_scale_activity(
         cation=cation,
         anion=anion,
     )
+
+
+def scale_remediation_advisor(deposit: str) -> ScaleRemediationAdvisorResult:
+    """The candidate remedies for a scaled or fouled deposit.
+
+    NeqSim's ``ScaleRemediationAdvisor``: the deposit name is normalised through the
+    class's alias table (``calcite`` and ``CaCO3`` reach the same rows), its rows are
+    selected or the ``UNKNOWN`` sample-and-identify guidance is returned, and the options
+    are ordered by descending effectiveness with a stable sort. The knowledge base is
+    vendored as ``data/scale/scale_remediation.csv``. **Screening-level advice only**: not
+    a substitute for deposit identification and a metallurgy review.
+
+    Raises:
+        Nothing; an unmatched name falls back to the ``UNKNOWN`` rows.
+
+    See :func:`azoth.eos.reference.scale_remediation_advisor`.
+    """
+    return resolve("eos.scale_remediation_advisor")(deposit=deposit)  # type: ignore[no-any-return]
 
 
 def scale_saturation_ratio(
@@ -3070,6 +3798,38 @@ def freezing_point(components: list[str], z: list[float], solid: str, P: Q) -> F
     """
     return resolve(_FREEZING_POINT)(  # type: ignore[no-any-return]
         components=components, z=z, solid=solid, P=P
+    )
+
+
+def hydrate_risk_map(
+    components: list[str],
+    z: list[float],
+    distances: Sequence[Q],
+    pressures: Sequence[Q],
+    temperatures: Sequence[Q],
+    eos: str | None = None,
+    hydrate_model: str | None = None,
+    high_risk_subcooling: Q | None = None,
+    medium_risk_subcooling: Q | None = None,
+) -> HydrateRiskMapResult:
+    """The hydrate risk along a pipeline profile.
+
+    NeqSim's ``HydrateRiskMapper``: the hydrate formation temperature at each profile point,
+    its subcooling against the point's actual temperature, and the band the two decide, with
+    the class's UNKNOWN-outranks-all-but-a-confirmed-CRITICAL rule.
+
+    See :func:`azoth.eos.reference.hydrate_risk_map`.
+    """
+    return resolve("eos.hydrate_risk_map")(  # type: ignore[no-any-return]
+        components=components,
+        z=z,
+        distances=list(distances),
+        pressures=list(pressures),
+        temperatures=list(temperatures),
+        eos=eos,
+        hydrate_model=hydrate_model,
+        high_risk_subcooling=high_risk_subcooling,
+        medium_risk_subcooling=medium_risk_subcooling,
     )
 
 
@@ -3823,6 +4583,62 @@ def ph_flash(
     )
 
 
+def production_chemical_scale_scenario(
+    calcium: Q,
+    barium: Q,
+    strontium: Q,
+    iron: Q,
+    magnesium: Q,
+    sodium: Q,
+    sulphate: Q,
+    bicarbonate: Q,
+    total_dissolved_solids: Q,
+    ph: float,
+    dissolved_h2s: Q,
+    temperature: Q,
+    pressure: Q,
+    activity_model: str,
+    chemicals: list[dict[str, object]],
+    pitzer_ionic_strength_molal: float | None = None,
+) -> ProductionChemicalScaleScenarioResult:
+    """The treatment-aware scale scenario of a produced water.
+
+    NeqSim's ``ProductionChemicalScaleScenario``: a pH adjuster's acid/base equivalents are
+    added to a closed carbonate balance, H2S scavengers consume dissolved sulphide by their
+    capacity, a scale inhibitor is reported as a kinetic control that changes no
+    thermodynamic index, and the coupled mineral equilibrium is solved before and after.
+    The class's warning map is reported as a record list of codes and messages.
+
+    Args:
+        chemicals: record rows of ``chemical_type``, ``name``, ``active_ingredient``,
+            ``active_wt_pct``, ``dosage``, and the optional ``alkalinity_capacity`` and
+            ``h2s_capacity``.
+
+    Raises:
+        OutOfRangeError: if an input is outside the spec's hard range.
+
+    See :func:`azoth.eos.reference.production_chemical_scale_scenario`.
+    """
+    return resolve("eos.production_chemical_scale_scenario")(  # type: ignore[no-any-return]
+        calcium=calcium,
+        barium=barium,
+        strontium=strontium,
+        iron=iron,
+        magnesium=magnesium,
+        sodium=sodium,
+        sulphate=sulphate,
+        bicarbonate=bicarbonate,
+        total_dissolved_solids=total_dissolved_solids,
+        ph=ph,
+        dissolved_h2s=dissolved_h2s,
+        temperature=temperature,
+        pressure=pressure,
+        activity_model=activity_model,
+        pitzer_ionic_strength_molal=pitzer_ionic_strength_molal,
+        chemicals=chemicals,
+    )
+
+
 def ps_flash(
     mixture: Mixture, ideal_gas: IdealGasModel, P: Q, S: Q, z: list[float]
 ) -> PsFlashResult:
@@ -4064,6 +4880,120 @@ def tp_flash_saft(components: list[str], T: Q, P: Q, z: list[float]) -> TpFlashS
     """
     return resolve(_TP_FLASH_SAFT)(  # type: ignore[no-any-return]
         components=components, T=T, P=P, z=z
+    )
+
+
+def stream_scale_analyzer(
+    calcium: Q,
+    barium: Q,
+    strontium: Q,
+    iron: Q,
+    magnesium: Q,
+    sodium: Q,
+    bicarbonate: Q,
+    sulphate: Q,
+    total_dissolved_solids: Q,
+    temperature: Q,
+    pressure: Q,
+    co2_partial_pressure: Q,
+    ph: float,
+    auto_ph: bool,
+    second_order_pressure_correction: bool,
+    activity_model: str,
+    water_flow: Q,
+    bdot_ion_size: float | None = None,
+    bdot_b: float | None = None,
+    pitzer_ionic_strength_molal: float | None = None,
+) -> StreamScaleAnalyzerResult:
+    """The scale mass rates of an aqueous stream.
+
+    NeqSim's ``StreamScaleAnalyzer``: the coupled multi-mineral equilibrium at one litre
+    of water, then each mineral's precipitated mass converted to a rate by the aqueous
+    throughput - the class's ``mg/L * L/day / 1e6`` and the SI mass times flow are one
+    number. ``dominant_scale`` is the largest precipitated mass, or ``none``. The stream
+    adapter is not ported: the water analysis and the throughput are stated directly.
+
+    Raises:
+        OutOfRangeError: if an input is outside a declared range.
+        InvalidInputError: if ``water_flow`` is absent.
+
+    See :func:`azoth.eos.reference.stream_scale_analyzer`.
+    """
+    return resolve("eos.stream_scale_analyzer")(  # type: ignore[no-any-return]
+        calcium=calcium,
+        barium=barium,
+        strontium=strontium,
+        iron=iron,
+        magnesium=magnesium,
+        sodium=sodium,
+        bicarbonate=bicarbonate,
+        sulphate=sulphate,
+        total_dissolved_solids=total_dissolved_solids,
+        temperature=temperature,
+        pressure=pressure,
+        co2_partial_pressure=co2_partial_pressure,
+        ph=ph,
+        auto_ph=auto_ph,
+        second_order_pressure_correction=second_order_pressure_correction,
+        activity_model=activity_model,
+        bdot_ion_size=bdot_ion_size,
+        bdot_b=bdot_b,
+        pitzer_ionic_strength_molal=pitzer_ionic_strength_molal,
+        water_flow=water_flow,
+    )
+
+
+def surf_cooldown(
+    components: list[str],
+    z: list[float],
+    operating_pressure: Q,
+    flash_temperature: Q,
+    internal_diameter: Q,
+    wall_thickness: Q,
+    insulation_thickness: Q,
+    coating_thickness: Q,
+    insulation_conductivity: Q,
+    seabed_temperature: Q,
+    operating_temperature: Q | None = None,
+    overall_u_value: Q | None = None,
+    external_htc: Q | None = None,
+    hydrate_margin: Q | None = None,
+    required_no_touch_time: Q | None = None,
+    total_time: Q | None = None,
+    time_step: Q | None = None,
+    require_water: bool | None = None,
+    eos: str | None = None,
+    hydrate_model: str | None = None,
+) -> SurfCooldownResult:
+    """The surface flowline cooldown and no-touch time.
+
+    NeqSim's ``SurfCooldownAnalyzer``: the hydrate equilibrium temperature at the operating
+    pressure, the fluid's flashed density and specific heat, the lumped cooldown, and the
+    crossing of the hydrate temperature plus the margin as the no-touch time.
+
+    See :func:`azoth.eos.reference.surf_cooldown`.
+    """
+    return resolve("eos.surf_cooldown")(  # type: ignore[no-any-return]
+        components=components,
+        z=z,
+        operating_pressure=operating_pressure,
+        flash_temperature=flash_temperature,
+        internal_diameter=internal_diameter,
+        wall_thickness=wall_thickness,
+        insulation_thickness=insulation_thickness,
+        coating_thickness=coating_thickness,
+        insulation_conductivity=insulation_conductivity,
+        seabed_temperature=seabed_temperature,
+        operating_temperature=operating_temperature,
+        overall_u_value=overall_u_value,
+        external_htc=external_htc,
+        hydrate_margin=hydrate_margin,
+        required_no_touch_time=required_no_touch_time,
+        total_time=total_time,
+        time_step=time_step,
+        require_water=require_water,
+        eos=eos,
+        hydrate_model=hydrate_model,
     )
 
 
@@ -4446,6 +5376,52 @@ def srk_cpa_phase(
     """
     return resolve(_SRK_CPA_PHASE)(  # type: ignore[no-any-return]
         components=components, T=T, P=P, z=z, compressed_phase=compressed_phase
+    )
+
+
+def electrolyte_scale_calculator(
+    calcium: Q,
+    barium: Q,
+    strontium: Q,
+    magnesium: Q,
+    sodium: Q,
+    potassium: Q,
+    iron: Q,
+    chloride: Q,
+    sulphate: Q,
+    bicarbonate: Q,
+    carbonate: Q,
+    temperature: Q,
+    pressure: Q,
+    ph: float,
+) -> ElectrolyteScaleCalculatorResult:
+    """The activity-corrected saturation indices of a brine.
+
+    NeqSim's ``ElectrolyteScaleCalculator``: an ionic strength from the eleven ions, Davies
+    activity coefficients over a temperature-adjusted Debye-Huckel A, and calcite, barite,
+    gypsum, celestite and brucite indices over the class's own Ksp correlations. The
+    hydroxide activity is ``10^(pH - pKw)``, so the brucite index is strongly pH-driven.
+
+    Raises:
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.eos.reference.electrolyte_scale_calculator`.
+    """
+    return resolve("eos.electrolyte_scale_calculator")(  # type: ignore[no-any-return]
+        calcium=calcium,
+        barium=barium,
+        strontium=strontium,
+        magnesium=magnesium,
+        sodium=sodium,
+        potassium=potassium,
+        iron=iron,
+        chloride=chloride,
+        sulphate=sulphate,
+        bicarbonate=bicarbonate,
+        carbonate=carbonate,
+        temperature=temperature,
+        pressure=pressure,
+        ph=ph,
     )
 
 

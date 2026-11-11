@@ -22,6 +22,7 @@ negative, so dividing would make the machine beat the reversible one.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from azoth.core.errors import InvalidInputError
@@ -44,8 +45,14 @@ def expander(
     inlet_t: Q,
     outlet_pressure: Q,
     isentropic_efficiency: float,
+    use_polytropic_calc: bool | None = None,
+    polytropic_efficiency: float | None = None,
+    number_of_steps: int | None = None,
+    rated_recovered_power: Q | None = None,
+    shaft_power: Q | None = None,
+    outlet_temperature: Q | None = None,
 ) -> ExpanderResult:
-    """Drop a stream's pressure along an isentrope, multiplying the step by the efficiency.
+    """Drop a stream's pressure along an isentrope, or in polytropic steps.
 
     Args:
         components: the fluid's substances, by name.
@@ -55,9 +62,14 @@ def expander(
         inlet_t: the inlet temperature.
         outlet_pressure: the pressure the machine takes the stream to.
         isentropic_efficiency: the machine's isentropic efficiency, in ``(0, 1]``.
+        use_polytropic_calc: whether the stepped branch runs instead.
+        polytropic_efficiency: the stepped branch's efficiency, in ``(0, 1]``.
+        number_of_steps: the stepped branch's pressure increments.
+        rated_recovered_power: ``setRatedRecoveredPower``; absent is 0, which creates no
+            constraint, and so does a non-positive value.
 
     Returns:
-        The outlet's record.
+        The outlet's record, the recovered power (negative) and the recovered-power map.
 
     Example:
         >>> import azoth
@@ -82,10 +94,25 @@ def expander(
     t = input_to_si(spec, "inlet_t", inlet_t)
     p = input_to_si(spec, "inlet_p", inlet_p)
     p_out = input_to_si(spec, "outlet_pressure", outlet_pressure)
+    rated = (
+        None
+        if rated_recovered_power is None
+        else input_to_si(spec, "rated_recovered_power", rated_recovered_power)
+    )
+    shaft = None if shaft_power is None else input_to_si(spec, "shaft_power", shaft_power)
+    target = (
+        None
+        if outlet_temperature is None
+        else input_to_si(spec, "outlet_temperature", outlet_temperature)
+    )
 
     apply_checks(
         checks.on_input,
-        {"inlet_t": t, "isentropic_efficiency": isentropic_efficiency}.get,
+        {
+            "inlet_t": t,
+            "isentropic_efficiency": isentropic_efficiency,
+            "polytropic_efficiency": polytropic_efficiency,
+        }.get,
         warnings,
     )
 
@@ -96,14 +123,58 @@ def expander(
             f"{isentropic_efficiency} is not",
         )
 
-    states = _states(components, t, p, inlet_z, p_out, isentropic_efficiency)
+    if shaft is not None and target is not None:
+        raise InvalidInputError(
+            "shaft_power",
+            "a stated power and an outlet temperature are two modes; the class's "
+            "`setPower` and `solveEfficiency` are one at a time",
+        )
+    if (shaft is not None or target is not None) and use_polytropic_calc:
+        raise InvalidInputError(
+            "shaft_power",
+            "the stated-power and outlet-temperature modes are the isentropic branch's",
+        )
+    for name, value in (("shaft_power", shaft), ("outlet_temperature", target)):
+        if value is not None and not math.isfinite(value):
+            raise InvalidInputError(name, f"{value} is not a finite number")
 
+    efficiency = 1.0 if polytropic_efficiency is None else float(polytropic_efficiency)
+    reported: float | None = None
+    if shaft is not None:
+        h_in, h_out, outlet_t, reported = _at_power(components, t, p, inlet_z, p_out, n, shaft)
+    elif target is not None:
+        h_in, h_out, outlet_t, reported = _solve_efficiency(
+            components, t, p, inlet_z, p_out, target, isentropic_efficiency
+        )
+    elif use_polytropic_calc:
+        h_in, h_out, outlet_t = _polytropic_states(
+            components,
+            inlet_z,
+            t,
+            p,
+            p_out,
+            efficiency,
+            5 if number_of_steps is None else int(number_of_steps),
+        )
+    else:
+        states = _states(components, t, p, inlet_z, p_out, isentropic_efficiency)
+        h_in, h_out, outlet_t = states.h_in, states.h_out, states.outlet_t
+
+    power = n * (h_out - h_in)
+    capacity = _recovered_power_capacity(power, rated)
     return ExpanderResult(
         outlet_n=from_si(n, "mol/s"),
         outlet_z=tuple(inlet_z),
         outlet_p=outlet_pressure,
-        outlet_t=states.outlet_t,
-        outlet_h=from_si(states.h_out, "J/mol"),
+        outlet_t=outlet_t,
+        outlet_h=from_si(h_out, "J/mol"),
+        power=from_si(power, "W"),
+        recovered_power_utilization=capacity.recovered_power_utilization,
+        max_utilization=capacity.max_utilization,
+        capacity_exceeded=capacity.capacity_exceeded,
+        hard_limit_exceeded=capacity.hard_limit_exceeded,
+        bottleneck_constraint=capacity.bottleneck_constraint,
+        reported_isentropic_efficiency=reported,
         warnings=tuple(warnings),
     )
 
@@ -172,8 +243,163 @@ def _states(
     )
 
 
+def _at_power(
+    components: list[str],
+    t: float,
+    p: float,
+    inlet_z: list[float],
+    p_out: float,
+    n: float,
+    power: float,
+) -> tuple[float, float, Q, float | None]:
+    """The stated-power route: the enthalpy step is `power/n`, and the efficiency divides it."""
+    if not n > 0.0 or not math.isfinite(n):
+        raise InvalidInputError(
+            "shaft_power",
+            f"the stated power divides by the molar flow, and {n} mol/s is not positive",
+        )
+    reference = _states(components, t, p, inlet_z, p_out, 1.0)
+    dh = power / n
+    h_out = reference.h_in + dh
+    mixture, ideal_gas = _components.mixture_of(components, eos="pr")
+    outlet_t = ph_flash_solve(
+        mixture, ideal_gas, from_si(p_out, "Pa"), from_si(h_out, "J/mol"), inlet_z
+    ).T
+    efficiency = None if reference.dh_isentropic == 0.0 else dh / reference.dh_isentropic
+    return reference.h_in, h_out, outlet_t, efficiency
+
+
+def _solve_efficiency(
+    components: list[str],
+    t: float,
+    p: float,
+    inlet_z: list[float],
+    p_out: float,
+    target: float,
+    start_efficiency: float,
+) -> tuple[float, float, Q, float]:
+    """`solveEfficiency`: the class's secant, its first step and its clamps."""
+    efficiency = (
+        min(max(start_efficiency, 1.0e-6), 1.0) if math.isfinite(start_efficiency) else 1.0e-6
+    )
+    states = _states(components, t, p, inlet_z, p_out, efficiency)
+    function_old = 0.0
+    delta_poly = 100.0
+    iteration = 0
+    while True:
+        iteration += 1
+        function = states.outlet_t.to("K").magnitude - target
+        slope = (
+            (function - function_old) / delta_poly
+            if delta_poly != 0.0
+            and abs(delta_poly) > 1.0e-12
+            and math.isfinite(delta_poly)
+            and math.isfinite(function)
+            and math.isfinite(function_old)
+            else math.nan
+        )
+        candidate = (
+            efficiency + (0.01 if function > 0.0 else -0.01)
+            if not math.isfinite(slope) or abs(slope) < 1.0e-12
+            else efficiency - function / slope
+        )
+        if iteration <= 1:
+            candidate = efficiency + 0.01
+        if not math.isfinite(candidate):
+            candidate = efficiency + (0.01 if function > 0.0 else -0.01)
+        old = efficiency
+        efficiency = min(max(candidate, 1.0e-6), 1.0)
+        delta_poly = efficiency - old
+        if abs(delta_poly) < 1.0e-12:
+            delta_poly = 1.0e-12 if function > 0.0 else -1.0e-12
+        function_old = function
+        states = _states(components, t, p, inlet_z, p_out, efficiency)
+        residual = states.outlet_t.to("K").magnitude - target
+        if not (abs(residual) > 0.01 or iteration < 3) or iteration >= 50:
+            return states.h_in, states.h_out, states.outlet_t, efficiency
+
+
+@dataclass(frozen=True, slots=True)
+class ExpanderCapacity:
+    """The `recoveredPower` constraint and its summaries, in SI."""
+
+    recovered_power_utilization: float | None
+    max_utilization: float
+    capacity_exceeded: bool
+    hard_limit_exceeded: bool
+    bottleneck_constraint: str | None
+
+
+def _recovered_power_capacity(power: float, rated: float | None) -> ExpanderCapacity:
+    """`Expander`'s recovered-power constraint, evaluated on the shaft power.
+
+    The parent's speed, surge and stonewall constraints are disabled without a chart, so this
+    is the only enabled entry. The value is `abs(power)`, and a non-finite power answers 0.0,
+    as the class's supplier does. A non-positive rating creates no constraint at all.
+    """
+    if rated is None or not rated > 0.0:
+        return ExpanderCapacity(None, 0.0, False, False, None)
+    recovered = abs(power) if math.isfinite(power) else 0.0
+    utilization = min(recovered / rated, 9.99)
+    return ExpanderCapacity(
+        recovered_power_utilization=utilization,
+        max_utilization=utilization if utilization > 0.0 else 0.0,
+        capacity_exceeded=utilization > 1.0,
+        hard_limit_exceeded=recovered > 1.1 * rated,
+        bottleneck_constraint="recoveredPower" if utilization > 0.0 else None,
+    )
+
+
 def _spec() -> dict[str, object]:
     """The generated spec, imported here so the module has no import-time cycle."""
     from azoth._models_gen import model
 
     return model("process.expander")
+
+
+def _polytropic_states(
+    components: list[str],
+    inlet_z: list[float],
+    t: float,
+    p: float,
+    p_out: float,
+    polytropic_efficiency: float,
+    number_of_steps: int,
+) -> tuple[float, float, Q]:
+    """The stepped branch: ``Expander.run``'s ``numbersteps`` increments of ``dp``.
+
+    Each step takes the current entropy and enthalpy, flashes isentropically to the next
+    pressure, and multiplies the step by the efficiency before a ``PHflash`` lands the state.
+    The count is floored at one, as the class's ``Math.max(1, ...)`` does.
+    """
+    if not 0.0 < polytropic_efficiency <= 1.0:
+        raise InvalidInputError(
+            "polytropic_efficiency",
+            "the expander's polytropic efficiency must be in (0, 1]",
+        )
+    steps = max(1, number_of_steps)
+    mixture, ideal_gas = _components.mixture_of(components, eos="pr")
+    increment = (p_out - p) / steps
+    state_t, state_p = t, p
+    h_in, _ = enthalpy_at(mixture, ideal_gas, t, p, inlet_z)
+    h = h_in
+    for _ in range(steps):
+        entropy, _ = entropy_at(mixture, ideal_gas, state_t, state_p, inlet_z)
+        next_p = state_p + increment
+        isentropic = ps_flash_solve(
+            mixture,
+            ideal_gas,
+            from_si(next_p, "Pa"),
+            from_si(entropy, "J/(mol*K)"),
+            inlet_z,
+        )
+        h_isentropic, _ = enthalpy_at(
+            mixture, ideal_gas, isentropic.T.to("K").magnitude, next_p, inlet_z
+        )
+        h = h + (h_isentropic - h) * polytropic_efficiency
+        flashed = ph_flash_solve(
+            mixture, ideal_gas, from_si(next_p, "Pa"), from_si(h, "J/mol"), inlet_z
+        )
+        state_t = flashed.T.to("K").magnitude
+        state_p = next_p
+    return h_in, h, flashed.T

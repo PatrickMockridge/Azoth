@@ -31,6 +31,21 @@ fn opened() -> Workspace {
 }
 
 #[test]
+fn a_case_has_a_name_the_header_can_set() {
+    let mut workspace = opened();
+    assert_eq!(
+        workspace.flowsheet().name,
+        "Feed, pump, heat, separate, recycle"
+    );
+    workspace
+        .apply(&Command::SetName {
+            name: "North field test".into(),
+        })
+        .expect("the name lands");
+    assert_eq!(workspace.flowsheet().name, "North field test");
+}
+
+#[test]
 fn an_edit_rechecks_and_the_values_go_stale() {
     let mut workspace = opened();
     assert!(workspace.ok(), "the shipped document is sound");
@@ -109,6 +124,14 @@ fn a_run_that_fails_takes_the_values_with_it() {
     assert!(workspace.report().is_none(), "no report from a failed run");
     assert!(workspace.dirty());
     assert!(workspace.paths().is_empty());
+
+    // An edit clears the failure: it described the document before the edit.
+    workspace
+        .apply(&Command::AddProduct {
+            name: "spare".into(),
+        })
+        .expect("the edit lands");
+    assert!(workspace.run_error().is_none(), "the old fault is gone");
 
     // And a successful run clears it.
     workspace = opened();
@@ -257,7 +280,7 @@ fn the_other_resources_answer_with_their_own_text() {
     let catalogue = resources::read(&workspace, &palette, "azoth://catalogue").expect("published");
     let parsed: serde_json::Value =
         serde_json::from_str(&catalogue.text).expect("the catalogue is JSON");
-    assert_eq!(parsed["unit_ops"].as_array().expect("an array").len(), 29);
+    assert_eq!(parsed["unit_ops"].as_array().expect("an array").len(), 31);
 
     // A URI this server does not publish is `None` rather than an error: the transport answers it
     // as a bad request, which is what a client's mistake about a name is.

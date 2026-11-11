@@ -6,15 +6,14 @@
 //!
 //! ```text
 //! mu_i  = f(LIQVISCMODEL_i, LIQVISC_i, T) * (correction_i + 1)/2
-//! mu    = exp(sum_i w_i ln mu_i)                    <- Grunberg-Nissan, G_ij = 0
+//! mu    = exp(sum_i w_i ln mu_i + sum_i sum_{j != i} w_i w_j G_ij)
 //! ```
 //!
-//! **The mixing rule's interaction term is zero, and that is a measurement rather than
-//! an omission.** `PhysicalPropertyMixingRule.initMixingRules` fills `Gij` with an inner
-//! loop that starts at `k = l` and breaks on `k == l`, so its body never runs and every
-//! phase reports a zero matrix - the probe prints `G[0][1] = 0.0` for a water/methanol
-//! mixture whose `Gij` column in `INTER.csv` is not empty. Reproducing the class means
-//! reproducing the zero.
+//! **The interaction term is the table's.** `PhysicalPropertyMixingRule.initMixingRules`
+//! reads `GIJVISC` from `INTER.csv` in either component order and leaves a pair with no row
+//! at zero (upstream PR #4003); before the fix its inner loop began at `k = l` and broke on
+//! it, so every phase reported a zero matrix. Water/TEG is the pair the class's own test
+//! names, `0.8`.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature, pascal_seconds};
 use azoth_core::{AzothError, Result, apply_checks};
@@ -119,9 +118,10 @@ pub fn aqueous_viscosity(
         ));
     }
 
+    let weights: Vec<f64> = masses.iter().map(|mass| mass / total_mass).collect();
     let mut weighted = 0.0;
     for (index, component) in components.iter().enumerate() {
-        let weight = masses[index] / total_mass;
+        let weight = weights[index];
         // A `Some` weight of zero contributes nothing, and `ln(0)` would poison it - the
         // class's own loop has the same structure but never sees an absent component
         // because a phase's mole fractions are positive.
@@ -131,8 +131,24 @@ pub fn aqueous_viscosity(
         weighted += weight * pure_viscosity(component, t.value, p.value).ln();
     }
 
+    // **The interaction term**: `sum_i sum_{j != i} w_i w_j G_ij`, over the pairs the table
+    // carries. A mixture built from constants has no names, and the class's matrix would be
+    // zeros for it - so no names means no interactions, which is the same answer.
+    let mut interaction = 0.0;
+    if let Some(names) = mixture.names() {
+        for (i, first) in names.iter().enumerate() {
+            for (j, second) in names.iter().enumerate() {
+                if i == j {
+                    continue;
+                }
+                interaction +=
+                    weights[i] * weights[j] * crate::databank::viscosity_gij(first, second);
+            }
+        }
+    }
+
     Ok(AqueousViscosityResult {
-        viscosity: pascal_seconds(weighted.exp() * CP_TO_PA_S),
+        viscosity: pascal_seconds((weighted + interaction).exp() * CP_TO_PA_S),
         warnings,
     })
 }

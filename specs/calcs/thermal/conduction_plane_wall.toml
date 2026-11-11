@@ -1,5 +1,6 @@
 id = "thermal.conduction_plane_wall"
 name = "Steady conduction through a plane wall"
+summary = "Steady heat flow through a plane wall from its conductivity, area, thickness and temperature difference. Use it for insulation and wall-loss screening."
 equation = "q = k * A * dT / L"
 latex = '''q = \frac{k\,A\,\Delta T}{L}'''
 assumptions = ["Steady state: the temperature profile is no longer changing.", "One-dimensional conduction: heat flows normal to the faces and nowhere else.", "the wall is homogeneous and isotropic, so a single `k` describes it in the flow direction", "`k` is constant across the temperature range.", "no internal heat generation within the wall", "no contact resistance at either face, and no convective film on either side; `dT` is the temperature difference across the solid itself, not between two fluids", "both faces are isothermal", "edge effects are neglected, which is the plane-wall idealisation: valid while the wall's lateral extent is large compared with its thickness", "the sign of `q` follows the sign of `dT`, and this calc does not know which physical face is which. It models a temperature difference across a slab, not a named hot side and cold side."]

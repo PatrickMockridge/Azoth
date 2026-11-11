@@ -54,17 +54,56 @@ const refused = decodeEnvelope(brokenJson);
 
 describe("the catalogue", () => {
   it("is the palette, with a model for all but one and a kernel for all but one", () => {
-    // **The two counts moved together, and that is the entry that moved them.** The rate-based
-    // packed column was a refusal by name and is now a kernel with a model of its own, so the
-    // library the fixture captures has twenty-eight of each - and `simple_absorber` is the one
-    // entry left with neither, refused on measured evidence rather than for want of a port.
-    expect(catalogue.unit_ops).toHaveLength(29);
-    expect(catalogue.unit_ops.filter((entry) => entry.model !== null)).toHaveLength(28);
-    expect(catalogue.unit_ops.filter((entry) => entry.runnable)).toHaveLength(28);
+    // **The two counts move together, and that is the entry that moved them.** The map machine
+    // was the last palette entry to land, so thirty of the thirty-one carry a model and a kernel
+    // - and `simple_absorber` is the one entry left with neither, refused on measured evidence
+    // rather than for want of a port.
+    expect(catalogue.unit_ops).toHaveLength(31);
+    expect(catalogue.unit_ops.filter((entry) => entry.model !== null)).toHaveLength(30);
+    expect(catalogue.unit_ops.filter((entry) => entry.runnable)).toHaveLength(30);
     expect(catalogue.unit_ops.filter((entry) => entry.model === null).map((e) => e.id)).toEqual([
       "unit_ops.simple_absorber",
     ]);
-    expect(catalogue.tools).toHaveLength(15);
+    expect(catalogue.tools).toHaveLength(16);
+  });
+
+  it("carries the standalone calculations, with the table-shaped four refused", () => {
+    // **The registry's 98, and the 94 a sheet can draw.** The four with table-shaped inputs or
+    // outputs are listed and refused rather than omitted, so a picker can say why they are not
+    // available instead of pretending they do not exist.
+    const calcs = catalogue.calcs ?? [];
+    expect(calcs).toHaveLength(98);
+    expect(calcs.filter((entry) => entry.available)).toHaveLength(94);
+    expect(
+      calcs.filter((entry) => !entry.available).map((entry) => entry.id),
+    ).toEqual([
+      "hydraulics.crane_k_factors",
+      "thermal.incremental_zone_analysis",
+      "thermal.shell_and_tube_design",
+      "thermal.zone_rating",
+    ]);
+    for (const entry of calcs) {
+      expect(entry.provenance.verification).not.toBe("");
+      expect(entry.worked_example, `${entry.id} has no worked example`).toBeTypeOf("object");
+      // **The sheet's first two readings.** Every calculation says what it is for, and every
+      // field says what it means; a blank one is a blank line on the sheet.
+      expect(entry.summary.trim(), `${entry.id} has no summary`).not.toBe("");
+      expect(entry.summary.length).toBeLessThanOrEqual(300);
+      for (const field of [...entry.inputs, ...entry.outputs]) {
+        expect(field.description.trim(), `${entry.id}.${field.name}`).not.toBe("");
+      }
+      for (const assumption of entry.assumptions) {
+        expect(assumption.trim(), `${entry.id} has an empty assumption`).not.toBe("");
+      }
+    }
+    const pump = calcs.find((entry) => entry.id === "hydraulics.pump_power");
+    expect(pump?.summary).toContain("Shaft power");
+    expect(pump?.inputs.map((input) => input.name)).toEqual(["rho", "q", "H", "eta"]);
+    expect(pump?.outputs.map((output) => output.name)).toEqual(["power"]);
+    expect(pump?.worked_example.rho).toBe(998);
+    // **The UI projection, not the library record.** No visible string may name the upstream
+    // implementation; the model id, verification and hashes are the citation the UI keeps.
+    expect(JSON.stringify(calcs).toLowerCase()).not.toContain("neqsim");
   });
 
   it("carries the kind a field needs, which is nowhere in the palette", () => {
@@ -116,6 +155,7 @@ describe("the catalogue", () => {
     expect([...families].sort()).toEqual([
       "column",
       "heat_exchanger",
+      "machine",
       "mixer",
       "reactor",
       "separator",
@@ -148,13 +188,13 @@ describe("the catalogue", () => {
     // `si_factor` runs the conversion a calculation runs, and `test_units_cross_library.py` holds
     // every one of them to `pint`. A unit the catalogue omits would be one a display could not
     // convert, so the count is asserted rather than a sample.
-    // **Seventy-four, and two of them a spec may not declare.** Seventy-two are the vocabulary's
-    // units; a degree Celsius and a degree Fahrenheit are *display* units, kept in their own
-    // table so that `unit.schema.json` - the enum a spec's `unit:` is checked against - does not
-    // offer them, and merged into this map because a display looks a unit up by name and does not
-    // care which table it came from.
+    // **Eighty-four, and two of them a spec may not declare.** Eighty-two are the
+    // vocabulary's units; a degree Celsius and a degree Fahrenheit are *display* units, kept in
+    // their own table so that `unit.schema.json` - the enum a spec's `unit:` is checked against -
+    // does not offer them, and merged into this map because a display looks a unit up by name and
+    // does not care which table it came from.
     const units = catalogue.units ?? {};
-    expect(Object.keys(units)).toHaveLength(74);
+    expect(Object.keys(units)).toHaveLength(84);
     expect(units["Pa"]).toEqual({ dimension: "pressure", factor: 1, offset: 0 });
     expect(units["psi"]?.dimension).toBe("pressure");
     expect(units["psi"]?.factor).toBeCloseTo(6894.757293168361, 6);

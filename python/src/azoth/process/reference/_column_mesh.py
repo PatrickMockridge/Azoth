@@ -860,6 +860,10 @@ def _outcome(mesh: Mesh, iterations: int, residual: float) -> _States:
         temperature_residual=residual,
         mass_residual=mass_residual,
         energy_residual=energy_residual,
+        # The mesh solver's path does not evaluate the end specifications on the published
+        # state; the fixed-point path is the one that reports them.
+        top_specification_residual=0.0,
+        bottom_specification_residual=0.0,
         # **The mesh solve has no reactive route, and the model refuses the pair** - see
         # `distillation_column`'s own refusal: this solve takes its fugacities from the
         # MESH equations, so the flag could only be ignored.

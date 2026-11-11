@@ -30,7 +30,7 @@ This box has 47 GiB RAM and 2 GiB swap, with no OOM guard (`systemd-oomd` inacti
   scoped set, no close-out, the `slow_sweep`-marked sweeps deselected, 5 minutes. `push` is
   CI's scoped lane and also deselects them, 15 minutes. `tranche` is the close-out: the push
   set with each reached sweep narrowed to the ids the scope selected, 20 minutes. `nightly`
-  is the whole tree, 45 minutes, and it is CI's — `--lane nightly --run` is refused and
+  is the whole tree, 60 minutes, and it is CI's — `--lane nightly --run` is refused and
   `--full` forces that render. `--estimate` prints the minutes before they are spent, and
   every `--run` prints the estimate first. **The budgets are ceilings: `--max-minutes` may
   only lower one** — a diff too wide for the push lane is `--lane tranche` (20 minutes) or

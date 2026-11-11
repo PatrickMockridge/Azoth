@@ -4,6 +4,8 @@
 
 `characterization.tbp_cut_properties`
 
+TBP cut properties by one of ten characterisation models. Use it to compare or build pseudo-component properties from a boiling cut.
+
 ## Equation
 
 $$
@@ -37,12 +39,24 @@ The other five take their own forms: `PedersenPR2` substitutes a Soreide boiling
 
 `getAvailableModels()` returns `PedersenSRK`, `PedersenSRKHeavyOil`, `PedersenPR`, `PedersenPR2`, `PedersenPRHeavyOil`, `RiaziDaubert`, `Lee-Kesler`, `Twu`, `Cavett` and `Standing`. The seam id `eos.tbp_fraction_properties` is the first of them.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **this is `PedersenSRK`'s class, ten times over.** The seam id `eos.tbp_fraction_properties` is the same class's `PedersenTBPModelSRK` and the two agree exactly on it, which `pedersen_srk_agrees_with_the_seam_id` pins. It is separate because that one is the seam a wax fluid calls.
+- **the units are g/mol and specific gravity, and this states SI.** `molar_mass` crosses in kg/mol and `density` in kg/m3, and the kernels convert at the boundary; NeqSim's own caller passes g/mol. `pc` is computed in **bar** - its coefficients and `0.01325` say so - and reported in pascals.
+- **the models do not share one unit for `molar_mass`.** `addTBPfraction` passes `molarMass * 1000.0` to `calcCriticalViscosity` but the bare kg/mol `molarMass` to `calcParachorParameter`, which multiplies by 1000 inside. This id converts once at the boundary and uses g/mol throughout.
+- **`PedersenSRKHeavyOil` is a no-op, reproduced rather than repaired.** It re-declares the two coefficient arrays, shadowing its parent's fields, and the parent's `calcTC` reads the parent's. Measured at `M = 500` g/mol it returns `PedersenSRK`'s `tc` exactly.
+- **`attraction_exponent` is absent for five of the ten, for two reasons.** `RiaziDaubert` sets `calcm = false`, so its caller ignores the exponent; `LeeKesler`, `Twu`, `Cavett` and `Standing` inherit `TBPBaseModel.calcm`, which **throws**. Absent means no exponent to use, not zero.
+- **four base-class quantities are not published.** `calcRacketZ` takes a flashed reference system. `calcParachorParameter`, `calcCriticalViscosity` and `calcCriticalVolume` have no unit NeqSim states anywhere, and `addTBPfraction` never calls `calcCriticalVolume` - it sets `critVol`.
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
-| `model` | pedersen_srk / pedersen_srk_heavy_oil / pedersen_pr / pedersen_pr2 / pedersen_pr_heavy_oil / riazi_daubert / lee_kesler / twu / cavett / standing | *Optional.* which of the ten models evaluates the cut. Absent takes the class's own default, `PedersenSRK` - `Characterise.TBPFractionModelName`, which is what `addTBPfraction` runs when nothing sets it. |
-| `molar_mass` | kg/mol | The cut's molar mass. A pseudo-component has no databank row, so this is what stands in for its identity. NeqSim's correlations take g/mol and the kernels convert. |
+| `model` | pedersen_srk / pedersen_srk_heavy_oil / pedersen_pr / pedersen_pr2 / pedersen_pr_heavy_oil / riazi_daubert / lee_kesler / twu / cavett / standing | *Optional.* Which of the ten characterisation models evaluates the cut. Optional; absent uses the Pedersen SRK model. |
+| `molar_mass` | kg/mol | The cut's molar mass. A pseudo-component has no databank row, so this stands in for its identity. |
 | `density` | kg/m**3 | The cut's normal liquid density at 15 C, which the correlations take as a specific gravity in g/cm3. The two are the same number in units a thousand apart. |
 | `boiling_point` | K | *Optional.* The cut's normal boiling point, when it is known. Every model returns this instead of correlating one when it is positive; absent means zero, which is what `addTBPfraction` leaves it at, so the correlation runs. |
 
@@ -69,18 +83,12 @@ The other five take their own forms: `PedersenPR2` substitutes a Soreide boiling
 | `acentric_factor >= -1 and acentric_factor <= 2` | warns `OUT_OF_VALID_RANGE` | **Measured outside this** above `M = 1120` g/mol, where the heavy set gives a boiling point above the critical temperature: `-44.6358323245519` at `M = 1121`, `d = 1.0`. A Pitzer factor outside `[-1, 2]` describes no fluid, so it is reported rather than passed on. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **this is `PedersenSRK`'s class, ten times over.** The seam id `eos.tbp_fraction_properties` is the same class's `PedersenTBPModelSRK` and the two agree exactly on it, which `pedersen_srk_agrees_with_the_seam_id` pins. It is separate because that one is the seam a wax fluid calls.
-- **the units are g/mol and specific gravity, and this states SI.** `molar_mass` crosses in kg/mol and `density` in kg/m3, and the kernels convert at the boundary; NeqSim's own caller passes g/mol. `pc` is computed in **bar** - its coefficients and `0.01325` say so - and reported in pascals.
-- **the models do not share one unit for `molar_mass`.** `addTBPfraction` passes `molarMass * 1000.0` to `calcCriticalViscosity` but the bare kg/mol `molarMass` to `calcParachorParameter`, which multiplies by 1000 inside. This id converts once at the boundary and uses g/mol throughout.
-- **`PedersenSRKHeavyOil` is a no-op, reproduced rather than repaired.** It re-declares the two coefficient arrays, shadowing its parent's fields, and the parent's `calcTC` reads the parent's. Measured at `M = 500` g/mol it returns `PedersenSRK`'s `tc` exactly.
-- **`attraction_exponent` is absent for five of the ten, for two reasons.** `RiaziDaubert` sets `calcm = false`, so its caller ignores the exponent; `LeeKesler`, `Twu`, `Cavett` and `Standing` inherit `TBPBaseModel.calcm`, which **throws**. Absent means no exponent to use, not zero.
-- **four base-class quantities are not published.** `calcRacketZ` takes a flashed reference system. `calcParachorParameter`, `calcCriticalViscosity` and `calcCriticalVolume` have no unit NeqSim states anywhere, and `addTBPfraction` never calls `calcCriticalVolume` - it sets `critVol`.
 - the correlations are fits to petroleum assays, so this is a property of a *cut* and not of a substance, and no databank is involved.
 
 

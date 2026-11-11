@@ -20,6 +20,7 @@ import sys
 import time
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 TOOLS = Path(__file__).resolve().parents[2] / "tools"
 
@@ -125,6 +126,24 @@ def test_a_change_inside_a_namespace_reaches_that_namespaces_ids() -> None:
     """Only a `specs/` path used to contribute ids, so a standards change reached nothing."""
     joined = " ".join(commands_for(["python/src/azoth/standards/kernels.py"]))
     assert "standards." in joined, "the namespace's own ids are what verifies it"
+
+
+def test_a_calc_only_namespace_does_not_open_the_model_cases() -> None:
+    """A thermal calculation change used to claim `thermal.` model cases that cannot exist.
+
+    `test_model_cases.py` holds model cases only, and `thermal` has no models. The narrowed
+    command collected nothing and pytest exited 5, which the lane read as a red run over a
+    green diff. The model target is emitted only for a term that names a model.
+    """
+    joined = " ".join(commands_for(["python/src/azoth/thermal/__init__.py"]))
+    assert "test_model_cases.py" not in joined
+    assert "test_cross_impl.py" in joined, "the calc's own cross-implementation cases remain"
+
+
+def test_a_model_namespace_still_opens_the_model_cases() -> None:
+    """The other side of the same rule: `eos.` does name models, so its cases run."""
+    joined = " ".join(commands_for(["python/src/azoth/eos/__init__.py"]))
+    assert "test_model_cases.py" in joined
 
 
 def test_a_namespace_the_table_does_not_know_is_refused() -> None:
@@ -298,6 +317,74 @@ def test_the_smoke_ids_do_not_open_a_registry_sweep() -> None:
     assert module.selection_terms(commands) == ""
     joined = " ".join(entry.command for entry in commands if entry.kind == module.PYTEST)
     assert "eos.pt_flash" in joined
+    # And the bounded process sample is policy too: a shared file selects it in the cross-impl
+    # command and must not narrow a sweep to it.
+    commands, _ = module.scope(["python/src/azoth/process/layers.py"], module.crate_edges())
+    assert module.selection_terms(commands) == ""
+    joined = " ".join(entry.command for entry in commands if entry.kind == module.PYTEST)
+    assert "process.separator" in joined
+
+
+def test_a_process_model_source_names_its_id_not_the_namespace() -> None:
+    """**The 48-minute push, in one assertion.** A one-model change selected all 33 process
+    ids; the model file names its own id and the bounded sample stays out of it."""
+    joined = " ".join(commands_for(["crates/azoth-process/src/models/separator.rs"]))
+    assert "process.separator" in joined
+    assert '-k "process."' not in joined
+    assert "process.compressor" not in joined, "a leaf does not pull in the sample"
+
+
+def test_a_process_kernel_names_its_same_stem_model() -> None:
+    joined = " ".join(commands_for(["crates/azoth-process/src/kernels/pipe.rs"]))
+    assert "process.pipe" in joined
+    assert '-k "process."' not in joined
+
+
+def test_a_separator_kernel_reaches_its_consumers() -> None:
+    """`kernels/separator.rs` serves gas_scrubber, tank and the assessment as well."""
+    joined = " ".join(commands_for(["crates/azoth-process/src/kernels/separator.rs"]))
+    for consumer in (
+        "process.separator",
+        "process.gas_scrubber",
+        "process.tank",
+        "process.separator_capacity_assessment",
+    ):
+        assert consumer in joined
+    assert '-k "process."' not in joined
+    assert "process.compressor" not in joined
+
+
+def test_a_reference_module_names_its_model() -> None:
+    joined = " ".join(commands_for(["python/src/azoth/process/reference/heater.py"]))
+    assert "process.heater" in joined
+    assert '-k "process."' not in joined
+    assert "process.compressor" not in joined
+
+
+def test_a_model_spec_selects_only_its_id() -> None:
+    joined = " ".join(commands_for(["specs/models/process/heater.toml"]))
+    assert "process.heater" in joined
+    assert '-k "process."' not in joined
+    assert "process.compressor" not in joined
+
+
+def test_a_shared_process_file_selects_the_bounded_sample() -> None:
+    module = tool()
+    joined = " ".join(commands_for(["python/src/azoth/process/reference/_phase_outlet.py"]))
+    assert '-k "process."' not in joined
+    for smoke in module.NAMESPACE_SMOKE_IDS["process"]:
+        assert smoke in joined
+
+
+def test_a_namespace_without_a_sample_keeps_the_dot() -> None:
+    """The bound is opt-in: a namespace with no entry behaves exactly as before."""
+    joined = " ".join(commands_for(["python/src/azoth/eos/flash.py"]))
+    assert '-k "eos."' in joined
+
+
+def test_every_namespace_sample_is_registered_and_local() -> None:
+    module = tool()
+    assert module.table_problems() == []
 
 
 def test_the_tool_and_pytest_agree_on_which_files_sweep() -> None:
@@ -542,6 +629,10 @@ def test_every_unconditional_ci_step_is_in_the_close_out_table() -> None:
                 # would be the list this table exists to avoid.
                 continue
             expected.add(command)
+    # The notebooks run in their own conditionally-reached job, not in an unconditional one,
+    # but a close-out should still execute them; the local lane is the only place a whole run
+    # happens before a push.
+    expected.add(".venv/bin/python tools/check_notebooks.py")
     assert declared == expected
 
 
@@ -669,7 +760,7 @@ def test_the_lane_budget_can_only_be_lowered() -> None:
     assert "watchdog" in zero.stderr
 
 
-def test_a_push_lane_refuses_a_dirty_tree(monkeypatch) -> None:
+def test_a_push_lane_refuses_a_dirty_tree(monkeypatch: Any) -> None:
     """A lane tests a commit, not a work in progress."""
     module = tool()
     dirty = subprocess.CompletedProcess([], 0, " M slice.rs\n", "")

@@ -4,6 +4,8 @@
 
 `eos.tbp_fraction_properties`
 
+Pseudo-component properties for a TBP cut from its boiling point, density and molar mass. Use it to build a characterised oil fraction.
+
 ## Equation
 
 $$
@@ -30,6 +32,18 @@ Pedersen's TBP correlations: mw = molar_mass*1000 (g/mol), d = density/1000 (g/c
 
 `calcTC`, `calcPC`, `calcTB`, `calcm` and the base class's `calcAcentricFactor`, as `addTBPfraction` composes them.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **this is NeqSim's default TBP model, `PedersenSRK`** - `Characterise.TBPFractionModelName`. The class holds eight models and this is the one `addTBPfraction` runs; `RiaziDaubert`, `Lee-Kesler`, `Twu`, `Cavett`, `Standing` and the two heavy-oil variants are carried by name.
+- the correlation is written in **g/mol and g/cm3** and this states SI, so the conversion is at the boundary and the coefficients keep NeqSim's own scale. `pc` is computed in **bar** - its coefficients and `0.01325` (= ln 1.01325) say so - and reported in pascals.
+- **the coefficient set switches at `mw = 1120` and the boiling-point correlation at `mw = 540`**, both in g/mol. The two crossings are pinned by tests, because a port that read either threshold in kg/mol would agree at every light cut and diverge only at heavy ones.
+- **above `mw = 1120` the acentric factor is unphysical and is returned anyway.** Measured at `mw = 1121`, `d = 1.0`: `tb = 1006.34005439028` K against `tc = 994.658850370848` K, so `omega` is `-44.6358323245519`. The correlation's behaviour, reproduced rather than repaired; the range warns.
+- **`racketZ` - the Peneloux shift `addTBPfraction` also fits - is carried**, and is not a function of these two numbers: it takes a flashed reference system. `PhaseSrkEos` never applies it either - its only callers are the density models.
+- `calcCriticalVolume`, `calcParachorParameter`, `calcCriticalViscosity` and `calcWatsonCharacterizationFactor` are the same class's neighbours and are carried by name: nothing in the ported families reads them.
+
 ## Inputs
 
 | Name | Unit | Description |
@@ -43,10 +57,10 @@ Pedersen's TBP correlations: mw = molar_mass*1000 (g/mol), d = density/1000 (g/c
 | Name | Unit | Description |
 |---|---|---|
 | `tc` | K | Critical temperature. |
-| `pc` | Pa | Critical pressure. NeqSim's correlation is written in bar and this reports pascals. |
+| `pc` | Pa | Critical pressure, in pascals. |
 | `boiling_temperature` | K | Normal boiling point. Two correlations meet at `mw = 540` g/mol and the switch is pinned by a test. |
 | `acentric_factor` | dimensionless | Pitzer's acentric factor, from Edmister's three-parameter form rather than from a vapour-pressure fit. |
-| `attraction_exponent` | dimensionless | The `m` of the cubic's alpha function, which for a pseudo-component **replaces** the acentric-factor correlation `eos.srk_kappa` makes. NeqSim's `addTBPfraction` sets it on the component's attractive term. |
+| `attraction_exponent` | dimensionless | The `m` of the cubic's alpha function. For a pseudo-component it replaces the acentric-factor correlation. |
 
 
 ## Valid range
@@ -58,19 +72,13 @@ Pedersen's TBP correlations: mw = molar_mass*1000 (g/mol), d = density/1000 (g/c
 | `acentric_factor >= -1 and acentric_factor <= 2` | warns `OUT_OF_VALID_RANGE` | **Measured outside this at `mw >= 1120`**: the heavy set gives a boiling point above the critical temperature, so the factor comes out at `-44.6358323245519` at `mw = 1121`, `d = 1.0`. A Pitzer factor outside `[-1, 2]` describes no fluid, so it is reported rather than passed on. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **this is NeqSim's default TBP model, `PedersenSRK`** - `Characterise.TBPFractionModelName`. The class holds eight models and this is the one `addTBPfraction` runs; `RiaziDaubert`, `Lee-Kesler`, `Twu`, `Cavett`, `Standing` and the two heavy-oil variants are carried by name.
 - **a cut is two numbers**, a molar mass and a normal liquid density, and everything a cubic needs follows from them. That is what `addTBPfraction` is: it evaluates these correlations and hands the results to a component.
-- the correlation is written in **g/mol and g/cm3** and this states SI, so the conversion is at the boundary and the coefficients keep NeqSim's own scale. `pc` is computed in **bar** - its coefficients and `0.01325` (= ln 1.01325) say so - and reported in pascals.
-- **the coefficient set switches at `mw = 1120` and the boiling-point correlation at `mw = 540`**, both in g/mol. The two crossings are pinned by tests, because a port that read either threshold in kg/mol would agree at every light cut and diverge only at heavy ones.
-- **above `mw = 1120` the acentric factor is unphysical and is returned anyway.** Measured at `mw = 1121`, `d = 1.0`: `tb = 1006.34005439028` K against `tc = 994.658850370848` K, so `omega` is `-44.6358323245519`. The correlation's behaviour, reproduced rather than repaired; the range warns.
-- **`racketZ` - the Peneloux shift `addTBPfraction` also fits - is carried**, and is not a function of these two numbers: it takes a flashed reference system. `PhaseSrkEos` never applies it either - its only callers are the density models.
-- `calcCriticalVolume`, `calcParachorParameter`, `calcCriticalViscosity` and `calcWatsonCharacterizationFactor` are the same class's neighbours and are carried by name: nothing in the ported families reads them.
 - the correlations are fits to petroleum assays, so this is a property of a *cut* and not of a substance, and no databank is involved.
 
 

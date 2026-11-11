@@ -10,14 +10,27 @@ assumptions = [
     "**the duty is W and the enthalpy is per mole, and they meet because a process fluid's moles are one second of flow.** `run` adds `getDuty()` (W) to `getEnthalpy()` (J) directly; here the shift is `duty / inlet_n` in J/mol, stated rather than inherited.",
     "`pressure_drop` is applied to the inlet and the flash runs at the pressure it leaves, before the temperature or the enthalpy is set - `run` sets the pressure first, and an explicit outlet pressure (which this palette entry does not declare) would override the drop rather than add to it.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `Heater` also carries a `runTransient`, a mechanical design, an electrical and an instrument design, a utility specification and bounded outlet-temperature limits. **None is here**: this is the steady-state arithmetic the palette's three parameters reach.",
+    "**the outlet-temperature limits are two HARD constraints.** Either setter initializes the map; the maximum's utilization is `temperature / limit`, the minimum's is `limit / temperature`, both capped at 9.99. A non-positive minimum is not a constraint.",
+    "**the maximum's hard-limit check is a no-op in the class.** `isHardLimitExceeded` reads `maxValue`, which `setMaxOutletTemperature` never sets, so only the minimum can trip it. The map holds no duty or pressure-drop constraint while the design's limits are zero.",
+    "**The instrument design is a static list, not physics.** Five process instruments and an overtemperature trip are common; the type adds the element monitor, the utility side's three, or the fan's three. The tag is `SYMBOL-(1000 + position)`.",
+    "**The instrument ranges are stated in their own units.** The list stores a number pair and a unit string, and the port publishes both; the values are not converted to SI because the class does not convert them.",
+    "**The electrical design's \"motor\" is the element bank.** For an electric heater the process duty is the shaft power, and the base class sizes a standard IEC motor on it; a shell-and-tube heater has no motor and only the auxiliary load.",
+    "**The air cooler's fan power is `max(2 kW per fan, 1% of the duty)`**, and the motor is sized on that. The voltage taps are `400/690/6600` V for the electric heater and `400/690` for the cooler.",
+    "**The motor tables are the class's**: 56 IEC sizes, four efficiency classes, pole offsets, slip and locked-rotor bands. The unsized defaults are 95%, 0.86 and 7.0; the shell branch uses the base class's 0.85.",
+    "**Electrical units are outside this library's dimensional vocabulary**: volts, amperes, VA, VAR and rpm are dimensionless, with the unit named in the description.",
+    "**The utility specification is five carried values and their predicates.** A temperature or the approach is specified when stated; the heat-capacity rate and the coefficient only when positive.",
+    "**The cable sizes on the tray ampacity and then upsizes for voltage drop, but its reported ampacity stays the base-selected section's**: the class computes the derated rating before the drop loop.",
+    "**The VFD sizes on the motor's rating, and its rated current is computed at the motor's own 400 V default** because `calcDesign` copies the design's tap to the motor after sizing it.",
+    "**The transformer and hazardous-area classification are constructed and settable but never sized or read by `calcDesign`**; this surface stops at the drive.",
+    "**The mechanical design is its thermal estimate only.** The temperatures give the LMTD and approach, UA is duty over it, and five candidate types give their areas and geometry. The detailed calculator is `thermal.shell_and_tube_design`, and the two-stream branch is `process.heat_exchanger`'s.",
+    "**`Heater.runTransient` is the steady re-run plus the clock, not a dynamic model.** It has no difference equation; the `calculateSteadyState = false` branch only copies the outlet pressure to the inlet and re-runs the inlet, a mutation of the caller's stream. Measured non-port.\n",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/Heater.java` is the port source, through its `run`.",
 ]
 [source]
 standard = "NeqSim process/equipment/heatexchanger/Heater.java"
-edition = "Its steady-state `run`: the pressure drop, then a `TPflash` at a stated outlet temperature or a `PHflash` at the enthalpy a stated duty implies, and the duty reported as the enthalpy the outlet reached."
+edition = "Its steady-state `run`, the two outlet-temperature constraints, the instrument list, the motor/electrical sizing, the cable, switchgear and VFD, the utility-specification predicates and the mechanical thermal estimate. `runTransient` is the steady re-run plus the clock, recorded rather than ported."
 [inputs]
 [inputs.components]
 type = "components"
@@ -48,6 +61,114 @@ description = "the heat added, which sets the outlet enthalpy as `inlet_h + duty
 unit = "Pa"
 optional = true
 description = "the pressure loss across the heater, taken off the inlet pressure before the flash. When omitted the outlet is at the inlet's pressure.\n"
+[inputs.max_outlet_temperature]
+unit = "K"
+optional = true
+description = "`setMaxOutletTemperature`, the maximum outlet-temperature limit. **Absent is unset** (`f64::MAX`); supplying it initializes the capacity map, and a non-positive limit's utilization is 0.\n"
+[inputs.min_outlet_temperature]
+unit = "K"
+optional = true
+description = "`setMinOutletTemperature`, the minimum outlet-temperature limit. **Absent is 0, and only a positive limit is a constraint** (`hasMinOutletTemperatureLimit`). Supplying any value initializes the map.\n"
+[inputs.instrument_design]
+type = "boolean"
+optional = true
+description = "whether to run `HeatExchangerInstrumentDesign.calcDesign`. Absent is false; every instrument output is absent without it.\n"
+[inputs.include_safety_instruments]
+type = "boolean"
+optional = true
+description = "whether the overtemperature trips are in the list. Absent takes the class's `true`.\n"
+[inputs.default_sil_level]
+unit = "dimensionless"
+optional = true
+description = "the SIL rating the safety trips carry. Absent takes the class's `2`; the setter takes an integer and clamps nothing.\n"
+[inputs.heat_exchanger_type]
+type = "enum"
+values = ["electric_heater", "air_cooler", "shell_and_tube"]
+optional = true
+description = "the construction the instruments and the electrical design follow. Absent is `electric_heater`, which the class detects for a `Heater`; stating it needs one of the two design flags.\n"
+[inputs.electrical_design]
+type = "boolean"
+optional = true
+description = "whether to run `HeatExchangerElectricalDesign.calcDesign`. Absent is false; every electrical output is absent without it.\n"
+[inputs.motor_sizing_margin]
+unit = "dimensionless"
+optional = true
+description = "the motor sizing margin over the shaft power. Absent is the class's `1.10`.\n"
+[inputs.motor_poles]
+unit = "dimensionless"
+optional = true
+description = "the motor's pole count. Absent is the class's `4`; it moves the synchronous speed and the efficiency table.\n"
+[inputs.efficiency_class]
+type = "enum"
+values = ["ie1", "ie2", "ie3", "ie4"]
+optional = true
+description = "the motor's IEC 60034-30-1 efficiency class. Absent is `ie3`; the class offsets the base efficiency by `-3`, `-1.5`, `0` or `+1` points.\n"
+[inputs.frequency_hz]
+unit = "dimensionless"
+optional = true
+description = "the supply frequency in Hz. Absent is the class's `50`; the synchronous speed is `120 f / poles`.\n"
+[inputs.phases]
+unit = "dimensionless"
+optional = true
+description = "the supply phases. Absent is the class's `3`; a single-phase machine takes the current without the `sqrt(3)`.\n"
+[inputs.number_of_fans]
+unit = "dimensionless"
+optional = true
+description = "the air cooler's fan count. Absent is the class's `2`; the fan power is `max(2 per fan, 1% of the duty)`.\n"
+[inputs.instrumentation_power]
+unit = "W"
+optional = true
+description = "the auxiliary instrumentation load. Absent is the class's 1.5 kW.\n"
+[inputs.cooling_water_pump_power]
+unit = "W"
+optional = true
+description = "the shell-and-tube cooling-water pump load, added to the auxiliary for that type only. Absent is the class's 0.\n"
+[inputs.cable_length]
+unit = "m"
+optional = true
+description = "the power cable's route length. Absent takes the class's 50 m; a longer run upsizes the cross-section until the voltage drop is under 5 percent.\n"
+[inputs.use_vfd]
+type = "boolean"
+optional = true
+description = "whether the motor is fed through a variable-frequency drive. Absent is false; a VFD raises the input by its losses and sets the input power factor.\n"
+[inputs.utility_specification]
+type = "boolean"
+optional = true
+description = "whether the utility-side specification is stated. Absent is false; every `has_*` output is absent without it.\n"
+[inputs.utility_supply_temperature]
+unit = "K"
+optional = true
+description = "the utility supply temperature. Stating it sets `has_supply_temperature`; absent leaves the class's `NaN`.\n"
+[inputs.utility_return_temperature]
+unit = "K"
+optional = true
+description = "the utility return temperature. Stating it sets `has_return_temperature`; absent leaves the class's `NaN`.\n"
+[inputs.utility_approach_temperature]
+unit = "K"
+optional = true
+description = "the minimum approach temperature, a difference. Stating it sets `has_approach_temperature`; absent leaves the class's `NaN`.\n"
+[inputs.utility_heat_capacity_rate]
+unit = "W/K"
+optional = true
+description = "the utility heat-capacity rate. **Specified only when positive**: zero and below store but leave `has_heat_capacity_rate` false.\n"
+[inputs.utility_overall_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+optional = true
+description = "the assumed overall heat-transfer coefficient. **Specified only when positive**: zero and below store but leave the predicate false.\n"
+[inputs.mechanical_design]
+type = "boolean"
+optional = true
+description = "whether to run `HeatExchangerMechanicalDesign.calcDesign`'s thermal estimate. Absent is false; every mechanical output is absent without it.\n"
+[inputs.mechanical_type]
+type = "enum"
+values = ["shell_and_tube", "plate_and_frame", "air_cooler", "double_pipe", "plate_fin"]
+optional = true
+description = "the manual type selection. Absent evaluates all five and ranks them by `mechanical_selection`; stating it selects that type from the five.\n"
+[inputs.mechanical_selection]
+type = "enum"
+values = ["min_area", "min_weight", "min_pressure_drop"]
+optional = true
+description = "the automatic ranking's metric. Absent is the class's `MIN_AREA`. Ignored with a stated `mechanical_type`.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -69,6 +190,357 @@ description = "the outlet molar enthalpy: the inlet's plus `duty / inlet_n`, or 
 [outputs.outlet_duty]
 unit = "W"
 description = "the duty the heater moved, as `inlet_n * (outlet_h - inlet_h)`. This is `Heater.run`'s own recomputation after the flash, so it is the state's number and not the caller's when a temperature was specified.\n"
+[outputs.max_outlet_temperature_utilization]
+unit = "dimensionless"
+optional = true
+description = "the `maxOutletTemperature` constraint's `min(outlet_t / limit, 9.99)`. Present only when the maximum limit is set; 0 for a non-positive limit.\n"
+[outputs.min_outlet_temperature_utilization]
+unit = "dimensionless"
+optional = true
+description = "the `minOutletTemperature` constraint's inverse `min(limit / outlet_t, 9.99)`, and 9.99 when the outlet temperature is not positive. Present only when the minimum is positive.\n"
+[outputs.max_utilization]
+unit = "dimensionless"
+description = "`getMaxUtilization`: the larger present utilization, and 0.0 on an empty map.\n"
+[outputs.capacity_exceeded]
+type = "boolean"
+description = "`isCapacityExceeded`: any constraint's utilization above 1.0.\n"
+[outputs.hard_limit_exceeded]
+type = "boolean"
+description = "`isHardLimitExceeded`: true only when the outlet temperature is below a positive minimum, because the maximum reads the `maxValue` its setter never sets.\n"
+[outputs.bottleneck_constraint]
+type = "string"
+optional = true
+description = "`getBottleneckConstraint`'s name: `maxOutletTemperature` or `minOutletTemperature`, whichever has the larger utilization. Absent on an empty or all-zero map.\n"
+[outputs.instrument_count]
+unit = "dimensionless"
+optional = true
+description = "the instruments in the design's list.\n"
+[outputs.analog_input_count]
+unit = "dimensionless"
+optional = true
+description = "the rows whose I/O type is `AI`.\n"
+[outputs.analog_output_count]
+unit = "dimensionless"
+optional = true
+description = "the rows whose I/O type is `AO`.\n"
+[outputs.digital_input_count]
+unit = "dimensionless"
+optional = true
+description = "the rows whose I/O type is `DI`.\n"
+[outputs.digital_output_count]
+unit = "dimensionless"
+optional = true
+description = "the rows whose I/O type is `DO`.\n"
+[outputs.total_io_count]
+unit = "dimensionless"
+optional = true
+description = "the four counts' sum, which is the instrument count for this list.\n"
+[outputs.safety_instrument_count]
+unit = "dimensionless"
+optional = true
+description = "the rows marked safety-related: the overtemperature trips.\n"
+[outputs.instruments]
+type = "record_list"
+description = "the design's instrument list, in the class's insertion order; empty when the design did not run.\n"
+[outputs.instruments.fields.tag]
+type = "string"
+description = "the tag the list assigns: `SYMBOL-(1000 + position)`.\n"
+[outputs.instruments.fields.isa_symbol]
+type = "string"
+description = "the ISA symbol, e.g. `TT` or `TSHH`.\n"
+[outputs.instruments.fields.service]
+type = "string"
+description = "the service description.\n"
+[outputs.instruments.fields.io_type]
+type = "string"
+description = "`AI`, `AO`, `DI` or `DO`.\n"
+[outputs.instruments.fields.range_unit]
+type = "string"
+optional = true
+description = "the unit the range is stated in; absent for a digital trip, whose constructor leaves it null.\n"
+[outputs.instruments.fields.range_min]
+unit = "dimensionless"
+description = "the range's lower bound, in the row's `range_unit`.\n"
+[outputs.instruments.fields.range_max]
+unit = "dimensionless"
+description = "the range's upper bound, in the row's `range_unit`.\n"
+[outputs.instruments.fields.sil_rating]
+unit = "dimensionless"
+description = "the SIL rating; zero for a non-safety instrument.\n"
+[outputs.instruments.fields.safety_related]
+type = "boolean"
+description = "whether the row is safety-related.\n"
+[outputs.shaft_power]
+unit = "W"
+optional = true
+description = "the shaft power the type implies: the duty for an electric heater, the fan power for an air cooler, zero for shell-and-tube.\n"
+[outputs.electrical_input_power]
+unit = "W"
+optional = true
+description = "the shaft power over the motor's efficiency, or the auxiliary load for shell-and-tube.\n"
+[outputs.apparent_power]
+unit = "dimensionless"
+optional = true
+description = "the apparent power in VA: the electrical input over the power factor.\n"
+[outputs.reactive_power]
+unit = "dimensionless"
+optional = true
+description = "the reactive power in VAR: the apparent power times `sin(acos(power factor))`.\n"
+[outputs.power_factor]
+unit = "dimensionless"
+optional = true
+description = "the motor's full-load power factor, or the class's `0.85` on the shell-and-tube auxiliary branch.\n"
+[outputs.rated_voltage]
+unit = "dimensionless"
+optional = true
+description = "the selected supply voltage in volts: `400`, `690` or `6600` for an electric heater, `400` or `690` for a cooler.\n"
+[outputs.frequency_hz]
+unit = "dimensionless"
+optional = true
+description = "the stated supply frequency in Hz. **The motor is sized before this is copied to it**, so the speed always uses the motor's 50 Hz default.\n"
+[outputs.full_load_current]
+unit = "dimensionless"
+optional = true
+description = "the full-load current in amperes, from the input, voltage, power factor and phase count.\n"
+[outputs.starting_current]
+unit = "dimensionless"
+optional = true
+description = "the full-load current times the motor's locked-rotor multiplier.\n"
+[outputs.total_electrical_losses]
+unit = "W"
+optional = true
+description = "the electrical input less the shaft power.\n"
+[outputs.motor_rated_power]
+unit = "W"
+optional = true
+description = "the next standard IEC motor size above the shaft power times the margin; zero for shell-and-tube.\n"
+[outputs.motor_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the motor's full-load efficiency as a fraction, from the IEC class and pole tables; 0.95 when no motor is sized.\n"
+[outputs.motor_power_factor]
+unit = "dimensionless"
+optional = true
+description = "the motor's full-load power factor; 0.86 when no motor is sized.\n"
+[outputs.motor_rated_speed]
+unit = "dimensionless"
+optional = true
+description = "the motor's rated speed in rpm: `120 f / poles` less the power-based slip; zero when no motor is sized.\n"
+[outputs.motor_locked_rotor_multiplier]
+unit = "dimensionless"
+optional = true
+description = "the locked-rotor current multiplier by motor size; 7.0 when no motor is sized.\n"
+[outputs.total_auxiliary_power]
+unit = "W"
+optional = true
+description = "the instrumentation load, plus the cooling-water pump load for shell-and-tube.\n"
+[outputs.total_connected_power]
+unit = "W"
+optional = true
+description = "the electrical input plus the auxiliary load.\n"
+[outputs.cable_length]
+unit = "m"
+optional = true
+description = "the power cable's route length the design used.\n"
+[outputs.cable_cross_section]
+unit = "dimensionless"
+optional = true
+description = "the selected cable cross-section in mm2, from the class's 19 standard sizes.\n"
+[outputs.cable_ampacity]
+unit = "dimensionless"
+optional = true
+description = "the derated ampacity in amperes: the base tray rating times the 40 C ambient and tray grouping factors.\n"
+[outputs.cable_voltage_drop]
+unit = "dimensionless"
+optional = true
+description = "the three-phase voltage drop in percent at the class's 0.85 power factor.\n"
+[outputs.cable_short_circuit_withstand]
+unit = "dimensionless"
+optional = true
+description = "the cable's 1-second short-circuit withstand in kA.\n"
+[outputs.switchgear_starter]
+type = "string"
+optional = true
+description = "the starter type: `DOL`, `Star-Delta` or `Soft Starter`, by the motor power.\n"
+[outputs.switchgear_type]
+type = "string"
+optional = true
+description = "`MCC` at 1000 V and below, `MV Switchgear` above it.\n"
+[outputs.switchgear_circuit_breaker]
+unit = "dimensionless"
+optional = true
+description = "the next standard circuit-breaker rating above 1.25 times the full-load current, in amperes.\n"
+[outputs.switchgear_fuse]
+unit = "dimensionless"
+optional = true
+description = "the next standard fuse rating above 1.6 times the full-load current, in amperes.\n"
+[outputs.switchgear_rated_current]
+unit = "dimensionless"
+optional = true
+description = "the switchgear's rated current, the circuit-breaker rating.\n"
+[outputs.switchgear_short_circuit]
+unit = "dimensionless"
+optional = true
+description = "the short-circuit rating in kA: 40 above 6000 V, 31.5 above 1000 V, else 25.\n"
+[outputs.switchgear_weight]
+unit = "kg"
+optional = true
+description = "the switchgear's estimated weight.\n"
+[outputs.vfd_rated_power]
+unit = "W"
+optional = true
+description = "the VFD's rated power, the motor's own rating. Absent when no VFD is sized.\n"
+[outputs.vfd_rated_current]
+unit = "dimensionless"
+optional = true
+description = "1.10 times the motor's rated current, in amperes. The motor's rated current is computed at its own 400 V default, before the design's tap is copied to it.\n"
+[outputs.vfd_input_voltage]
+unit = "dimensionless"
+optional = true
+description = "the VFD's input voltage in volts, copied from the motor's rated voltage.\n"
+[outputs.vfd_topology]
+type = "string"
+optional = true
+description = "`2-level`, `3-level` or `Multi-level`, by the motor's power and voltage.\n"
+[outputs.vfd_pulse_configuration]
+type = "string"
+optional = true
+description = "`6-pulse`, `12-pulse` or `AFE`, with the topology.\n"
+[outputs.vfd_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the VFD's efficiency as a fraction: 96.5% with an active rectifier, else 97.5% for a 2-level drive and 97% for a 3-level one.\n"
+[outputs.vfd_input_power_factor]
+unit = "dimensionless"
+optional = true
+description = "the drive's input power factor: 0.98 with an active rectifier, else 0.95.\n"
+[outputs.vfd_thd_current]
+unit = "dimensionless"
+optional = true
+description = "the input current's total harmonic distortion in percent: 3 with an active rectifier at medium voltage, 5 at low voltage, 10 for a 3-level drive and 35 otherwise.\n"
+[outputs.vfd_has_active_rectifier]
+type = "boolean"
+optional = true
+description = "whether the drive has an active front-end rectifier.\n"
+[outputs.vfd_requires_input_filter]
+type = "boolean"
+optional = true
+description = "whether a 6-pulse drive above 100 kW needs an input filter.\n"
+[outputs.vfd_heat_dissipation]
+unit = "W"
+optional = true
+description = "the drive's loss at its rated power, `rated power x (1 - efficiency)`.\n"
+[outputs.vfd_cooling_method]
+type = "string"
+optional = true
+description = "`Water` above 500 kW or above 3300 V, else `Air`.\n"
+[outputs.vfd_weight]
+unit = "kg"
+optional = true
+description = "the drive's estimated weight, by the voltage band.\n"
+[outputs.vfd_enclosure_rating]
+type = "string"
+optional = true
+description = "`IP42` above 1000 V, `IP54` for a water-cooled low-voltage drive, else `IP21`.\n"
+[outputs.has_supply_temperature]
+type = "boolean"
+optional = true
+description = "whether a utility supply temperature is stated.\n"
+[outputs.has_return_temperature]
+type = "boolean"
+optional = true
+description = "whether a utility return temperature is stated.\n"
+[outputs.has_approach_temperature]
+type = "boolean"
+optional = true
+description = "whether a minimum approach temperature is stated.\n"
+[outputs.has_heat_capacity_rate]
+type = "boolean"
+optional = true
+description = "whether a heat-capacity rate is stated **and positive**.\n"
+[outputs.has_overall_heat_transfer_coefficient]
+type = "boolean"
+optional = true
+description = "whether an overall heat-transfer coefficient is stated **and positive**.\n"
+[outputs.mechanical_selected_type]
+type = "string"
+optional = true
+description = "the selected configuration's spelling.\n"
+[outputs.mechanical_selected_area]
+unit = "m**2"
+optional = true
+description = "the selected configuration's required area.\n"
+[outputs.log_mean_temperature_difference]
+unit = "K"
+optional = true
+description = "the log-mean temperature difference the utility and process temperatures give.\n"
+[outputs.mechanical_approach_temperature]
+unit = "K"
+optional = true
+description = "the smallest of the two temperature differences, floored at zero.\n"
+[outputs.used_overall_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+optional = true
+description = "the coefficient the estimate used: the utility specification's when stated and positive, else the class's 500.\n"
+[outputs.calculated_ua]
+unit = "W/K"
+optional = true
+description = "`duty / log_mean_temperature_difference`, after the class's fallbacks.\n"
+[outputs.mechanical_types]
+type = "record_list"
+description = "the five candidates in the class's enum order; empty when the design did not run.\n"
+[outputs.mechanical_types.fields.mechanical_type]
+type = "string"
+description = "the configuration's spelling.\n"
+[outputs.mechanical_types.fields.required_area]
+unit = "m**2"
+description = "the required heat-transfer area.\n"
+[outputs.mechanical_types.fields.required_ua]
+unit = "W/K"
+description = "the UA the type's area is computed from.\n"
+[outputs.mechanical_types.fields.overall_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+description = "the type's typical overall coefficient.\n"
+[outputs.mechanical_types.fields.approach_temperature]
+unit = "K"
+description = "the larger of the estimate's approach and the type's allowable approach.\n"
+[outputs.mechanical_types.fields.estimated_length]
+unit = "m"
+description = "the estimated length: tube length, stack length, fan-module length, pipe length or core length.\n"
+[outputs.mechanical_types.fields.inner_diameter]
+unit = "m"
+description = "the equivalent inside diameter.\n"
+[outputs.mechanical_types.fields.outer_diameter]
+unit = "m"
+description = "the equivalent outside diameter.\n"
+[outputs.mechanical_types.fields.wall_thickness]
+unit = "m"
+description = "the wall or sheet thickness.\n"
+[outputs.mechanical_types.fields.tube_count]
+unit = "dimensionless"
+description = "the tube or plate count.\n"
+[outputs.mechanical_types.fields.tube_passes]
+unit = "dimensionless"
+description = "the tube passes or plate pairs.\n"
+[outputs.mechanical_types.fields.fin_surface_area]
+unit = "m**2"
+description = "the fin surface area; zero for the unfinned types.\n"
+[outputs.mechanical_types.fields.estimated_pressure_drop]
+unit = "dimensionless"
+description = "the class's qualitative pressure-drop proxy, in bar.\n"
+[outputs.mechanical_types.fields.estimated_weight]
+unit = "kg"
+description = "the estimated weight.\n"
+[outputs.mechanical_types.fields.module_length]
+unit = "m"
+description = "the module length.\n"
+[outputs.mechanical_types.fields.module_width]
+unit = "m"
+description = "the module width.\n"
+[outputs.mechanical_types.fields.module_height]
+unit = "m"
+description = "the module height.\n"
+
 [[valid_range]]
 quantity = "outlet_temperature"
 min = 0

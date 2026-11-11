@@ -4,6 +4,8 @@
 
 `eos.pr_z_factor`
 
+Peng-Robinson compressibility factor at a temperature and pressure. Use it for gas and liquid density and volumetric-flow estimates with a cubic EOS.
+
 ## Equation
 
 $$
@@ -52,7 +54,7 @@ DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 | `a_reduced >= 0` | raises | `A` is a squared term times a positive coefficient - `Omega_a * alpha * Pr / Tr**2` - so it cannot be negative for any real input to `eos.pr_alpha_ab`; zero is permitted as the hard-sphere limit. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

@@ -19,15 +19,23 @@ from dataclasses import dataclass
 
 from azoth.batch._core import run, sequence
 from azoth.batch._result import BatchResult
-from azoth.core.result import RootStructure
+from azoth.core.result import (
+    BeggsBrillRegime,
+    CorrosionSeverity,
+    FeSMorphology,
+    RootStructure,
+)
 from azoth.core.warnings import Warning
 
 __all__ = [
+    "BeggsBrillSegmentBatch",
     "ChapmanEnskogDiffusivityBatch",
     "ChungConductivityBatch",
     "ChungViscosityBatch",
     "Co2WaterDiffusivityBatch",
     "CostaldMolarVolumeBatch",
+    "DeWaardMilliamsCorrosionBatch",
+    "ElectrolyteScaleCalculatorBatch",
     "FullerSchettlerGiddingsDiffusivityBatch",
     "HeatOfVaporizationBatch",
     "IapwsSaturationPressureBatch",
@@ -58,6 +66,7 @@ __all__ = [
     "RackettMolarVolumeBatch",
     "RkAlphaAbBatch",
     "RkDepartureBatch",
+    "ScaleKineticsBatch",
     "SchwartzentruberAlphaBatch",
     "SoreideWhitsonAlphaBatch",
     "SrkAlphaAbBatch",
@@ -79,6 +88,7 @@ __all__ = [
     "chung_viscosity",
     "co2_water_diffusivity",
     "costald_molar_volume",
+    "de_waard_milliams_corrosion",
     "fuller_schettler_giddings_diffusivity",
     "heat_of_vaporization",
     "iapws_saturation_pressure",
@@ -128,6 +138,7 @@ __all__ = [
 ]
 
 _PR_KAPPA = "eos.pr_kappa"
+_BEGGS_BRILL_SEGMENT = "eos.beggs_brill_segment"
 _MATCOP5_PRUMR_ALPHA = "eos.matcop5_prumr_alpha"
 _MATCOP_ALPHA = "eos.matcop_alpha"
 _MATCOP_PR_ALPHA = "eos.matcop_pr_alpha"
@@ -213,6 +224,393 @@ def pr_kappa(*, omega: Sequence[float]) -> PrKappaBatch:
         _PR_KAPPA,
         {"omega": sequence(omega, "omega")},
         _build,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class BeggsBrillSegmentBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.beggs_brill_segment`."""
+
+    #: The Beggs-and-Brill flow regime per element.
+    regime: tuple[BeggsBrillRegime, ...]
+    #: The liquid holdup after the inclination correction. Dimensionless.
+    liquid_holdup: array[float]
+    #: The gas superficial velocity per element.
+    superficial_gas_velocity: array[float]
+    #: The liquid superficial velocity per element.
+    superficial_liquid_velocity: array[float]
+    #: Their sum per element.
+    superficial_mixture_velocity: array[float]
+    #: The volume-weighted no-slip mixture density per element.
+    no_slip_density: array[float]
+    #: The volume-weighted no-slip mixture viscosity per element.
+    no_slip_viscosity: array[float]
+    #: The no-slip Reynolds number per element. Dimensionless.
+    reynolds: array[float]
+    #: The single-phase Darcy friction factor per element. Dimensionless.
+    friction_factor: array[float]
+    #: ``f exp(S)`` per element. Dimensionless.
+    two_phase_friction_factor: array[float]
+    #: The elevation term over the segment per element.
+    hydrostatic_drop: array[float]
+    #: The friction term over the segment per element.
+    friction_drop: array[float]
+    #: Their sum per element.
+    total_drop: array[float]
+
+
+def _beggs_regimes(labels: Sequence[str]) -> tuple[BeggsBrillRegime, ...]:
+    """The regime column's labels, as the enum the scalar result carries."""
+    return tuple(BeggsBrillRegime(label) for label in labels)
+
+
+def _build_beggs_brill(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> BeggsBrillSegmentBatch:
+    return BeggsBrillSegmentBatch(
+        warnings=warnings,
+        units=units,
+        regime=_beggs_regimes(columns["regime"]),  # type: ignore[arg-type]
+        liquid_holdup=columns["liquid_holdup"],  # type: ignore[arg-type]
+        superficial_gas_velocity=columns["superficial_gas_velocity"],  # type: ignore[arg-type]
+        superficial_liquid_velocity=columns["superficial_liquid_velocity"],  # type: ignore[arg-type]
+        superficial_mixture_velocity=columns["superficial_mixture_velocity"],  # type: ignore[arg-type]
+        no_slip_density=columns["no_slip_density"],  # type: ignore[arg-type]
+        no_slip_viscosity=columns["no_slip_viscosity"],  # type: ignore[arg-type]
+        reynolds=columns["reynolds"],  # type: ignore[arg-type]
+        friction_factor=columns["friction_factor"],  # type: ignore[arg-type]
+        two_phase_friction_factor=columns["two_phase_friction_factor"],  # type: ignore[arg-type]
+        hydrostatic_drop=columns["hydrostatic_drop"],  # type: ignore[arg-type]
+        friction_drop=columns["friction_drop"],  # type: ignore[arg-type]
+        total_drop=columns["total_drop"],  # type: ignore[arg-type]
+    )
+
+
+def beggs_brill_segment(
+    *,
+    gas_flow: Sequence[float],
+    liquid_flow: Sequence[float],
+    gas_density: Sequence[float],
+    liquid_density: Sequence[float],
+    gas_viscosity: Sequence[float],
+    liquid_viscosity: Sequence[float],
+    temperature: Sequence[float],
+    pressure: Sequence[float],
+    diameter: Sequence[float],
+    length: Sequence[float],
+    elevation: Sequence[float],
+    roughness: Sequence[float],
+) -> BeggsBrillSegmentBatch:
+    """One Beggs-and-Brill pipe segment, over arrays.
+
+    Inputs in the spec's canonical units (m**3/s, kg/m**3, Pa*s, K, Pa, m). See
+    :func:`azoth.eos.beggs_brill_segment` for the correlation itself.
+    """
+    result: BeggsBrillSegmentBatch = run(
+        _BEGGS_BRILL_SEGMENT,
+        {
+            name: sequence(values, name)
+            for name, values in {
+                "gas_flow": gas_flow,
+                "liquid_flow": liquid_flow,
+                "gas_density": gas_density,
+                "liquid_density": liquid_density,
+                "gas_viscosity": gas_viscosity,
+                "liquid_viscosity": liquid_viscosity,
+                "temperature": temperature,
+                "pressure": pressure,
+                "diameter": diameter,
+                "length": length,
+                "elevation": elevation,
+                "roughness": roughness,
+            }.items()
+        },
+        _build_beggs_brill,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class DeWaardMilliamsCorrosionBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.de_waard_milliams_corrosion`."""
+
+    #: The uncorrected de Waard-Milliams rate per element.
+    baseline_rate: array[float]
+    #: The de Waard-Lotz pH factor per element. Dimensionless.
+    ph_correction_factor: array[float]
+    #: The protective-scale factor per element. Dimensionless.
+    scale_correction_factor: array[float]
+    #: The glycol factor per element. Dimensionless.
+    glycol_correction_factor: array[float]
+    #: The mass-transfer factor per element. Dimensionless.
+    flow_correction_factor: array[float]
+    #: One minus the clamped inhibitor efficiency per element. Dimensionless.
+    inhibitor_factor: array[float]
+    #: The corrected rate per element.
+    corrected_rate: array[float]
+    #: The elemental-sulfur contribution per element.
+    sulfur_rate: array[float]
+    #: The H2S/FeS contribution per element.
+    fes_rate: array[float]
+    #: The corrected rate less the sulfur contribution per element.
+    co2_corrected_rate: array[float]
+    #: The corrected rate plus the FeS contribution per element.
+    total_corrosion_rate: array[float]
+    #: The FeCO3 saturation index per element. Dimensionless.
+    feco3_saturation_index: array[float]
+    #: Whether the FeCO3 index exceeds one, as ``1.0`` or ``0.0``.
+    feco3_scale_forming: array[float]
+    #: NACE MR0175 sour service, as ``1.0`` or ``0.0``.
+    is_sour_service: array[float]
+    #: The NORSOK M-001 severity band per element.
+    corrosion_severity: tuple[CorrosionSeverity, ...]
+    #: The FeS morphology per element.
+    fes_morphology: tuple[FeSMorphology, ...]
+    #: The corrected rate times the design life per element.
+    corrosion_allowance: array[float]
+
+
+def _corrosion_severities(labels: Sequence[str]) -> tuple[CorrosionSeverity, ...]:
+    """The severity column's labels, as the enum the scalar result carries."""
+    return tuple(CorrosionSeverity(label) for label in labels)
+
+
+def _corrosion_morphologies(labels: Sequence[str]) -> tuple[FeSMorphology, ...]:
+    """The morphology column's labels, as the enum the scalar result carries."""
+    return tuple(FeSMorphology(label) for label in labels)
+
+
+def _build_de_waard(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> DeWaardMilliamsCorrosionBatch:
+    return DeWaardMilliamsCorrosionBatch(
+        warnings=warnings,
+        units=units,
+        baseline_rate=columns["baseline_rate"],  # type: ignore[arg-type]
+        ph_correction_factor=columns["ph_correction_factor"],  # type: ignore[arg-type]
+        scale_correction_factor=columns["scale_correction_factor"],  # type: ignore[arg-type]
+        glycol_correction_factor=columns["glycol_correction_factor"],  # type: ignore[arg-type]
+        flow_correction_factor=columns["flow_correction_factor"],  # type: ignore[arg-type]
+        inhibitor_factor=columns["inhibitor_factor"],  # type: ignore[arg-type]
+        corrected_rate=columns["corrected_rate"],  # type: ignore[arg-type]
+        sulfur_rate=columns["sulfur_rate"],  # type: ignore[arg-type]
+        fes_rate=columns["fes_rate"],  # type: ignore[arg-type]
+        co2_corrected_rate=columns["co2_corrected_rate"],  # type: ignore[arg-type]
+        total_corrosion_rate=columns["total_corrosion_rate"],  # type: ignore[arg-type]
+        feco3_saturation_index=columns["feco3_saturation_index"],  # type: ignore[arg-type]
+        feco3_scale_forming=columns["feco3_scale_forming"],  # type: ignore[arg-type]
+        is_sour_service=columns["is_sour_service"],  # type: ignore[arg-type]
+        corrosion_severity=_corrosion_severities(columns["corrosion_severity"]),  # type: ignore[arg-type]
+        fes_morphology=_corrosion_morphologies(columns["fes_morphology"]),  # type: ignore[arg-type]
+        corrosion_allowance=columns["corrosion_allowance"],  # type: ignore[arg-type]
+    )
+
+
+def de_waard_milliams_corrosion(
+    *,
+    temperature: Sequence[float],
+    co2_partial_pressure: Sequence[float],
+    ph: Sequence[float],
+    h2s_partial_pressure: Sequence[float],
+    flow_velocity: Sequence[float],
+    inhibitor_efficiency: Sequence[float],
+    glycol_fraction: Sequence[float],
+    sulfur_deposition_rate: Sequence[float],
+    design_life: Sequence[float],
+) -> DeWaardMilliamsCorrosionBatch:
+    """The de Waard-Milliams corrosion rate and its corrections, over arrays.
+
+    Inputs in the spec's canonical units (K, Pa, m/s, kg/(m**2*s), s). See
+    :func:`azoth.eos.de_waard_milliams_corrosion` for the calculation itself.
+    """
+    result: DeWaardMilliamsCorrosionBatch = run(
+        "eos.de_waard_milliams_corrosion",
+        {
+            name: sequence(values, name)
+            for name, values in {
+                "temperature": temperature,
+                "co2_partial_pressure": co2_partial_pressure,
+                "ph": ph,
+                "h2s_partial_pressure": h2s_partial_pressure,
+                "flow_velocity": flow_velocity,
+                "inhibitor_efficiency": inhibitor_efficiency,
+                "glycol_fraction": glycol_fraction,
+                "sulfur_deposition_rate": sulfur_deposition_rate,
+                "design_life": design_life,
+            }.items()
+        },
+        _build_de_waard,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class ElectrolyteScaleCalculatorBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.electrolyte_scale_calculator`."""
+
+    #: `0.5 sum(m_i z_i^2)` over the eleven ions, per element.
+    ionic_strength: array[float]
+    #: The temperature-adjusted Debye-Huckel A per element. Dimensionless.
+    debye_hueckel_a: array[float]
+    #: The Davies coefficient for a divalent ion per element. Dimensionless.
+    divalent_activity_coefficient: array[float]
+    #: The Davies coefficient for a monovalent ion per element. Dimensionless.
+    monovalent_activity_coefficient: array[float]
+    #: Calcite's activity-corrected saturation index per element. Dimensionless.
+    si_caco3: array[float]
+    #: Barite's activity-corrected saturation index per element. Dimensionless.
+    si_baso4: array[float]
+    #: Gypsum's activity-corrected saturation index per element. Dimensionless.
+    si_caso4: array[float]
+    #: Celestite's activity-corrected saturation index per element. Dimensionless.
+    si_srso4: array[float]
+    #: Brucite's activity-corrected saturation index per element. Dimensionless.
+    si_brucite: array[float]
+    #: `10^(pH - pKw)` per element. Dimensionless.
+    hydroxide_activity: array[float]
+
+
+def _build_electrolyte_scale(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> ElectrolyteScaleCalculatorBatch:
+    return ElectrolyteScaleCalculatorBatch(
+        warnings=warnings,
+        units=units,
+        ionic_strength=columns["ionic_strength"],  # type: ignore[arg-type]
+        debye_hueckel_a=columns["debye_hueckel_a"],  # type: ignore[arg-type]
+        divalent_activity_coefficient=columns["divalent_activity_coefficient"],  # type: ignore[arg-type]
+        monovalent_activity_coefficient=columns["monovalent_activity_coefficient"],  # type: ignore[arg-type]
+        si_caco3=columns["si_caco3"],  # type: ignore[arg-type]
+        si_baso4=columns["si_baso4"],  # type: ignore[arg-type]
+        si_caso4=columns["si_caso4"],  # type: ignore[arg-type]
+        si_srso4=columns["si_srso4"],  # type: ignore[arg-type]
+        si_brucite=columns["si_brucite"],  # type: ignore[arg-type]
+        hydroxide_activity=columns["hydroxide_activity"],  # type: ignore[arg-type]
+    )
+
+
+def electrolyte_scale_calculator(
+    *,
+    calcium: Sequence[float],
+    barium: Sequence[float],
+    strontium: Sequence[float],
+    magnesium: Sequence[float],
+    sodium: Sequence[float],
+    potassium: Sequence[float],
+    iron: Sequence[float],
+    chloride: Sequence[float],
+    sulphate: Sequence[float],
+    bicarbonate: Sequence[float],
+    carbonate: Sequence[float],
+    temperature: Sequence[float],
+    pressure: Sequence[float],
+    ph: Sequence[float],
+) -> ElectrolyteScaleCalculatorBatch:
+    """The Davies ion activities and five mineral saturation indices, over arrays.
+
+    Inputs in the spec's canonical units (kg/m**3, K, Pa). See
+    :func:`azoth.eos.electrolyte_scale_calculator` for the calculation itself.
+    """
+    result: ElectrolyteScaleCalculatorBatch = run(
+        "eos.electrolyte_scale_calculator",
+        {
+            name: sequence(values, name)
+            for name, values in {
+                "calcium": calcium,
+                "barium": barium,
+                "strontium": strontium,
+                "magnesium": magnesium,
+                "sodium": sodium,
+                "potassium": potassium,
+                "iron": iron,
+                "chloride": chloride,
+                "sulphate": sulphate,
+                "bicarbonate": bicarbonate,
+                "carbonate": carbonate,
+                "temperature": temperature,
+                "pressure": pressure,
+                "ph": ph,
+            }.items()
+        },
+        _build_electrolyte_scale,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class ScaleKineticsBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.scale_kinetics`."""
+
+    #: `S = 10^SI` per element. Dimensionless.
+    supersaturation_ratio: array[float]
+    #: The nucleation induction time per element.
+    induction_time: array[float]
+    #: The surface-reaction growth rate per element.
+    surface_limited_growth: array[float]
+    #: The mass-transport growth rate per element.
+    transport_limited_growth: array[float]
+    #: The rate-controlling growth rate per element.
+    effective_growth_rate: array[float]
+    #: The rate-controlling mechanism per element.
+    limiting_regime: tuple[str, ...]
+
+
+def _build_scale_kinetics(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> ScaleKineticsBatch:
+    return ScaleKineticsBatch(
+        warnings=warnings,
+        units=units,
+        supersaturation_ratio=columns["supersaturation_ratio"],  # type: ignore[arg-type]
+        induction_time=columns["induction_time"],  # type: ignore[arg-type]
+        surface_limited_growth=columns["surface_limited_growth"],  # type: ignore[arg-type]
+        transport_limited_growth=columns["transport_limited_growth"],  # type: ignore[arg-type]
+        effective_growth_rate=columns["effective_growth_rate"],  # type: ignore[arg-type]
+        limiting_regime=columns["limiting_regime"],  # type: ignore[arg-type]
+    )
+
+
+def scale_kinetics(
+    *,
+    saturation_index: Sequence[float],
+    nucleation_constant: Sequence[float],
+    nucleation_shape_factor: Sequence[float],
+    surface_rate_constant: Sequence[float],
+    surface_reaction_order: Sequence[float],
+    mass_transfer_coefficient: Sequence[float],
+    bulk_concentration: Sequence[float],
+    equilibrium_concentration: Sequence[float],
+) -> ScaleKineticsBatch:
+    """Scale nucleation and growth kinetics, over arrays.
+
+    Inputs in the spec's canonical units (s, m/s, mol/m**3). See
+    :func:`azoth.eos.scale_kinetics` for the calculation itself.
+    """
+    result: ScaleKineticsBatch = run(
+        "eos.scale_kinetics",
+        {
+            name: sequence(values, name)
+            for name, values in {
+                "saturation_index": saturation_index,
+                "nucleation_constant": nucleation_constant,
+                "nucleation_shape_factor": nucleation_shape_factor,
+                "surface_rate_constant": surface_rate_constant,
+                "surface_reaction_order": surface_reaction_order,
+                "mass_transfer_coefficient": mass_transfer_coefficient,
+                "bulk_concentration": bulk_concentration,
+                "equilibrium_concentration": equilibrium_concentration,
+            }.items()
+        },
+        _build_scale_kinetics,
     )
     return result
 

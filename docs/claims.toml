@@ -176,8 +176,8 @@ measure = { azoth_basis = "skills.azoth" }
 
 [[claim]]
 page = "docs/src/agentic/roadmap.md"
-text = "The remaining {placeholders} are placeholders — {screening} `screening`, {advisory} `advisory`, {data_retrieval} `data-retrieval` and {hybrid} `hybrid`"
-measure = { placeholders = "skills.placeholders", screening = "skills.screening", advisory = "skills.advisory", data_retrieval = "skills.data_retrieval", hybrid = "skills.hybrid" }
+text = "The remaining {placeholders} are placeholders — {screening} `screening`, {advisory} `advisory` and {data_retrieval} `data-retrieval`"
+measure = { placeholders = "skills.placeholders", screening = "skills.screening", advisory = "skills.advisory", data_retrieval = "skills.data_retrieval" }
 
 # --- what CI cannot measure ----------------------------------------------------
 #

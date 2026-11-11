@@ -40,10 +40,10 @@ fn the_water_gas_shift_is_the_captured_composition() {
     assert!(result.converged, "the captured state converges");
     assert_eq!(result.phase_count, 2, "the constructor's pair survives");
     let captured = [
-        0.079_140_502_548_023_4,
-        0.079_140_502_560_693_7,
-        0.420_859_061_906_977_14,
-        0.420_859_061_880_687_67,
+        0.079_120_948_086_210_83,
+        0.079_120_948_160_501_98,
+        0.420_877_601_471_954_97,
+        0.420_877_601_314_960_3,
     ];
     for (index, (got, want)) in overall(&result).iter().zip(captured).enumerate() {
         let relative = (got - want).abs() / want.abs();
@@ -55,7 +55,7 @@ fn the_water_gas_shift_is_the_captured_composition() {
 
     // `final_gibbs_energy`, **twice** one phase's worth: the driver weighs each phase by the
     // fraction its list carries, and the constructor leaves both at one.
-    let captured_gibbs = -2.259_535_542_715_054_7_f64;
+    let captured_gibbs = -2.259_405_858_361_138_7_f64;
     assert!(
         (result.gibbs_energy - captured_gibbs).abs() / captured_gibbs.abs() < 1.0e-5,
         "the Gibbs measure is {} against the capture's {captured_gibbs}",
@@ -72,7 +72,7 @@ fn the_water_gas_shift_is_the_captured_composition() {
 /// **Both codes stop on the relaxed multiphase tolerance, and at different points inside it**:
 /// this port at `5.5e-5` and NeqSim at `8.0e-6`, against a tolerance of `1e-4`. The species
 /// that carry most of the fluid agree to `3.6e-5`, and the small species are where a stopping
-/// point shows - **water at `3.6e-2` off by `7.2e-4`, hydrogen at `5.3e-1` off by `1.1e-4`**.
+/// point shows - **water at `3.7e-2` off by `6.9e-4`, hydrogen at `5.3e-1` off by `1.1e-4`**.
 /// So the composition band here is `1e-3` and the *residual* is the pin: `5.5e-5` against the
 /// `1e-4` the class accepts. A caller comparing compositions on a relaxed stop is comparing
 /// stopping points.
@@ -101,10 +101,10 @@ fn the_hot_four_component_fluid_is_the_captured_composition() {
         result.residual
     );
     let captured = [
-        0.318_153_488_941_055_16,
-        0.036_306_383_641_311_11,
-        0.281_847_077_069_566_24,
-        0.527_387_691_620_036_2,
+        0.318_453_902_859_046_73,
+        0.036_906_715_373_946_55,
+        0.281_546_862_268_622_36,
+        0.526_186_104_244_170_4,
     ];
     for (index, (got, want)) in overall(&result).iter().zip(captured).enumerate() {
         let relative = (got - want).abs() / want.abs();
@@ -113,7 +113,7 @@ fn the_hot_four_component_fluid_is_the_captured_composition() {
             "component {index}: {got} against the capture's {want}, a relative {relative:.3e}"
         );
     }
-    let captured_gibbs = -2.329_146_095_859_745_6_f64;
+    let captured_gibbs = -2.332_221_011_612_903_f64;
     assert!(
         (result.gibbs_energy - captured_gibbs).abs() / captured_gibbs.abs() < 1.0e-4,
         "the Gibbs measure is {} against the capture's {captured_gibbs}",
@@ -166,7 +166,7 @@ fn a_charged_component_is_refused() {
 /// water-gas shift on PR - the cubic the process layer's streams run - against the capture's
 /// `WGS-600K-pr` row, and against the SRK row beside it.
 ///
-/// `gibbs_energy` is the field that separates them: `-2.2598216` on PR against `-2.2595355` on
+/// `gibbs_energy` is the field that separates them: `-2.2596934` on PR against `-2.2594059` on
 /// SRK, which is `1.3e-4` relative, while this port reproduces each row's own value to `5e-8`.
 /// The tolerance below is two orders inside that effect, so a fall-back to the wrong cubic
 /// fails here rather than passing on a rounded agreement.
@@ -181,8 +181,8 @@ fn the_cubic_moves_the_answer_and_each_row_is_reproduced() {
     let pr = reactive_tp_flash(&components, Cubic::Pr, 600.0, BAR, &feed, 2).expect("it runs");
     let srk = reactive_tp_flash(&components, Cubic::Srk, 600.0, BAR, &feed, 2).expect("it runs");
 
-    let captured_pr = -2.259_821_586_120_850_6;
-    let captured_srk = -2.259_535_542_715_054_7;
+    let captured_pr = -2.259_693_384_757_628;
+    let captured_srk = -2.259_405_858_361_138_7;
     assert!(
         (pr.gibbs_energy - captured_pr).abs() / captured_pr.abs() < 1.0e-6,
         "PR: {} against the capture's {captured_pr}",

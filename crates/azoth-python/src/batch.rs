@@ -26,8 +26,9 @@
 use azoth_core::Warning;
 use azoth_core::units::{
     cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole_kelvin, kelvin_intervals,
-    kelvins, kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second, meters,
-    meters_per_second, pascal_seconds, pascals, square_meters, watts_per_meter_kelvin,
+    kelvins, kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second,
+    kilograms_per_square_meter_second, meters, meters_per_second, moles_per_cubic_meter,
+    newtons_per_meter, pascal_seconds, pascals, seconds, square_meters, watts_per_meter_kelvin,
 };
 use azoth_eos as eos;
 use azoth_hydraulics as hyd;
@@ -442,6 +443,169 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "q", "W", q);
         }
 
+        "thermal.lmtd_correction_factor" => {
+            let (hot_in, hot_out, cold_in, cold_out) = (
+                take(&inputs, "hot_inlet_temperature")?,
+                take(&inputs, "hot_outlet_temperature")?,
+                take(&inputs, "cold_inlet_temperature")?,
+                take(&inputs, "cold_outlet_temperature")?,
+            );
+            let shell_passes = take_optional(&inputs, "shell_passes");
+            let (mut r, mut p, mut ft, mut ft1, mut ft2, mut required) = (
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+            );
+            for i in 0..n {
+                let out = element(
+                    py,
+                    therm::lmtd_correction_factor(
+                        kelvins(hot_in[i]),
+                        kelvins(hot_out[i]),
+                        kelvins(cold_in[i]),
+                        kelvins(cold_out[i]),
+                        shell_passes.as_ref().map(|values| values[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                r.push(out.r);
+                p.push(out.p);
+                ft.push(out.ft);
+                ft1.push(out.ft_1_shell_pass);
+                ft2.push(out.ft_2_shell_passes);
+                required.push(out.required_shell_passes);
+            }
+            push_values(&mut columns, "r", "dimensionless", r);
+            push_values(&mut columns, "p", "dimensionless", p);
+            push_values(&mut columns, "ft", "dimensionless", ft);
+            push_values(&mut columns, "ft_1_shell_pass", "dimensionless", ft1);
+            push_values(&mut columns, "ft_2_shell_passes", "dimensionless", ft2);
+            push_values(
+                &mut columns,
+                "required_shell_passes",
+                "dimensionless",
+                required,
+            );
+        }
+
+        "thermal.shah_condensation" => {
+            let mass_flux = take(&inputs, "mass_flux")?;
+            let diameter = take(&inputs, "tube_inner_diameter")?;
+            let liquid_density = take(&inputs, "liquid_density")?;
+            let liquid_viscosity = take(&inputs, "liquid_viscosity")?;
+            let liquid_cp = take(&inputs, "liquid_cp")?;
+            let liquid_conductivity = take(&inputs, "liquid_conductivity")?;
+            let vapor_density = take(&inputs, "vapor_density")?;
+            let reduced_pressure = take(&inputs, "reduced_pressure")?;
+            let vapor_quality = take(&inputs, "vapor_quality")?;
+            let quality_in = take(&inputs, "quality_in")?;
+            let quality_out = take(&inputs, "quality_out")?;
+            let intervals = take_optional(&inputs, "intervals");
+            let (mut h_lo, mut re, mut local, mut average, mut vertical, mut valid) = (
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+            );
+            for i in 0..n {
+                let out = element(
+                    py,
+                    therm::shah_condensation(
+                        mass_flux[i],
+                        diameter[i],
+                        liquid_density[i],
+                        liquid_viscosity[i],
+                        liquid_cp[i],
+                        liquid_conductivity[i],
+                        vapor_density[i],
+                        reduced_pressure[i],
+                        vapor_quality[i],
+                        quality_in[i],
+                        quality_out[i],
+                        intervals.as_ref().map(|values| values[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                h_lo.push(out.liquid_only_htc.value);
+                re.push(out.liquid_only_reynolds);
+                local.push(out.local_htc.value);
+                average.push(out.average_htc.value);
+                vertical.push(out.vertical_htc.value);
+                valid.push(flag(out.in_valid_range));
+            }
+            push_values(&mut columns, "liquid_only_htc", "W/(m**2*K)", h_lo);
+            push_values(&mut columns, "liquid_only_reynolds", "dimensionless", re);
+            push_values(&mut columns, "local_htc", "W/(m**2*K)", local);
+            push_values(&mut columns, "average_htc", "W/(m**2*K)", average);
+            push_values(&mut columns, "vertical_htc", "W/(m**2*K)", vertical);
+            push_values(&mut columns, "in_valid_range", "dimensionless", valid);
+        }
+
+        "thermal.two_phase_pressure_drop" => {
+            let mass_flux = take(&inputs, "mass_flux")?;
+            let vapor_quality = take(&inputs, "vapor_quality")?;
+            let diameter = take(&inputs, "tube_inner_diameter")?;
+            let tube_length = take(&inputs, "tube_length")?;
+            let liquid_density = take(&inputs, "liquid_density")?;
+            let vapor_density = take(&inputs, "vapor_density")?;
+            let liquid_viscosity = take(&inputs, "liquid_viscosity")?;
+            let vapor_viscosity = take(&inputs, "vapor_viscosity")?;
+            let surface_tension = take(&inputs, "surface_tension")?;
+            let quality_in = take(&inputs, "quality_in")?;
+            let quality_out = take(&inputs, "quality_out")?;
+            let intervals = take_optional(&inputs, "intervals");
+            let (mut gradient, mut drop, mut average, mut msh, mut gravity, mut acceleration) = (
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+                Vec::with_capacity(n),
+            );
+            for i in 0..n {
+                let out = element(
+                    py,
+                    therm::two_phase_pressure_drop(
+                        kilograms_per_square_meter_second(mass_flux[i]),
+                        vapor_quality[i],
+                        meters(diameter[i]),
+                        meters(tube_length[i]),
+                        kilograms_per_cubic_meter(liquid_density[i]),
+                        kilograms_per_cubic_meter(vapor_density[i]),
+                        pascal_seconds(liquid_viscosity[i]),
+                        pascal_seconds(vapor_viscosity[i]),
+                        newtons_per_meter(surface_tension[i]),
+                        quality_in[i],
+                        quality_out[i],
+                        intervals.as_ref().map(|values| values[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                gradient.push(out.friedel_gradient.value);
+                drop.push(out.friedel_pressure_drop.value);
+                average.push(out.friedel_average_pressure_drop.value);
+                msh.push(out.muller_steinhagen_heck_gradient.value);
+                gravity.push(out.gravitational_gradient.value);
+                acceleration.push(out.acceleration_pressure_drop.value);
+            }
+            push_values(&mut columns, "friedel_gradient", "Pa/m", gradient);
+            push_values(&mut columns, "friedel_pressure_drop", "Pa", drop);
+            push_values(&mut columns, "friedel_average_pressure_drop", "Pa", average);
+            push_values(&mut columns, "muller_steinhagen_heck_gradient", "Pa/m", msh);
+            push_values(&mut columns, "gravitational_gradient", "Pa/m", gravity);
+            push_values(
+                &mut columns,
+                "acceleration_pressure_drop",
+                "Pa",
+                acceleration,
+            );
+        }
+
         "eos.pr_kappa" => {
             let omega = take(&inputs, "omega")?;
             let mut kappa = Vec::with_capacity(n);
@@ -454,6 +618,366 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
                 kappa.push(r.kappa);
             }
             push_values(&mut columns, "kappa", "dimensionless", kappa);
+        }
+
+        "eos.beggs_brill_segment" => {
+            let (gas_flow, liquid_flow) =
+                (take(&inputs, "gas_flow")?, take(&inputs, "liquid_flow")?);
+            let (gas_density, liquid_density) = (
+                take(&inputs, "gas_density")?,
+                take(&inputs, "liquid_density")?,
+            );
+            let (gas_viscosity, liquid_viscosity) = (
+                take(&inputs, "gas_viscosity")?,
+                take(&inputs, "liquid_viscosity")?,
+            );
+            let (temperature, pressure) =
+                (take(&inputs, "temperature")?, take(&inputs, "pressure")?);
+            let (diameter, length) = (take(&inputs, "diameter")?, take(&inputs, "length")?);
+            let (elevation, roughness) = (take(&inputs, "elevation")?, take(&inputs, "roughness")?);
+            let mut regime = Vec::with_capacity(n);
+            let mut holdup = Vec::with_capacity(n);
+            let mut v_sg = Vec::with_capacity(n);
+            let mut v_sl = Vec::with_capacity(n);
+            let mut v_mix = Vec::with_capacity(n);
+            let mut rho_ns = Vec::with_capacity(n);
+            let mut mu_ns = Vec::with_capacity(n);
+            let mut reynolds = Vec::with_capacity(n);
+            let mut friction = Vec::with_capacity(n);
+            let mut friction_two_phase = Vec::with_capacity(n);
+            let mut hydrostatic = Vec::with_capacity(n);
+            let mut friction_drop = Vec::with_capacity(n);
+            let mut total = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::beggs_brill_segment::beggs_brill_segment(
+                        cubic_meters_per_second(gas_flow[i]),
+                        cubic_meters_per_second(liquid_flow[i]),
+                        kilograms_per_cubic_meter(gas_density[i]),
+                        kilograms_per_cubic_meter(liquid_density[i]),
+                        pascal_seconds(gas_viscosity[i]),
+                        pascal_seconds(liquid_viscosity[i]),
+                        kelvins(temperature[i]),
+                        pascals(pressure[i]),
+                        meters(diameter[i]),
+                        meters(length[i]),
+                        meters(elevation[i]),
+                        meters(roughness[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                regime.push(Some(r.regime.as_str().to_string()));
+                holdup.push(r.liquid_holdup);
+                v_sg.push(r.superficial_gas_velocity.value);
+                v_sl.push(r.superficial_liquid_velocity.value);
+                v_mix.push(r.superficial_mixture_velocity.value);
+                rho_ns.push(r.no_slip_density.value);
+                mu_ns.push(r.no_slip_viscosity.value);
+                reynolds.push(r.reynolds);
+                friction.push(r.friction_factor);
+                friction_two_phase.push(r.two_phase_friction_factor);
+                hydrostatic.push(r.hydrostatic_drop.value);
+                friction_drop.push(r.friction_drop.value);
+                total.push(r.total_drop.value);
+            }
+            push_labels(&mut columns, "regime", regime);
+            push_values(&mut columns, "liquid_holdup", "dimensionless", holdup);
+            push_values(&mut columns, "superficial_gas_velocity", "m/s", v_sg);
+            push_values(&mut columns, "superficial_liquid_velocity", "m/s", v_sl);
+            push_values(&mut columns, "superficial_mixture_velocity", "m/s", v_mix);
+            push_values(&mut columns, "no_slip_density", "kg/m**3", rho_ns);
+            push_values(&mut columns, "no_slip_viscosity", "Pa*s", mu_ns);
+            push_values(&mut columns, "reynolds", "dimensionless", reynolds);
+            push_values(&mut columns, "friction_factor", "dimensionless", friction);
+            push_values(
+                &mut columns,
+                "two_phase_friction_factor",
+                "dimensionless",
+                friction_two_phase,
+            );
+            push_values(&mut columns, "hydrostatic_drop", "Pa", hydrostatic);
+            push_values(&mut columns, "friction_drop", "Pa", friction_drop);
+            push_values(&mut columns, "total_drop", "Pa", total);
+        }
+
+        "eos.de_waard_milliams_corrosion" => {
+            let (temperature, co2, ph, h2s, velocity) = (
+                take(&inputs, "temperature")?,
+                take(&inputs, "co2_partial_pressure")?,
+                take(&inputs, "ph")?,
+                take(&inputs, "h2s_partial_pressure")?,
+                take(&inputs, "flow_velocity")?,
+            );
+            let (inhibitor, glycol) = (
+                take(&inputs, "inhibitor_efficiency")?,
+                take(&inputs, "glycol_fraction")?,
+            );
+            let (sulfur, life) = (
+                take(&inputs, "sulfur_deposition_rate")?,
+                take(&inputs, "design_life")?,
+            );
+            let mut baseline = Vec::with_capacity(n);
+            let mut ph_factor = Vec::with_capacity(n);
+            let mut scale_factor = Vec::with_capacity(n);
+            let mut glycol_factor = Vec::with_capacity(n);
+            let mut flow_factor = Vec::with_capacity(n);
+            let mut inhibitor_factor = Vec::with_capacity(n);
+            let mut corrected = Vec::with_capacity(n);
+            let mut sulfur_rate = Vec::with_capacity(n);
+            let mut fes_rate = Vec::with_capacity(n);
+            let mut co2_corrected = Vec::with_capacity(n);
+            let mut total = Vec::with_capacity(n);
+            let mut feco3_si = Vec::with_capacity(n);
+            let mut feco3_forming = Vec::with_capacity(n);
+            let mut sour = Vec::with_capacity(n);
+            let mut severity = Vec::with_capacity(n);
+            let mut morphology = Vec::with_capacity(n);
+            let mut allowance = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::de_waard_milliams_corrosion::de_waard_milliams_corrosion(
+                        kelvins(temperature[i]),
+                        pascals(co2[i]),
+                        ph[i],
+                        pascals(h2s[i]),
+                        meters_per_second(velocity[i]),
+                        inhibitor[i],
+                        glycol[i],
+                        kilograms_per_square_meter_second(sulfur[i]),
+                        seconds(life[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                baseline.push(r.baseline_rate.value);
+                ph_factor.push(r.ph_correction_factor);
+                scale_factor.push(r.scale_correction_factor);
+                glycol_factor.push(r.glycol_correction_factor);
+                flow_factor.push(r.flow_correction_factor);
+                inhibitor_factor.push(r.inhibitor_factor);
+                corrected.push(r.corrected_rate.value);
+                sulfur_rate.push(r.sulfur_rate.value);
+                fes_rate.push(r.fes_rate.value);
+                co2_corrected.push(r.co2_corrected_rate.value);
+                total.push(r.total_corrosion_rate.value);
+                feco3_si.push(r.feco3_saturation_index);
+                feco3_forming.push(flag(r.feco3_scale_forming));
+                sour.push(flag(r.is_sour_service));
+                severity.push(Some(r.corrosion_severity.as_str().to_string()));
+                morphology.push(Some(r.fes_morphology.as_str().to_string()));
+                allowance.push(r.corrosion_allowance.value);
+            }
+            push_values(&mut columns, "baseline_rate", "m/s", baseline);
+            push_values(
+                &mut columns,
+                "ph_correction_factor",
+                "dimensionless",
+                ph_factor,
+            );
+            push_values(
+                &mut columns,
+                "scale_correction_factor",
+                "dimensionless",
+                scale_factor,
+            );
+            push_values(
+                &mut columns,
+                "glycol_correction_factor",
+                "dimensionless",
+                glycol_factor,
+            );
+            push_values(
+                &mut columns,
+                "flow_correction_factor",
+                "dimensionless",
+                flow_factor,
+            );
+            push_values(
+                &mut columns,
+                "inhibitor_factor",
+                "dimensionless",
+                inhibitor_factor,
+            );
+            push_values(&mut columns, "corrected_rate", "m/s", corrected);
+            push_values(&mut columns, "sulfur_rate", "m/s", sulfur_rate);
+            push_values(&mut columns, "fes_rate", "m/s", fes_rate);
+            push_values(&mut columns, "co2_corrected_rate", "m/s", co2_corrected);
+            push_values(&mut columns, "total_corrosion_rate", "m/s", total);
+            push_values(
+                &mut columns,
+                "feco3_saturation_index",
+                "dimensionless",
+                feco3_si,
+            );
+            push_values(
+                &mut columns,
+                "feco3_scale_forming",
+                "dimensionless",
+                feco3_forming,
+            );
+            push_values(&mut columns, "is_sour_service", "dimensionless", sour);
+            push_labels(&mut columns, "corrosion_severity", severity);
+            push_labels(&mut columns, "fes_morphology", morphology);
+            push_values(&mut columns, "corrosion_allowance", "m", allowance);
+        }
+
+        "eos.electrolyte_scale_calculator" => {
+            let (calcium, barium, strontium) = (
+                take(&inputs, "calcium")?,
+                take(&inputs, "barium")?,
+                take(&inputs, "strontium")?,
+            );
+            let (magnesium, sodium, potassium) = (
+                take(&inputs, "magnesium")?,
+                take(&inputs, "sodium")?,
+                take(&inputs, "potassium")?,
+            );
+            let (iron, chloride, sulphate) = (
+                take(&inputs, "iron")?,
+                take(&inputs, "chloride")?,
+                take(&inputs, "sulphate")?,
+            );
+            let (bicarbonate, carbonate) =
+                (take(&inputs, "bicarbonate")?, take(&inputs, "carbonate")?);
+            let (temperature, pressure, ph) = (
+                take(&inputs, "temperature")?,
+                take(&inputs, "pressure")?,
+                take(&inputs, "ph")?,
+            );
+            let mut ionic_strength = Vec::with_capacity(n);
+            let mut debye_hueckel_a = Vec::with_capacity(n);
+            let mut divalent = Vec::with_capacity(n);
+            let mut monovalent = Vec::with_capacity(n);
+            let mut si_caco3 = Vec::with_capacity(n);
+            let mut si_baso4 = Vec::with_capacity(n);
+            let mut si_caso4 = Vec::with_capacity(n);
+            let mut si_srso4 = Vec::with_capacity(n);
+            let mut si_brucite = Vec::with_capacity(n);
+            let mut hydroxide = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::electrolyte_scale_calculator::electrolyte_scale_calculator(
+                        kilograms_per_cubic_meter(calcium[i]),
+                        kilograms_per_cubic_meter(barium[i]),
+                        kilograms_per_cubic_meter(strontium[i]),
+                        kilograms_per_cubic_meter(magnesium[i]),
+                        kilograms_per_cubic_meter(sodium[i]),
+                        kilograms_per_cubic_meter(potassium[i]),
+                        kilograms_per_cubic_meter(iron[i]),
+                        kilograms_per_cubic_meter(chloride[i]),
+                        kilograms_per_cubic_meter(sulphate[i]),
+                        kilograms_per_cubic_meter(bicarbonate[i]),
+                        kilograms_per_cubic_meter(carbonate[i]),
+                        kelvins(temperature[i]),
+                        pascals(pressure[i]),
+                        ph[i],
+                    ),
+                    &mut warnings,
+                )?;
+                ionic_strength.push(r.ionic_strength.value);
+                debye_hueckel_a.push(r.debye_hueckel_a);
+                divalent.push(r.divalent_activity_coefficient);
+                monovalent.push(r.monovalent_activity_coefficient);
+                si_caco3.push(r.si_caco3);
+                si_baso4.push(r.si_baso4);
+                si_caso4.push(r.si_caso4);
+                si_srso4.push(r.si_srso4);
+                si_brucite.push(r.si_brucite);
+                hydroxide.push(r.hydroxide_activity);
+            }
+            push_values(&mut columns, "ionic_strength", "mol/kg", ionic_strength);
+            push_values(
+                &mut columns,
+                "debye_hueckel_a",
+                "dimensionless",
+                debye_hueckel_a,
+            );
+            push_values(
+                &mut columns,
+                "divalent_activity_coefficient",
+                "dimensionless",
+                divalent,
+            );
+            push_values(
+                &mut columns,
+                "monovalent_activity_coefficient",
+                "dimensionless",
+                monovalent,
+            );
+            push_values(&mut columns, "si_caco3", "dimensionless", si_caco3);
+            push_values(&mut columns, "si_baso4", "dimensionless", si_baso4);
+            push_values(&mut columns, "si_caso4", "dimensionless", si_caso4);
+            push_values(&mut columns, "si_srso4", "dimensionless", si_srso4);
+            push_values(&mut columns, "si_brucite", "dimensionless", si_brucite);
+            push_values(
+                &mut columns,
+                "hydroxide_activity",
+                "dimensionless",
+                hydroxide,
+            );
+        }
+
+        "eos.scale_kinetics" => {
+            let (saturation_index, nucleation_constant, nucleation_shape_factor) = (
+                take(&inputs, "saturation_index")?,
+                take(&inputs, "nucleation_constant")?,
+                take(&inputs, "nucleation_shape_factor")?,
+            );
+            let (surface_rate_constant, surface_reaction_order) = (
+                take(&inputs, "surface_rate_constant")?,
+                take(&inputs, "surface_reaction_order")?,
+            );
+            let (mass_transfer_coefficient, bulk, equilibrium) = (
+                take(&inputs, "mass_transfer_coefficient")?,
+                take(&inputs, "bulk_concentration")?,
+                take(&inputs, "equilibrium_concentration")?,
+            );
+            let mut supersaturation = Vec::with_capacity(n);
+            let mut induction = Vec::with_capacity(n);
+            let mut surface = Vec::with_capacity(n);
+            let mut transport_limited = Vec::with_capacity(n);
+            let mut effective = Vec::with_capacity(n);
+            let mut regime = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::scale_kinetics::scale_kinetics(
+                        saturation_index[i],
+                        nucleation_constant[i],
+                        nucleation_shape_factor[i],
+                        surface_rate_constant[i],
+                        surface_reaction_order[i],
+                        mass_transfer_coefficient[i],
+                        moles_per_cubic_meter(bulk[i]),
+                        moles_per_cubic_meter(equilibrium[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                supersaturation.push(r.supersaturation_ratio);
+                induction.push(r.induction_time.value);
+                surface.push(r.surface_limited_growth.value);
+                transport_limited.push(r.transport_limited_growth.value);
+                effective.push(r.effective_growth_rate.value);
+                regime.push(Some(r.limiting_regime));
+            }
+            push_values(
+                &mut columns,
+                "supersaturation_ratio",
+                "dimensionless",
+                supersaturation,
+            );
+            push_values(&mut columns, "induction_time", "s", induction);
+            push_values(&mut columns, "surface_limited_growth", "m/s", surface);
+            push_values(
+                &mut columns,
+                "transport_limited_growth",
+                "m/s",
+                transport_limited,
+            );
+            push_values(&mut columns, "effective_growth_rate", "m/s", effective);
+            push_labels(&mut columns, "limiting_regime", regime);
         }
 
         "eos.iapws_saturation_pressure" => {

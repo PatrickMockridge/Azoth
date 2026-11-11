@@ -677,6 +677,20 @@ impl Mixture {
         &self.components
     }
 
+    /// Replace one component's parachor, by index.
+    ///
+    /// The CPA column is selected per component after the mixture is assembled, because the
+    /// selection is the *model's* - `ComponentSrkCPA` and its subclasses - and the databank
+    /// assembly does not know which model asked for the fluid.
+    ///
+    /// # Panics
+    /// If `index` is past the last component, which is a caller's indexing error.
+    #[must_use]
+    pub fn with_parachor_at(mut self, index: usize, parachor: f64) -> Self {
+        self.components[index].parachor = parachor;
+        self
+    }
+
     /// How many components there are.
     #[must_use]
     pub fn len(&self) -> usize {

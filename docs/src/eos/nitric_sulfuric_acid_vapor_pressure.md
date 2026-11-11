@@ -4,6 +4,8 @@
 
 `eos.nitric_sulfuric_acid_vapor_pressure`
 
+Vapour pressures of water, nitric acid and sulfuric acid from component-specific correlations. Use it for acid-absorption and condensation screening.
+
 ## Equation
 
 $$
@@ -27,6 +29,16 @@ p_water = 100*10**(8.42926609 - 1827.17843/T - 71208.271/T**2); p_nitric = 133.3
 The three pure-component correlations of section 3, as NeqSim master implements them in `NitricSulfuricAcidVaporPressure`. The nitric-acid coefficients are NeqSim's refit, not the paper's.
 
 DOI: [10.1029/96JD02155](https://doi.org/10.1029/96JD02155)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- three correlations, not one form with three coefficient sets: water is a log10 polynomial in `1/T`, nitric acid an Antoine in `log10(P/torr)`, sulfuric acid a `ln(P/atm)` straight line. Each is ported with its own unit factor, `100`, `133.322368421` and `101325`.
+- the three come back together because they are always wanted together: a phase over this system needs all three pure-component pressures at one temperature, and three calculations would be three chances to evaluate them at different ones.
+- the nitric-acid Antoine pair is an *engineering adjustment*, ported as NeqSim states it: `A`/`B` are refitted from Pennington (1951)'s `7.61628`/`1486.238` to reproduce the 83 C boiling point and raise `P0` at 273.15 K by 6.9 % against Vandoni (1944)'s salting-out data. `C = 43.0` is Pennington's.
+- the water correlation reaches 610.4 Pa at 273.15 K against a measured 611 Pa, which is the check that says the unit factor is `mbar` and not the bar the rest of this library works in.
 
 ## Inputs
 
@@ -52,18 +64,15 @@ DOI: [10.1029/96JD02155](https://doi.org/10.1029/96JD02155)
 | `T >= 190 and T <= 298` | warns `OUT_OF_VALID_RANGE` | the range the correlations are stated for; outside it the model extrapolates |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- three correlations, not one form with three coefficient sets: water is a log10 polynomial in `1/T`, nitric acid an Antoine in `log10(P/torr)`, sulfuric acid a `ln(P/atm)` straight line. Each is ported with its own unit factor, `100`, `133.322368421` and `101325`.
-- the three come back together because they are always wanted together: a phase over this system needs all three pure-component pressures at one temperature, and three calculations would be three chances to evaluate them at different ones.
-- the nitric-acid Antoine pair is an *engineering adjustment*, ported as NeqSim states it: `A`/`B` are refitted from Pennington (1951)'s `7.61628`/`1486.238` to reproduce the 83 C boiling point and raise `P0` at 273.15 K by 6.9 % against Vandoni (1944)'s salting-out data. `C = 43.0` is Pennington's.
-- the validity is per species, not per class. Water and sulfuric acid are stated for roughly 190-298 K and nitric acid's Antoine for roughly 190-400 K, so the range below is the conservative envelope NeqSim's own constants state.
+- the validity is per species, not per formula class. Water and sulfuric acid are stated for roughly 190-298 K and nitric acid's Antoine for roughly 190-400 K; the range below is the conservative envelope.
+
 - the range is a *warning* rather than an error: the arithmetic is well defined outside it and a caller inspecting the extrapolation is doing something legitimate. The nitric-acid form alone has a pole at `T = 43 K`, which is an error.
-- the water correlation reaches 610.4 Pa at 273.15 K against a measured 611 Pa, which is the check that says the unit factor is `mbar` and not the bar the rest of this library works in.
 
 
 

@@ -150,7 +150,7 @@ fn the_2004_revision_matches_its_own_oracle() {
         state.z
     );
     // Master's numbers, at the `1e-7` this settles to. They were `1e-6`-apart from its
-    // 3.20.0 values before the 2004 revision stopped adding the extensive `FBornD` term.
+    // 3.20.0 values before the 2004 revision stopped adding the extensive `FBornD` term (issues #3862/#3888).
     let want: [f64; 4] = [
         8.372_595_908_242_34,
         -5.748_783_296_884_28,

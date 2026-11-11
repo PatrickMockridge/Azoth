@@ -4,6 +4,8 @@
 
 `eos.srk_kappa`
 
+Soave-Redlich-Kwong attraction-parameter coefficient from the acentric factor. Use it when assembling an SRK EOS.
+
 ## Equation
 
 $$
@@ -45,7 +47,7 @@ DOI: [10.1016/0009-2509(72)80096-4](https://doi.org/10.1016/0009-2509(72)80096-4
 | `kappa > 0` | warns `OUT_OF_VALID_RANGE` | The polynomial passes through zero at omega = -0.29521 and omega = 9.23840, and kappa is negative below the lower one. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

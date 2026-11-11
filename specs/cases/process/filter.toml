@@ -47,3 +47,890 @@ applied_drop = 0.0
 # capture as the evidence for the assumption that says why. What the clamp itself does is held
 # by `crates/azoth-process/tests/kernels.rs`: the request is clamped, and the flash after it is
 # what refuses.
+
+[[cases]]
+id = "the_flow_scaled_drop_is_the_configured_one_at_the_reference_flow"
+tolerance = 0.0002
+source = "`process_filter_models.tsv`'s `flow_scaled_methane_1000_kg_per_hr` row: `FilterTest.testFlowScaledPressureDrop`'s state re-cased on PR methane - `Y_STRAINER`'s `FLOW_SCALED` model at exponent `2.0`, the configured `0.10` bar and the reference flow the inlet itself carries. At the reference the ratio is one, so the clean drop is the configured one and the outlet is the `FIXED` row's.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 10000.0
+pressure_drop_model = "flow_scaled"
+reference_flow = 74.26460241371493
+flow_exponent = 2.0
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1990000.0
+outlet_t = 298.15
+outlet_h = 519.8638561838793
+clean_drop = 10000.0
+applied_drop = 10000.0
+nominal_removal_efficiency = 0.0
+outlet_particle_concentration = 0.0
+captured_rate = 0.0
+
+[[cases]]
+id = "the_flow_scaled_drop_doubles_at_twice_the_flow"
+tolerance = 0.0002
+source = "The same state at `2000` kg/hr: twice the actual flow against the same reference, so `(Q/Q_ref)^2 = 4` and the clean drop is `0.40` bar. **The square is the class's `Y_STRAINER` exponent**, set by `setFilterServiceType` and read from `flowExponent`; the model states it rather than a type's default, because a type is not a declared input.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 34.62915636449265
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 10000.0
+pressure_drop_model = "flow_scaled"
+reference_flow = 74.26460241371493
+flow_exponent = 2.0
+[cases.expected]
+outlet_n = 34.62915636449265
+outlet_z = [1.0]
+outlet_p = 1960000.0
+outlet_t = 298.15
+outlet_h = 525.3552022816244
+clean_drop = 40000.0
+applied_drop = 40000.0
+nominal_removal_efficiency = 0.0
+outlet_particle_concentration = 0.0
+captured_rate = 0.0
+
+[[cases]]
+id = "the_tabulated_curve_interpolates_between_its_points"
+tolerance = 0.0002
+source = "`process_filter_models.tsv`'s `tabulated_methane_1000_kg_per_hr` row: `FilterTest.testTabulatedPressureDropCurve`'s curve - `0.10` bar at half the inlet flow and `0.50` at one and a half times it - evaluated at the inlet flow, which is halfway and so lands on `0.30` bar. Selecting a curve selects the `TABULATED` model in the class; here the model is stated and the curve is its input.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 10000.0
+pressure_drop_model = "tabulated"
+pressure_drop_curve = [
+    { flow = 37.132301206857465, drop = 10000.0 },
+    { flow = 111.39690362057239, drop = 50000.0 },
+]
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1970000.0
+outlet_t = 298.15
+outlet_h = 523.5247917958733
+clean_drop = 30000.0
+applied_drop = 30000.0
+nominal_removal_efficiency = 0.0
+outlet_particle_concentration = 0.0
+captured_rate = 0.0
+
+[[cases]]
+id = "the_ergun_bed_drops_by_the_packed_bed_correlation"
+tolerance = 0.0005
+source = "`process_filter_models.tsv`'s `ergun_methane_1000_kg_per_hr` row: `FilterTest.testErgunPressureDropIncreasesWithFlow`'s geometry - `1.0` m2, `1.5` m deep, `2` mm particles, `0.40` void - on PR methane at `1000` kg/hr. **The viscosity is an input**, `1.1529270713459012e-5` Pa s as the class's own system reports it, because azoth's viscosity dispatch is a separate calculation and this row is the packed-bed arithmetic. The density is the port's PR at the same state.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 10000.0
+pressure_drop_model = "ergun"
+media_area = 1.0
+media_bed_depth = 1.5
+media_particle_diameter = 0.002
+media_void_fraction = 0.40
+viscosity = 1.1529270713459012e-05
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1999854.237109082
+outlet_t = 298.15
+outlet_h = 518.0600145934741
+clean_drop = 145.7628909180396
+applied_drop = 145.7628909180396
+nominal_removal_efficiency = 0.0
+outlet_particle_concentration = 0.0
+captured_rate = 0.0
+
+[[cases]]
+id = "the_ergun_drop_rises_with_the_flow"
+tolerance = 0.0005
+source = "The same bed at `2000` kg/hr. The viscous term is linear in the superficial velocity and the inertial one quadratic, so the drop rises by `2.97` rather than by `4` - the row that separates Ergun from a flow-scaled curve.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 34.62915636449265
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 10000.0
+pressure_drop_model = "ergun"
+media_area = 1.0
+media_bed_depth = 1.5
+media_particle_diameter = 0.002
+media_void_fraction = 0.40
+viscosity = 1.1529270713459012e-05
+[cases.expected]
+outlet_n = 34.62915636449265
+outlet_z = [1.0]
+outlet_p = 1999567.4552791186
+outlet_t = 298.15
+outlet_h = 518.1125111990125
+clean_drop = 432.5447208812192
+applied_drop = 432.5447208812192
+nominal_removal_efficiency = 0.0
+outlet_particle_concentration = 0.0
+captured_rate = 0.0
+
+[[cases]]
+id = "the_beta_curve_captures_particles"
+tolerance = 0.0002
+source = "`process_filter_models.tsv`'s `capture_beta_ratio_methane_1000_kg_per_hr` row: `FilterTest.testBetaRatioCurveCalculatesParticleCapture`'s curve - beta `2/100/1000` at `5/10/20` micrometre - at the `10` micrometre knot, `100` mg/kg inlet (`1e-4` as a mass fraction) and the filter's default `0.01` bar drop. The efficiency is `0.99`, the outlet `1` mg/kg (`1e-6`) and the captured rate `0.099` kg/hr on `1000` kg/hr.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 1000.0
+performance_curve = [
+    { particle_size = 5.0e-06, beta_ratio = 2.0 },
+    { particle_size = 1.0e-05, beta_ratio = 100.0 },
+    { particle_size = 2.0e-05, beta_ratio = 1000.0 },
+]
+particle_size = 1.0e-05
+inlet_particle_concentration = 1.0e-04
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1999000.0
+outlet_t = 298.15
+outlet_h = 518.2163861562253
+clean_drop = 1000.0
+applied_drop = 1000.0
+nominal_removal_efficiency = 0.99
+outlet_particle_concentration = 1.0000000000000009e-06
+captured_rate = 0.099
+
+[[cases]]
+id = "the_loaded_element_adds_its_pressure_drop"
+tolerance = 0.0005
+source = "`process_filter_loading.tsv`'s `loaded_run`: `testBackwashAndRegenerationReduceLoading`'s pre-step state on PR methane - `9/10` kg of loading at `1.0` bar per capacity, breakthrough starting at `0.5` - so the clean `0.2` bar becomes `1.1` and the fraction `0.9` starts breakthrough at `0.8`.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 9.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 100000.0
+breakthrough_start_fraction = 0.5
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1890000.0
+outlet_t = 298.15
+outlet_h = 538.1669582968343
+clean_drop = 20000.0
+applied_drop = 110000.0
+unrestricted_drop = 110000.0
+bypass_fraction = 0.0
+loading_fraction = 0.9
+breakthrough_fraction = 0.8
+current_removal_efficiency = 0.0
+solids_loading = 9.0
+differential_pressure_utilization = 0.22
+replacement_required = false
+[[cases]]
+id = "the_bypass_holds_the_drop_and_carries_the_particles"
+tolerance = 0.0005
+source = "`process_filter_loading.tsv`'s `bypass_run`: `testBypassLimitsPressureDropAndReducesCapture` - the loaded `2.0` bar opens the `0.5` bar bypass, so half the flow bypasses, the applied drop is `0.5` bar and the current efficiency is `0.99 x 0.5`.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 5.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 360000.0
+bypass_cracking_pressure = 50000.0
+nominal_removal_efficiency = 0.99
+inlet_particle_concentration = 1.0e-04
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1950000.0
+outlet_t = 298.15
+outlet_h = 527.1855738746241
+clean_drop = 20000.0
+applied_drop = 50000.0
+unrestricted_drop = 200000.0
+bypass_fraction = 0.5
+loading_fraction = 0.5
+breakthrough_fraction = 0.0
+current_removal_efficiency = 0.495
+solids_loading = 5.0
+differential_pressure_utilization = 0.4
+nominal_removal_efficiency = 0.99
+outlet_particle_concentration = 5.05e-05
+captured_rate = 0.0495
+replacement_required = false
+[[cases]]
+id = "a_non_positive_capacity_is_no_capacity"
+tolerance = 0.0005
+source = "`process_filter_loading.tsv`'s `capacity_disabled`: `setLoadingCapacity(0)` restores the class's positive-infinity default, so nine kilograms of loading are carried but no fraction and no extra drop are computed.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 9.0
+loading_capacity = 0.0
+pressure_drop_increase_at_capacity = 100000.0
+breakthrough_start_fraction = 0.5
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1980000.0
+outlet_t = 298.15
+outlet_h = 521.6943429265608
+clean_drop = 20000.0
+applied_drop = 20000.0
+unrestricted_drop = 20000.0
+bypass_fraction = 0.0
+loading_fraction = 0.0
+breakthrough_fraction = 0.0
+current_removal_efficiency = 0.0
+solids_loading = 9.0
+differential_pressure_utilization = 0.04
+replacement_required = false
+[[cases]]
+id = "the_terminal_drop_calls_for_replacement"
+tolerance = 0.0005
+source = "`process_filter_loading.tsv`'s `terminal_drop`: the same loaded state with a `0.5` bar terminal drop. The utilization is `2.0/0.5 = 4`, so `isReplacementRequired` is true even though the bypass holds the applied drop at `0.5`.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 5.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 360000.0
+bypass_cracking_pressure = 50000.0
+terminal_pressure_drop = 50000.0
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1950000.0
+outlet_t = 298.15
+outlet_h = 527.1855738746241
+clean_drop = 20000.0
+applied_drop = 50000.0
+unrestricted_drop = 200000.0
+bypass_fraction = 0.5
+loading_fraction = 0.5
+breakthrough_fraction = 0.0
+current_removal_efficiency = 0.0
+solids_loading = 5.0
+differential_pressure_utilization = 4.0
+replacement_required = true
+[[cases]]
+id = "loading_past_capacity_breaks_through"
+tolerance = 0.0005
+source = "`process_filter_loading.tsv`'s `loading_beyond_capacity`: eleven kilograms against a ten-kilogram capacity is a fraction of `1.1`, breakthrough is capped at one, and the loading branch of `isReplacementRequired` fires.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 11.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 100000.0
+breakthrough_start_fraction = 0.5
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1870000.0
+outlet_t = 298.15
+outlet_h = 541.8270857083041
+clean_drop = 20000.0
+applied_drop = 130000.0
+unrestricted_drop = 130000.0
+bypass_fraction = 0.0
+loading_fraction = 1.1
+breakthrough_fraction = 1.0
+current_removal_efficiency = 0.0
+solids_loading = 11.0
+differential_pressure_utilization = 0.26
+replacement_required = true
+[[cases]]
+id = "breakthrough_starts_above_its_boundary"
+tolerance = 0.0005
+source = "`process_filter_loading.tsv`'s `breakthrough_boundary`: a loading fraction exactly at the `0.5` start is not yet broken through - the class's comparison is `<=` - so the extra drop is `0.5` bar and breakthrough is zero.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 5.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 100000.0
+breakthrough_start_fraction = 0.5
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1930000.0
+outlet_t = 298.15
+outlet_h = 530.8461983506398
+clean_drop = 20000.0
+applied_drop = 70000.0
+unrestricted_drop = 70000.0
+bypass_fraction = 0.0
+loading_fraction = 0.5
+breakthrough_fraction = 0.0
+current_removal_efficiency = 0.0
+solids_loading = 5.0
+differential_pressure_utilization = 0.14
+replacement_required = false
+
+[[cases]]
+id = "the_first_step_accumulates_five_kilograms"
+tolerance = 0.0005
+source = "`process_filter_dynamic.tsv`'s `dynamic_first_step_3600`: the class's `testDynamicLoadingBuildsPressureDropAndBreakthrough` first call on PR methane - five kilograms an hour for an hour on a ten-kilogram capacity - so the loading is five, the fraction one half, and the clean `0.1` bar becomes `0.6`.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 10000.0
+solids_loading = 0.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 100000.0
+breakthrough_start_fraction = 0.5
+time_step = 3600.0
+holdup_volume = 1.0
+solids_loading_rate = 5.0
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1940000.0
+outlet_t = 298.15
+outlet_h = 529.0159060666894
+clean_drop = 10000.0
+applied_drop = 60000.0
+unrestricted_drop = 60000.0
+bypass_fraction = 0.0
+loading_fraction = 0.5
+breakthrough_fraction = 0.0
+current_removal_efficiency = 0.0
+solids_loading = 5.0
+differential_pressure_utilization = 0.12
+holdup_residence_time = 48.47531506255213
+[[cases]]
+id = "the_second_step_starts_from_the_first"
+tolerance = 0.0005
+source = "`process_filter_dynamic.tsv`'s `dynamic_second_step_1800`: the same machine another half hour from the five kilograms the first step left - the class's second `runTransient` call, restated here as its own initial state.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 10000.0
+solids_loading = 5.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 100000.0
+breakthrough_start_fraction = 0.5
+time_step = 1800.0
+solids_loading_rate = 5.0
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1915000.0
+outlet_t = 298.15
+outlet_h = 533.591560841867
+clean_drop = 10000.0
+applied_drop = 85000.0
+unrestricted_drop = 85000.0
+bypass_fraction = 0.0
+loading_fraction = 0.75
+breakthrough_fraction = 0.5
+current_removal_efficiency = 0.0
+solids_loading = 7.5
+differential_pressure_utilization = 0.17
+holdup_residence_time = 0.0
+[[cases]]
+id = "backwash_and_regeneration_remove_loading"
+tolerance = 0.0005
+source = "`process_filter_dynamic.tsv`'s `backwash_after_step`: `testBackwashAndRegenerationReduceLoading` - nine kilograms, a four and a two kilogram an hour removal active for half an hour with no capture, so the loading falls to six and breakthrough to `0.2`.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 9.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 100000.0
+breakthrough_start_fraction = 0.5
+time_step = 1800.0
+solids_loading_rate = 0.0
+backwash_removal_rate = 4.0
+regeneration_removal_rate = 2.0
+backwash_active = true
+regeneration_active = true
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1920000.0
+outlet_t = 298.15
+outlet_h = 532.6764502203005
+clean_drop = 20000.0
+applied_drop = 80000.0
+unrestricted_drop = 80000.0
+bypass_fraction = 0.0
+loading_fraction = 0.6
+breakthrough_fraction = 0.19999999999999996
+current_removal_efficiency = 0.0
+solids_loading = 6.0
+differential_pressure_utilization = 0.16
+holdup_residence_time = 0.0
+[[cases]]
+id = "the_accretion_uses_the_pre_step_efficiency"
+tolerance = 0.0005
+source = "`process_filter_dynamic.tsv`'s `concentration_after_8h`: the pre-step fraction `0.79` gives a `0.4158` efficiency, so eight hours accrete `0.33264` kg rather than the post-step efficiency's answer; the reported capture is the post-step `0.034993728` kg/hr.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 10000.0
+solids_loading = 7.9
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 100000.0
+breakthrough_start_fraction = 0.5
+time_step = 28800.0
+nominal_removal_efficiency = 0.99
+inlet_particle_concentration = 1.0e-04
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1907673.6
+outlet_t = 298.15
+outlet_h = 534.9324355250758
+clean_drop = 10000.0
+applied_drop = 92326.4
+unrestricted_drop = 92326.4
+bypass_fraction = 0.0
+loading_fraction = 0.823264
+breakthrough_fraction = 0.646528
+current_removal_efficiency = 0.34993728
+solids_loading = 8.23264
+differential_pressure_utilization = 0.1846528
+nominal_removal_efficiency = 0.99
+outlet_particle_concentration = 6.5006272e-05
+captured_rate = 0.034993728
+holdup_residence_time = 0.0
+[[cases]]
+id = "the_pre_step_bypass_is_in_the_accretion"
+tolerance = 0.0005
+source = "`process_filter_dynamic.tsv`'s `dynamic_bypass_after_step`: the bypass is open before the step, so the accretion uses `0.99 x 0.5`; the reported efficiency is the post-step one, after the loading moved the unrestricted drop slightly.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 298.15
+pressure_drop = 20000.0
+solids_loading = 5.0
+loading_capacity = 10.0
+pressure_drop_increase_at_capacity = 360000.0
+bypass_cracking_pressure = 50000.0
+time_step = 3600.0
+nominal_removal_efficiency = 0.99
+inlet_particle_concentration = 1.0e-04
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 1950000.0
+outlet_t = 298.15
+outlet_h = 527.1855738746241
+clean_drop = 20000.0
+applied_drop = 50000.0
+unrestricted_drop = 201782.0
+bypass_fraction = 0.5022127243995583
+loading_fraction = 0.50495
+breakthrough_fraction = 0.0
+current_removal_efficiency = 0.49280940284443725
+solids_loading = 5.0495
+differential_pressure_utilization = 0.403564
+nominal_removal_efficiency = 0.99
+outlet_particle_concentration = 5.0719059715556284e-05
+captured_rate = 0.04928094028444373
+holdup_residence_time = 0.0
+
+[[cases]]
+id = "the_coalescer_design_is_the_captures"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `coalescer_default`: `FilterMechanicalDesignTest`'s coalescer re-cased on PR methane - the class's element sizing, pressure boundary, nozzle, weights and an empty warning list.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 15000.0
+terminal_pressure_drop = 100000.0
+element_collapse_pressure = 500000.0
+element_integrity_verified = true
+filter_type = "coalescer"
+mechanical_design = true
+performance_curve = [
+    { particle_size = 1e-06, beta_ratio = 10.0 },
+    { particle_size = 3e-06, beta_ratio = 1000.0 },
+    { particle_size = 1e-05, beta_ratio = 10000.0 },
+]
+[cases.expected]
+outlet_n = 173.14578182246325
+outlet_z = [1.0]
+outlet_p = 4985000.0
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 1.0
+vessel_inner_diameter = 0.5
+vessel_outer_diameter = 0.5296657784122932
+vessel_length = 1.5
+shell_thickness = 0.014832889206146602
+head_thickness = 0.014832889206146602
+effective_element_area = 1.5
+calculated_face_velocity = 0.053286507969994096
+required_nozzle_diameter = 0.07133362941921673
+selected_nozzle_diameter = 0.08
+calculated_nozzle_velocity = 15.901520894119196
+empty_vessel_weight = 323.91707924523325
+total_equipped_weight = 431.0922030188032
+design_temperature = 328.15
+differential_pressure_design_acceptable = true
+
+[[cases]]
+id = "the_basket_strainer_reports_four_warnings"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `basket_strainer_warnings`: the terminal and collapse ratings exceeded, no integrity record and no performance data - four warnings in the class's order, and an unacceptable design.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 200000.0
+terminal_pressure_drop = 100000.0
+element_collapse_pressure = 150000.0
+filter_type = "basket_strainer"
+mechanical_design = true
+[cases.expected]
+outlet_n = 173.14578182246325
+outlet_z = [1.0]
+outlet_p = 4800000.0
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 1.0
+vessel_inner_diameter = 0.74
+vessel_outer_diameter = 0.781025352050194
+vessel_length = 1.54
+shell_thickness = 0.02051267602509697
+head_thickness = 0.02051267602509697
+effective_element_area = 0.5
+calculated_face_velocity = 0.1598595239099823
+required_nozzle_diameter = 0.07133362941921673
+selected_nozzle_diameter = 0.08
+calculated_nozzle_velocity = 15.901520894119196
+empty_vessel_weight = 726.6361579799395
+total_equipped_weight = 952.6270053739214
+design_temperature = 328.15
+differential_pressure_design_acceptable = false
+
+[[cases]]
+id = "the_activated_carbon_sizes_the_vessel_cross_section"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `activated_carbon_granular`: one element and the vessel cross-section, which the design writes to the filter's hydraulic media area.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 1000.0
+filter_type = "activated_carbon"
+element_integrity_verified = true
+nominal_removal_efficiency = 0.9
+mechanical_design = true
+[cases.expected]
+outlet_n = 173.14578182246325
+outlet_z = [1.0]
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 1.0
+vessel_inner_diameter = 2.2557674273111896
+vessel_outer_diameter = 2.3685364114800205
+vessel_length = 4.511534854622379
+shell_thickness = 0.05638449208441533
+head_thickness = 0.05638449208441533
+effective_element_area = 1.0
+calculated_face_velocity = 0.019999999999999997
+required_nozzle_diameter = 0.07133362941921673
+selected_nozzle_diameter = 0.08
+calculated_nozzle_velocity = 15.901520894119196
+empty_vessel_weight = 17986.364521827443
+total_equipped_weight = 25380.517927250454
+design_temperature = 328.15
+differential_pressure_design_acceptable = true
+design_media_area = 3.9964880977495576
+
+[[cases]]
+id = "the_high_flow_cartridge_needs_three_elements"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `cartridge_high_flow`: five times the flow asks for three elements, and the bundle sets the diameter.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 865.7289091123163
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 10000.0
+element_integrity_verified = true
+mechanical_design = true
+[cases.expected]
+outlet_n = 865.7289091123163
+outlet_z = [1.0]
+outlet_p = 4990000.0
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 3.0
+vessel_inner_diameter = 0.6676537180435969
+vessel_outer_diameter = 0.7052548079383237
+vessel_length = 1.6676537180435969
+shell_thickness = 0.018800544947363447
+head_thickness = 0.018800544947363447
+effective_element_area = 1.0
+calculated_face_velocity = 0.13321626992498523
+required_nozzle_diameter = 0.15950684446314745
+selected_nozzle_diameter = 0.2
+calculated_nozzle_velocity = 12.721216715295355
+empty_vessel_weight = 628.2536343725617
+total_equipped_weight = 846.7297246843302
+design_temperature = 328.15
+differential_pressure_design_acceptable = true
+
+[[cases]]
+id = "the_low_flow_strainer_stays_one_element"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `y_strainer_low_flow`: one element at a tenth of the flow, and the type's smaller element defaults.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 1000.0
+filter_type = "y_strainer"
+element_integrity_verified = true
+mechanical_design = true
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 4999000.0
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 1.0
+vessel_inner_diameter = 0.56
+vessel_outer_diameter = 0.5925056718217685
+vessel_length = 1.12
+shell_thickness = 0.016252835910884195
+head_thickness = 0.016252835910884195
+effective_element_area = 0.25
+calculated_face_velocity = 0.03197190478199645
+required_nozzle_diameter = 0.022557674273111894
+selected_nozzle_diameter = 0.025
+calculated_nozzle_velocity = 16.28315739557805
+empty_vessel_weight = 319.5216427778925
+total_equipped_weight = 420.3781356112603
+design_temperature = 328.15
+differential_pressure_design_acceptable = true
+
+[[cases]]
+id = "the_stated_element_count_is_a_floor"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `two_initial_elements`: the flow asks for one and the stated two is the floor, so the bundle and the L/D follow it.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 17.314578182246326
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 1000.0
+filter_type = "y_strainer"
+number_of_elements = 2.0
+element_integrity_verified = true
+mechanical_design = true
+[cases.expected]
+outlet_n = 17.314578182246326
+outlet_z = [1.0]
+outlet_p = 4999000.0
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 2.0
+vessel_inner_diameter = 0.7091168824543144
+vessel_outer_diameter = 0.7486804884714743
+vessel_length = 1.4182337649086287
+shell_thickness = 0.019781803008579967
+head_thickness = 0.019781803008579967
+effective_element_area = 0.25
+calculated_face_velocity = 0.015985952390998225
+required_nozzle_diameter = 0.022557674273111894
+selected_nozzle_diameter = 0.025
+calculated_nozzle_velocity = 16.28315739557805
+empty_vessel_weight = 623.5863476984322
+total_equipped_weight = 820.6622520079618
+design_temperature = 328.15
+differential_pressure_design_acceptable = true
+
+[[cases]]
+id = "the_design_overrides_are_the_captures"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `overrides`: every settable margin and material property stated - a `1.2` multiplier against a `5` bar addend, `100` MPa allowable, `0.7` joint and `6` mm corrosion.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 173.14578182246325
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 1000.0
+element_integrity_verified = true
+mechanical_design = true
+max_face_velocity = 0.05
+element_area = 0.5
+max_nozzle_velocity = 10.0
+min_ld_ratio = 1.5
+max_ld_ratio = 3.0
+design_pressure_margin = 1.2
+minimum_design_pressure_margin = 500000.0
+design_temperature_margin = 15.0
+allowable_stress = 100000000.0
+joint_efficiency = 0.7
+corrosion_allowance = 6.0
+[cases.expected]
+outlet_n = 173.14578182246325
+outlet_z = [1.0]
+outlet_p = 4999000.0
+outlet_t = 303.15
+design_pressure = 6000000.0
+required_elements = 4.0
+vessel_inner_diameter = 0.74
+vessel_outer_diameter = 0.8176781114339664
+vessel_length = 1.74
+shell_thickness = 0.03883905571698323
+head_thickness = 0.03883905571698323
+effective_element_area = 0.5
+calculated_face_velocity = 0.03996488097749557
+required_nozzle_diameter = 0.10088098617795271
+selected_nozzle_diameter = 0.15
+calculated_nozzle_velocity = 4.52309927654946
+empty_vessel_weight = 1517.5842350495514
+total_equipped_weight = 2012.8595055644168
+design_temperature = 318.15
+differential_pressure_design_acceptable = true
+
+[[cases]]
+id = "the_long_bed_takes_the_maximum_ld_ratio"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `granular_long_bed`: a four-metre bed at a low flow, where the raw L/D exceeds the maximum and the diameter widens to meet it.\n"
+[cases.inputs]
+components = ["methane"]
+inlet_n = 8.657289091123163
+inlet_z = [1.0]
+inlet_p = 5000000.0
+inlet_t = 303.15
+pressure_drop = 1000.0
+filter_type = "granular_media"
+media_area = 1.0
+media_bed_depth = 4.0
+media_particle_diameter = 0.002
+media_void_fraction = 0.4
+element_integrity_verified = true
+mechanical_design = true
+[cases.expected]
+outlet_n = 8.657289091123163
+outlet_z = [1.0]
+outlet_t = 303.15
+design_pressure = 5500000.000000001
+required_elements = 1.0
+vessel_inner_diameter = 0.9008809861779528
+vessel_outer_diameter = 0.949521085767424
+vessel_length = 4.504404930889764
+shell_thickness = 0.024320049794735607
+head_thickness = 0.024320049794735607
+effective_element_area = 1.0
+calculated_face_velocity = 0.006269801635127205
+required_nozzle_diameter = 0.015950684446314742
+selected_nozzle_diameter = 0.02
+calculated_nozzle_velocity = 12.721216715295354
+empty_vessel_weight = 2697.6484467188293
+total_equipped_weight = 6056.617327915622
+design_temperature = 328.15
+differential_pressure_design_acceptable = true
+design_media_area = 0.637418586795286
+
+[[cases]]
+id = "the_liquid_feed_switches_the_nozzle_velocity"
+tolerance = 0.0005
+source = "`process_filter_mechanical_design.tsv`'s `liquid_bag_nozzle_density`: `n-butane` at `564` kg/m3 crosses the class's `200` kg/m3 nozzle-velocity switch to `3` m/s, and the 6 mm shell floor holds.\n"
+[cases.inputs]
+components = ["n-butane"]
+inlet_n = 23.895684821652168
+inlet_z = [1.0]
+inlet_p = 500000.0
+inlet_t = 300.0
+pressure_drop = 1000.0
+filter_type = "bag"
+element_integrity_verified = true
+mechanical_design = true
+[cases.expected]
+outlet_n = 23.895684821652168
+outlet_z = [1.0]
+outlet_p = 499000.0
+outlet_t = 300.0
+design_pressure = 850000.0
+required_elements = 1.0
+vessel_inner_diameter = 0.524
+vessel_outer_diameter = 0.536
+vessel_length = 1.324
+shell_thickness = 0.006
+head_thickness = 0.006
+effective_element_area = 0.5
+calculated_face_velocity = 0.00492639222244873
+required_nozzle_diameter = 0.03233284550447493
+selected_nozzle_diameter = 0.04
+calculated_nozzle_velocity = 1.9601491845304588
+empty_vessel_weight = 124.67812771697994
+total_equipped_weight = 170.0815660320739
+design_temperature = 325.0
+differential_pressure_design_acceptable = true
