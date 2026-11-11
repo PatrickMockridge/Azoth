@@ -38,6 +38,7 @@ jobs:
       extension: ${{ steps.plan.outputs.extension }}
       rust-test: ${{ steps.plan.outputs.rust-test }}
       python-test: ${{ steps.plan.outputs.python-test }}
+      notebooks: ${{ steps.plan.outputs.notebooks }}
       wheel-data: ${{ steps.plan.outputs.wheel-data }}
       ui: ${{ steps.plan.outputs.ui }}
       docs-build: ${{ steps.plan.outputs.docs-build }}
@@ -357,6 +358,34 @@ jobs:
           .venv/bin/python -m coverage json -o coverage.json
           python tools/check_coverage.py \
             --base "${{ needs.scope.outputs.base }}" --json coverage.json
+  notebooks:
+    name: notebooks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: scope
+    if: needs.scope.outputs.notebooks == 'true'
+    env:
+      # The notebooks select the inline backend themselves; this is only the font cache.
+      MPLCONFIGDIR: ${{ runner.temp }}/mpl
+      # A missing notebook extra is an error here, not a skip.
+      AZOTH_REQUIRE_NOTEBOOKS: "1"
+      VIRTUAL_ENV: ${{ github.workspace }}/.venv
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --extra notebook --extra dev --no-install-project
+      # The process notebook needs the compiled extension, and the wheel carries the
+      # embedded palette `Session` opens.
+      - run: .venv/bin/maturin develop
+      - name: execute every worked notebook
+        env:
+          PYTHONPATH: ""
+        run: .venv/bin/python tools/check_notebooks.py
   wheel-data:
     name: wheel-data
     runs-on: ubuntu-latest

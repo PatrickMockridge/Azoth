@@ -5,6 +5,7 @@
   - [The editor](./using/editor.md)
   - [Calculation sheets](./using/calculations.md)
   - [Reading a calculation page](./using/reading-a-calculation.md)
+  - [Python scripting and Jupyter](./using/python.md)
 - [Inherent safety](./safety.md)
 <!-- BEGIN GENERATED: calcs -->
 - [Petroleum fraction characterisation](./characterization/index.md)

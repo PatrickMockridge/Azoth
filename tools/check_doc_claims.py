@@ -94,6 +94,7 @@ REPO_DIRS = (
     "databank/",
     "docs/",
     "lean/",
+    "notebooks/",
     "python/",
     "skills/",
     "specs/",

@@ -61,6 +61,7 @@ FORBIDDEN_IN_ARTIFACTS: tuple[str, ...] = (
     "lean/",
     "validation/",
     "target/",
+    "notebooks/",
 )
 
 #: The one repository tree that is a *build input* rather than a copy of the repository.

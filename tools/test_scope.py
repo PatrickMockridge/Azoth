@@ -177,6 +177,14 @@ CLOSE_OUT: tuple[Command, ...] = (
     Command("the strict type check", SCRIPT, ".venv/bin/mypy", jobs=("python-lint",)),
     Command("the provenance record", SCRIPT, "python tools/provenance.py --out provenance.json"),
     Command("every tracked path claims something", SCRIPT, "python tools/test_scope.py --audit"),
+    # Reached by its own job rather than `spec-validate`: it starts Jupyter kernels and needs
+    # the notebook extra, so a push that changes no notebook does not pay for it.
+    Command(
+        "the worked notebooks execute",
+        SCRIPT,
+        ".venv/bin/python tools/check_notebooks.py",
+        jobs=("notebooks",),
+    ),
 )
 
 
@@ -614,6 +622,17 @@ ROOT_CLAIMS: dict[str, Claim] = {
         ),
     ),
     "tools/gated.sh": Claim(inert="the memory wrapper the hook requires; no test reads it"),
+    "notebooks/": Claim(
+        commands=(
+            Command(
+                "the worked notebooks execute on the installed wheel",
+                SCRIPT,
+                ".venv/bin/python tools/check_notebooks.py",
+                jobs=("notebooks",),
+            ),
+        ),
+        jobs=("notebooks",),
+    ),
     # **These run somewhere this box is not.** They are placed in a job rather than silently
     # dropped, so a diff that reaches them is a job that runs rather than a shrug.
     "ui/": Claim(jobs=("ui",)),
@@ -652,6 +671,7 @@ CARGO_GENERATORS = ("gen_ui_fixtures",)
 UNRUNNABLE: dict[str, str] = {
     "check_nightly": "it asks the GitHub API; .github/workflows/liveness.yml runs it",
     "check_coverage": "it reads a coverage document the instrumented run writes; CI runs it",
+    "check_notebooks": "it starts kernels and needs the notebook extra; the notebooks job runs it",
 }
 
 
@@ -936,6 +956,9 @@ def claims(path: str) -> Claim:
         return specs_claim(path, parts)
 
     if path.endswith(".py") and (parts[0] == "tools" or parts[:2] == [".claude", "hooks"]):
+        if path == "tools/check_notebooks.py":
+            # The tool's own test is local; the notebooks job is what proves it against them.
+            return Claim(tools=("check_notebooks",), jobs=("notebooks",))
         return Claim(tools=(Path(path).stem,))
 
     if parts[0] in ("databank", "data"):
@@ -1078,6 +1101,13 @@ def triggered_generators(paths: list[str]) -> frozenset[str] | None:
     return frozenset(names)
 
 
+#: Namespaces the worked notebooks exercise. A change to one re-executes them, because an
+#: example that stops running is a broken page rather than a stale test.
+NOTEBOOK_NAMESPACES = frozenset(
+    {"batch", "core", "eos", "hydraulics", "process", "standards", "thermal"}
+)
+
+
 def python_claim(path: str, parts: list[str]) -> Claim:
     """A path under `python/`: a test file, a fixture, a module, or a namespace package."""
     if path.startswith(f"{TESTS}/"):
@@ -1122,7 +1152,8 @@ def python_claim(path: str, parts: list[str]) -> Claim:
                 f"test_scope: python/src/azoth/{parts[3]} is a module with no MODULE_TESTS entry,"
                 f" so a change to it reaches nothing. Known: {sorted(MODULE_TESTS)}."
             )
-        return Claim(files=targets)
+        jobs = ("notebooks",) if stem in {"__init__", "_dispatch"} else ()
+        return Claim(files=targets, jobs=jobs)
     # **A reference module names its model.** `reference/<leaf>.py` is the Python twin of the
     # registered id's kernel, so it can say which id it reaches rather than the namespace; a
     # shared helper (`_column_mesh.py`, `capacity.py`) matches no id and keeps the claim.
@@ -1130,7 +1161,8 @@ def python_claim(path: str, parts: list[str]) -> Claim:
         candidate = f"{parts[3]}.{parts[5].removesuffix('.py')}"
         if candidate in registered_ids():
             return Claim(ids=(candidate,), namespaces=(parts[3],))
-    return Claim(namespaces=(parts[3],), shared=True)
+    jobs = ("notebooks",) if parts[3] in NOTEBOOK_NAMESPACES else ()
+    return Claim(namespaces=(parts[3],), shared=True, jobs=jobs)
 
 
 def specs_claim(path: str, parts: list[str]) -> Claim:
@@ -1304,6 +1336,9 @@ def is_cheap(entry: Command) -> bool:
     `CLOSE_OUT` is flat-cost by construction - that is why those five jobs run on every push -
     so a formatting or lint failure belongs at the front of the run with the generators.
     """
+    if "tools/check_notebooks" in entry.command:
+        # Minutes, not seconds: starting five kernels is not a cheap-first check.
+        return False
     return is_generator_check(entry) or entry.command in {step.command for step in CLOSE_OUT}
 
 
@@ -1629,6 +1664,8 @@ def script_jobs(command: str) -> set[str]:
     """Which job runs a non-cargo, non-pytest command, read off the command itself."""
     if command.endswith("/maturin develop"):
         return {"python-test"}
+    if "tools/check_notebooks" in command:
+        return {"notebooks"}
     if "tools/gen_ui_fixtures" in command:
         # The one generator that *runs* the CLI rather than reading the specs, so it belongs in
         # the job that has a cargo build - which is why `ci.yml` keeps it beside `rust-test`.
@@ -1956,6 +1993,8 @@ def estimate_seconds(entry: Command) -> int:
             (ESTIMATE_SECONDS.get(target, ESTIMATE_PYTEST_DEFAULT) for target in targets),
             default=ESTIMATE_PYTEST_DEFAULT,
         )
+    if "tools/check_notebooks" in entry.command:
+        return 180
     if is_generator_check(entry):
         stem = Path(entry.command.split()[1]).stem
         return ESTIMATE_GENERATORS.get(stem, 2)

@@ -33,6 +33,11 @@ The library is a Rust crate with a Python package and a command line. The
 [front page](../index.md) has the install route and the batch API; [the middleware](../architecture/middleware.md)
 describes the doors a front end uses.
 
+[Python scripting and Jupyter](./python.md) is the route for a script or a notebook:
+`import azoth`, the `pint` quantities the API takes, the worked notebooks under
+[`notebooks/`](https://github.com/PatrickMockridge/azoth/tree/main/notebooks), the batch API,
+and the provenance every result carries.
+
 ## Before you rely on a number
 
 The port is incomplete. Every shipped model is marked `unverified` or `partially_verified`, and

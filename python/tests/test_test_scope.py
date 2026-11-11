@@ -629,6 +629,10 @@ def test_every_unconditional_ci_step_is_in_the_close_out_table() -> None:
                 # would be the list this table exists to avoid.
                 continue
             expected.add(command)
+    # The notebooks run in their own conditionally-reached job, not in an unconditional one,
+    # but a close-out should still execute them; the local lane is the only place a whole run
+    # happens before a push.
+    expected.add(".venv/bin/python tools/check_notebooks.py")
     assert declared == expected
 
 

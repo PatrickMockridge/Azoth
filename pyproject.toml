@@ -60,6 +60,17 @@ agent = [
   # skills (`tools/export_skills.py --target dsh`) and using the library do not.
   "deepseek-harness-sdk",
 ]
+notebook = [
+  # The kernel `tools/check_notebooks.py` starts, and the cell formats it reads.
+  "ipykernel>=6.29",
+  "nbclient>=0.10",
+  "nbformat>=5.10",
+  # What the worked notebooks import directly. matplotlib pulls numpy in; numpy is
+  # stated because the notebooks import it themselves.
+  "matplotlib>=3.9",
+  "numpy>=1.26",
+  "pandas>=2.2",
+]
 
 [project.urls]
 Homepage = "https://github.com/PatrickMockridge/Azoth"
