@@ -365,8 +365,6 @@ jobs:
     needs: scope
     if: needs.scope.outputs.notebooks == 'true'
     env:
-      # The notebooks select the inline backend themselves; this is only the font cache.
-      MPLCONFIGDIR: ${{ runner.temp }}/mpl
       # A missing notebook extra is an error here, not a skip.
       AZOTH_REQUIRE_NOTEBOOKS: "1"
       VIRTUAL_ENV: ${{ github.workspace }}/.venv
@@ -385,6 +383,9 @@ jobs:
       - name: execute every worked notebook
         env:
           PYTHONPATH: ""
+          # The notebooks select the inline backend themselves; this is only the font cache,
+          # and `runner` is a step-level context.
+          MPLCONFIGDIR: ${{ runner.temp }}/mpl
         run: .venv/bin/python tools/check_notebooks.py
   wheel-data:
     name: wheel-data
