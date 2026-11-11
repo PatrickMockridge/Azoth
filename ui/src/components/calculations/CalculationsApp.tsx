@@ -14,6 +14,7 @@ import { saveText } from "../../save";
 import { declaredToSI, type Units } from "../../state/units";
 import type { Appearance } from "../../state/appearance";
 import { RibbonGroup } from "../RibbonGroup";
+import { WindowChrome } from "../shell/WindowChrome";
 import type { SheetDoor, SheetOpened, SheetSession } from "../../wire/session";
 import type { SheetCommand } from "../../wire/sheetCommands";
 import type { CalcForm, Catalogue, SheetEnvelope } from "../../wire/types";
@@ -335,7 +336,8 @@ export function CalculationsApp({
         onUnits={onUnits}
       />
 
-      <div className="ribbon">
+      <div className="ribbon" data-window="commands">
+        <WindowChrome title="Tools">
         <RibbonGroup
           label="Run"
           note={
@@ -441,6 +443,7 @@ export function CalculationsApp({
             Save
           </button>
         </RibbonGroup>
+        </WindowChrome>
       </div>
 
       <div className="calc-body">

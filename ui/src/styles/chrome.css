@@ -9,6 +9,20 @@
   height: 100%;
 }
 
+/*
+ * The shell wrapper is inert until a layout asks for a window. `display:contents` keeps the
+ * body's children in the parent's grid/flex, and the title/grip appear only in a shell that
+ * frames the region.
+ */
+.window-title,
+.window-grip {
+  display: none;
+}
+
+.window-body {
+  display: contents;
+}
+
 /* --- the title strip ------------------------------------------------------- */
 
 /*

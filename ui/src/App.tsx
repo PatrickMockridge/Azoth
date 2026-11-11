@@ -30,6 +30,7 @@ import { Palette } from "./components/Palette";
 import { PropertyView } from "./components/property/PropertyView";
 import { ReportView } from "./components/report/ReportView";
 import { RibbonGroup } from "./components/RibbonGroup";
+import { WindowChrome } from "./components/shell/WindowChrome";
 import { StarterHints } from "./components/StarterHints";
 import { StatusBar } from "./components/StatusBar";
 import { TitleStrip } from "./components/TitleStrip";
@@ -556,7 +557,8 @@ export function App() {
         onUnits={chooseUnits}
       />
 
-      <div className="ribbon">
+      <div className="ribbon" data-window="commands">
+        <WindowChrome title="Tools">
         <RibbonGroup label="Run">
           <button
             type="button"
@@ -663,13 +665,15 @@ export function App() {
             Save
           </button>
         </RibbonGroup>
+        </WindowChrome>
       </div>
 
       <div className="body">
         {/* **Three readings of one document, in one column.** The navigator lists what this
             flowsheet *has*, the palette what can be added, and the boundary what it is between —
             and each selects or commands through the one envelope the app holds. */}
-        <aside className="side">
+        <aside className="side" data-window="palette">
+          <WindowChrome title="Palette">
           {envelope === null ? null : (
             <Navigation
               catalogue={catalogue}
@@ -693,9 +697,11 @@ export function App() {
             forms={catalogue?.unit_ops ?? []}
             onAdd={addUnit}
           />
+          </WindowChrome>
         </aside>
 
-        <div className="canvas">
+        <div className="canvas" data-window="document">
+          <WindowChrome title={envelope?.flowsheet.name ?? "Untitled"}>
           {envelope === null ? (
             <p className="note">{fault ?? "loading the engine…"}</p>
           ) : envelope.flowsheet.graph.nodes.length === 0 ? (
@@ -724,9 +730,11 @@ export function App() {
               onDismiss={dismissWelcome}
             />
           ) : null}
+          </WindowChrome>
         </div>
 
-        <aside className="side right">
+        <aside className="side right" data-window="inspector">
+          <WindowChrome title={node?.id ?? edge?.id ?? "Inspector"}>
           {fault !== null ? <div className="fault">{fault}</div> : null}
           {envelope === null ? null : (
             <PropertyView
@@ -739,6 +747,7 @@ export function App() {
               onSelect={setSelected}
             />
           )}
+          </WindowChrome>
         </aside>
       </div>
 

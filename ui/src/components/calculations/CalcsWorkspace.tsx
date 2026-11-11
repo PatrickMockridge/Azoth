@@ -6,6 +6,7 @@
  */
 
 import { DockTabs } from "../property/DockTabs";
+import { WindowChrome } from "../shell/WindowChrome";
 import { manualHome } from "../../manual";
 import { CalcPicker } from "./CalcPicker";
 import { CalcSheet } from "./CalcSheet";
@@ -54,43 +55,47 @@ export function CalcsWorkspace({
 
   return (
     <div className="calc-workspace">
-      <aside className="calc-side">
-        <CalcPicker forms={forms} onAdd={onAdd} />
+      <aside className="calc-side" data-window="picker">
+        <WindowChrome title="Calculators">
+          <CalcPicker forms={forms} onAdd={onAdd} />
+        </WindowChrome>
       </aside>
-      <section className="calc-main">
-        {current === undefined ? (
-          <CalcStarterHints />
-        ) : (
-          <>
-            <DockTabs
-              tabs={sheets.map((sheet) => ({ id: sheet.id, label: sheet.name }))}
-              active={current.id}
-              onTab={onSelect}
-              label="Calculation sheets"
-            />
-            <div
-              className="calc-sheet-panel"
-              role="tabpanel"
-              id={`sheet-${current.id}`}
-              aria-labelledby={`tab-${current.id}`}
-            >
-              <CalcSheet
-                form={form}
-                sheet={current}
-                units={units}
-                onCommand={onCommand}
-                onCalculate={() => onCalculate(current.id)}
-                onWorkedExample={() => {
-                  if (form !== undefined) {
-                    onWorkedExample(current.id, form);
-                  }
-                }}
-                onName={(name) => onName(current.id, name)}
-                onRemove={() => onRemove(current.id)}
+      <section className="calc-main" data-window="worksheet">
+        <WindowChrome title={current?.name ?? envelope.book.name}>
+          {current === undefined ? (
+            <CalcStarterHints />
+          ) : (
+            <>
+              <DockTabs
+                tabs={sheets.map((sheet) => ({ id: sheet.id, label: sheet.name }))}
+                active={current.id}
+                onTab={onSelect}
+                label="Calculation sheets"
               />
-            </div>
-          </>
-        )}
+              <div
+                className="calc-sheet-panel"
+                role="tabpanel"
+                id={`sheet-${current.id}`}
+                aria-labelledby={`tab-${current.id}`}
+              >
+                <CalcSheet
+                  form={form}
+                  sheet={current}
+                  units={units}
+                  onCommand={onCommand}
+                  onCalculate={() => onCalculate(current.id)}
+                  onWorkedExample={() => {
+                    if (form !== undefined) {
+                      onWorkedExample(current.id, form);
+                    }
+                  }}
+                  onName={(name) => onName(current.id, name)}
+                  onRemove={() => onRemove(current.id)}
+                />
+              </div>
+            </>
+          )}
+        </WindowChrome>
       </section>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { DockTabs } from "../property/DockTabs";
+import { WindowChrome } from "../shell/WindowChrome";
 
 /** The shortest a dock may be drawn, and the tallest - both in pixels. */
 const MIN = 80;
@@ -67,8 +68,13 @@ export function Dock({
     };
   }, [dragging, onSize]);
 
+  const title = tabs.find((tab) => tab.id === active)?.label ?? "Workbook";
   return (
-    <div className={`dock${dragging ? " dragging" : ""}`} style={{ height: size }}>
+    <div
+      className={`dock${dragging ? " dragging" : ""}`}
+      style={{ height: size }}
+      data-window="workbook"
+    >
       <div
         className="splitter"
         role="separator"
@@ -91,8 +97,10 @@ export function Dock({
           onSize(clamp(size + step));
         }}
       />
-      <DockTabs tabs={tabs} active={active} onTab={onTab} label="docked panels" />
-      <div className="dock-body">{children}</div>
+      <WindowChrome title={title}>
+        <DockTabs tabs={tabs} active={active} onTab={onTab} label="docked panels" />
+        <div className="dock-body">{children}</div>
+      </WindowChrome>
     </div>
   );
 }

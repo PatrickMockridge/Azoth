@@ -1,4 +1,5 @@
 import { status, statusClass } from "./TitleStrip";
+import { WindowChrome } from "./shell/WindowChrome";
 import type { Units } from "../state/units";
 import type { Envelope } from "../wire/types";
 
@@ -23,7 +24,8 @@ export function StatusBar({ envelope, units }: { envelope: Envelope | null; unit
   const converged = envelope?.session?.converged;
 
   return (
-    <footer className="status-bar" aria-label="status">
+    <footer className="status-bar" aria-label="status" data-window="status">
+      <WindowChrome title="Status">
       {envelope === null ? (
         <span>no document</span>
       ) : (
@@ -56,6 +58,7 @@ export function StatusBar({ envelope, units }: { envelope: Envelope | null; unit
         document{" "}
         <span className="value">{envelope === null ? "—" : envelope.flowsheet.id}</span>
       </span>
+      </WindowChrome>
     </footer>
   );
 }
