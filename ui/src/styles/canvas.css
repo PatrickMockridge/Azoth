@@ -171,20 +171,20 @@
 
 .glyph .glyph-body {
   fill: none;
-  stroke: var(--text-dim);
-  stroke-width: 1.4;
+  stroke: var(--text);
+  stroke-width: 1.6;
   vector-effect: non-scaling-stroke;
 }
 
 .glyph .glyph-detail {
   fill: none;
-  stroke: var(--line-strong);
-  stroke-width: 1;
+  stroke: var(--text-dim);
+  stroke-width: 1.2;
   vector-effect: non-scaling-stroke;
 }
 
 .glyph .glyph-accent {
-  fill: var(--text-dim);
+  fill: var(--text);
   stroke: none;
 }
 
