@@ -148,6 +148,16 @@ export function useWindowManager(
         return;
       }
       z.current += 1;
+      if (z.current > 18) {
+        // Stay below the overview/report layer (20): cycle the other windows back down rather
+        // than letting a much-clicked window climb over the modal layer.
+        z.current = 11;
+        for (const other of element.querySelectorAll<HTMLElement>("[data-window]")) {
+          if (other !== region) {
+            other.style.setProperty("--wz", "10");
+          }
+        }
+      }
       region.style.setProperty("--wz", String(z.current));
 
       const interactive = target.closest("input, select, button, textarea, a, [contenteditable]");

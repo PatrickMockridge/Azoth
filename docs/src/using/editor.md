@@ -52,13 +52,23 @@ It never changes the document, and solving has no opinion about it.
 
 ## Appearance
 
-The header's **Appearance** control chooses a layout and a colour, and remembers the pair for
+The top bar's **Appearance** control chooses a layout and a colour, and remembers the pair for
 this browser. The layouts are **Macintosh**, **Windows XP** and **Cyberpunk**; each can be
 **light**, **neutral** or **dark**. The default is Windows XP light.
 
-![The Macintosh layout](../images/editor-mac.png)
+The layouts are not colour schemes over one screen. **Windows XP** is a single MDI frame: a Luna
+title bar, a menu row, a toolbar and Explorer panes around a document window. **Macintosh** is a
+grey desktop: the menu bar is at the top and the navigator, drawing, inspector, workbook and
+status are separate windows — drag a title bar to move one, drag its bottom-right corner to
+resize it, and use **View → Reset window positions** to put them back. **Cyberpunk** is a
+full-bleed drawing with translucent HUD rails; the switches at the right of the top strip hide
+the navigator, inspector, workbook or command deck, and **Cmd** in the strip — or
+**Ctrl/Cmd+K** anywhere in that layout — opens a command palette over the same commands as the
+toolbar and menus.
 
-![The Cyberpunk layout in its dark colour](../images/editor-cyberpunk.png)
+![The Macintosh desktop](../images/editor-mac.png)
+
+![The Cyberpunk HUD in its dark colour](../images/editor-cyberpunk.png)
 
 The profiles are cosmetic: they change nothing in the document, the stream values or the unit
 set, and the report keeps its fixed paper palette when printed. The choice is a reader's, like

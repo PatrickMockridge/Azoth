@@ -365,6 +365,15 @@ it("tells the browser which colour scheme is in force", () => {
   );
 });
 
+/** A shell that gives `.app` its own display must not outrank the workspace switch. */
+it("keeps the hidden workspace hidden in every desktop shell", () => {
+  for (const file of ["layouts/mac.css", "layouts/cyberpunk.css"]) {
+    const css = read(file);
+    expect(css, file).toMatch(/\.app\.off[\s\S]*?display:\s*none/);
+    expect(css, file).toMatch(/\.app\[hidden\][\s\S]*?display:\s*none/);
+  }
+});
+
 /** Print is the one fixed palette, and the layout decoration must not reach it. */
 it("keeps paper out of the layouts and above every cell", () => {
   const report = read("report.css");

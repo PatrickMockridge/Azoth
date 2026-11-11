@@ -28,11 +28,14 @@ function stubFetch(): void {
   };
 }
 
-async function open() {
+async function open(stored: Record<string, string> = {}) {
   window.localStorage.setItem("azoth.welcome", "seen");
   window.localStorage.removeItem("azoth.units");
   window.localStorage.removeItem("azoth.appearance");
   window.localStorage.removeItem("azoth.theme");
+  for (const [key, value] of Object.entries(stored)) {
+    window.localStorage.setItem(key, value);
+  }
   const { App } = await import("../src/App");
   const rendered = render(<App />);
   await waitFor(() => {
@@ -70,6 +73,27 @@ describe("the calculations workspace", () => {
 
     // The hidden flowsheet has the same document attributes; the choice is not per-workspace.
     expect(document.documentElement.dataset.theme).toBe("light");
+  });
+
+  it("gives the book the same Macintosh windows and Cyberpunk picker rail", async () => {
+    stubFetch();
+    await open({
+      "azoth.appearance": JSON.stringify({ layout: "mac", theme: "light" }),
+    });
+    const picker = document.querySelector('[data-window="picker"]');
+    const worksheet = document.querySelector('[data-window="worksheet"]');
+    expect(picker?.querySelector(".window-title")?.textContent).toBe("Calculators");
+    expect(worksheet?.querySelector(".window-title")?.textContent).toBe("Pump shaft power");
+
+    cleanup();
+    await open({
+      "azoth.appearance": JSON.stringify({ layout: "cyberpunk", theme: "dark" }),
+    });
+    const app = document.querySelector(".app.calculations");
+    expect(app?.getAttribute("data-hud-picker")).toBe("on");
+    fireEvent.click(screen.getByRole("button", { name: "Hide Picker" }));
+    expect(app?.getAttribute("data-hud-picker")).toBe("off");
+    expect(document.querySelector('[data-window="worksheet"]')).not.toBeNull();
   });
 
   it("opens the shipped worked-example book and calculates its first sheet", async () => {

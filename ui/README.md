@@ -51,12 +51,34 @@ and fails when they are stale.
 the pre-paint script only overrides it. `?layout=mac&theme=dark` previews a combination without
 saving it.
 
+**The layouts are shells, not skins.** Each one arranges the same semantic regions — the
+Navigator, document, Inspector, Workbook and status — differently:
+
+- **Macintosh** is a desktop. The menu bar is a screen strip and the palette, document,
+  inspector, workbook and status are separate windows. `useWindowManager` drags from a title,
+  resizes from the grip, raises on click, clamps to the desktop and exposes a **Reset window
+  positions** command. The resting geometry is CSS.
+- **Windows XP** is one MDI frame: a Luna title bar, a menu row, a tool row, a large-button
+  toolbar, Explorer panes and a white document child under a blue caption.
+- **Cyberpunk** is a full-bleed drawing with translucent HUD rails and a command deck. The
+  telemetry strip's rail switches hide the Navigator, Inspector, Workbook or Toolbar; the canvas
+  never hides. `Ctrl/Cmd+K` opens the command palette.
+
+**Typography is bundled**, not borrowed from the OS: Sysfont for Macintosh, the unmodified Wine
+Tahoma for XP, Rajdhani and Share Tech Mono for Cyberpunk, with IBM Plex Mono for Macintosh data.
+`src/styles/fonts.css` and `src/fonts/` carry the faces and licences; `check:dist` asks for every
+font URL and its MIME type.
+
+**One command model** (`src/commands/model.ts`) feeds the toolbar, the menu bar and the palette.
+The toolbar buttons stay visible and keep their accessible names; menu items are `menuitem`s and
+palette rows are `option`s, so a second surface never duplicates a `getByRole("button")`.
+
 `src/styles/tokens.css` owns every value: the nine tone cells, the three layout shape blocks and
-the derived paints. `src/styles/layouts/*.css` are selectors only - no colour or duration literal
-is allowed there, and `test/tokens.test.ts` enforces both the contract and the nine-cell
-completeness. `test/contrast.test.ts` measures the text pairs in every combination.
-`src/state/appearance.ts` reads and writes `azoth.appearance`; `index.html` carries a pre-paint
-copy of the same key and defaults, held equal by `test/appearance.test.ts`.
+the derived paints. `src/styles/layouts/*.css` carry the boxes, captions and windows but no
+colour or duration literal; `test/tokens.test.ts` enforces the contract, the nine cells and the
+shell invariants. `test/contrast.test.ts` measures the text pairs; `test/shell.test.tsx` moves,
+resizes and resets a Macintosh window. `src/state/appearance.ts` reads and writes
+`azoth.appearance`; `index.html` carries a pre-paint copy of the same key and defaults.
 
 To add a layout: add its id to the union and the chooser, add the full shape set in a
 `[data-layout]` block plus one tone cell per colour in `tokens.css`, and add a

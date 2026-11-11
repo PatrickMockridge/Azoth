@@ -81,6 +81,20 @@
   color: var(--text-dim);
 }
 
+[data-layout="xp"] .menu {
+  border-color: var(--line-strong);
+  background: var(--surface-menu);
+}
+
+[data-layout="xp"] .menubar .menu-item:hover:not(.off) {
+  background: var(--bg-selected);
+  color: var(--selected-text);
+}
+
+[data-layout="xp"] .menubar .menu-item:hover:not(.off) .menu-shortcut {
+  color: var(--selected-text);
+}
+
 /* --- controls --------------------------------------------------------------- */
 
 [data-layout="xp"] button,

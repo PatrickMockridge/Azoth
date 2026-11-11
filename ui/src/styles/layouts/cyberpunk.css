@@ -19,6 +19,12 @@
   overflow: hidden;
 }
 
+/* The HUD's `display:block` must not outrank the workspace switch. */
+[data-layout="cyberpunk"] .app.off,
+[data-layout="cyberpunk"] .app[hidden] {
+  display: none;
+}
+
 /* --- the telemetry strip ---------------------------------------------------- */
 
 [data-layout="cyberpunk"] .bar {
@@ -113,11 +119,14 @@
 }
 
 [data-layout="cyberpunk"] [data-window="worksheet"] {
-  inset: var(--hud-bar-h) 0 0 0;
-  z-index: auto;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
+  left: calc(var(--tools-w) + 2 * var(--hud-gap));
+  right: var(--hud-gap);
+  top: calc(var(--hud-bar-h) + 2 * var(--hud-gap) + var(--deck-h));
+  bottom: var(--hud-gap);
+  z-index: 10;
+  border: 1px solid var(--hud-border);
+  background: var(--surface-hud);
+  box-shadow: 0 0 12px var(--glow-accent);
 }
 
 [data-layout="cyberpunk"] [data-window="document"] .window-title,

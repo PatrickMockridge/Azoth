@@ -25,6 +25,12 @@
   color: var(--text);
 }
 
+/* The desktop's `display:block` must not outrank the workspace switch. */
+[data-layout="mac"] .app.off,
+[data-layout="mac"] .app[hidden] {
+  display: none;
+}
+
 /* --- the menu bar ----------------------------------------------------------- */
 
 [data-layout="mac"] .bar {
