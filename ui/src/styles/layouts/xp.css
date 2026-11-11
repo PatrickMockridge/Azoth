@@ -1,0 +1,187 @@
+/*
+ * Windows XP / Luna: the default.
+ *
+ * **Shape is Luna, colour is the tone cell.** Every rule here is scoped to `[data-layout="xp"]`
+ * and reads a token; a colour literal here would be a value the Mac and cyberpunk cells could not
+ * reach, and the token test refuses one. The desktop frame, the five-stop title bar, the beveled
+ * controls and the folder tabs are the period's signatures; the exact greys and blues come from
+ * `tokens.css`, so neutral ("silver") and dark ("Royale Noir") keep the same shape.
+ */
+
+[data-layout="xp"] .app {
+  height: calc(100% - 2 * var(--desktop-gap));
+  margin: var(--desktop-gap);
+  overflow: hidden;
+  border: var(--frame-w) solid var(--frame);
+  border-radius: var(--r4) var(--r4) 0 0;
+  background: var(--bg-panel);
+}
+
+/* The title bar: white bold text over the blue, with the tool row a cream toolbar under it. */
+[data-layout="xp"] .bar {
+  box-shadow: inset 0 1px 0 var(--e-highlight), inset 0 -1px 0 var(--titlebar-d);
+}
+
+[data-layout="xp"] .bar-identity {
+  min-height: var(--head-h);
+  padding-inline: var(--s5);
+}
+
+[data-layout="xp"] .bar h1 {
+  font-size: var(--fs-lg);
+  letter-spacing: 0;
+  text-shadow: 0 1px 1px color-mix(in srgb, var(--titlebar-d) 70%, transparent);
+}
+
+[data-layout="xp"] .bar-identity .screening,
+[data-layout="xp"] .bar-identity .pill {
+  box-shadow: none;
+}
+
+[data-layout="xp"] .bar-tools {
+  border-top: 1px solid var(--bevel-dark);
+  box-shadow: inset 0 1px 0 var(--bevel-light);
+}
+
+[data-layout="xp"] .ribbon {
+  box-shadow: inset 0 1px 0 var(--bevel-light);
+}
+
+/* Controls: a three-stop face, a 1px dark outline and a white inner highlight. */
+[data-layout="xp"] button,
+[data-layout="xp"] .button,
+[data-layout="xp"] input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+[data-layout="xp"] select {
+  border: var(--bevel-w) solid var(--ctl-border);
+  border-radius: var(--r2);
+  background: var(--ctl-face-paint);
+  box-shadow: var(--ctl-bevel);
+  color: var(--ctl-text);
+}
+
+[data-layout="xp"] input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+[data-layout="xp"] select {
+  border-color: var(--well-border);
+  background: var(--well);
+  box-shadow: var(--well-shadow);
+  color: var(--text);
+}
+
+[data-layout="xp"] button:active:not(:disabled) {
+  background: var(--ctl-face-low);
+  box-shadow: inset 1px 1px 2px color-mix(in srgb, var(--ctl-border) 35%, transparent);
+}
+
+/* Rows and links are buttons in the DOM but not controls on a face. */
+[data-layout="xp"] .entry,
+[data-layout="xp"] .tree-row,
+[data-layout="xp"] .diagnostic,
+[data-layout="xp"] .link,
+[data-layout="xp"] .message-head {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+}
+
+[data-layout="xp"] .workspace-switch button {
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-dim);
+}
+
+[data-layout="xp"] .workspace-switch button.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+[data-layout="xp"] .primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: none;
+  color: var(--accent-ink);
+}
+
+[data-layout="xp"] .primary:hover:not(:disabled) {
+  background: var(--accent-hi);
+  border-color: var(--accent-hi);
+}
+
+/* Folder tabs, with the active one joined to the pane by a short accent rule. */
+[data-layout="xp"] .tab {
+  position: relative;
+  border: 1px solid var(--tab-border);
+  border-bottom: 0;
+  border-radius: var(--r2) var(--r2) 0 0;
+  background: var(--tab-face);
+  color: var(--tab-text);
+}
+
+[data-layout="xp"] .tab.active {
+  background: var(--tab-face-active);
+  color: var(--tab-text-active);
+}
+
+[data-layout="xp"] .tab.active::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(-1 * var(--bevel-w));
+  height: 2px;
+  background: var(--accent);
+}
+
+/* Panels are raised faces; a dock and a status bar are sunken ones. */
+[data-layout="xp"] .side,
+[data-layout="xp"] .dock {
+  background: var(--surface-panel);
+}
+
+[data-layout="xp"] .status-bar {
+  box-shadow: inset 0 1px 0 var(--bevel-dark);
+}
+
+[data-layout="xp"] .status-bar .value {
+  padding-inline: var(--s2);
+  border: 1px solid var(--well-border);
+  background: var(--well);
+}
+
+/* A node is a small XP window: a Luna header over a white body. */
+[data-layout="xp"] .unit-plate {
+  border-color: var(--node-border);
+}
+
+[data-layout="xp"] .unit-plate header {
+  background: var(--surface-bar);
+  color: var(--titlebar-text);
+}
+
+[data-layout="xp"] .stream {
+  background: var(--well);
+}
+
+/* The overlay windows wear the same title bar. */
+[data-layout="xp"] .overview-head {
+  border-bottom: 1px solid var(--bevel-dark);
+  background: var(--surface-bar);
+  color: var(--titlebar-text);
+}
+
+[data-layout="xp"] .overview-head h2,
+[data-layout="xp"] .overview-head .overview-severity {
+  color: var(--titlebar-text);
+}
+
+/* Scrollbars: a beveled cream thumb on a sunken track. */
+[data-layout="xp"] *::-webkit-scrollbar-thumb {
+  border: 1px solid var(--ctl-border);
+  background: var(--ctl-face-paint);
+}
+
+[data-layout="xp"] *::-webkit-scrollbar-track {
+  border: 1px solid var(--line);
+}

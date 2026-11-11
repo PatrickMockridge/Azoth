@@ -17,18 +17,22 @@ body,
 body {
   font: var(--fs-md) / var(--lh-body) var(--font-ui);
   color: var(--text);
-  background: var(--bg-app);
+  background: var(--surface-app);
 }
 
 /*
- * A 2px ring, on `:focus-visible` only.
- *
- * The rule this replaces rang on **every** click (`:focus`, 1px) - which trains a user to ignore
- * it - and 1px is under the minimum a ring is legible at on a dense surface.
+ * The ring is on `:focus-visible` only, and its shape is the layout's: XP's dotted rectangle,
+ * Mac's inner dotted box, cyberpunk's solid neon frame. The colour is the tone's `--focus`.
  */
 :focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 1px;
+  outline: var(--focus-w) var(--focus-style) var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+/* A selected row and a selected run of text are the same pair, so neither can lose its ink. */
+::selection {
+  background: var(--bg-selected);
+  color: var(--selected-text);
 }
 
 /* Numbers are tabular everywhere they are set, and the face is the mono one. */
@@ -42,22 +46,26 @@ body {
   font-variant-numeric: var(--tabnum);
 }
 
-/* A thin scrollbar, because a docked panel's is part of the chrome and not of the content. */
+/* A scrollbar is part of the chrome, so its size and colours are the layout's and the tone's. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
 }
 
 *::-webkit-scrollbar-thumb {
-  background: var(--line-strong);
+  background: var(--scrollbar-thumb);
   border: 2px solid transparent;
   background-clip: content-box;
-  border-radius: var(--r-pill);
+  border-radius: var(--scrollbar-radius);
 }
 
 .sr-only {

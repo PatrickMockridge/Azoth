@@ -44,6 +44,25 @@ The committed fixtures in `test/fixtures/` are the library's output. Regenerate 
 the palette or a shipped flowsheet; `test/currency.test.ts` recomputes them from the built wasm
 and fails when they are stale.
 
+## Appearance
+
+`data-layout` on `<html>` is `xp`, `mac` or `cyberpunk`; `data-theme` is `light`, `neutral` or
+`dark`. `:root` is Windows XP light, so a document with no attributes already has the default and
+the pre-paint script only overrides it. `?layout=mac&theme=dark` previews a combination without
+saving it.
+
+`src/styles/tokens.css` owns every value: the nine tone cells, the three layout shape blocks and
+the derived paints. `src/styles/layouts/*.css` are selectors only - no colour or duration literal
+is allowed there, and `test/tokens.test.ts` enforces both the contract and the nine-cell
+completeness. `test/contrast.test.ts` measures the text pairs in every combination.
+`src/state/appearance.ts` reads and writes `azoth.appearance`; `index.html` carries a pre-paint
+copy of the same key and defaults, held equal by `test/appearance.test.ts`.
+
+To add a layout: add its id to the union and the chooser, add the full shape set in a
+`[data-layout]` block plus one tone cell per colour in `tokens.css`, and add a
+`layouts/<id>.css` imported before `report.css`. The token and contrast tests name what is
+missing.
+
 ## Publish it
 
 `.github/workflows/pages.yml` builds the wasm and `dist/` on every push to `main` that reaches

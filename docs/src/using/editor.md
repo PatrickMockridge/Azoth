@@ -50,6 +50,20 @@ A **product** is a name only: its stream is calculated.
 The unit set at the top right changes what is *shown* — SI or field units, including °C and °F.
 It never changes the document, and solving has no opinion about it.
 
+## Appearance
+
+The header's **Appearance** control chooses a layout and a colour, and remembers the pair for
+this browser. The layouts are **Macintosh**, **Windows XP** and **Cyberpunk**; each can be
+**light**, **neutral** or **dark**. The default is Windows XP light.
+
+![The Macintosh layout](../images/editor-mac.png)
+
+![The Cyberpunk layout in its dark colour](../images/editor-cyberpunk.png)
+
+The profiles are cosmetic: they change nothing in the document, the stream values or the unit
+set, and the report keeps its fixed paper palette when printed. The choice is a reader's, like
+the unit set, and is not written into a case.
+
 ## What the numbers mean
 
 **Checks** on a unit operation names the model, how far it is verified, and the hashes of the

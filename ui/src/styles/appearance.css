@@ -1,0 +1,103 @@
+/*
+ * The appearance chooser: two groups of choices under the title strip.
+ *
+ * **A drop-down window, not a menu bar item.** The panel is opaque and sits above the bar's own
+ * paint, so a cream XP tool row and a black cyberpunk deck both read as surfaces with a window
+ * open over them. The swatches carry the same `data-layout`/`data-theme` attributes as the
+ * document, which is what makes a preview the real paint rather than a hand-drawn copy.
+ */
+
+.appearance {
+  position: relative;
+  display: inline-flex;
+}
+
+.appearance-panel {
+  position: absolute;
+  inset-inline-end: 0;
+  top: calc(100% + var(--s2));
+  z-index: 40;
+  display: flex;
+  width: min(22rem, calc(100vw - var(--s7) * 2));
+  flex-direction: column;
+  gap: var(--s5);
+  padding: var(--s5);
+  border: var(--frame-w) solid var(--line-strong);
+  border-radius: var(--r4);
+  background: var(--surface-menu);
+  color: var(--text);
+  box-shadow: var(--menu-shadow);
+}
+
+.appearance-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.appearance-label {
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: var(--ls-label);
+  text-transform: var(--label-transform);
+}
+
+.appearance-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.appearance .appearance-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) var(--s3);
+  border: 1px solid transparent;
+  border-radius: var(--r2);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-xs);
+  text-align: start;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.appearance .appearance-choice:hover {
+  background: var(--bg-hover);
+}
+
+.appearance .appearance-choice[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--text-strong);
+}
+
+.appearance-swatch {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 20px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r1);
+  background: var(--surface-panel);
+}
+
+.appearance-swatch::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 7px;
+  background: var(--surface-bar);
+}
+
+.appearance-swatch.colour {
+  background: var(--bg-panel);
+}
+
+.appearance-swatch.colour::before {
+  background: var(--accent);
+}

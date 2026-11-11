@@ -31,6 +31,8 @@ function stubFetch(): void {
 async function open() {
   window.localStorage.setItem("azoth.welcome", "seen");
   window.localStorage.removeItem("azoth.units");
+  window.localStorage.removeItem("azoth.appearance");
+  window.localStorage.removeItem("azoth.theme");
   const { App } = await import("../src/App");
   const rendered = render(<App />);
   await waitFor(() => {
@@ -53,6 +55,23 @@ afterEach(() => {
 });
 
 describe("the calculations workspace", () => {
+  it("offers the same appearance control as the flowsheet", async () => {
+    stubFetch();
+    await open();
+
+    expect(document.documentElement.dataset.layout).toBe("xp");
+    expect(document.documentElement.dataset.theme).toBe("light");
+
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cyberpunk" }));
+    await waitFor(() =>
+      expect(document.documentElement.dataset.layout).toBe("cyberpunk"),
+    );
+
+    // The hidden flowsheet has the same document attributes; the choice is not per-workspace.
+    expect(document.documentElement.dataset.theme).toBe("light");
+  });
+
   it("opens the shipped worked-example book and calculates its first sheet", async () => {
     stubFetch();
     await open();

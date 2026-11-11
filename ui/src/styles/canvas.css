@@ -10,27 +10,29 @@
 .canvas {
   position: relative;
   min-height: 0;
-  background: var(--bg-canvas);
+  background: var(--surface-canvas);
 }
 
 .unit-plate {
   position: relative;
   /* A 72px glyph plus a label on each side; the label never has to sit on the drawing. */
-  min-width: 190px;
+  min-width: var(--node-w);
   /*
    * **A fixed plate, so the nozzles do not move when a readout appears.** Handles are placed at
    * percentages of the node's measured height; a node that grew with its result rows moved every
    * edge endpoint under the reader. The readout is clipped here and shown in full in the overview.
+   * The size is fixed across layouts for the same reason: a theme switch must not re-route the
+   * drawing, so only paint, border and radius change.
    *
    * **The plate is not `.unit`.** `unit` is the semantic class of a unit string in a field, a table
    * or a result; an unscoped `.unit` rule here put a 168px plate around every one of them.
    */
-  height: 168px;
+  height: var(--node-h);
   overflow: hidden;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r4);
-  background: var(--bg-panel);
-  box-shadow: var(--e-node);
+  border: var(--bevel-w) solid var(--node-border);
+  border-radius: var(--node-radius);
+  background: var(--surface-node);
+  box-shadow: var(--node-shadow);
 }
 
 .unit-plate header,
@@ -52,7 +54,7 @@
   z-index: 2;
   padding: 1px var(--s1);
   border-radius: var(--r2);
-  background: var(--bg-panel);
+  background: var(--surface-node);
   color: var(--text-dim);
   font-family: var(--font-mono);
   font-size: var(--fs-2xs);
@@ -93,7 +95,7 @@
   bottom: calc(100% + var(--s1));
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-canvas);
+  background: var(--surface-canvas);
 }
 
 .unit-plate.selected {
@@ -111,9 +113,10 @@
 
 .unit-plate header {
   padding: var(--s3) var(--s5);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--node-border);
+  background: var(--surface-node-head);
+  color: var(--node-head-text);
   font-weight: 600;
-  color: var(--text-strong);
 }
 
 .unit-plate .id {
@@ -132,9 +135,10 @@
 .stream {
   position: relative;
   padding: var(--s3) var(--s6);
-  border: 1px dashed var(--line-strong);
+  border: var(--bevel-w) dashed var(--node-border);
   border-radius: var(--r-pill);
-  background: var(--bg-panel);
+  background: var(--surface-node);
+  color: var(--text);
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
 }
@@ -207,8 +211,8 @@
  * the visible dot stays small, while the transparent element around it is easier to hit.
  */
 .react-flow__handle {
-  width: 14px;
-  height: 14px;
+  width: var(--handle-size);
+  height: var(--handle-size);
   background: transparent;
   border: 0;
   pointer-events: auto;
@@ -217,8 +221,8 @@
 .react-flow__handle::after {
   content: "";
   position: absolute;
-  inset: 3.5px;
-  border-radius: 50%;
+  inset: calc((var(--handle-size) - var(--handle-dot)) / 2);
+  border-radius: var(--handle-radius);
   background: var(--text-dim);
 }
 
@@ -252,7 +256,7 @@
 }
 
 .react-flow__edge-textbg {
-  fill: var(--bg-panel);
+  fill: var(--surface-node);
 }
 
 .react-flow__controls-button {

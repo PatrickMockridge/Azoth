@@ -7,8 +7,45 @@
       name="description"
       content="The azoth flowsheet editor: build a process, solve it in the browser, and read every number with its units and checks."
     />
-    <meta name="theme-color" content="#10151c" />
+    <meta name="theme-color" content="#ece9d8" />
     <title>azoth — flowsheet</title>
+    <!--
+      The pre-paint bootstrap: the same key, the same values and the same default as
+      `src/state/appearance.ts`, set before the stylesheet paints so a returning reader never
+      sees the default flash. `?layout=` and `?theme=` preview a combination without saving it.
+      `ui/test/appearance.test.ts` holds this copy and the module's equal.
+    -->
+    <script>
+      try {
+        var stored = {};
+        try {
+          stored = JSON.parse(localStorage.getItem("azoth.appearance") || "{}") || {};
+        } catch (ignored) {}
+        var query = new URLSearchParams(location.search);
+        var layout = query.get("layout");
+        if (layout !== "xp" && layout !== "mac" && layout !== "cyberpunk") {
+          layout = stored.layout;
+        }
+        if (layout !== "xp" && layout !== "mac" && layout !== "cyberpunk") {
+          layout = "xp";
+        }
+        var theme = query.get("theme");
+        if (theme !== "light" && theme !== "neutral" && theme !== "dark") {
+          theme = stored.theme;
+        }
+        if (theme !== "light" && theme !== "neutral" && theme !== "dark") {
+          theme = localStorage.getItem("azoth.theme");
+        }
+        if (theme !== "light" && theme !== "neutral" && theme !== "dark") {
+          theme = "light";
+        }
+        document.documentElement.dataset.layout = layout;
+        document.documentElement.dataset.theme = theme;
+      } catch (error) {
+        document.documentElement.dataset.layout = "xp";
+        document.documentElement.dataset.theme = "light";
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

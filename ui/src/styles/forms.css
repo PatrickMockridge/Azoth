@@ -42,7 +42,7 @@
   font-family: var(--font-ui);
   font-size: var(--fs-2xs);
   letter-spacing: var(--ls-label);
-  text-transform: uppercase;
+  text-transform: var(--label-transform);
   white-space: nowrap;
 }
 
@@ -52,10 +52,10 @@
 
 .field .entry {
   padding: var(--s2) var(--s4);
-  border: 1px solid var(--line-strong);
+  border: var(--bevel-w) solid var(--ctl-border);
   border-radius: var(--r2);
   margin-top: var(--s2);
-  background: var(--bg-raised);
+  background: var(--ctl-face-paint);
 }
 
 .field input,
@@ -64,10 +64,11 @@
   height: var(--ctl-h);
   margin-top: var(--s2);
   padding: 0 var(--s3);
-  border: 1px solid var(--line-strong);
+  border: var(--bevel-w) solid var(--well-border);
   border-radius: var(--r2);
   color: var(--text);
-  background: var(--bg-input);
+  background: var(--well);
+  box-shadow: var(--well-shadow);
   font-family: var(--font-mono);
   font-size: var(--fs-sm);
   font-variant-numeric: var(--tabnum);

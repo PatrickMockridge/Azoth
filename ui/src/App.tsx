@@ -38,7 +38,12 @@ import { Workbook } from "./components/workbook/Workbook";
 import { EXAMPLES } from "./examples";
 import { saveDocument } from "./save";
 import { selectedEdge, selectedNode } from "./state/selection";
-import { applyTheme, readTheme, type Theme } from "./state/theme";
+import {
+  applyAppearance,
+  isPreview,
+  readAppearance,
+  type Appearance,
+} from "./state/appearance";
 import { readUnitSet, rememberUnitSet, unitsOf } from "./state/units";
 import { readWelcome, rememberWelcome } from "./state/welcome";
 import { door } from "./wire/door";
@@ -74,7 +79,9 @@ export function App() {
   const [overview, setOverview] = useState<string | null>(null);
   const [fault, setFault] = useState<string | null>(null);
   const [openable, setOpenable] = useState(false);
-  const [theme, setTheme] = useState<Theme>(readTheme);
+  const [initialAppearance] = useState(readAppearance);
+  const [previewed] = useState(isPreview);
+  const [appearance, setAppearance] = useState<Appearance>(initialAppearance);
   /** Which of the two documents is in front; both stay mounted. */
   const [workspace, setWorkspace] = useState<Workspace>("flowsheet");
   /** The calculation book is loaded on first visit and then kept, so switching back keeps it. */
@@ -319,10 +326,17 @@ export function App() {
     rememberUnitSet(id);
   }, []);
 
-  /** The theme, in force and remembered. Dark is CSS's default; this only overrides it. */
+  /**
+   * The appearance, in force and remembered. XP light is CSS's default; this only overrides it.
+   *
+   * **A preview link is shown but not saved** until the reader chooses something themselves, so a
+   * shared `?layout=mac&theme=dark` does not silently rewrite a visitor's preference.
+   */
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
+    applyAppearance(appearance, {
+      persist: !previewed || appearance !== initialAppearance,
+    });
+  }, [appearance, initialAppearance, previewed]);
 
   /**
    * The document has edits that were never saved.
@@ -531,14 +545,14 @@ export function App() {
       <TitleStrip
         envelope={envelope}
         session={session !== null}
-        theme={theme}
+        appearance={appearance}
         units={units}
         unsaved={unsaved}
         workspace={workspace}
         onWorkspace={chooseWorkspace}
         onName={setCaseName}
         onOrder={setOrder}
-        onTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+        onAppearance={setAppearance}
         onUnits={chooseUnits}
       />
 
@@ -800,12 +814,12 @@ export function App() {
         door={sheetDoor}
         catalogue={catalogue}
         units={units}
-        theme={theme}
+        appearance={appearance}
         version={envelope?.provenance.version ?? "—"}
         workspace={workspace}
         hidden={workspace !== "calculations"}
         onWorkspace={chooseWorkspace}
-        onTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+        onAppearance={setAppearance}
         onUnits={chooseUnits}
       />
     ) : null}

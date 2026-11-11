@@ -44,12 +44,22 @@ function stubFetch(): void {
   };
 }
 
-/** The app, with the module loaded and the shipped document open. */
-async function open() {
+/**
+ * The app, with the module loaded and the shipped document open.
+ *
+ * The appearance is cleared each time - a choice from an earlier test is a reader's, not this
+ * case's starting state - and may be preset by key for the tests about remembering one.
+ */
+async function open(stored: Record<string, string> = {}) {
   // The first-run card is another test's subject; these tests are about the editor behind it.
   window.localStorage.setItem("azoth.welcome", "seen");
   // Each case starts in SI; a unit choice from an earlier test is a reader's, not this case's.
   window.localStorage.removeItem("azoth.units");
+  window.localStorage.removeItem("azoth.appearance");
+  window.localStorage.removeItem("azoth.theme");
+  for (const [key, value] of Object.entries(stored)) {
+    window.localStorage.setItem(key, value);
+  }
   const { App } = await import("../src/App");
   const rendered = render(<App />);
   // The demo's first node only exists once the module has loaded and the document was opened.
@@ -377,24 +387,49 @@ describe("the editor", () => {
     expect(pill(container)).toBe("stale");
   });
 
-  it("is dark until somebody says otherwise, and remembers that they did", async () => {
+  it("opens in Windows XP light, and remembers the layout and colour chosen", async () => {
     stubFetch();
-    // This suite shares one jsdom, and the theme is remembered in that document's store.
-    window.localStorage.clear();
     await open();
 
-    // **The attribute is an override and not what makes it dark.** `:root` carries the dark
-    // tokens, so a document with no attribute is already dark - which is what makes dark a
-    // default rather than a value somebody set.
-    expect(document.documentElement.dataset.theme).toBe("dark");
+    // **The attributes are overrides and not what makes the default.** `:root` carries the XP
+    // light tokens, so a document with no attributes is already the default - which is what makes
+    // it a default rather than a value somebody set.
+    expect(document.documentElement.dataset.layout).toBe("xp");
+    expect(document.documentElement.dataset.theme).toBe("light");
 
-    fireEvent.click(screen.getByRole("button", { name: "Light" }));
-    await waitFor(() => expect(document.documentElement.dataset.theme).toBe("light"));
-    expect(window.localStorage.getItem("azoth.theme")).toBe("light");
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+    fireEvent.click(screen.getByRole("button", { name: "Macintosh" }));
+    await waitFor(() => expect(document.documentElement.dataset.layout).toBe("mac"));
 
-    // And it toggles back, which a one-way switch would not.
+    // The panel stays open so the two axes can be compared before it closes.
     fireEvent.click(screen.getByRole("button", { name: "Dark" }));
     await waitFor(() => expect(document.documentElement.dataset.theme).toBe("dark"));
+    expect(
+      JSON.parse(window.localStorage.getItem("azoth.appearance") ?? "{}"),
+    ).toEqual({ layout: "mac", theme: "dark" });
+
+    // Escape closes it and hands focus back to the trigger, which is where a keyboard user was.
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Appearance" })).toBeNull());
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Appearance" }));
+  });
+
+  it("adopts a remembered appearance, and migrates the old theme key", async () => {
+    stubFetch();
+    await open({
+      "azoth.appearance": JSON.stringify({ layout: "cyberpunk", theme: "neutral" }),
+    });
+    await waitFor(() =>
+      expect(document.documentElement.dataset.layout).toBe("cyberpunk"),
+    );
+    expect(document.documentElement.dataset.theme).toBe("neutral");
+
+    cleanup();
+    // A build before the layout axis remembered only a colour; the layout is the one that build
+    // most resembled.
+    await open({ "azoth.theme": "dark" });
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe("dark"));
+    expect(document.documentElement.dataset.layout).toBe("xp");
   });
 
   it("shows the duty a heater reached, under the field name its own model gives it", async () => {

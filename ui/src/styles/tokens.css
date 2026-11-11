@@ -1,88 +1,178 @@
 /*
  * The editor's tokens: every value, in one place.
  *
- * **`:root` is the dark theme, so dark is the default with no attribute and no script.** A light
- * theme is `[data-theme="light"]`, which is the same list of names with different values - and the
- * two lists are held equal by `test/tokens.test.ts`, because a token that exists in one and not
- * the other resolves to nothing rather than failing.
+ * **Two axes, nine cells.** `data-layout` names the chrome's lineage - `xp`, `mac` or
+ * `cyberpunk` - and `data-theme` names the colour within it - `light`, `neutral` or `dark`.
+ * `:root` is Windows XP light, so a document with no attributes and no script already has the
+ * default look; every other cell overrides tone, and each layout block overrides shape and paint.
  *
- * **Elevation is lightness, not shadow.** Industrial chrome is flat panels separated by hairlines;
- * a shadow is reserved for what actually floats over something (a menu, a dialog, a node plate).
+ * **Tone is flat colour; shape is paint.** A `--bg-*`, `--text-*`, `--titlebar-*`, `--ctl-*` or
+ * `--table-*` token is a colour and may be measured for contrast. A `--surface-*`,
+ * `--ctl-face-paint`, `--node-shadow` or `--menu-shadow` is a paint and may be a gradient, a
+ * repeating pattern or `none`. Components read the paint token in `background` and the flat token
+ * in `border-color`, `fill` and `color-mix`, which is what lets one rule wear a Luna gradient and a
+ * Mac pinstripe without knowing which is in force.
  *
- * **Contrast is measured, not asserted.** Against `--bg-panel` the ratios are: `--text` 14.7:1,
- * `--text-dim` 6.6:1, `--text-faint` 5.0:1, `--accent` 6.2:1, `--ok` 7.6:1, `--warn` 8.2:1,
- * `--error` 5.9:1 - all past 4.5:1 for body text. One constraint falls out and it is the kind of
- * thing a later hover style breaks: on `--bg-raised`, `--text-faint` measures 4.22:1, so
- * **`--text-faint` is never used on `--bg-raised`, `--bg-hover` or `--bg-selected`**, which take
- * `--text-dim` (5.6:1 there).
+ * **Every tone cell declares the whole tone set.** A missed name would inherit another layout's
+ * colour, which is the muddy compromise this layer replaces; `ui/test/tokens.test.ts` holds all
+ * nine cells to the same list, and `ui/test/contrast.test.ts` measures the text pairs in each.
+ *
+ * **Print is not a theme.** `report.css` owns the paper palette at the end of the import list,
+ * with a selector specific enough to beat every cell. Layout decoration is screen-only.
  */
 
 :root {
-  /* The browser's own controls follow the theme, including a `<select>`'s popup. */
-  color-scheme: dark;
+  /* Windows XP, light: the default. */
+  color-scheme: light;
 
-  /* surfaces */
-  --bg-app: #0b0e13;
-  --bg-canvas: #0e1218;
-  --bg-panel: #141922;
-  --bg-panel-2: #1a212b;
-  --bg-raised: #202836;
-  --bg-hover: #232d3b;
-  --bg-input: #0a0d12;
-  --bg-selected: #1d2a3d;
+  /* tone: surfaces */
+  --bg-app: #ece9d8;
+  --bg-canvas: #dce6f2;
+  --bg-panel: #ece9d8;
+  --bg-panel-2: #e2decc;
+  --bg-raised: #ffffff;
+  --bg-hover: #e4ebf5;
+  --bg-input: #ffffff;
+  --bg-selected: #316ac5;
 
-  /* lines */
-  --line: #262e3a;
-  --line-strong: #333d4d;
-  --grid-minor: #1b2230;
+  /* tone: lines */
+  --line: #c9c4b4;
+  --line-strong: #aca899;
+  --grid-minor: #d5d0c0;
+  --grid-line: var(--line);
 
-  /* text */
-  --text: #e6ebf2;
-  --text-strong: #f4f7fb;
-  --text-dim: #93a0b1;
-  --text-faint: #7d8a9c;
+  /* tone: text */
+  --text: #1a1a1a;
+  --text-strong: #000000;
+  --text-dim: #4a463c;
+  --text-faint: #5e5a50;
 
-  /* accent, status, and the one hue that is neither */
-  --accent: #4c9aff;
-  --accent-hi: #6cb0ff;
-  --accent-ink: #06101f;
+  /* tone: accent and status */
+  --accent: #0054e3;
+  --accent-hi: #0046b8;
+  --accent-ink: #ffffff;
+  --focus: #0054e3;
+  --ok: #176b2f;
+  --warn: #8a5a00;
+  --error: #c00000;
+  --edge: #4a463c;
+  --edge-recycle: #6b46a8;
+  --selected-text: #ffffff;
+
+  /* tone: the title bar and the controls, so every layout can paint them */
+  --titlebar-a: #003c9e;
+  --titlebar-b: #0b61d8;
+  --titlebar-c: #0a5ac8;
+  --titlebar-d: #00337f;
+  --titlebar-text: #ffffff;
+  --titlebar-muted: #eaf2ff;
+  --ctl-face: #ece9d8;
+  --ctl-face-hi: #ffffff;
+  --ctl-face-low: #d6d2c2;
+  --ctl-text: #1a1a1a;
+  --ctl-border: #003c74;
+  --well: #ffffff;
+  --well-border: #7f9db9;
+  --pill-face: #ffffff;
+  --pill-border: #aca899;
+  --tab-face: #e2decc;
+  --tab-face-active: #ece9d8;
+  --tab-text: #4a463c;
+  --tab-text-active: #000000;
+  --tab-border: #9a9484;
+  --table-face: #ffffff;
+  --table-head-face: #e2decc;
+  --table-head-text: #4a463c;
+  --table-stripe: #f7f5ee;
+  --node-face: #ffffff;
+  --node-head: #0b61d8;
+  --node-head-text: #ffffff;
+  --node-border: #aca899;
+  --pin-a: #ece9d8;
+  --pin-b: #e2decc;
+  --desktop-a: #ece9d8;
+  --desktop-b: #dce6f2;
+
+  /* derived: tints follow the cell's accent and status colours */
   --accent-tint: color-mix(in srgb, var(--accent) 14%, transparent);
-  --ok: #3fbf87;
-  --warn: #e8a33d;
-  --error: #ff5f56;
   --ok-tint: color-mix(in srgb, var(--ok) 40%, transparent);
   --warn-tint: color-mix(in srgb, var(--warn) 40%, transparent);
   --error-tint: color-mix(in srgb, var(--error) 40%, transparent);
-  --focus: var(--accent-hi);
 
-  /* a connection is one thing and a tear is another */
-  --edge: var(--text-dim);
-  --edge-recycle: #b98cf0;
-
-  /* elevation */
-  --e-highlight: rgb(255 255 255 / 4%);
-  --e2: 0 1px 2px rgb(0 0 0 / 45%);
-  --e3: 0 4px 12px rgb(0 0 0 / 50%);
-  --e-node: 0 2px 6px rgb(0 0 0 / 55%);
+  /* shape: paints, read only in `background` */
+  --surface-app: linear-gradient(180deg, #7ba2d8 0%, #a8c6e8 55%, #8fb3e8 100%);
+  --surface-canvas: var(--bg-canvas);
+  --surface-panel: var(--bg-panel);
+  --surface-panel-2: var(--bg-panel-2);
+  --surface-raised: var(--bg-raised);
+  --surface-bar: linear-gradient(
+    180deg,
+    var(--titlebar-a) 0%,
+    var(--titlebar-b) 42%,
+    var(--titlebar-c) 58%,
+    var(--titlebar-d) 100%
+  );
+  --surface-tools: var(--bg-panel-2);
+  --surface-ribbon: var(--bg-panel-2);
+  --surface-dock: var(--bg-panel);
+  --surface-status: var(--bg-panel-2);
+  --surface-tabs: var(--bg-panel-2);
+  --surface-tab-active: var(--tab-face-active);
+  --surface-menu: var(--bg-raised);
+  --surface-report: var(--table-face);
+  --surface-node: var(--node-face);
+  --surface-node-head: var(--node-head);
+  --surface-cell: var(--table-face);
+  --surface-cell-alt: var(--table-stripe);
+  --ctl-face-paint: linear-gradient(
+    180deg,
+    var(--ctl-face-hi) 0%,
+    var(--ctl-face) 48%,
+    var(--ctl-face-low) 100%
+  );
+  --ctl-face-hover: linear-gradient(
+    180deg,
+    var(--ctl-face-hi) 0%,
+    var(--bg-hover) 55%,
+    var(--ctl-face) 100%
+  );
+  --ctl-bevel: inset 0 0 0 1px var(--bevel-light);
+  --well-shadow: inset 1px 1px 2px color-mix(in srgb, var(--titlebar-a) 22%, transparent);
+  --node-shadow: 0 1px 2px color-mix(in srgb, var(--text) 30%, transparent);
+  --menu-shadow: 0 4px 12px color-mix(in srgb, var(--text) 28%, transparent);
+  --e2: 0 1px 2px color-mix(in srgb, var(--text) 22%, transparent);
+  --e3: 0 4px 12px color-mix(in srgb, var(--text) 28%, transparent);
+  --e-node: 0 2px 6px color-mix(in srgb, var(--text) 30%, transparent);
+  --e-highlight: rgb(255 255 255 / 60%);
+  --frame: #0054e3;
+  --frame-w: 3px;
+  --bevel-light: var(--ctl-face-hi);
+  --bevel-mid: var(--ctl-face);
+  --bevel-dark: var(--ctl-face-low);
+  --bevel-w: 1px;
+  --scrollbar-thumb: var(--ctl-face-low);
+  --scrollbar-track: var(--bg-panel-2);
+  --glow-accent: transparent;
+  --texture: transparent;
+  --backdrop: color-mix(in srgb, var(--bg-app) 72%, transparent);
 
   /* type */
-  --font-ui: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", "JetBrains Mono", Menlo, Consolas,
-    monospace;
-  --fs-2xs: 10px;
-  --fs-xs: 11px;
-  --fs-sm: 12px;
-  --fs-md: 13px;
-  --fs-lg: 15px;
-  --fs-xl: 18px;
+  --font-ui: Tahoma, "Segoe UI", Verdana, system-ui, sans-serif;
+  --font-display: Tahoma, "Segoe UI", Verdana, system-ui, sans-serif;
+  --font-mono: "Lucida Console", Consolas, ui-monospace, monospace;
+  --fs-2xs: 9px;
+  --fs-xs: 10px;
+  --fs-sm: 11px;
+  --fs-md: 11px;
+  --fs-lg: 14px;
+  --fs-xl: 17px;
   --lh-tight: 1.25;
   --lh-body: 1.45;
-  --ls-label: 0.07em;
-  /* Tabular figures and a slashed zero: a column of pressures must not shimmy as its digits
-     change, and `sep1.liquid` sits in the same face as the numbers beside it. */
+  --ls-label: 0.04em;
+  --label-transform: none;
   --tabnum: "tnum" 1, "zero" 1;
 
-  /* space, on a 2px base - HYSYS density is the point */
+  /* space, on a 2px base */
   --s1: 2px;
   --s2: 4px;
   --s3: 6px;
@@ -94,72 +184,817 @@
   --s9: 24px;
   --s10: 32px;
 
-  /* density */
+  /* density and geometry */
   --row-h: 22px;
   --head-h: 26px;
-  --ctl-h: 24px;
-  --tab-h: 28px;
-
-  /* radii: tight, because a process simulator is a tool and not a phone */
+  --ctl-h: 23px;
+  --tab-h: 26px;
   --r1: 2px;
   --r2: 3px;
-  --r3: 4px;
-  --r4: 6px;
-  --r-pill: 999px;
+  --r3: 3px;
+  --r4: 4px;
+  --r-pill: 3px;
+  --col-nav: 210px;
+  --col-dock: 320px;
+  --case-name-w: 12rem;
+  --desktop-gap: 6px;
+  /* Fixed across layouts: xyflow measures the plate and the handles, and a theme switch must
+     not re-route a drawing. Only paint, border and radius change. */
+  --node-w: 190px;
+  --node-h: 168px;
+  --node-radius: 4px;
+  --handle-size: 14px;
+  --handle-dot: 7px;
+  --handle-radius: 50%;
+  --scrollbar-size: 17px;
+  --scrollbar-radius: 2px;
+  --splitter-h: 6px;
+  --dialog-w: min(56rem, 92vw);
+  --dialog-h: min(44rem, 88vh);
+  --calc-side-min: 18rem;
+  --calc-side-max: 24rem;
+  --sheet-w: 72rem;
+  --chart-h: 28px;
+  --bar-pad-y: 4px;
+  --bar-pad-x: 12px;
+
+  /* focus: the shape is the layout's, the colour is the tone's */
+  --focus-w: 1px;
+  --focus-style: dotted;
+  --focus-offset: 1px;
 
   /* motion */
   --t-fast: 90ms;
   --t-mid: 140ms;
+  --t-slow: 900ms;
+  --t-blink: 1s;
+  --t-pulse: 2s;
   --ease: cubic-bezier(0.2, 0, 0, 1);
 }
 
-[data-theme="light"] {
+/* Windows XP, neutral: Luna "silver". */
+[data-theme="neutral"] {
   color-scheme: light;
 
-  --bg-app: #e8ecf1;
-  --bg-canvas: #eef1f5;
-  --bg-panel: #f4f6f9;
-  --bg-panel-2: #eaedf2;
+  --bg-app: #efefef;
+  --bg-canvas: #e4e8ed;
+  --bg-panel: #f4f4f4;
+  --bg-panel-2: #eaeaea;
   --bg-raised: #ffffff;
-  --bg-hover: #e4e9f0;
+  --bg-hover: #e8eef5;
   --bg-input: #ffffff;
-  --bg-selected: #dbe7f8;
+  --bg-selected: #2a5c8a;
 
-  --line: #d7dde5;
-  --line-strong: #bcc6d3;
-  --grid-minor: #d3dae3;
+  --line: #d0d0d0;
+  --line-strong: #a8a8a8;
+  --grid-minor: #dcdcdc;
 
-  --text: #1a2029;
-  --text-strong: #0b0f14;
-  --text-dim: #56616f;
-  --text-faint: #6d7887;
+  --text: #1a1a1a;
+  --text-strong: #000000;
+  --text-dim: #4a4a4a;
+  --text-faint: #5a5a5a;
 
-  --accent: #1f5fd0;
-  --accent-hi: #17489c;
+  --accent: #2a5c8a;
+  --accent-hi: #1f466b;
   --accent-ink: #ffffff;
-  --accent-tint: color-mix(in srgb, var(--accent) 12%, transparent);
-  --ok: #1d7f56;
-  --warn: #8a5a00;
-  --error: #c1332a;
-  --focus: var(--accent);
-
-  --edge: #6d7887;
+  --focus: #2a5c8a;
+  --ok: #176b2f;
+  --warn: #7a4b00;
+  --error: #b01030;
+  --edge: #4a4a4a;
   --edge-recycle: #6b46a8;
+  --selected-text: #ffffff;
 
-  --e-highlight: rgb(255 255 255 / 70%);
-  --e2: 0 1px 2px rgb(15 23 42 / 12%);
-  --e3: 0 4px 12px rgb(15 23 42 / 16%);
-  --e-node: 0 2px 6px rgb(15 23 42 / 18%);
+  --titlebar-a: #3a3a3a;
+  --titlebar-b: #565656;
+  --titlebar-c: #525252;
+  --titlebar-d: #333333;
+  --titlebar-text: #ffffff;
+  --titlebar-muted: #e8e8e8;
+  --ctl-face: #efefef;
+  --ctl-face-hi: #ffffff;
+  --ctl-face-low: #dcdcdc;
+  --ctl-text: #1a1a1a;
+  --ctl-border: #6e6e6e;
+  --well: #ffffff;
+  --well-border: #a0a0a0;
+  --pill-face: #ffffff;
+  --pill-border: #b0b0b0;
+  --tab-face: #eaeaea;
+  --tab-face-active: #f4f4f4;
+  --tab-text: #4a4a4a;
+  --tab-text-active: #000000;
+  --tab-border: #a0a0a0;
+  --table-face: #ffffff;
+  --table-head-face: #eaeaea;
+  --table-head-text: #4a4a4a;
+  --table-stripe: #f2f2f2;
+  --node-face: #ffffff;
+  --node-head: #2a5c8a;
+  --node-head-text: #ffffff;
+  --node-border: #a0a0a0;
+  --pin-a: #efefef;
+  --pin-b: #eaeaea;
+  --desktop-a: #efefef;
+  --desktop-b: #e4e8ed;
+
+  /* the two XP paints whose brightness is part of the tone */
+  --surface-app: linear-gradient(180deg, #b6c3d1 0%, #d8dee5 55%, #c2ccd8 100%);
+  --surface-bar: linear-gradient(
+    180deg,
+    var(--titlebar-a) 0%,
+    var(--titlebar-b) 42%,
+    var(--titlebar-c) 58%,
+    var(--titlebar-d) 100%
+  );
+  --frame: #6e6e6e;
 }
 
-/*
- * xyflow's own variables, bridged rather than overridden.
- *
- * The canvas therefore follows `data-theme` from this one place, and xyflow's defaults never show
- * through - which is why `.react-flow.dark` is not used at all: one theme switch is enough.
- */
+/* Windows XP, dark: Royale Noir. */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-app: #10141a;
+  --bg-canvas: #0c1016;
+  --bg-panel: #1b2028;
+  --bg-panel-2: #242a34;
+  --bg-raised: #2e3541;
+  --bg-hover: #333b48;
+  --bg-input: #0a0d12;
+  --bg-selected: #2f4c74;
+
+  --line: #333b48;
+  --line-strong: #4a5566;
+  --grid-minor: #222a34;
+
+  --text: #e8edf5;
+  --text-strong: #ffffff;
+  --text-dim: #a8b2c0;
+  --text-faint: #8e99a8;
+
+  --accent: #4c9aff;
+  --accent-hi: #7fb6ff;
+  --accent-ink: #06101f;
+  --focus: #7fb6ff;
+  --ok: #4cd08c;
+  --warn: #f0b44a;
+  --error: #ff8078;
+  --edge: #a8b2c0;
+  --edge-recycle: #b98cf0;
+  --selected-text: #ffffff;
+
+  --titlebar-a: #0b1220;
+  --titlebar-b: #2b3a55;
+  --titlebar-c: #24324a;
+  --titlebar-d: #080d16;
+  --titlebar-text: #e8edf5;
+  --titlebar-muted: #a8b2c0;
+  --ctl-face: #2e3541;
+  --ctl-face-hi: #3c4656;
+  --ctl-face-low: #242a34;
+  --ctl-text: #e8edf5;
+  --ctl-border: #5a6b82;
+  --well: #0a0d12;
+  --well-border: #4a5566;
+  --pill-face: #242a34;
+  --pill-border: #4a5566;
+  --tab-face: #242a34;
+  --tab-face-active: #1b2028;
+  --tab-text: #a8b2c0;
+  --tab-text-active: #ffffff;
+  --tab-border: #333b48;
+  --table-face: #1b2028;
+  --table-head-face: #242a34;
+  --table-head-text: #a8b2c0;
+  --table-stripe: #20262f;
+  --node-face: #1b2028;
+  --node-head: #2b3a55;
+  --node-head-text: #ffffff;
+  --node-border: #4a5566;
+  --pin-a: #10141a;
+  --pin-b: #0c1016;
+  --desktop-a: #10141a;
+  --desktop-b: #0c1016;
+
+  --surface-app: linear-gradient(180deg, #0a0d13 0%, #131a24 55%, #0a0d13 100%);
+  --surface-bar: linear-gradient(
+    180deg,
+    var(--titlebar-a) 0%,
+    var(--titlebar-b) 42%,
+    var(--titlebar-c) 58%,
+    var(--titlebar-d) 100%
+  );
+  --e-highlight: rgb(255 255 255 / 8%);
+  --frame: #2b3a55;
+}
+
+/* --------------------------------------------------------------------------------------- */
+/* Macintosh                                : shape and paint for the layout; light is here. */
+/* --------------------------------------------------------------------------------------- */
+
+[data-layout="mac"] {
+  --font-ui: Chicago, Charcoal, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: Chicago, Charcoal, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: Monaco, Menlo, ui-monospace, monospace;
+  --fs-2xs: 9px;
+  --fs-xs: 10px;
+  --fs-sm: 11px;
+  --fs-md: 12px;
+  --fs-lg: 14px;
+  --fs-xl: 17px;
+  --lh-tight: 1.2;
+  --lh-body: 1.4;
+  --ls-label: 0.02em;
+  --label-transform: none;
+
+  --row-h: 20px;
+  --head-h: 22px;
+  --ctl-h: 22px;
+  --tab-h: 24px;
+  --r1: 0px;
+  --r2: 0px;
+  --r3: 0px;
+  --r4: 0px;
+  --r-pill: 0px;
+  --col-nav: 200px;
+  --col-dock: 300px;
+  --case-name-w: 12rem;
+  --desktop-gap: 12px;
+  --node-radius: 0px;
+  --handle-dot: 6px;
+  --handle-radius: 0px;
+  --scrollbar-size: 16px;
+  --scrollbar-radius: 0px;
+  --splitter-h: 6px;
+  --bar-pad-y: 3px;
+  --bar-pad-x: 8px;
+
+  --focus-w: 1px;
+  --focus-style: dotted;
+  --focus-offset: -3px;
+
+  --surface-app: repeating-conic-gradient(
+      var(--desktop-a) 0% 25%,
+      var(--desktop-b) 0% 50%
+    )
+    0 0 / 4px 4px;
+  --surface-canvas: var(--bg-canvas);
+  --surface-panel: var(--bg-panel);
+  --surface-panel-2: var(--bg-panel-2);
+  --surface-raised: var(--bg-raised);
+  --surface-bar: repeating-linear-gradient(
+    0deg,
+    var(--pin-a) 0 1px,
+    var(--pin-b) 1px 2px
+  );
+  --surface-tools: var(--bg-panel);
+  --surface-ribbon: var(--bg-panel);
+  --surface-dock: var(--bg-panel);
+  --surface-status: var(--bg-panel);
+  --surface-tabs: var(--bg-panel-2);
+  --surface-tab-active: var(--tab-face-active);
+  --surface-menu: var(--bg-raised);
+  --surface-report: var(--table-face);
+  --surface-node: var(--node-face);
+  --surface-node-head: var(--node-head);
+  --surface-cell: var(--table-face);
+  --surface-cell-alt: var(--table-stripe);
+  --ctl-face-paint: var(--ctl-face);
+  --ctl-face-hover: var(--bg-hover);
+  --ctl-bevel: inset 1px 1px 0 var(--bevel-light), inset -1px -1px 0 var(--bevel-dark);
+  --well-shadow: inset 1px 1px 0 var(--bevel-dark);
+  --node-shadow: 1px 1px 0 var(--frame);
+  --menu-shadow: 2px 2px 0 var(--frame);
+  --e2: 1px 1px 0 var(--frame);
+  --e3: 2px 2px 0 var(--frame);
+  --e-node: 1px 1px 0 var(--frame);
+  --e-highlight: rgb(255 255 255 / 0%);
+  --frame: #000000;
+  --frame-w: 1px;
+  --bevel-light: var(--ctl-face-hi);
+  --bevel-mid: var(--ctl-face);
+  --bevel-dark: var(--ctl-face-low);
+  --bevel-w: 1px;
+  --scrollbar-thumb: var(--ctl-face-low);
+  --scrollbar-track: var(--bg-panel-2);
+  --glow-accent: transparent;
+  --texture: transparent;
+  --backdrop: color-mix(in srgb, var(--bg-app) 72%, transparent);
+
+  --t-fast: 0ms;
+  --t-mid: 0ms;
+  --t-slow: 0ms;
+  --t-blink: 0ms;
+  --t-pulse: 0ms;
+}
+
+/* Macintosh, light: Platinum. */
+[data-layout="mac"] {
+  color-scheme: light;
+
+  --bg-app: #a8a8a8;
+  --bg-canvas: #c6c6c6;
+  --bg-panel: #dddddd;
+  --bg-panel-2: #d2d2d2;
+  --bg-raised: #eeeeee;
+  --bg-hover: #d8d8d8;
+  --bg-input: #ffffff;
+  --bg-selected: #000080;
+
+  --line: #000000;
+  --line-strong: #000000;
+  --grid-minor: #b8b8b8;
+
+  --text: #000000;
+  --text-strong: #000000;
+  --text-dim: #333333;
+  --text-faint: #555555;
+
+  --accent: #000080;
+  --accent-hi: #0000aa;
+  --accent-ink: #ffffff;
+  --focus: #000000;
+  --ok: #006400;
+  --warn: #7a4a00;
+  --error: #b00000;
+  --edge: #000000;
+  --edge-recycle: #6b46a8;
+  --selected-text: #ffffff;
+
+  --titlebar-a: #dddddd;
+  --titlebar-b: #dddddd;
+  --titlebar-c: #dddddd;
+  --titlebar-d: #dddddd;
+  --titlebar-text: #000000;
+  --titlebar-muted: #333333;
+  --ctl-face: #dddddd;
+  --ctl-face-hi: #ffffff;
+  --ctl-face-low: #bfbfbf;
+  --ctl-text: #000000;
+  --ctl-border: #000000;
+  --well: #ffffff;
+  --well-border: #000000;
+  --pill-face: #dddddd;
+  --pill-border: #000000;
+  --tab-face: #d2d2d2;
+  --tab-face-active: #dddddd;
+  --tab-text: #333333;
+  --tab-text-active: #000000;
+  --tab-border: #000000;
+  --table-face: #ffffff;
+  --table-head-face: #dddddd;
+  --table-head-text: #000000;
+  --table-stripe: #f0f0f0;
+  --node-face: #ffffff;
+  --node-head: #dddddd;
+  --node-head-text: #000000;
+  --node-border: #000000;
+  --pin-a: #b8b8b8;
+  --pin-b: #dddddd;
+  --desktop-a: #a8a8a8;
+  --desktop-b: #b8b8b8;
+}
+
+/* Macintosh, neutral: Platinum dusk. */
+[data-layout="mac"][data-theme="neutral"] {
+  color-scheme: light;
+
+  --bg-app: #8f8f8f;
+  --bg-canvas: #afafaf;
+  --bg-panel: #b8b8b8;
+  --bg-panel-2: #acacac;
+  --bg-raised: #c8c8c8;
+  --bg-hover: #c0c0c0;
+  --bg-input: #f4f4f4;
+  --bg-selected: #24476f;
+
+  --line: #000000;
+  --line-strong: #000000;
+  --grid-minor: #9e9e9e;
+
+  --text: #111111;
+  --text-strong: #000000;
+  --text-dim: #2e2e2e;
+  --text-faint: #3a3a3a;
+
+  --accent: #1b3a6b;
+  --accent-hi: #12294d;
+  --accent-ink: #ffffff;
+  --focus: #000000;
+  --ok: #0a4f1e;
+  --warn: #6b3f00;
+  --error: #8a0e0e;
+  --edge: #000000;
+  --edge-recycle: #4b2e80;
+  --selected-text: #ffffff;
+
+  --titlebar-a: #b8b8b8;
+  --titlebar-b: #b8b8b8;
+  --titlebar-c: #b8b8b8;
+  --titlebar-d: #b8b8b8;
+  --titlebar-text: #111111;
+  --titlebar-muted: #2e2e2e;
+  --ctl-face: #b8b8b8;
+  --ctl-face-hi: #d8d8d8;
+  --ctl-face-low: #9a9a9a;
+  --ctl-text: #111111;
+  --ctl-border: #000000;
+  --well: #f4f4f4;
+  --well-border: #000000;
+  --pill-face: #b8b8b8;
+  --pill-border: #000000;
+  --tab-face: #acacac;
+  --tab-face-active: #b8b8b8;
+  --tab-text: #2e2e2e;
+  --tab-text-active: #000000;
+  --tab-border: #000000;
+  --table-face: #f4f4f4;
+  --table-head-face: #b8b8b8;
+  --table-head-text: #111111;
+  --table-stripe: #e8e8e8;
+  --node-face: #f4f4f4;
+  --node-head: #b8b8b8;
+  --node-head-text: #111111;
+  --node-border: #000000;
+  --pin-a: #9e9e9e;
+  --pin-b: #b8b8b8;
+  --desktop-a: #8f8f8f;
+  --desktop-b: #9e9e9e;
+}
+
+/* Macintosh, dark: after hours. */
+[data-layout="mac"][data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-app: #1e1e1e;
+  --bg-canvas: #2a2a2a;
+  --bg-panel: #3a3a3a;
+  --bg-panel-2: #333333;
+  --bg-raised: #454545;
+  --bg-hover: #424242;
+  --bg-input: #111111;
+  --bg-selected: #345a8a;
+
+  --line: #5a5a5a;
+  --line-strong: #808080;
+  --grid-minor: #3a3a3a;
+
+  --text: #f0f0f0;
+  --text-strong: #ffffff;
+  --text-dim: #c0c0c0;
+  --text-faint: #a8a8a8;
+
+  --accent: #7fb0ff;
+  --accent-hi: #a8c8ff;
+  --accent-ink: #0b0b0b;
+  --focus: #ffffff;
+  --ok: #6be39b;
+  --warn: #f2c14e;
+  --error: #ff7b72;
+  --edge: #c0c0c0;
+  --edge-recycle: #c39bff;
+  --selected-text: #ffffff;
+
+  --titlebar-a: #3a3a3a;
+  --titlebar-b: #3a3a3a;
+  --titlebar-c: #3a3a3a;
+  --titlebar-d: #3a3a3a;
+  --titlebar-text: #f0f0f0;
+  --titlebar-muted: #c0c0c0;
+  --ctl-face: #3a3a3a;
+  --ctl-face-hi: #555555;
+  --ctl-face-low: #2a2a2a;
+  --ctl-text: #f0f0f0;
+  --ctl-border: #a8a8a8;
+  --well: #111111;
+  --well-border: #808080;
+  --pill-face: #333333;
+  --pill-border: #808080;
+  --tab-face: #333333;
+  --tab-face-active: #3a3a3a;
+  --tab-text: #c0c0c0;
+  --tab-text-active: #ffffff;
+  --tab-border: #808080;
+  --table-face: #2a2a2a;
+  --table-head-face: #3a3a3a;
+  --table-head-text: #f0f0f0;
+  --table-stripe: #333333;
+  --node-face: #2a2a2a;
+  --node-head: #3a3a3a;
+  --node-head-text: #f0f0f0;
+  --node-border: #808080;
+  --pin-a: #5a5a5a;
+  --pin-b: #3a3a3a;
+  --desktop-a: #1e1e1e;
+  --desktop-b: #2a2a2a;
+}
+
+/* --------------------------------------------------------------------------------------- */
+/* Cyberpunk                                : shape and paint; light is the bone terminal. */
+/* --------------------------------------------------------------------------------------- */
+
+[data-layout="cyberpunk"] {
+  --font-ui: Bahnschrift, "DIN Alternate", "Arial Narrow", "Roboto Condensed", "Segoe UI",
+    system-ui, sans-serif;
+  --font-display: "Share Tech Mono", "IBM Plex Mono", "Cascadia Mono", ui-monospace, monospace;
+  --font-mono: "Share Tech Mono", "IBM Plex Mono", "Cascadia Mono", ui-monospace, monospace;
+  --fs-2xs: 9px;
+  --fs-xs: 10px;
+  --fs-sm: 11px;
+  --fs-md: 12px;
+  --fs-lg: 15px;
+  --fs-xl: 18px;
+  --lh-tight: 1.2;
+  --lh-body: 1.45;
+  --ls-label: 0.14em;
+  --label-transform: uppercase;
+
+  --row-h: 22px;
+  --head-h: 26px;
+  --ctl-h: 24px;
+  --tab-h: 28px;
+  --r1: 0px;
+  --r2: 2px;
+  --r3: 2px;
+  --r4: 2px;
+  --r-pill: 0px;
+  --col-nav: 220px;
+  --col-dock: 300px;
+  --case-name-w: 13rem;
+  --desktop-gap: 0px;
+  --node-radius: 0px;
+  --handle-dot: 8px;
+  --handle-radius: 0px;
+  --scrollbar-size: 10px;
+  --scrollbar-radius: 0px;
+  --splitter-h: 6px;
+  --bar-pad-y: 6px;
+  --bar-pad-x: 10px;
+
+  --focus-w: 2px;
+  --focus-style: solid;
+  --focus-offset: 1px;
+
+  --surface-app: linear-gradient(180deg, var(--bg-app) 0%, var(--bg-canvas) 100%);
+  --surface-canvas: var(--bg-canvas);
+  --surface-panel: var(--bg-panel);
+  --surface-panel-2: var(--bg-panel-2);
+  --surface-raised: var(--bg-raised);
+  --surface-bar: linear-gradient(180deg, var(--bg-app) 0%, var(--bg-panel-2) 100%);
+  --surface-tools: var(--bg-panel-2);
+  --surface-ribbon: var(--bg-panel-2);
+  --surface-dock: var(--bg-panel);
+  --surface-status: var(--bg-app);
+  --surface-tabs: var(--bg-panel-2);
+  --surface-tab-active: var(--bg-panel);
+  --surface-menu: var(--bg-panel);
+  --surface-report: var(--table-face);
+  --surface-node: var(--node-face);
+  --surface-node-head: var(--node-head);
+  --surface-cell: var(--table-face);
+  --surface-cell-alt: var(--table-stripe);
+  --ctl-face-paint: var(--ctl-face);
+  --ctl-face-hover: var(--accent-tint);
+  --ctl-bevel: none;
+  --well-shadow: none;
+  --node-shadow: 0 0 6px var(--glow-accent);
+  --menu-shadow: 0 0 12px var(--glow-accent);
+  --e2: 0 0 4px var(--glow-accent);
+  --e3: 0 0 12px var(--glow-accent);
+  --e-node: 0 0 6px var(--glow-accent);
+  --e-highlight: rgb(255 255 255 / 0%);
+  --frame: var(--accent);
+  --frame-w: 1px;
+  --bevel-light: transparent;
+  --bevel-mid: var(--line-strong);
+  --bevel-dark: transparent;
+  --bevel-w: 1px;
+  --scrollbar-thumb: var(--accent);
+  --scrollbar-track: var(--bg-app);
+  --glow-accent: color-mix(in srgb, var(--accent) 55%, transparent);
+  --texture: color-mix(in srgb, var(--accent) 9%, transparent);
+  --backdrop: color-mix(in srgb, var(--bg-app) 82%, transparent);
+
+  --t-fast: 90ms;
+  --t-mid: 140ms;
+  --t-slow: 900ms;
+  --t-blink: 1s;
+  --t-pulse: 2s;
+}
+
+/* Cyberpunk, light: the bone-paper terminal. */
+[data-layout="cyberpunk"] {
+  color-scheme: light;
+
+  --bg-app: #efe9da;
+  --bg-canvas: #e8e1cf;
+  --bg-panel: #e6dfcd;
+  --bg-panel-2: #ddd5c2;
+  --bg-raised: #f7f2e6;
+  --bg-hover: #e1d8c4;
+  --bg-input: #fffdf5;
+  --bg-selected: #0f5a54;
+
+  --line: #b8ae98;
+  --line-strong: #7a6f58;
+  --grid-minor: #d5cbb6;
+
+  --text: #211c14;
+  --text-strong: #000000;
+  --text-dim: #57503f;
+  --text-faint: #655c48;
+
+  --accent: #00635c;
+  --accent-hi: #004a45;
+  --accent-ink: #ffffff;
+  --focus: #00635c;
+  --ok: #2f6b2f;
+  --warn: #7a5200;
+  --error: #a01b2e;
+  --edge: #57503f;
+  --edge-recycle: #8a2e6e;
+  --selected-text: #ffffff;
+
+  --titlebar-a: #211c14;
+  --titlebar-b: #3a3327;
+  --titlebar-c: #302a20;
+  --titlebar-d: #14110f;
+  --titlebar-text: #efe9da;
+  --titlebar-muted: #c9c0aa;
+  --ctl-face: #e6dfcd;
+  --ctl-face-hi: #fbf6ea;
+  --ctl-face-low: #d6cdb8;
+  --ctl-text: #211c14;
+  --ctl-border: #00635c;
+  --well: #fffdf5;
+  --well-border: #7a6f58;
+  --pill-face: #f7f2e6;
+  --pill-border: #7a6f58;
+  --tab-face: #ddd5c2;
+  --tab-face-active: #e6dfcd;
+  --tab-text: #57503f;
+  --tab-text-active: #000000;
+  --tab-border: #7a6f58;
+  --table-face: #fffdf5;
+  --table-head-face: #ddd5c2;
+  --table-head-text: #211c14;
+  --table-stripe: #f2ebdd;
+  --node-face: #fffdf5;
+  --node-head: #211c14;
+  --node-head-text: #efe9da;
+  --node-border: #00635c;
+  --pin-a: #efe9da;
+  --pin-b: #e8e1cf;
+  --desktop-a: #efe9da;
+  --desktop-b: #e8e1cf;
+
+  --glow-accent: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* Cyberpunk, neutral: graphite neon. */
+[data-layout="cyberpunk"][data-theme="neutral"] {
+  color-scheme: light;
+
+  --bg-app: #c9ccd1;
+  --bg-canvas: #bfc3c9;
+  --bg-panel: #d4d7dc;
+  --bg-panel-2: #c4c8ce;
+  --bg-raised: #e4e6e9;
+  --bg-hover: #d9dce0;
+  --bg-input: #f4f5f6;
+  --bg-selected: #1f5a66;
+
+  --line: #9aa1a9;
+  --line-strong: #66707a;
+  --grid-minor: #b0b6bd;
+
+  --text: #10151a;
+  --text-strong: #000000;
+  --text-dim: #3e4750;
+  --text-faint: #4f5862;
+
+  --accent: #00616e;
+  --accent-hi: #004a54;
+  --accent-ink: #ffffff;
+  --focus: #00616e;
+  --ok: #176b3a;
+  --warn: #7a4b00;
+  --error: #b01030;
+  --edge: #3e4750;
+  --edge-recycle: #7a2e6e;
+  --selected-text: #ffffff;
+
+  --titlebar-a: #10151a;
+  --titlebar-b: #2a323b;
+  --titlebar-c: #222a32;
+  --titlebar-d: #0b0f13;
+  --titlebar-text: #e8eef0;
+  --titlebar-muted: #b8c2c8;
+  --ctl-face: #d4d7dc;
+  --ctl-face-hi: #eff1f3;
+  --ctl-face-low: #c4c8ce;
+  --ctl-text: #10151a;
+  --ctl-border: #00616e;
+  --well: #f4f5f6;
+  --well-border: #66707a;
+  --pill-face: #e4e6e9;
+  --pill-border: #66707a;
+  --tab-face: #c4c8ce;
+  --tab-face-active: #d4d7dc;
+  --tab-text: #3e4750;
+  --tab-text-active: #000000;
+  --tab-border: #66707a;
+  --table-face: #f4f5f6;
+  --table-head-face: #c4c8ce;
+  --table-head-text: #10151a;
+  --table-stripe: #dfe2e6;
+  --node-face: #f4f5f6;
+  --node-head: #10151a;
+  --node-head-text: #e8eef0;
+  --node-border: #00616e;
+  --pin-a: #c9ccd1;
+  --pin-b: #bfc3c9;
+  --desktop-a: #c9ccd1;
+  --desktop-b: #bfc3c9;
+
+  --glow-accent: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* Cyberpunk, dark: black neon. */
+[data-layout="cyberpunk"][data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-app: #05060a;
+  --bg-canvas: #070a12;
+  --bg-panel: #0b0f18;
+  --bg-panel-2: #101624;
+  --bg-raised: #161e2e;
+  --bg-hover: #1a2233;
+  --bg-input: #04060a;
+  --bg-selected: #102a3a;
+
+  --line: #1c2a36;
+  --line-strong: #2a4050;
+  --grid-minor: #111a24;
+
+  --text: #e6fcff;
+  --text-strong: #ffffff;
+  --text-dim: #8fb8c4;
+  --text-faint: #6e97a3;
+
+  --accent: #00e5ff;
+  --accent-hi: #6bf2ff;
+  --accent-ink: #001014;
+  --focus: #00e5ff;
+  --ok: #39ff88;
+  --warn: #ffc400;
+  --error: #ff4d6d;
+  --edge: #8fb8c4;
+  --edge-recycle: #ff2ea6;
+  --selected-text: #ffffff;
+
+  --titlebar-a: #05060a;
+  --titlebar-b: #0b1220;
+  --titlebar-c: #080e18;
+  --titlebar-d: #05060a;
+  --titlebar-text: #e6fcff;
+  --titlebar-muted: #8fb8c4;
+  --ctl-face: #101624;
+  --ctl-face-hi: #1b2436;
+  --ctl-face-low: #0b0f18;
+  --ctl-text: #e6fcff;
+  --ctl-border: #00e5ff;
+  --well: #04060a;
+  --well-border: #2a4050;
+  --pill-face: #101624;
+  --pill-border: #2a4050;
+  --tab-face: #101624;
+  --tab-face-active: #0b0f18;
+  --tab-text: #8fb8c4;
+  --tab-text-active: #e6fcff;
+  --tab-border: #2a4050;
+  --table-face: #0b0f18;
+  --table-head-face: #101624;
+  --table-head-text: #8fb8c4;
+  --table-stripe: #0e1320;
+  --node-face: #0b0f18;
+  --node-head: #101624;
+  --node-head-text: #e6fcff;
+  --node-border: #00e5ff;
+  --pin-a: #05060a;
+  --pin-b: #070a12;
+  --desktop-a: #05060a;
+  --desktop-b: #070a12;
+
+  --glow-accent: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* --------------------------------------------------------------------------------------- */
+/* xyflow: bridged, not overridden                                                          */
+/* --------------------------------------------------------------------------------------- */
+
 .react-flow {
-  --xy-background-color: var(--bg-canvas);
+  --xy-background-color: var(--surface-canvas);
   --xy-background-pattern-color: var(--grid-minor);
   --xy-edge-stroke-default: var(--edge);
   --xy-edge-stroke-width-default: 1.2;
@@ -168,7 +1003,7 @@
   --xy-handle-background-color-default: var(--text-dim);
   --xy-handle-border-color-default: var(--bg-panel);
   --xy-selection-background-color-default: var(--accent-tint);
-  --xy-selection-border-default: 1px dashed var(--accent);
+  --xy-selection-border-default: var(--focus-w) var(--focus-style) var(--accent);
   --xy-edge-label-background-color-default: var(--bg-panel);
   --xy-edge-label-color-default: var(--text);
   --xy-controls-button-background-color-default: var(--bg-raised);
@@ -190,13 +1025,16 @@
 }
 
 /*
- * Reduced motion zeroes the durations rather than each rule, which is why a duration written as a
- * literal anywhere else would escape this - the test beside this file forbids one.
+ * Reduced motion zeroes every duration rather than each rule, which is why a duration written as
+ * a literal anywhere else would escape this - the test beside this file forbids one.
  */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --t-fast: 0ms;
     --t-mid: 0ms;
+    --t-slow: 0ms;
+    --t-blink: 0ms;
+    --t-pulse: 0ms;
   }
 
   .react-flow__edge.animated path,

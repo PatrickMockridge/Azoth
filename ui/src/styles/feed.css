@@ -21,9 +21,9 @@
 
 .boundary-row .remove {
   width: var(--ctl-h);
-  border: 1px solid var(--line-strong);
+  border: var(--bevel-w) solid var(--ctl-border);
   border-radius: var(--r2);
-  background: var(--bg-raised);
+  background: var(--ctl-face-paint);
   color: var(--text-dim);
   cursor: pointer;
 }
@@ -42,7 +42,7 @@
   color: var(--text-dim);
   font-size: var(--fs-xs);
   font-weight: 600;
-  text-transform: uppercase;
+  text-transform: var(--label-transform);
   letter-spacing: var(--ls-label);
 }
 
@@ -57,10 +57,10 @@
 .feed-editor .feed-actions button,
 .component-picker .matches button {
   padding: var(--s2) var(--s4);
-  border: 1px solid var(--line-strong);
+  border: var(--bevel-w) solid var(--ctl-border);
   border-radius: var(--r2);
-  background: var(--bg-raised);
-  color: var(--text);
+  background: var(--ctl-face-paint);
+  color: var(--ctl-text);
   cursor: pointer;
 }
 
@@ -103,9 +103,9 @@
   width: 100%;
   height: var(--ctl-h);
   padding: 0 var(--s3);
-  border: 1px solid var(--line-strong);
+  border: var(--bevel-w) solid var(--well-border);
   border-radius: var(--r2);
-  background: var(--bg-input);
+  background: var(--well);
   color: var(--text);
   font-family: var(--font-mono);
   font-variant-numeric: var(--tabnum);
@@ -114,9 +114,9 @@
 .component-row button {
   width: var(--ctl-h);
   height: var(--ctl-h);
-  border: 1px solid var(--line-strong);
+  border: var(--bevel-w) solid var(--ctl-border);
   border-radius: var(--r2);
-  background: var(--bg-raised);
+  background: var(--ctl-face-paint);
   color: var(--text-dim);
   cursor: pointer;
 }
@@ -125,9 +125,9 @@
   width: 100%;
   height: var(--ctl-h);
   padding: 0 var(--s3);
-  border: 1px solid var(--line-strong);
+  border: var(--bevel-w) solid var(--well-border);
   border-radius: var(--r2);
-  background: var(--bg-input);
+  background: var(--well);
   color: var(--text);
   font-family: var(--font-mono);
   font-size: var(--fs-sm);
@@ -188,9 +188,9 @@
 .feed-head .button {
   height: var(--ctl-h);
   padding: 0 var(--s4);
-  border: 1px solid var(--line-strong);
+  border: var(--bevel-w) solid var(--ctl-border);
   border-radius: var(--r3);
-  background: var(--bg-raised);
-  color: var(--text);
+  background: var(--ctl-face-paint);
+  color: var(--ctl-text);
   cursor: pointer;
 }

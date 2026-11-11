@@ -1,0 +1,237 @@
+/*
+ * Cyberpunk: the 1-2-3 terminal that grew up.
+ *
+ * **One band, neon rules, and a scanline that is decoration.** The layout keeps the title and its
+ * tools on one line, strips the radii, sets labels in the mono face and lets the accent do the
+ * pointing; the scanline is a fixed overlay under the modal layer, so it never intercepts a
+ * gesture or paints over a dialog. Tone cells decide whether the neon is on black, graphite or
+ * bone paper.
+ */
+
+[data-layout="cyberpunk"] .app {
+  position: relative;
+  height: 100%;
+  margin: 0;
+  border: 0;
+}
+
+[data-layout="cyberpunk"] .bar {
+  flex-wrap: nowrap;
+}
+
+[data-layout="cyberpunk"] .bar-identity {
+  width: auto;
+  flex: 0 0 auto;
+  padding-inline-end: 0;
+}
+
+[data-layout="cyberpunk"] .bar-tools {
+  width: auto;
+  flex: 1;
+  border-top: 0;
+  background: transparent;
+  color: var(--titlebar-text);
+}
+
+[data-layout="cyberpunk"] .bar h1 {
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px var(--glow-accent);
+}
+
+[data-layout="cyberpunk"] .bar-tools .build,
+[data-layout="cyberpunk"] .bar-tools .units-label {
+  color: var(--titlebar-muted);
+}
+
+[data-layout="cyberpunk"] .bar-identity .screening,
+[data-layout="cyberpunk"] .bar-identity .pill {
+  border-color: var(--accent);
+  background: transparent;
+}
+
+[data-layout="cyberpunk"] .bar {
+  border-bottom: 1px solid var(--accent);
+  box-shadow: 0 0 10px var(--glow-accent);
+}
+
+[data-layout="cyberpunk"] .ribbon {
+  border-bottom: 1px solid var(--line-strong);
+}
+
+/* Controls: a dark key with a neon hairline; hover is a glow, not a lift. */
+[data-layout="cyberpunk"] button,
+[data-layout="cyberpunk"] .button,
+[data-layout="cyberpunk"] input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+[data-layout="cyberpunk"] select {
+  border: var(--bevel-w) solid var(--ctl-border);
+  border-radius: 0;
+  background: var(--ctl-face-paint);
+  box-shadow: none;
+  color: var(--ctl-text);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+[data-layout="cyberpunk"] input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+[data-layout="cyberpunk"] select {
+  border-color: var(--well-border);
+  background: var(--well);
+  box-shadow: none;
+  color: var(--text);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+[data-layout="cyberpunk"] button:hover:not(:disabled),
+[data-layout="cyberpunk"] .button:hover:not(.off) {
+  border-color: var(--accent);
+  background: var(--ctl-face-hover);
+  box-shadow: 0 0 8px var(--glow-accent);
+}
+
+[data-layout="cyberpunk"] .entry,
+[data-layout="cyberpunk"] .tree-row,
+[data-layout="cyberpunk"] .diagnostic,
+[data-layout="cyberpunk"] .link,
+[data-layout="cyberpunk"] .message-head {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+[data-layout="cyberpunk"] .workspace-switch {
+  border-color: var(--accent);
+  border-radius: 0;
+}
+
+[data-layout="cyberpunk"] .workspace-switch button {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-dim);
+}
+
+[data-layout="cyberpunk"] .workspace-switch button.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+[data-layout="cyberpunk"] .primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--glow-accent);
+  color: var(--accent-ink);
+}
+
+/* Tabs: flat, angular, with the active one lit from below. */
+[data-layout="cyberpunk"] .tab {
+  border: 1px solid var(--tab-border);
+  border-bottom: 0;
+  background: var(--tab-face);
+  color: var(--tab-text);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
+}
+
+[data-layout="cyberpunk"] .tab.active {
+  background: var(--tab-face-active);
+  color: var(--tab-text-active);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+[data-layout="cyberpunk"] .tabs {
+  border-bottom-color: var(--accent);
+}
+
+/* Panels are outlined, not filled; the field behind them is the texture. */
+[data-layout="cyberpunk"] .side,
+[data-layout="cyberpunk"] .dock,
+[data-layout="cyberpunk"] .status-bar {
+  border-color: var(--line-strong);
+}
+
+[data-layout="cyberpunk"] .status-bar {
+  border-top-color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+[data-layout="cyberpunk"] .unit-plate {
+  border: 1px solid var(--node-border);
+  box-shadow: none;
+}
+
+[data-layout="cyberpunk"] .unit-plate.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--glow-accent);
+}
+
+[data-layout="cyberpunk"] .unit-plate header {
+  color: var(--node-head-text);
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+[data-layout="cyberpunk"] .stream {
+  border: 1px solid var(--frame);
+  background: var(--node-face);
+}
+
+[data-layout="cyberpunk"] .overview,
+[data-layout="cyberpunk"] .welcome {
+  border: var(--frame-w) solid var(--accent);
+  border-radius: 0;
+  box-shadow: 0 0 16px var(--glow-accent);
+}
+
+[data-layout="cyberpunk"] .overview-head {
+  border-bottom: 1px solid var(--accent);
+}
+
+[data-layout="cyberpunk"] .overview-head h2 {
+  color: var(--accent);
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Scrollbars: a square neon thumb on the page's own black. */
+[data-layout="cyberpunk"] *::-webkit-scrollbar-thumb {
+  border: 0;
+  border-radius: 0;
+  background: var(--scrollbar-thumb);
+}
+
+[data-layout="cyberpunk"] *::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+/* A recycle is the one edge that glows; the rest stay quiet so the drawing remains readable. */
+[data-layout="cyberpunk"] .react-flow__edge.tear .react-flow__edge-path {
+  filter: drop-shadow(0 0 3px var(--glow-accent));
+}
+
+/*
+ * The scanline. It sits on the static app, not the transformed xyflow viewport, so panning does
+ * not repaint it, and below the modal layer so a dialog is read without a screen door.
+ */
+[data-layout="cyberpunk"] .app::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 2px,
+    var(--texture) 2px 3px
+  );
+}

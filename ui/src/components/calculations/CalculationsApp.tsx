@@ -12,7 +12,7 @@ import blankBook from "../../../../specs/calcbooks/blank.toml?raw";
 import demoBook from "../../../../specs/calcbooks/demo.toml?raw";
 import { saveText } from "../../save";
 import { declaredToSI, type Units } from "../../state/units";
-import type { Theme } from "../../state/theme";
+import type { Appearance } from "../../state/appearance";
 import { RibbonGroup } from "../RibbonGroup";
 import type { SheetDoor, SheetOpened, SheetSession } from "../../wire/session";
 import type { SheetCommand } from "../../wire/sheetCommands";
@@ -38,23 +38,23 @@ export function CalculationsApp({
   door,
   catalogue,
   units,
-  theme,
+  appearance,
   version,
   workspace,
   hidden,
   onWorkspace,
-  onTheme,
+  onAppearance,
   onUnits,
 }: {
   door: SheetDoor | null;
   catalogue: Catalogue | null;
   units: Units;
-  theme: Theme;
+  appearance: Appearance;
   version: string;
   workspace: Workspace;
   hidden: boolean;
   onWorkspace: (workspace: Workspace) => void;
-  onTheme: () => void;
+  onAppearance: (appearance: Appearance) => void;
   onUnits: (id: string) => void;
 }) {
   const [session, setSession] = useState<SheetSession | null>(null);
@@ -325,13 +325,13 @@ export function CalculationsApp({
       <CalcTitleStrip
         envelope={envelope}
         workspace={workspace}
-        theme={theme}
+        appearance={appearance}
         units={units}
         unsaved={unsaved}
         version={version}
         onName={(name) => send({ command: "set_book_name", name })}
         onWorkspace={onWorkspace}
-        onTheme={onTheme}
+        onAppearance={onAppearance}
         onUnits={onUnits}
       />
 

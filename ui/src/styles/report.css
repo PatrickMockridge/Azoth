@@ -17,10 +17,10 @@
 .workbook-head .export {
   height: var(--ctl-h);
   padding: 0 var(--s4);
-  border: 1px solid var(--line-strong);
+  border: var(--bevel-w) solid var(--ctl-border);
   border-radius: var(--r3);
-  background: var(--bg-raised);
-  color: var(--text);
+  background: var(--ctl-face-paint);
+  color: var(--ctl-text);
   cursor: pointer;
 }
 
@@ -35,7 +35,7 @@
   z-index: 20;
   overflow-y: auto;
   padding: var(--s6);
-  background: var(--bg-app);
+  background: var(--surface-report);
   color: var(--text);
 }
 
@@ -63,10 +63,10 @@
 .report-head button {
   height: var(--ctl-h);
   padding: 0 var(--s4);
-  border: 1px solid var(--line-strong);
+  border: var(--bevel-w) solid var(--ctl-border);
   border-radius: var(--r3);
-  background: var(--bg-raised);
-  color: var(--text);
+  background: var(--ctl-face-paint);
+  color: var(--ctl-text);
   cursor: pointer;
 }
 
@@ -81,7 +81,7 @@
   margin-block: var(--s5);
   padding: var(--s4);
   border: 1px solid var(--line);
-  background: var(--bg-panel);
+  background: var(--surface-report);
 }
 
 .pfd {
@@ -167,18 +167,96 @@
     margin: 12mm;
   }
 
-  :root {
+  /*
+   * **The paper palette, at the end of the import list and specific enough to win.** A layout cell
+   * is `[data-layout][data-theme]`, so a plain `:root` block would lose; this block resets every
+   * tone and paint the chrome could carry, and it is the only place a screen colour is overridden.
+   */
+  :root,
+  [data-theme],
+  [data-layout],
+  [data-layout][data-theme] {
+    color-scheme: light;
+    --bg-app: #fff;
+    --bg-canvas: #fff;
     --bg-panel: #fff;
+    --bg-panel-2: #fff;
     --bg-raised: #fff;
+    --bg-input: #fff;
+    --bg-selected: #ddd;
+    --line: #ccc;
+    --line-strong: #888;
+    --grid-minor: #eee;
     --text: #111;
     --text-strong: #000;
     --text-dim: #333;
-    --line: #ccc;
-    --line-strong: #888;
+    --text-faint: #555;
     --accent: #000;
+    --accent-hi: #000;
     --accent-ink: #fff;
+    --focus: #000;
+    --ok: #000;
+    --warn: #222;
+    --error: #000;
     --edge: #333;
     --edge-recycle: #333;
+    --selected-text: #000;
+    --surface-app: #fff;
+    --surface-canvas: #fff;
+    --surface-panel: #fff;
+    --surface-panel-2: #fff;
+    --surface-raised: #fff;
+    --surface-bar: #fff;
+    --surface-tools: #fff;
+    --surface-ribbon: #fff;
+    --surface-dock: #fff;
+    --surface-status: #fff;
+    --surface-tabs: #fff;
+    --surface-tab-active: #fff;
+    --surface-menu: #fff;
+    --surface-report: #fff;
+    --surface-node: #fff;
+    --surface-node-head: #fff;
+    --surface-cell: #fff;
+    --surface-cell-alt: #fff;
+    --ctl-face-paint: #fff;
+    --ctl-face-hover: #fff;
+    --ctl-text: #111;
+    --ctl-border: #888;
+    --well: #fff;
+    --well-border: #888;
+    --pill-face: #fff;
+    --pill-border: #888;
+    --table-face: #fff;
+    --table-head-face: #fff;
+    --table-head-text: #333;
+    --table-stripe: #fff;
+    --node-face: #fff;
+    --node-head: #fff;
+    --node-head-text: #111;
+    --node-border: #888;
+    --tab-face: #fff;
+    --tab-face-active: #fff;
+    --tab-text: #333;
+    --tab-text-active: #000;
+    --tab-border: #888;
+    --titlebar-a: #fff;
+    --titlebar-b: #fff;
+    --titlebar-c: #fff;
+    --titlebar-d: #fff;
+    --titlebar-text: #111;
+    --titlebar-muted: #333;
+    --pin-a: #fff;
+    --pin-b: #fff;
+    --texture: transparent;
+    --glow-accent: transparent;
+    --node-shadow: none;
+    --menu-shadow: none;
+    --ctl-bevel: none;
+    --label-transform: none;
+    --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-display: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
   }
 
   body {
@@ -187,6 +265,21 @@
 
   /* The editor is not the report. */
   .app > :not(.report) {
+    display: none;
+  }
+
+  /* The layout's `.app` frame is `[data-layout="…"] .app`, so the reset needs the same weight. */
+  .app,
+  [data-layout] .app {
+    margin: 0;
+    height: auto;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .app::after {
     display: none;
   }
 

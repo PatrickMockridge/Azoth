@@ -3,16 +3,18 @@
  *
  * `tokens.css` first because everything else reads it, `base.css` next because it is what a bare
  * element gets, and then the surfaces - chrome, canvas, forms, tables - which do not know about
- * each other.
+ * each other. The layout files come after the components so their scoped rules win a tie by
+ * source order; `report.css` is last because its print block must beat every tone cell.
  *
  * **The split is the one that keeps a value out of a rule.** A colour, a duration, a radius or a
- * size written into `chrome.css` is a value `[data-theme="light"]` cannot reach, and
- * `test/tokens.test.ts` fails on one.
+ * size written into `chrome.css` is a value no other cell can reach, and `test/tokens.test.ts`
+ * fails on a colour or a duration. Geometry the layouts vary lives in `tokens.css`.
  */
 
 @import "./tokens.css";
 @import "./base.css";
 @import "./chrome.css";
+@import "./appearance.css";
 @import "./canvas.css";
 @import "./forms.css";
 @import "./tables.css";
@@ -20,4 +22,7 @@
 @import "./guide.css";
 @import "./calculations.css";
 @import "./overview.css";
+@import "./layouts/mac.css";
+@import "./layouts/xp.css";
+@import "./layouts/cyberpunk.css";
 @import "./report.css";

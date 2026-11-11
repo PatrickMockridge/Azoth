@@ -12,19 +12,19 @@
   display: grid;
   padding: var(--s6);
   place-items: center;
-  background: color-mix(in srgb, var(--bg-app) 72%, transparent);
+  background: var(--backdrop);
 }
 
 .overview {
   display: flex;
-  width: min(56rem, 92vw);
-  max-height: min(44rem, 88vh);
+  width: var(--dialog-w);
+  max-height: var(--dialog-h);
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--line-strong);
+  border: var(--frame-w) solid var(--line-strong);
   border-radius: var(--r4);
-  background: var(--bg-panel);
-  box-shadow: var(--e3);
+  background: var(--surface-menu);
+  box-shadow: var(--menu-shadow);
 }
 
 .overview-head {
@@ -52,10 +52,10 @@
 .overview-actions button {
   height: var(--ctl-h);
   padding: 0 var(--s4);
-  border: 1px solid var(--line-strong);
+  border: var(--bevel-w) solid var(--ctl-border);
   border-radius: var(--r3);
-  background: var(--bg-raised);
-  color: var(--text);
+  background: var(--ctl-face-paint);
+  color: var(--ctl-text);
   cursor: pointer;
 }
 
@@ -125,7 +125,7 @@
 .overview-severity {
   margin-inline-start: var(--s3);
   font-size: var(--fs-xs);
-  text-transform: uppercase;
+  text-transform: var(--label-transform);
 }
 
 .overview-severity.error {
