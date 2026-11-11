@@ -267,6 +267,19 @@
   stroke-dasharray: 1 2;
 }
 
+.pfd-edge-label {
+  position: absolute;
+  padding: 1px var(--s1);
+  border: 1px solid var(--line);
+  border-radius: var(--r2);
+  background: var(--surface-node);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .react-flow__edge-text {
   font-family: var(--font-mono);
   font-size: var(--fs-2xs);

@@ -85,6 +85,12 @@ To add a layout: add its id to the union and the chooser, add the full shape set
 `layouts/<id>.css` imported before `report.css`. The token and contrast tests name what is
 missing.
 
+**Connectors are routed, not guessed.** `src/pfd/route.ts` treats each node plate as an obstacle
+and finds an orthogonal path on a visibility grid; a recycle gets a return lane below the
+drawing, one lane per recycle. `src/components/PfdEdge.tsx` draws that path and keeps the old
+temperature/pressure tag. `test/pfdRoute.test.ts` checks that no segment crosses a plate, the
+return uses its lane, and no line is retraced in the opposite direction.
+
 ## Publish it
 
 `.github/workflows/pages.yml` builds the wasm and `dist/` on every push to `main` that reaches

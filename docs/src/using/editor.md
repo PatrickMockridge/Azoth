@@ -38,6 +38,8 @@ This page is part of the user manual; [Using azoth](./index.md) is its start.
   feed takes its connections with it; **Undo** restores it.
 - A connection can be turned into a **tear** — a recycle — from its Connections sheet. A tear is
   drawn as a moving line and is iterated until its residual is small.
+- Connectors are routed around the node plates; a recycle takes its own return lane below the
+  drawing, so it never runs back over a unit or along its own outbound line.
 
 ## Feeds, products and units
 

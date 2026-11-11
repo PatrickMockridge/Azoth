@@ -20,7 +20,6 @@ import {
   ReactFlow,
   useEdgesState,
   useNodesState,
-  type BuiltInEdge,
   type Connection,
   type Edge,
   type Node,
@@ -33,10 +32,17 @@ import { formatQuantity } from "../wire/field";
 import { removeCommandFor } from "../wire/nodes";
 import { asEdgeData } from "../wire/decode";
 import type { Catalogue, Envelope, GraphNode } from "../wire/types";
+import { PfdEdge } from "./PfdEdge";
 import { STREAM_NODE, UNIT_NODE, nodeTypes, type NodePayload } from "./UnitOpNode";
 
-/** The connector shape: a right-angle route with a 4 px corner radius. */
-export const PFD_EDGE = { type: "smoothstep" as const, borderRadius: 4 };
+/** The connector: a route computed around the node plates, not xyflow's handle-to-handle curve. */
+export const PFD_EDGE = { type: "pfd" as const };
+
+const edgeTypes = { pfd: PfdEdge };
+
+/** The plate sizes the router treats as obstacles; they are the layout tokens' fixed values. */
+const UNIT_OBSTACLE = { width: 190, height: 168 };
+const STREAM_OBSTACLE = { width: 160, height: 42 };
 
 /**
  * **One line per point.** A handle already carrying an edge is full; a connection needs a free
@@ -139,6 +145,7 @@ export function Flowsheet({
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={connect}
@@ -271,16 +278,32 @@ function derive(
     };
   });
 
-  const edges: BuiltInEdge[] = envelope.flowsheet.graph.edges.map((edge) => {
+  const obstacles = nodes.map((node) => ({
+    x: node.position.x,
+    y: node.position.y,
+    width: node.type === UNIT_NODE ? UNIT_OBSTACLE.width : STREAM_OBSTACLE.width,
+    height: node.type === UNIT_NODE ? UNIT_OBSTACLE.height : STREAM_OBSTACLE.height,
+  }));
+  let returnLane = 0;
+
+  const edges: Edge[] = envelope.flowsheet.graph.edges.map((edge) => {
     const stream = streams[edge.data.path];
+    const recycle = edge.data.kind === "recycle";
     return {
       id: edge.id,
       type: PFD_EDGE.type,
-      pathOptions: { borderRadius: PFD_EDGE.borderRadius },
       source: edge.source,
       sourceHandle: edge.sourceHandle,
       target: edge.target,
       targetHandle: edge.targetHandle,
+      data: {
+        ...edge.data,
+        route: {
+          obstacles,
+          recycle,
+          lane: recycle ? returnLane++ : 0,
+        },
+      },
       markerEnd: {
         type: MarkerType.ArrowClosed,
         width: 14,

@@ -136,11 +136,10 @@ describe("the editor", () => {
     expect(connectable(occupied, "feed_1", undefined)).toBe(false);
   });
 
-  it("uses the HYSYS connector shape", () => {
+  it("uses the node-avoiding orthogonal connector", () => {
     // **The canvas cannot draw a path in jsdom** (it measures handle rectangles), so this is the
-    // configuration the real canvas consumes: a smoothstep route, not the default bezier, with a
-    // 4 px corner. The visual check is the drawing itself.
-    expect(PFD_EDGE).toEqual({ type: "smoothstep", borderRadius: 4 });
+    // configuration the real canvas consumes: the custom route, not xyflow's default bezier.
+    expect(PFD_EDGE).toEqual({ type: "pfd" });
   });
 
   it("opens a node overview on double-click and hands it back to the bar", async () => {
