@@ -82,6 +82,17 @@
   color: var(--menubar-ink);
 }
 
+/* The View menu already carries the workspace switch and the build stamp is not a Macintosh
+   control; hiding both keeps the one-row menu bar from crowding the case name. */
+[data-layout="mac"] .bar-tools .workspace-switch,
+[data-layout="mac"] .bar-tools .build {
+  display: none;
+}
+
+[data-layout="mac"] .bar .case-name input {
+  width: 9rem;
+}
+
 /* --- the desktop ------------------------------------------------------------ */
 
 [data-layout="mac"] .body,
@@ -179,7 +190,7 @@
   background: var(--surface-window-title);
   color: var(--window-title-ink);
   font-family: var(--font-display);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-sm);
   font-weight: 700;
   cursor: move;
   user-select: none;
@@ -251,8 +262,8 @@
   gap: 0;
   overflow: hidden;
   padding: var(--s1) var(--s3);
-  font-size: var(--fs-2xs);
-  line-height: 1.25;
+  font-size: var(--fs-xs);
+  line-height: 1.3;
 }
 
 [data-layout="mac"] [data-window="status"] .spacer {

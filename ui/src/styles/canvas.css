@@ -169,40 +169,40 @@
   pointer-events: none;
 }
 
-.glyph .body {
+.glyph .glyph-body {
   fill: none;
   stroke: var(--text-dim);
   stroke-width: 1.4;
   vector-effect: non-scaling-stroke;
 }
 
-.glyph .detail {
+.glyph .glyph-detail {
   fill: none;
   stroke: var(--line-strong);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
-.glyph .accent {
+.glyph .glyph-accent {
   fill: var(--text-dim);
   stroke: none;
 }
 
-.glyph.selected .body {
+.glyph.selected .glyph-body {
   stroke: var(--accent);
 }
 
-.glyph.selected .accent {
+.glyph.selected .glyph-accent {
   fill: var(--accent);
 }
 
 /* A diagnostic names this node: the drawing says so, because the border is a thin line on a
    surface a person is reading at a glance. */
-.glyph.flagged .body {
+.glyph.flagged .glyph-body {
   stroke: var(--error);
 }
 
-.glyph.flagged .accent {
+.glyph.flagged .glyph-accent {
   fill: var(--error);
 }
 

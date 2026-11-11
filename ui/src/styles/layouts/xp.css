@@ -243,7 +243,7 @@
   border-bottom: 1px solid var(--line-strong);
   background: var(--surface-panel-2);
   color: var(--text);
-  font-size: var(--fs-2xs);
+  font-size: var(--fs-xs);
   font-weight: 700;
 }
 

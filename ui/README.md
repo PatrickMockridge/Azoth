@@ -64,10 +64,10 @@ Navigator, document, Inspector, Workbook and status — differently:
   telemetry strip's rail switches hide the Navigator, Inspector, Workbook or Toolbar; the canvas
   never hides. `Ctrl/Cmd+K` opens the command palette.
 
-**Typography is bundled**, not borrowed from the OS: Sysfont for Macintosh, the unmodified Wine
-Tahoma for XP, Rajdhani and Share Tech Mono for Cyberpunk, with IBM Plex Mono for Macintosh data.
-`src/styles/fonts.css` and `src/fonts/` carry the faces and licences; `check:dist` asks for every
-font URL and its MIME type.
+**Typography is bundled**, not borrowed from the OS: Sysfont for Macintosh chrome, the unmodified
+Wine Tahoma for XP, Rajdhani for Cyberpunk chrome, with IBM Plex Sans for the readable body and
+IBM Plex Mono for data. `src/styles/fonts.css` and `src/fonts/` carry the faces and licences;
+`check:dist` asks for every font URL and its MIME type.
 
 **One command model** (`src/commands/model.ts`) feeds the toolbar, the menu bar and the palette.
 The toolbar buttons stay visible and keep their accessible names; menu items are `menuitem`s and

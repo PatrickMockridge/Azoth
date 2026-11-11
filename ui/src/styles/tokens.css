@@ -161,14 +161,14 @@
   --font-ui: "Wine Tahoma", Tahoma, "DejaVu Sans", Verdana, sans-serif;
   --font-display: "Wine Tahoma", Tahoma, "DejaVu Sans", Verdana, sans-serif;
   --font-mono: "Wine Tahoma", Tahoma, "DejaVu Sans", monospace;
-  --fs-2xs: 9px;
-  --fs-xs: 10px;
-  --fs-sm: 11px;
-  --fs-md: 11px;
-  --fs-lg: 14px;
-  --fs-xl: 17px;
-  --lh-tight: 1.25;
-  --lh-body: 1.45;
+  --fs-2xs: 11px;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 13px;
+  --fs-lg: 15px;
+  --fs-xl: 18px;
+  --lh-tight: 1.3;
+  --lh-body: 1.5;
   --ls-label: 0.04em;
   --label-transform: none;
   --tabnum: "tnum" 1, "zero" 1;
@@ -186,10 +186,10 @@
   --s10: 32px;
 
   /* density and geometry */
-  --row-h: 22px;
+  --row-h: 24px;
   --head-h: 26px;
-  --ctl-h: 23px;
-  --tab-h: 26px;
+  --ctl-h: 26px;
+  --tab-h: 28px;
   --r1: 2px;
   --r2: 3px;
   --r3: 3px;
@@ -197,7 +197,7 @@
   --r-pill: 3px;
   --col-nav: 210px;
   --col-dock: 320px;
-  --case-name-w: 12rem;
+  --case-name-w: 14rem;
   --desktop-gap: 6px;
   /* Fixed across layouts: xyflow measures the plate and the handles, and a theme switch must
      not re-route a drawing. Only paint, border and radius change. */
@@ -221,10 +221,10 @@
   --command-icon-size: 16px;
 
   /* The shells' furniture: a menu bar, a window title and a resize grip. */
-  --menubar-h: 22px;
+  --menubar-h: 24px;
   --menubar-ink: var(--text);
   --surface-menubar: var(--bg-panel);
-  --window-title-h: 22px;
+  --window-title-h: 24px;
   --window-title-ink: var(--text);
   --surface-window-title: var(--surface-bar);
   --window-shadow: var(--e2);
@@ -243,19 +243,19 @@
   --commands-x: 1%;
   --commands-y: 4%;
   --commands-w: 66%;
-  --commands-h: 12%;
+  --commands-h: 14%;
   --palette-x: 1%;
-  --palette-y: 18%;
+  --palette-y: 20%;
   --palette-w: 18%;
-  --palette-h: 40%;
+  --palette-h: 38%;
   --document-x: 20%;
-  --document-y: 18%;
+  --document-y: 20%;
   --document-w: 57%;
-  --document-h: 54%;
+  --document-h: 52%;
   --inspector-x: 78%;
-  --inspector-y: 18%;
+  --inspector-y: 20%;
   --inspector-w: 21%;
-  --inspector-h: 54%;
+  --inspector-h: 52%;
   --workbook-x: 20%;
   --workbook-y: 74%;
   --workbook-w: 57%;
@@ -265,11 +265,11 @@
   --status-w: 18%;
   --status-h: 12%;
   --picker-x: 1%;
-  --picker-y: 18%;
+  --picker-y: 20%;
   --picker-w: 24%;
   --picker-h: 52%;
   --worksheet-x: 26%;
-  --worksheet-y: 18%;
+  --worksheet-y: 20%;
   --worksheet-w: 73%;
   --worksheet-h: 76%;
   --wz: 1;
@@ -449,24 +449,24 @@
 /* --------------------------------------------------------------------------------------- */
 
 [data-layout="mac"] {
-  --font-ui: Sysfont, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-ui: "IBM Plex Sans", Geneva, "Helvetica Neue", "DejaVu Sans", sans-serif;
   --font-display: Sysfont, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: "IBM Plex Mono", Monaco, Menlo, "DejaVu Sans Mono", ui-monospace, monospace;
-  --fs-2xs: 9px;
-  --fs-xs: 10px;
-  --fs-sm: 11px;
-  --fs-md: 12px;
-  --fs-lg: 14px;
-  --fs-xl: 17px;
-  --lh-tight: 1.2;
-  --lh-body: 1.4;
+  --fs-2xs: 11px;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 13px;
+  --fs-lg: 16px;
+  --fs-xl: 19px;
+  --lh-tight: 1.3;
+  --lh-body: 1.5;
   --ls-label: 0.02em;
   --label-transform: none;
 
-  --row-h: 20px;
-  --head-h: 22px;
-  --ctl-h: 22px;
-  --tab-h: 24px;
+  --row-h: 24px;
+  --head-h: 24px;
+  --ctl-h: 24px;
+  --tab-h: 28px;
   --r1: 0px;
   --r2: 0px;
   --r3: 0px;
@@ -486,10 +486,10 @@
   --bar-pad-x: 8px;
   --command-icon-size: 14px;
 
-  --menubar-h: 24px;
+  --menubar-h: 28px;
   --menubar-ink: var(--text);
   --surface-menubar: var(--bg-panel);
-  --window-title-h: 20px;
+  --window-title-h: 24px;
   --window-title-ink: var(--text);
   --surface-window-title: repeating-linear-gradient(
     0deg,
@@ -774,24 +774,23 @@
 /* --------------------------------------------------------------------------------------- */
 
 [data-layout="cyberpunk"] {
-  --font-ui: Rajdhani, "IBM Plex Sans Condensed", "Arial Narrow", "Roboto Condensed",
-    "Segoe UI", system-ui, sans-serif;
+  --font-ui: "IBM Plex Sans", "DejaVu Sans", "Segoe UI", system-ui, sans-serif;
   --font-display: Rajdhani, "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
-  --font-mono: "Share Tech Mono", "IBM Plex Mono", "Cascadia Mono", ui-monospace, monospace;
-  --fs-2xs: 9px;
-  --fs-xs: 10px;
-  --fs-sm: 11px;
-  --fs-md: 12px;
-  --fs-lg: 15px;
-  --fs-xl: 18px;
-  --lh-tight: 1.2;
-  --lh-body: 1.45;
-  --ls-label: 0.14em;
+  --font-mono: "IBM Plex Mono", "Share Tech Mono", "Cascadia Mono", ui-monospace, monospace;
+  --fs-2xs: 11px;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 13px;
+  --fs-lg: 17px;
+  --fs-xl: 20px;
+  --lh-tight: 1.3;
+  --lh-body: 1.5;
+  --ls-label: 0.1em;
   --label-transform: uppercase;
 
-  --row-h: 22px;
+  --row-h: 24px;
   --head-h: 26px;
-  --ctl-h: 24px;
+  --ctl-h: 26px;
   --tab-h: 28px;
   --r1: 0px;
   --r2: 2px;
@@ -815,18 +814,18 @@
   --menubar-h: 0px;
   --menubar-ink: var(--text);
   --surface-menubar: var(--surface-bar);
-  --window-title-h: 24px;
+  --window-title-h: 28px;
   --window-title-ink: var(--text);
   --surface-window-title: var(--surface-panel);
   --window-shadow: var(--e3);
   --window-grip: 0px;
-  --hud-bar-h: 40px;
+  --hud-bar-h: 92px;
   --hud-gap: 10px;
-  --tools-w: 260px;
-  --inspector-w: 300px;
-  --dock-h: 190px;
-  --deck-h: 92px;
-  --deck-w: 720px;
+  --tools-w: 280px;
+  --inspector-w: 320px;
+  --dock-h: 200px;
+  --deck-h: 104px;
+  --deck-w: 780px;
   --surface-hud: color-mix(in srgb, var(--bg-panel) 88%, transparent);
   --hud-border: var(--accent);
 

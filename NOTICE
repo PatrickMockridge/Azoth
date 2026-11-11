@@ -43,6 +43,11 @@ licences are under `ui/src/fonts/licenses/` and the sources are recorded in
   Licence:   SIL Open Font License, Version 1.1
   Vendored:  ui/src/fonts/ibm-plex-mono-400.woff2, unmodified
 
+  Project:   IBM Plex Sans - https://fonts.google.com/specimen/IBM+Plex+Sans
+  Version:   Google Fonts v23, Latin subset, variable
+  Licence:   SIL Open Font License, Version 1.1
+  Vendored:  ui/src/fonts/ibm-plex-sans-latin.woff2, unmodified
+
 --------------------------------------------------------------------------------
 lean-units
 --------------------------------------------------------------------------------

@@ -12,6 +12,7 @@ record.
 | Rajdhani | `rajdhani-500.woff2`, `rajdhani-600.woff2` | 500, 600 | Google Fonts, `Rajdhani:v17` Latin subset (https://fonts.google.com/specimen/Rajdhani) | SIL OFL 1.1 | No |
 | Share Tech Mono | `share-tech-mono.woff2` | 400 | Google Fonts, `Share+Tech+Mono:v16` Latin subset (https://fonts.google.com/specimen/Share+Tech+Mono) | SIL OFL 1.1 | No |
 | IBM Plex Mono | `ibm-plex-mono-400.woff2` | 400 | Google Fonts, `IBM+Plex+Mono:v20` Latin subset (https://fonts.google.com/specimen/IBM+Plex+Mono) | SIL OFL 1.1 | No |
+| IBM Plex Sans | `ibm-plex-sans-latin.woff2` | 100-700 (variable) | Google Fonts, `IBM+Plex+Sans:v23` Latin subset (https://fonts.google.com/specimen/IBM+Plex+Sans) | SIL OFL 1.1 | No |
 
 ## Why Wine Tahoma stays TTF
 

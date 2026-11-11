@@ -32,9 +32,10 @@
   inset: 0 0 auto 0;
   display: flex;
   height: var(--hud-bar-h);
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  align-content: center;
   align-items: center;
-  gap: var(--s4);
+  gap: 0 var(--s4);
   padding: 0 var(--s4);
   border-bottom: 1px solid var(--accent);
   background: var(--surface-bar);
@@ -47,8 +48,8 @@
 }
 
 [data-layout="cyberpunk"] .bar-identity {
-  width: auto;
-  flex: 1 1 auto;
+  width: 100%;
+  flex: 0 0 100%;
   min-width: 0;
   padding: 0;
   gap: var(--s4);
@@ -56,10 +57,11 @@
 }
 
 [data-layout="cyberpunk"] .bar-tools {
-  width: auto;
-  flex: 0 0 auto;
-  padding: 0;
+  width: 100%;
+  flex: 0 0 100%;
+  padding: var(--s1) 0 0;
   border: 0;
+  border-top: 1px solid var(--line-strong);
   background: transparent;
   color: inherit;
 }
@@ -232,7 +234,7 @@
   background: var(--surface-panel-2);
   color: var(--accent);
   font-family: var(--font-mono);
-  font-size: var(--fs-2xs);
+  font-size: var(--fs-xs);
   letter-spacing: var(--ls-label);
   text-transform: uppercase;
 }

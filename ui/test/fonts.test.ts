@@ -69,11 +69,13 @@ it("names a declared family first in every layout token", () => {
   }
 });
 
-it("gives the UI face a different first family in each layout", () => {
-  const firsts = LIGHT.map((combination) => firstFamily(effective(combination).get("font-ui") ?? ""));
-  expect(new Set(firsts).size).toBe(3);
+it("keeps the chrome distinct and the body readable", () => {
+  // The body face is the readable one; Macintosh and Cyberpunk deliberately share it. The
+  // identity lives in the title/menu face, which must differ in every layout.
+  const uis = LIGHT.map((combination) => firstFamily(effective(combination).get("font-ui") ?? ""));
+  expect(new Set(uis)).toEqual(new Set(["Wine Tahoma", "IBM Plex Sans"]));
   const displays = LIGHT.map((combination) =>
     firstFamily(effective(combination).get("font-display") ?? ""),
   );
-  expect(new Set(displays).size).toBe(3);
+  expect(new Set(displays)).toEqual(new Set(["Wine Tahoma", "Sysfont", "Rajdhani"]));
 });
