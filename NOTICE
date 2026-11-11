@@ -8,6 +8,42 @@ spec cites the paper its method comes from and says in its own notes what was
 changed, and neither restates the licence terms recorded here.
 
 --------------------------------------------------------------------------------
+UI fonts
+--------------------------------------------------------------------------------
+
+The editor's three layouts bundle four families so their typography does not
+depend on the operating system. The files are under `ui/src/fonts/`; the full
+licences are under `ui/src/fonts/licenses/` and the sources are recorded in
+`ui/src/fonts/README.md`.
+
+  Project:   Sysfont - https://madebyarne.github.io/sysfont/
+  Version:   1.0 (`sysfont.zip`)
+  Licence:   SIL Open Font License, Version 1.1
+  Vendored:  ui/src/fonts/sysfont.woff2, unmodified
+
+  Project:   Wine Tahoma - https://github.com/wine-mirror/wine/tree/master/fonts
+  Version:   the files named `tahoma.ttf` and `tahomabd.ttf` on `master` at fetch time
+  Licence:   GNU Lesser General Public License, Version 2.1 or later
+  Copyright: Copyright (c) 2004 Larry Snyder, based on Bitstream Vera Sans,
+             Copyright (c) 2003 Bitstream, Inc.
+  Vendored:  ui/src/fonts/wine-tahoma.ttf and wine-tahoma-bold.ttf, unmodified
+
+  Project:   Rajdhani - https://fonts.google.com/specimen/Rajdhani
+  Version:   Google Fonts v17, Latin subset
+  Licence:   SIL Open Font License, Version 1.1
+  Vendored:  ui/src/fonts/rajdhani-500.woff2 and rajdhani-600.woff2, unmodified
+
+  Project:   Share Tech Mono - https://fonts.google.com/specimen/Share+Tech+Mono
+  Version:   Google Fonts v16, Latin subset
+  Licence:   SIL Open Font License, Version 1.1
+  Vendored:  ui/src/fonts/share-tech-mono.woff2, unmodified
+
+  Project:   IBM Plex Mono - https://fonts.google.com/specimen/IBM+Plex+Mono
+  Version:   Google Fonts v20, Latin subset
+  Licence:   SIL Open Font License, Version 1.1
+  Vendored:  ui/src/fonts/ibm-plex-mono-400.woff2, unmodified
+
+--------------------------------------------------------------------------------
 lean-units
 --------------------------------------------------------------------------------
 

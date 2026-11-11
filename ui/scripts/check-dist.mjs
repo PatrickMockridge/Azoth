@@ -32,6 +32,9 @@ const TYPES = new Map([
   [".svg", "image/svg+xml"],
   [".png", "image/png"],
   [".ico", "image/x-icon"],
+  [".woff2", "font/woff2"],
+  [".woff", "font/woff"],
+  [".ttf", "font/ttf"],
 ]);
 
 const failures = [];
@@ -140,6 +143,37 @@ try {
       fail(`${name} is served as ${type || "(no type)"}, not application/wasm`);
     }
   }
+
+  // Every font the CSS asks for, resolved relative to the stylesheet that names it. A font URL
+  // that only works at the site root is the same deploy failure as a root-absolute script.
+  let fonts = 0;
+  for (const name of (await readdir(assets)).filter((entry) => entry.endsWith(".css"))) {
+    const source = await readFile(join(assets, name), "utf8");
+    for (const match of source.matchAll(/url\((?:["']?)([^"')]+\.(?:woff2|ttf))(?:"|')?\)/g)) {
+      const value = match[1];
+      if (value.startsWith("http") || value.startsWith("data:")) {
+        continue;
+      }
+      fonts += 1;
+      const path = new URL(value, `http://x/assets/${name}`).pathname.replace(/^\//, "");
+      const response = await get(PREFIX + path);
+      if (response === null) {
+        continue;
+      }
+      const type = (response.headers.get("content-type") ?? "").split(";")[0];
+      const expected = TYPES.get(extname(path));
+      if (type !== expected) {
+        fail(`${path} is served as ${type || "(no type)"}, not ${expected}`);
+      }
+    }
+  }
+  if (fonts === 0) {
+    fail("the built CSS names no font file");
+  }
+
+  // The licences the font files travel under are part of the deployed artifact.
+  await get(`${PREFIX}fonts/OFL-1.1.txt`);
+  await get(`${PREFIX}fonts/LGPL-2.1.txt`);
 } finally {
   server.close();
 }

@@ -11,6 +11,7 @@
  * fails on a colour or a duration. Geometry the layouts vary lives in `tokens.css`.
  */
 
+@import "./fonts.css";
 @import "./tokens.css";
 @import "./base.css";
 @import "./chrome.css";

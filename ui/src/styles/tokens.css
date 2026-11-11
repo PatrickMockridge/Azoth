@@ -157,9 +157,9 @@
   --backdrop: color-mix(in srgb, var(--bg-app) 72%, transparent);
 
   /* type */
-  --font-ui: Tahoma, "Segoe UI", Verdana, system-ui, sans-serif;
-  --font-display: Tahoma, "Segoe UI", Verdana, system-ui, sans-serif;
-  --font-mono: "Lucida Console", Consolas, ui-monospace, monospace;
+  --font-ui: "Wine Tahoma", Tahoma, "DejaVu Sans", Verdana, sans-serif;
+  --font-display: "Wine Tahoma", Tahoma, "DejaVu Sans", Verdana, sans-serif;
+  --font-mono: "Wine Tahoma", Tahoma, "DejaVu Sans", monospace;
   --fs-2xs: 9px;
   --fs-xs: 10px;
   --fs-sm: 11px;
@@ -393,9 +393,9 @@
 /* --------------------------------------------------------------------------------------- */
 
 [data-layout="mac"] {
-  --font-ui: Chicago, Charcoal, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-display: Chicago, Charcoal, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-mono: Monaco, Menlo, ui-monospace, monospace;
+  --font-ui: Sysfont, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: Sysfont, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", Monaco, Menlo, "DejaVu Sans Mono", ui-monospace, monospace;
   --fs-2xs: 9px;
   --fs-xs: 10px;
   --fs-sm: 11px;
@@ -694,9 +694,9 @@
 /* --------------------------------------------------------------------------------------- */
 
 [data-layout="cyberpunk"] {
-  --font-ui: Bahnschrift, "DIN Alternate", "Arial Narrow", "Roboto Condensed", "Segoe UI",
-    system-ui, sans-serif;
-  --font-display: "Share Tech Mono", "IBM Plex Mono", "Cascadia Mono", ui-monospace, monospace;
+  --font-ui: Rajdhani, "IBM Plex Sans Condensed", "Arial Narrow", "Roboto Condensed",
+    "Segoe UI", system-ui, sans-serif;
+  --font-display: Rajdhani, "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-mono: "Share Tech Mono", "IBM Plex Mono", "Cascadia Mono", ui-monospace, monospace;
   --fs-2xs: 9px;
   --fs-xs: 10px;

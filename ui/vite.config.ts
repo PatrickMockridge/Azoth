@@ -21,6 +21,9 @@ export default defineConfig({
   // its module beside the emitted chunk - so a relative base is the one spelling that works in
   // all three without a build-time setting.
   base: "./",
+  // Fonts are emitted as files, not inlined as data URLs: `check-dist` looks for their MIME
+  // type under the Pages path, and a data URL cannot be asked for as a URL.
+  build: { assetsInlineLimit: 0 },
   // The wasm module is built by wasm-pack into `src/wasm/pkg`, and `vite` bundles the glue's
   // `new URL("azoth_wasm_bg.wasm", import.meta.url)` as an asset - which is why the target is
   // `web` and not `bundler`: one file to serve, no plugin, and no second loader.
