@@ -8,7 +8,7 @@
  * holds the copy to the module's key and defaults.
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { beforeEach, expect, it } from "vitest";
@@ -99,6 +99,17 @@ it("puts a choice in force and remembers it, unless asked not to", () => {
   expect(window.localStorage.getItem("azoth.appearance")).toBe(
     JSON.stringify({ layout: "cyberpunk", theme: "dark" }),
   );
+});
+
+it("links a browser icon that the build carries", () => {
+  const html = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
+  expect(html).toContain('rel="icon"');
+  expect(html).toContain("favicon.svg");
+  expect(html).toContain("favicon.ico");
+  expect(html).toContain("apple-touch-icon.png");
+  for (const name of ["favicon.svg", "favicon.ico", "apple-touch-icon.png"]) {
+    expect(existsSync(resolve(process.cwd(), "public", name)), name).toBe(true);
+  }
 });
 
 it("names the same key and defaults in the pre-paint script", () => {
