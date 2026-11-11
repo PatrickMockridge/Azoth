@@ -569,7 +569,7 @@ export function App() {
     [open],
   );
 
-  const commands: CommandSpec[] = [
+  const caseCommands: CommandSpec[] = [
     { id: "new", label: "New", menu: "case", run: openBlank, enabled: openable },
     {
       id: "open",
@@ -579,22 +579,32 @@ export function App() {
       enabled: openable,
     },
     { id: "demo", label: "Demo", menu: "case", run: openDemo, enabled: openable },
-    ...EXAMPLES.map((example) => ({
-      id: `example-${example.file}`,
-      label: `Open “${example.title}”`,
-      menu: "case" as const,
-      run: () => openExample(example.document),
-      enabled: openable,
-      keywords: "example case",
-    })),
-    {
-      id: "save",
-      label: "Save…",
-      menu: "case",
-      run: save,
-      enabled: session !== null,
-      shortcut: "Ctrl+S",
-    },
+  ];
+  const exampleCommands: CommandSpec[] = EXAMPLES.map((example) => ({
+    id: `example-${example.file}`,
+    label: example.title,
+    menu: "case" as const,
+    run: () => openExample(example.document),
+    enabled: openable,
+    keywords: "example case",
+  }));
+  const examplesSubmenu: CommandSpec = {
+    id: "examples",
+    label: "Demo cases…",
+    menu: "case",
+    run: () => {},
+    enabled: openable,
+    children: exampleCommands,
+  };
+  const saveCommand: CommandSpec = {
+    id: "save",
+    label: "Save…",
+    menu: "case",
+    run: save,
+    enabled: session !== null,
+    shortcut: "Ctrl+S",
+  };
+  const remainingCommands: CommandSpec[] = [
     {
       id: "undo",
       label: "Undo",
@@ -651,8 +661,21 @@ export function App() {
       enabled: true,
     },
   ];
+
+  // The palette searches the examples flat; the menu nests them under one heading, so the
+  // `Case` menu stays one line per row.
+  const commands: CommandSpec[] = [
+    ...caseCommands,
+    ...exampleCommands.map((command) => ({
+      ...command,
+      id: `palette-${command.id}`,
+      label: `Open “${command.label}”`,
+    })),
+    saveCommand,
+    ...remainingCommands,
+  ];
   const menus: MenuSpec[] = menusOf(
-    commands,
+    [...caseCommands, examplesSubmenu, saveCommand, ...remainingCommands],
     { case: "Case", book: "Book", edit: "Edit", run: "Run", view: "View", help: "Help" },
     ["case", "edit", "run", "view", "help"],
   );

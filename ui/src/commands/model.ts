@@ -19,6 +19,8 @@ export interface CommandSpec {
   hint?: string;
   /** Words that should find this command in the palette even when the label would not. */
   keywords?: string;
+  /** A submenu: the parent is a heading, and these are its entries. */
+  children?: readonly CommandSpec[];
 }
 
 export interface MenuSpec {

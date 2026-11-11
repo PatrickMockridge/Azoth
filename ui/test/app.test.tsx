@@ -402,6 +402,22 @@ describe("the editor", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
+  it("nests the worked cases under one Demo cases submenu", async () => {
+    stubFetch();
+    await open();
+
+    fireEvent.click(screen.getByRole("button", { name: "Case" }));
+    const parent = screen.getByRole("menuitem", { name: "Demo cases…" });
+    expect(parent.getAttribute("aria-haspopup")).toBe("menu");
+    fireEvent.click(parent);
+    expect(screen.getByRole("menuitem", { name: "Heat a gas" })).toBeDefined();
+    // The submenu is a second menu; the Case menu's own entries are still present.
+    expect(screen.getByRole("menuitem", { name: "New" })).toBeDefined();
+
+    fireEvent.click(screen.getByRole("menuitem", { name: "Heat a gas" }));
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+  });
+
   it("closes a menu on Escape and returns focus to its trigger", async () => {
     stubFetch();
     await open();

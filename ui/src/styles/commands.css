@@ -41,13 +41,24 @@
   inset-block-start: calc(100% + var(--s1));
   inset-inline-start: 0;
   display: flex;
+  width: max-content;
   min-width: 12rem;
+  max-width: min(30rem, calc(100vw - var(--s7) * 2));
   flex-direction: column;
   padding: var(--s1);
   border: 1px solid var(--line-strong);
   border-radius: var(--r2);
   background: var(--surface-menu);
   box-shadow: var(--menu-shadow);
+}
+
+.menu-subwrap {
+  position: relative;
+}
+
+.menu.submenu {
+  inset-block-start: calc(-1 * var(--s1));
+  inset-inline-start: 100%;
 }
 
 .menubar .menu-item {
@@ -66,7 +77,13 @@
   font: inherit;
   font-size: var(--fs-sm);
   text-align: start;
+  white-space: nowrap;
   cursor: pointer;
+}
+
+.menubar .menu-item > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .menubar .menu-item:hover:not(.off) {
