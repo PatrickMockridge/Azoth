@@ -219,22 +219,24 @@ export function UnitOpNode({ data, selected }: NodeProps<AppNode>) {
           {portLabel(slot)}
         </span>
       ))}
-      <Glyph
-        kind={glyphFor(graph.data.unit)}
-        sense={senseFor(graph.data.unit)}
-        selected={selected === true}
-        flagged={severity === "error"}
-      />
-      <header>{graph.data.unit_name ?? graph.data.unit ?? "unknown unit"}</header>
-      <div className="id">
-        {graph.data.name}
-        {form !== undefined && !form.runnable ? " · not runnable" : ""}
-      </div>
-      {readout.map((line) => (
-        <div key={line.port} className="readout">
-          {line.text}
+      <div className="unit-body">
+        <Glyph
+          kind={glyphFor(graph.data.unit)}
+          sense={senseFor(graph.data.unit)}
+          selected={selected === true}
+          flagged={severity === "error"}
+        />
+        <header>{graph.data.unit_name ?? graph.data.unit ?? "unknown unit"}</header>
+        <div className="id">
+          {graph.data.name}
+          {form !== undefined && !form.runnable ? " · not runnable" : ""}
         </div>
-      ))}
+        {readout.map((line) => (
+          <div key={line.port} className="readout">
+            {line.text}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

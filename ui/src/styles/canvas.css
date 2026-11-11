@@ -28,11 +28,21 @@
    * or a result; an unscoped `.unit` rule here put a 168px plate around every one of them.
    */
   height: var(--node-h);
-  overflow: hidden;
+  /* The labels sit outside the plate; only the content is clipped. */
+  overflow: visible;
   border: var(--bevel-w) solid var(--node-border);
   border-radius: var(--node-radius);
   background: var(--surface-node);
   box-shadow: var(--node-shadow);
+}
+
+.unit-body {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: inherit;
+  background: inherit;
 }
 
 .unit-plate header,
@@ -54,7 +64,7 @@
   z-index: 2;
   padding: 1px var(--s1);
   border-radius: var(--r2);
-  background: var(--surface-node);
+  background: var(--surface-canvas);
   color: var(--text-dim);
   font-family: var(--font-mono);
   font-size: var(--fs-2xs);
@@ -64,14 +74,21 @@
   pointer-events: none;
 }
 
+/*
+ * Outside the plate, on the edge an installer would read: the header and symbol stay clear.
+ * The two sides are staggered - a right-hand label sits above its nozzle, a left-hand one below -
+ * so the OUT of one unit and the IN of its neighbour, which share a gap, do not sit on one line.
+ */
 .port-label.left {
-  left: var(--s2);
-  transform: translateY(-50%);
+  right: calc(100% + var(--s1));
+  left: auto;
+  transform: translateY(0);
 }
 
 .port-label.right {
-  right: var(--s2);
-  transform: translateY(-50%);
+  left: calc(100% + var(--s1));
+  right: auto;
+  transform: translateY(-100%);
 }
 
 .port-label.top {
