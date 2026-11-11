@@ -4,6 +4,8 @@
 
 `eos.pr_lee_kesler_alpha`
 
+Peng-Robinson alpha function with a Soave-form m-factor. Use it when a Peng-Robinson EOS is fitted with the Lee-Kesler m correlation.
+
 ## Equation
 
 $$
@@ -21,6 +23,14 @@ alpha = (1 + m*(1 - sqrt(Tr)))**2 with m = 0.480 + 1.574*omega - 0.176*omega**2
 **NeqSim master `AttractiveTermPrLeeKesler`**
 
 `alpha(temperature)`, ported verbatim
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- despite the class name, this is the Soave (SRK) m-factor applied within the Peng-Robinson alpha form, not the Lee-Kesler BWR enthalpy method; NeqSim retains the class for backward compatibility.
+
 
 ## Inputs
 
@@ -44,13 +54,11 @@ alpha = (1 + m*(1 - sqrt(Tr)))**2 with m = 0.480 + 1.574*omega - 0.176*omega**2
 | `Tr > 0` | raises | the formula takes a square root of `Tr`; zero and below are not states |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
-
-- despite the class name, this is the Soave (SRK) m-factor applied within the Peng-Robinson alpha form, not the Lee-Kesler BWR enthalpy method; NeqSim retains the class for backward compatibility.
 
 - the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.
 

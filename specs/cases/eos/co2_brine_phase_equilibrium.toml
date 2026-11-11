@@ -55,10 +55,11 @@ feed as the 40 bara case at five times the pressure. **`accepted_root` is not as
 and the reason is a measurement rather than a gap: at this pressure the CO2-rich phase's
 vapour and liquid roots are the same root (`Z = 0.415472999952953` on both), so the two trials
 reach one fixed point and the class's choice between them is a strict comparison of two
-numerically equal Gibbs energies. NeqSim's arithmetic made the `OIL` one lower and this
-library's makes the `GAS` one; the phase count, fractions and compositions are the same
-either way, and those are what this case pins. The 40 bara case is where the roots differ and
-the label is determined."""
+numerically equal Gibbs energies. NeqSim's arithmetic made the `OIL` one lower. **This model
+treats an energy within `1e-9` (relative) of the incumbent as a tie and keeps the first
+trial, the `GAS` root**, so the two kernels report one label on every machine; the phase
+count, fractions and compositions are the same either way, and those are what this case pins.
+The 40 bara case is where the roots differ and the label is determined."""
 [cases.inputs]
 components = ["CO2", "water", "Na+", "Cl-"]
 T = 283.15

@@ -266,12 +266,9 @@ tags = ["flow-assurance"]
 [[skill]]
 name = "azoth-surf-cooldown-screening"
 version = "0.1.0"
-description = "Educational SURF flowline/riser cooldown and no-touch-time screening placeholder with public assumptions. USE WHEN: a task needs a quick, public estimate of how long an insulated subsea flowline stays above its hydrate formation temperature after shutdown, and should be directed to validated NeqSim methods for real cooldown and hydrate calculations."
-# `hybrid`, which is what the skill's own text says: its hydrate half calls the ported
-# `eos.hydrate_formation_temperature` and its cooldown half is the placeholder.
-calculation_basis = "hybrid"
+description = "Subsea flowline cooldown and no-touch-time screening with azoth: the hydrate equilibrium temperature, the flashed density and specific heat, the lumped cooldown and the verdict. USE WHEN: a task needs to know how long an insulated flowline stays above its hydrate formation temperature after shutdown."
+calculation_basis = "azoth"
 path = "skills/flow-assurance/surf-cooldown-screening/SKILL.md"
-tranche = "P9"
 tags = ["flow-assurance"]
 
 [[skill]]
@@ -510,10 +507,9 @@ tags = ["process"]
 [[skill]]
 name = "azoth-sand-erosion-screening"
 version = "0.1.0"
-description = "Educational sand-erosion and remaining-wall-life screening for solids-bearing lines. USE WHEN: a task needs a public, screening-level estimate of sand erosion rate, cumulative wall loss, and remaining wall life from a sand production rate before detailed DNV RP O501 erosion analysis."
-calculation_basis = "screening"
+description = "Sand-erosion and remaining-wall-life screening with azoth: the API RP 14E erosional velocity, the DNV RP O501 rate at a chosen fitting and material, the cumulative loss, the remaining wall and the risk band. USE WHEN: a task needs a produced-sand rate turned into a wall-loss or remaining-life estimate."
+calculation_basis = "azoth"
 path = "skills/process/sand-erosion-screening/SKILL.md"
-tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]

@@ -21,6 +21,13 @@ the real liquid's ``0.00826846105398939``.
 
 **Both velocities are superficial over the total area**, which is what separates them from
 ``TrayHydraulicsCalculator.getFsFactor()``, whose area is the net one less a downcomer.
+
+**A single phase's root is the feed's.** The flash's negative-flash branch answers
+``all_vapour``/``all_liquid`` with the *trial* composition's root - the other side of the cubic -
+while NeqSim's ``getPhase(0)``/``getDensity`` read the system's, so this family passes
+``from_feed=True``. The designer keeps the flash's root: its own capture was taken against it,
+and the Python designer uses a separate copy, so a global switch would move one mirror and not
+the other.
 """
 
 from __future__ import annotations
@@ -30,7 +37,7 @@ from typing import Any
 
 from azoth.core.units import Q, quantity
 from azoth.eos import components as _components
-from azoth.eos.reference._mixture_state import reduced_parameters
+from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
 from azoth.eos.reference.hydrate_inhibitor_wt import GAS, phase_label
 from azoth.eos.reference.pr_mass_density import pr_mass_density
 from azoth.eos.reference.pr_molar_volume import pr_molar_volume
@@ -76,19 +83,31 @@ def _mass_density(mixture: Any, t: float, p: float, z: list[float], root: float)
 
 
 def _labelled_phases(
-    components: list[str], t: float, p: float, z: list[float]
+    components: list[str], t: float, p: float, z: list[float], *, from_feed: bool = False
 ) -> tuple[Any, list[tuple[str, list[float], float]], list[float]]:
-    """The phases, labelled and in the order the class's own system carries them: gas first."""
+    """The phases, labelled and in the order the class's own system carries them: gas first.
+
+    ``from_feed`` re-derives a single phase's **root** from the feed as well as its
+    composition. The flash returns a trial root on a negative-flash answer - the other side of
+    the cubic - and the separator family's capacity surfaces need the feed's, which is what
+    NeqSim's phase getter returns. The columns keep the flash's root: that is the state their
+    own capture was taken against.
+    """
     mixture, _ideal_gas = _components.mixture_of(components, eos="pr")
     flash = pt_flash(mixture, quantity(t, "K"), quantity(p, "Pa"), list(z))
     reduced = reduced_parameters(mixture, t, p)
+    kij = mixture.effective_kij(t)
+
+    def single_root(liquid: bool) -> float:
+        if not from_feed:
+            return flash.z_liquid if liquid else flash.z_vapour
+        return phase_state(reduced, kij, list(z), liquid=liquid).z
 
     if flash.phase == "all_vapour":
-        labelled = [(GAS, list(z), flash.z_vapour)]
+        labelled = [(GAS, list(z), single_root(liquid=False))]
     elif flash.phase in ("all_liquid", "trivial"):
-        labelled = [
-            (phase_label(mixture, reduced, list(z), flash.z_liquid), list(z), flash.z_liquid)
-        ]
+        root = single_root(liquid=True)
+        labelled = [(phase_label(mixture, reduced, list(z), root), list(z), root)]
     else:
         labelled = [
             (GAS, list(flash.y), flash.z_vapour),
@@ -113,15 +132,21 @@ def _labelled_phases(
 
 
 def _system_per_mole(
-    components: list[str], t: float, p: float, z: list[float]
+    components: list[str],
+    t: float,
+    p: float,
+    z: list[float],
+    *,
+    from_feed: bool = False,
 ) -> tuple[float, float]:
     """The whole system's mass and volume per mole of it: ``(kg/mol, m**3/mol)``.
 
     **The sum over the phases, and every capacity-limit reading needs it.** ``getDensity("kg/m3")``
     and ``getFlowRate("m3/sec")`` are *system* quantities in NeqSim, not phase ones, and on a
-    two-phase outlet neither is either phase's.
+    two-phase outlet neither is either phase's. ``from_feed`` re-derives a single phase's root
+    from the feed; see :func:`_labelled_phases`.
     """
-    mixture, labelled, shares = _labelled_phases(components, t, p, z)
+    mixture, labelled, shares = _labelled_phases(components, t, p, z, from_feed=from_feed)
     mass = 0.0
     volume = 0.0
     for (_label, phase_z, root), share in zip(labelled, shares, strict=True):
@@ -132,9 +157,43 @@ def _system_per_mole(
     return mass, volume
 
 
-def _phase_zero_density(components: list[str], t: float, p: float, z: list[float]) -> float:
+def system_mass_density(
+    components: list[str], t: float, p: float, z: list[float], *, from_feed: bool = False
+) -> float:
+    """``SystemInterface.getDensity("kg/m3")``, kg/m**3.
+
+    The Python half of ``segment::phase::system_mass_density``. **It is the system's density and
+    not a phase's**, so it answers on a two-phase state where a single-phase cubic volume would
+    not. The default keeps the flash's root, which is what pump, filter, valve and the reactor
+    mechanical design were measured against; the columns' capacity family asks for the feed's.
+    """
+    mass, volume = _system_per_mole(components, t, p, z, from_feed=from_feed)
+    return mass / volume
+
+
+def system_volumetric_flow(
+    components: list[str],
+    t: float,
+    p: float,
+    z: list[float],
+    moles_per_second: float,
+    *,
+    from_feed: bool = False,
+) -> float:
+    """``SystemInterface.getFlowRate("m3/sec")``, m**3/s.
+
+    The Python half of ``segment::phase::system_volumetric_flow``: ``n * V`` summed over the
+    phases.
+    """
+    _mass, volume = _system_per_mole(components, t, p, z, from_feed=from_feed)
+    return moles_per_second * volume
+
+
+def _phase_zero_density(
+    components: list[str], t: float, p: float, z: list[float], *, from_feed: bool = False
+) -> float:
     """``getPhase(0)``'s mass density: the gas phase where there is one, the single phase else."""
-    mixture, labelled, _shares = _labelled_phases(components, t, p, z)
+    mixture, labelled, _shares = _labelled_phases(components, t, p, z, from_feed=from_feed)
     _label, phase_z, root = labelled[0]
     return _mass_density(mixture, t, p, phase_z, root)
 
@@ -177,13 +236,13 @@ def fs_limits(
     if area <= 0.0:
         fs_factor = 0.0
     else:
-        mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z)
+        mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z, from_feed=True)
         fs_factor = (gas_n * volume_per_mole) / area * math.sqrt(mass / volume_per_mole)
 
     # ``getMinimumDiameterForFsLimit`` **does not consult the area at all** - its own guard is the
     # limit's - so a column with no diameter still owes this number.
     if max_allowable_fs_factor > 0.0:
-        mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z)
+        mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z, from_feed=True)
         minimum_fs = math.sqrt(
             4.0
             * (gas_n * volume_per_mole)
@@ -231,7 +290,7 @@ def gas_load_limits(
     if area <= 0.0:
         velocity = 0.0
     else:
-        _mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z)
+        _mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z, from_feed=True)
         velocity = (gas_n * volume_per_mole) / area
 
     if _not_positive(velocity):
@@ -251,7 +310,9 @@ def gas_load_limits(
                 (liquid_density - gas_density) / gas_density
             )
             if permissible > 0.0:
-                _mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z)
+                _mass, volume_per_mole = _system_per_mole(
+                    components, gas_t, gas_p, gas_z, from_feed=True
+                )
                 minimum_gas_load = math.sqrt(
                     4.0 * (gas_n * volume_per_mole) / (math.pi * permissible)
                 )
@@ -273,6 +334,7 @@ def _densities(gas_out: Stream, liquid_out_vapour: Stream) -> tuple[float, float
         gas_out.t.to("K").magnitude,
         gas_out.p.to("Pa").magnitude,
         list(gas_out.z),
+        from_feed=True,
     )
     liquid_density = resolve_liquid_density(
         gas_density,
@@ -281,6 +343,7 @@ def _densities(gas_out: Stream, liquid_out_vapour: Stream) -> tuple[float, float
             liquid_out_vapour.t.to("K").magnitude,
             liquid_out_vapour.p.to("Pa").magnitude,
             list(liquid_out_vapour.z),
+            from_feed=True,
         ),
     )
     return gas_density, liquid_density

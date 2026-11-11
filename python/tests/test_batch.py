@@ -223,6 +223,9 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # `salt` names the `compsalt` row and the three overrides, like `form` and `eos`:
         # a categorical input with no float-array column shape.
         "eos.scale_saturation_ratio",
+        # The inhibitor performance takes two categorical inputs - the mineral and the
+        # inhibitor family - for the same reason: a batch would compute one pair N times.
+        "eos.scale_inhibitor_performance",
         # The binary Pitzer model takes four categorical inputs - the salt, the ion whose
         # coefficient is reported, and the cation and anion of the product - so a batch has
         # no column to vary any of them down, the same reason as `salt` above.
@@ -247,11 +250,43 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # `eos` names the cubic the reference liquid is built from, the same categorical
         # input the other two carry.
         "eos.solid_fugacity",
+        # `geometry` and `pipe_material` name the fitting and the wall material, and the
+        # arithmetic changes with both: a categorical input with no float-array column.
+        "eos.erosion_prediction",
+        # `model` names one of six relative-viscosity expressions, and a demulsifier is a
+        # flag rather than a column: a batch would compute one pair N times.
+        "eos.emulsion_viscosity",
         # `source` picks one of three reaction tables and `reaction` names a row in it.
         # The second is not an enum at all, and both select *which arithmetic* runs
         # rather than scaling it, so there is no column to vary them down: a batch would
         # compute one reaction N times.
         "reactions.equilibrium_constant",
+        # The rating carries three categorical inputs - `triangular_pitch`, the shell-side
+        # method and the sealing flag - and each selects a branch rather than scaling one,
+        # so there is no float-array column to vary any of them down.
+        "thermal.shell_and_tube_rating",
+        # The vibration screen's `triangular_pitch` is a categorical layout switch, the same
+        # reason: the two Connors constants are different arithmetic, not a scale factor.
+        "thermal.shell_and_tube_vibration",
+        # The boiling calc's `horizontal` switch is categorical, the same reason.
+        "thermal.boiling_heat_transfer",
+        # The fouling calc's `model` picks one of three resistances - a categorical choice
+        # that changes the arithmetic, so a batch has no column to vary it down.
+        "thermal.fouling_model",
+        # The insert calc's `insert` picks one of three correlation pairs, the same reason.
+        "thermal.tube_insert_model",
+        # The TEMA calc carries eight categorical inputs - the three head letters, the class,
+        # the tube size, the pitch pattern, the baffle type - and a boolean recommendation.
+        "thermal.tema_standard",
+        # The zone rating's `zones` record list has no float-array column, and the base's
+        # `triangular_pitch` and shell-side method are categorical switches.
+        "thermal.zone_rating",
+        # The incremental analysis carries a zones record list, per-row regime strings and the
+        # categorical layout switch, so it has no float-array columns either.
+        "thermal.incremental_zone_analysis",
+        # The design calculator carries designation, class and material-grade strings, the tube
+        # size and shell-side method enums, and two boolean switches.
+        "thermal.shell_and_tube_design",
     }, sorted(excluded)
 
 

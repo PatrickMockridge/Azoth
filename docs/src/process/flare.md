@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/flare/Flare.java**
 
-Its steady-state `run`: the inlet cloned to the outlet, `heatDuty = inStream.LCV() * flowSm3sec`, and `co2Emission` from the gas's carbon. **The radiation model and the capacity check are not read.**
+Its steady-state `run`: the inlet cloned to the outlet, `heatDuty = inStream.LCV() * flowSm3sec`, and `co2Emission` from the gas's carbon; then the point-source radiation model, the tip's dispersion surrogate and the three-axis capacity check.
 
 
 ## What this model is
@@ -24,6 +24,14 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `inlet_z` | dimensionless | the inlet composition, which the outlet carries unchanged and the standard sums. |
 | `inlet_p` | Pa | the inlet pressure, which the outlet carries unchanged. |
 | `inlet_t` | K | the inlet temperature, which the outlet carries unchanged. |
+| `flame_height` | m | *Optional.* `setFlameHeight`: the point source's height above the base. Absent is the class's 30 m, and a negative value is clamped at zero. |
+| `radiant_fraction` | dimensionless | *Optional.* `setRadiantFraction`: the fraction of the duty radiated. Absent is the class's 0.18; clamped to `[0, 1]`, and a NaN leaves the default standing. |
+| `tip_diameter` | m | *Optional.* `setTipDiameter`: the tip's outlet diameter, which the exit velocity divides. Absent is the class's 0.3 m; clamped at `1e-4` m. |
+| `ground_distance` | m | *Optional.* the horizontal distance the radiation flux is read at. **Absent leaves `radiation_flux` absent.** |
+| `radiation_flux_threshold` | W/m**2 | *Optional.* the flux the horizontal distance is solved for. **Absent leaves `radiation_distance` absent**, and a non-positive threshold answers zero. |
+| `design_heat_duty_capacity` | W | *Optional.* `setDesignHeatDutyCapacity`: the design heat release the duty is checked against. Absent or non-positive leaves the heat utilisation absent. |
+| `design_mass_flow_capacity` | kg/s | *Optional.* `setDesignMassFlowCapacity`: the design mass flow. Absent or non-positive leaves the mass utilisation absent. |
+| `design_molar_flow_capacity` | mol/s | *Optional.* `setDesignMolarFlowCapacity`: the design molar flow. Absent or non-positive leaves the molar utilisation absent. |
 
 
 ## Outputs
@@ -37,12 +45,23 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `product_h` | J/mol | the product's molar enthalpy, the inlet's. |
 | `heat_duty` | W | the heat the flare releases: the gas's inferior calorific value per normal cubic metre at 0 C times its flow in standard cubic metres per second at 15 C. **The two references differ**, which is the class's own arithmetic. |
 | `co2_emission` | kg/s | the carbon dioxide the combustion forms: the gas's carbon atoms per second times `44.01e-3` kg/mol. |
+| `radiation_flux` | W/m**2 | *Optional.* `estimateRadiationHeatFlux` at `ground_distance`: the radiant fraction of the duty over the sphere through the point source. Present only with `ground_distance`. |
+| `radiation_distance` | m | *Optional.* `radiationDistanceForFlux`: the horizontal distance at which the flux falls to `radiation_flux_threshold`, zero where the contour is inside the flame-height sphere. Present only with the threshold. |
+| `exit_velocity` | m/s | `getDispersionSurrogate().getExitVelocityMs()`: the inlet's mass flow over the tip area and the inlet's density, floored at zero. |
+| `momentum_flux` | Pa | the surrogate's `momentumFlux`, `rho v^2`, floored at the density the class floors. |
+| `standard_volume_rate` | m**3/s | the surrogate's `standardVolumeSm3PerSec`: the inlet's own `Sm3/sec`, scaled by the mass rate over the reference mass rate. |
+| `heat_utilization` | dimensionless | *Optional.* `evaluateCapacity().getHeatUtilization()`: the duty over `design_heat_duty_capacity`. Absent when the design is not finite and positive. |
+| `mass_utilization` | dimensionless | *Optional.* the operating mass flow over `design_mass_flow_capacity`. Absent as the heat's is. |
+| `molar_utilization` | dimensionless | *Optional.* the operating molar flow over `design_molar_flow_capacity`. Absent as the heat's is. |
+| `overloaded` | - | *Optional.* `isOverloaded`: any present utilisation above `1 + 1e-6`. Absent until at least one utilisation exists. |
 
 | Bound | On violation | Why |
 |---|---|---|
 | `inlet_n >= 0` | raises | a molar flow is non-negative, and the CO2 it carries is proportional to it |
 | `heat_duty >= 0` | raises | a calorific value times a positive flow is non-negative, and a negative duty would be a flare that absorbs heat |
 | `co2_emission >= 0` | raises | a mass rate of carbon dioxide is non-negative |
+| `ground_distance >= 0` | raises | a horizontal distance from the base; the class squares it, so a negative one would silently be its magnitude |
+| `radiation_flux_threshold >= 0` | raises | a flux the distance is solved for; the class answers zero below it, which is the no-contour branch |
 
 ## Assumptions
 
@@ -50,9 +69,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the reported duty multiplies two different volumetric references.** `LCV()` is per normal cubic metre at **0 °C** and `getFlowRate("Sm3/sec")` is a volume at **15 °C**, so the duty is 5.5 per cent above the same gas measured consistently. The port reproduces the class.
 - **two molar gas constants, and the class uses both.** The standard's density reaches `8.314510` and the Sm3 conversion divides by `8.3144621`; a port that used one for both would be a port of neither.
 - **the carbon comes from the element table, not the standard's.** `getElements().getNumberOfElements("C")` reads the component's formula, so a gas ISO 6976 has no row for still gets a CO2 emission - and only its duty is refused.
-- **no parameter is declared, and none is read.** The entry has one inlet and one outlet and the class's own setters (a flame height, a radiant fraction, a tip diameter) are radiation-model inputs `run` never reads.
+- **the radiation model is a point source at the flame height.** The flux at a ground distance is `radiant_fraction * duty / (4 pi (d^2 + h^2))`, and the distance for a threshold is its inverse, zero where the contour falls inside the flame-height sphere.
+- **the setters clamp rather than refuse, and so does the port.** A negative flame height is zero, a radiant fraction above one is one (a NaN keeps the default), and a tip diameter below `1e-4` m is `1e-4`.
+- **the dispersion surrogate divides by the inlet's own density.** It is the cubic's vapour root with the Peneloux shift, `getThermoSystem().getDensity`'s reading; `momentumPerMass` is omitted because its dimension is one the vocabulary does not carry.
+- **a utilisation exists only where its design capacity is finite and positive.** The class answers `NaN` with none, so an unstated limit is an absent output rather than a zero - and `overloaded` is absent until one utilisation exists.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route - and the duty reads the standard's table rather than the cubic, so the fluid choice moves the *record* and not the report.
-- NeqSim's `Flare` also carries a radiation model, a capacity check and a `runTransient`. **None is here**: the first two read setters nothing declares, and the transient needs a holdup this library has no state for.
+- NeqSim's `Flare` also carries `runTransient`, the cumulative accumulators and a performance DTO with an emission map. **None is here**: the first two need a holdup this library has no state for, and the DTO restates the outputs this id declares.
 
 ## Cases
 
@@ -62,11 +84,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `sales_gas` | components = ['methane', 'ethane', 'propane', 'n-butane', 'nitrogen'], inlet_n = 1.0, inlet_z = [0.85, 0.07, 0.03, 0.02, 0.03], inlet_p = 101325.0, inlet_t = 288.15 | product_n = 1.0, product_z = [0.85, 0.07, 0.03, 0.02, 0.03], product_p = 101325.0, product_t = 288.15, product_h = 549.2474767040519, heat_duty = 949169.6473970738, co2_emission = 0.05105160000000001 |
 | `sour_gas` | components = ['methane', 'CO2', 'nitrogen'], inlet_n = 1.0, inlet_z = [0.8, 0.15, 0.05], inlet_p = 101325.0, inlet_t = 288.15 | product_n = 1.0, product_z = [0.8, 0.15, 0.05], product_p = 101325.0, product_t = 288.15, product_h = 504.0082050804368, heat_duty = 679291.5927940359, co2_emission = 0.041809500000000006 |
 | `heavy` | components = ['methane', 'n-butane', 'n-heptane'], inlet_n = 0.9999999999999999, inlet_z = [0.6, 0.3, 0.1], inlet_p = 101325.0, inlet_t = 288.15 | product_n = 0.9999999999999999, product_z = [0.6, 0.3, 0.1], product_p = 101325.0, product_t = 288.15, product_h = -2022.5692972719955, heat_duty = 1856692.489362915, co2_emission = 0.110025 |
+| `performance_defaults` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 101325.0, inlet_t = 288.15, ground_distance = 30.0, radiation_flux_threshold = 4000.0 | radiation_flux = 8.330432843526976, radiation_distance = 0.0, exit_velocity = 0.3332699477343139, momentum_flux = 0.09547952202390333, standard_volume_rate = 0.023644828562694297 |
+| `performance_design_capacities` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 101325.0, inlet_t = 288.15, ground_distance = 50.0, radiation_flux_threshold = 1500.0, design_heat_duty_capacity = 837466.4519183197, design_mass_flow_capacity = 0.010125499999999999, design_molar_flow_capacity = 0.5 | radiation_flux = 4.410229152455459, radiation_distance = 0.0, exit_velocity = 0.3332699477343139, momentum_flux = 0.09547952202390333, standard_volume_rate = 0.023644828562694297, heat_utilization = 1.25, mass_utilization = 2.0, molar_utilization = 2.0, overloaded = True |
+| `performance_hot_flame` | components = ['methane', 'ethane', 'propane', 'n-butane', 'nitrogen'], inlet_n = 1.0, inlet_z = [0.85, 0.07, 0.03, 0.02, 0.03], inlet_p = 101325.0, inlet_t = 288.15, flame_height = 60.0, radiant_fraction = 0.3, tip_diameter = 0.6, ground_distance = 10.0, radiation_flux_threshold = 2000.0 | radiation_flux = 6.124258427677121, radiation_distance = 0.0, exit_velocity = 0.0833661263044291, momentum_flux = 0.0056219209062236845, standard_volume_rate = 0.023644828562694297 |
+| `performance_high_duty` | components = ['methane', 'n-butane'], inlet_n = 100.0, inlet_z = [0.9, 0.1], inlet_p = 101325.0, inlet_t = 288.15, ground_distance = 60.0, radiation_flux_threshold = 1000.0 | radiation_flux = 333.21731374107935, radiation_distance = 24.484238028471637, exit_velocity = 33.326994773431394, momentum_flux = 954.7952202390334, standard_volume_rate = 2.3644828562694302 |
+| `performance_clamped_fields` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 101325.0, inlet_t = 288.15, flame_height = -5.0, radiant_fraction = 5.0, tip_diameter = 0.0, ground_distance = 30.0, radiation_flux_threshold = 4000.0 | radiation_flux = 92.56036492807755, radiation_distance = 4.563560244898433, exit_velocity = 23557.464437948434, momentum_flux = 477062212.3328937, standard_volume_rate = 0.023644828562694297 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 4 declared, every one run
+- Tests: 9 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`
@@ -75,6 +102,6 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/flare/Flare.java` is the port source, through its `run`.
+- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/flare/Flare.java` is the port source, through its `run`, `estimateRadiationHeatFlux`, `radiationDistanceForFlux`, `getDispersionSurrogate` and `evaluateCapacity`.
 - ISO 6976:1995 through `Standard_ISO6976`, which is what `Stream.LCV()` builds; see `standards.iso6976`.
-- `validation/neqsim/captures/process_flare.tsv` - four gases, each with the record through and the duty and emission beside it.
+- `validation/neqsim/captures/process_flare.tsv` - four gases with the record through and the duty and emission beside it, then five states over the radiation model, the dispersion surrogate and the capacity check.

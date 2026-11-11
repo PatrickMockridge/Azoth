@@ -4,6 +4,8 @@
 
 `eos.matcop_prumr_new_alpha`
 
+Five-parameter Mathias-Copeman alpha function, UMR-PR new variant. Use it when a cubic EOS needs this attraction-temperature form.
+
 ## Equation
 
 $$
@@ -23,6 +25,16 @@ alpha = (1 + mc1*u + mc2*u**2 + mc3*u**3 + mc4*u**4 + mc5*u**5)**2 with u = 1 - 
 `alpha(temperature)`, ported verbatim
 
 DOI: [10.1016/j.fluid.2024.114241](https://doi.org/10.1016/j.fluid.2024.114241)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- when the first coefficient is below 1e-20 the alpha falls back to the standard Peng-Robinson form; the supercritical fallback is disabled (``useStandardAlphaForSupercritical = false`` in NeqSim).
+
+- the fallback ``m`` is the UMR-PR kappa, a fourth-order fit in the acentric factor, unlike `matcop5_prumr_alpha` whose fallback uses the standard Peng-Robinson kappa.
+
 
 ## Inputs
 
@@ -51,17 +63,13 @@ DOI: [10.1016/j.fluid.2024.114241](https://doi.org/10.1016/j.fluid.2024.114241)
 | `Tr > 0` | raises | the formula takes a square root of `Tr`; zero and below are not states |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
 - the five Mathias-Copeman coefficients are the caller's fitted parameters, not derived.
-
-- when the first coefficient is below 1e-20 the alpha falls back to the standard Peng-Robinson form; the supercritical fallback is disabled (``useStandardAlphaForSupercritical = false`` in NeqSim).
-
-- the fallback ``m`` is the UMR-PR kappa, a fourth-order fit in the acentric factor, unlike `matcop5_prumr_alpha` whose fallback uses the standard Peng-Robinson kappa.
 
 
 

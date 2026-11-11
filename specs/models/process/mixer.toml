@@ -8,7 +8,7 @@ assumptions = [
     "**`outlet_pressure` is optional, and omitting it leaves the pressure unchecked.** A bound on an optional input cannot always run, so an omitted pressure produces a `RANGE_CHECK_SKIPPED` warning rather than silence: `checked and fine` and `never checked` must not look alike.",
     "**feeds carrying nothing in total are refused.** The outlet composition is the flows' weighted average, so a zero total is a 0/0 and every field would return NaN. NeqSim propagates a zero-flow outlet instead, through an `isActive` flag `Stream` has no equivalent of.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `Mixer` also carries a canonical inlet ordering, a pressure-mismatch flag and a `runTransient`. **The flag is owed**: it warns that the inlets arrived at different pressures and the outlet collapsed to the lowest, which is about upstream equipment rather than the record.",
+    "NeqSim's `Mixer` also carries a canonical inlet ordering and a `runTransient`. **The pressure-mismatch flag is ported**: it reports the inlet spread and warns past the class's `0.5` bar tolerance, which is about upstream equipment rather than the record.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/mixer/Mixer.java` is the port source, through its `run`.",
@@ -59,6 +59,12 @@ description = "the outlet pressure: `outlet_pressure` when given, else the lowes
 [outputs.product_t]
 unit = "K"
 description = "the outlet temperature, solved from the joined enthalpy at the outlet pressure.\n"
+[outputs.inlet_pressure_spread]
+unit = "Pa"
+description = "`getInletPressureSpread`: the active inlets' highest pressure less the lowest. Active is `FlowRate(\"kg/hr\") > 1e-20`.\n"
+[outputs.pressure_mismatch]
+type = "boolean"
+description = "`isPressureMismatch`: the spread exceeds `0.5` bar and the caller did not specify `outlet_pressure`; the outlet then collapses to the lowest inlet.\n"
 [outputs.product_h]
 unit = "J/mol"
 description = "the outlet molar enthalpy, the flow-weighted average of the feeds'. Mixing adds no heat and no work, so this is the whole of the energy balance.\n"

@@ -25,7 +25,9 @@
 use std::collections::BTreeMap;
 
 use azoth_core::unit_vocab_gen;
-use azoth_core::units::{kelvins, meters, pascals, watts};
+use azoth_core::units::{
+    cubic_meters, kelvins, meters, meters_per_second, pascals, watts, watts_per_cubic_meter,
+};
 use azoth_core::{AzothError, Result};
 
 use crate::kernels;
@@ -84,10 +86,10 @@ pub struct KernelOutcome {
 impl KernelOutcome {
     /// Outlets, and nothing else.
     ///
-    /// The five entries that take this are the same five
-    /// `python/src/azoth/process/layers.py`'s `NO_INTERIOR` table names - `mixer`, `splitter`,
-    /// `manifold`, `component_splitter` and `throttling_valve` - and it says of each that the
-    /// kernel forms nothing its records do not carry.
+    /// An entry takes this when its whole answer is its outlets. `python/src/azoth/process/
+    /// layers.py`'s `NO_INTERIOR` table is the separate statement that a model's kernel forms
+    /// nothing its records do not carry; this is not that table's count and it names no
+    /// members, because the two sets are not the same set.
     #[must_use]
     pub fn streams_only(streams: Vec<Stream>) -> Self {
         Self {
@@ -365,18 +367,25 @@ pub(crate) fn cooler(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutc
 }
 
 pub(crate) fn expander(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
-    Ok(KernelOutcome::streams_only(vec![
-        kernels::expander::expander(
-            &inlets[0],
-            pascals(p.si("outlet_pressure")?),
-            p.number("isentropic_efficiency")?,
-        )?,
-    ]))
+    let out = kernels::expander::expander(
+        &inlets[0],
+        pascals(p.si("outlet_pressure")?),
+        p.number("isentropic_efficiency")?,
+    )?;
+    let power = watts(inlets[0].n * (out.h.value - inlets[0].h.value));
+    let result = crate::models::ExpanderResult::of(
+        &out,
+        power,
+        p.optional_si("rated_recovered_power")?.map(watts),
+        None,
+        Vec::new(),
+    );
+    KernelOutcome::publishing(vec![out], &result)
 }
 
 pub(crate) fn filter(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let out = kernels::filter::filter(&inlets[0], pascals(p.si("pressure_drop")?))?;
-    let result = crate::models::FilterResult::of(&out, Vec::new());
+    let result = crate::models::FilterResult::of(&out, None, Vec::new());
     KernelOutcome::publishing(vec![out.outlet], &result)
 }
 
@@ -398,9 +407,17 @@ pub(crate) fn gibbs_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Result<Ker
         max_iterations: p.number("max_iterations")? as u32,
         convergence_tolerance: p.number("convergence_tolerance")?,
         min_iterations: p.number("min_iterations")? as u32,
+        ..Default::default()
     };
     let (outlet, numbers) = kernels::gibbs_reactor::gibbs_reactor(&inlets[0], &setup)?;
-    let result = crate::models::GibbsReactorResult::of(&outlet, &numbers, Vec::new());
+    // **The palette entry declares the solve's parameters and none of the vessel's**, so a
+    // flowsheet's Gibbs reactor publishes the class-default vessel. The model id is where the
+    // eleven mechanical inputs are declared.
+    let mechanical = crate::reactor::mechanical::reactor_mechanical_design(
+        &inlets[0],
+        &crate::reactor::mechanical::ReactorMechanicalGeometry::default(),
+    )?;
+    let result = crate::models::GibbsReactorResult::of(&outlet, &numbers, &mechanical, Vec::new());
     KernelOutcome::publishing(vec![outlet], &result)
 }
 
@@ -411,7 +428,13 @@ pub(crate) fn heater(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutc
         p.optional_si("duty")?.map(watts),
         p.optional_si("pressure_drop")?.map(pascals),
     )?;
-    let result = crate::models::HeaterResult::of(&out, Vec::new());
+    let capacity = kernels::heater::capacity(
+        out.outlet.t,
+        p.optional_si("max_outlet_temperature")?.map(kelvins),
+        p.optional_si("min_outlet_temperature")?.map(kelvins),
+    );
+    let result =
+        crate::models::HeaterResult::of(&out, capacity, None, None, None, None, Vec::new());
     KernelOutcome::publishing(vec![out.outlet], &result)
 }
 
@@ -430,9 +453,10 @@ pub(crate) fn mixer(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutco
 }
 
 pub(crate) fn pipe(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+    let length = azoth_core::units::meters(p.si("length")?);
     let out = kernels::pipe::pipe(
         &inlets[0],
-        azoth_core::units::meters(p.si("length")?),
+        length,
         azoth_core::units::meters(p.si("diameter")?),
         azoth_core::units::meters(p.si("roughness")?),
     )?;
@@ -440,7 +464,7 @@ pub(crate) fn pipe(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcom
     // expression the model publishes, written once here because a flowsheet's inlet is the stream
     // the executor handed over and not a record field.
     let pressure_drop = pascals(inlets[0].p.value - out.outlet.p.value);
-    let result = crate::models::PipeResult::of(&out, pressure_drop, Vec::new());
+    let result = crate::models::PipeResult::of(&out.outlet, pressure_drop, length, Vec::new());
     KernelOutcome::publishing(vec![out.outlet], &result)
 }
 
@@ -473,10 +497,36 @@ pub(crate) fn gas_scrubber(inlets: &[Stream], p: &Parameters<'_>) -> Result<Kern
 }
 
 pub(crate) fn splitter(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
-    Ok(KernelOutcome::streams_only(kernels::splitter::splitter(
+    use kernels::splitter::SplitterDesignRequest;
+
+    let header_diameter = p.optional_si("header_diameter")?.map(meters);
+    let request = SplitterDesignRequest {
+        mechanical_design: p.optional_flag("mechanical_design")?.unwrap_or(false),
+        design_velocity: p.optional_si("design_velocity")?.map(meters_per_second),
+        max_operation_pressure: p.optional_si("max_operation_pressure")?.map(pascals),
+        tensile_strength: p.optional_si("tensile_strength")?.map(pascals),
+        joint_efficiency: p.optional_number("joint_efficiency")?,
+        corrosion_allowance: p.optional_si("corrosion_allowance")?.map(meters),
+    };
+    let out = kernels::splitter::splitter(&inlets[0], &p.vector("split_factors")?)?;
+    let design = kernels::splitter::design(
         &inlets[0],
         &p.vector("split_factors")?,
-    )?))
+        header_diameter,
+        &request,
+    )?;
+    let effective_header_diameter =
+        design.map_or(header_diameter, |d| Some(meters(d.header_diameter)));
+    let capacity = kernels::splitter::capacity(
+        &inlets[0],
+        p.optional_si("design_pressure_drop")?.map(pascals),
+        p.optional_si("max_design_velocity")?.map(meters_per_second),
+        effective_header_diameter,
+        p.optional_flag("capacity_analysis_enabled")?
+            .unwrap_or(false),
+    )?;
+    let result = crate::models::SplitterResult::of(&out, capacity, design, Vec::new());
+    KernelOutcome::publishing(out, &result)
 }
 
 pub(crate) fn tank(inlets: &[Stream], _p: &Parameters<'_>) -> Result<KernelOutcome> {
@@ -490,6 +540,107 @@ pub(crate) fn throttling_valve(inlets: &[Stream], p: &Parameters<'_>) -> Result<
     ]))
 }
 
+/// `unit_ops.turbo_expander_compressor`: two feeds on one shaft, two outlets.
+///
+/// **The curves are not palette parameters**, so a flowsheet runs the class's defaults: the
+/// fitted velocity-ratio parabola and unity Q/N factors. A caller that has measured curves
+/// reaches them through `process.turbo_expander_compressor`.
+pub(crate) fn turbo_expander_compressor(
+    inlets: &[Stream],
+    p: &Parameters<'_>,
+) -> Result<KernelOutcome> {
+    use kernels::turbo_expander_compressor::{
+        DEFAULT_BEARING_LOSS, DEFAULT_COMPRESSOR_DESIGN_EFFICIENCY,
+        DEFAULT_COMPRESSOR_DESIGN_HEAD_M, DEFAULT_EXPANDER_DESIGN_EFFICIENCY,
+        DEFAULT_IGV_AREA_INCREASE_FACTOR, DEFAULT_IGV_OPENING, DEFAULT_MAXIMUM_IGV_AREA,
+        TurboSettings, turbo_expander,
+    };
+
+    let settings = TurboSettings {
+        expander_out_pressure: pascals(p.si("expander_out_pressure")?),
+        impeller_diameter: p.si("impeller_diameter")?,
+        design_speed: p.number("design_speed")?,
+        design_uc: p.number("design_uc")?,
+        design_qn: p.number("design_qn")?,
+        maximum_igv_area: p
+            .optional_si("maximum_igv_area")?
+            .unwrap_or(DEFAULT_MAXIMUM_IGV_AREA),
+        igv_area_increase_factor: p
+            .optional_number("igv_area_increase_factor")?
+            .unwrap_or(DEFAULT_IGV_AREA_INCREASE_FACTOR),
+        igv_opening: p
+            .optional_number("igv_opening")?
+            .unwrap_or(DEFAULT_IGV_OPENING),
+        igv_control_mode: p.optional_flag("igv_control_mode")?.unwrap_or(false),
+        bearing_loss: p
+            .optional_si("bearing_loss")?
+            .unwrap_or(DEFAULT_BEARING_LOSS),
+        expander_design_efficiency: p
+            .optional_number("expander_design_isentropic_efficiency")?
+            .unwrap_or(DEFAULT_EXPANDER_DESIGN_EFFICIENCY),
+        compressor_design_efficiency: p
+            .optional_number("compressor_design_polytropic_efficiency")?
+            .unwrap_or(DEFAULT_COMPRESSOR_DESIGN_EFFICIENCY),
+        compressor_design_head_m: p
+            .optional_si("compressor_design_polytropic_head")?
+            .unwrap_or(DEFAULT_COMPRESSOR_DESIGN_HEAD_M),
+        uc_curve: &[],
+        qn_efficiency_curve: &[],
+        qn_head_curve: &[],
+        chart: None,
+        igv_penalty_curve: &[],
+        expander_out_temperature: p.optional_si("expander_out_temperature")?.map(kelvins),
+    };
+    let outcome = turbo_expander(&inlets[0], &inlets[1], &settings)?;
+    Ok(KernelOutcome::streams_only(vec![
+        outcome.expander_outlet,
+        outcome.compressor_outlet,
+    ]))
+}
+
+/// `unit_ops.map_turbo_expander_compressor`: two feeds on one shaft, two outlets.
+///
+/// **The palette carries no compressor map**, so this runs the specified-pressure mode with
+/// the isentropic compressor. A balanced-speed run needs the map and reaches it through
+/// `process.map_turbo_expander_compressor`.
+pub(crate) fn map_turbo_expander_compressor(
+    inlets: &[Stream],
+    p: &Parameters<'_>,
+) -> Result<KernelOutcome> {
+    use kernels::map_turbo_expander_compressor::{
+        DEFAULT_BEARING_LOSS, DEFAULT_COMPRESSOR_SPEED, DEFAULT_MECHANICAL_EFFICIENCY,
+        MapMachineSettings, ShaftMode, map_turbo_expander,
+    };
+    let mode = match p.optional_text("shaft_mode")?.as_deref() {
+        Some("balanced_speed") => ShaftMode::BalancedSpeed,
+        _ => ShaftMode::SpecifiedPressures,
+    };
+    let settings = MapMachineSettings {
+        expander_out_pressure: pascals(p.si("expander_out_pressure")?),
+        expander_efficiency: p.number("expander_isentropic_efficiency")?,
+        mode,
+        mechanical_efficiency: p
+            .optional_number("mechanical_efficiency")?
+            .unwrap_or(DEFAULT_MECHANICAL_EFFICIENCY),
+        bearing_loss: p
+            .optional_si("bearing_loss")?
+            .unwrap_or(DEFAULT_BEARING_LOSS),
+        min_speed: None,
+        max_speed: None,
+        chart: None,
+        compressor_speed: p
+            .optional_number("compressor_speed")?
+            .unwrap_or(DEFAULT_COMPRESSOR_SPEED),
+        compressor_outlet_pressure: Some(pascals(p.si("compressor_outlet_pressure")?)),
+        compressor_isentropic_efficiency: p.number("compressor_isentropic_efficiency")?,
+    };
+    let outcome = map_turbo_expander(&inlets[0], &inlets[1], &settings)?;
+    Ok(KernelOutcome::streams_only(vec![
+        outcome.expander_outlet,
+        outcome.compressor_outlet,
+    ]))
+}
+
 pub(crate) fn heat_exchanger(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let out = kernels::heat_exchanger::heat_exchanger(
         &inlets[0],
@@ -499,12 +650,16 @@ pub(crate) fn heat_exchanger(inlets: &[Stream], p: &Parameters<'_>) -> Result<Ke
         &p.text("flow_arrangement")?,
         p.optional_si("hot_outlet_temperature")?.map(kelvins),
         p.optional_si("cold_outlet_temperature")?.map(kelvins),
+        p.flag("use_delta_t")?,
+        p.optional_si("delta_t")?
+            .map(kelvins)
+            .unwrap_or_else(|| kelvins(1.0)),
     )?;
     // **The duty and the rating cross here.** Neither is on an outlet stream, and the four the
     // rating names are what tell a reader whether the exchanger was area-limited or
     // capacity-limited - which is the difference between a bigger one helping and it not
     // helping at all.
-    let result = crate::models::HeatExchangerResult::of(&out, Vec::new());
+    let result = crate::models::HeatExchangerResult::of(&out, None, Vec::new());
     KernelOutcome::publishing(vec![out.hot_out, out.cold_out], &result)
 }
 
@@ -560,7 +715,24 @@ pub(crate) fn stirred_tank_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Res
             pressure_drop: pascals(p.optional_si("pressure_drop")?.unwrap_or(0.0)),
         },
     )?;
-    let result = crate::models::StirredTankReactorResult::of(&product, duty, Vec::new());
+    // The class's three stored fields, at its own initialisers when absent. `run` reads none
+    // of them; the volume and the specific power are the agitator's product, and the
+    // residence time is carried for a transient this port does not have.
+    let vessel = cubic_meters(
+        p.optional_si("vessel_volume")?
+            .unwrap_or(kernels::DEFAULT_VESSEL_VOLUME_M3),
+    );
+    let _ = p.optional_si("residence_time")?;
+    let per_volume = watts_per_cubic_meter(
+        p.optional_si("agitator_power_per_volume")?
+            .unwrap_or(kernels::DEFAULT_AGITATOR_POWER_PER_VOLUME_W_PER_M3),
+    );
+    let result = crate::models::StirredTankReactorResult::of(
+        &product,
+        duty,
+        kernels::agitator_power(per_volume, vessel),
+        Vec::new(),
+    );
     KernelOutcome::publishing(vec![product], &result)
 }
 

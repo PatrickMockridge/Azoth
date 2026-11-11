@@ -1,5 +1,6 @@
 id = "hydraulics.reynolds_number"
 name = "Reynolds number for pipe flow"
+summary = "Reynolds number for pipe flow from density, velocity, diameter and viscosity. Use it to choose the flow regime and the right friction-factor correlation."
 equation = "Re = rho * v * D / mu"
 latex = '''Re = \frac{\rho v D}{\mu}'''
 assumptions = ["Newtonian fluid", "single-phase flow", "constant density and viscosity across the pipe cross-section", "circular pipe running full", "fully developed flow"]

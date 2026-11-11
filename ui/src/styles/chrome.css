@@ -33,6 +33,64 @@
   flex: 1;
 }
 
+/*
+ * The screening status and the build stamp.
+ *
+ * **A link, because it is a statement with a source.** It is deliberately not a `.pill`: those
+ * are the status and the document's identity, and `ui/test/xyflow-env.ts` reads the first and
+ * last of them. This is a caution about the whole page.
+ */
+.bar .screening {
+  display: inline-flex;
+  align-items: center;
+  height: var(--ctl-h);
+  padding: 0 var(--s4);
+  border: 1px solid var(--warn);
+  border-radius: var(--r3);
+  color: var(--warn);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.bar .screening:hover {
+  background: var(--warn-tint);
+}
+
+.bar .case-name {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.bar .case-name input {
+  width: 12rem;
+  height: var(--ctl-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r3);
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+.bar .unsaved {
+  color: var(--warn);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+}
+
+.bar .build {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* --- the ribbon ------------------------------------------------------------ */
 
 /*
@@ -70,6 +128,13 @@
   display: flex;
   align-items: center;
   gap: var(--s3);
+}
+
+.ribbon-note {
+  max-width: 24rem;
+  color: var(--warn);
+  font-size: var(--fs-xs);
+  line-height: var(--lh-body);
 }
 
 .ribbon-label {
@@ -138,7 +203,17 @@
   border-color: var(--accent-hi);
 }
 
-.bar select {
+/* **A disabled primary is not an invitation.** Leaving the accent fill makes a dead control look
+   like the main action; the raised well and muted text say it cannot run yet. */
+.bar .primary:disabled,
+.ribbon .primary:disabled {
+  border-color: var(--line-strong);
+  background: var(--bg-raised);
+  color: var(--text-dim);
+}
+
+.bar select,
+.ribbon select {
   height: var(--ctl-h);
   padding: 0 var(--s3);
   border: 1px solid var(--line-strong);
@@ -146,6 +221,19 @@
   color: var(--text);
   background: var(--bg-raised);
   font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+/* **A set is a reading choice, so its name is visible.** The select's value alone ("SI") does not
+   say what it is a set of; the label is not hover-only. */
+.units-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.units-label {
+  color: var(--text-dim);
   font-size: var(--fs-xs);
 }
 
@@ -176,6 +264,12 @@
 
 .pill.stale,
 .chip.stale {
+  color: var(--warn);
+  border-color: var(--warn-tint);
+}
+
+.pill.warn,
+.chip.warn {
   color: var(--warn);
   border-color: var(--warn-tint);
 }
@@ -270,6 +364,14 @@
   text-decoration: line-through;
 }
 
+/* **Why a palette entry is refused is a fact, not a disabled tooltip.** */
+.palette-row .refusal {
+  margin: 0;
+  padding: 0 var(--s5) var(--s2);
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+}
+
 /* --- the navigator --------------------------------------------------------- */
 
 /*
@@ -347,8 +449,27 @@
 /* --- the property view ----------------------------------------------------- */
 
 .prop-header {
+  position: relative;
   border-bottom: 1px solid var(--line);
   background: var(--bg-panel-2);
+}
+
+.prop-header .remove {
+  position: absolute;
+  inset-block-start: var(--s4);
+  inset-inline-end: var(--s4);
+  height: var(--ctl-h);
+  padding: 0 var(--s4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r3);
+  background: var(--bg-raised);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.prop-header .remove:hover {
+  border-color: var(--error);
+  color: var(--error);
 }
 
 .prop-header h2 {
@@ -522,6 +643,82 @@
 
 .diagnostic p {
   margin: var(--s2) 0 0;
+}
+
+/* A message group is one object: a heading, its facts, and the technical detail folded away. */
+.message {
+  border-bottom: 1px solid var(--line);
+  padding-block: var(--s2);
+}
+
+.message-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s2) var(--s5);
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+div.message-head {
+  cursor: default;
+}
+
+.message-head:hover {
+  background: var(--bg-hover);
+}
+
+.message .title {
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.message.error .title {
+  color: var(--error);
+}
+
+.message.warning .title {
+  color: var(--warn);
+}
+
+.message .summary {
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+  white-space: nowrap;
+}
+
+.message-list {
+  margin: 0;
+  padding: 0 var(--s5) var(--s3) var(--s8);
+  color: var(--text);
+}
+
+.message-list li {
+  margin-block: var(--s1);
+}
+
+.message-list summary {
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  cursor: pointer;
+}
+
+.message-list code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--text-dim);
+}
+
+.message.run .fault {
+  margin: var(--s3) var(--s5);
 }
 
 .fault {

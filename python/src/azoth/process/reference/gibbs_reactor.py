@@ -65,6 +65,8 @@ from azoth.eos.reference._mixture_state import (
     reduced_parameters,
 )
 from azoth.eos.reference.pt_flash import check_composition
+from azoth.process.reference import reactor_mechanical
+from azoth.reactions.reference._linalg import condition_number_2, solve_least_squares
 
 #: ``GibbsReactor.java``'s own ``elementNames``, which has **seven** entries for an eight-column
 #: table. Index 5 is named ``Ar`` and reads the file's ``Na`` column; index 6 is named ``Z`` and
@@ -90,6 +92,16 @@ ELEMENT_ZERO_THRESHOLD: Final = 1.0e-6
 
 #: ``performIterationUpdate``'s floor on a composition after the damped step.
 MIN_COMPOSITION: Final = 1.0e-15
+
+#: ``MAX_STEP_LIMIT``, ``Math.log(5.0)``: the largest fractional mole change one adaptive step
+#: allows a significant component.
+MAX_STEP_LIMIT: Final = 1.6094379124341004
+#: ``calculateAdaptiveAlpha``'s floor under the step it returns.
+MIN_ADAPTIVE_ALPHA: Final = 1.0e-4
+#: ``armijoLineSearch``'s floor when every backtrack fails.
+MIN_ARMIJO_ALPHA: Final = 1.0e-6
+#: ``evaluateTotalGibbsEnergy``'s ``1e-30`` floor under a mole number.
+GIBBS_ZERO_MOLES: Final = 1.0e-30
 
 #: The four heat-capacity coefficients the element subtraction reads, per element, in the order
 #: ``O, N, C, H, S`` - ``calculateCorrectedHeatCapacityCoeffs``' own five arrays.
@@ -254,15 +266,17 @@ class Solved:
     element_in: tuple[float, ...]
     element_out: tuple[float, ...]
     gibbs_history: list[float]
+    condition_number_history: list[float]
 
 
-def _solve_linear(jacobian: list[list[float]], rhs: list[float]) -> list[float] | None:
-    """``J x = rhs`` by Gaussian elimination with partial pivoting, or ``None`` if singular.
+def _solve_linear(jacobian: list[list[float]], rhs: list[float]) -> list[float]:
+    """``J x = rhs`` by Gaussian elimination, falling back to the pseudo-inverse's construction.
 
-    ``solveNewtonSystem`` uses EJML's ``solve`` and falls back to ``pseudoInverse``; the fallback
-    is **not carried**, so a singular system is refused rather than answered differently. It is
-    reachable: two species against three active elements is over-determined, and the capture's
-    ``steam_methane_hot`` row is exactly that.
+    ``solveNewtonSystem`` uses EJML's ``solve`` and retries through ``pseudoInverse`` when it
+    throws; :func:`solve_least_squares` is that inverse's own decomposition, the same one
+    ``azoth-reactions``' bordered solve falls back to. It is reachable: two species against three
+    active elements is over-determined, and the capture's ``steam_methane_hot`` row is exactly
+    that.
     """
     n = len(rhs)
     a = [[*jacobian[i], rhs[i]] for i in range(n)]
@@ -270,7 +284,7 @@ def _solve_linear(jacobian: list[list[float]], rhs: list[float]) -> list[float] 
         pivot = max(range(column, n), key=lambda row: abs(a[row][column]))
         a[column], a[pivot] = a[pivot], a[column]
         if a[column][column] == 0.0:
-            return None
+            return solve_least_squares(jacobian, rhs)
         for row in range(column + 1, n):
             factor = a[row][column] / a[column][column]
             for k in range(column, n + 1):
@@ -293,6 +307,14 @@ def solve(
     max_iterations: int,
     tolerance: float,
     min_iterations: int,
+    armijo_line_search: bool = False,
+    armijo_c1: float = 1.0e-4,
+    armijo_rho: float = 0.5,
+    armijo_max_backtracks: int = 20,
+    adaptive_step_size: bool = False,
+    regularization: bool = False,
+    regularization_threshold: float = 1.0e10,
+    regularization_tau: float = 1.0e-6,
 ) -> Solved:
     """Minimise the Gibbs energy of a fluid at a temperature and pressure."""
     table = database()
@@ -341,6 +363,7 @@ def solve(
     iterations = 0
     final_error = math.inf
     enthalpy_old = 0.0
+    condition_history: list[float] = []
 
     for iteration in range(1, max_iterations + 1):
         iterations = iteration
@@ -367,13 +390,17 @@ def solve(
             _element_balance(species, moles)[j] - element_in[j] for j in active
         ]
         delta = _solve_linear(jacobian, [-value for value in vector])
-        if delta is None:
-            raise InvalidInputError(
-                "jacobian",
-                f"the Newton system is singular at iteration {iteration}, and the class's "
-                "fallback for that is `SimpleMatrix.pseudoInverse`, which this port does not "
-                "carry - a feed with fewer species than active elements reaches it",
+
+        # **``applyRegularization``, every pass while ``iteration <= 5``** even with the flag
+        # off, because the class records the condition number there; every pass when it is on.
+        # When the augmentation fires the condition drops and the class re-solves.
+        if regularization or condition_history or iteration <= 5:
+            number = _apply_regularization(
+                jacobian, variables, regularization, regularization_threshold, regularization_tau
             )
+            condition_history.append(number)
+            if regularization and number < regularization_threshold:
+                delta = _solve_linear(jacobian, [-value for value in vector])
 
         delta_norm = math.sqrt(sum(value * value for value in delta))
         history.append(_mixture_gibbs(species, moles, temperature_value, cp))
@@ -403,8 +430,34 @@ def solve(
             final_error = delta_norm
             break
 
+        # **The step size: adaptive first, then Armijo, then the fixed damping.** The class's
+        # own order, with the adaptive branch replacing the damping rather than bounding it.
+        alpha = damping
+        if adaptive_step_size:
+            alpha = _adaptive_alpha(moles, variables, delta)
+        if armijo_line_search:
+            current_g = _total_gibbs_energy(
+                mixture, species, cp, moles, temperature_value, pressure_bara
+            )
+            alpha = _armijo_alpha(
+                mixture,
+                species,
+                cp,
+                moles,
+                temperature_value,
+                pressure_bara,
+                objective,
+                variables,
+                delta,
+                alpha,
+                current_g,
+                armijo_c1,
+                armijo_rho,
+                armijo_max_backtracks,
+            )
+
         for slot, index in enumerate(variables):
-            moles[index] = max(moles[index] + delta[slot] * damping, MIN_COMPOSITION)
+            moles[index] = max(moles[index] + delta[slot] * alpha, MIN_COMPOSITION)
         for slot, element in enumerate(active):
             lambdas[element] += delta[len(variables) + slot]
 
@@ -419,6 +472,7 @@ def solve(
         element_in=tuple(element_in),
         element_out=tuple(element_out),
         gibbs_history=history,
+        condition_number_history=condition_history,
     )
 
 
@@ -448,6 +502,145 @@ def _objective(
             - lagrange
         )
     return values
+
+
+def _apply_regularization(
+    jacobian: list[list[float]],
+    variables: list[int],
+    regularization: bool,
+    threshold: float,
+    tau: float,
+) -> float:
+    """``applyRegularization``: the 2-norm condition number, and the diagonal augmentation.
+
+    **The augmentation fires only above the threshold**, and ``tau`` is raised to
+    ``maxDiag * 1e-8`` when that is larger than the configured value. The first
+    ``len(variables)`` diagonal entries are the composition block; the element rows are
+    untouched. The mutated Jacobian is the caller's, as the class mutates its own field.
+    """
+    number = condition_number_2(jacobian)
+    if regularization and number > threshold:
+        block = len(variables)
+        max_diag = max((abs(jacobian[i][i]) for i in range(block)), default=0.0)
+        if max_diag > 0.0:
+            tau = max(tau, max_diag * 1.0e-8)
+        for i in range(block):
+            jacobian[i][i] += tau
+        number = condition_number_2(jacobian)
+    return number
+
+
+def _total_gibbs_energy(
+    mixture: Any,
+    species: list[Species | None],
+    cp: Sequence[tuple[float, ...]],
+    moles: list[float],
+    temperature: float,
+    pressure_bara: float,
+) -> float:
+    """``evaluateTotalGibbsEnergy``: the Gibbs energy **with the fugacity coefficients**, kJ.
+
+    **A second Gibbs energy in this module, and not the history's.** The history pushes
+    ``calculateMixtureGibbsEnergy`` - the formation sum alone - while Armijo compares this one,
+    which adds ``RT ln phi``, ``RT ln y`` and ``RT ln P``.
+    """
+    rt = R_KJ * temperature
+    total = sum(moles)
+    x = [divide(value, total) for value in moles]
+    reduced = reduced_parameters(mixture, temperature, pressure_bara * 1.0e5)
+    state = phase_state(reduced, mixture.kij, x, liquid=False)
+    derivatives = phase_derivatives(
+        reduced,
+        mixture.kij,
+        x,
+        state.z,
+        temperature=temperature,
+        pressure=pressure_bara * 1.0e5,
+    )
+    ln_p = natural_log(pressure_bara)
+    total_g = 0.0
+    for i, entry in enumerate(species):
+        if entry is None:
+            continue
+        ni = moles[i]
+        if ni < GIBBS_ZERO_MOLES:
+            continue
+        y = divide(ni, total)
+        total_g += ni * (
+            entry.gibbs_energy(temperature, cp[i])
+            + rt * derivatives.ln_phi[i]
+            + rt * natural_log(y)
+            + rt * ln_p
+        )
+    return total_g
+
+
+def _directional_derivative(
+    objective: list[float], variables: list[int], delta: list[float]
+) -> float:
+    """The Armijo slope: ``sum_i F_i * delta_i`` over the composition variables."""
+    return sum(objective[index] * delta[slot] for slot, index in enumerate(variables))
+
+
+def _adaptive_alpha(moles: list[float], variables: list[int], delta: list[float]) -> float:
+    """``calculateAdaptiveAlpha``: the NASA CEA-style step limit, from a requested ``1.0``.
+
+    **The requested step is ``1.0`` and not ``dampingComposition``**, which is what the class
+    passes at its call site; the fixed damping is what this replaces.
+    """
+    alpha = 1.0
+    significance = sum(moles) * 1.0e-3
+    for slot, index in enumerate(variables):
+        current = moles[index]
+        if current < significance:
+            continue
+        abs_delta = abs(delta[slot])
+        if abs_delta < 1.0e-30:
+            continue
+        alpha = min(alpha, MAX_STEP_LIMIT * current / abs_delta)
+    for slot, index in enumerate(variables):
+        current = moles[index]
+        step = delta[slot]
+        if step < 0.0 and current > MIN_COMPOSITION:
+            alpha = min(alpha, 0.9 * current / (-step))
+    return max(alpha, MIN_ADAPTIVE_ALPHA)
+
+
+def _armijo_alpha(
+    mixture: Any,
+    species: list[Species | None],
+    cp: Sequence[tuple[float, ...]],
+    moles: list[float],
+    temperature: float,
+    pressure_bara: float,
+    objective: list[float],
+    variables: list[int],
+    delta: list[float],
+    alpha_max: float,
+    current_g: float,
+    armijo_c1: float,
+    armijo_rho: float,
+    armijo_max_backtracks: int,
+) -> float:
+    """``armijoLineSearch``: the step satisfying ``G(trial) <= G + c1*alpha*slope``.
+
+    **Each trial needs the fugacity coefficients at the trial composition** - the class calls
+    ``updateSystemWithNewCompositions(); system.init(3)`` before ``evaluateTotalGibbsEnergy`` -
+    so every backtrack is one ``phase_derivatives`` call. ``moles`` is never touched.
+    """
+    slope = _directional_derivative(objective, variables, delta)
+    if slope >= 0.0:
+        return alpha_max
+    alpha = alpha_max
+    for _ in range(armijo_max_backtracks):
+        trial = list(moles)
+        for slot, index in enumerate(variables):
+            trial[index] = max(moles[index] + alpha * delta[slot], MIN_COMPOSITION)
+        trial_g = _total_gibbs_energy(mixture, species, cp, trial, temperature, pressure_bara)
+        if trial_g <= current_g + armijo_c1 * alpha * slope:
+            return alpha
+        alpha *= armijo_rho
+    return max(alpha, MIN_ARMIJO_ALPHA)
 
 
 def _jacobian(
@@ -569,6 +762,25 @@ def gibbs_reactor(
     max_iterations: float,
     convergence_tolerance: float,
     min_iterations: float,
+    reactor_type: str | None = None,
+    catalyst_bulk_density: float | None = None,
+    catalyst_particle_diameter: float | None = None,
+    bed_void_fraction: float | None = None,
+    ghsv: float | None = None,
+    lhsv: float | None = None,
+    number_of_beds: int | None = None,
+    max_operation_pressure: float | None = None,
+    max_operation_temperature: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
+    armijo_line_search: bool | None = None,
+    armijo_c1: float | None = None,
+    armijo_rho: float | None = None,
+    armijo_max_backtracks: int | None = None,
+    adaptive_step_size: bool | None = None,
+    regularization: bool | None = None,
+    regularization_threshold: float | None = None,
+    regularization_tau: float | None = None,
 ) -> GibbsReactorResult:
     """Bring a feed to its Gibbs equilibrium at its own temperature and pressure.
 
@@ -610,6 +822,16 @@ def gibbs_reactor(
         max_iterations=int(max_iterations),
         tolerance=convergence_tolerance,
         min_iterations=int(min_iterations),
+        armijo_line_search=bool(armijo_line_search),
+        armijo_c1=1.0e-4 if armijo_c1 is None else float(armijo_c1),
+        armijo_rho=0.5 if armijo_rho is None else float(armijo_rho),
+        armijo_max_backtracks=(20 if armijo_max_backtracks is None else int(armijo_max_backtracks)),
+        adaptive_step_size=bool(adaptive_step_size),
+        regularization=bool(regularization),
+        regularization_threshold=(
+            1.0e10 if regularization_threshold is None else float(regularization_threshold)
+        ),
+        regularization_tau=1.0e-6 if regularization_tau is None else float(regularization_tau),
     )
 
     outlet_total = sum(state.moles)
@@ -626,6 +848,69 @@ def gibbs_reactor(
         checks.derived,
         {"iterations": float(state.iterations), "final_error": state.final_error}.get,
         warnings,
+    )
+
+    # **The vessel is read from the feed, before the equilibrium**, which is the class's own
+    # surface: ``calcDesign`` never looks at the outlet.
+    # **The four dimensioned values cross in SI and the geometry keeps the class's units.**
+    # The spec declares millimetres and bar, and the boundary hands over the SI magnitude - so
+    # the conversions are here, and a default is the class's initialiser in its own unit.
+    mechanical = reactor_mechanical.reactor_mechanical_design(
+        list(components),
+        temperature_k,
+        pressure_pa,
+        list(feed_z),
+        total_flow,
+        reactor_mechanical.ReactorMechanicalGeometry(
+            reactor_type=_reactor_type_name(reactor_type or "fixed-bed"),
+            catalyst_bulk_density=(
+                reactor_mechanical.DEFAULT_CATALYST_BULK_DENSITY
+                if catalyst_bulk_density is None
+                else input_to_si(spec, "catalyst_bulk_density", catalyst_bulk_density)
+            ),
+            catalyst_particle_diameter_mm=(
+                reactor_mechanical.DEFAULT_CATALYST_PARTICLE_DIAMETER_MM
+                if catalyst_particle_diameter is None
+                else input_to_si(spec, "catalyst_particle_diameter", catalyst_particle_diameter)
+                * 1000.0
+            ),
+            bed_void_fraction=(
+                reactor_mechanical.DEFAULT_BED_VOID_FRACTION
+                if bed_void_fraction is None
+                else float(bed_void_fraction)
+            ),
+            ghsv_per_hour=(
+                reactor_mechanical.DEFAULT_GHSV_PER_HOUR if ghsv is None else float(ghsv)
+            ),
+            lhsv_per_hour=(
+                reactor_mechanical.DEFAULT_LHSV_PER_HOUR if lhsv is None else float(lhsv)
+            ),
+            number_of_beds=(
+                reactor_mechanical.DEFAULT_NUMBER_OF_BEDS
+                if number_of_beds is None
+                else int(number_of_beds)
+            ),
+            max_operation_pressure_bara=(
+                reactor_mechanical.DEFAULT_MAX_OPERATION_PRESSURE_BARA
+                if max_operation_pressure is None
+                else input_to_si(spec, "max_operation_pressure", max_operation_pressure) / 1.0e5
+            ),
+            max_operation_temperature_k=(
+                reactor_mechanical.DEFAULT_MAX_OPERATION_TEMPERATURE_K
+                if max_operation_temperature is None
+                else input_to_si(spec, "max_operation_temperature", max_operation_temperature)
+            ),
+            joint_efficiency=(
+                reactor_mechanical.JOINT_EFFICIENCY
+                if joint_efficiency is None
+                else float(joint_efficiency)
+            ),
+            corrosion_allowance_mm=(
+                reactor_mechanical.CORROSION_ALLOWANCE_MM
+                if corrosion_allowance is None
+                else input_to_si(spec, "corrosion_allowance", corrosion_allowance) * 1000.0
+            ),
+        ),
     )
 
     return GibbsReactorResult(
@@ -646,8 +931,43 @@ def gibbs_reactor(
         gibbs_energy_history=tuple(
             from_si(_v, "W") for _v in tuple(value * 1000.0 for value in state.gibbs_history)
         ),
+        vessel_diameter=from_si(mechanical.vessel_diameter_m, "m"),
+        vessel_length=from_si(mechanical.vessel_length_m, "m"),
+        shell_thickness=from_si(mechanical.shell_thickness_mm / 1000.0, "mm"),
+        head_thickness=from_si(mechanical.head_thickness_mm / 1000.0, "mm"),
+        design_pressure=from_si(mechanical.design_pressure_bara * 1.0e5, "bar"),
+        design_temperature=from_si(mechanical.design_temperature_c + 273.15, "K"),
+        catalyst_volume=from_si(mechanical.catalyst_volume_m3, "m**3"),
+        catalyst_mass=from_si(mechanical.catalyst_mass_kg, "kg"),
+        bed_pressure_drop=from_si(mechanical.bed_pressure_drop_bar * 1.0e5, "bar"),
+        empty_vessel_weight=from_si(mechanical.empty_vessel_weight_kg, "kg"),
+        total_equipped_weight=from_si(mechanical.total_equipped_weight_kg, "kg"),
+        reactor_type=mechanical.reactor_type,
+        number_of_beds=mechanical.number_of_beds,
+        condition_number_history=tuple(float(value) for value in state.condition_number_history),
         warnings=tuple(warnings),
     )
+
+
+#: The spec's four reactor types, in the class's own spelling. **Only ``CSTR`` changes an
+#: answer**; the other three select the GHSV branch and otherwise only echo.
+_REACTOR_TYPES: Final = {
+    "fixed-bed": "FIXED_BED",
+    "cstr": "CSTR",
+    "packed-bed": "PACKED_BED",
+    "fluidized-bed": "FLUIDIZED_BED",
+}
+
+
+def _reactor_type_name(kind: str) -> str:
+    """The class's own spelling of a declared reactor type, or a refusal."""
+    mapped = _REACTOR_TYPES.get(kind)
+    if mapped is None:
+        raise InvalidInputError(
+            "reactor_type",
+            f"'{kind}' is not one of fixed-bed, cstr, packed-bed, fluidized-bed",
+        )
+    return mapped
 
 
 def _spec() -> dict[str, Any]:

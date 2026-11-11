@@ -323,6 +323,9 @@ def render_calc(spec: dict[str, Any]) -> str:
     parts.append(BANNER.format(source=source))
     parts.append(f"\n# {spec['name']}\n")
     parts.append(f"`{spec['id']}`\n")
+    summary = " ".join(str(spec.get("summary", "")).split())
+    if summary:
+        parts.append(f"{summary}\n")
     parts.append("## Equation\n")
     parts.append(f"$$\n{spec['latex']}\n$$\n")
     parts.append(f"In the form the library evaluates:\n\n```python\n{spec['equation']}\n```\n")
@@ -330,6 +333,15 @@ def render_calc(spec: dict[str, Any]) -> str:
     if citation:
         parts.append("## Source\n")
         parts.append(citation + "\n")
+
+    notes = [str(note) for note in spec.get("notes", [])]
+    if notes:
+        parts.append("## Notes\n")
+        parts.append(
+            "Implementation detail: where this port departs from its source, which "
+            "branches are not carried, and known deviations.\n\n"
+        )
+        parts.append("\n".join(f"- {note}" for note in notes) + "\n")
 
     rows = [(f"`{name}`", *describe_quantity(d)) for name, d in spec["inputs"].items()]
     parts.append("## Inputs\n")
@@ -342,12 +354,13 @@ def render_calc(spec: dict[str, Any]) -> str:
     parts.append("\n## Valid range\n")
     parts.append(render_range(spec))
 
-    parts.append("\n## Assumptions\n")
-    parts.append(
-        "These are **not** checked at runtime. They are what the caller has to\n"
-        "satisfy for the result to mean what it says.\n\n"
-    )
-    parts.append("\n".join(f"- {a}" for a in spec["assumptions"]) + "\n")
+    if spec["assumptions"]:
+        parts.append("\n## Conditions for a valid result\n")
+        parts.append(
+            "These are **not** checked at runtime. They are what the caller has to\n"
+            "satisfy for the result to mean what it says.\n\n"
+        )
+        parts.append("\n".join(f"- {a}" for a in spec["assumptions"]) + "\n")
 
     parts.append("\n" + render_solver(spec))
     parts.append(render_worked_example(spec))
@@ -405,17 +418,15 @@ def render_namespace_index(
     out += f"\n# {title}\n\n"
     out += (
         "Every calculation in this section is generated from its specification. "
-        "Each page shows the equation, where it came from, the range in which it is "
-        "validated, its assumptions, a worked example, and the tests that exercise "
-        "it.\n\n"
+        "Each page states what the calculation is for, the equation and where it came "
+        "from, the range in which it is validated, the conditions it does not check, a "
+        "worked example, and the tests that exercise it.\n\n"
     )
-    out += "| Calculation | Equation | Source |\n|---|---|---|\n"
+    out += "| Calculation | What it is for | Source |\n|---|---|---|\n"
     for calc in calcs:
-        equation = table_cell(calc["latex"])
+        summary = table_cell(calc.get("summary", ""))
         standard = table_cell((calc.get("source") or {}).get("standard", "-"))
-        out += (
-            f"| [`{calc['id']}`](./{calc['id'].split('.')[-1]}.md) | ${equation}$ | {standard} |\n"
-        )
+        out += f"| [`{calc['id']}`](./{calc['id'].split('.')[-1]}.md) | {summary} | {standard} |\n"
 
     if models:
         out += (

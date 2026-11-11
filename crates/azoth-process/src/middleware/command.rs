@@ -127,6 +127,10 @@ pub enum Command {
         x: f64,
         y: f64,
     },
+    /// Set the case's own name, which is the heading a reader and a report use.
+    SetName {
+        name: String,
+    },
 }
 
 /// The seven fields a `[[recycles]]` entry carries: **the one list**, which `set_recycle` and
@@ -342,6 +346,9 @@ pub fn apply(flowsheet: &mut Flowsheet, palette: &[UnitOpSpec], command: &Comman
                 crate::NodeRole::Product => &mut layout.products,
             };
             placed.insert(name.to_string(), [*x, *y]);
+        }
+        Command::SetName { name } => {
+            flowsheet.name = name.clone();
         }
     }
     Ok(())

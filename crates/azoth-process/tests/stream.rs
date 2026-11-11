@@ -89,25 +89,19 @@ fn water_needs_the_tables_rackett_compressibility() {
     );
 }
 
-/// **The one row where the flash root disagrees, and it is not this accessor's.**
+/// **The density is read at the stream's own composition, not at a negative flash's trial
+/// split.**
 ///
-/// Three of the five rows match the capture's `cubic_density` in every digit. This one does
-/// not: azoth's cubic root for 0.9/0.1 methane/n-butane at 320 K and 30 bar is `Z = 0.87296`
-/// and NeqSim's is `Z = 0.91976`, so the same `M / (Z R T / P)` gives `26.157` and `24.826`.
+/// This row once reported a root the capture did not: azoth's flash classified the feed as
+/// vapour from a converged negative flash, and the roots it carried were its last trial
+/// `x`/`y`, whose vapour root is `Z = 0.87296` and gives `26.157` kg/m3. NeqSim's
+/// `getPhase(0).getDensity()` at the feed's composition is `24.826126577519663` (`Z =
+/// 0.91976`). `Stream::single_phase_root` now evaluates the cubic at the stream's own `z`,
+/// so this accessor agrees with the capture.
 ///
-/// **And NeqSim's own stream fluid disagrees with itself there.** Its
-/// `getPhase(0).getZ()` is `0.91976` and its `getPhase(0).getDensity()` is `24.826126577519663`,
-/// which is that root - while the *same object's* `getEntropy()/getTotalNumberOfMoles()` is
-/// `-20.429350395514717`, which is the value a `Z` of `0.87296` gives. Azoth is
-/// self-consistent at `0.87296` on all three: density `26.157222505467086`, entropy
-/// `-20.429765016975505`, which is the capture's own entropy to `2e-5`. A fresh NeqSim fluid
-/// at the same state has `Z = 0.91976` throughout and an entropy of `-19.843548034475464`.
-///
-/// The divergence is a root-selection question in `eos.pt_flash` for a state no `eos` case
-/// pins, and locating it is that tier's business rather than this one's - `W2`'s layered
-/// harness exists to say which layer moved. The assertion below is **that the divergence is
-/// still there**, so that fixing `eos` fails this test and points back at this comment
-/// instead of leaving a silently stale expectation.
+/// The entropy still differs - azoth's flash gives `-20.429765016975505` against a fresh
+/// NeqSim fluid's `-19.843548034475464` - and that is a flash-model difference rather than a
+/// root-selection one.
 #[test]
 fn methane_butane_gas() {
     let s = stream(&["methane", "n-butane"], &[0.9, 0.1], 320.0, 30.0e5, 1.0);
@@ -118,13 +112,7 @@ fn methane_butane_gas() {
     );
     close(s.mass_flow().unwrap(), 0.020250999999999998, "mass_flow");
     close(s.entropy().unwrap(), -20.429765016975505, "entropy");
-
-    let density = s.density().unwrap();
-    assert!(
-        (density - 24.826126577519663).abs() / 24.826126577519663 > 0.05,
-        "the cubic root now agrees with the capture's {density}; if `eos.pt_flash` was fixed, \
-         update this test and the comment above rather than the divergence"
-    );
+    close(s.density().unwrap(), 24.826126577519663, "density");
 }
 
 #[test]

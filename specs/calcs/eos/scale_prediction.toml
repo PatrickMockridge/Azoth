@@ -1,20 +1,11 @@
 id = "eos.scale_prediction"
 name = "Mineral-scale saturation indices from a water analysis"
+summary = "Mineral-scale saturation indices from a water analysis, with ionic-strength activity coefficients. Use it to screen a produced or injection water for scaling."
 equation = "I = TDS/40000\n\nlog10(gamma_z) = -A z^2 (sqrt(I)/(1 + sqrt(I)) - 0.3 I),  A = 1.8246e6 sqrt(rho) / (eps T)^(3/2)\n\nSI_j = log10(IAP_j / Ksp_j),  IAP_j = (c_cation gamma_z)(c_anion gamma_z)\n\nwith the free ion concentrations after five ion-pair sweeps, and Ksp_j from the class's five temperature correlations with the pressure correction exp(-dV (P - 1.01325)/(83.1446 T))."
 latex = '''I = \frac{\mathrm{TDS}}{40000}, \qquad \log_{10}\gamma_z = -A z^2\left(\frac{\sqrt{I}}{1+\sqrt{I}} - 0.3I\right), \qquad A = \frac{1.8246\times10^{6}\sqrt{\rho}}{(\varepsilon T)^{3/2}}
 \mathrm{SI}_j = \log_{10}\frac{\left(c^{+}_j\gamma_z\right)\left(c^{-}_j\gamma_z\right)}{K_{sp,j}}'''
-assumptions = [
-    "the class's inputs are a water analysis (mg/L, C, bara, bar); this calc takes SI concentrations, kelvin and pascal. Its molar masses are the class's own (Ca 40078 ... SO4 96060 mg/mol), not modern atomic weights.\n",
-    "`I = TDS/40000` is the class's ionic strength, a TDS proxy and not a charge sum; it is reported in mol/m3 while every internal concentration is mol/L.\n",
-    "the activity coefficients are the Davies equation with a Debye-Huckel A from water's density (Kell 1975) and dielectric constant (Archer-Wang 1990), including the class's silent floors: density at 0.85 g/cm3 and dielectric at 20.\n",
-    "**ion pairing is exactly five successive-substitution sweeps** over six complexes, with the class's denominators as written (including its `gamma/gamma` factors); only Ca, Mg, Na, SO4, CO3 and HCO3 pair, so Ba, Sr and Fe stay at their analytical totals.\n",
-    "**the auto-pH path is broken upstream and is reproduced.** `calcHenryCO2`'s coefficients give `log10(KH)` about 48.7 at 25 C, so auto pH lands near -45 and the carbonate indices near -50; a manual pH is the physical route. Its gate needs `auto_ph`, positive CO2 partial pressure and bicarbonate.\n",
-    "**an absent ion gives an absent index**: no barium or no sulphate leaves the barite SI unset, no strontium the celestite one, no iron the siderite one; the class returns NaN for each and this calc returns no value.\n",
-    "the pressure correction is skipped at `P <= 1.013` bara although its exponent uses 1.01325, so it begins just above one atmosphere; the second-order term applies only with its flag and a compressibility change above 1e-12.\n",
-    "**the sodium constant is written twice upstream**: `calculate()` divides by 22990.0 and the total-sodium getter by 22989.77; both are reproduced, because the equilibrium solver reads the getter.\n",
-    "Ksp is in `(mol/L)^2` and is reported dimensionless, as `eos.scale_saturation_ratio`'s `solubility_product` is; `log10` of each is reported beside it for the literature pins.\n",
-    "the risk list is the class's locale-formatted strings and is not a calculation; the count and the flag are reported instead.\n",
-]
+assumptions = ["The auto-pH path is unreliable: its coefficients can drive the estimated pH far below the physical range. Use a measured or manually supplied pH.", "An absent ion gives an absent index: no barium or no sulphate leaves the barite index unset, and likewise for celestite and siderite.", "Ksp is in `(mol/L)^2` and is reported dimensionless; `log10` of each is reported beside it.", "the risk list is a count and a flag, not a list of formatted strings.\n"]
+notes = ["the class's inputs are a water analysis (mg/L, C, bara, bar); this calc takes SI concentrations, kelvin and pascal. Its molar masses are the class's own (Ca 40078 ... SO4 96060 mg/mol), not modern atomic weights.\n", "`I = TDS/40000` is the class's ionic strength, a TDS proxy and not a charge sum; it is reported in mol/m3 while every internal concentration is mol/L.\n", "the activity coefficients are the Davies equation with a Debye-Huckel A from water's density (Kell 1975) and dielectric constant (Archer-Wang 1990), including the class's silent floors: density at 0.85 g/cm3 and dielectric at 20.\n", "**ion pairing is exactly five successive-substitution sweeps** over six complexes, with the class's denominators as written (including its `gamma/gamma` factors); only Ca, Mg, Na, SO4, CO3 and HCO3 pair, so Ba, Sr and Fe stay at their analytical totals.\n", "the pressure correction is skipped at `P <= 1.013` bara although its exponent uses 1.01325, so it begins just above one atmosphere; the second-order term applies only with its flag and a compressibility change above 1e-12.\n", "**the sodium constant is written twice upstream**: `calculate()` divides by 22990.0 and the total-sodium getter by 22989.77; both are reproduced, because the equilibrium solver reads the getter.\n"]
 references = [
     "NeqSim master, `pvtsimulation/flowassurance/ScalePredictionCalculator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
     "`validation/neqsim/captures/scale_prediction_probe.tsv` - the upstream tests' brines, both pH paths, the pressure-correction boundary and every intermediate.",
@@ -65,7 +56,7 @@ unit = "dimensionless"
 description = "the water's pH; ignored when `auto_ph` is on and its gate holds.\n"
 [inputs.auto_ph]
 type = "boolean"
-description = "whether to estimate pH from the CO2 partial pressure and the bicarbonate. **The estimate is the class's as shipped** - see the assumptions.\n"
+description = "Whether to estimate pH from the CO2 partial pressure and the bicarbonate concentration.\n"
 [inputs.second_order_pressure_correction]
 type = "boolean"
 description = "whether to add the compressibility term to the Ksp pressure correction.\n"
@@ -84,7 +75,7 @@ unit = "dimensionless"
 description = "the Davies coefficient for a monovalent ion.\n"
 [outputs.ph_used]
 unit = "dimensionless"
-description = "the pH the calculation used: the input, or the class's estimate.\n"
+description = "The pH the calculation used: the input, or the estimated value.\n"
 [outputs.free_calcium]
 unit = "mol/m**3"
 description = "free calcium after ion pairing.\n"
@@ -99,7 +90,7 @@ unit = "mol/m**3"
 description = "free bicarbonate after ion pairing.\n"
 [outputs.total_barium]
 unit = "mol/m**3"
-description = "total barium, which the class does not ion-pair.\n"
+description = "Total barium, not ion-paired.\n"
 [outputs.total_strontium]
 unit = "mol/m**3"
 description = "total strontium.\n"
@@ -108,7 +99,7 @@ unit = "mol/m**3"
 description = "total iron.\n"
 [outputs.total_sodium]
 unit = "mol/m**3"
-description = "total sodium, divided by the class's getter constant `22989.77`.\n"
+description = "Total sodium concentration.\n"
 [outputs.ksp_calcite]
 unit = "dimensionless"
 description = "calcite's solubility product, in `(mol/L)^2`.\n"

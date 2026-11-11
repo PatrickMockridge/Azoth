@@ -1,0 +1,25 @@
+ClosedLoopDepositionSolver at f0c7436c69 - 80 mol/sec, 100 bara, 60 C, 1000 m, 0.1 m, 10 increments
+state=base_1yr iterations=1 converged=true final_diameter_m=0.09998794649351135 tolerance_m=1.0E-4 max_iterations=10 last_max_thickness_mm=0.006026753244324614 last_time_to_blockage_years=4148.170496866197
+  diameter_history_m=[0.1] thickness_history_mm=[0.006026753244324614] velocity_history_m_s=[2.347648653523357]
+  restored_diameter_m=0.1 profile_size=1 velocity_profile_entries=11 segment0_pressure_bara=100.0 segment0_temperature_k=333.15
+state=service_1000yr iterations=3 converged=true final_diameter_m=0.08794649351135078 tolerance_m=1.0E-4 max_iterations=10 last_max_thickness_mm=6.026753244324614 last_time_to_blockage_years=3648.1704968661975
+  diameter_history_m=[0.1,0.08794649351135078,0.08794649351135078] thickness_history_mm=[6.026753244324614,6.026753244324614,6.026753244324614] velocity_history_m_s=[2.347648653523357,3.041163776065383,3.041163776065383]
+  restored_diameter_m=0.1 profile_size=1 velocity_profile_entries=11 segment0_pressure_bara=100.0 segment0_temperature_k=333.15
+state=max_iterations_2 iterations=2 converged=false final_diameter_m=0.08794649351135078 tolerance_m=1.0E-4 max_iterations=2 last_max_thickness_mm=6.026753244324614 last_time_to_blockage_years=3648.1704968661975
+  diameter_history_m=[0.1,0.08794649351135078] thickness_history_mm=[6.026753244324614,6.026753244324614] velocity_history_m_s=[2.347648653523357,3.041163776065383]
+  restored_diameter_m=0.1 profile_size=1 velocity_profile_entries=11 segment0_pressure_bara=100.0 segment0_temperature_k=333.15
+state=blocked iterations=1 converged=true final_diameter_m=0.0 tolerance_m=1.0E-4 max_iterations=10 last_max_thickness_mm=60267.53244324614 last_time_to_blockage_years=4148.170496866197
+  diameter_history_m=[0.1] thickness_history_mm=[60267.53244324614] velocity_history_m_s=[2.347648653523357]
+  restored_diameter_m=0.1 profile_size=1 velocity_profile_entries=11 segment0_pressure_bara=100.0 segment0_temperature_k=333.15
+state=no_scale iterations=1 converged=true final_diameter_m=0.1 tolerance_m=1.0E-4 max_iterations=10 last_max_thickness_mm=0.0 last_time_to_blockage_years=Infinity
+  diameter_history_m=[0.1] thickness_history_mm=[0.0] velocity_history_m_s=[2.347648653523357]
+  restored_diameter_m=0.1 profile_size=1 velocity_profile_entries=11 segment0_pressure_bara=100.0 segment0_temperature_k=333.15
+state=inhibited_0_5 iterations=3 converged=true final_diameter_m=0.0939732467556754 tolerance_m=1.0E-4 max_iterations=10 last_max_thickness_mm=3.0133766221623066 last_time_to_blockage_years=7796.340993732395
+  diameter_history_m=[0.1,0.0939732467556754,0.0939732467556754] thickness_history_mm=[3.013376622162307,3.0133766221623066,3.0133766221623066] velocity_history_m_s=[2.347648653523357,2.660496130931978,2.660496130931978]
+  restored_diameter_m=0.1 profile_size=1 velocity_profile_entries=11 segment0_pressure_bara=100.0 segment0_temperature_k=333.15
+state=large_tolerance iterations=1 converged=true final_diameter_m=0.08794649351135078 tolerance_m=0.02 max_iterations=10 last_max_thickness_mm=6.026753244324614 last_time_to_blockage_years=4148.170496866197
+  diameter_history_m=[0.1] thickness_history_mm=[6.026753244324614] velocity_history_m_s=[2.347648653523357]
+  restored_diameter_m=0.1 profile_size=1 velocity_profile_entries=11 segment0_pressure_bara=100.0 segment0_temperature_k=333.15
+state=pr_eos iterations=3 converged=true final_diameter_m=0.08794649351135078 tolerance_m=1.0E-4 max_iterations=10 last_max_thickness_mm=6.026753244324614 last_time_to_blockage_years=3648.1704968661975
+  diameter_history_m=[0.1,0.08794649351135078,0.08794649351135078] thickness_history_mm=[6.026753244324614,6.026753244324614,6.026753244324614] velocity_history_m_s=[2.316614002995081,3.0008964518525576,3.0008964518525576]
+  restored_diameter_m=0.1 profile_size=1 velocity_profile_entries=11 segment0_pressure_bara=100.0 segment0_temperature_k=333.15

@@ -11,6 +11,12 @@ description = "the heat added; an alternative to specifying the outlet temperatu
 [parameters.pressure_drop]
 unit = "Pa"
 description = "the pressure loss across the heater"
+[parameters.max_outlet_temperature]
+unit = "K"
+description = "`setMaxOutletTemperature`, the upper HARD limit; supplying it initializes the capacity map"
+[parameters.min_outlet_temperature]
+unit = "K"
+description = "`setMinOutletTemperature`, the lower HARD limit; only a positive value is a constraint"
 [[ports]]
 name = "inlet"
 direction = "in"

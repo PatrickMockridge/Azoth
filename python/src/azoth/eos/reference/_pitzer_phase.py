@@ -661,6 +661,7 @@ def catalogue_interactions(
     charge: Sequence[float],
     ions: Sequence[int],
     neutrals: Sequence[int],
+    zero_missing_zeta: bool = False,
 ) -> list[NeutralInteraction] | None:
     """The neutral interactions the PHREEQC catalogue imposes on a topology.
 
@@ -693,6 +694,10 @@ def catalogue_interactions(
                     continue
                 form = find(ZETA, [species[neutral], species[cation], species[anion]])
                 if form is None:
+                    # The manual CO2-chloride dataset supplies these rows as zero, and a
+                    # zero coefficient contributes nothing - so the term is absent.
+                    if zero_missing_zeta:
+                        continue
                     return None
                 out.append(NeutralInteraction(ZETA, [neutral, cation, anion], form))
     return out

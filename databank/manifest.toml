@@ -1,4 +1,4 @@
-schema_version = 1
+schema_version = 2
 [[upstreams]]
 id = "neqsim"
 project = "NeqSim"
@@ -11,6 +11,8 @@ notice = "NOTICE"
 [[upstreams.files]]
 id = "neqsim/COMP.csv"
 upstream_path = "src/main/resources/data/COMP.csv"
+commit = "8bb7bace99dc733493587b4ea60c6c7b6c5a8006"
+retrieved = "2026-10-23"
 vendored_source = "databank/sources/neqsim/COMP.csv"
 compiled_to = "data/components/components.csv"
 source_rows = 389
@@ -484,6 +486,12 @@ name = "ENTHALPYOFFORMATION"
 disposition = "used"
 as = "enthalpyofformation"
 unit = "J/mol"
+[[upstreams.files.columns]]
+name = "FORMATIONENTHALPYSOURCE"
+disposition = "vendored"
+as = "formationenthalpysource"
+unit = "text"
+reason = "not-ported: the provenance of the formation enthalpy. Upstream's optional formation-referenced enthalpy (#3991) is a caller-selected reference this library does not offer, so nothing reads the column yet."
 [[upstreams.files.columns]]
 name = "ABSOLUTEENTROPY"
 disposition = "used"
@@ -1076,10 +1084,9 @@ unit = "dimensionless"
 reason = "unreachable-upstream: the Mathias-Copeman alpha; NeqSim's `SystemPrMathiasCopeman` and `SystemSrkMathiasCopeman` are the only classes that mention it and neither is constructed anywhere in the checkout, and `mcpr1` appears in no source file at all."
 [[upstreams.files.columns]]
 name = "PARACHOR_CPA"
-disposition = "vendored"
+disposition = "used"
 as = "parachor_cpa"
 unit = "parachor"
-reason = "not-ported: surface tension; NeqSim's `ParachorSurfaceTension`"
 [[upstreams.files.columns]]
 name = "lambdaRSAFTVRMie"
 disposition = "used"
@@ -1337,14 +1344,9 @@ as = "nrtlgji"
 unit = "K"
 [[upstreams.files.columns]]
 name = "GIJVISC"
-disposition = "vendored"
+disposition = "used"
 as = "gijvisc"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: NRTL's mixing rule inside a viscosity model; NeqSim's `PhaseGENRTL` \
-    with `physicalproperties/`, which the `eos.viscosity` port does not use - this \
-    library's liquid viscosity is the Pedersen correlation, not a friction-theory \
-    model over NRTL."""
 [[upstreams.files.columns]]
 name = "HVGIJT"
 disposition = "used"
@@ -2496,6 +2498,8 @@ reason = "not-ported: vendored whole; nothing reads it yet"
 id = "neqsim/Packing.csv"
 compiled_to = "data/packing/packing.csv"
 upstream_path = "src/main/resources/designdata/Packing.csv"
+commit = "834b5c4fecda20540203f013401d3e7a31b214ea"
+retrieved = "2026-10-23"
 vendored_source = "databank/sources/neqsim/Packing.csv"
 source_rows = 28
 compiled_rows = 28
@@ -2563,6 +2567,93 @@ name = "A"
 disposition = "dropped"
 unit = "neqsim-internal"
 reason = "unread-upstream: `PackingSpecificationLibrary.parseCsvLine` reads no such field, and the value it carries on 21 of the 28 rows is the same zero"
+
+[[upstreams.files]]
+id = "neqsim/HeatExchangerTubeMaterials.csv"
+compiled_to = "data/heat_exchanger/tube_materials.csv"
+upstream_path = "src/main/resources/designdata/HeatExchangerTubeMaterials.csv"
+commit = "f0c7436c6923766b1e22957b7075f650600457a7"
+retrieved = "2026-11-09"
+vendored_source = "databank/sources/neqsim/HeatExchangerTubeMaterials.csv"
+source_rows = 22
+compiled_rows = 22
+[[upstreams.files.columns]]
+name = "ID"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "not-a-value: the file own row number; the compiled table is read by grade, so nothing keys on it"
+[[upstreams.files.columns]]
+name = "MaterialGrade"
+disposition = "used"
+as = "material_grade"
+unit = "text"
+[[upstreams.files.columns]]
+name = "Specification"
+disposition = "used"
+as = "specification"
+unit = "text"
+[[upstreams.files.columns]]
+name = "MaterialType"
+disposition = "vendored"
+as = "material_type"
+unit = "text"
+reason = "unread-upstream: `ShellAndTubeDesignCalculator.loadMaterialFromDB` reads the grade, specification, allowable stress, SMYS, conductivity and the NACE text, and not this column. The price test reads the `Specification` string, not this one."
+[[upstreams.files.columns]]
+name = "SMYS_MPa"
+disposition = "used"
+as = "smys_mpa"
+unit = "MPa"
+[[upstreams.files.columns]]
+name = "SMTS_MPa"
+disposition = "dropped"
+unit = "MPa"
+reason = "unread-upstream: no member of `ShellAndTubeDesignCalculator` reads the tensile strength; the allowable stress is its own column."
+[[upstreams.files.columns]]
+name = "AllowableStress_MPa"
+disposition = "used"
+as = "allowable_stress_mpa"
+unit = "MPa"
+[[upstreams.files.columns]]
+name = "MaxTempC"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "unread-upstream: `ShellAndTubeDesignCalculator.getAllowableStress` applies a fixed 200/300/400 C ladder to the allowable stress, and never reads this column."
+[[upstreams.files.columns]]
+name = "MinTempC"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "unread-upstream: no member of `ShellAndTubeDesignCalculator` reads a minimum temperature."
+[[upstreams.files.columns]]
+name = "Density_kg_m3"
+disposition = "dropped"
+unit = "kg/m**3"
+reason = "unread-upstream: `ShellAndTubeDesignCalculator.calculateWeights` hard-codes 7850 kg/m3 for every grade."
+[[upstreams.files.columns]]
+name = "ThermalConductivity_WpmK"
+disposition = "used"
+as = "thermal_conductivity_wpm_k"
+unit = "W/(m*K)"
+[[upstreams.files.columns]]
+name = "ThermalExpansion_perC"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "unread-upstream: no member of `ShellAndTubeDesignCalculator` reads the expansion coefficient."
+[[upstreams.files.columns]]
+name = "NACECompliant"
+disposition = "used"
+as = "nace_compliant"
+unit = "text"
+reason = "carried as the file text, not a boolean: the class tests it against `Yes`, which no row holds, and the port reproduces that."
+[[upstreams.files.columns]]
+name = "TypicalService"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "unread-upstream: no member of `ShellAndTubeDesignCalculator` reads the service description."
+[[upstreams.files.columns]]
+name = "Description"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "unread-upstream: no member of `ShellAndTubeDesignCalculator` reads the description."
 
 [[upstreams.files]]
 id = "neqsim/PitzerParameters.csv"
@@ -2915,9 +3006,11 @@ generated = ["carbon_number", "molar_mass_g_per_mol", "density_g_per_cm3"]
 id = "neqsim/element.csv"
 compiled_to = "data/reactions/elements.csv"
 upstream_path = "src/main/resources/data/element.csv"
+commit = "9cea9724b66bbdc721a12d8a4e8fd79068890704"
+retrieved = "2026-10-23"
 vendored_source = "databank/sources/neqsim/element.csv"
-source_rows = 178
-compiled_rows = 178
+source_rows = 173
+compiled_rows = 173
 [[upstreams.files.columns]]
 name = "ID"
 disposition = "vendored"
@@ -8433,6 +8526,8 @@ unit = "neqsim-internal"
 id = "neqsim/REACTIONDATA.csv"
 compiled_to = "data/reactions/REACTIONDATA.csv"
 upstream_path = "src/main/resources/data/REACTIONDATA.csv"
+commit = "1acf06520bc0c05db006a0592e0f286f90800206"
+retrieved = "2026-10-23"
 vendored_source = "databank/sources/neqsim/REACTIONDATA.csv"
 source_rows = 47
 compiled_rows = 47
@@ -8571,6 +8666,8 @@ unit = "neqsim-internal"
 id = "neqsim/REACTIONDATAPITZER.csv"
 compiled_to = "data/reactions/REACTIONDATAPITZER.csv"
 upstream_path = "src/main/resources/data/REACTIONDATAPITZER.csv"
+commit = "1acf06520bc0c05db006a0592e0f286f90800206"
+retrieved = "2026-10-23"
 vendored_source = "databank/sources/neqsim/REACTIONDATAPITZER.csv"
 source_rows = 47
 compiled_rows = 47

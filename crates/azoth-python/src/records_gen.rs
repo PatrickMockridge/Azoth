@@ -41,6 +41,221 @@ pub struct AssayCutDerivation {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct BrineAnalysis {
+    #[pyo3(item)]
+    pub calcium: f64,
+    #[pyo3(item)]
+    pub barium: f64,
+    #[pyo3(item)]
+    pub strontium: f64,
+    #[pyo3(item)]
+    pub magnesium: f64,
+    #[pyo3(item)]
+    pub sodium: f64,
+    #[pyo3(item)]
+    pub potassium: f64,
+    #[pyo3(item)]
+    pub chloride: f64,
+    #[pyo3(item)]
+    pub sulphate: f64,
+    #[pyo3(item)]
+    pub bicarbonate: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct CompressorCurvePoint {
+    #[pyo3(item)]
+    pub speed: f64,
+    #[pyo3(item)]
+    pub flow: f64,
+    #[pyo3(item)]
+    pub head: f64,
+    #[pyo3(item)]
+    pub efficiency: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct CompressorSurgePoint {
+    #[pyo3(item)]
+    pub flow: f64,
+    #[pyo3(item)]
+    pub head: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct DepositMass {
+    #[pyo3(item)]
+    pub mechanism: String,
+    #[pyo3(item)]
+    pub mass: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct EfficiencyPoint {
+    #[pyo3(item)]
+    pub diameter: f64,
+    #[pyo3(item)]
+    pub efficiency: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct ExpanderMapPoint {
+    #[pyo3(item)]
+    pub igv: f64,
+    #[pyo3(item)]
+    pub uc: f64,
+    #[pyo3(item)]
+    pub efficiency: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct FilterBetaPoint {
+    #[pyo3(item)]
+    pub particle_size: f64,
+    #[pyo3(item)]
+    pub beta_ratio: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct FilterDropPoint {
+    #[pyo3(item)]
+    pub flow: f64,
+    #[pyo3(item)]
+    pub drop: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct FluidComponent {
+    #[pyo3(item)]
+    pub fluid: f64,
+    #[pyo3(item)]
+    pub name: String,
+    #[pyo3(item)]
+    pub pseudo_component: bool,
+    #[pyo3(item)]
+    pub moles: f64,
+    #[pyo3(item)]
+    pub molar_mass: Option<f64>,
+    #[pyo3(item)]
+    pub density: Option<f64>,
+    #[pyo3(item)]
+    pub normal_boiling_point: Option<f64>,
+    #[pyo3(item)]
+    pub critical_temperature: Option<f64>,
+    #[pyo3(item)]
+    pub critical_pressure: Option<f64>,
+    #[pyo3(item)]
+    pub acentric_factor: Option<f64>,
+    #[pyo3(item)]
+    pub critical_volume: Option<f64>,
+    #[pyo3(item)]
+    pub racket_z: Option<f64>,
+    #[pyo3(item)]
+    pub racket_z_cpa: Option<f64>,
+    #[pyo3(item)]
+    pub parachor: Option<f64>,
+    #[pyo3(item)]
+    pub critical_viscosity: Option<f64>,
+    #[pyo3(item)]
+    pub triple_point_temperature: Option<f64>,
+    #[pyo3(item)]
+    pub heat_of_fusion: Option<f64>,
+    #[pyo3(item)]
+    pub ideal_gas_enthalpy_of_formation: Option<f64>,
+    #[pyo3(item)]
+    pub cp_a: Option<f64>,
+    #[pyo3(item)]
+    pub cp_b: Option<f64>,
+    #[pyo3(item)]
+    pub cp_c: Option<f64>,
+    #[pyo3(item)]
+    pub cp_d: Option<f64>,
+    #[pyo3(item)]
+    pub attractive_m: Option<f64>,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct IncrementalZoneInput {
+    #[pyo3(item)]
+    pub zone_name: String,
+    #[pyo3(item)]
+    pub duty: f64,
+    #[pyo3(item)]
+    pub hot_inlet_temp: f64,
+    #[pyo3(item)]
+    pub hot_outlet_temp: f64,
+    #[pyo3(item)]
+    pub cold_inlet_temp: f64,
+    #[pyo3(item)]
+    pub cold_outlet_temp: f64,
+    #[pyo3(item)]
+    pub tube_phase_regime: String,
+    #[pyo3(item)]
+    pub tube_density: f64,
+    #[pyo3(item)]
+    pub tube_viscosity: f64,
+    #[pyo3(item)]
+    pub tube_cp: f64,
+    #[pyo3(item)]
+    pub tube_conductivity: f64,
+    #[pyo3(item)]
+    pub tube_mass_flow: f64,
+    #[pyo3(item)]
+    pub shell_phase_regime: String,
+    #[pyo3(item)]
+    pub shell_density: f64,
+    #[pyo3(item)]
+    pub shell_viscosity: f64,
+    #[pyo3(item)]
+    pub shell_cp: f64,
+    #[pyo3(item)]
+    pub shell_conductivity: f64,
+    #[pyo3(item)]
+    pub shell_mass_flow: f64,
+    #[pyo3(item)]
+    pub tube_liquid_density: Option<f64>,
+    #[pyo3(item)]
+    pub tube_vapor_density: Option<f64>,
+    #[pyo3(item)]
+    pub tube_liquid_viscosity: Option<f64>,
+    #[pyo3(item)]
+    pub tube_vapor_viscosity: Option<f64>,
+    #[pyo3(item)]
+    pub tube_liquid_cp: Option<f64>,
+    #[pyo3(item)]
+    pub tube_liquid_conductivity: Option<f64>,
+    #[pyo3(item)]
+    pub tube_quality_in: Option<f64>,
+    #[pyo3(item)]
+    pub tube_quality_out: Option<f64>,
+    #[pyo3(item)]
+    pub tube_reduced_pressure: Option<f64>,
+    #[pyo3(item)]
+    pub tube_surface_tension: Option<f64>,
+    #[pyo3(item)]
+    pub tube_heat_of_vaporization: Option<f64>,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct InteractionComponent {
+    #[pyo3(item)]
+    pub name: String,
+    #[pyo3(item)]
+    pub pseudo_component: bool,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct Lump {
     #[pyo3(item)]
     pub name: String,
@@ -52,6 +267,62 @@ pub struct Lump {
     pub density: Option<f64>,
     #[pyo3(item)]
     pub boiling_point: Option<f64>,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct MapCurvePoint {
+    #[pyo3(item)]
+    pub speed: f64,
+    #[pyo3(item)]
+    pub flow: f64,
+    #[pyo3(item)]
+    pub head: f64,
+    #[pyo3(item)]
+    pub efficiency: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct PipeFitting {
+    #[pyo3(item)]
+    pub ld_ratio: f64,
+    #[pyo3(item)]
+    pub count: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct ProductionChemicalDose {
+    #[pyo3(item)]
+    pub chemical_type: String,
+    #[pyo3(item)]
+    pub name: String,
+    #[pyo3(item)]
+    pub active_ingredient: String,
+    #[pyo3(item)]
+    pub active_wt_pct: f64,
+    #[pyo3(item)]
+    pub dosage: f64,
+    #[pyo3(item)]
+    pub alkalinity_capacity: Option<f64>,
+    #[pyo3(item)]
+    pub h2s_capacity: Option<f64>,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct PumpCurvePoint {
+    #[pyo3(item)]
+    pub speed: f64,
+    #[pyo3(item)]
+    pub flow: f64,
+    #[pyo3(item)]
+    pub head: f64,
+    #[pyo3(item)]
+    pub efficiency: f64,
+    #[pyo3(item)]
+    pub npsh_required: Option<f64>,
 }
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
@@ -69,6 +340,25 @@ pub struct ReferenceRow {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct ScaleInhibitor {
+    #[pyo3(item)]
+    pub scale_type: String,
+    #[pyo3(item)]
+    pub inhibitor_chemistry: String,
+    #[pyo3(item)]
+    pub temperature: f64,
+    #[pyo3(item)]
+    pub saturation_ratio: f64,
+    #[pyo3(item)]
+    pub total_dissolved_solids: f64,
+    #[pyo3(item)]
+    pub calcium: f64,
+    #[pyo3(item)]
+    pub available_dose: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct SourceRow {
     #[pyo3(item)]
     pub moles: f64,
@@ -78,6 +368,33 @@ pub struct SourceRow {
     pub density: Option<f64>,
     #[pyo3(item)]
     pub boiling_point: Option<f64>,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct TurboIgvPenaltyPoint {
+    #[pyo3(item)]
+    pub igv: f64,
+    #[pyo3(item)]
+    pub factor: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct TurboQnPoint {
+    #[pyo3(item)]
+    pub qn: f64,
+    #[pyo3(item)]
+    pub factor: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct TurboUcPoint {
+    #[pyo3(item)]
+    pub uc: f64,
+    #[pyo3(item)]
+    pub efficiency: f64,
 }
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
@@ -107,4 +424,33 @@ pub struct WaterAnalysis {
     pub pressure: f64,
     #[pyo3(item)]
     pub co2_partial_pressure: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct ZoneDefinitionRow {
+    #[pyo3(item)]
+    pub zone_name: String,
+    #[pyo3(item)]
+    pub duty_fraction: f64,
+    #[pyo3(item)]
+    pub total_duty: f64,
+    #[pyo3(item)]
+    pub lmtd: f64,
+    #[pyo3(item)]
+    pub tube_density: f64,
+    #[pyo3(item)]
+    pub tube_viscosity: f64,
+    #[pyo3(item)]
+    pub tube_cp: f64,
+    #[pyo3(item)]
+    pub tube_conductivity: f64,
+    #[pyo3(item)]
+    pub shell_density: f64,
+    #[pyo3(item)]
+    pub shell_viscosity: f64,
+    #[pyo3(item)]
+    pub shell_cp: f64,
+    #[pyo3(item)]
+    pub shell_conductivity: f64,
 }

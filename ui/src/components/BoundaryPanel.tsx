@@ -1,34 +1,39 @@
 /**
  * The boundary: what the flowsheet is fed and what it produces.
  *
- * **This is where `add_input` becomes reachable for a *new* record.** The inputs panel could edit
- * an existing feed's flow, pressure and temperature, and `components` and `z` were read-only with
- * a note saying the command that changes them is `add_input` — which no control offered. A feed is
- * a record, and the record is what this form writes.
+ * **A row selects; a separate control removes.** The panel used to make a feed's own row the
+ * remove action, so clicking one to look at it deleted it and every connection it fed. Selecting
+ * is the common gesture and removing is the rare one, so they are two controls now.
  *
- * **Two rules are enforced here, and both are the checker's own.** Add is disabled until the fluid
- * names at least one substance and the mole fractions match it one for one — which is exactly the
- * two facts `Diagnostic::InputRecord` tests, so the form cannot send a record the checker would
- * refuse for a reason it could see. **Substance names are not checked**: whether `methane` exists
- * is the databank's answer, it arrives as the run's own failure, and guessing at it here would be
- * a second opinion about the databank.
+ * **A feed is edited as a record, not as a comma-separated string.** `FeedEditor` owns the
+ * component picker, the fraction basis and the one `add_input`; this panel only lists the
+ * boundary and decides which feed is being edited.
  */
 
 import { useState } from "react";
 
-import { displayUnitOf, toDisplayUnit, type Units } from "../state/units";
-
+import { FeedEditor, newFeedDraft } from "./feed/FeedEditor";
+import type { Units } from "../state/units";
+import type { Catalogue, Envelope } from "../wire/types";
 import type { EditorCommand } from "../wire/commands";
-import type { Envelope } from "../wire/types";
 
 export interface BoundaryPanelProps {
+  catalogue: Catalogue | null;
   envelope: Envelope;
   /** The unit a reader wants values in. A feed is stored in the units its spec declares. */
   units: Units;
   onCommand: (command: EditorCommand) => void;
+  /** A feed or product row selects the object, as the canvas does. */
+  onSelect: (id: string) => void;
 }
 
-export function BoundaryPanel({ envelope, units, onCommand }: BoundaryPanelProps) {
+export function BoundaryPanel({
+  catalogue,
+  envelope,
+  units,
+  onCommand,
+  onSelect,
+}: BoundaryPanelProps) {
   const nodes = envelope.flowsheet.graph.nodes;
   const feeds = nodes.filter((node) => node.role === "input");
   const products = nodes.filter((node) => node.role === "product");
@@ -38,62 +43,65 @@ export function BoundaryPanel({ envelope, units, onCommand }: BoundaryPanelProps
       <div className="label">Boundary</div>
 
       {feeds.map((feed) => (
-        <button
-          key={feed.id}
-          type="button"
-          className="entry"
-          onClick={() => onCommand({ command: "remove_input", name: feed.data.name })}
-        >
-          <span className="name">{feed.data.name}</span>
-          <span className="tag">feed · remove</span>
-        </button>
+        <div className="boundary-row" key={feed.id}>
+          <button type="button" className="entry" onClick={() => onSelect(feed.id)}>
+            <span className="name">{feed.data.name}</span>
+            <span className="tag">feed</span>
+          </button>
+          <button
+            type="button"
+            className="remove"
+            aria-label={`remove feed ${feed.data.name}`}
+            title="remove this feed and every connection that draws from it"
+            onClick={() => onCommand({ command: "remove_input", name: feed.data.name })}
+          >
+            ×
+          </button>
+        </div>
       ))}
       {products.map((product) => (
-        <button
-          key={product.id}
-          type="button"
-          className="entry"
-          onClick={() => onCommand({ command: "remove_product", name: product.data.name })}
-        >
-          <span className="name">{product.data.name}</span>
-          <span className="tag">product · remove</span>
-        </button>
+        <div className="boundary-row" key={product.id}>
+          <button type="button" className="entry" onClick={() => onSelect(product.id)}>
+            <span className="name">{product.data.name}</span>
+            <span className="tag">product</span>
+          </button>
+          <button
+            type="button"
+            className="remove"
+            aria-label={`remove product ${product.data.name}`}
+            title="remove this product and every connection that writes to it"
+            onClick={() => onCommand({ command: "remove_product", name: product.data.name })}
+          >
+            ×
+          </button>
+        </div>
       ))}
 
-      <NewFeed envelope={envelope} units={units} onCommand={onCommand} />
+      <NewFeed
+        catalogue={catalogue}
+        envelope={envelope}
+        units={units}
+        onCommand={onCommand}
+      />
       <NewProduct envelope={envelope} onCommand={onCommand} />
     </div>
   );
 }
 
-/** The record of a feed, which is four numbers and a fluid. */
-function NewFeed({ envelope, units, onCommand }: BoundaryPanelProps) {
-  const existing = envelope.flowsheet.graph.nodes.find((node) => node.role === "input");
+/** The record of a feed: a fluid, a flow, a pressure and a temperature. */
+function NewFeed({
+  catalogue,
+  envelope,
+  units,
+  onCommand,
+}: {
+  catalogue: Catalogue | null;
+  envelope: Envelope;
+  units: Units;
+  onCommand: (command: EditorCommand) => void;
+}) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState(nextName(envelope, "feed"));
-  const [components, setComponents] = useState(
-    (existing?.data.input?.components ?? []).join(", "),
-  );
-  const [z, setZ] = useState((existing?.data.input?.z ?? []).join(", "));
-  const [n, setN] = useState(String(existing?.data.input?.n ?? 1));
-  const [P, setP] = useState(String(existing?.data.input?.P ?? 5e5));
-  const [T, setT] = useState(String(existing?.data.input?.T ?? 300));
-
-  const fluids = components
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry !== "");
-  const fractions = z
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry !== "")
-    .map(Number);
-  // The checker's own two facts, so the form cannot send a record it would refuse.
-  const ready =
-    name.trim() !== "" &&
-    fluids.length >= 1 &&
-    fractions.length === fluids.length &&
-    fractions.every((fraction) => Number.isFinite(fraction));
+  const taken = envelope.flowsheet.graph.nodes.map((node) => node.data.name);
 
   if (!open) {
     return (
@@ -104,66 +112,17 @@ function NewFeed({ envelope, units, onCommand }: BoundaryPanelProps) {
   }
 
   return (
-    <div className="field">
-      <div className="head">
-        <span className="name">New feed</span>
-      </div>
-      <input value={name} onChange={(event) => setName(event.target.value)} placeholder="name" />
-      <input
-        value={components}
-        onChange={(event) => setComponents(event.target.value)}
-        placeholder="methane, n-butane"
-      />
-      <input
-        value={z}
-        onChange={(event) => setZ(event.target.value)}
-        placeholder="0.9, 0.1"
-      />
-      {/* **The placeholders name the unit the box accepts**, which is the set's and not the
-          document's: a feed is stored in the units its spec declares, and the conversion happens
-          here rather than in a reader's head. */}
-      <input
-        value={n}
-        onChange={(event) => setN(event.target.value)}
-        placeholder={unit(units, "mol/s")}
-      />
-      <input
-        value={P}
-        onChange={(event) => setP(event.target.value)}
-        placeholder={unit(units, "Pa")}
-      />
-      <input
-        value={T}
-        onChange={(event) => setT(event.target.value)}
-        placeholder={unit(units, "K")}
-      />
-      {ready ? null : (
-        <div className="hint bad">
-          a fluid names at least one substance, and one mole fraction each
-        </div>
-      )}
-      <button
-        type="button"
-        className="entry"
-        disabled={!ready}
-        onClick={() => {
-          onCommand({
-            command: "add_input",
-            name: name.trim(),
-            components: fluids,
-            // **Back to the units the document stores**, which is what makes each box above a
-            // box in the reader's unit rather than a relabelled one.
-            n: toDisplayUnit(units, Number(n), "mol/s"),
-            z: fractions,
-            P: toDisplayUnit(units, Number(P), "Pa"),
-            T: toDisplayUnit(units, Number(T), "K"),
-          });
-          setOpen(false);
-        }}
-      >
-        <span className="name">Add the feed</span>
-      </button>
-    </div>
+    <FeedEditor
+      catalogue={catalogue}
+      units={units}
+      initial={newFeedDraft(taken, units)}
+      editing={false}
+      onApply={(record) => {
+        onCommand({ command: "add_input", ...record });
+        setOpen(false);
+      }}
+      onCancel={() => setOpen(false)}
+    />
   );
 }
 
@@ -175,18 +134,27 @@ function NewProduct({
   envelope: Envelope;
   onCommand: (command: EditorCommand) => void;
 }) {
-  const [name, setName] = useState(nextName(envelope, "product"));
+  const suggested = nextName(envelope, "product");
+  const [name, setName] = useState(suggested);
   return (
     <div className="field">
       <div className="head">
         <span className="name">+ New product</span>
       </div>
-      <input value={name} onChange={(event) => setName(event.target.value)} placeholder="name" />
+      <input
+        value={name}
+        aria-label="product name"
+        onChange={(event) => setName(event.target.value)}
+        placeholder={suggested}
+      />
       <button
         type="button"
         className="entry"
         disabled={name.trim() === ""}
-        onClick={() => onCommand({ command: "add_product", name: name.trim() })}
+        onClick={() => {
+          onCommand({ command: "add_product", name: name.trim() });
+          setName("");
+        }}
       >
         <span className="name">Add the product</span>
       </button>
@@ -204,9 +172,4 @@ function nextName(envelope: Envelope, stem: string): string {
     }
   }
   return `${stem}_x`;
-}
-
-/** The unit a box's placeholder names, in the set in force. */
-function unit(units: Units, declared: string): string {
-  return displayUnitOf(units, declared) ?? declared;
 }

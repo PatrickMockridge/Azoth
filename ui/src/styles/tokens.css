@@ -18,6 +18,9 @@
  */
 
 :root {
+  /* The browser's own controls follow the theme, including a `<select>`'s popup. */
+  color-scheme: dark;
+
   /* surfaces */
   --bg-app: #0b0e13;
   --bg-canvas: #0e1218;
@@ -111,6 +114,8 @@
 }
 
 [data-theme="light"] {
+  color-scheme: light;
+
   --bg-app: #e8ecf1;
   --bg-canvas: #eef1f5;
   --bg-panel: #f4f6f9;

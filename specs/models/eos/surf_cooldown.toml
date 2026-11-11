@@ -1,0 +1,163 @@
+id = "eos.surf_cooldown"
+name = "Surface flowline cooldown and no-touch time"
+kind = "direct"
+assumptions = [
+    "the model takes the fluid by components and composition and the operating point as a pressure and a flash temperature; the class reads both from a `SystemInterface` it is handed.\n",
+    "**water is the substance named `water`**, present above a mole fraction of 1e-12 as the class's own floor; `require_water` turns an absent water into a refusal, which the class offers as the caller's guard.\n",
+    "**the density is the flashed phases' total mass over their total Peneloux-corrected volume**, and the specific heat is their mole-fraction-weighted molar `cp` over the total mass - the class's `getCp` is the sum of each phase's `cp0 n + cp_res`.\n",
+    "**the flash's own cp carries a measured 7e-5 relative difference from the class's system cp**, which the cases' 1e-3 tolerance records rather than hides; the hydrate arithmetic is pinned by its own 1e-8 cases.\n",
+    "**the hydrate temperature is `eos.hydrate_formation_temperature` at the operating pressure**, and a failure of that solve is reported as no hydrate risk exactly as the class reports it - `water_present` is the caller's way to tell a dry fluid from a failed solve.\n",
+    "**the cooldown is `eos.pipeline_cooldown`** with the class's steel properties, the layer U when none is supplied, the optional operating-temperature override as the initial temperature, and the target at the hydrate temperature plus the margin.\n",
+    "**the no-touch time is the interpolated crossing of that target**, absent when the march never reaches it or when the hydrate temperature is absent or no colder than the seabed; the verdict bands are the requirement's three-quarter point or the absolute twelve and six hours.\n",
+]
+references = [
+    "NeqSim master, `pvtsimulation/flowassurance/SurfCooldownAnalyzer.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "`validation/neqsim/captures/flow_assurance_remainder_probe.tsv` - the eighteen states: three supplied U values, the layer value, the requirement bands, the operating override, a warm seabed, a dry fluid, the required-water guard, a low-pressure line, two margins and a longer step.",
+]
+[source]
+standard = "NeqSim master `SurfCooldownAnalyzer`"
+edition = "`calculate`, `detectWater`, `extractFluidProperties`, `computeHydrateEquilibriumTemperature`, `evaluateNoTouchTime` and the getters. The Gson report is a composition."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name.\n"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overall mole fractions.\n"
+[inputs.operating_pressure]
+unit = "Pa"
+description = "the pressure the fluid and the hydrate equilibrium are read at.\n"
+[inputs.flash_temperature]
+unit = "K"
+description = "the temperature the fluid's density and specific heat are flashed at.\n"
+[inputs.internal_diameter]
+unit = "m"
+description = "the pipe's internal diameter.\n"
+[inputs.wall_thickness]
+unit = "m"
+description = "the steel wall thickness.\n"
+[inputs.insulation_thickness]
+unit = "m"
+description = "the insulation thickness.\n"
+[inputs.coating_thickness]
+unit = "m"
+description = "the external coating thickness.\n"
+[inputs.insulation_conductivity]
+unit = "W/(m*K)"
+description = "the insulation's thermal conductivity.\n"
+[inputs.seabed_temperature]
+unit = "K"
+description = "the ambient temperature.\n"
+[inputs.operating_temperature]
+unit = "K"
+optional = true
+description = "the cooldown's initial temperature; absent takes the flash temperature.\n"
+[inputs.overall_u_value]
+unit = "W/(m**2*K)"
+optional = true
+description = "a supplied U value; absent computes the layers.\n"
+[inputs.external_htc]
+unit = "W/(m**2*K)"
+optional = true
+description = "the external convection coefficient for the layer calculation; absent takes 300.\n"
+[inputs.hydrate_margin]
+unit = "K"
+optional = true
+interval = true
+description = "the margin above the hydrate temperature; absent takes 3 K.\n"
+[inputs.required_no_touch_time]
+unit = "s"
+optional = true
+description = "the required no-touch time; absent uses the absolute twelve- and six-hour bands.\n"
+[inputs.total_time]
+unit = "s"
+optional = true
+description = "the cooldown horizon; absent takes 72 hours.\n"
+[inputs.time_step]
+unit = "s"
+optional = true
+description = "the march step; absent takes five minutes.\n"
+[inputs.require_water]
+type = "boolean"
+optional = true
+description = "whether a fluid with no water is refused rather than reported as no risk; absent is false.\n"
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk", "rk"]
+optional = true
+description = "the cubic the flash and the hydrate reference phase run; absent takes srk.\n"
+[inputs.hydrate_model]
+type = "enum"
+values = ["pvtsim", "guo_finch"]
+optional = true
+description = "which fitted component model fills the cages; absent takes pvtsim.\n"
+[outputs]
+[outputs.verdict]
+type = "enum"
+values = ["ok", "marginal", "critical", "no_hydrate_risk"]
+description = "the screening verdict.\n"
+[outputs.water_present]
+type = "boolean"
+description = "whether the fluid carries a water component above the class's floor.\n"
+[outputs.water_mole_fraction]
+unit = "dimensionless"
+description = "the water's mole fraction.\n"
+[outputs.no_touch_time]
+unit = "s"
+optional = true
+description = "the time to reach the hydrate temperature plus the margin, absent where the class returns positive infinity.\n"
+[outputs.initial_fluid_temperature]
+unit = "K"
+description = "the initial temperature the cooldown ran from.\n"
+[outputs.hydrate_equilibrium_temperature]
+unit = "K"
+optional = true
+description = "the hydrate equilibrium temperature at the operating pressure, absent where the solve failed.\n"
+[outputs.hydrate_margin]
+unit = "K"
+interval = true
+description = "the margin added above the hydrate temperature, an echo of the input.\n"
+[outputs.seabed_temperature]
+unit = "K"
+description = "the ambient temperature, an echo of the input.\n"
+[outputs.overall_u_value]
+unit = "W/(m**2*K)"
+description = "the U value the cooldown ran with.\n"
+[outputs.time_constant]
+unit = "s"
+description = "the thermal mass over the per-length conductance.\n"
+[outputs.fluid_density]
+unit = "kg/m**3"
+description = "the density the cooldown used.\n"
+[outputs.fluid_specific_heat]
+unit = "J/(kg*K)"
+description = "the specific heat the cooldown used.\n"
+[outputs.internal_diameter]
+unit = "m"
+description = "the pipe's internal diameter, an echo of the input.\n"
+[outputs.insulation_thickness]
+unit = "m"
+description = "the insulation thickness, an echo of the input.\n"
+[[valid_range]]
+quantity = "operating_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "The state has a positive pressure.\n"
+[[valid_range]]
+quantity = "flash_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "seabed_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[implementations]
+python = "azoth.eos.surf_cooldown"
+rust = "azoth_eos::surf_cooldown"

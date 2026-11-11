@@ -116,7 +116,7 @@ def _expander(inputs: Mapping[str, Any]) -> dict[str, float]:
     `Expander.run`'s second-law statement is the only other number it exposes, and the
     efficiency-of-one row is where the reversible state is the answer.
     """
-    from azoth.process.reference.expander import _states
+    from azoth.process.reference.expander import _recovered_power_capacity, _states
 
     states = _states(
         [str(name) for name in inputs["components"]],
@@ -127,7 +127,7 @@ def _expander(inputs: Mapping[str, Any]) -> dict[str, float]:
         float(inputs["isentropic_efficiency"]),
     )
     n = float(inputs["inlet_n"])
-    return {
+    dump = {
         "inlet_h": states.h_in,
         "inlet_s": states.s_in,
         "isentropic_h": states.h_isentropic,
@@ -138,6 +138,14 @@ def _expander(inputs: Mapping[str, Any]) -> dict[str, float]:
         "power_kW": n * states.dh_actual / 1000.0,
         "entropy_production_kJ_per_molK": (states.s_out - states.s_in) / 1000.0,
     }
+    capacity = _recovered_power_capacity(
+        n * states.dh_actual,
+        None if "rated_recovered_power" not in inputs else float(inputs["rated_recovered_power"]),
+    )
+    if capacity.recovered_power_utilization is not None:
+        dump["constraint_recoveredPower_utilization"] = capacity.recovered_power_utilization
+    dump["max_utilization"] = capacity.max_utilization
+    return dump
 
 
 def _pipe(inputs: Mapping[str, Any]) -> dict[str, float]:
@@ -257,6 +265,8 @@ def _heat_exchanger(inputs: Mapping[str, Any]) -> dict[str, float]:
         str(inputs.get("flow_arrangement", "counterflow")),
         optional("hot_outlet_temperature"),
         optional("cold_outlet_temperature"),
+        bool(inputs.get("use_delta_t", False)),
+        1.0 if inputs.get("delta_t") is None else float(inputs["delta_t"]),
     )
     # In the order the kernel computes them - the inlets, then the rating, then the
     # outlets - because the harness reports the *first* layer that moved, and the first one
@@ -293,22 +303,28 @@ def _splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
     they are dumped so that the parting is measured rather than described. Two of the three
     are declared divergences; see `LAYER_CASES`.
 
+    The capacity map's numeric fields are dumped under the probe's own keys. The boolean
+    and the bottleneck's name are not: the layer harness compares floats, so those two are
+    pinned by the case and by `test_splitter_capacity.py`. The mechanical design's nine
+    numeric answers are dumped the same way when `mechanical_design` is on.
+
     Nothing here reads a state the kernel did not compute. A branch's pressure, temperature
     and composition are the feed's *by construction* - the kernel copies them - so dumping
     them would be dumping the input, and the entropy is a function of `(T, P, z)` the
     splitter never forms, which would make this a second implementation of
     `Stream::entropy` rather than a layer of the split.
     """
-    from azoth.process.reference.splitter import _route
+    from azoth.process.reference import capacity
+    from azoth.process.reference.splitter import _capacity, _design, _route
 
-    states = _route(
-        [str(name) for name in inputs["components"]],
-        float(inputs["feed_t"]),
-        float(inputs["feed_p"]),
-        [float(v) for v in inputs["feed_z"]],
-        [float(f) for f in inputs["split_factors"]],
-    )
+    components = [str(name) for name in inputs["components"]]
+    t = float(inputs["feed_t"])
+    p = float(inputs["feed_p"])
+    z = [float(v) for v in inputs["feed_z"]]
     n = float(inputs["feed_n"])
+    factors = [float(f) for f in inputs["split_factors"]]
+
+    states = _route(components, t, p, z, factors)
     dump = {"feed_h": states.h_in}
     for index, fraction in enumerate(states.fractions):
         dump[f"products{index}_n"] = n * fraction
@@ -319,6 +335,114 @@ def _splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
     dump["molar_enthalpy_out_weighted"] = sum(
         fraction * states.h_in for fraction in states.fractions
     )
+
+    dump["feed_volume_flow_m3_s"] = capacity.system_volumetric_flow(
+        components, t, p, z, n, from_feed=True
+    )
+    stated_header = None if "header_diameter" not in inputs else float(inputs["header_diameter"])
+    # The case states `corrosion_allowance` in the spec's millimetres while every other design
+    # input is already SI, so it is divided by 1000 for `_design`'s metres.
+    design = _design(
+        components,
+        t,
+        p,
+        z,
+        n,
+        factors,
+        stated_header,
+        bool(inputs.get("mechanical_design", False)),
+        None if "design_velocity" not in inputs else float(inputs["design_velocity"]),
+        None if "max_operation_pressure" not in inputs else float(inputs["max_operation_pressure"]),
+        None if "tensile_strength" not in inputs else float(inputs["tensile_strength"]),
+        None if "joint_efficiency" not in inputs else float(inputs["joint_efficiency"]),
+        None
+        if "corrosion_allowance" not in inputs
+        else float(inputs["corrosion_allowance"]) / 1000.0,
+    )
+    effective_header = stated_header if design is None else design.header_diameter
+    capacity_map = _capacity(
+        components,
+        t,
+        p,
+        z,
+        n,
+        None if "design_pressure_drop" not in inputs else float(inputs["design_pressure_drop"]),
+        None if "max_design_velocity" not in inputs else float(inputs["max_design_velocity"]),
+        effective_header,
+        bool(inputs.get("capacity_analysis_enabled", False)),
+    )
+    for key, value in (
+        ("pressure_drop_value_pa", capacity_map.pressure_drop_value),
+        ("pressure_drop_design_pa", capacity_map.pressure_drop_design),
+        ("pressure_drop_utilization", capacity_map.pressure_drop_utilization),
+        ("velocity_value_m_s", capacity_map.velocity_value),
+        ("velocity_design_m_s", capacity_map.velocity_design),
+        ("velocity_utilization", capacity_map.velocity_utilization),
+    ):
+        if value is not None:
+            dump[key] = value
+    dump["max_utilization"] = capacity_map.max_utilization
+    if design is not None:
+        for key, value in (
+            ("design_header_diameter_m", design.header_diameter),
+            ("design_branch_diameter_m", design.branch_diameter),
+            ("design_header_length_m", design.header_length),
+            ("design_wall_thickness_m", design.wall_thickness),
+            ("manifold_volume_m3", design.manifold_volume),
+            ("design_total_pressure_drop_pa", design.total_pressure_drop),
+            ("header_weight_kg", design.header_weight),
+            ("branch_weight_kg", design.branch_weight),
+            ("total_weight_kg", design.total_weight),
+        ):
+            dump[key] = value
+    return dump
+
+
+def _heater(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.heater`'s outlet record and its two outlet-temperature constraints.
+
+    The outlet state is the flash's own answer, and the duty is `run`'s `newH - oldH`; the
+    capacity map's utilisations are the one interior the record does not carry, so they are
+    dumped under the probe's keys. The booleans and the bottleneck's name stay case pins.
+    """
+    from azoth.process.reference.heater import _capacity, _states
+
+    components = [str(name) for name in inputs["components"]]
+    n = float(inputs["inlet_n"])
+    z = [float(v) for v in inputs["inlet_z"]]
+    p = float(inputs["inlet_p"])
+    t = float(inputs["inlet_t"])
+    t_out = None if "outlet_temperature" not in inputs else float(inputs["outlet_temperature"])
+    duty = None if "duty" not in inputs else float(inputs["duty"])
+    drop = None if "pressure_drop" not in inputs else float(inputs["pressure_drop"])
+    max_t = (
+        None if "max_outlet_temperature" not in inputs else float(inputs["max_outlet_temperature"])
+    )
+    min_t = (
+        None if "min_outlet_temperature" not in inputs else float(inputs["min_outlet_temperature"])
+    )
+
+    states = _states(components, n, z, p, t, t_out, duty, drop)
+    outlet_k = states.outlet_t.to("K").magnitude
+    dump = {
+        "outlet_temperature_k": outlet_k,
+        "outlet_h": states.h_out,
+        "duty_W": states.duty,
+    }
+    capacity = _capacity(outlet_k, max_t, min_t)
+    for key, value in (
+        (
+            "constraint_maxOutletTemperature_utilization",
+            capacity.max_outlet_temperature_utilization,
+        ),
+        (
+            "constraint_minOutletTemperature_utilization",
+            capacity.min_outlet_temperature_utilization,
+        ),
+    ):
+        if value is not None:
+            dump[key] = value
+    dump["max_utilization"] = capacity.max_utilization
     return dump
 
 
@@ -916,7 +1040,373 @@ def _plug_flow_reactor(inputs: Mapping[str, Any]) -> dict[str, float]:
     }
 
 
+def _hem_release(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.hem_release`'s stations, from the reference's own arithmetic.
+
+    **The enthalpy and entropy are not dumped.** The capture prints NeqSim's specific `h`
+    and `s` on the ideal-gas datum, and this library's datum differs by a constant; every
+    other station field is a state or a flux and compares directly. The four stations are
+    the record's own rows, so the case holds the rate and this dump holds the profile.
+    """
+    from azoth.process.reference.hem_release import _states
+
+    states = _states(
+        [str(name) for name in inputs["components"]],
+        [float(value) for value in inputs["upstream_z"]],
+        float(inputs["upstream_t"]),
+        float(inputs["upstream_p"]),
+        float(inputs["diameter"]),
+        float(inputs["discharge_coefficient"]),
+        float(inputs["back_pressure"]),
+    )
+    dumped: dict[str, float] = {
+        "mass_flow_kg_s": 0.0 if states.mass_flow is None else states.mass_flow
+    }
+    for index, row in enumerate(states.stations):
+        prefix = f"station_{index}_"
+        dumped[prefix + "p_pa"] = row.pressure
+        dumped[prefix + "t_k"] = row.temperature
+        dumped[prefix + "density_kg_m3"] = row.density
+        dumped[prefix + "velocity_m_per_s"] = row.velocity
+        dumped[prefix + "mass_flux_kg_m2_s"] = row.mass_flux
+        dumped[prefix + "gas_mass_fraction"] = row.gas_mass_fraction
+    return dumped
+
+
+def _leak_blowdown(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.leak_blowdown`'s series, from the reference's own arithmetic.
+
+    **No `beta`, velocity, momentum or SMD.** The class's single-phase `getBeta()` and its
+    cached density make those a record of the class's behaviour rather than the state's; the
+    rate, pressure, temperature and gamma compare directly.
+    """
+    from azoth.process.reference.leak_blowdown import _states
+
+    volume = float(inputs.get("vessel_volume", 1.0))
+    diameter = float(inputs.get("hole_diameter", 0.01))
+    coefficient = float(inputs.get("discharge_coefficient", 0.62))
+    back = float(inputs.get("back_pressure", 101325.0))
+    step = float(inputs.get("time_step", 1.0))
+    states = _states(
+        [str(name) for name in inputs["components"]],
+        [float(value) for value in inputs["initial_z"]],
+        float(inputs["initial_t"]),
+        float(inputs["initial_p"]),
+        float(inputs["duration"]),
+        volume,
+        diameter,
+        coefficient,
+        back,
+        step,
+        str(inputs.get("scenario_name", "Release")),
+    )
+    dumped: dict[str, float] = {
+        "initial_density_kg_m3": states.initial_mass / volume,
+        "initial_gamma": states.initial_gamma,
+        "total_mass_released_kg": (
+            0.0 if states.total_mass_released is None else states.total_mass_released
+        ),
+        "peak_mass_flow_kg_s": (
+            0.0 if states.peak_mass_flow_rate is None else states.peak_mass_flow_rate
+        ),
+        "time_to_empty_s": 0.0 if states.time_to_empty is None else states.time_to_empty,
+        "declared_points": float(states.number_of_points),
+        "recorded_points": float(len(states.points)),
+    }
+    for index, row in enumerate(states.points):
+        prefix = f"point_{index}_"
+        dumped[prefix + "t_s"] = row.time
+        dumped[prefix + "mass_flow_kg_s"] = row.mass_flow_rate
+        dumped[prefix + "temperature_k"] = row.temperature
+        dumped[prefix + "pressure_pa"] = row.pressure
+        dumped[prefix + "gamma"] = states.gammas[index]
+    return dumped
+
+
+def _separator(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.separator`'s capacity surface, from the reference's own factored arithmetic.
+
+    The five getters are the model's second fold, and the capture prints the intermediates
+    on the way to them. **The two density rules are two layers**: `liquid_density_kg_m3` is
+    the sizing family's - the liquid's own, or `1000.0` with no liquid - while
+    `gas_load_factor_m_per_s` is formed from the floored one. A port that collapsed them
+    would agree on every two-phase row here and disagree on a near-dry one.
+    """
+    from azoth.core.units import quantity
+    from azoth.process.reference.separator import _capacity_states, _route, _sizing_getters
+
+    components = [str(name) for name in inputs["components"]]
+    feed_z = [float(v) for v in inputs["feed_z"]]
+    states = _route(
+        components,
+        float(inputs["feed_n"]),
+        feed_z,
+        float(inputs["feed_p"]),
+        quantity(float(inputs["feed_t"]), "K"),
+        float(inputs["pressure_drop"]),
+        float(inputs["gas_in_liquid"]),
+        None if inputs.get("heat_input") is None else float(inputs["heat_input"]),
+    )
+    # **A mechanical design case states no vessel**, so the capacity fold has no diameter to
+    # divide by; its own layers are dumped from `_mechanical_layers`.
+    if inputs.get("internal_diameter") is None:
+        if not inputs.get("mechanical_design"):
+            return {}
+        return _mechanical_layers(inputs, states)
+    level = inputs.get("design_liquid_level_fraction")
+    capacity = _capacity_states(
+        components,
+        states.temperature.to("K").magnitude,
+        states.p_out,
+        feed_z,
+        states.n_vapour,
+        list(states.liquid_z),
+        float(inputs["internal_diameter"]),
+        float(inputs["design_gas_load_factor"]),
+        str(inputs.get("orientation") or "horizontal"),
+        0.8 if level is None else float(level),
+    )
+    dump = {"capacity_utilization": capacity.utilization}
+    gas_density = capacity.gas_density
+    gas_area = capacity.gas_area
+    volumetric_flow = capacity.volumetric_flow
+    max_flow = capacity.max_flow
+    if gas_density is None or gas_area is None or volumetric_flow is None or max_flow is None:
+        return dump
+    dump |= {
+        "gas_density_kg_m3": gas_density,
+        "gas_area_m2": gas_area,
+        "gas_volumetric_flow_m3_s": volumetric_flow,
+        "max_allowable_gas_flow_m3_s": max_flow,
+    }
+    # `liquid_density_kg_m3` is the **liquid phase's**, and a dry system has none to print:
+    # the capture says `none` and the comparison would float it.
+    liquid_density = capacity.liquid_density
+    if capacity.has_liquid and liquid_density is not None:
+        dump["liquid_density_kg_m3"] = liquid_density
+    max_velocity = capacity.max_velocity
+    superficial = capacity.superficial_velocity
+    load_factor = capacity.load_factor
+    if max_velocity is not None and superficial is not None and load_factor is not None:
+        dump |= {
+            "max_allowable_gas_velocity_m_per_s": max_velocity,
+            "gas_superficial_velocity_m_per_s": superficial,
+            "gas_load_factor_m_per_s": load_factor,
+        }
+    # **The sizing capture's own three layers**, on the same run: the operating area
+    # fraction, the phase-indexed load factors and `sizeFromFlow`'s diameter. The indexed
+    # values are dumped under the capture's per-phase key, because the record carries one
+    # number per liquid phase and the capture prints one line per phase.
+    sizing = _sizing_getters(
+        components,
+        states.temperature.to("K").magnitude,
+        states.p_out,
+        feed_z,
+        states.n_vapour,
+        list(states.liquid_z),
+        float(inputs["internal_diameter"]),
+        float(inputs["design_gas_load_factor"]),
+        str(inputs.get("orientation") or "horizontal"),
+        0.8 if level is None else float(level),
+        5.0 if inputs.get("separator_length") is None else float(inputs["separator_length"]),
+        0.5
+        if inputs.get("liquid_level_fraction") is None
+        else float(inputs["liquid_level_fraction"]),
+        None if inputs.get("safety_factor") is None else float(inputs["safety_factor"]),
+    )
+    if sizing is not None:
+        dump["gas_area_fraction"] = sizing.gas_area_fraction
+        if sizing.required_diameter is not None:
+            dump["sized_diameter_m"] = sizing.required_diameter
+        for index, value in enumerate(sizing.rated_by_phase, start=1):
+            dump[f"gas_load_factor_phase_{index}_m_per_s"] = value
+    return dump
+
+
+def _mechanical_layers(inputs: Mapping[str, Any], states: Any) -> dict[str, float]:
+    """`process.separator`'s mechanical-design layers, under the capture's key names.
+
+    The design's intermediates are its own arithmetic, and the capture prints them: the two
+    volume flows, the shell and skid weights, the module box, the levels and the three nozzle
+    diameters. A design that moved one step would move the ones after it, which is why the
+    dump carries the chain rather than the final diameter alone.
+    """
+    from azoth.process.reference.separator import _mechanical_design
+
+    components = [str(name) for name in inputs["components"]]
+    design = _mechanical_design(
+        components,
+        states.temperature.to("K").magnitude,
+        states.p_out,
+        list(states.y),
+        states.n_vapour,
+        list(states.liquid_z),
+        states.n_liquid,
+        str(inputs.get("orientation") or "horizontal") == "horizontal",
+        float(inputs["design_gas_load_factor"]),
+        0.8 if inputs.get("fg") is None else float(inputs["fg"]),
+        1.0
+        if inputs.get("volume_safety_factor") is None
+        else float(inputs["volume_safety_factor"]),
+        60.0 if inputs.get("retention_time") is None else float(inputs["retention_time"]),
+        1.0e7
+        if inputs.get("max_operation_pressure") is None
+        else float(inputs["max_operation_pressure"]),
+        (425.0e6 if inputs.get("allowable_stress") is None else float(inputs["allowable_stress"]))
+        / 1.0e6,
+        1.0 if inputs.get("joint_efficiency") is None else float(inputs["joint_efficiency"]),
+        0.0
+        if inputs.get("corrosion_allowance") is None
+        else float(inputs["corrosion_allowance"]) * 1000.0,
+    )
+    diameter = design.inner_diameter
+    return {
+        "inner_diameter_m": diameter,
+        "tantan_length_m": design.tantan_length,
+        "outer_diameter_m": design.outer_diameter,
+        "wall_thickness_m": design.wall_thickness,
+        "max_design_volume_flow_m3_hr": design.max_design_volume_flow_m3_hr,
+        "max_design_gas_volume_flow_m3_hr": design.max_design_gas_volume_flow_m3_hr,
+        "vessel_shell_weight_kg": design.vessel_shell_weight_kg,
+        "piping_weight_kg": design.vessel_shell_weight_kg * 0.4,
+        "structural_weight_kg": design.vessel_shell_weight_kg * 0.1,
+        "electrical_weight_kg": design.vessel_shell_weight_kg * 0.08,
+        "total_weight_kg": design.total_weight_kg,
+        "module_width_m": design.module_width,
+        "module_length_m": design.module_length,
+        "module_height_m": design.module_height,
+        "vessel_volume_m3": design.vessel_volume_m3,
+        "hhll_m": design.hhll,
+        "hll_m": design.hll,
+        "nll_m": design.nll,
+        "lll_m": design.lll,
+        "llll_m": design.llll,
+        "weir_height_m": design.weir_height,
+        "hil_m": 0.25 * diameter,
+        "nil_m": design.nil,
+        "lil_m": 0.15 * diameter,
+        "effective_length_liquid_m": design.effective_length_liquid,
+        "effective_length_gas_m": design.effective_length_gas,
+        "calc_liquid_retention_time_s": design.liquid_retention_time_s,
+        "calc_surge_volume_m3": design.surge_volume_m3,
+        "calc_surge_time_s": design.surge_time_s,
+        "calc_inlet_nozzle_id_m": design.inlet_nozzle_id,
+        "calc_gas_outlet_nozzle_id_m": design.gas_outlet_nozzle_id,
+        "calc_oil_outlet_nozzle_id_m": design.oil_outlet_nozzle_id,
+    }
+
+
+def _anti_surge_recycle(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.anti_surge_recycle`'s layers: the machine the loop converged.
+
+    The record carries the four flows and the distance to surge; **the machine that produced
+    them is the interior**, and the capture prints its inlet's molar flow, pressure,
+    temperature and enthalpy beside the shaft power and the discharge state at the converged
+    recycle mass. This rebuilds that state from the result's own recycle mass through the
+    reference's mixer and machine, so a wrong recycle mass or a wrong mixed state moves the
+    numbers. On the inactive row the recycle is zero and the reconstruction is the natural
+    suction, which is the state `solve` leaves untouched.
+    """
+    from azoth import _models_gen
+    from azoth.core.units import ureg
+    from azoth.eos import components as databank
+    from azoth.process.reference import capacity
+    from azoth.process.reference.anti_surge_recycle import (
+        DEFAULT_COOLER_TEMPERATURE,
+        DEFAULT_DAMPING,
+        DEFAULT_MARGIN,
+        DEFAULT_MAX_ITERATIONS,
+        DEFAULT_SPEED,
+        DEFAULT_TOLERANCE,
+        _machine,
+    )
+    from azoth.process.reference.anti_surge_recycle import (
+        anti_surge_recycle as model,
+    )
+    from azoth.process.reference.mixer import _route
+
+    spec = _models_gen.model("process.anti_surge_recycle")
+
+    def quantity(value: Any, unit: str) -> Any:
+        return ureg.Quantity(float(value), unit)
+
+    def records(name: str) -> list[dict[str, Any]]:
+        fields = spec["inputs"][name]["fields"]
+        return [
+            {
+                key: quantity(value, fields[key]["unit"])
+                for key, value in row.items()
+                if value is not None
+            }
+            for row in inputs[name]
+        ]
+
+    components = [str(name) for name in inputs["components"]]
+    feed_z = [float(value) for value in inputs["feed_z"]]
+    feed_n = float(inputs["feed_n"])
+    feed_p = float(inputs["feed_p"])
+    feed_t = float(inputs["feed_t"])
+    cooler = float(inputs.get("recycle_cooler_temperature", DEFAULT_COOLER_TEMPERATURE))
+    speed = float(inputs.get("speed", DEFAULT_SPEED))
+    margin = float(inputs.get("surge_control_margin", DEFAULT_MARGIN))
+    curve = records("curve")
+    surge_curve = records("surge_curve")
+
+    result = model(
+        components,
+        quantity(feed_n, "mol/s"),
+        feed_z,
+        quantity(feed_p, "Pa"),
+        quantity(feed_t, "K"),
+        curve,
+        surge_curve,
+        speed=speed,
+        surge_control_margin=margin,
+        recycle_cooler_temperature=quantity(cooler, "K"),
+        damping=float(inputs.get("damping", DEFAULT_DAMPING)),
+        tolerance=float(inputs.get("tolerance", DEFAULT_TOLERANCE)),
+        max_iterations=int(inputs.get("max_iterations", DEFAULT_MAX_ITERATIONS)),
+    )
+
+    mixture, _ = databank.mixture_of(components, eos="pr")
+    molar_mass = capacity._molar_mass(mixture, feed_z)
+    recycle_n = result.recycle_mass_flow.to("kg/s").magnitude / molar_mass
+    mixed = _route(
+        components,
+        [feed_n, recycle_n],
+        [list(feed_z), list(feed_z)],
+        [feed_p, feed_p],
+        [feed_t, cooler],
+        None,
+    )
+    machine = _machine(
+        components,
+        mixed.n_total,
+        list(mixed.z),
+        mixed.pressure,
+        mixed.product_t.to("K").magnitude,
+        curve,
+        surge_curve,
+        speed,
+        margin,
+    )
+    return {
+        "compressor_inlet_n": mixed.n_total,
+        "compressor_inlet_P": mixed.pressure / 1.0e5,
+        "compressor_inlet_T": mixed.product_t.to("K").magnitude,
+        "compressor_inlet_h": mixed.h_out,
+        "compressor_inlet_kg_hr": mixed.n_total * molar_mass * 3600.0,
+        "compressor_power_kw": machine.power.to("kW").magnitude,
+        "compressor_outlet_p_bara": machine.outlet_p.to("bar").magnitude,
+        "compressor_outlet_T": machine.outlet_t.to("K").magnitude,
+        "compressor_outlet_h": machine.outlet_h.to("J/mol").magnitude,
+    }
+
+
 DUMPERS: dict[str, Dumper] = {
+    "process.separator": _separator,
+    "process.hem_release": _hem_release,
+    "process.leak_blowdown": _leak_blowdown,
     "process.rate_based_packed_column": _rate_based_packed_column,
     "process.absorption_column": _absorption_column,
     "process.packed_column": _packed_column,
@@ -928,10 +1418,12 @@ DUMPERS: dict[str, Dumper] = {
     "process.pipe": _pipe,
     "process.pump": _pump,
     "process.splitter": _splitter,
+    "process.heater": _heater,
     "process.mixer": _mixer,
     "process.gibbs_reactor": _gibbs_reactor,
     "process.plug_flow_reactor": _plug_flow_reactor,
     "process.compressor": _compressor,
+    "process.anti_surge_recycle": _anti_surge_recycle,
     "process.heat_exchanger": _heat_exchanger,
     "process.shortcut_distillation_column": _shortcut_distillation_column,
 }
@@ -969,16 +1461,6 @@ NO_INTERIOR: dict[str, str] = {
         "is the thing this dict exists to refuse - and the class's own arithmetic, the "
         "Souders-Brown capacity metric, is mechanical design that no port field reaches"
     ),
-    "process.heater": (
-        "the kernel is one ``Stream::from_pt`` at the stated temperature or one "
-        "``Stream::from_ph`` at the enthalpy a stated duty implies, at the pressure the drop "
-        "leaves - and the outlet record is that flash's answer in full. The capture's extra "
-        "line is ``duty_W``, which is ``Heater.run``'s own ``newH - oldH`` and therefore a "
-        "difference of the two records' enthalpies over the inlet's flow; the model reports "
-        "it as ``outlet_duty`` for exactly that reason. `getEnergyInput` is no way out of "
-        "that: `run` overwrites the field with the same difference, so it reads back the "
-        "number the record already implies rather than a layer behind it"
-    ),
     "process.filter": (
         "the kernel is one ``enthalpy_at`` at the pressure the drop leaves, and the temperature "
         "is the inlet's - so the outlet record is that state in full. The capture's two extra "
@@ -988,7 +1470,10 @@ NO_INTERIOR: dict[str, str] = {
         "flow, both of which the result already carries, and its unit is one this library has "
         "no dimension for. **The capture's third row is uncased rather than dumped**: the "
         "clamp lands the outlet at a microbar, where this library's cubic refuses to converge "
-        "and NeqSim's extrapolates - so there is no layer to compare, and that is the finding"
+        "and NeqSim's extrapolates - so there is no layer to compare, and that is the finding. "
+        "**The loaded state does not add an interior either**: the loading fraction, "
+        "breakthrough, the bypass and the replacement flag are scalars over the flashed "
+        "record, and `process_filter_loading.tsv` cases them rather than dumping them here"
     ),
     "process.stirred_tank_reactor": (
         "the kernel forms the reacted composition, the outlet pressure and the flashed state, "
@@ -1000,9 +1485,10 @@ NO_INTERIOR: dict[str, str] = {
     ),
     "process.flare": (
         "the kernel is a *pass-through*: `run` clones the inlet into the outlet, so the whole "
-        "record is the answer and there is no intermediate between the two ports. Its two "
-        "reported numbers - the duty and the CO2 emission - are outputs rather than layers, "
-        "and the capture prints them beside the record exactly as the model does"
+        "record is the answer and there is no intermediate between the two ports. Its reported "
+        "numbers - the duty, the CO2 emission, and the radiation, dispersion and capacity "
+        "surface - are outputs rather than layers, and the capture prints them beside the "
+        "record exactly as the model does; each is a closed form over the record itself"
     ),
     "process.ejector": (
         "the kernel forms the mixing pressure, four velocities, two efficiencies' enthalpy "
@@ -1037,21 +1523,37 @@ NO_INTERIOR: dict[str, str] = {
         "feed - a construction-time state a kernel that is a pure function of its inlets "
         "has no way to reproduce"
     ),
-    "process.separator": (
-        "the kernel forms the flash's ``beta``, the two phase compositions and the moles the "
-        "entrainment moves, and every one of the four is on the two outlet records - the "
-        "vapour fraction is their flow ratio and the compositions are their ``z``. "
-        "`Separator` exposes no getter for the state *before* the entrainment either: "
-        "`getThermoSystem()` is the working system with the fraction already applied. "
-        "**That state is not missing from the oracle, it is in the block beside it.** "
-        "Entrainment is a move applied after the flash, and the capture's first row runs "
-        "the same feed at the same conditions with no entrainment - so the fourth row's "
-        "flash is the first row's answer exactly, and it is: the vapour leaves at "
-        "`0.7773101311100368`, which is the first row's `0.8182211906421439` less the "
-        "stated `0.05`, at that row's composition and enthalpy to `1.3e-15`. The flash's "
-        "arithmetic is therefore already held by the three rows that state no entrainment, "
-        "and reaching for it again here would be a second implementation of the ported "
-        "arithmetic rather than a layer of it"
+    "process.separator_capacity_assessment": (
+        "the kernel folds the same run and capacity arithmetic ``process.separator`` carries "
+        "into the snapshot, and every number in the snapshot is on the model's own record - "
+        "the status, the diagnostic and the two basis strings included. The capacity layers "
+        "are dumped under ``process.separator`` already, against the same numbers, so a "
+        "dumper here would be a second dump of that arithmetic under another name, which is "
+        "the thing this dict exists to refuse"
+    ),
+    "process.separator_performance": (
+        "the calculator's every number is a top-level output - the six fractions, the four "
+        "efficiencies and the cut diameter - and the droplet size classes it integrates over "
+        "are derived inside the kernel rather than carried on the record, so there is no "
+        "interior the capture could name"
+    ),
+    "process.turbo_expander_compressor": (
+        "the kernel forms the speed, both powers, both efficiencies, the compressor's "
+        "polytropic head, the two ratios and the IGV opening, and **every one of them is on "
+        "the model's own record** beside the two outlet streams - the model function copies "
+        "``TurboOutcome`` field for field. The case's expected block already asserts all of "
+        "them against the same capture, so a dumper would add a key-by-key comparison of "
+        "numbers the case compares and no layer behind them"
+    ),
+    "process.map_turbo_expander_compressor": (
+        "the kernel forms both outlet states, the shaft speed, the available and consumed "
+        "powers, the residual and the status, and **every one of them is on the model's own "
+        "record** beside the two outlet streams - the model function copies the outcome field "
+        "for field. The case's expected block already asserts them against the same capture, "
+        "so a dumper would compare numbers the case compares and no layer behind them. **The "
+        "one intermediate the record does not carry is the bisection's own trial powers**, "
+        "which are `process.compressor`'s chart arithmetic on the same map - held by that id's "
+        "dumper and its Khader cases"
     ),
 }
 
@@ -1206,6 +1708,120 @@ _SPLITTER_DIVERGENCE: tuple[Divergence, ...] = (
 #: `python/tests/test_process_layer_diff.py` fails on rather than a silent mis-pairing.
 LAYER_CASES: tuple[LayerCase, ...] = (
     LayerCase(
+        model="process.hem_release",
+        case="methane_50bara_choked",
+        capture="process_hem_release.tsv",
+        block=0,
+        identified_by=("#label", "methane_50bara_choked"),
+    ),
+    LayerCase(
+        model="process.hem_release",
+        case="propane_flashes_through_the_opening",
+        capture="process_hem_release.tsv",
+        block=11,
+        identified_by=("#label", "propane_20bara"),
+    ),
+    LayerCase(
+        model="process.leak_blowdown",
+        case="methane_50bara_ten_seconds",
+        capture="process_leak_blowdown.tsv",
+        block=0,
+        identified_by=("#label", "pr_methane_50bara_10s_1s"),
+    ),
+    # The separator's capacity surface. **Seven of the capture's fifteen blocks are these
+    # cases**, and the other eight are declared uncased: three PR rows the cases already
+    # state under another setting, four SRK rows re-casing the pin's own tests, and the
+    # `GasScrubber` defaults row the port deliberately does not adopt.
+    LayerCase(
+        model="process.separator",
+        case="the_capacity_at_the_design_vessel",
+        capture="process_separator_capacity.tsv",
+        block=0,
+        identified_by=("#label", "pr_two_phase_vertical_d1000_k011"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="a_horizontal_vessel_derates_the_gas_area",
+        capture="process_separator_capacity.tsv",
+        block=1,
+        identified_by=("#label", "pr_two_phase_horizontal_d1000_k011"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="the_vertical_area_ignores_the_design_liquid_level",
+        capture="process_separator_capacity.tsv",
+        block=3,
+        identified_by=("#label", "pr_two_phase_vertical_fg02"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="a_dry_gas_uses_the_sizing_fallback",
+        capture="process_separator_capacity.tsv",
+        block=5,
+        identified_by=("#label", "pr_dry_gas_vertical_d1000_k011"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="an_overloaded_vessel_reports_overload",
+        capture="process_separator_capacity.tsv",
+        block=7,
+        identified_by=("#label", "pr_overloaded_vertical_d020_k011"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="entrainment_moves_the_liquid_the_metric_reads",
+        capture="process_separator_capacity.tsv",
+        block=8,
+        identified_by=("#label", "pr_entrained_gas_in_liquid_005_vertical_d1000"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="the_metric_is_at_the_outlet_state",
+        capture="process_separator_capacity.tsv",
+        block=9,
+        identified_by=("#label", "pr_pressure_drop_outlet_state_vertical_d1000"),
+    ),
+    # The sizing capture's four cased blocks. **The other five are declared uncased**: the
+    # level-`0.2` row repeats the horizontal case under a stated design level, the two
+    # near-critical rows are the derating measurement (a getter the port refuses), the
+    # three-phase row is the capacity family's under another feed, and the liquid-only row
+    # is the class's no-sizing branch, which publishes nothing to compare.
+    LayerCase(
+        model="process.separator",
+        case="a_vertical_vessel_ignores_the_operating_level",
+        capture="process_separator_sizing.tsv",
+        block=0,
+        identified_by=("#label", "pr_two_phase_vertical"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="the_phase_indexed_load_factor_reads_the_operating_level",
+        capture="process_separator_sizing.tsv",
+        block=1,
+        identified_by=("#label", "pr_two_phase_horizontal"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="a_dry_gas_has_no_liquid_phase_to_index",
+        capture="process_separator_sizing.tsv",
+        block=6,
+        identified_by=("#label", "pr_dry_gas_vertical"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="the_safety_factor_scales_the_required_diameter",
+        capture="process_separator_sizing.tsv",
+        block=8,
+        identified_by=("#label", "pr_sizing_safety_15"),
+    ),
+    LayerCase(
+        model="process.separator",
+        case="the_mechanical_design_sizes_the_vessel_from_the_default_standards",
+        capture="process_separator_mechanical_design.tsv",
+        block=1,
+        identified_by=("#label", "port_fixture_pr"),
+    ),
+    LayerCase(
         model="process.rate_based_packed_column",
         case="co2_water_absorber",
         capture="process_rate_based_packed_column.tsv",
@@ -1247,8 +1863,8 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         model="process.rate_based_packed_column",
         case="billet_schultes",
         capture="process_rate_based_billet.tsv",
-        block=1,
-        identified_by=("#label", "billet_schultes"),
+        block=3,
+        identified_by=("#label", "plastic_schultes"),
         # The same band the Onda row takes and for the same reason, measured on this row:
         # the four segments differ from the capture by between `1.6e-4` and `6.1e-4`
         # relative - the largest of any dumped key - because the heat step's capacity rates
@@ -1368,9 +1984,9 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         identified_by=("split_factors", "1.0 0.5 0.0"),
         divergence=_COMPONENT_SPLITTER_SEPARATION_DIVERGENCE,
     ),
-    # The shortcut column's four rows. **Their block order is the probe's**, and the two
-    # degenerate rows are the gap between the fourth and the fifth: `UNCASED_ROWS` declares
-    # them, and this tuple names the other four by position.
+    # The shortcut column's five rows. **Their block order is the probe's**, and the two
+    # degenerate rows are blocks 2 and 6: `UNCASED_ROWS` declares them, and this tuple names
+    # the other five by position.
     LayerCase(
         model="process.shortcut_distillation_column",
         case="propane_nbutane_split",
@@ -1398,6 +2014,15 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_shortcut_distillation_column.tsv",
         block=4,
         identified_by=("#label", "binary_methane_nbutane"),
+    ),
+    # **The Kirkbride fix's own regression state**, whose material balance the class's test
+    # writes by hand; its feed tray is `4` from the corrected product-basis correlation.
+    LayerCase(
+        model="process.shortcut_distillation_column",
+        case="asymmetric_kirkbride_regression",
+        capture="process_shortcut_distillation_column.tsv",
+        block=5,
+        identified_by=("#label", "asymmetric_kirkbride_regression"),
     ),
     # The isentropic pair. **Both rows of each are cases, and the efficiency-of-one row is
     # the one that matters**: its reversible step *is* its answer, so the capture states the
@@ -1442,6 +2067,42 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_expander.tsv",
         block=0,
         identified_by=("isentropic_efficiency", "0.75"),
+    ),
+    # The recovered-power constraint's five states.
+    LayerCase(
+        model="process.expander",
+        case="the_recovered_power_is_absent_without_a_rating",
+        capture="process_expander_capacity.tsv",
+        block=0,
+        identified_by=("case", "no_rating"),
+    ),
+    LayerCase(
+        model="process.expander",
+        case="a_rating_above_the_recovered_power_is_its_utilization",
+        capture="process_expander_capacity.tsv",
+        block=1,
+        identified_by=("case", "rating_2_kw"),
+    ),
+    LayerCase(
+        model="process.expander",
+        case="a_rating_inside_the_hard_band_is_not_exceeded",
+        capture="process_expander_capacity.tsv",
+        block=2,
+        identified_by=("case", "rating_1_2_kw"),
+    ),
+    LayerCase(
+        model="process.expander",
+        case="a_rating_below_the_recovered_power_trips_both_flags",
+        capture="process_expander_capacity.tsv",
+        block=3,
+        identified_by=("case", "rating_1_kw"),
+    ),
+    LayerCase(
+        model="process.expander",
+        case="a_non_positive_rating_is_no_constraint",
+        capture="process_expander_capacity.tsv",
+        block=4,
+        identified_by=("case", "rating_zero"),
     ),
     # The pipe's three rows, one per branch and one that diverges. The water row is a case
     # *because the case records the divergence*, not because the model reproduces it: the
@@ -1528,6 +2189,13 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         block=1,
         identified_by=("specified_outlet_pressure_bara", "8.0"),
     ),
+    LayerCase(
+        model="process.mixer",
+        case="a_sub_tolerance_spread_raises_no_flag",
+        capture="process_mixer.tsv",
+        block=2,
+        identified_by=("feed1_P", "9.6"),
+    ),
     # The splitter's two rows carry the same numbers, so the pairing is the label's and
     # not a state's.
     LayerCase(
@@ -1545,6 +2213,218 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         block=1,
         identified_by=("split_factors", "3.0 7.0"),
         divergence=_SPLITTER_DIVERGENCE,
+    ),
+    # The capacity map's nine branches, in the probe's own order. The pairing is the
+    # block's `case=` key, which is what the probe prints first.
+    LayerCase(
+        model="process.splitter",
+        case="the_capacity_map_is_absent_until_a_setter_creates_it",
+        capture="process_splitter_capacity.tsv",
+        block=0,
+        identified_by=("case", "no_setters"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_header_diameter_alone_does_not_initialize_the_map",
+        capture="process_splitter_capacity.tsv",
+        block=1,
+        identified_by=("case", "header_alone"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="enabling_analysis_initializes_the_class_defaults",
+        capture="process_splitter_capacity.tsv",
+        block=2,
+        identified_by=("case", "enabled_defaults"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="a_sized_header_and_a_stated_drop_report_both_constraints",
+        capture="process_splitter_capacity.tsv",
+        block=3,
+        identified_by=("case", "sized_header_design_drop"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="a_tight_velocity_is_exceeded_with_analysis_disabled",
+        capture="process_splitter_capacity.tsv",
+        block=4,
+        identified_by=("case", "tight_velocity_disabled"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="a_non_positive_drop_suppresses_only_its_own_constraint",
+        capture="process_splitter_capacity.tsv",
+        block=5,
+        identified_by=("case", "zero_design_drop"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="a_non_positive_velocity_suppresses_only_its_own_constraint",
+        capture="process_splitter_capacity.tsv",
+        block=6,
+        identified_by=("case", "zero_max_velocity"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_utilization_is_capped_at_9_99",
+        capture="process_splitter_capacity.tsv",
+        block=7,
+        identified_by=("case", "cap_9_99"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_velocity_reads_the_two_phase_feeds_own_volume_flow",
+        capture="process_splitter_capacity.tsv",
+        block=8,
+        identified_by=("case", "two_phase_one_outlet"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    # The mechanical design's nine branches, in the probe's own order.
+    LayerCase(
+        model="process.splitter",
+        case="the_default_design_sizes_at_fifteen_metres_per_second",
+        capture="process_splitter_mechanical_design.tsv",
+        block=0,
+        identified_by=("case", "default_design"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="a_larger_flow_rounds_the_header_to_one_inch",
+        capture="process_splitter_mechanical_design.tsv",
+        block=1,
+        identified_by=("case", "twenty_mol"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="a_lower_design_velocity_rounds_the_header_up",
+        capture="process_splitter_mechanical_design.tsv",
+        block=2,
+        identified_by=("case", "design_velocity_ten"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_operating_pressure_thickens_the_wall",
+        capture="process_splitter_mechanical_design.tsv",
+        block=3,
+        identified_by=("case", "high_pressure"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_tensile_strength_thickens_the_wall",
+        capture="process_splitter_mechanical_design.tsv",
+        block=4,
+        identified_by=("case", "low_tensile"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_corrosion_allowance_is_added_to_the_wall",
+        capture="process_splitter_mechanical_design.tsv",
+        block=5,
+        identified_by=("case", "corrosion"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_joint_efficiency_is_read_and_discarded",
+        capture="process_splitter_mechanical_design.tsv",
+        block=6,
+        identified_by=("case", "joint_efficiency"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_two_phase_design_reads_the_system_density",
+        capture="process_splitter_mechanical_design.tsv",
+        block=7,
+        identified_by=("case", "two_phase"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_velocity_reads_the_designed_header",
+        capture="process_splitter_mechanical_design.tsv",
+        block=8,
+        identified_by=("case", "design_with_capacity"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    # The heater's outlet-temperature constraints, in the probe's own order. The heater's
+    # outlet record is the flash's answer; the capacity utilisations are the interior.
+    LayerCase(
+        model="process.heater",
+        case="the_outlet_temperature_limits_are_absent_without_setters",
+        capture="process_heater_capacity.tsv",
+        block=0,
+        identified_by=("case", "no_limits"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="a_maximum_above_the_outlet_is_its_utilization",
+        capture="process_heater_capacity.tsv",
+        block=1,
+        identified_by=("case", "max_above"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="a_maximum_below_the_outlet_is_exceeded_but_not_hard",
+        capture="process_heater_capacity.tsv",
+        block=2,
+        identified_by=("case", "max_below"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="a_minimum_below_the_outlet_is_its_inverse_utilization",
+        capture="process_heater_capacity.tsv",
+        block=3,
+        identified_by=("case", "min_below"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="a_minimum_above_the_outlet_is_hard_exceeded",
+        capture="process_heater_capacity.tsv",
+        block=4,
+        identified_by=("case", "min_above"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="both_limits_report_both_constraints_and_the_larger_bottleneck",
+        capture="process_heater_capacity.tsv",
+        block=5,
+        identified_by=("case", "both"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="a_minimum_of_zero_is_not_a_constraint",
+        capture="process_heater_capacity.tsv",
+        block=6,
+        identified_by=("case", "min_zero"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="the_utilization_is_capped_at_9_99",
+        capture="process_heater_capacity.tsv",
+        block=7,
+        identified_by=("case", "min_capped"),
+    ),
+    LayerCase(
+        model="process.heater",
+        case="a_duty_specified_outlet_reads_its_flashed_temperature",
+        capture="process_heater_capacity.tsv",
+        block=8,
+        identified_by=("case", "duty_specified"),
     ),
     # **The reactive section's block**, on the binary state the model's own case is held to:
     # NeqSim's reactive column there is bit-identical to its standard twin, which is the class's
@@ -1737,6 +2617,30 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         block=5,
         identified_by=(LABEL_KEY, "rwgs_1200k"),
     ),
+    # The calculator's three states: two recycles below the control line at 0.05 and 0.10
+    # margins, and one natural flow above it. **The block's machine state is the layer**, and
+    # the inactive row's reconstruction is the natural suction, which is what `solve` leaves.
+    LayerCase(
+        model="process.anti_surge_recycle",
+        case="the_recycle_holds_the_margin_at_five_percent",
+        capture="process_anti_surge_recycle.tsv",
+        block=0,
+        identified_by=(LABEL_KEY, "low_flow_margin_005"),
+    ),
+    LayerCase(
+        model="process.anti_surge_recycle",
+        case="a_natural_flow_above_the_control_line_opens_nothing",
+        capture="process_anti_surge_recycle.tsv",
+        block=1,
+        identified_by=(LABEL_KEY, "high_flow_no_recycle"),
+    ),
+    LayerCase(
+        model="process.anti_surge_recycle",
+        case="a_ten_percent_margin_moves_the_converged_state",
+        capture="process_anti_surge_recycle.tsv",
+        block=2,
+        identified_by=(LABEL_KEY, "low_flow_margin_010"),
+    ),
 )
 
 #: Probe rows that are **deliberately not cases**, per capture, by the count they take.
@@ -1748,6 +2652,37 @@ LAYER_CASES: tuple[LayerCase, ...] = (
 #: held to the `reference_pin_*` rows instead. Counting them here rather than leaving the
 #: block count open keeps the check exact: a probe row added without a case still fails.
 UNCASED_ROWS: dict[str, int] = {
+    # The separator capacity capture's eight. **Three are the cases' own states under another
+    # stated setting** - the vertical vessel at the default `0.8`, and the horizontal one at
+    # `0.2` - kept as the measurement the design-liquid fraction moves a horizontal area by a
+    # quarter and a vertical one by nothing. **One is the pin's
+    # near-dry scrubber state, which is single-phase in this jar**: it exercises the
+    # `1000.0` fallback and not the `10.0` floor, so it is evidence for the floor's
+    # unreachability rather than an oracle for a floored state. **Four are SRK**, the cubic
+    # `SeparatorTest` itself uses: the port is PR, so they measure what the cubic moved.
+    # **The last is `GasScrubber` at minimum setup**, which prints the class defaults this
+    # id does not adopt - `vertical`, `0.1`, and the `0.11` m/s `K` it inherits.
+    "process_separator_capacity.tsv": 8,
+    # The sizing capture's five: the level-`0.2` row repeats the horizontal case under a
+    # stated design level, the two near-critical rows are the derating measurement (the
+    # getter the port refuses), the three-phase row is the capacity family's under another
+    # feed, and the liquid-only row is the class's no-sizing branch.
+    "process_separator_sizing.tsv": 5,
+    # The mechanical capture's SRK row is the class's own test fixture; the port's separator
+    # is PR, so only the PR row can be an oracle for this tree's state.
+    "process_separator_mechanical_design.tsv": 1,
+    # The gas scrubber's two mechanical rows are the same pair of cubics. The id has no dumper
+    # - its stream side is the separator's and `NO_INTERIOR` says so - so the case is the
+    # oracle and the capture stays here as its evidence.
+    "process_gas_scrubber_mechanical_design.tsv": 2,
+    # The settling capture's two vessels: the same feed at two geometries. The id is a
+    # `NO_INTERIOR` model, so the cases are the oracle and these are their evidence.
+    "process_three_phase_settling.tsv": 2,
+    # The enhanced chain's eleven states: the class's own six, the mist-position and
+    # weir-position setters, the vane-pack and axial-cyclone design-K records, and the
+    # inlet-device overrides. The id is a `NO_INTERIOR` model - the enhanced path is the
+    # kernel's own arithmetic, and the cases hold its six fractions and efficiencies.
+    "process_separator_performance_enhanced.tsv": 11,
     # The plug-flow reactor's five: the probe swept ten states and the model declares five
     # cases, so the five left over are the probe's own sweep - its Euler default, its coarse
     # and every-step marches, its half-activity bed and its concentration probe - kept as
@@ -1765,10 +2700,11 @@ UNCASED_ROWS: dict[str, int] = {
     # three remaining CO2/water rows are the stripper and the two heights, which the port's own
     # test asserts as *directions* rather than as digits.
     "process_rate_based_packed_column.tsv": 7,
-    # And the correlation capture's one: `billet_onda` is `co2_water_absorber`'s state
-    # again, kept beside `billet_schultes` so the pair measures the multiplier, and it is
-    # evidence rather than an oracle because the port already reaches that state.
-    "process_rate_based_billet.tsv": 1,
+    # And the correlation capture's three: `billet_onda` is `co2_water_absorber`'s state
+    # again and `billet_schultes` on the built-in is the identity (its constants are `1.0` and
+    # `0.40`), so neither is an oracle for a state the port does not already reach; the
+    # `plastic_onda` baseline is the pair's control. The case reads `plastic_schultes`.
+    "process_rate_based_billet.tsv": 3,
     "process_heat_exchanger.tsv": 2,
     # The shortcut column's two degenerate rows. **Both are evidence rather than oracles**:
     # a reflux multiplier of exactly one leaves Gilliland's `X` at zero and the class returns
@@ -1860,6 +2796,16 @@ UNCASED_ROWS: dict[str, int] = {
     # `FALLBACK_PRODUCTS`, which the class's own warning says means the products are a single
     # flash of the mixed feeds rather than the tray solution.
     "process_packed_column.tsv": 13,
+    # The release capture's twenty-one. The probe prints the PR oracle, the SRK evidence,
+    # the two states no azoth input can express (an empty fluid and the hydrate flag) and the
+    # propane/n-butane row the class calls INVALID while this port converges. The layer diff
+    # reads the choked methane block and the flashing propane block; the rest are cases
+    # asserted on the rate and the sound speed, or evidence with no state to compare.
+    "process_hem_release.tsv": 21,
+    # The blowdown capture's ten: one block is layer-cased (the ten-second methane run); the
+    # rest are the long horizons held to the capture as evidence, the SRK rows, the propane
+    # row whose single-phase beta and cached density are class artefacts, and the refusals.
+    "process_leak_blowdown.tsv": 10,
 }
 
 

@@ -2,7 +2,7 @@
 
 The Python mirror of ``crates/azoth-eos/src/henry.rs``. **Held to the same constants
 rather than to each other**: ``test_cross_impl.py`` compares registered models, and this
-is a shared function, so both sides' tests assert ``H(298.15) = 51.6545 bar`` for CO2 and
+is a shared function, so both sides' tests assert ``H(298.15) = 28.95 bar`` for CO2 and
 the same finite cap - the numbers, not the agreement.
 
 **There is no single branch to port.** Three of the tranche's models override
@@ -22,11 +22,13 @@ What they share is ``H(T)`` and the cap, and that is what this module is. The
 constants an insoluble ion gets are three *different* numbers, and each belongs to the
 model that chose it rather than to a rule here.
 
-The data behind it is thin, and that is a finding: of the 348 compiled rows, 296 carry
-no correlation and the other 52 carry one of four distinct sets - a ``900`` sentinel
-whose ``exp`` overflows into the cap (40 rows), a constant (5), ``0.059565`` shared by
-``h2s``, ``sf6``, ``r12`` and ``r134a`` (4), and CO2's real correlation, which is
-shared with ``co`` and ``cos`` (3).
+The data behind it is sourced, and its history is worth keeping: of the 348 compiled
+rows, 269 carry no correlation and the other 79 carry 75 distinct two-term sets.
+**Upstream PR #4045 replaced the four placeholder sets this module used to describe** -
+forty rows of ``900``, the constant ``2.92``, the ``0.059565`` quartet and the one CO2 set
+copied onto ``co`` and ``cos`` - with sourced coefficients. Methane is now ``723.75 bar``
+at 298.15 K rather than ``exp(900)`` through the cap, and CO2 is ``28.95 bar`` where the
+copied set gave ``51.65``. The cap remains the model's rule for an ion.
 """
 
 from __future__ import annotations
@@ -46,8 +48,9 @@ class Insoluble(enum.Enum):
 
     **Three numbers, and none of them a rule.** ``ComponentGE`` and ``ComponentGePitzer``
     give an insoluble ion the capped Henry coefficient - ``1e12`` bar, which is also the
-    number ``exp(900)`` overflows to, so the cap and the sentinel are one constant in two
-    roles - and the other two models each carry a fugacity coefficient of their own.
+    number the old ``exp(900)`` sentinel overflowed to, so the cap and the sentinel were
+    one constant in two roles - and the other two models each carry a fugacity coefficient
+    of their own.
     ``ComponentKentEisenberg``'s ``1e8`` says "sparingly present" and
     ``ComponentDesmukhMather``'s ``1e-15`` says "absent", which are different claims about
     the same ion.
@@ -80,7 +83,7 @@ class HenryRecord(NamedTuple):
     """The four coefficients of NeqSim's Henry correlation, dimensionless, in bar.
 
     ``HenryCoef1``..``HenryCoef4`` of ``COMP.csv``, which ``Component.java:2210`` reads as
-    ``henryCoefParameter[0..3]``. **All four are zero on 296 of the 348 rows**, which is
+    ``henryCoefParameter[0..3]``. **All four are zero on 269 of the 348 rows**, which is
     the table's marker for a substance it fits no correlation for - and a zero set
     evaluated as a polynomial gives ``1.802 bar`` for every one of them, so a caller must
     refuse rather than evaluate. :func:`effective_coefficient` is that refusal.

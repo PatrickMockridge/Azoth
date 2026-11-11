@@ -5,19 +5,34 @@ assumptions = [
     "**an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)` - the same flash decides it - so accepting one would let a case hand over a state that does not exist, while an outlet reports the `h` it reached because a machine changes it.",
     "**the step is isentropic, and the inlet's entropy is derived rather than carried.** `s = f(T, P, z)` from the same flash that gives the inlet's enthalpy. The captured efficiency-of-one row is the demonstration: the outlet's entropy equals the inlet's and the step's production is zero.",
     "**the efficiency divides the isentropic step**: `h_out = h_in + (h_is - h_in) / eta`, so an efficiency below one costs more work than the reversible step. `process.expander` multiplies instead, because an expansion's difference is negative.",
+    "**the polytropic branch is the class's default method.** The isentropic state at the outlet pressure gives the densities and the isenthalpic volume exponent; `CF` and the polytropic exponent land `h_out`. `detailed` and `schultz` are refused by name.",
+    "**the polytropic outlet is held to `6e-3`**: the port reproduces the class's formula on its printed densities and enthalpies; the class's reported PR outlet sits `0.2-0.44%` above that, its in-place state differing from a fresh `PSflash`. `polytropicExponent` is cross-checked, not pinned.",
+    "**the deposit multipliers are the class's screening model**: mass/density, film/wetted area, blockage/passage half-height, efficiency `1 - 1.6 b`, head `(1-b)^2`, clamped. The no-chart branch scales its efficiency; with a chart only the factors are recorded.",
     "**the outlet temperature is solved, not assumed isothermal.** The work moves the enthalpy and `Stream::from_ph` finds the temperature at which the mixture carries it, so a compressor's outlet is hotter and an expander's colder than a `v (P2 - P1)` reading would give.",
-    "**the shaft power is not an output.** NeqSim's `getPower` is the machine's `dH = h_out - h_in`, which the record already carries as `n * (outlet_h - inlet_h)` - the captured rows satisfy that to their last digit, so a field would be a second copy of one number.",
+    "**the shaft power is an output in both branches.** It is the machine's `dH = h_out - h_in` times the molar flow - the number the record's enthalpies already imply - and in the chart branch it is the chart's work `H M / eta`, which is the same difference.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's class also carries a compressor chart and catalogue, the polytropic branch, a gamma-based pressure-ratio mode, anti-surge machinery, a deposit model, `useGERG2008`/`useLeachman`/`useVega` property overrides, `runTransient` and a `MechanicalDesign`. **None is here.**",
+    "**a curve selects the fixed-speed chart branch.** `CompressorChart`, the default fan law: one reduced quadratic in `Q/N` for the head and one for the efficiency, the class's kappa and pressure-ratio equation, and the head's shaft work. **Nothing is clamped**; the branch clamps only the efficiency.",
+    "**the chart's head crosses in metres.** A curve quoted in kJ/kg is multiplied by `1000/9.81` - the class's own `polytropicHeadMeter` - and the branch converts back with `9.81`, not standard gravity, so the pressure ratio is the class's.",
+    "**the surge surface is the compressor's own; the recycle calculators are not.** A stated `surge_curve` sets the boundary curve, the read-outs are `getSurgeFlowRate`'s family, and `anti_surge_active` runs `run`'s recycle block. The calculators and controllers are named in `ROADMAP.md`.",
+    "**the run-time loop is capped at 20 passes.** The class's `do-while` is uncapped and would spin on a curve it cannot leave; this stops and reports the last pass, which is the one deliberate divergence here.",
+    "**the Khader map is fitted in the reference fluid's phase speed and read in the process fluid's system speed.** Its coordinates are Mach `N/60 D/cs`, corrected flow `Q/3600/cs/D^2` and head `h/cs^2`; the map's second flow column is never read.",
+    "**the class's meter-chart head asymmetry is not reproduced.** `isSurge` reads one head and the recycle target another; under the tests' kJ/kg unit they agree, and this port states the curve in metres on both sides. No IGV is carried, so its surge-flow adjustment is absent.",
+    "**the speed-solve mode is a Newton on the speed.** It reads the chart at the trial speed, forms the pressure ratio and updates through a `100` rpm numerical derivative with relaxation `min(0.8, i/(i+3))`, 200 iterations to `1e-3` bar. `limit_speed` pegs an out-of-range answer at the bound.",
+    "**the catalogue and the property overrides are absent; the deposit model has landed.** The catalogue attaches only a thermal network, and GERG2008/Leachman/Vega are Tier-4 EOS. `MapTurboExpanderCompressor` is its own id, `process.map_turbo_expander_compressor`.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/compressor/Compressor.java` is the port source, through its no-chart steady-state branch.",
     "Smith, J. M.; Van Ness, H. C.; Abbott, M. M. (2005). \"Introduction to Chemical Engineering Thermodynamics.\", 7th ed., McGraw-Hill. The isentropic efficiency and the reversible-work reference it divides.",
     "`validation/neqsim/captures/process_compressor.tsv` - the isentropic limit at an efficiency of one, and a real machine at 0.75.",
+    "`validation/neqsim/captures/process_compressor_curve.tsv` - the reduced chart's rows and inverses, and `Compressor.run`'s fixed-speed branch on PR.",
+    "`validation/neqsim/captures/process_anti_surge.tsv` - the two boundary splines, the chart's generated surge and stonewall curves, the read-outs at a control margin, and the run-time recycle block in and out of surge.",
+    "`validation/neqsim/captures/process_compressor_map_lookup.tsv` - the two alternative map lookups: their interpolation rows, the base class's out-of-range throw, and a machine run on each.",
+    "`validation/neqsim/captures/process_compressor_khader.tsv` - the Mach-number normalised map on PR: the reference and process sound speeds, the corrected factors, the real curves, and two machine runs.",
+    "`validation/neqsim/captures/process_compressor_speed_solve.tsv` - the speed-solve mode's five runs on PR: converged above the map, pegged at each bound, and the two unlimited solves.",
 ]
 [source]
 standard = "NeqSim process/equipment/compressor/Compressor.java"
-edition = "Its no-chart `run`: the outlet pressure, a `PSflash` at the inlet's own entropy, and the enthalpy moved by `(h_isentropic - h_in) / eta`."
+edition = "Its no-chart `run`; the fixed-speed chart branch - the reduced head and polytropic efficiency, the kappa ratio and the head's shaft work; and the speed-solve mode's Newton on the speed, with its numerical derivative, relaxation and bounds."
 [inputs]
 [inputs.components]
 type = "components"
@@ -38,10 +53,131 @@ unit = "K"
 description = "the inlet temperature, which fixes the inlet enthalpy.\n"
 [inputs.outlet_pressure]
 unit = "Pa"
-description = "the pressure the machine takes the stream to, which is `unit_ops.compressor`'s own parameter.\n"
+optional = true
+description = "the pressure the machine takes the stream to in the isentropic branch. **A stated `curve` overrides it**: the chart branch solves the pressure from the head. An absent value with no curve is refused.\n"
 [inputs.isentropic_efficiency]
 unit = "dimensionless"
 description = "the machine's isentropic efficiency, in `(0, 1]`. One is the reversible limit, and the capture's second row is exactly that.\n"
+[inputs.use_polytropic_calc]
+type = "boolean"
+optional = true
+description = "run the no-chart polytropic branch instead of the isentropic one. **Absent is false.** Refused with a curve: the chart's own branch states its efficiency.\n"
+[inputs.polytropic_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the polytropic efficiency the counter says it runs at, `(0, 1]`. **Absent is the class's `1.0`.** Unread unless `use_polytropic_calc`.\n"
+[inputs.polytropic_method]
+type = "enum"
+values = ["default", "detailed", "schultz"]
+optional = true
+description = "the class's `polytropicMethod`. **Absent is `default`**; `detailed` and `schultz` are refused by name, because neither is carried.\n"
+[inputs.compression_ratio]
+unit = "dimensionless"
+optional = true
+description = "`setCompressionRatio`: the outlet pressure is `P_in * ratio`, and it overrides a stated `outlet_pressure`. **Absent leaves the stated pressure in charge.**\n"
+[inputs.max_outlet_pressure]
+unit = "Pa"
+optional = true
+description = "`setMaxOutletPressure`: caps the ratio's outlet pressure. Unread without `compression_ratio`.\n"
+[inputs.power]
+unit = "W"
+optional = true
+description = "`setPower`: fixes the shaft work, so `h_out = h_in + power / n`. The polytropic branch keeps its stated efficiency; the isentropic one back-solves `(h_is - h_in) / dH`. Absent leaves the efficiency in charge.\n"
+[inputs.deposit]
+type = "record_list"
+row_type = "DepositMass"
+optional = true
+description = "`CompressorDeposit`'s accumulated mass, one row per mechanism. **Absent is no deposit.** The multipliers degrade the polytropic efficiency in the no-chart branch; with a chart the class only records the factors.\n"
+[inputs.deposit.fields.mechanism]
+type = "enum"
+values = ["sulfur_s8", "salt_nacl", "scale_caco3", "scale_baso4", "scale_caso4", "iron_sulfide", "iron_oxide", "hydrocarbon_wax", "particulate", "generic"]
+description = "the deposit mechanism, whose representative density converts the mass to volume.\n"
+[inputs.deposit.fields.mass]
+unit = "kg"
+description = "the accumulated mass for that mechanism.\n"
+[inputs.wetted_area]
+unit = "m**2"
+optional = true
+description = "the foulable impeller/inlet area. Absent leaves the film thickness zero, so the multipliers are one.\n"
+[inputs.passage_half_height]
+unit = "m"
+optional = true
+description = "the characteristic flow-passage half-height the blockage divides by. Absent leaves the multipliers one.\n"
+[inputs.curve]
+type = "record_list"
+row_type = "CompressorCurvePoint"
+optional = true
+description = "the manufacturer's map, one row per point, in the order the chart states them. **An absent curve is the isentropic branch.** The head is in metres; a kJ/kg curve is multiplied by `1000/9.81`.\n"
+[inputs.curve.fields.speed]
+unit = "dimensionless"
+description = "the speed the point was measured at, rpm; the reduced variables divide by it.\n"
+[inputs.curve.fields.flow]
+unit = "m**3/h"
+description = "the measured actual flow, which becomes `Q/N`.\n"
+[inputs.curve.fields.head]
+unit = "m"
+description = "the measured polytropic head in metres, the class's default `headUnit`; a kJ/kg head is multiplied by `1000/9.81` before it is stated.\n"
+[inputs.curve.fields.efficiency]
+unit = "dimensionless"
+description = "the measured polytropic efficiency as a fraction; the class's percent column is divided by `100`. Fitted against the same `flow`.\n"
+[inputs.speed]
+unit = "dimensionless"
+optional = true
+description = "the machine's speed, rpm, at which the chart is read. Absent takes `Compressor.speed`'s `3000`; ignored in the isentropic branch. In the speed-solve mode it is the Newton's starting point.\n"
+[inputs.solve_speed]
+type = "boolean"
+optional = true
+description = "`setSolveSpeed`: solve the speed that reaches `outlet_pressure` through the chart, rather than read the chart at `speed`. Absent is `false`. Needs `curve` and `outlet_pressure`.\n"
+[inputs.min_speed]
+unit = "dimensionless"
+optional = true
+description = "`setMinimumSpeed`: the speed-solve mode's floor, rpm. Absent takes the class's `0`, so the Newton is unbounded below until `limit_speed` asks for the peg.\n"
+[inputs.max_speed]
+unit = "dimensionless"
+optional = true
+description = "`setMaximumSpeed`: the speed-solve mode's ceiling, rpm. Absent takes the class's `30000`.\n"
+[inputs.limit_speed]
+type = "boolean"
+optional = true
+description = "`setLimitSpeed`: peg the solve at `min_speed`/`max_speed` when it leaves them, and report the chart's own pressure at the peg. Absent is `false`, which lets an out-of-range speed stand.\n"
+[inputs.chart_type]
+type = "enum"
+values = ["fan_law", "interpolate", "interpolate_and_extrapolate", "khader_2015"]
+optional = true
+description = "`setCompressorChartType`: which map class runs. Absent is `fan_law`, `CompressorChart`; `interpolate` and `interpolate_and_extrapolate` are the two alternative map lookups; `khader_2015` is the Mach-number normalised map.\n"
+[inputs.chart_conditions]
+type = "vector"
+unit = "dimensionless"
+length = "four"
+optional = true
+description = "`setCurves`' chart conditions: T in C, P in bara, a density the Khader chart does not read, and the reference fluid's molar mass in g/mol. **Required for `khader_2015`** and ignored by the other maps.\n"
+[inputs.impeller_diameter]
+unit = "m"
+optional = true
+description = "the impeller's outer diameter, which the Khader map's machine Mach number divides by. Absent takes the class field's `0.3`; ignored by the other maps.\n"
+[inputs.surge_curve]
+type = "record_list"
+row_type = "CompressorSurgePoint"
+optional = true
+description = "the surge boundary, `getSurgeCurve().setCurve`'s measured (flow, head) rows, in the same units as `curve`. **Absent is no boundary**: the surge read-outs are then null and the anti-surge block cannot fire. The class builds no curve from `setCurves` either.\n"
+[inputs.surge_curve.fields.flow]
+unit = "m**3/h"
+description = "the measured flow at the boundary, m3/hr.\n"
+[inputs.surge_curve.fields.head]
+unit = "m"
+description = "the measured head at the boundary, in metres; a kJ/kg head is multiplied by `1000/9.81` before it is stated.\n"
+[inputs.surge_control_margin]
+unit = "dimensionless"
+optional = true
+description = "`setSurgeControlMargin`: the control line as a fraction above the surge flow, `getControlLineFlow = surgeFlow (1 + margin)`. Absent takes the class's `0.0`, and a negative margin is refused as `setSurgeControlMargin` refuses it.\n"
+[inputs.anti_surge_active]
+type = "boolean"
+optional = true
+description = "`getAntiSurge().setActive(true)`: whether the run-time recycle block runs. Absent is the class's `false`.\n"
+[inputs.surge_control_factor]
+unit = "dimensionless"
+optional = true
+description = "`AntiSurge.surgeControlFactor`: the recycle target's multiple of the surge flow. Absent takes the class's `1.05`. Read only when `anti_surge_active` is set.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -60,6 +196,81 @@ description = "the outlet temperature, solved from the shifted enthalpy at the o
 [outputs.outlet_h]
 unit = "J/mol"
 description = "the outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency. Reported because the shaft work the machine does is this difference times the flow.\n"
+[outputs.polytropic_head]
+unit = "m"
+description = "the chart head the branch used, in metres (`getPolytropicHead(\"meter\")`); zero in the isentropic branch.\n"
+[outputs.polytropic_efficiency]
+unit = "dimensionless"
+description = "the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; the stated polytropic efficiency in that branch, zero in the isentropic one.\n"
+[outputs.polytropic_exponent]
+unit = "dimensionless"
+optional = true
+description = "`getPolytropicExponent` from the polytropic branch, `n = k / (1 - (k-1)/k (1 - eta))`; absent outside it.\n"
+[outputs.total_deposit_mass]
+unit = "kg"
+optional = true
+description = "the deposit inventory's summed mass. Present when `deposit` is stated.\n"
+[outputs.deposit_volume]
+unit = "m**3"
+optional = true
+description = "`sum(mass / density)` over the mechanisms.\n"
+[outputs.film_thickness]
+unit = "m"
+optional = true
+description = "`volume / wetted_area`, or zero where the area is absent.\n"
+[outputs.area_blockage_fraction]
+unit = "dimensionless"
+optional = true
+description = "`min(film / passage_half_height, 0.95)`, or zero where the half-height is absent.\n"
+[outputs.efficiency_multiplier]
+unit = "dimensionless"
+optional = true
+description = "`max(1 - 1.6 b, 0.02)`, the deposit's polytropic-efficiency multiplier.\n"
+[outputs.head_multiplier]
+unit = "dimensionless"
+optional = true
+description = "`max((1 - b)^2, 0.05)`, the deposit's polytropic-head multiplier.\n"
+[outputs.degradation_factor]
+unit = "dimensionless"
+optional = true
+description = "`getDegradationFactor`: the efficiency multiplier the run recorded.\n"
+[outputs.fouling_factor]
+unit = "dimensionless"
+optional = true
+description = "`getFoulingFactor`: `1 - head_multiplier`.\n"
+[outputs.power]
+unit = "W"
+description = "the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.\n"
+[outputs.shaft_speed]
+unit = "dimensionless"
+description = "the speed the chart was read at, rpm: the stated one, or the one the speed-solve mode reached - pegged at a bound where `limit_speed` asked for it. `3000` in the isentropic branch, where the field is never read.\n"
+[outputs.surge_flow_rate]
+unit = "m**3/h"
+description = "`getSurgeFlowRate()`: the surge curve's flow at the post-run fluid head, m3/hr. Null without a surge curve.\n"
+[outputs.surge_flow_rate_margin]
+unit = "m**3/h"
+description = "`getSurgeFlowRateMargin()`: the inlet flow less the surge flow, m3/hr.\n"
+[outputs.surge_flow_rate_std]
+unit = "m**3/h"
+description = "`getSurgeFlowRateStd()`: the surge flow at 1.01325 bara and 288.15 K over the inlet's volume-corrected `Z`.\n"
+[outputs.distance_to_surge]
+unit = "dimensionless"
+description = "`getDistanceToSurge()`: the inlet flow over the surge flow, less one. **Negative is inside the surge line.**\n"
+[outputs.control_line_flow]
+unit = "m**3/h"
+description = "`getControlLineFlow()`: the surge flow times `1 + surge_control_margin`, m3/hr.\n"
+[outputs.distance_to_control_line]
+unit = "dimensionless"
+description = "`getDistanceToControlLine()`: the inlet flow over the control-line flow, less one.\n"
+[outputs.required_recycle_fraction]
+unit = "dimensionless"
+description = "`getRequiredRecycleFractionToControlLine()`: the fraction of the control-line flow the inlet is short by, zero when it is above it.\n"
+[outputs.anti_surge_recycle_power]
+unit = "W"
+description = "`getAntiSurgeRecyclePower(getCurrentSurgeFraction())`: the chart power times the run-time recycle fraction, so zero unless the block fired.\n"
+[outputs.recycle_fraction]
+unit = "dimensionless"
+description = "`AntiSurge.getCurrentSurgeFraction()`: the run-time recycle the block settled on, zero when it fired and found no surge. **Null unless `anti_surge_active`.**\n"
 [[valid_range]]
 quantity = "isentropic_efficiency"
 min = 0
@@ -69,11 +280,36 @@ max_inclusive = true
 severity = "error"
 rationale = "the reversible step divides by it, so zero has no answer and above one would beat the reversible machine"
 [[valid_range]]
+quantity = "speed"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the reduced variables divide by the speed"
+[[valid_range]]
+quantity = "surge_control_margin"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "`setSurgeControlMargin` throws on a negative fraction"
+[[valid_range]]
 quantity = "inlet_t"
 min = 0
 min_inclusive = false
 severity = "error"
 rationale = "an absolute temperature"
+[[unported]]
+parameter = "polytropic_method"
+value = "detailed"
+class = "Compressor"
+capture = "validation/neqsim/captures/process_compressor_polytropic.tsv"
+
+[[unported]]
+parameter = "polytropic_method"
+value = "schultz"
+class = "Compressor"
+capture = "validation/neqsim/captures/process_compressor_polytropic.tsv"
+
 [implementations]
 python = "azoth.process.compressor"
 rust = "azoth_process::compressor"
+

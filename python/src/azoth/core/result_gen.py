@@ -23,15 +23,45 @@ from typing import ClassVar
 
 from azoth.core.record_outputs_gen import (
     ActivityCoefficientRow,
+    AppliedStandardRow,
+    BrineMixingPointRow,
+    CharacterizationComponent,
+    ChemicalWarningRow,
+    DepositionSegmentRow,
+    EquilibriumSoundSpeedSample,
     FlowlineScaleSegment,
+    HeaterInstrument,
+    HeaterMechanicalType,
+    HeatExchangerMechanicalType,
+    HemReleaseDiagnostic,
+    HemReleaseStation,
+    HydrateRiskPoint,
+    IncrementalZoneRow,
     KComponent,
+    LeakBlowdownDiagnostic,
+    LeakBlowdownPoint,
     MineralEquilibriumRow,
+    NaceIssueRow,
+    RemediationOptionRow,
+    ScaleControlRiskRow,
+    ScaleControlRow,
+    ScenarioChangeRow,
+    ScenarioIndexRow,
+    StreamScaleMineralRow,
     SubFraction,
     WaterMixingResult,
+    ZoneRatingRow,
 )
 from azoth.core.result_base import (
+    BeggsBrillRegime,
+    CooldownVerdict,
+    CorrosionSeverity,
+    EmulsionType,
+    ErosionRiskLevel,
+    FeSMorphology,
     FlowRegime,
     HenryStatus,
+    HydrateRiskLevel,
     HydrateStructure,
     MultiflashSeedPath,
     Phase,
@@ -87,6 +117,28 @@ class CharacterisePlusFractionResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class CharacterizeToCommonSlateResult(_HasWarnings):
+    """Result of ``characterization.characterize_to_common_slate``."""
+
+    CALC_ID: ClassVar[str] = "characterization.characterize_to_common_slate"
+
+    #: Every fluid's components in order - its own base components, then the shared cuts named by their slate position. A cut invalid in any fluid is dropped from every fluid, so a name can be absent from one fluid's run.
+    components: tuple[CharacterizationComponent, ...]
+
+    #: Which fluid each row belongs to. The row is the component's, and the fluid is a fact about the answer rather than the component, so it travels beside the row.
+    fluid_index: tuple[float, ...]
+
+    #: Each fluid's total mole amount after re-characterization. A fluid keeps its own moles and takes the slate's molar mass, so its mass can move from the input's.
+    fluid_moles: tuple[Q, ...]
+
+    #: How many shared cuts the answer has: the requested count, or the largest pseudo-component count among the fluids when none was requested.
+    resolved_pseudo_components: int
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class CharacterizeToReferenceResult(_HasWarnings):
     """Result of ``characterization.characterize_to_reference``."""
 
@@ -103,6 +155,22 @@ class CharacterizeToReferenceResult(_HasWarnings):
 
     #: Each group's density, the mass over the volume its rows occupy.
     group_density: tuple[Q, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class CombineReservoirFluidsResult(_HasWarnings):
+    """Result of ``characterization.combine_reservoir_fluids``."""
+
+    CALC_ID: ClassVar[str] = "characterization.combine_reservoir_fluids"
+
+    #: The blended fluid's components: its merged base components first, in the fluids' order, then the combined pseudo-components in ascending cut order, named `PC1_PC`, `PC2_PC` and so on.
+    components: tuple[CharacterizationComponent, ...]
+
+    #: The blended fluid's total mole amount: the merged base components' and the surviving cuts', which is the fluids' own total wherever every amount was positive.
+    total_moles: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -316,6 +384,73 @@ class TbpDensityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TbpFractionComponentResult(_HasWarnings):
+    """Result of ``characterization.tbp_fraction_component``."""
+
+    CALC_ID: ClassVar[str] = "characterization.tbp_fraction_component"
+
+    #: Critical temperature, from the TBP model's correlation.
+    critical_temperature: Q
+
+    #: Critical pressure. The correlation is written in bar and this states pascals.
+    critical_pressure: Q
+
+    #: Normal boiling point, from the model's two-branch correlation.
+    boiling_temperature: Q
+
+    #: The acentric factor the component carries: the root `AttractiveTermSrk.setm` solves from the fitted `m`, not the model's Edmister value.
+    acentric_factor: float
+
+    #: The fitted coefficient of the Soave alpha function, `0.7431 + 0.0048122 M + 0.0096707 SG - 3.7184e-6 M**2` in g/mol and g/cm3.
+    attraction_exponent: float
+
+    #: Critical volume, `(0.2918 - 0.0928 w_model) R Tc/Pc`, from the **model's** acentric factor. The class's own unit is cm3/mol and this is the same volume in SI.
+    critical_volume: Q
+
+    #: The Peneloux Rackett compressibility, from the reference SRK phase's liquid root at 15 C and one atmosphere.
+    racket_z: float
+
+    #: The same compressibility on the CPA basis, which the class sets to the same number.
+    racket_z_cpa: float
+
+    #: The parachor, `59.3 + 2.34 M` in g/mol, in NeqSim's mixed `(mN/m)**(1/4) * cm**3/mol`.
+    parachor: float
+
+    #: Critical viscosity, `7.94830 sqrt(M) Pc^(2/3) / Tc^(1/6) 1e-7` with `M` in g/mol and `Pc` in bar.
+    critical_viscosity: Q
+
+    #: The triple-point temperature, `374.5 + 0.02617 M - 20172/M` in g/mol.
+    triple_point_temperature: Q
+
+    #: The heat of fusion, `0.1426/0.238845 M Ttrip` in g/mol.
+    heat_of_fusion: Q
+
+    #: The ideal-gas enthalpy of formation, `-1462600 M - 47566` with `M` in kg/mol.
+    ideal_gas_enthalpy_of_formation: Q
+
+    #: The constant term of the ideal-gas heat capacity.
+    cp_a: Q
+
+    #: The coefficient of `T`.
+    cp_b: Q
+
+    #: The coefficient of `T**2`.
+    cp_c: Q
+
+    #: The coefficient of `T**3`, as `getCpD()` states it: the stored zero plus `1e-10`.
+    cp_d: Q
+
+    #: The Lennard-Jones collision diameter, Tee-Gotoh-Stewart's correlation on the critical constants.
+    lennard_jones_diameter: Q
+
+    #: The Lennard-Jones energy over Boltzmann's constant, in kelvin.
+    lennard_jones_energy: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class TbpGroupingResult(_HasWarnings):
     """Result of ``characterization.tbp_grouping``."""
 
@@ -323,6 +458,19 @@ class TbpGroupingResult(_HasWarnings):
 
     #: Each bin's summed mole fraction. Bins 0 to 5 are always zero, and the entries do not sum to one because the light end is in no bin.
     group_fraction: tuple[float, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class TransferBinaryInteractionParametersResult(_HasWarnings):
+    """Result of ``characterization.transfer_binary_interaction_parameters``."""
+
+    CALC_ID: ClassVar[str] = "characterization.transfer_binary_interaction_parameters"
+
+    #: The target's matrix after the transfer: its own values, with the reference's nonzero pairs written over them in both triangles.
+    target_kij: tuple[tuple[float, ...], ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -461,6 +609,77 @@ class BariteCelestiteSolidSolutionResult(_HasWarnings):
 
     #: whether the index is positive.
     supersaturated: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class BeggsBrillSegmentResult(_HasWarnings):
+    """Result of ``eos.beggs_brill_segment``."""
+
+    CALC_ID: ClassVar[str] = "eos.beggs_brill_segment"
+
+    #: The Beggs-and-Brill regime the segment's velocities put it in.
+    regime: BeggsBrillRegime
+
+    #: the liquid holdup after the inclination correction and the physical bound.
+    liquid_holdup: float
+
+    #: the gas superficial velocity.
+    superficial_gas_velocity: Q
+
+    #: the liquid superficial velocity.
+    superficial_liquid_velocity: Q
+
+    #: their sum.
+    superficial_mixture_velocity: Q
+
+    #: the volume-weighted no-slip mixture density.
+    no_slip_density: Q
+
+    #: the volume-weighted no-slip mixture viscosity.
+    no_slip_viscosity: Q
+
+    #: The no-slip Reynolds number.
+    reynolds: float
+
+    #: the single-phase Darcy friction factor.
+    friction_factor: float
+
+    #: `f exp(S)`, the Beggs-Brill two-phase multiplier applied.
+    two_phase_friction_factor: float
+
+    #: the elevation term over the segment.
+    hydrostatic_drop: Q
+
+    #: the friction term over the segment.
+    friction_drop: Q
+
+    #: their sum; negative on a downhill segment whose gravity term exceeds friction.
+    total_drop: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class BrineMixingScaleEvaluatorResult(_HasWarnings):
+    """Result of ``eos.brine_mixing_scale_evaluator``."""
+
+    CALC_ID: ClassVar[str] = "eos.brine_mixing_scale_evaluator"
+
+    #: One row per mixing fraction, from all brine A to all brine B.
+    points: tuple[BrineMixingPointRow, ...]
+
+    #: the fraction of brine A where the worst index occurs.
+    worst_fraction_a: float
+
+    #: the mineral that produced it.
+    worst_mineral: str
+
+    #: the worst index itself.
+    worst_saturation_index: float
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -668,6 +887,34 @@ class ChungViscosityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ClosedLoopDepositionSolverResult(_HasWarnings):
+    """Result of ``eos.closed_loop_deposition_solver``."""
+
+    CALC_ID: ClassVar[str] = "eos.closed_loop_deposition_solver"
+
+    #: the number of iterations the loop ran, including the one that converged.
+    iterations_taken: int
+
+    #: whether the loop met the diameter tolerance or detected a blocked line.
+    converged: bool
+
+    #: the diameter after deposition; zero when the line is blocked.
+    final_effective_diameter: Q
+
+    #: the effective diameter each iteration ran at, oldest first.
+    diameter_history: tuple[Q, ...]
+
+    #: the worst segment's thickness after each iteration's accumulator pass.
+    max_thickness_history: tuple[Q, ...]
+
+    #: the mean mixture superficial velocity of each iteration's profile.
+    velocity_history: tuple[Q, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Co2BrinePhaseEquilibriumResult(_HasWarnings):
     """Result of ``eos.co2_brine_phase_equilibrium``."""
 
@@ -784,6 +1031,67 @@ class CriticalPointResult(_HasWarnings):
 
     #: the convergence residual at the returned state, against `algorithm.tolerance`
     residual: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class DeWaardMilliamsCorrosionResult(_HasWarnings):
+    """Result of ``eos.de_waard_milliams_corrosion``."""
+
+    CALC_ID: ClassVar[str] = "eos.de_waard_milliams_corrosion"
+
+    #: the uncorrected de Waard-Milliams 1991 rate.
+    baseline_rate: Q
+
+    #: the de Waard-Lotz pH factor, at most one where the film protects.
+    ph_correction_factor: float
+
+    #: the protective-scale factor above 80 C and pH 5.
+    scale_correction_factor: float
+
+    #: the glycol factor on the aqueous phase's water activity.
+    glycol_correction_factor: float
+
+    #: the mass-transfer factor above 1 m/s, capped at five.
+    flow_correction_factor: float
+
+    #: one minus the clamped inhibitor efficiency.
+    inhibitor_factor: float
+
+    #: the CO2 rate with every factor and the sulfur contribution.
+    corrected_rate: Q
+
+    #: the elemental-sulfur contribution.
+    sulfur_rate: Q
+
+    #: the H2S/FeS contribution, capped at 100 mm/yr.
+    fes_rate: Q
+
+    #: the corrected rate less the sulfur contribution.
+    co2_corrected_rate: Q
+
+    #: the corrected rate plus the FeS contribution.
+    total_corrosion_rate: Q
+
+    #: the FeCO3 saturation index, above one where scale forms.
+    feco3_saturation_index: float
+
+    #: whether the FeCO3 index exceeds one.
+    feco3_scale_forming: bool
+
+    #: NACE MR0175 sour service: H2S above 0.003 bar.
+    is_sour_service: bool
+
+    #: the NORSOK M-001 severity band.
+    corrosion_severity: CorrosionSeverity
+
+    #: the FeS morphology and protectiveness the temperature band predicts.
+    fes_morphology: FeSMorphology
+
+    #: the corrected rate times the design life.
+    corrosion_allowance: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -915,6 +1223,74 @@ class ElectrolyteCpaStatoilPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ElectrolyteScaleCalculatorResult(_HasWarnings):
+    """Result of ``eos.electrolyte_scale_calculator``."""
+
+    CALC_ID: ClassVar[str] = "eos.electrolyte_scale_calculator"
+
+    #: `0.5 sum(m_i z_i^2)` over the eleven ions.
+    ionic_strength: Q
+
+    #: the temperature-adjusted Debye-Huckel A, floored at 0.5.
+    debye_hueckel_a: float
+
+    #: the Davies coefficient for a divalent ion.
+    divalent_activity_coefficient: float
+
+    #: the Davies coefficient for a monovalent ion.
+    monovalent_activity_coefficient: float
+
+    #: calcite's activity-corrected saturation index.
+    si_caco3: float
+
+    #: barite's activity-corrected saturation index.
+    si_baso4: float
+
+    #: gypsum's activity-corrected saturation index.
+    si_caso4: float
+
+    #: celestite's activity-corrected saturation index.
+    si_srso4: float
+
+    #: brucite's activity-corrected saturation index, from the hydroxide activity squared.
+    si_brucite: float
+
+    #: `10^(pH - pKw)` at the state's temperature.
+    hydroxide_activity: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class EmulsionViscosityResult(_HasWarnings):
+    """Result of ``eos.emulsion_viscosity``."""
+
+    CALC_ID: ClassVar[str] = "eos.emulsion_viscosity"
+
+    #: the effective emulsion viscosity.
+    effective_viscosity: Q
+
+    #: the model's relative viscosity before the tightness and demulsifier corrections.
+    relative_viscosity: float
+
+    #: the effective viscosity over the continuous phase's.
+    viscosity_ratio: float
+
+    #: the water cut at which the phases invert.
+    inversion_water_cut: float
+
+    #: which phase is continuous at the stated water cut.
+    emulsion_type: EmulsionType
+
+    #: whether the water cut is at or above the inversion point.
+    is_inverted: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class EosCgPhaseResult(_HasWarnings):
     """Result of ``eos.eos_cg_phase``."""
 
@@ -940,6 +1316,80 @@ class EosCgPhaseResult(_HasWarnings):
 
     #: the Gibbs energy, `h - T s`
     g: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class EquilibriumSoundSpeedResult(_HasWarnings):
+    """Result of ``eos.equilibrium_sound_speed``."""
+
+    CALC_ID: ClassVar[str] = "eos.equilibrium_sound_speed"
+
+    #: the homogeneous-equilibrium acoustic speed, or null when no step converged.
+    sound_speed: Q | None
+
+    #: `converged`, `flash_failed`, `unsupported_state` or `derivative_not_converged`.
+    status: str
+
+    #: the class's detail for that status.
+    message: str
+
+    #: the final pressure increment, Pa; NaN when no stencil was evaluated.
+    pressure_step: Q
+
+    #: the successive-derivative difference at the accepted step; absent until two stencils agree in shape.
+    relative_step_error: float | None
+
+    #: the target specific entropy the calculation held fixed.
+    specific_entropy: Q
+
+    #: `central`, `forward`, `backward` or `unavailable`.
+    stencil: str
+
+    #: whether any sampled stencil changed the phase assemblage.
+    phase_boundary_encountered: bool
+
+    #: TP or quality evaluations, including rejected trials.
+    flash_evaluations: int
+
+    #: the accepted stencil's states, centre first.
+    samples: tuple[EquilibriumSoundSpeedSample, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ErosionPredictionResult(_HasWarnings):
+    """Result of ``eos.erosion_prediction``."""
+
+    CALC_ID: ClassVar[str] = "eos.erosion_prediction"
+
+    #: the API RP 14E erosional velocity at the mixture density.
+    erosional_velocity: Q
+
+    #: the actual velocity over the erosional one.
+    velocity_ratio: float
+
+    #: the DNV RP O501 wall-loss rate, or the straight-pipe empirical rate.
+    erosion_rate: Q
+
+    #: the rate over the design life.
+    cumulative_erosion: Q
+
+    #: the wall less the cumulative erosion and the corrosion allowance.
+    remaining_wall_thickness: Q
+
+    #: whether the velocity ratio is at most one.
+    within_api_limits: bool
+
+    #: whether the remaining wall is positive.
+    within_erosion_limits: bool
+
+    #: the rate-and-ratio risk band.
+    risk_level: ErosionRiskLevel
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -1620,6 +2070,37 @@ class HydrateInhibitorWtResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HydrateRiskMapResult(_HasWarnings):
+    """Result of ``eos.hydrate_risk_map``."""
+
+    CALC_ID: ClassVar[str] = "eos.hydrate_risk_map"
+
+    #: One row per profile point, in the order the points were given.
+    points: tuple[HydrateRiskPoint, ...]
+
+    #: the worst band, with unknown outranking everything but a confirmed critical.
+    overall_risk: HydrateRiskLevel
+
+    #: the smallest subcooling over the evaluated points, absent when none was.
+    minimum_subcooling: Q | None
+
+    #: the number of points inside the hydrate region.
+    critical_point_count: int
+
+    #: the number of points whose hydrate temperature could not be computed.
+    unknown_point_count: int
+
+    #: the number of profile points.
+    total_points: int
+
+    #: whether every point produced a hydrate temperature.
+    all_points_evaluated: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HydrogenPhaseResult(_HasWarnings):
     """Result of ``eos.hydrogen_phase``."""
 
@@ -2182,6 +2663,118 @@ class PhaseTransportResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PipeBeggsAndBrillsResult(_HasWarnings):
+    """Result of ``eos.pipe_beggs_and_brills``."""
+
+    CALC_ID: ClassVar[str] = "eos.pipe_beggs_and_brills"
+
+    #: the pressure at the inlet and each segment's outlet.
+    pressure_profile: tuple[Q, ...]
+
+    #: each segment's drop; the inlet entry is zero.
+    pressure_drop_profile: tuple[Q, ...]
+
+    #: one value, the isothermal temperature, as the class's own profile list has.
+    temperature_profile: tuple[Q, ...]
+
+    #: the holdup at each segment, one entry per segment.
+    liquid_holdup_profile: tuple[float, ...]
+
+    #: the mixture superficial velocity at each segment.
+    mixture_superficial_velocity_profile: tuple[Q, ...]
+
+    #: each segment's flow regime.
+    flow_regime_profile: tuple[str, ...]
+
+    #: the pressure after the last segment.
+    outlet_pressure: Q
+
+    #: the inlet pressure minus the outlet's.
+    total_pressure_drop: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class PipelineCooldownResult(_HasWarnings):
+    """Result of ``eos.pipeline_cooldown``."""
+
+    CALC_ID: ClassVar[str] = "eos.pipeline_cooldown"
+
+    #: the time at each march step, the first at zero.
+    time: tuple[Q, ...]
+
+    #: the lumped fluid-and-steel temperature at each step.
+    fluid_temperature: tuple[Q, ...]
+
+    #: the thermal mass over the per-length conductance.
+    time_constant: Q
+
+    #: the layer-resistance U value, which the class's getter always recomputes.
+    calculated_u_value: Q
+
+    #: the U value the march ran with: the supplied one, or the layer value.
+    effective_u_value: Q
+
+    #: the interpolated crossing of the target temperature, absent when not reached.
+    time_to_reach_target: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class PitzerHydrateFormationPressureResult(_HasWarnings):
+    """Result of ``eos.pitzer_hydrate_formation_pressure``."""
+
+    CALC_ID: ClassVar[str] = "eos.pitzer_hydrate_formation_pressure"
+
+    #: the pressure at which the hydrate's water fugacity equals the aqueous phase's.
+    pressure: Q
+
+    #: the structure the coefficient comparison chose, or the one the caller pinned.
+    structure: HydrateStructure
+
+    #: `f_aq^water / pSat_water(T)` at the answer.
+    water_activity: float
+
+    #: flash evaluations taken, the scan's and the bisection's together.
+    iterations: int
+
+    #: `ln(f_hydrate^water / f_aq^water)` at the answer.
+    residual: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class PitzerHydrateFormationTemperatureResult(_HasWarnings):
+    """Result of ``eos.pitzer_hydrate_formation_temperature``."""
+
+    CALC_ID: ClassVar[str] = "eos.pitzer_hydrate_formation_temperature"
+
+    #: the temperature at which the hydrate's water fugacity equals the aqueous phase's.
+    temperature: Q
+
+    #: the structure the coefficient comparison chose, or the one the caller pinned.
+    structure: HydrateStructure
+
+    #: `f_aq^water / pSat_water(T)` at the answer.
+    water_activity: float
+
+    #: flash evaluations taken, the scan's and the bisection's together.
+    iterations: int
+
+    #: `ln(f_hydrate^water / f_aq^water)` at the answer.
+    residual: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PitzerPhaseResult(_HasWarnings):
     """Result of ``eos.pitzer_phase``."""
 
@@ -2470,6 +3063,43 @@ class PrZFactorResult(_HasWarnings):
 
     #: the residual at the final iterate
     residual: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ProductionChemicalScaleScenarioResult(_HasWarnings):
+    """Result of ``eos.production_chemical_scale_scenario``."""
+
+    CALC_ID: ClassVar[str] = "eos.production_chemical_scale_scenario"
+
+    #: the pH after the dose, or the untreated pH when nothing changes the carbonate balance.
+    treated_ph: float
+
+    #: the bicarbonate at the treated pH.
+    treated_bicarbonate: Q
+
+    #: the summed acid/base equivalents, positive for a base.
+    base_dose_equivalents: Q
+
+    #: the summed H2S capacity of the dosed scavengers.
+    scavenger_capacity: Q
+
+    #: the dissolved H2S the capacity leaves.
+    residual_dissolved_h2s: Q
+
+    #: The untreated indices, in the equilibrium's mineral order.
+    baseline_si: tuple[ScenarioIndexRow, ...]
+
+    #: The treated indices, in the same order.
+    treated_si: tuple[ScenarioIndexRow, ...]
+
+    #: The treated minus baseline index, over the baseline's minerals.
+    si_change: tuple[ScenarioChangeRow, ...]
+
+    #: The class's warning map, in insertion order.
+    model_warnings: tuple[ChemicalWarningRow, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -2961,6 +3591,112 @@ class SaturateWithWaterResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ScaleControlAssessorResult(_HasWarnings):
+    """Result of ``eos.scale_control_assessor``."""
+
+    CALC_ID: ClassVar[str] = "eos.scale_control_assessor"
+
+    #: The uninhibited indices, one row per scale in the class's order.
+    thermodynamic_si: tuple[ScaleControlRow, ...]
+
+    #: The inhibited risk index, one row per scale in the same order.
+    kinetic_risk_index: tuple[ScaleControlRiskRow, ...]
+
+    #: the largest defined risk index; absent where none is.
+    worst_kinetic_risk_index: float | None
+
+    #: whether the worst index is below the class's 0.5 threshold.
+    kinetically_controlled: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScaleDepositionAccumulatorResult(_HasWarnings):
+    """Result of ``eos.scale_deposition_accumulator``."""
+
+    CALC_ID: ClassVar[str] = "eos.scale_deposition_accumulator"
+
+    #: One row per evaluated segment, in the profile's order.
+    segments: tuple[DepositionSegmentRow, ...]
+
+    #: the mass summed over the segments.
+    total_deposition_mass: Q
+
+    #: the thickest segment, which sets the blockage time.
+    max_thickness: Q
+
+    #: the time until the worst segment occludes half the pipe cross-section.
+    time_to_blockage: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScaleInhibitorPerformanceResult(_HasWarnings):
+    """Result of ``eos.scale_inhibitor_performance``."""
+
+    CALC_ID: ClassVar[str] = "eos.scale_inhibitor_performance"
+
+    #: the MIC the correlation returns.
+    minimum_inhibitor_concentration: Q
+
+    #: 1.5 times the MIC.
+    recommended_dose: Q
+
+    #: the efficiency at the supplied dose, 0..1; zero when no dose is stated.
+    efficiency: float
+
+    #: whether the supplied dose meets the MIC.
+    adequate: bool
+
+    #: phosphonate above 175 C.
+    thermal_degradation_risk: bool
+
+    #: phosphonate with more than 2000 mg/L calcium.
+    calcium_phosphonate_precipitation_risk: bool
+
+    #: a saturation ratio above 100.
+    extreme_supersaturation_risk: bool
+
+    #: phosphate ester below 40 C.
+    low_temperature_solubility_risk: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScaleKineticsResult(_HasWarnings):
+    """Result of ``eos.scale_kinetics``."""
+
+    CALC_ID: ClassVar[str] = "eos.scale_kinetics"
+
+    #: `S = 10^SI`.
+    supersaturation_ratio: float
+
+    #: the nucleation induction time; infinite at or below saturation.
+    induction_time: Q
+
+    #: the surface-reaction growth rate.
+    surface_limited_growth: Q
+
+    #: the mass-transport growth rate; zero when no transport data are given.
+    transport_limited_growth: Q
+
+    #: the rate-controlling growth rate.
+    effective_growth_rate: Q
+
+    #: `REACTION`, `TRANSPORT` or `NONE`.
+    limiting_regime: str
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ScaleMassResult(_HasWarnings):
     """Result of ``eos.scale_mass``."""
 
@@ -3000,7 +3736,7 @@ class ScalePredictionResult(_HasWarnings):
     #: the Davies coefficient for a monovalent ion.
     monovalent_activity_coefficient: float
 
-    #: the pH the calculation used: the input, or the class's estimate.
+    #: The pH the calculation used: the input, or the estimated value.
     ph_used: float
 
     #: free calcium after ion pairing.
@@ -3015,7 +3751,7 @@ class ScalePredictionResult(_HasWarnings):
     #: free bicarbonate after ion pairing.
     free_bicarbonate: Q
 
-    #: total barium, which the class does not ion-pair.
+    #: Total barium, not ion-paired.
     total_barium: Q
 
     #: total strontium.
@@ -3024,7 +3760,7 @@ class ScalePredictionResult(_HasWarnings):
     #: total iron.
     total_iron: Q
 
-    #: total sodium, divided by the class's getter constant `22989.77`.
+    #: Total sodium concentration.
     total_sodium: Q
 
     #: calcite's solubility product, in `(mol/L)^2`.
@@ -3077,6 +3813,22 @@ class ScalePredictionResult(_HasWarnings):
 
     #: how many are.
     scale_risk_count: int
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScaleRemediationAdvisorResult(_HasWarnings):
+    """Result of ``eos.scale_remediation_advisor``."""
+
+    CALC_ID: ClassVar[str] = "eos.scale_remediation_advisor"
+
+    #: the knowledge-base key the lookup used.
+    canonical_key: str
+
+    #: The candidate remedies, ordered by descending effectiveness.
+    options: tuple[RemediationOptionRow, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -3164,6 +3916,25 @@ class SoreideWhitsonPhaseResult(_HasWarnings):
 
     #: the fugacity coefficients, as logarithms, at the chosen root
     ln_phi: tuple[float, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SoundSpeedResult(_HasWarnings):
+    """Result of ``eos.sound_speed``."""
+
+    CALC_ID: ClassVar[str] = "eos.sound_speed"
+
+    #: the speed of sound in the phase the flash puts first - the gas where two phases - at the flashed state, m/s.
+    sound_speed: Q
+
+    #: `SystemThermo.getSoundSpeed()`: the beta-weighted mean of the phase speeds. Equal to `sound_speed` on a flashed single phase; a weighted mean, not a mixture speed, on two.
+    system_sound_speed: Q
+
+    #: what the flash found at the state, which says whether the two speeds above differ.
+    phase: Phase
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -3312,6 +4083,83 @@ class StabilityTestResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class StreamScaleAnalyzerResult(_HasWarnings):
+    """Result of ``eos.stream_scale_analyzer``."""
+
+    CALC_ID: ClassVar[str] = "eos.stream_scale_analyzer"
+
+    #: One row per registered mineral, in the equilibrium's order.
+    minerals: tuple[StreamScaleMineralRow, ...]
+
+    #: the total precipitated mass per cubic metre.
+    total_scale_mass: Q
+
+    #: the total mass rate.
+    total_scale_rate: Q
+
+    #: the mineral precipitating the greatest mass, or `none`.
+    dominant_scale: str
+
+    #: whether the total precipitated mass is positive.
+    has_scaling: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SurfCooldownResult(_HasWarnings):
+    """Result of ``eos.surf_cooldown``."""
+
+    CALC_ID: ClassVar[str] = "eos.surf_cooldown"
+
+    #: the screening verdict.
+    verdict: CooldownVerdict
+
+    #: whether the fluid carries a water component above the class's floor.
+    water_present: bool
+
+    #: the water's mole fraction.
+    water_mole_fraction: float
+
+    #: the time to reach the hydrate temperature plus the margin, absent where the class returns positive infinity.
+    no_touch_time: Q | None
+
+    #: the initial temperature the cooldown ran from.
+    initial_fluid_temperature: Q
+
+    #: the hydrate equilibrium temperature at the operating pressure, absent where the solve failed.
+    hydrate_equilibrium_temperature: Q | None
+
+    #: the margin added above the hydrate temperature, an echo of the input.
+    hydrate_margin: Q
+
+    #: the ambient temperature, an echo of the input.
+    seabed_temperature: Q
+
+    #: the U value the cooldown ran with.
+    overall_u_value: Q
+
+    #: the thermal mass over the per-length conductance.
+    time_constant: Q
+
+    #: the density the cooldown used.
+    fluid_density: Q
+
+    #: the specific heat the cooldown used.
+    fluid_specific_heat: Q
+
+    #: the pipe's internal diameter, an echo of the input.
+    internal_diameter: Q
+
+    #: the insulation thickness, an echo of the input.
+    insulation_thickness: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class TbpFractionPropertiesResult(_HasWarnings):
     """Result of ``eos.tbp_fraction_properties``."""
 
@@ -3320,7 +4168,7 @@ class TbpFractionPropertiesResult(_HasWarnings):
     #: Critical temperature.
     tc: Q
 
-    #: Critical pressure. NeqSim's correlation is written in bar and this reports pascals.
+    #: Critical pressure, in pascals.
     pc: Q
 
     #: Normal boiling point. Two correlations meet at `mw = 540` g/mol and the switch is pinned by a test.
@@ -3329,7 +4177,7 @@ class TbpFractionPropertiesResult(_HasWarnings):
     #: Pitzer's acentric factor, from Edmister's three-parameter form rather than from a vapour-pressure fit.
     acentric_factor: float
 
-    #: The `m` of the cubic's alpha function, which for a pseudo-component **replaces** the acentric-factor correlation `eos.srk_kappa` makes. NeqSim's `addTBPfraction` sets it on the component's attractive term.
+    #: The `m` of the cubic's alpha function. For a pseudo-component it replaces the acentric-factor correlation.
     attraction_exponent: float
 
     #: Caveats.
@@ -3862,6 +4710,40 @@ class UniquacActivityCoefficientsResult(_HasWarnings):
 
     #: the activity coefficient of each component
     gamma: tuple[float, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ValveScaleDriftResult(_HasWarnings):
+    """Result of ``eos.valve_scale_drift``."""
+
+    CALC_ID: ClassVar[str] = "eos.valve_scale_drift"
+
+    #: the accumulated radial deposit thickness.
+    deposit_thickness: Q
+
+    #: the time the state is at.
+    elapsed_time: Q
+
+    #: the open flow area as a fraction of the clean area, 0..1.
+    open_area_fraction: float
+
+    #: the loss of effective flow coefficient, capped at 0.999999.
+    fouling_fraction: float
+
+    #: the clean Kv times the open-area fraction.
+    effective_kv: float
+
+    #: the time for the port to close; infinite with zero growth or no port.
+    time_to_plug: Q
+
+    #: the opening needed to hold the same flow, capped at 100.
+    opening_percent: float
+
+    #: the time for the opening to reach 100 percent; infinite when it never pins.
+    time_to_pin: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -4453,7 +5335,7 @@ class PackingSizingResult(_HasWarnings):
 
     CALC_ID: ClassVar[str] = "hydraulics.packing_sizing"
 
-    #: the packing the name resolved to, which is `Pall-Ring-50` where nothing matched - so a misspelt packing is visible rather than silent.
+    #: the packing the name resolved to; a misspelt packing is refused rather than defaulted.
     packing_name: str
 
     #: the resolved packing factor in 1/m, the only geometry this calculation reads. Reported as `dimensionless` because the vocabulary has no `1/m`; `hydraulics.packing_hydraulics` declares the same field the same way.
@@ -4714,6 +5596,40 @@ class AbsorptionColumnResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class AntiSurgeRecycleResult(_HasWarnings):
+    """Result of ``process.anti_surge_recycle``."""
+
+    CALC_ID: ClassVar[str] = "process.anti_surge_recycle"
+
+    #: whether a recycle was opened: the natural inlet volume flow below the control line.
+    recycle_active: bool
+
+    #: whether a pass met `|control - inlet| < tolerance * control`. **True on the inactive branch**, which performs no pass.
+    converged: bool
+
+    #: passes through the loop: five on the captured low-flow rows, zero when inactive.
+    iterations: int
+
+    #: the converged recycle mass, in the class's own unit. **An exhausted cap reports the last update**, which the machine was not run at.
+    recycle_mass_flow: Q
+
+    #: the machine inlet's actual volumetric flow at the final state, as `getFlowRate("m3/hr")` reports it.
+    inlet_volume_flow: Q
+
+    #: `getSurgeFlowRate()` at the final machine state: the surge curve's flow at the running head.
+    surge_flow: Q
+
+    #: the control line, `surge_flow * (1 + surge_control_margin)`, recomputed at each pass's surge flow.
+    control_flow: Q
+
+    #: `getDistanceToSurge()` at the final machine state: the inlet flow over the surge flow less one.
+    distance_to_surge: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ComponentSplitterResult(_HasWarnings):
     """Result of ``process.component_splitter``."""
 
@@ -4774,6 +5690,72 @@ class CompressorResult(_HasWarnings):
     #: the outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency. Reported because the shaft work the machine does is this difference times the flow.
     outlet_h: Q
 
+    #: the chart head the branch used, in metres (`getPolytropicHead("meter")`); zero in the isentropic branch.
+    polytropic_head: Q
+
+    #: the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; the stated polytropic efficiency in that branch, zero in the isentropic one.
+    polytropic_efficiency: float
+
+    #: `getPolytropicExponent` from the polytropic branch, `n = k / (1 - (k-1)/k (1 - eta))`; absent outside it.
+    polytropic_exponent: float | None
+
+    #: the deposit inventory's summed mass. Present when `deposit` is stated.
+    total_deposit_mass: Q | None
+
+    #: `sum(mass / density)` over the mechanisms.
+    deposit_volume: Q | None
+
+    #: `volume / wetted_area`, or zero where the area is absent.
+    film_thickness: Q | None
+
+    #: `min(film / passage_half_height, 0.95)`, or zero where the half-height is absent.
+    area_blockage_fraction: float | None
+
+    #: `max(1 - 1.6 b, 0.02)`, the deposit's polytropic-efficiency multiplier.
+    efficiency_multiplier: float | None
+
+    #: `max((1 - b)^2, 0.05)`, the deposit's polytropic-head multiplier.
+    head_multiplier: float | None
+
+    #: `getDegradationFactor`: the efficiency multiplier the run recorded.
+    degradation_factor: float | None
+
+    #: `getFoulingFactor`: `1 - head_multiplier`.
+    fouling_factor: float | None
+
+    #: the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.
+    power: Q
+
+    #: the speed the chart was read at, rpm: the stated one, or the one the speed-solve mode reached - pegged at a bound where `limit_speed` asked for it. `3000` in the isentropic branch, where the field is never read.
+    shaft_speed: float
+
+    #: `getSurgeFlowRate()`: the surge curve's flow at the post-run fluid head, m3/hr. Null without a surge curve.
+    surge_flow_rate: Q | None
+
+    #: `getSurgeFlowRateMargin()`: the inlet flow less the surge flow, m3/hr.
+    surge_flow_rate_margin: Q | None
+
+    #: `getSurgeFlowRateStd()`: the surge flow at 1.01325 bara and 288.15 K over the inlet's volume-corrected `Z`.
+    surge_flow_rate_std: Q | None
+
+    #: `getDistanceToSurge()`: the inlet flow over the surge flow, less one. **Negative is inside the surge line.**
+    distance_to_surge: float | None
+
+    #: `getControlLineFlow()`: the surge flow times `1 + surge_control_margin`, m3/hr.
+    control_line_flow: Q | None
+
+    #: `getDistanceToControlLine()`: the inlet flow over the control-line flow, less one.
+    distance_to_control_line: float | None
+
+    #: `getRequiredRecycleFractionToControlLine()`: the fraction of the control-line flow the inlet is short by, zero when it is above it.
+    required_recycle_fraction: float | None
+
+    #: `getAntiSurgeRecyclePower(getCurrentSurgeFraction())`: the chart power times the run-time recycle fraction, so zero unless the block fired.
+    anti_surge_recycle_power: Q | None
+
+    #: `AntiSurge.getCurrentSurgeFraction()`: the run-time recycle the block settled on, zero when it fired and found no surge. **Null unless `anti_surge_active`.**
+    recycle_fraction: float | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -4801,6 +5783,12 @@ class CoolerResult(_HasWarnings):
 
     #: the duty the cooler moved, as `inlet_n * (outlet_h - inlet_h)`. Negative when heat was removed, which is the usual case for this entry.
     outlet_duty: Q
+
+    #: the post-step valve opening, in percent. Present only on the dynamic branch.
+    cooling_valve_opening: float | None
+
+    #: the equilibrium the thermal lag moved toward. Present only on the dynamic branch, as evidence.
+    equilibrium_outlet_temperature: Q | None
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -4880,6 +5868,12 @@ class DistillationColumnResult(_HasWarnings):
 
     #: `|H_feed + duties - H_products| / |H_feed|`, the enthalpy closure. As the mass residual, not the class's norm.
     energy_residual: float
+
+    #: the top specification's residual on the published products (upstream PR #4127): `L/D - target` for a ratio, actual less stated duty for a duty, in SI where dimensioned (mol/s, W). Zero with no specification; unavailable, not zero, on a dry terminal.
+    top_specification_residual: float
+
+    #: the bottom specification's residual, `V/B - target` for a ratio; as the top's.
+    bottom_specification_residual: float
 
     #: `getFsFactor`: the gas outlet's superficial velocity over the **total** `pi*D^2/4` times the square root of its system density, in `Pa**0.5` - dimensionless because no vocabulary unit expresses it. **Not the tray calculator's own `Fs`**.
     fs_factor: float
@@ -4999,6 +5993,57 @@ class EjectorResult(_HasWarnings):
     #: the diffuser's design velocity: the class's own estimate, which takes one more `v^2/2` off before the discharge flash.
     diffuser_velocity: Q | None
 
+    #: `getMotiveNozzleThroatArea`: the motive mass flow over its density at the mixing pressure and its exit velocity.
+    motive_nozzle_throat_area: Q
+
+    #: `getMotiveNozzleDiameter`: `sqrt(4A/pi)` of the throat area.
+    motive_nozzle_diameter: Q
+
+    #: `getSuctionInletArea`: the suction mass flow over its density at the mixing pressure and its design velocity.
+    suction_inlet_area: Q
+
+    #: `getSuctionInletDiameter`: `sqrt(4A/pi)` of the suction inlet's area.
+    suction_inlet_diameter: Q
+
+    #: `getMixingChamberArea`: the total mass flow over the mixture's density at the mixing pressure and the mixing velocity. **The area ratio the class reports beside it is this over the throat area.**
+    mixing_chamber_area: Q
+
+    #: `getMixingChamberDiameter`: `sqrt(4A/pi)` of the mixing chamber's area.
+    mixing_chamber_diameter: Q
+
+    #: `getDiffuserOutletArea`: the total mass flow over the discharge density and the diffuser's design velocity.
+    diffuser_outlet_area: Q
+
+    #: `getDiffuserOutletDiameter`: `sqrt(4A/pi)` of the diffuser outlet's area.
+    diffuser_outlet_diameter: Q
+
+    #: `getMotiveNozzleEffectiveLength`: three times the throat diameter.
+    motive_nozzle_effective_length: Q
+
+    #: `getSuctionInletLength`: two and a half times the suction inlet's diameter.
+    suction_inlet_length: Q
+
+    #: `getMixingChamberLength`: four times the mixing chamber's diameter.
+    mixing_chamber_length: Q
+
+    #: `getDiffuserOutletLength`: six times the diffuser outlet's diameter.
+    diffuser_outlet_length: Q
+
+    #: `getBodyVolume`: the four stages' cylinder volumes, area times length, summed.
+    body_volume: Q
+
+    #: `getConnectedPipingVolume`: the suction connection's and the discharge connection's cylinder volumes.
+    connected_piping_volume: Q
+
+    #: `getTotalVolume`: the body and the connected piping summed.
+    total_volume: Q
+
+    #: `getSuctionConnectionLength`: `3 + 1.5*clamp(discharge/suction - 1, 0, 3)` times the suction inlet's diameter, in bara - `setSuctionConnectionLength` is not a declared input.
+    suction_connection_length: Q
+
+    #: `getDischargeConnectionLength`: `5 + 2*clamp(discharge/mixing - 1, 0, 3)` times the diffuser outlet's diameter, in bara.
+    discharge_connection_length: Q
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -5023,6 +6068,27 @@ class ExpanderResult(_HasWarnings):
 
     #: the outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency. Reported because the shaft work the machine does is this difference times the flow.
     outlet_h: Q
+
+    #: the recovered shaft power: the enthalpy change times the molar flow, **negative** for an expansion, as `getPower()` is.
+    power: Q
+
+    #: the `recoveredPower` constraint's `min(|power| / rating, 9.99)`. Present only when the rating is positive.
+    recovered_power_utilization: float | None
+
+    #: the enabled constraints' largest utilization; 0.0 without a rating, because the parent's chart constraints are disabled.
+    max_utilization: float
+
+    #: `isCapacityExceeded`: the utilization above 1.0, so `|power|` above the rating.
+    capacity_exceeded: bool
+
+    #: `isHardLimitExceeded`: `|power|` above `1.1 x` the rating, the constraint's `maxValue` - narrower than the utilization's own 1.0.
+    hard_limit_exceeded: bool
+
+    #: `getBottleneckConstraint`'s name: `recoveredPower` when its utilization is above zero, and absent otherwise.
+    bottleneck_constraint: str | None
+
+    #: the efficiency the mode produced: `dH/(h_isentropic - h_in)` for a stated power (above one or negative allowed), or the solved one. Absent in the ordinary branch and where the isentropic step is zero.
+    reported_isentropic_efficiency: float | None
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -5049,8 +6115,101 @@ class FilterResult(_HasWarnings):
     #: the outlet molar enthalpy, which is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so an isothermal drop moves it.
     outlet_h: Q
 
+    #: the clean drop the selected model computed, before the clamp. This is `Filter.getCalculatedCleanDeltaP()` after `run`.
+    clean_drop: Q
+
     #: the drop actually applied: `pressure_drop` unless it exceeded what the inlet pressure allows, in which case the clamp's value. This is `Filter.getDeltaP()` after `run`, and it is an output because it can differ from the input.
     applied_drop: Q
+
+    #: the nominal removal efficiency: the beta curve's value at `particle_size`, else the stated scalar.
+    nominal_removal_efficiency: float
+
+    #: the outlet particle concentration as a mass fraction: `inlet (1 - eta)`, or zero when the capture is off.
+    outlet_particle_concentration: float
+
+    #: the captured particle mass rate: the inlet mass flow times the inlet concentration times the efficiency, or zero when the capture is off.
+    captured_rate: Q
+
+    #: the clean drop plus `pressure_drop_increase_at_capacity * loading_fraction`, before bypass and before the inlet-pressure clamp. This is `getUnrestrictedDeltaP()`.
+    unrestricted_drop: Q
+
+    #: the fraction of the flow bypassing the element: `1 - sqrt(cracking/unrestricted)` when the bypass is open above its cracking drop, else zero.
+    bypass_fraction: float
+
+    #: `solids_loading / loading_capacity`, or zero when the capacity is not finite or not positive.
+    loading_fraction: float
+
+    #: zero at or below `breakthrough_start_fraction`, else `(fraction - start)/(1 - start)` capped at one.
+    breakthrough_fraction: float
+
+    #: the nominal efficiency retained by breakthrough and bypass: `nominal (1 - breakthrough) (1 - bypass)`, clamped to `[0, 1]`. The capture outputs use this.
+    current_removal_efficiency: float
+
+    #: the carried solids loading this run read.
+    solids_loading: Q
+
+    #: `unrestricted_drop / terminal_pressure_drop`. Bypass does not lower it, because the check reads the unrestricted drop.
+    differential_pressure_utilization: float
+
+    #: true when `differential_pressure_utilization >= 1` or `loading_fraction >= 1`. The class's `isReplacementRequired`.
+    replacement_required: bool
+
+    #: the holdup volume over the inlet's volumetric flow. Zero without a holdup; **absent where the flow is zero and the holdup positive**, the class's positive infinity.
+    holdup_residence_time: Q | None
+
+    #: the design pressure: the larger of `operating * design_pressure_margin` and `operating + minimum_design_pressure_margin`.
+    design_pressure: Q | None
+
+    #: the inlet temperature plus `design_temperature_margin`.
+    design_temperature: Q | None
+
+    #: the element count the design requires, at least `number_of_elements`. A granular type reports 1.
+    required_elements: float | None
+
+    #: the vessel's inside diameter, from the element bundle or the granular cross-section, floored at 0.5 m.
+    vessel_inner_diameter: Q | None
+
+    #: the inside diameter plus twice the shell thickness.
+    vessel_outer_diameter: Q | None
+
+    #: the tangent-to-tangent length: the active length plus the diameter, then clamped to the L/D window.
+    vessel_length: Q | None
+
+    #: the shell thickness from the class's ASME-shaped screening formula, floored at 6 mm.
+    shell_thickness: Q | None
+
+    #: the 2:1 ellipsoidal head's thickness, floored at the shell's.
+    head_thickness: Q | None
+
+    #: the element area the design used: the stated override or the type's default.
+    effective_element_area: Q | None
+
+    #: the flow over the effective element area, or over the granular vessel's cross-section.
+    calculated_face_velocity: Q | None
+
+    #: the hydraulic nozzle diameter the nozzle velocity requires.
+    required_nozzle_diameter: Q | None
+
+    #: the next nominal nozzle diameter at or above the required one, from the class's 15 to 1200 mm table.
+    selected_nozzle_diameter: Q | None
+
+    #: the flow over the selected nozzle's area.
+    calculated_nozzle_velocity: Q | None
+
+    #: the shell and head metal at 7850 kg/m3.
+    empty_vessel_weight: Q | None
+
+    #: the empty vessel, 30% of it for accessories, and the elements or granular media.
+    total_equipped_weight: Q | None
+
+    #: the unrestricted drop over `element_collapse_pressure`.
+    collapse_pressure_utilization: float | None
+
+    #: true when both the terminal and the collapse utilizations are below one.
+    differential_pressure_design_acceptable: bool | None
+
+    #: the vessel cross-section a granular design writes to the filter's hydraulic area; absent for a cartridge type.
+    design_media_area: Q | None
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -5082,6 +6241,33 @@ class FlareResult(_HasWarnings):
 
     #: the carbon dioxide the combustion forms: the gas's carbon atoms per second times `44.01e-3` kg/mol.
     co2_emission: Q
+
+    #: `estimateRadiationHeatFlux` at `ground_distance`: the radiant fraction of the duty over the sphere through the point source. Present only with `ground_distance`.
+    radiation_flux: Q | None
+
+    #: `radiationDistanceForFlux`: the horizontal distance at which the flux falls to `radiation_flux_threshold`, zero where the contour is inside the flame-height sphere. Present only with the threshold.
+    radiation_distance: Q | None
+
+    #: `getDispersionSurrogate().getExitVelocityMs()`: the inlet's mass flow over the tip area and the inlet's density, floored at zero.
+    exit_velocity: Q
+
+    #: the surrogate's `momentumFlux`, `rho v^2`, floored at the density the class floors.
+    momentum_flux: Q
+
+    #: the surrogate's `standardVolumeSm3PerSec`: the inlet's own `Sm3/sec`, scaled by the mass rate over the reference mass rate.
+    standard_volume_rate: Q
+
+    #: `evaluateCapacity().getHeatUtilization()`: the duty over `design_heat_duty_capacity`. Absent when the design is not finite and positive.
+    heat_utilization: float | None
+
+    #: the operating mass flow over `design_mass_flow_capacity`. Absent as the heat's is.
+    mass_utilization: float | None
+
+    #: the operating molar flow over `design_molar_flow_capacity`. Absent as the heat's is.
+    molar_utilization: float | None
+
+    #: `isOverloaded`: any present utilisation above `1 + 1e-6`. Absent until at least one utilisation exists.
+    overloaded: bool | None
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -5126,6 +6312,117 @@ class GasScrubberResult(_HasWarnings):
     #: `getCapacityUtilization`: the vapour's volumetric flow over what the cross-section admits at the design load factor, `Q / (K sqrt((rho_l - rho_g)/rho_g) A)`. Present only when both mechanical inputs are supplied.
     capacity_utilization: float | None
 
+    #: `sizeFromFlow(safety_factor)`'s diameter. Absent when no safety factor or no gas.
+    required_diameter: Q | None
+
+    #: whether a positive mesh-pad area was configured. Present with the design.
+    has_mesh_pad: bool | None
+
+    #: the configured mesh-pad face area, `0` when none.
+    mesh_pad_area: Q | None
+
+    #: the mesh pad's thickness, `100` by default.
+    mesh_pad_thickness: Q | None
+
+    #: the mesh pad's elevation, `0` by default.
+    mesh_pad_elevation: Q | None
+
+    #: whether inlet cyclones are configured; the class's default is none.
+    has_inlet_cyclones: bool | None
+
+    #: whether demisting cyclones are configured; the class's default is none.
+    has_demisting_cyclones: bool | None
+
+    #: `calcDesign`'s sized internal diameter, from the gas flow, the design `K` and the orientation's gas area. Absent unless `mechanical_design`.
+    design_inner_diameter: Q | None
+
+    #: the tangent-to-tangent length, always `5 d` for this class.
+    design_tantan_length: Q | None
+
+    #: the inside diameter plus twice the wall thickness.
+    design_outer_diameter: Q | None
+
+    #: the ASME wall thickness at the stated pressure, allowable stress, joint efficiency and corrosion allowance.
+    design_wall_thickness: Q | None
+
+    #: the design velocity over the sized gas area, in m3/hr.
+    max_design_gas_volume_flow: Q | None
+
+    #: the class's empty-shell estimate, `0.032 wall_mm d_mm L`.
+    vessel_shell_weight: Q | None
+
+    #: the class's piping allowance, `0.4` of the shell weight.
+    piping_weight: Q | None
+
+    #: the class's structural allowance, `0.1` of the shell weight.
+    structural_weight: Q | None
+
+    #: the class's electrical allowance, `0.08` of the shell weight.
+    electrical_weight: Q | None
+
+    #: the internals' weight. `0.0` here: the class leaves it at zero without internals sections, and this port builds none.
+    internals_weight: Q | None
+
+    #: the shell plus the class's piping, structural and electrical allowances.
+    total_weight: Q | None
+
+    #: `2 d`.
+    module_width: Q | None
+
+    #: `1.5 L` - the class writes `2.5 d` first and overwrites it with this.
+    module_length: Q | None
+
+    #: `2 d`, with no separator's `+ 1`.
+    module_height: Q | None
+
+    #: the cylinder's internal volume, `pi (d/2)^2 L`.
+    vessel_volume: Q | None
+
+    #: the high-high liquid level, `0.80 d`.
+    hhll: Q | None
+
+    #: the high liquid level, `0.70 d`.
+    hll: Q | None
+
+    #: the normal liquid level, `0.50 d`.
+    nll: Q | None
+
+    #: the low liquid level, `0.30 d`.
+    lll: Q | None
+
+    #: the low-low liquid level, `0.15 d`.
+    llll: Q | None
+
+    #: the weir height, `0.25 d`.
+    weir_height: Q | None
+
+    #: the normal interface level, `0.20 d`.
+    nil: Q | None
+
+    #: the effective liquid separation length, `0.82 L`.
+    effective_length_liquid: Q | None
+
+    #: the effective gas separation length, `0.64 L`.
+    effective_length_gas: Q | None
+
+    #: the inlet nozzle's inside diameter at API 12J's `8000 Pa` momentum limit, rounded up in `50` mm steps with a `50` mm floor.
+    inlet_nozzle_id: Q | None
+
+    #: the gas outlet nozzle's inside diameter at `20` m/s, rounded up in `50` mm steps.
+    gas_outlet_nozzle_id: Q | None
+
+    #: the oil outlet nozzle's inside diameter at `1.5` m/s, rounded up in `25` mm steps with a `50` mm floor.
+    oil_outlet_nozzle_id: Q | None
+
+    #: the volume between NLL and HLL over the effective liquid length.
+    surge_volume: Q | None
+
+    #: the surge volume over the liquid flow, with the class's unit slip: m3/s divided as though m3/hr.
+    surge_time: Q | None
+
+    #: the volume at NLL over the same flow, again as though m3/hr.
+    liquid_retention_time: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -5168,6 +6465,48 @@ class GibbsReactorResult(_HasWarnings):
 
     #: the total Gibbs energy at the top of each iteration, before the update. **This is what makes the solve checkable**: a fixed point has no formula, so the path is the answer.
     gibbs_energy_history: tuple[Q, ...]
+
+    #: `getVesselDiameter()`: `(4 V / (pi * 4))^(1/3)` off `V = catalystVolume / 0.70`, floored at `0.5` m.
+    vessel_diameter: Q
+
+    #: `getVesselLength()`: `4.0 * D`. The class's `2.0`/`8.0` L/D clamps are unreachable, because the ratio is `4.0` by construction.
+    vessel_length: Q
+
+    #: `getShellThickness()`, the ASME VIII Div 1 shell at the target diameter, floored at `6.0` mm. SI, shown in mm.
+    shell_thickness: Q
+
+    #: `getHeadThickness()`, the 2:1 ellipsoidal form floored at the shell - **which it always is**: its denominator is the larger of the two at every positive design pressure, so this equals `shell_thickness` on every state.
+    head_thickness: Q
+
+    #: `getDesignPressureBara()`: the operating pressure times `1.10`.
+    design_pressure: Q
+
+    #: `getDesignTemperatureC()` plus `273.15`: the operating temperature plus `25` C. SI, shown in K.
+    design_temperature: Q
+
+    #: `getCatalystVolume()`: `flow_m3hr / max(GHSV, 1)` - or `max(LHSV, 0.01)` for `cstr` - floored at `0.01` m3.
+    catalyst_volume: Q
+
+    #: `getCatalystMass()`: the volume times the bulk density.
+    catalyst_mass: Q
+
+    #: `getBedPressureDrop()`: the Ergun drop over `bedLength = catalystVolume / (pi D^2 / 4)`, with the class's hard-coded `1.5e-5` Pa s viscosity.
+    bed_pressure_drop: Q
+
+    #: `getEmptyVesselWeight()`: the shell plus both heads at the shell thickness.
+    empty_vessel_weight: Q
+
+    #: `getTotalEquippedWeight()`: the empty vessel, the catalyst, two `12` mm plates per bed, and nozzles at `10%` of the shell and heads.
+    total_equipped_weight: Q
+
+    #: `getReactorType()`, in the class's own spelling (`FIXED_BED`, `CSTR`, ...), which is what the capture prints.
+    reactor_type: str
+
+    #: `getNumberOfBeds()`.
+    number_of_beds: int
+
+    #: `getConditionNumberHistory()`: the Jacobian's 2-norm condition number, recorded at `:3009-3026` before the update. **A diagnostic, not an answer** - it is what says the iteration is ill-conditioned rather than only saying so in prose.
+    condition_number_history: tuple[float, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -5227,6 +6566,90 @@ class HeatExchangerResult(_HasWarnings):
     #: `C_min / C_max`, which is the shape of the effectiveness relation, or null where one outlet was pinned.
     capacity_ratio: float | None
 
+    #: `runDeltaT`'s computed overall conductance, `dH / (T_out,set - T_in,set)`. Present only in that mode; the rating's `ua` is an input and is unread here.
+    ua_value: Q | None
+
+    #: which side `runDeltaT` set, `hot` or `cold`; present only in that mode.
+    delta_t_side: str | None
+
+    #: the post-step metal-wall temperature. Present on the dynamic branch, echoed from the stated state on a steady fallback, and absent when the class's field is NaN.
+    wall_temperature: Q | None
+
+    #: the post-step shell-side CSTR temperature; present only with a positive `shell_holdup_volume` (or echoed on a fallback), absent where the class's field stays NaN.
+    shell_fluid_temperature: Q | None
+
+    #: the post-step tube-side CSTR temperature, on the same terms.
+    tube_fluid_temperature: Q | None
+
+    #: the selected configuration's spelling; present only with `mechanical_design`.
+    mechanical_selected_type: str | None
+
+    #: the selected configuration's required area.
+    mechanical_selected_area: Q | None
+
+    #: the log-mean temperature difference the four stream temperatures give, the sides ordered by their mean.
+    log_mean_temperature_difference: Q | None
+
+    #: the smallest of the two temperature differences, floored at zero.
+    mechanical_approach_temperature: Q | None
+
+    #: the coefficient the estimate used: the class's 500. This branch never reads the exchanger's `UAvalue` for it.
+    used_overall_heat_transfer_coefficient: Q | None
+
+    #: `getUAvalue()` - the stated `ua`, the class's 500 when a pinned run states none, or `ua_value` in delta-T mode - after the class's fallbacks.
+    calculated_ua: Q | None
+
+    #: the correlated overall coefficient the rating calculated. Present only with `use_rating_pressure_drop`.
+    rating_u: Q | None
+
+    #: `rating_u * rating_area`, the conductance the effectiveness-NTU rating used. Present only in the rating mode.
+    rating_ua: Q | None
+
+    #: the outside area the rating used; present only in the rating mode.
+    rating_area: Q | None
+
+    #: the tube side's correlated pressure drop, which the outlet pressure is reduced by.
+    tube_side_pressure_drop: Q | None
+
+    #: the shell side's correlated pressure drop.
+    shell_side_pressure_drop: Q | None
+
+    #: the tube-side film coefficient.
+    tube_side_heat_transfer_coefficient: Q | None
+
+    #: the shell-side film coefficient after the Bell-Delaware factors, or the Kern value.
+    shell_side_heat_transfer_coefficient: Q | None
+
+    #: the tube-side Reynolds number.
+    tube_side_reynolds: float | None
+
+    #: the shell-side Reynolds number.
+    shell_side_reynolds: float | None
+
+    #: the tube-side velocity.
+    tube_side_velocity: Q | None
+
+    #: the shell-side crossflow velocity.
+    shell_side_velocity: Q | None
+
+    #: the baffle-cut correction factor; 1.0 on the Kern path.
+    jc: float | None
+
+    #: the baffle-leakage correction factor; 1.0 on the Kern path.
+    jl: float | None
+
+    #: the bundle-bypass correction factor; 1.0 on the Kern path.
+    jb: float | None
+
+    #: the unequal-spacing correction factor; 1.0 on the Kern path.
+    js: float | None
+
+    #: the adverse-temperature-gradient correction factor; 1.0 on the Kern path.
+    jr: float | None
+
+    #: the five candidates in the class's enum order; empty when the design did not run.
+    mechanical_types: tuple[HeatExchangerMechanicalType, ...]
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -5254,6 +6677,293 @@ class HeaterResult(_HasWarnings):
 
     #: the duty the heater moved, as `inlet_n * (outlet_h - inlet_h)`. This is `Heater.run`'s own recomputation after the flash, so it is the state's number and not the caller's when a temperature was specified.
     outlet_duty: Q
+
+    #: the `maxOutletTemperature` constraint's `min(outlet_t / limit, 9.99)`. Present only when the maximum limit is set; 0 for a non-positive limit.
+    max_outlet_temperature_utilization: float | None
+
+    #: the `minOutletTemperature` constraint's inverse `min(limit / outlet_t, 9.99)`, and 9.99 when the outlet temperature is not positive. Present only when the minimum is positive.
+    min_outlet_temperature_utilization: float | None
+
+    #: `getMaxUtilization`: the larger present utilization, and 0.0 on an empty map.
+    max_utilization: float
+
+    #: `isCapacityExceeded`: any constraint's utilization above 1.0.
+    capacity_exceeded: bool
+
+    #: `isHardLimitExceeded`: true only when the outlet temperature is below a positive minimum, because the maximum reads the `maxValue` its setter never sets.
+    hard_limit_exceeded: bool
+
+    #: `getBottleneckConstraint`'s name: `maxOutletTemperature` or `minOutletTemperature`, whichever has the larger utilization. Absent on an empty or all-zero map.
+    bottleneck_constraint: str | None
+
+    #: the instruments in the design's list.
+    instrument_count: float | None
+
+    #: the rows whose I/O type is `AI`.
+    analog_input_count: float | None
+
+    #: the rows whose I/O type is `AO`.
+    analog_output_count: float | None
+
+    #: the rows whose I/O type is `DI`.
+    digital_input_count: float | None
+
+    #: the rows whose I/O type is `DO`.
+    digital_output_count: float | None
+
+    #: the four counts' sum, which is the instrument count for this list.
+    total_io_count: float | None
+
+    #: the rows marked safety-related: the overtemperature trips.
+    safety_instrument_count: float | None
+
+    #: the design's instrument list, in the class's insertion order; empty when the design did not run.
+    instruments: tuple[HeaterInstrument, ...]
+
+    #: the shaft power the type implies: the duty for an electric heater, the fan power for an air cooler, zero for shell-and-tube.
+    shaft_power: Q | None
+
+    #: the shaft power over the motor's efficiency, or the auxiliary load for shell-and-tube.
+    electrical_input_power: Q | None
+
+    #: the apparent power in VA: the electrical input over the power factor.
+    apparent_power: float | None
+
+    #: the reactive power in VAR: the apparent power times `sin(acos(power factor))`.
+    reactive_power: float | None
+
+    #: the motor's full-load power factor, or the class's `0.85` on the shell-and-tube auxiliary branch.
+    power_factor: float | None
+
+    #: the selected supply voltage in volts: `400`, `690` or `6600` for an electric heater, `400` or `690` for a cooler.
+    rated_voltage: float | None
+
+    #: the stated supply frequency in Hz. **The motor is sized before this is copied to it**, so the speed always uses the motor's 50 Hz default.
+    frequency_hz: float | None
+
+    #: the full-load current in amperes, from the input, voltage, power factor and phase count.
+    full_load_current: float | None
+
+    #: the full-load current times the motor's locked-rotor multiplier.
+    starting_current: float | None
+
+    #: the electrical input less the shaft power.
+    total_electrical_losses: Q | None
+
+    #: the next standard IEC motor size above the shaft power times the margin; zero for shell-and-tube.
+    motor_rated_power: Q | None
+
+    #: the motor's full-load efficiency as a fraction, from the IEC class and pole tables; 0.95 when no motor is sized.
+    motor_efficiency: float | None
+
+    #: the motor's full-load power factor; 0.86 when no motor is sized.
+    motor_power_factor: float | None
+
+    #: the motor's rated speed in rpm: `120 f / poles` less the power-based slip; zero when no motor is sized.
+    motor_rated_speed: float | None
+
+    #: the locked-rotor current multiplier by motor size; 7.0 when no motor is sized.
+    motor_locked_rotor_multiplier: float | None
+
+    #: the instrumentation load, plus the cooling-water pump load for shell-and-tube.
+    total_auxiliary_power: Q | None
+
+    #: the electrical input plus the auxiliary load.
+    total_connected_power: Q | None
+
+    #: the power cable's route length the design used.
+    cable_length: Q | None
+
+    #: the selected cable cross-section in mm2, from the class's 19 standard sizes.
+    cable_cross_section: float | None
+
+    #: the derated ampacity in amperes: the base tray rating times the 40 C ambient and tray grouping factors.
+    cable_ampacity: float | None
+
+    #: the three-phase voltage drop in percent at the class's 0.85 power factor.
+    cable_voltage_drop: float | None
+
+    #: the cable's 1-second short-circuit withstand in kA.
+    cable_short_circuit_withstand: float | None
+
+    #: the starter type: `DOL`, `Star-Delta` or `Soft Starter`, by the motor power.
+    switchgear_starter: str | None
+
+    #: `MCC` at 1000 V and below, `MV Switchgear` above it.
+    switchgear_type: str | None
+
+    #: the next standard circuit-breaker rating above 1.25 times the full-load current, in amperes.
+    switchgear_circuit_breaker: float | None
+
+    #: the next standard fuse rating above 1.6 times the full-load current, in amperes.
+    switchgear_fuse: float | None
+
+    #: the switchgear's rated current, the circuit-breaker rating.
+    switchgear_rated_current: float | None
+
+    #: the short-circuit rating in kA: 40 above 6000 V, 31.5 above 1000 V, else 25.
+    switchgear_short_circuit: float | None
+
+    #: the switchgear's estimated weight.
+    switchgear_weight: Q | None
+
+    #: the VFD's rated power, the motor's own rating. Absent when no VFD is sized.
+    vfd_rated_power: Q | None
+
+    #: 1.10 times the motor's rated current, in amperes. The motor's rated current is computed at its own 400 V default, before the design's tap is copied to it.
+    vfd_rated_current: float | None
+
+    #: the VFD's input voltage in volts, copied from the motor's rated voltage.
+    vfd_input_voltage: float | None
+
+    #: `2-level`, `3-level` or `Multi-level`, by the motor's power and voltage.
+    vfd_topology: str | None
+
+    #: `6-pulse`, `12-pulse` or `AFE`, with the topology.
+    vfd_pulse_configuration: str | None
+
+    #: the VFD's efficiency as a fraction: 96.5% with an active rectifier, else 97.5% for a 2-level drive and 97% for a 3-level one.
+    vfd_efficiency: float | None
+
+    #: the drive's input power factor: 0.98 with an active rectifier, else 0.95.
+    vfd_input_power_factor: float | None
+
+    #: the input current's total harmonic distortion in percent: 3 with an active rectifier at medium voltage, 5 at low voltage, 10 for a 3-level drive and 35 otherwise.
+    vfd_thd_current: float | None
+
+    #: whether the drive has an active front-end rectifier.
+    vfd_has_active_rectifier: bool | None
+
+    #: whether a 6-pulse drive above 100 kW needs an input filter.
+    vfd_requires_input_filter: bool | None
+
+    #: the drive's loss at its rated power, `rated power x (1 - efficiency)`.
+    vfd_heat_dissipation: Q | None
+
+    #: `Water` above 500 kW or above 3300 V, else `Air`.
+    vfd_cooling_method: str | None
+
+    #: the drive's estimated weight, by the voltage band.
+    vfd_weight: Q | None
+
+    #: `IP42` above 1000 V, `IP54` for a water-cooled low-voltage drive, else `IP21`.
+    vfd_enclosure_rating: str | None
+
+    #: whether a utility supply temperature is stated.
+    has_supply_temperature: bool | None
+
+    #: whether a utility return temperature is stated.
+    has_return_temperature: bool | None
+
+    #: whether a minimum approach temperature is stated.
+    has_approach_temperature: bool | None
+
+    #: whether a heat-capacity rate is stated **and positive**.
+    has_heat_capacity_rate: bool | None
+
+    #: whether an overall heat-transfer coefficient is stated **and positive**.
+    has_overall_heat_transfer_coefficient: bool | None
+
+    #: the selected configuration's spelling.
+    mechanical_selected_type: str | None
+
+    #: the selected configuration's required area.
+    mechanical_selected_area: Q | None
+
+    #: the log-mean temperature difference the utility and process temperatures give.
+    log_mean_temperature_difference: Q | None
+
+    #: the smallest of the two temperature differences, floored at zero.
+    mechanical_approach_temperature: Q | None
+
+    #: the coefficient the estimate used: the utility specification's when stated and positive, else the class's 500.
+    used_overall_heat_transfer_coefficient: Q | None
+
+    #: `duty / log_mean_temperature_difference`, after the class's fallbacks.
+    calculated_ua: Q | None
+
+    #: the five candidates in the class's enum order; empty when the design did not run.
+    mechanical_types: tuple[HeaterMechanicalType, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class HemReleaseResult(_HasWarnings):
+    """Result of ``process.hem_release``."""
+
+    CALC_ID: ClassVar[str] = "process.hem_release"
+
+    #: `valid`, `valid_with_warnings`, `invalid` or `unsupported`.
+    status: str
+
+    #: the release rate, or absent when the result is not usable. A valid no-forward-flow result states `0.0`.
+    mass_flow_rate: Q | None
+
+    #: whether the accepted flow is choked; false on failure and on no forward flow.
+    choked: bool
+
+    #: the throat's equilibrium sound speed, when the flow is choked and the calculation converged; absent otherwise.
+    throat_sound_speed: Q | None
+
+    #: the upstream overall mole fractions, which every station shares.
+    component_mole_fractions: tuple[float, ...]
+
+    #: the upstream overall mass fractions, `z_i M_i / sum(z M)`.
+    component_mass_fractions: tuple[float, ...]
+
+    #: the resolved stations, upstream first: the stagnation state, the throat, the aliased exit and the receiving-pressure state. Empty on failure, and the ambient row is absent on no forward flow.
+    stations: tuple[HemReleaseStation, ...]
+
+    #: the model's assumption and warning records, in the order it forms them.
+    diagnostics: tuple[HemReleaseDiagnostic, ...]
+
+    #: the codes alone, so a case can hold the contract without asserting prose.
+    diagnostic_codes: tuple[str, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class LeakBlowdownResult(_HasWarnings):
+    """Result of ``process.leak_blowdown``."""
+
+    CALC_ID: ClassVar[str] = "process.leak_blowdown"
+
+    #: `valid`, `valid_with_warnings`, `invalid` or `unsupported`; `unsupported` is declared but unreachable.
+    status: str
+
+    #: the scenario label the caller stated, or the class's default.
+    scenario_name: str
+
+    #: the opening the calculation used.
+    hole_diameter: Q
+
+    #: the declared slots, `ceil(duration/time_step)+1`.
+    number_of_points: int
+
+    #: the visited rows; the difference is the class's zero-filled tail.
+    recorded_points: int
+
+    #: one row per visited step, in time order.
+    points: tuple[LeakBlowdownPoint, ...]
+
+    #: the summed `mdot dt`, or absent on failure.
+    total_mass_released: Q | None
+
+    #: the largest recorded rate, or absent on failure.
+    peak_mass_flow_rate: Q | None
+
+    #: the class's `totalReleased/(0.5 peakRate)`, or absent on failure.
+    time_to_empty: Q | None
+
+    #: the model's assumption, floor and failure records, in order.
+    diagnostics: tuple[LeakBlowdownDiagnostic, ...]
+
+    #: the codes alone.
+    diagnostic_codes: tuple[str, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -5285,6 +6995,64 @@ class ManifoldResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class MapTurboExpanderResult(_HasWarnings):
+    """Result of ``process.map_turbo_expander_compressor``."""
+
+    CALC_ID: ClassVar[str] = "process.map_turbo_expander_compressor"
+
+    #: the expander outlet's molar flow, which is its feed's.
+    expander_outlet_n: Q
+
+    #: the expander outlet's composition.
+    expander_outlet_z: tuple[float, ...]
+
+    #: the expander outlet's pressure.
+    expander_outlet_p: Q
+
+    #: the expander outlet's temperature.
+    expander_outlet_t: Q
+
+    #: the expander outlet's molar enthalpy.
+    expander_outlet_h: Q
+
+    #: the compressor outlet's molar flow, which is its feed's.
+    compressor_outlet_n: Q
+
+    #: the compressor outlet's composition.
+    compressor_outlet_z: tuple[float, ...]
+
+    #: the compressor outlet's pressure: the map's solved ratio or the stated one.
+    compressor_outlet_p: Q
+
+    #: the compressor outlet's temperature.
+    compressor_outlet_t: Q
+
+    #: the compressor outlet's molar enthalpy.
+    compressor_outlet_h: Q
+
+    #: the shaft speed: the bisected speed, or the specified-mode compressor's.
+    shaft_speed: float
+
+    #: the expander's power less the mechanical and bearing losses, floored at zero.
+    available_shaft_power: Q
+
+    #: the compressor's absorbed power.
+    consumed_compressor_power: Q
+
+    #: `available_shaft_power - consumed_compressor_power`; zero when a balanced run is not speed-limited.
+    power_balance_residual: Q
+
+    #: whether the speed was pegged at a bound.
+    speed_limited: bool
+
+    #: which outcome the shaft reached: `balanced`, `under_power_surge` (pegged at the map's lowest speed) or `over_power_max_speed` (at its highest).
+    operating_status: str
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class MixerResult(_HasWarnings):
     """Result of ``process.mixer``."""
 
@@ -5301,6 +7069,12 @@ class MixerResult(_HasWarnings):
 
     #: the outlet temperature, solved from the joined enthalpy at the outlet pressure.
     product_t: Q
+
+    #: `getInletPressureSpread`: the active inlets' highest pressure less the lowest. Active is `FlowRate("kg/hr") > 1e-20`.
+    inlet_pressure_spread: Q
+
+    #: `isPressureMismatch`: the spread exceeds `0.5` bar and the caller did not specify `outlet_pressure`; the outlet then collapses to the lowest inlet.
+    pressure_mismatch: bool
 
     #: the outlet molar enthalpy, the flow-weighted average of the feeds'. Mixing adds no heat and no work, so this is the whole of the energy balance.
     product_h: Q
@@ -5417,6 +7191,36 @@ class PackedColumnResult(_HasWarnings):
     #: the column's internal diameter: the stated one, or the one `hydraulics.packing_sizing` answers where `column_diameter` is absent or at or below zero. **The capture's four solved rows all take the sizing branch**, so this is the sized value there and not an echo of the input.
     internal_diameter: Q
 
+    #: `PackingHydraulicsCalculator.getKGa`: the volumetric gas-film coefficient.
+    k_ga: Q
+
+    #: `getKLa`: the volumetric liquid-film coefficient.
+    k_la: Q
+
+    #: `getWettedArea`: the packing's wetted area per unit volume.
+    wetted_area: Q
+
+    #: `getHtuG`: the gas-side height of a transfer unit.
+    htu_g: Q
+
+    #: `getHtuL`: the liquid-side height of a transfer unit.
+    htu_l: Q
+
+    #: `getHtuOg`: the overall height of a transfer unit.
+    htu_og: Q
+
+    #: `isWettingOk`: whether the liquid load reaches the packing's minimum wetting rate.
+    wetting_ok: bool
+
+    #: `getPressureDropPerMeter`: the bed's pressure gradient.
+    pressure_drop_per_meter: Q
+
+    #: the packing's resolved name, from the calculator.
+    resolved_packing: str
+
+    #: the packing's resolved factor, from the calculator.
+    resolved_packing_factor: Q
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -5441,6 +7245,9 @@ class PipeResult(_HasWarnings):
 
     #: the outlet molar enthalpy. Reported because it is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so a drop moves it.
     outlet_h: Q
+
+    #: `length` plus the fittings' `sum(L/D) D`, which is `Pipeline.getEffectiveLength()`.
+    effective_length: Q
 
     #: `inlet_p - outlet_p`, which is `AdiabaticPipe.getPressureDrop()`. **Declared rather than left to a subtraction**: the drop is a small difference of two large numbers, so a case pinning only `outlet_p` compares it at the precision of the *pressure*.
     pressure_drop: Q
@@ -5494,6 +7301,15 @@ class PlugFlowReactorResult(_HasWarnings):
     #: every station's conversion of the key component.
     conversion_profile: tuple[float, ...]
 
+    #: every station's summed volumetric reaction rate - the class's `ReactionRate_mol_m3s` column. **The first output on the vocabulary's `MolarRateDensity` dimension**, added for it.
+    reaction_rate_profile: tuple[Q, ...]
+
+    #: every station's molar flow of every component - the class's `F_<component>_mol_s` columns. A matrix rather than a vector per component, because the component set is the run's.
+    molar_flow_profile: tuple[tuple[Q, ...], ...]
+
+    #: `getResidenceTime()`: the tube's volume over the feed's volumetric flow, which the kernel already computes and this id dropped.
+    residence_time: Q
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -5510,14 +7326,32 @@ class PumpResult(_HasWarnings):
     #: the outlet composition, which is the inlet's.
     outlet_z: tuple[float, ...]
 
-    #: the outlet pressure, which is `outlet_pressure` rather than something the pump solves for.
+    #: the outlet pressure: `outlet_pressure` in the isentropic branch, or the inlet pressure plus the chart's corrected head times the inlet density and `g`.
     outlet_p: Q
 
     #: the outlet temperature, solved from the shifted enthalpy at the outlet pressure.
     outlet_t: Q
 
-    #: the outlet molar enthalpy: the inlet's plus `(H(P_out, s_in) - H(P_in)) / eta`. Reported because a machine's whole effect on the stream is this and the temperature it implies.
+    #: the outlet molar enthalpy: the inlet's plus the shaft work per mole. In the isentropic branch that work is the isentropic head over the efficiency; in the chart branch it is `Q dP/eta/n`.
     outlet_h: Q
+
+    #: the head the pump used: the chart's corrected head after the density and viscosity corrections, or in the isentropic branch the work per mole over `M g`.
+    head: Q
+
+    #: the efficiency the pump used, as a fraction: the chart's corrected value, or the stated isentropic efficiency.
+    efficiency: float
+
+    #: the required NPSH: the chart's curve at the operating flow where it has one, else the class's flow-band estimate. Reported in both branches.
+    npsh_required: Q
+
+    #: `(P_in - P_bubble)/(rho g)` at the inlet, which is `Pump.getNPSHAvailable`. `NaN` where the bubble point does not solve, which the class also returns.
+    npsh_available: Q
+
+    #: `NPSHa < margin * NPSHr`, with an unknown NPSH status counting as cavitating. False whenever `check_npsh` is not set.
+    cavitating: bool
+
+    #: the shaft power: the enthalpy rise across the machine times the molar flow, so it is the isentropic work in the isentropic branch and the chart's `Q dP/eta` in the chart branch.
+    power: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -5692,6 +7526,311 @@ class SeparatorResult(_HasWarnings):
     #: the liquid outlet's molar enthalpy at its own state.
     liquid_h: Q
 
+    #: `getCapacityUtilization`: the gas's volumetric flow over what the gas area admits at the design velocity, `Q / (V_max A)`. **Present only when the vessel is stated**, and `0.0` when no gas phase exists.
+    capacity_utilization: float | None
+
+    #: `getMaxAllowableGasVelocity`: `K sqrt((rho_l - rho_g)/rho_g)` with the liquid's own density, or `1000.0` where no liquid exists - **the sizing rule's, with no `10.0` floor**. Present only when the vessel is stated and a gas phase exists.
+    max_allowable_gas_velocity: Q | None
+
+    #: `getGasSuperficialVelocity`: `Q/A` over the design gas area, so a horizontal vessel's is the area-derated one. Present as above.
+    gas_superficial_velocity: Q | None
+
+    #: `getGasLoadFactor()`: the gas's *actual* Souders-Brown `K`, `u sqrt(rho_g/(rho_l - rho_g))`, with the `10.0` near-dry floor on `rho_l`. **Not `design_gas_load_factor`.** Present as above.
+    gas_load_factor: Q | None
+
+    #: `isOverloaded`: `capacity_utilization > 1.0`, exactly. **Present only when the vessel is stated**; `false` with no gas.
+    is_overloaded: bool | None
+
+    #: `1 - liquidVolume / separatorVolume` on a horizontal vessel and `1.0` on a vertical one: **the actual holdup**, which `getGasLoadFactor(int)` divides its term by, and not the design level fraction the superficial velocity uses. Present only when the vessel is stated.
+    gas_area_fraction: float | None
+
+    #: `getGasLoadFactor(int)` for each liquid phase, in phase order: the superficial velocity over `sqrt((1/gas_area_fraction) (rho_i - rho_g)/rho_g)`, with the `10.0` near-dry floor. Absent with no gas, and with no liquid phase.
+    rated_gas_load_factor_by_phase: tuple[Q, ...] | None
+
+    #: `sizeFromFlow(safety_factor)`'s answer: the gas flow times the factor over the maximum velocity and the orientation's design gas area, under the circle's area. Absent when no safety factor or no gas.
+    required_diameter: Q | None
+
+    #: `calcDesign`'s sized internal diameter, from the gas flow, the design `K` and the orientation's gas area. Absent unless `mechanical_design`.
+    design_inner_diameter: Q | None
+
+    #: the tangent-to-tangent length, from the liquid volume and the retention time, with the class's `5 d` substitution outside an L/D of 3 to 6.
+    design_tantan_length: Q | None
+
+    #: the inside diameter plus twice the wall thickness.
+    design_outer_diameter: Q | None
+
+    #: the ASME wall thickness at the stated pressure, allowable stress, joint efficiency and corrosion allowance.
+    design_wall_thickness: Q | None
+
+    #: `getMaxDesignGassVolumeFlow`: the design velocity over the sized gas area, in m3/hr.
+    max_design_gas_volume_flow: Q | None
+
+    #: `0.032 * wall_mm * diameter_mm * length`, the class's empty-shell estimate.
+    vessel_shell_weight: Q | None
+
+    #: the class's piping allowance, `0.4` of the shell weight.
+    piping_weight: Q | None
+
+    #: the class's structural allowance, `0.1` of the shell weight.
+    structural_weight: Q | None
+
+    #: the class's electrical allowance, `0.08` of the shell weight.
+    electrical_weight: Q | None
+
+    #: the internals' weight. `0.0` here: the class leaves it at zero without internals sections, and this port builds none.
+    internals_weight: Q | None
+
+    #: the shell plus the class's piping, structural and electrical allowances (`40%`, `10%` and `8%`).
+    total_weight: Q | None
+
+    #: `2 d`.
+    module_width: Q | None
+
+    #: `1.5 * tantan_length`.
+    module_length: Q | None
+
+    #: `2 d + 1`.
+    module_height: Q | None
+
+    #: the cylinder's internal volume, `pi (d/2)^2 L`.
+    vessel_volume: Q | None
+
+    #: the high-high liquid level, `0.80 d` by the class's default fraction.
+    hhll: Q | None
+
+    #: the high liquid level, `0.70 d`.
+    hll: Q | None
+
+    #: the normal liquid level, `0.50 d`.
+    nll: Q | None
+
+    #: the low liquid level, `0.30 d`.
+    lll: Q | None
+
+    #: the low-low liquid level, `0.15 d`.
+    llll: Q | None
+
+    #: the weir height, `0.25 d`.
+    weir_height: Q | None
+
+    #: the normal oil/water interface level, `0.20 d`.
+    nil: Q | None
+
+    #: the effective liquid separation length, `0.82 L` when the class leaves it unset.
+    effective_length_liquid: Q | None
+
+    #: the effective gas separation length, `0.64 L`.
+    effective_length_gas: Q | None
+
+    #: the inlet nozzle's inside diameter: API 12J's `8000 Pa` momentum limit on the two-phase flow, rounded up in `50` mm steps with a `50` mm floor.
+    inlet_nozzle_id: Q | None
+
+    #: the gas outlet nozzle's inside diameter at a `20` m/s limit, rounded up in `50` mm steps.
+    gas_outlet_nozzle_id: Q | None
+
+    #: the oil outlet nozzle's inside diameter at a `1.5` m/s limit, rounded up in `25` mm steps with a `50` mm floor.
+    oil_outlet_nozzle_id: Q | None
+
+    #: the vessel's volume between NLL and HLL over the effective liquid length.
+    surge_volume: Q | None
+
+    #: the surge volume over the liquid volumetric flow, **with the class's unit slip**: the flow is m3/s and is divided as though m3/hr.
+    surge_time: Q | None
+
+    #: the volume at NLL over the same flow, again as though m3/hr - the capture's `394 159` s is that arithmetic rather than a physical residence time.
+    liquid_retention_time: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SeparatorCapacityAssessmentResult(_HasWarnings):
+    """Result of ``process.separator_capacity_assessment``."""
+
+    CALC_ID: ClassVar[str] = "process.separator_capacity_assessment"
+
+    #: `feasible`, `infeasible` or `unassessed` - the class's `FEASIBLE`/`INFEASIBLE`/`UNASSESSED` in the library's spelling.
+    status: str
+
+    #: the class's sentence for the status: one of seven fixed strings, not a composed message.
+    diagnostic: str
+
+    #: `equipment` when no mechanical limit was stated, `mechanicalDesign` when one was, and empty on `unassessed`.
+    design_basis_source: str
+
+    #: `soudersBrown` or `mechanicalDesignGasFlow`, and empty on `unassessed`.
+    governing_capacity_basis: str
+
+    #: the gas flow area: the full cross-section vertical, `(1 - design_liquid_level_fraction)` of it horizontal. **Absent on `unassessed`.**
+    gas_area: Q | None
+
+    #: the gas phase's mass density. Absent on `unassessed`.
+    gas_density: Q | None
+
+    #: the liquid phase's mass density, or `1000.0` where the system carries no liquid. Absent on `unassessed`.
+    liquid_density: Q | None
+
+    #: `getMaxAllowableGasVelocity`: `K sqrt((rho_l - rho_g)/rho_g)`, the sizing rule's, with no `10.0` floor. Absent on `unassessed`.
+    maximum_gas_velocity: Q | None
+
+    #: the gas phase's actual volumetric flow. Absent on `unassessed`.
+    current_gas_flow: Q | None
+
+    #: the stated mechanical limit in m3/s, or `0.0` when none was stated - the class's snapshot field. Absent on `unassessed`.
+    mechanical_design_maximum_gas_flow: Q | None
+
+    #: `getMaxAllowableGasFlowRate`: the maximum velocity times the gas area. Absent on `unassessed`.
+    souders_brown_maximum_gas_flow: Q | None
+
+    #: the governed limit: the mechanical limit where it binds, the Souders-Brown flow otherwise. Absent on `unassessed`.
+    maximum_gas_flow: Q | None
+
+    #: the current gas flow over the governed limit; `<= 1` is `feasible`. Absent on `unassessed`.
+    utilization: float | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SeparatorPerformanceResult(_HasWarnings):
+    """Result of ``process.separator_performance``."""
+
+    CALC_ID: ClassVar[str] = "process.separator_performance"
+
+    #: the oil fraction carried out with the gas: `1 - overall_gas_liquid_efficiency` when an oil phase and a gas-liquid distribution exist.
+    oil_in_gas: float
+
+    #: the water fraction carried out with the gas. **In a three-phase state this is the whole entrainment too**, not a split of it.
+    water_in_gas: float
+
+    #: the gas fraction carried under into the oil: `1 - ` the bubble gravity efficiency.
+    gas_in_oil: float
+
+    #: the gas fraction carried under into the water, which is the same value as `gas_in_oil`.
+    gas_in_water: float
+
+    #: the oil fraction left in the water after the 300 s gravity stage and the coalescer.
+    oil_in_water: float
+
+    #: the water fraction left in the oil after the 300 s gravity stage and the coalescer.
+    water_in_oil: float
+
+    #: the gravity stage's integrated capture efficiency; zero when the gravity section is excluded or no gas-liquid distribution is stated.
+    gravity_section_efficiency: float
+
+    #: the mist eliminator's integrated capture efficiency; zero without one.
+    mist_eliminator_efficiency: float
+
+    #: the stages in series, `1 - (1 - eta_gravity)(1 - eta_mist)` per size class, or whichever stage is present.
+    overall_gas_liquid_efficiency: float
+
+    #: the oil-in-water gravity efficiency; zero unless the oil-in-water distribution is stated.
+    liquid_liquid_gravity_efficiency: float
+
+    #: the gas section's critical droplet diameter; zero without a gas-liquid distribution.
+    gravity_cut_diameter: Q
+
+    #: the predicted inlet regime's enum spelling, e.g. `SLUG`; present only on the enhanced path.
+    inlet_flow_regime: str | None
+
+    #: the inlet device's bulk liquid-removal efficiency.
+    inlet_device_bulk_efficiency: float | None
+
+    #: the device's pressure drop, `coefficient * 0.5 rho_mix v^2`.
+    inlet_device_pressure_drop: Q | None
+
+    #: the inlet nozzle's velocity, the two-phase flow over the pipe area.
+    inlet_nozzle_velocity: Q | None
+
+    #: the nozzle's momentum flux, `rho_mix v^2`.
+    inlet_momentum_flux: Q | None
+
+    #: the actual Souders-Brown `K` at the superficial gas velocity.
+    k_factor: Q | None
+
+    #: the actual `K` over its design value; above one is flooding.
+    k_factor_utilization: float | None
+
+    #: whether `k_factor_utilization` exceeds one.
+    mist_eliminator_flooded: bool | None
+
+    #: the vessel's gas cross-section.
+    gas_area: Q | None
+
+    #: the vessel's liquid cross-section.
+    liquid_area: Q | None
+
+    #: the gas section's volume, `gas_area * length`.
+    gas_volume: Q | None
+
+    #: the liquid section's volume, `liquid_area * length`.
+    liquid_volume: Q | None
+
+    #: the vessel's internal volume, the two sections together.
+    total_volume: Q | None
+
+    #: the height a droplet falls through in the gas section.
+    effective_gas_settling_height: Q | None
+
+    #: the height a bubble rises through in the liquid.
+    effective_liquid_settling_height: Q | None
+
+    #: the gas's residence time in the gravity section.
+    gas_residence_time: Q | None
+
+    #: the liquid's residence time, the class's own m3/hr slip included.
+    liquid_residence_time: Q | None
+
+    #: the gravity section's length: inlet device to mist eliminator, or to the weir three-phase.
+    gravity_section_length: Q | None
+
+    #: the three-phase oil pad, `level * oil_frac`.
+    oil_pad_thickness: Q | None
+
+    #: the three-phase water layer, `level * water_frac`.
+    water_layer_height: Q | None
+
+    #: API 12J's gas-section verdict: cut at most `100` um and `K` within its limit.
+    api_gas_liquid_compliant: bool | None
+
+    #: API 12J's liquid-section verdict: residence at least `180` s two-phase, `300` s three-phase.
+    api_liquid_compliant: bool | None
+
+    #: both verdicts.
+    api_fully_compliant: bool | None
+
+    #: the class's own gas-section sentence, `COMPLIANT:` or `NON-COMPLIANT:` followed by the cut and `K` it read. Present only on the enhanced path.
+    api_gas_liquid_comment: str | None
+
+    #: the class's own liquid-section sentence, with the residence time it read. Present only on the enhanced path.
+    api_liquid_comment: str | None
+
+    #: the cut diameter the API check read; the capture prints it in micrometres.
+    api_gravity_cut_diameter: Q | None
+
+    #: the `K` over the API limit it read.
+    api_k_factor_utilization: float | None
+
+    #: the API limit on `K`: `0.25` with a mist eliminator, otherwise `0.120` horizontal and `0.107` vertical.
+    api_max_k_factor: Q | None
+
+    #: the API minimum liquid residence time.
+    api_min_liquid_residence_time: Q | None
+
+    #: the downstream distribution's `d63.2` after the device's multiplier.
+    post_inlet_device_characteristic_diameter: Q | None
+
+    #: the downstream distribution's spread.
+    post_inlet_device_spread: float | None
+
+    #: the downstream distribution's volume-median diameter, `inverseCDF(0.5)`.
+    post_inlet_d50: Q | None
+
+    #: the downstream distribution's Sauter mean diameter, the 50-class `sum(d^3)/sum(d^2)`.
+    post_inlet_d32: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -5744,7 +7883,7 @@ class ShortcutDistillationColumnResult(_HasWarnings):
     #: the reflux ratio the correlation was evaluated at: `minimum_reflux_ratio * reflux_ratio_multiplier`.
     actual_reflux_ratio: float
 
-    #: the feed stage counted from the top: `round(N_rectifying) + 1`, where the rectifying count is `actual_stages / (1 + kirkbride_ratio)`.
+    #: the feed stage counted from the top: `round(N_rectifying) + 1`, where the rectifying count is `actual_stages kirkbride_ratio / (1 + kirkbride_ratio)`.
     feed_tray_number: int
 
     #: the condenser duty the class reports: `-V * 30000` J/mol with `V = D(R + 1)`. **An estimate, not an energy balance** - it does not depend on the fluid.
@@ -5781,6 +7920,60 @@ class SplitterResult(_HasWarnings):
     #: each outlet's molar enthalpy, which is the feed's. A splitter adds no heat and no work and does not flash, so this is the one field an oracle cannot be asked for - see the assumptions.
     products_h: tuple[Q, ...]
 
+    #: the `pressureDrop` constraint's current value: `0.0` by construction, the class's "ideal splitter". Present only when the constraint is in the map.
+    pressure_drop_value: Q | None
+
+    #: the `pressureDrop` constraint's design value: `design_pressure_drop`, or the class's 5000 Pa when the map was initialized by the enable flag. Present only with the constraint.
+    pressure_drop_design: Q | None
+
+    #: the `pressureDrop` constraint's `min(value/design, 9.99)`, which is 0 because its value is 0. Present only with the constraint.
+    pressure_drop_utilization: float | None
+
+    #: the `velocity` constraint's current value: the inlet's system volume flow over the header area, or 0 when the diameter is unsized. Present only with the constraint.
+    velocity_value: Q | None
+
+    #: the `velocity` constraint's design value: `max_design_velocity`, or the class's 30 m/s when the map was initialized by the enable flag. Present only with the constraint.
+    velocity_design: Q | None
+
+    #: the `velocity` constraint's `min(value/design, 9.99)`. Present only with the constraint.
+    velocity_utilization: float | None
+
+    #: `getMaxUtilization`: the largest utilization among the enabled constraints, and 0.0 on an empty map.
+    max_utilization: float
+
+    #: `isCapacityExceeded`: any enabled constraint above 1.0. **It does not consult `capacity_analysis_enabled`**, and neither does the class.
+    capacity_exceeded: bool
+
+    #: `getBottleneckConstraint`'s name, the class's own map key: `pressureDrop` or `velocity`. Absent when no enabled constraint has a utilization above 0, which the strict `>` makes the empty-map and zero-velocity cases.
+    bottleneck_constraint: str | None
+
+    #: `calcDesign`'s NPS-rounded header diameter. Absent unless `mechanical_design`; zero when the feed flow is not positive.
+    design_header_diameter: Q | None
+
+    #: `calcDesign`'s NPS-rounded branch diameter, from the largest split factor's share of the flow. Absent unless `mechanical_design`.
+    design_branch_diameter: Q | None
+
+    #: `(number of outlets + 1)` times `max(2 * branch diameter, 0.5 m)`. Absent unless `mechanical_design`.
+    design_header_length: Q | None
+
+    #: the B31.3-style wall thickness the class holds in mm, crossed in metres; never below the class's 3 mm floor. Absent unless `mechanical_design`.
+    design_wall_thickness: Q | None
+
+    #: the header's internal volume, `pi (d/2)^2 * header length`. Absent unless `mechanical_design`.
+    manifold_volume: Q | None
+
+    #: `0.25 rho_system v^2` on the rounded header - the class's `0.5 * 0.5` with the system density. Absent unless `mechanical_design`.
+    design_total_pressure_drop: Q | None
+
+    #: the header's steel: `pi/4 (OD^2 - D^2) * length * 7850`. Absent unless `mechanical_design`.
+    header_weight: Q | None
+
+    #: the branch steel: the same wall and outside diameter over 0.5 m per outlet at 7850 kg/m3. Absent unless `mechanical_design`.
+    branch_weight: Q | None
+
+    #: the header and branch weights summed. Absent unless `mechanical_design`.
+    total_weight: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -5808,6 +8001,9 @@ class StirredTankReactorResult(_HasWarnings):
 
     #: the heat the vessel had to supply: the outlet's total enthalpy less the feed's when isothermal, and zero when adiabatic.
     heat_duty: Q
+
+    #: `getAgitatorPower`: the specific power times the vessel volume - `1.0 * 10.0 = 10` at the defaults. **Not a duty `run` applies**; it is the number the class would write to an agitator energy port, which is declared out.
+    agitator_power: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -6025,6 +8221,27 @@ class ThreePhaseSeparatorResult(_HasWarnings):
     #: the aqueous outlet's molar enthalpy at the state its composition settles on, which on a dry feed is the state of a stream that carries nothing.
     heavy_liquid_h: Q
 
+    #: the stored water level, clamped at zero. Present when either level is stated; an unstated one is the class's `0.0` default.
+    water_level: Q | None
+
+    #: the stored oil level, clamped at zero. Present as `water_level` is.
+    oil_level: Q | None
+
+    #: `getOilThickness`: `oil_level - water_level` floored at zero. Present as the levels are.
+    oil_thickness: Q | None
+
+    #: `calcOilRetentionTime`, converted from the class's minutes: the oil segment `NIL`-to-`NLL` times the effective length over the oil phase's flow. **Absent when the vessel is not stated or the feed has no oil.**
+    oil_retention_time: Q | None
+
+    #: `calcWaterRetentionTime`: the segment below `NIL` times the effective length over the aqueous flow. Absent as the oil's is.
+    water_retention_time: Q | None
+
+    #: `calcInterfaceSettlingTime`, converted from the class's minutes: a 150 µm water droplet through the oil layer, `9.81 d^2 (rho_w - rho_o)/(18 mu_o)`, over the layer. Absent with no vessel or no non-positive velocity.
+    interface_settling_time: Q | None
+
+    #: whether `interface_settling_time` reaches the class's one-minute limit. **Not `isWithinAllLimits`**: that ANDs the base class's velocity and retention checks, which this id does not carry.
+    settling_time_sufficient: bool | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -6049,6 +8266,94 @@ class ThrottlingValveResult(_HasWarnings):
 
     #: the outlet molar enthalpy, which is the inlet's: the drop is isenthalpic.
     outlet_h: Q
+
+    #: `getKv()`: the rated `Kv` at 100% opening, stated or sized, in the class's `(m3/h)*sqrt(bar)`.
+    kv: float
+
+    #: `getCv()`: `Kv * 1.156`.
+    cv: float
+
+    #: `getCg()`: `Cv * 1360`.
+    cg: float
+
+    #: `calcValveSize`'s `choked`: on a gas valve, `x >= Fgamma * xT`. Reported whether or not `allow_choked` caps it.
+    choked: bool
+
+    #: `isGasValve()`: a gas phase carrying more than half the volume. It selects the branch the whole sizing runs.
+    gas_valve: bool
+
+    #: `calculateMolarFlow()`: the mole flow the adjusted `Kv` and the drop give - the inverse of the sizing, and the class's own consistency check.
+    calculated_molar_flow: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class TurboExpanderResult(_HasWarnings):
+    """Result of ``process.turbo_expander_compressor``."""
+
+    CALC_ID: ClassVar[str] = "process.turbo_expander_compressor"
+
+    #: the expander outlet's molar flow, which is its feed's.
+    expander_outlet_n: Q
+
+    #: the expander outlet's composition.
+    expander_outlet_z: tuple[float, ...]
+
+    #: the expander outlet's pressure, which is the stated `expander_out_pressure`.
+    expander_outlet_p: Q
+
+    #: the expander outlet's temperature, from the replay at the solved efficiency.
+    expander_outlet_t: Q
+
+    #: the expander outlet's molar enthalpy.
+    expander_outlet_h: Q
+
+    #: the compressor outlet's molar flow, which is its feed's.
+    compressor_outlet_n: Q
+
+    #: the compressor outlet's composition.
+    compressor_outlet_z: tuple[float, ...]
+
+    #: the compressor outlet's pressure, solved from the absorbed power and the polytropic efficiency.
+    compressor_outlet_p: Q
+
+    #: the compressor outlet's temperature.
+    compressor_outlet_t: Q
+
+    #: the compressor outlet's molar enthalpy.
+    compressor_outlet_h: Q
+
+    #: the solved shaft speed, rpm.
+    speed: float
+
+    #: the expander's power: the mass flow times the isentropic drop times the solved efficiency.
+    power_expander: Q
+
+    #: the compressor's absorbed power, which does not include the bearing loss.
+    power_compressor: Q
+
+    #: the expander efficiency the balance used.
+    expander_isentropic_efficiency: float
+
+    #: the design efficiency: the stated one, or the inverse's back-calculation.
+    expander_design_isentropic_efficiency: float
+
+    #: the compressor's polytropic efficiency the balance used.
+    compressor_polytropic_efficiency: float
+
+    #: the compressor's polytropic head the balance used.
+    compressor_polytropic_head: Q
+
+    #: the expander's `U/C/design_uc` at the solved speed.
+    uc_ratio_expander: float
+
+    #: the compressor's Q/N ratio at the solved speed.
+    qn_ratio_compressor: float
+
+    #: the IGV opening the machine reports - the held one, or the recomputed one.
+    igv_opening: float
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -6387,6 +8692,37 @@ class Iso6976Result(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class BoilingHeatTransferResult(_HasWarnings):
+    """Result of ``thermal.boiling_heat_transfer``."""
+
+    CALC_ID: ClassVar[str] = "thermal.boiling_heat_transfer"
+
+    #: the Chen local coefficient at `vapor_quality`.
+    chen_htc: Q
+
+    #: the Gungor-Winterton local coefficient at `vapor_quality`.
+    gungor_winterton_htc: Q
+
+    #: the same coefficient with the horizontal stratified correction where it applies.
+    gungor_winterton_corrected_htc: Q
+
+    #: the Simpson's-rule average of the uncorrected coefficient over the range.
+    average_htc: Q
+
+    #: the Lockhart-Martinelli parameter at `vapor_quality`.
+    martinelli_parameter: float
+
+    #: the Chen enhancement factor `F`.
+    chen_enhancement_factor: float
+
+    #: the Chen suppression factor `S`.
+    chen_suppression_factor: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ConductionPlaneWallResult(_HasWarnings):
     """Result of ``thermal.conduction_plane_wall``."""
 
@@ -6394,6 +8730,632 @@ class ConductionPlaneWallResult(_HasWarnings):
 
     #: Heat flow rate through the wall, positive in the direction of decreasing temperature.
     q: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class FoulingModelResult(_HasWarnings):
+    """Result of ``thermal.fouling_model``."""
+
+    CALC_ID: ClassVar[str] = "thermal.fouling_model"
+
+    #: the model's resistance at `time_hours`, in m**2*K/W: the fixed value, the Ebert-Panchal analytical approach, or the Kern-Seaton asymptote.
+    fouling_resistance_at_time: float
+
+    #: the resistance after the Euler steps, in m**2*K/W; for Kern-Seaton it is the no-argument getter at the operating time.
+    current_fouling_resistance: float
+
+    #: the model's asymptote in m**2*K/W: the fixed value, `Rf_max`, or the deposition over removal; `MAX_VALUE` when there is no removal.
+    asymptotic_fouling_resistance: float
+
+    #: the wall temperature whose zero-resistance rate equals `threshold_rate`; zero outside the guards, `MAX_VALUE` when no wall exceeds the threshold.
+    threshold_wall_temperature: Q
+
+    #: The velocity at which the asymptote crosses the fixed resistance.
+    threshold_velocity: Q
+
+    #: the predicted time to `target_fouling_resistance`; `-1` when the target is at or beyond the asymptote, `0` for the fixed model.
+    time_to_target: Q
+
+    #: the time advanced by the Euler steps.
+    operating_time: Q
+
+    #: the Ebert-Panchal rate at the current resistance, in m**2*K/(W*h), which is zero when the wall temperature or Reynolds number is non-positive.
+    fouling_rate: float
+
+    #: `rho*v*D/mu` of the stated conditions.
+    reynolds_number: float
+
+    #: `f/8*rho*v**2`, using the Darcy friction factor.
+    wall_shear_stress: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class IncrementalZoneAnalysisResult(_HasWarnings):
+    """Result of ``thermal.incremental_zone_analysis``."""
+
+    CALC_ID: ClassVar[str] = "thermal.incremental_zone_analysis"
+
+    #: the number of zones rated.
+    number_of_zones: float
+
+    #: the sum of the zone areas `duty/(U*LMTD)`.
+    total_required_area: Q
+
+    #: the sum of the zone duties.
+    total_duty: Q
+
+    #: `sum(U*A)/sum(A)`, or zero with no area.
+    weighted_average_u: Q
+
+    #: the sum of the zone tube-side drops.
+    total_tube_side_pressure_drop: Q
+
+    #: the sum of the zone shell-side drops.
+    total_shell_side_pressure_drop: Q
+
+    #: the smallest absolute hot-cold endpoint difference in any zone; `f64::MAX` with no zones.
+    minimum_approach_temperature: Q
+
+    #: one row per zone, in the input order.
+    zones: tuple[IncrementalZoneRow, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class LmtdCorrectionFactorResult(_HasWarnings):
+    """Result of ``thermal.lmtd_correction_factor``."""
+
+    CALC_ID: ClassVar[str] = "thermal.lmtd_correction_factor"
+
+    #: the capacity ratio `(Th_in - Th_out)/(Tc_out - Tc_in)`.
+    r: float
+
+    #: the thermal effectiveness `(Tc_out - Tc_in)/(Th_in - Tc_in)`.
+    p: float
+
+    #: the correction factor for the stated number of shell passes.
+    ft: float
+
+    #: The correction factor for one shell pass.
+    ft_1_shell_pass: float
+
+    #: The correction factor for two shell passes.
+    ft_2_shell_passes: float
+
+    #: the first pass count from one to six whose correction factor reaches 0.75, or -1 when none does.
+    required_shell_passes: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ShahCondensationResult(_HasWarnings):
+    """Result of ``thermal.shah_condensation``."""
+
+    CALC_ID: ClassVar[str] = "thermal.shah_condensation"
+
+    #: the all-liquid Dittus-Boelter coefficient.
+    liquid_only_htc: Q
+
+    #: `G*D/mu_l`, the validity band's Reynolds number.
+    liquid_only_reynolds: float
+
+    #: the Shah coefficient at `vapor_quality`.
+    local_htc: Q
+
+    #: the Simpson's-rule average over `quality_in` to `quality_out`.
+    average_htc: Q
+
+    #: the vertical-tube coefficient at `vapor_quality`.
+    vertical_htc: Q
+
+    #: whether the stated reduced pressure, liquid-only Reynolds number and mass flux are inside the correlation's validated bands.
+    in_valid_range: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ShellAndTubeDesignResult(_HasWarnings):
+    """Result of ``thermal.shell_and_tube_design``."""
+
+    CALC_ID: ClassVar[str] = "thermal.shell_and_tube_design"
+
+    #: the designation, echoed.
+    tema_designation: str
+
+    #: The TEMA construction class.
+    tema_class: str
+
+    #: the bundle diameter plus the rear-head clearance, snapped to a standard shell size.
+    shell_inside_diameter: Q
+
+    #: the inside diameter plus twice the wall.
+    shell_outside_diameter: Q
+
+    #: The ASME circumferential-stress thickness, floored at the minimum and rounded to a plate thickness.
+    shell_wall_thickness: Q
+
+    #: the specification and grade, e.g. `ASME-II-A SA-516-70`.
+    shell_material: str
+
+    #: the grade, echoed.
+    shell_material_grade: str
+
+    #: the shell allowable stress after the temperature derating.
+    shell_allowable_stress: Q
+
+    #: the shell minimum yield strength from the table.
+    shell_smys: Q
+
+    #: the joint efficiency, echoed.
+    shell_joint_efficiency: float
+
+    #: the area-derived tube count, rounded up to a multiple of the passes.
+    tube_count: float
+
+    #: the standard tube outside diameter.
+    tube_outer_diameter: Q
+
+    #: The minimum tube wall thickness.
+    tube_wall_thickness: Q
+
+    #: the tube length, echoed.
+    tube_length: Q
+
+    #: the passes, echoed.
+    tube_passes: float
+
+    #: `tube_outer_diameter * 1.25`.
+    tube_pitch: Q
+
+    #: The tube pitch pattern, e.g. `Triangular 30°`.
+    tube_pitch_pattern: str
+
+    #: the specification and grade of the tube material.
+    tube_material: str
+
+    #: the tube grade, echoed.
+    tube_material_grade: str
+
+    #: the tube allowable stress after the temperature derating.
+    tube_allowable_stress: Q
+
+    #: the tube material's conductivity from the table.
+    tube_thermal_conductivity: Q
+
+    #: The baffle type, e.g. `Single Segmental`.
+    baffle_type: str
+
+    #: `(tube_length - 2*spacing)/spacing` floored, at least one.
+    baffle_count: float
+
+    #: 0.4 of the shell diameter, clamped by the TEMA minimum, the maximum and the unsupported span.
+    baffle_spacing: Q
+
+    #: The baffle cut, e.g. 0.25.
+    baffle_cut: float
+
+    #: the required area, echoed.
+    required_area: Q
+
+    #: `tube_count * pi * d_o * L`.
+    actual_area: Q
+
+    #: `(actual - required)/required`.
+    area_margin: float
+
+    #: The UHX-13 tubesheet thickness, floored at the minimum.
+    tubesheet_thickness_uhx: Q
+
+    #: the shell MAWP per UG-27.
+    mawp_shell_side: Q
+
+    #: the tube MAWP per UG-27.
+    mawp_tube_side: Q
+
+    #: `1.3 * MAWP * S(20 C)/S(design)`.
+    hydro_test_pressure_shell: Q
+
+    #: the same on the tube side.
+    hydro_test_pressure_tube: Q
+
+    #: The available reinforcement area per UG-37.
+    nozzle_reinforcement_area: Q
+
+    #: whether the available area meets the required one.
+    nozzle_reinforcement_adequate: bool
+
+    #: whether the H2S partial pressure exceeds the 0.003 bar threshold.
+    sour_service_required: bool
+
+    #: the stated partial pressure, echoed when the assessment runs.
+    h2s_partial_pressure: Q | None
+
+    #: Whether the shell material meets NACE.
+    shell_nace_compliant: bool
+
+    #: the tube material's compliance flag, likewise.
+    tube_nace_compliant: bool
+
+    #: The shell hardness in HV.
+    shell_max_hardness: float
+
+    #: the tube hardness in HV, likewise.
+    tube_max_hardness: float
+
+    #: The NACE assessment's issue strings.
+    nace_issues: tuple[NaceIssueRow, ...]
+
+    #: The standards the design pipeline applied.
+    applied_standards: tuple[AppliedStandardRow, ...]
+
+    #: the thermal block's tube-side coefficient.
+    tube_side_heat_transfer_coefficient: Q | None
+
+    #: the thermal block's shell-side coefficient.
+    shell_side_heat_transfer_coefficient: Q | None
+
+    #: the thermal block's overall coefficient.
+    overall_heat_transfer_coefficient: Q | None
+
+    #: the thermal block's tube-side drop.
+    tube_side_pressure_drop: Q | None
+
+    #: the thermal block's shell-side drop.
+    shell_side_pressure_drop: Q | None
+
+    #: the thermal block's tube-side velocity.
+    tube_side_velocity: Q | None
+
+    #: the thermal block's shell-side velocity.
+    shell_side_velocity: Q | None
+
+    #: the thermal block's tube-side Reynolds number.
+    tube_side_reynolds: float | None
+
+    #: the thermal block's shell-side Reynolds number.
+    shell_side_reynolds: float | None
+
+    #: the tube flow diameter the thermal block read.
+    effective_tube_inside_diameter: Q | None
+
+    #: the outside area the thermal block read.
+    outside_heat_transfer_area: Q | None
+
+    #: the deposit resistance on the outside area; zero without a deposit.
+    tube_fouling_layer_resistance_outside: float | None
+
+    #: the Bell-Delaware baffle-cut factor.
+    jc: float | None
+
+    #: the Bell-Delaware leakage factor.
+    jl: float | None
+
+    #: the Bell-Delaware bypass factor.
+    jb: float | None
+
+    #: the Bell-Delaware spacing factor, 1.0.
+    js: float | None
+
+    #: the Bell-Delaware adverse-gradient factor.
+    jr: float | None
+
+    #: whether the vibration screen passed.
+    passed: bool | None
+
+    #: the first natural frequency.
+    natural_frequency: Q | None
+
+    #: the Strouhal shedding frequency.
+    vortex_shedding_frequency: Q | None
+
+    #: `f_vs/f_n`.
+    vortex_shedding_ratio: float | None
+
+    #: whether the shedding ratio is inside the 0.8-1.2 band.
+    vortex_shedding_critical: bool | None
+
+    #: Connors' critical crossflow velocity.
+    critical_velocity: Q | None
+
+    #: the crossflow velocity over the safety-factored critical one.
+    velocity_ratio: float | None
+
+    #: whether the velocity ratio exceeds one.
+    fluid_elastic_critical: bool | None
+
+    #: the shell acoustic frequency.
+    acoustic_frequency: Q | None
+
+    #: `f_vs/f_ac`.
+    acoustic_ratio: float | None
+
+    #: whether the acoustic ratio is inside the 0.8-1.2 band.
+    acoustic_critical: bool | None
+
+    #: the shell metal mass.
+    shell_weight: Q
+
+    #: the tube metal mass.
+    tube_weight: Q
+
+    #: the tubesheet mass, one sheet for a U-tube and two otherwise.
+    tubesheet_weight: Q
+
+    #: the two heads' mass as hemispheres.
+    head_weight: Q
+
+    #: the baffle mass at 6.35 mm.
+    baffle_weight: Q
+
+    #: the five component masses.
+    total_dry_weight: Q
+
+    #: the dry mass plus the shell and tube volumes of water.
+    operating_weight: Q
+
+    #: the material cost in USD, declared dimensionless because the vocabulary has no currency.
+    material_cost: float
+
+    #: the fabrication cost in USD.
+    fabrication_cost: float
+
+    #: material plus fabrication, in USD.
+    total_cost: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ShellAndTubeRatingResult(_HasWarnings):
+    """Result of ``thermal.shell_and_tube_rating``."""
+
+    CALC_ID: ClassVar[str] = "thermal.shell_and_tube_rating"
+
+    #: the tube-side film coefficient.
+    tube_side_heat_transfer_coefficient: Q
+
+    #: the shell-side film coefficient after the Bell-Delaware factors, or the Kern value.
+    shell_side_heat_transfer_coefficient: Q
+
+    #: the overall coefficient on the outside area, from the five resistances.
+    overall_heat_transfer_coefficient: Q
+
+    #: the tube-side pressure drop over all passes, friction plus return losses.
+    tube_side_pressure_drop: Q
+
+    #: the shell-side pressure drop: Kern's, or Bell-Delaware's crossflow, window and end-zone terms.
+    shell_side_pressure_drop: Q
+
+    #: the tube-side velocity in one pass.
+    tube_side_velocity: Q
+
+    #: the shell-side crossflow velocity.
+    shell_side_velocity: Q
+
+    #: the tube-side Reynolds number on the effective flow diameter.
+    tube_side_reynolds: float
+
+    #: the shell-side Reynolds number; Kern uses the equivalent diameter, Bell-Delaware the tube outside diameter.
+    shell_side_reynolds: float
+
+    #: `tube_inside_diameter - 2*deposit_thickness`, the flow diameter.
+    effective_tube_inside_diameter: Q
+
+    #: `pi * tube_outside_diameter * tube_length * tube_count`.
+    outside_heat_transfer_area: Q
+
+    #: the deposit's cylindrical resistance in m**2*K/W on the outside area; zero without a layer.
+    tube_fouling_layer_resistance_outside: float
+
+    #: the baffle-cut correction factor; 1.0 on the Kern path.
+    jc: float
+
+    #: the baffle-leakage correction factor; 1.0 on the Kern path.
+    jl: float
+
+    #: the bundle-bypass correction factor; 1.0 on the Kern path.
+    jb: float
+
+    #: The unequal-spacing correction factor; 1.0 on the Kern path and 1.0 here.
+    js: float
+
+    #: the adverse-temperature-gradient correction factor; 1.0 above Re 100.
+    jr: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ShellAndTubeVibrationResult(_HasWarnings):
+    """Result of ``thermal.shell_and_tube_vibration``."""
+
+    CALC_ID: ClassVar[str] = "thermal.shell_and_tube_vibration"
+
+    #: the first natural frequency of the pinned span, Hz.
+    natural_frequency: Q
+
+    #: the Strouhal shedding frequency, Hz.
+    vortex_shedding_frequency: Q
+
+    #: `f_vs / f_n`; critical when strictly between 0.8 and 1.2.
+    vortex_shedding_ratio: float
+
+    #: whether the shedding ratio is inside the 0.8-1.2 band.
+    vortex_shedding_critical: bool
+
+    #: Connors' critical crossflow velocity for fluid-elastic instability.
+    critical_velocity: Q
+
+    #: `V / (0.5 * V_crit)`; critical above one.
+    velocity_ratio: float
+
+    #: whether the velocity ratio exceeds one.
+    fluid_elastic_critical: bool
+
+    #: the first acoustic resonance frequency of the shell cavity, Hz.
+    acoustic_frequency: Q
+
+    #: `f_vs / f_ac`; critical when strictly between 0.8 and 1.2.
+    acoustic_ratio: float
+
+    #: whether the acoustic ratio is inside the 0.8-1.2 band.
+    acoustic_critical: bool
+
+    #: true only when none of the three mechanisms is critical.
+    passed: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class TemaStandardResult(_HasWarnings):
+    """Result of ``thermal.tema_standard``."""
+
+    CALC_ID: ClassVar[str] = "thermal.tema_standard"
+
+    #: the configuration's relative cost factor, one for the plainest head, shell and rear.
+    configuration_cost_factor: float
+
+    #: the shell letter's pressure drop factor relative to an `E` shell.
+    shell_pressure_drop_factor: float
+
+    #: whether the rear head allows the bundle to be removed.
+    bundle_removable: bool
+
+    #: Whether the rear head handles thermal expansion.
+    good_thermal_expansion: bool
+
+    #: The construction class's cost factor relative to class `B`.
+    class_cost_factor: float
+
+    #: The minimum tube wall thickness for the class.
+    min_tube_wall_thickness: Q
+
+    #: The minimum corrosion allowance for the class.
+    min_corrosion_allowance: Q
+
+    #: the standard tube size's outside diameter.
+    tube_outer_diameter: Q
+
+    #: the same diameter in inches, which is how the size is named.
+    tube_outer_diameter_inch: Q
+
+    #: the layout angle in degrees: 30, 60, 90 or 45.
+    layout_angle: float
+
+    #: the pattern's minimum pitch over tube diameter.
+    min_pitch_ratio: float
+
+    #: the pattern's heat-transfer factor relative to square 90.
+    pitch_heat_transfer_factor: float
+
+    #: the baffle type's heat-transfer factor relative to a single segmental.
+    baffle_heat_transfer_factor: float
+
+    #: the baffle type's pressure-drop factor relative to a single segmental.
+    baffle_pressure_drop_factor: float
+
+    #: `tube_outer_diameter * min_pitch_ratio`.
+    min_tube_pitch: Q
+
+    #: the truncated bundle-area estimate at the stated pitch and passes.
+    estimated_tube_count: float
+
+    #: The maximum unsupported tube span for the diameter band and material.
+    max_unsupported_span: Q
+
+    #: The greater of one fifth of the shell diameter and the minimum baffle spacing.
+    min_baffle_spacing: Q
+
+    #: the shell inside diameter.
+    max_baffle_spacing: Q
+
+    #: The recommended TEMA designation.
+    recommended_designation: str
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class TubeInsertModelResult(_HasWarnings):
+    """Result of ``thermal.tube_insert_model``."""
+
+    CALC_ID: ClassVar[str] = "thermal.tube_insert_model"
+
+    #: `h_enhanced/h_plain` at the stated Reynolds and Prandtl numbers.
+    heat_transfer_enhancement_ratio: float
+
+    #: `f_enhanced/f_plain` at the stated Reynolds number.
+    pressure_drop_penalty_ratio: float
+
+    #: `h_ratio/f_ratio**(1/3)` at constant pumping power.
+    performance_evaluation_criteria: float
+
+    #: `plain_heat_transfer_coefficient * heat_transfer_enhancement_ratio`.
+    enhanced_heat_transfer_coefficient: Q
+
+    #: `plain_pressure_drop * pressure_drop_penalty_ratio`.
+    enhanced_pressure_drop: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class TwoPhasePressureDropResult(_HasWarnings):
+    """Result of ``thermal.two_phase_pressure_drop``."""
+
+    CALC_ID: ClassVar[str] = "thermal.two_phase_pressure_drop"
+
+    #: the Friedel frictional gradient at `vapor_quality`.
+    friedel_gradient: Q
+
+    #: the Friedel gradient times `tube_length` at `vapor_quality`.
+    friedel_pressure_drop: Q
+
+    #: the Simpson's-rule average of the Friedel gradient over `quality_in` to `quality_out`, times `tube_length`.
+    friedel_average_pressure_drop: Q
+
+    #: the Muller-Steinhagen-Heck frictional gradient at `vapor_quality`.
+    muller_steinhagen_heck_gradient: Q
+
+    #: the gravitational gradient of the homogeneous mixture at `vapor_quality`, positive for upflow.
+    gravitational_gradient: Q
+
+    #: the momentum-flux change over `quality_in` to `quality_out`, negative when the quality falls.
+    acceleration_pressure_drop: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ZoneRatingResult(_HasWarnings):
+    """Result of ``thermal.zone_rating``."""
+
+    CALC_ID: ClassVar[str] = "thermal.zone_rating"
+
+    #: the number of zones rated, which is the input list's length.
+    zone_count: float
+
+    #: one row per zone, in the input order.
+    zones: tuple[ZoneRatingRow, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

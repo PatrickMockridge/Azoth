@@ -6,7 +6,7 @@ use azoth_eos::hydrate_inhibitor_wt::PhaseLabel;
 use azoth_eos::pt_flash;
 
 use crate::kernels::separator::separator;
-use crate::segment::phase::{labelled_phases_at, mass_density, molar_mass_of};
+use crate::segment::phase::{labelled_phases_at_from_feed, mass_density, molar_mass_of};
 use crate::stream::Stream;
 
 /// `Separator.getMaxAllowableGasVelocity`'s own substitution where the system carries no liquid:
@@ -62,7 +62,8 @@ pub fn capacity_utilization(
 ) -> Result<f64> {
     let (mixture, _ideal_gas) = feed.mixture()?;
     let flash = pt_flash(&mixture, gas_outlet.t, gas_outlet.p, &feed.z)?;
-    let labelled = labelled_phases_at(&mixture, gas_outlet.t, gas_outlet.p, &feed.z, &flash)?;
+    let labelled =
+        labelled_phases_at_from_feed(&mixture, gas_outlet.t, gas_outlet.p, &feed.z, &flash)?;
 
     let Some((_label, gas_z, gas_root)) = labelled
         .iter()

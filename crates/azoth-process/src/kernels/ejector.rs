@@ -31,7 +31,8 @@ pub struct EjectorNumbers {
     pub diffuser_velocity: Velocity,
 }
 
-/// What an ejector did: the discharge record, and the five numbers its route reached.
+/// What an ejector did: the discharge record, the five numbers its route reached, and the
+/// mechanical design container built beside them.
 pub struct EjectorOutcome {
     /// The discharge record.
     pub outlet: Stream,
@@ -39,6 +40,55 @@ pub struct EjectorOutcome {
     /// returns the motive stream unchanged there rather than dividing by a total of zero, and a
     /// machine that ran on no fluid reached no pressure and no velocity at all.
     pub numbers: Option<EjectorNumbers>,
+    /// The areas, diameters, lengths and volumes `updateDesign` stores, in SI.
+    ///
+    /// **Zeroed where nothing flowed**, which is not an absence: `run` calls `resetDesign` on
+    /// that branch and the container's own getters then answer `0.0`.
+    pub design: EjectorDesign,
+}
+
+/// The mechanical design container `EjectorMechanicalDesign` holds, in SI.
+///
+/// The areas are the throat, the suction inlet, the mixing chamber and the diffuser outlet;
+/// each diameter is `sqrt(4A/pi)` of the one beside it. The four lengths are the class's fixed
+/// multiples of those diameters, and the two connection lengths are its pressure-ratio
+/// estimates - so this is `run`'s own sizing, not a standard's.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct EjectorDesign {
+    /// The motive nozzle's throat area, m2.
+    pub motive_nozzle_throat_area: f64,
+    /// Its throat diameter, m.
+    pub motive_nozzle_diameter: f64,
+    /// The suction inlet's area, m2.
+    pub suction_inlet_area: f64,
+    /// Its diameter, m.
+    pub suction_inlet_diameter: f64,
+    /// The mixing chamber's area, m2.
+    pub mixing_chamber_area: f64,
+    /// Its diameter, m.
+    pub mixing_chamber_diameter: f64,
+    /// The diffuser outlet's area, m2.
+    pub diffuser_outlet_area: f64,
+    /// Its diameter, m.
+    pub diffuser_outlet_diameter: f64,
+    /// The motive nozzle's effective length, m - `3` diameters.
+    pub motive_nozzle_effective_length: f64,
+    /// The suction inlet's length, m - `2.5` diameters.
+    pub suction_inlet_length: f64,
+    /// The mixing chamber's length, m - `4` diameters.
+    pub mixing_chamber_length: f64,
+    /// The diffuser outlet's length, m - `6` diameters.
+    pub diffuser_outlet_length: f64,
+    /// The four stages' cylinder volumes, m3.
+    pub body_volume: f64,
+    /// The two connection pipes' cylinder volumes, m3.
+    pub connected_piping_volume: f64,
+    /// The two volumes' sum, m3 - `getTotalVolume`.
+    pub total_volume: f64,
+    /// The suction connection's straight length, m.
+    pub suction_connection_length: f64,
+    /// The discharge connection's straight length, m.
+    pub discharge_connection_length: f64,
 }
 
 /// The ejector's four parameters, as `unit_ops.ejector` declares them.
@@ -124,6 +174,7 @@ pub fn ejector(motive: &Stream, suction: &Stream, setup: EjectorSetup) -> Result
         return Ok(EjectorOutcome {
             outlet: motive.clone(),
             numbers: None,
+            design: EjectorDesign::default(),
         });
     }
 
@@ -146,7 +197,10 @@ pub fn ejector(motive: &Stream, suction: &Stream, setup: EjectorSetup) -> Result
     let motive_actual_h = motive_mass_enthalpy
         - setup.motive_nozzle_efficiency * (motive_mass_enthalpy - motive_isentropic_h);
     // The motive's own state at the mixing pressure is the class's *area* calculation -
-    // `rhoNozzle` and the Mach number - and neither reaches the discharge state.
+    // `rhoNozzle` and the Mach number - and neither reaches the discharge state, but the
+    // throat area the mechanical design reports is built on it.
+    let motive_at_mixing = flash_at_enthalpy(motive, mixing_pressure, motive_actual_h)?;
+    let motive_density = motive_at_mixing.corrected_density()?.max(1.0e-9);
     let nozzle_velocity = (2.0 * (motive_mass_enthalpy - motive_actual_h).max(0.0)).sqrt();
 
     // The suction nozzle, the same route with its own efficiency.
@@ -178,7 +232,8 @@ pub fn ejector(motive: &Stream, suction: &Stream, setup: EjectorSetup) -> Result
 
     // The joined fluid at the mixing pressure and that static enthalpy.
     let joined = join(motive, suction)?;
-    let _mixing = flash_at_enthalpy(&joined, mixing_pressure, mixed_static_h)?;
+    let mixing = flash_at_enthalpy(&joined, mixing_pressure, mixed_static_h)?;
+    let mixing_density = mixing.corrected_density()?.max(1.0e-9);
 
     // The diffuser: the recovered energy goes back in as enthalpy, and the pressure rise is
     // taken at the discharge pressure.
@@ -194,6 +249,38 @@ pub fn ejector(motive: &Stream, suction: &Stream, setup: EjectorSetup) -> Result
     );
     let final_h = before_diffuser - 0.5 * design_diffuser_velocity * design_diffuser_velocity;
 
+    // `updateDesign`'s container: the four areas each stage's own flash and velocity give,
+    // their diameters, the class's four fixed multiples of those diameters, and its two
+    // pressure-ratio estimates for the connection pipes.
+    let motive_area = motive_mass / (motive_density * nozzle_velocity.max(1.0e-6));
+    let suction_area = suction_mass / (drawn_density * design_suction_velocity.max(1.0e-6));
+    let mixing_area = total_mass / (mixing_density * mixing_velocity.max(1.0e-6));
+    let diffuser_area = total_mass / (diffuser_density * design_diffuser_velocity.max(1.0e-6));
+    let motive_diameter = area_to_diameter(motive_area);
+    let suction_diameter = area_to_diameter(suction_area);
+    let mixing_diameter = area_to_diameter(mixing_area);
+    let diffuser_diameter = area_to_diameter(diffuser_area);
+    let motive_length = estimated_length(motive_diameter, NOZZLE_LENGTH_FACTOR);
+    let suction_length = estimated_length(suction_diameter, SUCTION_LENGTH_FACTOR);
+    let mixing_length = estimated_length(mixing_diameter, MIXING_LENGTH_FACTOR);
+    let diffuser_length = estimated_length(diffuser_diameter, DIFFUSER_LENGTH_FACTOR);
+    let suction_connection_length = estimate_suction_connection_length(
+        suction_diameter,
+        suction_pressure_bar,
+        discharge_pressure_bar,
+    );
+    let discharge_connection_length = estimate_discharge_connection_length(
+        diffuser_diameter,
+        mixing_pressure_bar,
+        discharge_pressure_bar,
+    );
+    let body_volume = cylinder_volume(motive_area, motive_length)
+        + cylinder_volume(suction_area, suction_length)
+        + cylinder_volume(mixing_area, mixing_length)
+        + cylinder_volume(diffuser_area, diffuser_length);
+    let connected_piping_volume = cylinder_volume(suction_area, suction_connection_length)
+        + cylinder_volume(diffuser_area, discharge_connection_length);
+
     // **Everything the route reached, kept rather than dropped.** The mixing pressure is the
     // class's own estimate and the four velocities are what the efficiencies made of it, so the
     // discharge state is the last line of an argument that was otherwise thrown away.
@@ -206,7 +293,92 @@ pub fn ejector(motive: &Stream, suction: &Stream, setup: EjectorSetup) -> Result
             mixing_velocity: meters_per_second(mixing_velocity),
             diffuser_velocity: meters_per_second(design_diffuser_velocity),
         }),
+        design: EjectorDesign {
+            motive_nozzle_throat_area: motive_area,
+            motive_nozzle_diameter: motive_diameter,
+            suction_inlet_area: suction_area,
+            suction_inlet_diameter: suction_diameter,
+            mixing_chamber_area: mixing_area,
+            mixing_chamber_diameter: mixing_diameter,
+            diffuser_outlet_area: diffuser_area,
+            diffuser_outlet_diameter: diffuser_diameter,
+            motive_nozzle_effective_length: motive_length,
+            suction_inlet_length: suction_length,
+            mixing_chamber_length: mixing_length,
+            diffuser_outlet_length: diffuser_length,
+            body_volume,
+            connected_piping_volume,
+            total_volume: body_volume + connected_piping_volume,
+            suction_connection_length,
+            discharge_connection_length,
+        },
     })
+}
+
+/// The class's four length multiples of a stage's own diameter.
+const NOZZLE_LENGTH_FACTOR: f64 = 3.0;
+const SUCTION_LENGTH_FACTOR: f64 = 2.5;
+const MIXING_LENGTH_FACTOR: f64 = 4.0;
+const DIFFUSER_LENGTH_FACTOR: f64 = 6.0;
+
+/// `diameterFromArea`: a circle's diameter, and zero for a stage that got no area.
+fn area_to_diameter(area: f64) -> f64 {
+    if area <= 0.0 {
+        return 0.0;
+    }
+    (4.0 * area / std::f64::consts::PI).sqrt()
+}
+
+/// `estimateLength`: the fixed multiple, and zero where either operand is not positive.
+fn estimated_length(diameter: f64, factor: f64) -> f64 {
+    if diameter <= 0.0 || factor <= 0.0 {
+        return 0.0;
+    }
+    factor * diameter
+}
+
+/// `cylinderVolume`: the stage's swept volume, zeroed on the same guard.
+fn cylinder_volume(area: f64, length: f64) -> f64 {
+    if area <= 0.0 || length <= 0.0 {
+        return 0.0;
+    }
+    area * length
+}
+
+/// `estimateSuctionConnectionLength`, in bara - the pressure enters only as a ratio.
+fn estimate_suction_connection_length(
+    diameter: f64,
+    suction_pressure: f64,
+    discharge_pressure: f64,
+) -> f64 {
+    if diameter <= 0.0 {
+        return 0.0;
+    }
+    let ratio = if discharge_pressure > 0.0 && suction_pressure > 0.0 {
+        discharge_pressure / suction_pressure
+    } else {
+        1.0
+    };
+    let factor = 3.0 + 1.5 * clamp(ratio - 1.0, 0.0, 3.0);
+    factor * diameter
+}
+
+/// `estimateDischargeConnectionLength`, in bara.
+fn estimate_discharge_connection_length(
+    diameter: f64,
+    mixing_pressure: f64,
+    discharge_pressure: f64,
+) -> f64 {
+    if diameter <= 0.0 {
+        return 0.0;
+    }
+    let ratio = if discharge_pressure > 0.0 && mixing_pressure > 0.0 {
+        discharge_pressure / mixing_pressure
+    } else {
+        1.0
+    };
+    let factor = 5.0 + 2.0 * clamp(ratio - 1.0, 0.0, 3.0);
+    factor * diameter
 }
 
 /// The isentropic flash of one stream to a pressure, as `(temperature, mass enthalpy)`.

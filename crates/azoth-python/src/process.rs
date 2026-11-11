@@ -8,8 +8,11 @@ use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 use azoth_core::units::{
-    joules_per_mole, kelvins, kilograms_per_cubic_meter, pascals, square_meters_per_second, watts,
-    watts_per_kelvin, watts_per_square_meter_kelvin,
+    cubic_meters, cubic_meters_per_second, hours, joules_per_kilogram_kelvin, joules_per_mole,
+    kelvin_intervals, kelvins, kilograms, kilograms_per_cubic_meter, kilograms_per_second, meters,
+    meters_per_second, pascal_seconds, pascals, seconds, square_meters, square_meters_per_second,
+    watts, watts_per_cubic_meter, watts_per_kelvin, watts_per_meter_kelvin,
+    watts_per_square_meter_kelvin,
 };
 use azoth_process::executor::Session;
 use azoth_process::{self, ExecutionOrder, Stream};
@@ -179,6 +182,8 @@ pub fn heat_exchanger_stream(
         flow_arrangement,
         hot_outlet_temperature.map(kelvins),
         cold_outlet_temperature.map(kelvins),
+        false,
+        kelvins(1.0),
     )
     // **Two streams, which is this shape's contract**: the id's result carries the duty and the
     // rating beside them, and the stream-level call is what a connection carries.
@@ -207,6 +212,579 @@ pub fn pump_stream(
     azoth_process::kernels::pump(&feed.to_stream(), pascals(outlet_pressure), efficiency)
         .map(PyStream::from_inner)
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.pump` - the pump's kernel as a registered id.
+///
+/// **Hand-written, because the wrapper generator cannot derive a record slice that may be
+/// absent.** `process.pump` declares `curve` as an optional `record_list`; `gen_python_wrappers`
+/// refuses `Option<&[Row]>` and re-points the register here, so the row is built from the
+/// generated mapping by hand. Each field arrives as an SI magnitude, which is the rule every
+/// record field crosses by.
+#[pyfunction]
+#[pyo3(
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, curve = None, speed = None, reference_density = None, viscosity = None, use_viscosity_correction = None, check_npsh = None, npsh_margin = None)
+)]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, curve=None, speed=None, reference_density=None, viscosity=None, use_viscosity_correction=None, check_npsh=None, npsh_margin=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn pump(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    isentropic_efficiency: f64,
+    outlet_pressure: Option<f64>,
+    curve: Option<Vec<crate::records_gen::PumpCurvePoint>>,
+    speed: Option<f64>,
+    reference_density: Option<f64>,
+    viscosity: Option<f64>,
+    use_viscosity_correction: Option<bool>,
+    check_npsh: Option<bool>,
+    npsh_margin: Option<f64>,
+) -> PyResult<crate::transport_gen::PyPumpResult> {
+    let points: Option<Vec<azoth_process::models::pump::PumpCurvePoint>> = curve.map(|rows| {
+        rows.into_iter()
+            .map(|row| azoth_process::models::pump::PumpCurvePoint {
+                speed: row.speed,
+                flow: cubic_meters_per_second(row.flow),
+                head: meters(row.head),
+                efficiency: row.efficiency,
+                npsh_required: row.npsh_required.map(meters),
+            })
+            .collect()
+    });
+    azoth_process::pump(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        outlet_pressure.map(pascals),
+        isentropic_efficiency,
+        points.as_deref(),
+        speed,
+        reference_density.map(kilograms_per_cubic_meter),
+        viscosity.map(square_meters_per_second),
+        use_viscosity_correction,
+        check_npsh,
+        npsh_margin,
+    )
+    .map(|r| crate::transport_gen::PyPumpResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.filter` - the filter's kernel as a registered id.
+///
+/// **Hand-written, because two of its record slices may be absent.** `gen_python_wrappers`
+/// refuses `Option<&[Row]>`, and both `pressure_drop_curve` and `performance_curve` are
+/// optional; the rows are built from the generated mappings here.
+#[pyfunction]
+#[pyo3(
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model = None, reference_flow = None, flow_exponent = None, pressure_drop_curve = None, media_area = None, media_bed_depth = None, media_particle_diameter = None, media_void_fraction = None, viscosity = None, performance_curve = None, particle_size = None, nominal_removal_efficiency = None, inlet_particle_concentration = None, solids_loading = None, loading_capacity = None, pressure_drop_increase_at_capacity = None, breakthrough_start_fraction = None, bypass_cracking_pressure = None, terminal_pressure_drop = None, time_step = None, holdup_volume = None, solids_loading_rate = None, backwash_removal_rate = None, regeneration_removal_rate = None, backwash_active = None, regeneration_active = None, mechanical_design = None, filter_type = None, number_of_elements = None, max_face_velocity = None, element_area = None, max_nozzle_velocity = None, min_ld_ratio = None, max_ld_ratio = None, design_pressure_margin = None, minimum_design_pressure_margin = None, design_temperature_margin = None, allowable_stress = None, joint_efficiency = None, corrosion_allowance = None, element_collapse_pressure = None, element_integrity_verified = None)
+)]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop, pressure_drop_model=None, reference_flow=None, flow_exponent=None, pressure_drop_curve=None, media_area=None, media_bed_depth=None, media_particle_diameter=None, media_void_fraction=None, viscosity=None, performance_curve=None, particle_size=None, nominal_removal_efficiency=None, inlet_particle_concentration=None, solids_loading=None, loading_capacity=None, pressure_drop_increase_at_capacity=None, breakthrough_start_fraction=None, bypass_cracking_pressure=None, terminal_pressure_drop=None, time_step=None, holdup_volume=None, solids_loading_rate=None, backwash_removal_rate=None, regeneration_removal_rate=None, backwash_active=None, regeneration_active=None, mechanical_design=None, filter_type=None, number_of_elements=None, max_face_velocity=None, element_area=None, max_nozzle_velocity=None, min_ld_ratio=None, max_ld_ratio=None, design_pressure_margin=None, minimum_design_pressure_margin=None, design_temperature_margin=None, allowable_stress=None, joint_efficiency=None, corrosion_allowance=None, element_collapse_pressure=None, element_integrity_verified=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn filter(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    pressure_drop: f64,
+    pressure_drop_model: Option<&str>,
+    reference_flow: Option<f64>,
+    flow_exponent: Option<f64>,
+    pressure_drop_curve: Option<Vec<crate::records_gen::FilterDropPoint>>,
+    media_area: Option<f64>,
+    media_bed_depth: Option<f64>,
+    media_particle_diameter: Option<f64>,
+    media_void_fraction: Option<f64>,
+    viscosity: Option<f64>,
+    performance_curve: Option<Vec<crate::records_gen::FilterBetaPoint>>,
+    particle_size: Option<f64>,
+    nominal_removal_efficiency: Option<f64>,
+    inlet_particle_concentration: Option<f64>,
+    solids_loading: Option<f64>,
+    loading_capacity: Option<f64>,
+    pressure_drop_increase_at_capacity: Option<f64>,
+    breakthrough_start_fraction: Option<f64>,
+    bypass_cracking_pressure: Option<f64>,
+    terminal_pressure_drop: Option<f64>,
+    time_step: Option<f64>,
+    holdup_volume: Option<f64>,
+    solids_loading_rate: Option<f64>,
+    backwash_removal_rate: Option<f64>,
+    regeneration_removal_rate: Option<f64>,
+    backwash_active: Option<bool>,
+    regeneration_active: Option<bool>,
+    mechanical_design: Option<bool>,
+    filter_type: Option<&str>,
+    number_of_elements: Option<f64>,
+    max_face_velocity: Option<f64>,
+    element_area: Option<f64>,
+    max_nozzle_velocity: Option<f64>,
+    min_ld_ratio: Option<f64>,
+    max_ld_ratio: Option<f64>,
+    design_pressure_margin: Option<f64>,
+    minimum_design_pressure_margin: Option<f64>,
+    design_temperature_margin: Option<f64>,
+    allowable_stress: Option<f64>,
+    joint_efficiency: Option<f64>,
+    corrosion_allowance: Option<f64>,
+    element_collapse_pressure: Option<f64>,
+    element_integrity_verified: Option<bool>,
+) -> PyResult<crate::transport_gen::PyFilterResult> {
+    let drop_points: Option<Vec<azoth_process::models::filter::FilterDropPoint>> =
+        pressure_drop_curve.map(|rows| {
+            rows.into_iter()
+                .map(|row| azoth_process::models::filter::FilterDropPoint {
+                    flow: cubic_meters_per_second(row.flow),
+                    drop: pascals(row.drop),
+                })
+                .collect()
+        });
+    let beta_points: Option<Vec<azoth_process::models::filter::FilterBetaPoint>> =
+        performance_curve.map(|rows| {
+            rows.into_iter()
+                .map(|row| azoth_process::models::filter::FilterBetaPoint {
+                    particle_size: meters(row.particle_size),
+                    beta_ratio: row.beta_ratio,
+                })
+                .collect()
+        });
+    azoth_process::filter(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        pascals(pressure_drop),
+        pressure_drop_model,
+        reference_flow.map(cubic_meters_per_second),
+        flow_exponent,
+        drop_points.as_deref(),
+        media_area.map(square_meters),
+        media_bed_depth.map(meters),
+        media_particle_diameter.map(meters),
+        media_void_fraction,
+        viscosity.map(pascal_seconds),
+        beta_points.as_deref(),
+        particle_size.map(meters),
+        nominal_removal_efficiency,
+        inlet_particle_concentration,
+        solids_loading.map(kilograms),
+        loading_capacity.map(kilograms),
+        pressure_drop_increase_at_capacity.map(pascals),
+        breakthrough_start_fraction,
+        bypass_cracking_pressure.map(pascals),
+        terminal_pressure_drop.map(pascals),
+        time_step.map(seconds),
+        holdup_volume.map(cubic_meters),
+        solids_loading_rate.map(kilograms_per_second),
+        backwash_removal_rate.map(kilograms_per_second),
+        regeneration_removal_rate.map(kilograms_per_second),
+        backwash_active,
+        regeneration_active,
+        mechanical_design,
+        filter_type,
+        number_of_elements,
+        max_face_velocity.map(meters_per_second),
+        element_area.map(square_meters),
+        max_nozzle_velocity.map(meters_per_second),
+        min_ld_ratio,
+        max_ld_ratio,
+        design_pressure_margin,
+        minimum_design_pressure_margin.map(pascals),
+        design_temperature_margin.map(kelvin_intervals),
+        allowable_stress.map(pascals),
+        joint_efficiency,
+        corrosion_allowance.map(meters),
+        element_collapse_pressure.map(pascals),
+        element_integrity_verified,
+    )
+    .map(|r| crate::transport_gen::PyFilterResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.pipe` - the line's kernel as a registered id.
+///
+/// **Hand-written, because `fittings` is an optional record slice** the wrapper generator
+/// refuses; the row is built from the generated mapping here.
+#[pyfunction]
+#[pyo3(
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, roughness, fittings = None, outlet_pressure = None, correlation = None, number_of_increments = None, elevation = None)
+)]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, roughness, fittings=None, outlet_pressure=None, correlation=None, number_of_increments=None, elevation=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn pipe(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    length: f64,
+    diameter: f64,
+    roughness: f64,
+    fittings: Option<Vec<crate::records_gen::PipeFitting>>,
+    outlet_pressure: Option<f64>,
+    correlation: Option<&str>,
+    number_of_increments: Option<usize>,
+    elevation: Option<f64>,
+) -> PyResult<crate::transport_gen::PyPipeResult> {
+    let rows: Option<Vec<azoth_process::models::pipe::PipeFitting>> = fittings.map(|rows| {
+        rows.into_iter()
+            .map(|row| azoth_process::models::pipe::PipeFitting {
+                ld_ratio: row.ld_ratio,
+                count: row.count,
+            })
+            .collect()
+    });
+    azoth_process::pipe(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        meters(length),
+        meters(diameter),
+        meters(roughness),
+        rows.as_deref(),
+        outlet_pressure.map(pascals),
+        correlation,
+        number_of_increments,
+        elevation.map(meters),
+    )
+    .map(|r| crate::transport_gen::PyPipeResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.compressor` - the machine's kernel as a registered id.
+///
+/// **Hand-written, because `curve` is an optional record slice** the wrapper generator
+/// refuses; the row is built from the generated mapping here.
+#[pyfunction]
+#[pyo3(
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, use_polytropic_calc = None, polytropic_efficiency = None, polytropic_method = None, compression_ratio = None, max_outlet_pressure = None, power = None, deposit = None, wetted_area = None, passage_half_height = None, curve = None, speed = None, solve_speed = None, min_speed = None, max_speed = None, limit_speed = None, chart_type = None, chart_conditions = None, impeller_diameter = None, surge_curve = None, surge_control_margin = None, anti_surge_active = None, surge_control_factor = None)
+)]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, use_polytropic_calc=None, polytropic_efficiency=None, polytropic_method=None, compression_ratio=None, max_outlet_pressure=None, power=None, deposit=None, wetted_area=None, passage_half_height=None, curve=None, speed=None, solve_speed=None, min_speed=None, max_speed=None, limit_speed=None, chart_type=None, chart_conditions=None, impeller_diameter=None, surge_curve=None, surge_control_margin=None, anti_surge_active=None, surge_control_factor=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn compressor(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    isentropic_efficiency: f64,
+    outlet_pressure: Option<f64>,
+    use_polytropic_calc: Option<bool>,
+    polytropic_efficiency: Option<f64>,
+    polytropic_method: Option<&str>,
+    compression_ratio: Option<f64>,
+    max_outlet_pressure: Option<f64>,
+    power: Option<f64>,
+    deposit: Option<Vec<crate::records_gen::DepositMass>>,
+    wetted_area: Option<f64>,
+    passage_half_height: Option<f64>,
+    curve: Option<Vec<crate::records_gen::CompressorCurvePoint>>,
+    speed: Option<f64>,
+    solve_speed: Option<bool>,
+    min_speed: Option<f64>,
+    max_speed: Option<f64>,
+    limit_speed: Option<bool>,
+    chart_type: Option<&str>,
+    chart_conditions: Option<Vec<f64>>,
+    impeller_diameter: Option<f64>,
+    surge_curve: Option<Vec<crate::records_gen::CompressorSurgePoint>>,
+    surge_control_margin: Option<f64>,
+    anti_surge_active: Option<bool>,
+    surge_control_factor: Option<f64>,
+) -> PyResult<crate::transport_gen::PyCompressorResult> {
+    let deposit_rows: Option<Vec<azoth_process::models::compressor::DepositMass>> =
+        deposit.map(|rows| {
+            rows.into_iter()
+                .map(|row| azoth_process::models::compressor::DepositMass {
+                    mechanism: row.mechanism,
+                    mass: kilograms(row.mass),
+                })
+                .collect()
+        });
+    let points: Option<Vec<azoth_process::models::compressor::CompressorCurvePoint>> =
+        curve.map(|rows| {
+            rows.into_iter()
+                .map(
+                    |row| azoth_process::models::compressor::CompressorCurvePoint {
+                        speed: row.speed,
+                        flow: cubic_meters_per_second(row.flow),
+                        head: meters(row.head),
+                        efficiency: row.efficiency,
+                    },
+                )
+                .collect()
+        });
+    let surge: Option<Vec<azoth_process::models::compressor::CompressorSurgePoint>> = surge_curve
+        .map(|rows| {
+            rows.into_iter()
+                .map(
+                    |row| azoth_process::models::compressor::CompressorSurgePoint {
+                        flow: cubic_meters_per_second(row.flow),
+                        head: meters(row.head),
+                    },
+                )
+                .collect()
+        });
+    azoth_process::compressor(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        outlet_pressure.map(pascals),
+        isentropic_efficiency,
+        use_polytropic_calc,
+        polytropic_efficiency,
+        polytropic_method,
+        compression_ratio,
+        max_outlet_pressure.map(pascals),
+        power.map(watts),
+        deposit_rows.as_deref(),
+        wetted_area.map(meters),
+        passage_half_height.map(meters),
+        points.as_deref(),
+        speed,
+        solve_speed,
+        min_speed,
+        max_speed,
+        limit_speed,
+        chart_type,
+        chart_conditions.as_deref(),
+        impeller_diameter.map(meters),
+        surge.as_deref(),
+        surge_control_margin,
+        anti_surge_active,
+        surge_control_factor,
+    )
+    .map(|r| crate::transport_gen::PyCompressorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.turbo_expander_compressor` - the coupled machine as a registered id.
+///
+/// **Hand-written, because four of its inputs are optional record slices** the wrapper
+/// generator refuses; each row is built from the generated mapping here.
+#[pyfunction]
+#[pyo3(
+    signature = (expander_components, compressor_components, expander_n, expander_z, expander_p, expander_t, compressor_n, compressor_z, compressor_p, compressor_t, expander_out_pressure, impeller_diameter, design_speed, design_uc, design_qn, igv_opening = None, igv_control_mode = None, maximum_igv_area = None, igv_area_increase_factor = None, bearing_loss = None, expander_design_isentropic_efficiency = None, compressor_design_polytropic_efficiency = None, compressor_design_polytropic_head = None, expander_out_temperature = None, uc_curve = None, qn_efficiency_curve = None, qn_head_curve = None, chart = None, igv_penalty_curve = None)
+)]
+#[pyo3(
+    text_signature = "(expander_components, compressor_components, expander_n, expander_z, expander_p, expander_t, compressor_n, compressor_z, compressor_p, compressor_t, expander_out_pressure, impeller_diameter, design_speed, design_uc, design_qn, igv_opening=None, igv_control_mode=None, maximum_igv_area=None, igv_area_increase_factor=None, bearing_loss=None, expander_design_isentropic_efficiency=None, compressor_design_polytropic_efficiency=None, compressor_design_polytropic_head=None, expander_out_temperature=None, uc_curve=None, qn_efficiency_curve=None, qn_head_curve=None, chart=None, igv_penalty_curve=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn turbo_expander_compressor(
+    py: Python<'_>,
+    expander_components: Vec<String>,
+    compressor_components: Vec<String>,
+    expander_n: f64,
+    expander_z: Vec<f64>,
+    expander_p: f64,
+    expander_t: f64,
+    compressor_n: f64,
+    compressor_z: Vec<f64>,
+    compressor_p: f64,
+    compressor_t: f64,
+    expander_out_pressure: f64,
+    impeller_diameter: f64,
+    design_speed: f64,
+    design_uc: f64,
+    design_qn: f64,
+    igv_opening: Option<f64>,
+    igv_control_mode: Option<bool>,
+    maximum_igv_area: Option<f64>,
+    igv_area_increase_factor: Option<f64>,
+    bearing_loss: Option<f64>,
+    expander_design_isentropic_efficiency: Option<f64>,
+    compressor_design_polytropic_efficiency: Option<f64>,
+    compressor_design_polytropic_head: Option<f64>,
+    expander_out_temperature: Option<f64>,
+    uc_curve: Option<Vec<crate::records_gen::TurboUcPoint>>,
+    qn_efficiency_curve: Option<Vec<crate::records_gen::TurboQnPoint>>,
+    qn_head_curve: Option<Vec<crate::records_gen::TurboQnPoint>>,
+    chart: Option<Vec<crate::records_gen::ExpanderMapPoint>>,
+    igv_penalty_curve: Option<Vec<crate::records_gen::TurboIgvPenaltyPoint>>,
+) -> PyResult<crate::transport_gen::PyTurboExpanderResult> {
+    use azoth_process::models::turbo_expander_compressor::{
+        ExpanderMapPoint, TurboIgvPenaltyPoint, TurboQnPoint, TurboUcPoint,
+    };
+
+    let uc: Option<Vec<TurboUcPoint>> = uc_curve.map(|rows| {
+        rows.into_iter()
+            .map(|row| TurboUcPoint {
+                uc: row.uc,
+                efficiency: row.efficiency,
+            })
+            .collect()
+    });
+    let qn_efficiency: Option<Vec<TurboQnPoint>> = qn_efficiency_curve.map(|rows| {
+        rows.into_iter()
+            .map(|row| TurboQnPoint {
+                qn: row.qn,
+                factor: row.factor,
+            })
+            .collect()
+    });
+    let qn_head: Option<Vec<TurboQnPoint>> = qn_head_curve.map(|rows| {
+        rows.into_iter()
+            .map(|row| TurboQnPoint {
+                qn: row.qn,
+                factor: row.factor,
+            })
+            .collect()
+    });
+    let map: Option<Vec<ExpanderMapPoint>> = chart.map(|rows| {
+        rows.into_iter()
+            .map(|row| ExpanderMapPoint {
+                igv: row.igv,
+                uc: row.uc,
+                efficiency: row.efficiency,
+            })
+            .collect()
+    });
+    let penalty: Option<Vec<TurboIgvPenaltyPoint>> = igv_penalty_curve.map(|rows| {
+        rows.into_iter()
+            .map(|row| TurboIgvPenaltyPoint {
+                igv: row.igv,
+                factor: row.factor,
+            })
+            .collect()
+    });
+
+    azoth_process::turbo_expander_compressor(
+        &expander_components,
+        expander_n,
+        &expander_z,
+        pascals(expander_p),
+        kelvins(expander_t),
+        &compressor_components,
+        compressor_n,
+        &compressor_z,
+        pascals(compressor_p),
+        kelvins(compressor_t),
+        pascals(expander_out_pressure),
+        meters(impeller_diameter),
+        design_speed,
+        design_uc,
+        design_qn,
+        igv_opening,
+        igv_control_mode,
+        maximum_igv_area.map(square_meters),
+        igv_area_increase_factor,
+        bearing_loss.map(watts),
+        expander_design_isentropic_efficiency,
+        compressor_design_polytropic_efficiency,
+        compressor_design_polytropic_head.map(meters),
+        expander_out_temperature.map(kelvins),
+        uc.as_deref(),
+        qn_efficiency.as_deref(),
+        qn_head.as_deref(),
+        map.as_deref(),
+        penalty.as_deref(),
+    )
+    .map(|r| crate::transport_gen::PyTurboExpanderResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.map_turbo_expander_compressor` - the map-based single shaft as a registered id.
+///
+/// **Hand-written, because `curve` is an optional record slice** the wrapper generator
+/// refuses; the row is built from the generated mapping here.
+#[pyfunction]
+#[pyo3(
+    signature = (expander_components, compressor_components, expander_n, expander_z, expander_p, expander_t, compressor_n, compressor_z, compressor_p, compressor_t, expander_out_pressure, expander_isentropic_efficiency, shaft_mode = None, mechanical_efficiency = None, bearing_loss = None, compressor_outlet_pressure = None, compressor_isentropic_efficiency = None, compressor_speed = None, min_shaft_speed = None, max_shaft_speed = None, curve = None, chart_type = None, chart_conditions = None, impeller_diameter = None)
+)]
+#[pyo3(
+    text_signature = "(expander_components, compressor_components, expander_n, expander_z, expander_p, expander_t, compressor_n, compressor_z, compressor_p, compressor_t, expander_out_pressure, expander_isentropic_efficiency, shaft_mode=None, mechanical_efficiency=None, bearing_loss=None, compressor_outlet_pressure=None, compressor_isentropic_efficiency=None, compressor_speed=None, min_shaft_speed=None, max_shaft_speed=None, curve=None, chart_type=None, chart_conditions=None, impeller_diameter=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn map_turbo_expander_compressor(
+    py: Python<'_>,
+    expander_components: Vec<String>,
+    compressor_components: Vec<String>,
+    expander_n: f64,
+    expander_z: Vec<f64>,
+    expander_p: f64,
+    expander_t: f64,
+    compressor_n: f64,
+    compressor_z: Vec<f64>,
+    compressor_p: f64,
+    compressor_t: f64,
+    expander_out_pressure: f64,
+    expander_isentropic_efficiency: f64,
+    shaft_mode: Option<&str>,
+    mechanical_efficiency: Option<f64>,
+    bearing_loss: Option<f64>,
+    compressor_outlet_pressure: Option<f64>,
+    compressor_isentropic_efficiency: Option<f64>,
+    compressor_speed: Option<f64>,
+    min_shaft_speed: Option<f64>,
+    max_shaft_speed: Option<f64>,
+    curve: Option<Vec<crate::records_gen::MapCurvePoint>>,
+    chart_type: Option<&str>,
+    chart_conditions: Option<Vec<f64>>,
+    impeller_diameter: Option<f64>,
+) -> PyResult<crate::transport_gen::PyMapTurboExpanderResult> {
+    let points: Option<Vec<azoth_process::models::map_turbo_expander_compressor::MapCurvePoint>> =
+        curve.map(|rows| {
+            rows.into_iter()
+                .map(
+                    |row| azoth_process::models::map_turbo_expander_compressor::MapCurvePoint {
+                        speed: row.speed,
+                        flow: cubic_meters_per_second(row.flow),
+                        head: meters(row.head),
+                        efficiency: row.efficiency,
+                    },
+                )
+                .collect()
+        });
+    azoth_process::map_turbo_expander_compressor(
+        &expander_components,
+        expander_n,
+        &expander_z,
+        pascals(expander_p),
+        kelvins(expander_t),
+        &compressor_components,
+        compressor_n,
+        &compressor_z,
+        pascals(compressor_p),
+        kelvins(compressor_t),
+        pascals(expander_out_pressure),
+        expander_isentropic_efficiency,
+        shaft_mode,
+        mechanical_efficiency,
+        bearing_loss.map(watts),
+        compressor_outlet_pressure.map(pascals),
+        compressor_isentropic_efficiency,
+        compressor_speed,
+        min_shaft_speed,
+        max_shaft_speed,
+        points.as_deref(),
+        chart_type,
+        chart_conditions.as_deref(),
+        impeller_diameter.map(meters),
+    )
+    .map(|r| crate::transport_gen::PyMapTurboExpanderResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// `process.absorption_column` - the tray absorber as a registered id.
@@ -452,12 +1030,12 @@ pub fn stripping_column(
 // **The two component lists lead, and the rest follow in the spec's order**, which is
 // what `tools/gen_stub.py` emits: it writes every fluid the model names before the
 // declared inputs, so a signature that interleaved them would be a stub that lies.
-#[pyo3(signature = (hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua = None, hot_outlet_temperature = None, cold_outlet_temperature = None))]
+#[pyo3(signature = (hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua = None, hot_outlet_temperature = None, cold_outlet_temperature = None, use_delta_t = None, delta_t = None, guess_out_temperature = None, mechanical_design = None, mechanical_type = None, mechanical_selection = None, use_rating_pressure_drop = None, rating_area = None, rating_tube_side = None, rating_tube_outside_diameter = None, rating_tube_inside_diameter = None, rating_tube_length = None, rating_tube_count = None, rating_tube_passes = None, rating_tube_pitch = None, rating_triangular_pitch = None, rating_shell_inside_diameter = None, rating_baffle_spacing = None, rating_baffle_count = None, rating_baffle_cut = None, rating_tube_wall_conductivity = None, rating_fouling_tube = None, rating_fouling_shell = None, rating_tube_fouling_layer_thickness = None, rating_tube_fouling_layer_conductivity = None, rating_shell_side_method = None, rating_shell_viscosity_wall = None, rating_has_sealing = None, rating_sealing_pairs = None, rating_tube_to_baffle_clearance = None, rating_shell_to_baffle_clearance = None, rating_bypass_area = None, time_step = None, dynamic_model_enabled = None, transient_tube_side = None, wall_mass = None, wall_cp = None, wall_temperature = None, shell_holdup_volume = None, tube_holdup_volume = None, shell_side_htc = None, tube_side_htc = None, heat_transfer_area = None, shell_fluid_temperature = None, tube_fluid_temperature = None))]
 #[pyo3(
-    text_signature = "(hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua=None, hot_outlet_temperature=None, cold_outlet_temperature=None)"
+    text_signature = "(hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua=None, hot_outlet_temperature=None, cold_outlet_temperature=None, use_delta_t=None, delta_t=None, guess_out_temperature=None, mechanical_design=None, mechanical_type=None, mechanical_selection=None, use_rating_pressure_drop=None, rating_area=None, rating_tube_side=None, rating_tube_outside_diameter=None, rating_tube_inside_diameter=None, rating_tube_length=None, rating_tube_count=None, rating_tube_passes=None, rating_tube_pitch=None, rating_triangular_pitch=None, rating_shell_inside_diameter=None, rating_baffle_spacing=None, rating_baffle_count=None, rating_baffle_cut=None, rating_tube_wall_conductivity=None, rating_fouling_tube=None, rating_fouling_shell=None, rating_tube_fouling_layer_thickness=None, rating_tube_fouling_layer_conductivity=None, rating_shell_side_method=None, rating_shell_viscosity_wall=None, rating_has_sealing=None, rating_sealing_pairs=None, rating_tube_to_baffle_clearance=None, rating_shell_to_baffle_clearance=None, rating_bypass_area=None, time_step=None, dynamic_model_enabled=None, transient_tube_side=None, wall_mass=None, wall_cp=None, wall_temperature=None, shell_holdup_volume=None, tube_holdup_volume=None, shell_side_htc=None, tube_side_htc=None, heat_transfer_area=None, shell_fluid_temperature=None, tube_fluid_temperature=None)"
 )]
 #[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are fourteen
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are seventeen
 pub fn heat_exchanger(
     py: Python<'_>,
     hot_components: Vec<String>,
@@ -474,6 +1052,51 @@ pub fn heat_exchanger(
     ua: Option<f64>,
     hot_outlet_temperature: Option<f64>,
     cold_outlet_temperature: Option<f64>,
+    use_delta_t: Option<bool>,
+    delta_t: Option<f64>,
+    guess_out_temperature: Option<f64>,
+    mechanical_design: Option<bool>,
+    mechanical_type: Option<&str>,
+    mechanical_selection: Option<&str>,
+    use_rating_pressure_drop: Option<bool>,
+    rating_area: Option<f64>,
+    rating_tube_side: Option<&str>,
+    rating_tube_outside_diameter: Option<f64>,
+    rating_tube_inside_diameter: Option<f64>,
+    rating_tube_length: Option<f64>,
+    rating_tube_count: Option<f64>,
+    rating_tube_passes: Option<f64>,
+    rating_tube_pitch: Option<f64>,
+    rating_triangular_pitch: Option<bool>,
+    rating_shell_inside_diameter: Option<f64>,
+    rating_baffle_spacing: Option<f64>,
+    rating_baffle_count: Option<f64>,
+    rating_baffle_cut: Option<f64>,
+    rating_tube_wall_conductivity: Option<f64>,
+    rating_fouling_tube: Option<f64>,
+    rating_fouling_shell: Option<f64>,
+    rating_tube_fouling_layer_thickness: Option<f64>,
+    rating_tube_fouling_layer_conductivity: Option<f64>,
+    rating_shell_side_method: Option<&str>,
+    rating_shell_viscosity_wall: Option<f64>,
+    rating_has_sealing: Option<bool>,
+    rating_sealing_pairs: Option<f64>,
+    rating_tube_to_baffle_clearance: Option<f64>,
+    rating_shell_to_baffle_clearance: Option<f64>,
+    rating_bypass_area: Option<f64>,
+    time_step: Option<f64>,
+    dynamic_model_enabled: Option<bool>,
+    transient_tube_side: Option<&str>,
+    wall_mass: Option<f64>,
+    wall_cp: Option<f64>,
+    wall_temperature: Option<f64>,
+    shell_holdup_volume: Option<f64>,
+    tube_holdup_volume: Option<f64>,
+    shell_side_htc: Option<f64>,
+    tube_side_htc: Option<f64>,
+    heat_transfer_area: Option<f64>,
+    shell_fluid_temperature: Option<f64>,
+    tube_fluid_temperature: Option<f64>,
 ) -> PyResult<crate::transport_gen::PyHeatExchangerResult> {
     azoth_process::heat_exchanger(
         &hot_components,
@@ -490,6 +1113,51 @@ pub fn heat_exchanger(
         flow_arrangement,
         hot_outlet_temperature.map(kelvins),
         cold_outlet_temperature.map(kelvins),
+        use_delta_t,
+        delta_t.map(kelvins),
+        guess_out_temperature.map(kelvins),
+        mechanical_design,
+        mechanical_type,
+        mechanical_selection,
+        use_rating_pressure_drop,
+        rating_area.map(square_meters),
+        rating_tube_side,
+        rating_tube_outside_diameter.map(meters),
+        rating_tube_inside_diameter.map(meters),
+        rating_tube_length.map(meters),
+        rating_tube_count,
+        rating_tube_passes,
+        rating_tube_pitch.map(meters),
+        rating_triangular_pitch,
+        rating_shell_inside_diameter.map(meters),
+        rating_baffle_spacing.map(meters),
+        rating_baffle_count,
+        rating_baffle_cut,
+        rating_tube_wall_conductivity.map(watts_per_meter_kelvin),
+        rating_fouling_tube,
+        rating_fouling_shell,
+        rating_tube_fouling_layer_thickness.map(meters),
+        rating_tube_fouling_layer_conductivity.map(watts_per_meter_kelvin),
+        rating_shell_side_method,
+        rating_shell_viscosity_wall.map(pascal_seconds),
+        rating_has_sealing,
+        rating_sealing_pairs,
+        rating_tube_to_baffle_clearance.map(meters),
+        rating_shell_to_baffle_clearance.map(meters),
+        rating_bypass_area.map(square_meters),
+        time_step.map(seconds),
+        dynamic_model_enabled,
+        transient_tube_side,
+        wall_mass.map(kilograms),
+        wall_cp.map(joules_per_kilogram_kelvin),
+        wall_temperature.map(kelvins),
+        shell_holdup_volume.map(cubic_meters),
+        tube_holdup_volume.map(cubic_meters),
+        shell_side_htc.map(watts_per_square_meter_kelvin),
+        tube_side_htc.map(watts_per_square_meter_kelvin),
+        heat_transfer_area.map(square_meters),
+        shell_fluid_temperature.map(kelvins),
+        tube_fluid_temperature.map(kelvins),
     )
     .map(|r| crate::transport_gen::PyHeatExchangerResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
@@ -502,11 +1170,11 @@ pub fn heat_exchanger(
 /// pressure drop are all `run`'s own, and a kernel that took none of them could only be a
 /// pass-through.
 #[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, reaction, limiting_reactant, conversion, isothermal, reactor_temperature = None, reactor_pressure = None, pressure_drop = None))]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, reaction, limiting_reactant, conversion, isothermal, reactor_temperature = None, reactor_pressure = None, pressure_drop = None, vessel_volume = None, residence_time = None, agitator_power_per_volume = None))]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, reaction, limiting_reactant, conversion, isothermal, reactor_temperature=None, reactor_pressure=None, pressure_drop=None)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, reaction, limiting_reactant, conversion, isothermal, reactor_temperature=None, reactor_pressure=None, pressure_drop=None, vessel_volume=None, residence_time=None, agitator_power_per_volume=None)"
 )]
-#[allow(clippy::too_many_arguments)] // one argument per declared input, and there are twelve
+#[allow(clippy::too_many_arguments)] // one argument per declared input, and there are fifteen
 pub fn stirred_tank_reactor(
     py: Python<'_>,
     components: Vec<String>,
@@ -521,6 +1189,9 @@ pub fn stirred_tank_reactor(
     reactor_temperature: Option<f64>,
     reactor_pressure: Option<f64>,
     pressure_drop: Option<f64>,
+    vessel_volume: Option<f64>,
+    residence_time: Option<f64>,
+    agitator_power_per_volume: Option<f64>,
 ) -> PyResult<crate::transport_gen::PyStirredTankReactorResult> {
     azoth_process::stirred_tank_reactor(
         &components,
@@ -535,6 +1206,9 @@ pub fn stirred_tank_reactor(
         reactor_temperature.map(kelvins),
         reactor_pressure.map(pascals),
         pascals(pressure_drop.unwrap_or(0.0)),
+        vessel_volume.map(cubic_meters),
+        residence_time.map(hours),
+        agitator_power_per_volume.map(watts_per_cubic_meter),
     )
     .map(|r| crate::transport_gen::PyStirredTankReactorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
@@ -926,5 +1600,165 @@ pub fn rate_based_packed_column(
         column_solver,
     )
     .map(|out| crate::transport_gen::PyRateBasedPackedColumnResult::from(&out))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.separator_performance` - the droplet-based calculator as a registered id.
+///
+/// **Hand-written, because the two configured curves are optional record slices** the wrapper
+/// generator refuses; the rows are built from the generated mapping here.
+#[pyfunction]
+#[pyo3(signature = (
+    gas_density, oil_density, water_density, gas_viscosity, oil_viscosity, water_viscosity,
+    gas_velocity, vessel_diameter, vessel_length, orientation, liquid_level_fraction,
+    mist_position = None, weir_position = None,
+    gas_liquid_distribution = None, gas_liquid_characteristic_diameter = None,
+    gas_liquid_spread = None, gas_bubble_distribution = None,
+    gas_bubble_characteristic_diameter = None, gas_bubble_spread = None,
+    oil_in_water_distribution = None, oil_in_water_characteristic_diameter = None,
+    oil_in_water_spread = None, water_in_oil_distribution = None,
+    water_in_oil_characteristic_diameter = None, water_in_oil_spread = None,
+    mist_eliminator = None, mist_eliminator_cut_diameter = None,
+    mist_eliminator_sharpness = None, mist_eliminator_max_efficiency = None,
+    mist_eliminator_points = None, oil_water_coalescer = None,
+    oil_water_coalescer_cut_diameter = None, oil_water_coalescer_max_efficiency = None,
+    oil_water_coalescer_points = None, include_gravity_section = None,
+    liquid_in_gas_calibration_factor = None, gas_carry_under_calibration_factor = None,
+    liquid_liquid_calibration_factor = None, enhanced = None,
+    inlet_pipe_diameter = None, surface_tension = None,
+    oil_water_interfacial_tension = None, oil_volume_fraction = None,
+    apply_turbulence_correction = None, inlet_device = None,
+    override_bulk_efficiency = None, override_dsd_multiplier = None,
+    design_k_factor = None,
+    liquid_liquid_residence_time = None
+))]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn separator_performance(
+    py: Python<'_>,
+    gas_density: f64,
+    oil_density: f64,
+    water_density: f64,
+    gas_viscosity: f64,
+    oil_viscosity: f64,
+    water_viscosity: f64,
+    gas_velocity: f64,
+    vessel_diameter: f64,
+    vessel_length: f64,
+    orientation: &str,
+    liquid_level_fraction: f64,
+    mist_position: Option<f64>,
+    weir_position: Option<f64>,
+    gas_liquid_distribution: Option<&str>,
+    gas_liquid_characteristic_diameter: Option<f64>,
+    gas_liquid_spread: Option<f64>,
+    gas_bubble_distribution: Option<&str>,
+    gas_bubble_characteristic_diameter: Option<f64>,
+    gas_bubble_spread: Option<f64>,
+    oil_in_water_distribution: Option<&str>,
+    oil_in_water_characteristic_diameter: Option<f64>,
+    oil_in_water_spread: Option<f64>,
+    water_in_oil_distribution: Option<&str>,
+    water_in_oil_characteristic_diameter: Option<f64>,
+    water_in_oil_spread: Option<f64>,
+    mist_eliminator: Option<&str>,
+    mist_eliminator_cut_diameter: Option<f64>,
+    mist_eliminator_sharpness: Option<f64>,
+    mist_eliminator_max_efficiency: Option<f64>,
+    mist_eliminator_points: Option<Vec<crate::records_gen::EfficiencyPoint>>,
+    oil_water_coalescer: Option<&str>,
+    oil_water_coalescer_cut_diameter: Option<f64>,
+    oil_water_coalescer_max_efficiency: Option<f64>,
+    oil_water_coalescer_points: Option<Vec<crate::records_gen::EfficiencyPoint>>,
+    include_gravity_section: Option<bool>,
+    liquid_in_gas_calibration_factor: Option<f64>,
+    gas_carry_under_calibration_factor: Option<f64>,
+    liquid_liquid_calibration_factor: Option<f64>,
+    enhanced: Option<bool>,
+    inlet_pipe_diameter: Option<f64>,
+    surface_tension: Option<f64>,
+    oil_water_interfacial_tension: Option<f64>,
+    oil_volume_fraction: Option<f64>,
+    apply_turbulence_correction: Option<bool>,
+    inlet_device: Option<&str>,
+    override_bulk_efficiency: Option<f64>,
+    override_dsd_multiplier: Option<f64>,
+    design_k_factor: Option<f64>,
+    liquid_liquid_residence_time: Option<f64>,
+) -> PyResult<crate::transport_gen::PySeparatorPerformanceResult> {
+    let mist_points: Option<Vec<azoth_process::models::separator_performance::EfficiencyPoint>> =
+        mist_eliminator_points.map(|rows| {
+            rows.into_iter()
+                .map(
+                    |row| azoth_process::models::separator_performance::EfficiencyPoint {
+                        diameter: meters(row.diameter),
+                        efficiency: row.efficiency,
+                    },
+                )
+                .collect()
+        });
+    let coalescer_points: Option<
+        Vec<azoth_process::models::separator_performance::EfficiencyPoint>,
+    > = oil_water_coalescer_points.map(|rows| {
+        rows.into_iter()
+            .map(
+                |row| azoth_process::models::separator_performance::EfficiencyPoint {
+                    diameter: meters(row.diameter),
+                    efficiency: row.efficiency,
+                },
+            )
+            .collect()
+    });
+    azoth_process::separator_performance(
+        kilograms_per_cubic_meter(gas_density),
+        kilograms_per_cubic_meter(oil_density),
+        kilograms_per_cubic_meter(water_density),
+        pascal_seconds(gas_viscosity),
+        pascal_seconds(oil_viscosity),
+        pascal_seconds(water_viscosity),
+        meters_per_second(gas_velocity),
+        meters(vessel_diameter),
+        meters(vessel_length),
+        orientation,
+        liquid_level_fraction,
+        mist_position,
+        weir_position,
+        gas_liquid_distribution,
+        gas_liquid_characteristic_diameter.map(meters),
+        gas_liquid_spread,
+        gas_bubble_distribution,
+        gas_bubble_characteristic_diameter.map(meters),
+        gas_bubble_spread,
+        oil_in_water_distribution,
+        oil_in_water_characteristic_diameter.map(meters),
+        oil_in_water_spread,
+        water_in_oil_distribution,
+        water_in_oil_characteristic_diameter.map(meters),
+        water_in_oil_spread,
+        mist_eliminator,
+        mist_eliminator_cut_diameter.map(meters),
+        mist_eliminator_sharpness,
+        mist_eliminator_max_efficiency,
+        mist_points.as_deref(),
+        oil_water_coalescer,
+        oil_water_coalescer_cut_diameter.map(meters),
+        oil_water_coalescer_max_efficiency,
+        coalescer_points.as_deref(),
+        include_gravity_section,
+        liquid_in_gas_calibration_factor,
+        gas_carry_under_calibration_factor,
+        liquid_liquid_calibration_factor,
+        enhanced,
+        inlet_pipe_diameter.map(meters),
+        surface_tension,
+        oil_water_interfacial_tension,
+        oil_volume_fraction,
+        apply_turbulence_correction,
+        inlet_device,
+        override_bulk_efficiency,
+        override_dsd_multiplier,
+        design_k_factor.map(meters_per_second),
+        liquid_liquid_residence_time.map(seconds),
+    )
+    .map(|r| crate::transport_gen::PySeparatorPerformanceResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }

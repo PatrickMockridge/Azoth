@@ -4,6 +4,8 @@
 
 `eos.rackett_molar_volume`
 
+Saturated liquid molar volume from the Rackett equation. Use it for liquid density estimates when critical properties and an acentric factor are known.
+
 ## Equation
 
 $$
@@ -23,6 +25,14 @@ v = (R*Tc/Pc)*Z_RA**(1 + (1 - Tr)**(2/7)),  Z_RA = 0.29056 - 0.08775*omega
 Improved equation for prediction of saturated liquid density. J. Chem. Eng. Data, 17(2), 236-241
 
 DOI: [10.1021/je60053a012](https://doi.org/10.1021/je60053a012)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- `R` is the exact molar gas constant from the 2019 SI definition, the same value `eos.pr_molar_volume` uses.
+
 
 ## Inputs
 
@@ -50,7 +60,7 @@ DOI: [10.1021/je60053a012](https://doi.org/10.1021/je60053a012)
 | `T > 0` | raises | An absolute temperature; zero and below are not states. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
@@ -59,8 +69,6 @@ satisfy for the result to mean what it says.
 - the acentric factor, critical temperature and critical pressure are those of the component intended. NOT CHECKED - all three come from the caller.
 
 - `Z_RA` is the Yamada-Gunn correlation `0.29056 - 0.08775*omega`; this library ships no databank Rackett Z, so the correlation is the whole value.
-
-- `R` is the exact molar gas constant from the 2019 SI definition, the same value `eos.pr_molar_volume` uses.
 
 - the volume is the *saturated liquid* molar volume; it is not corrected for compression above the vapour pressure.
 

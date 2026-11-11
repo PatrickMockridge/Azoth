@@ -202,6 +202,16 @@ class SpecChecks:
         return self.on_input + self.derived
 
 
+#: Parsed checks, keyed by the identity of the spec mapping.
+#:
+#: **The generated specs are module-level constants and are never mutated.** Every inner EOS
+#: kernel re-asks for its spec's checks, and parsing the same prose millions of times was
+#: measured at roughly 60% of the HEM reference's cost. The key is `id` because a mapping is
+#: unhashable, and the entry holds the mapping itself so the id cannot be recycled while it is
+#: cached. A test that edits a spec must copy it (a new id) rather than mutate it in place.
+_CHECKS: dict[int, tuple[Mapping[str, Any], SpecChecks]] = {}
+
+
 def checks_for(spec: Mapping[str, Any]) -> SpecChecks:
     """Split a spec's ``valid_range`` into input and derived checks.
 
@@ -210,7 +220,21 @@ def checks_for(spec: Mapping[str, Any]) -> SpecChecks:
     :func:`apply_checks`, which takes one value per quantity - has an empty block and a spec that
     is still valid. Reading the key directly made the first such model raise `KeyError` here
     while the Rust side, which emits an empty check list, ran it happily.
+
+    **The parse is cached by the spec's identity**, which is what makes the inner EOS kernels
+    affordable; see ``_CHECKS``.
     """
+    key = id(spec)
+    cached = _CHECKS.get(key)
+    if cached is not None and cached[0] is spec:
+        return cached[1]
+    checks = _build_checks(spec)
+    _CHECKS[key] = (spec, checks)
+    return checks
+
+
+def _build_checks(spec: Mapping[str, Any]) -> SpecChecks:
+    """One spec's ``valid_range``, split once."""
     inputs = spec["inputs"]
     on_input: list[RangeCheck] = []
     derived: list[RangeCheck] = []

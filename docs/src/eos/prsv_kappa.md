@@ -4,6 +4,8 @@
 
 `eos.prsv_kappa`
 
+Peng-Robinson-Stryjek-Vera attraction-parameter coefficient. Use it when a cubic EOS needs the PRSV kappa form.
+
 ## Equation
 
 $$
@@ -47,7 +49,7 @@ DOI: [10.1002/cjce.5450640224](https://doi.org/10.1002/cjce.5450640224)
 | `Tr > 0` | raises | `Tr` appears as a square root; Tr = 0 is finite but a negative Tr makes the root undefined, and a reduced temperature at or below zero is not a state. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

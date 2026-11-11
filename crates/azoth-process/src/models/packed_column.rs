@@ -8,7 +8,8 @@
 //! the seven quantities `ColumnInternalsDesigner` reports on the far side of the solve.
 
 use azoth_core::units::{
-    Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole,
+    Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole, meters,
+    pascals,
 };
 use azoth_core::{AzothError, Result, Warning, apply_checks};
 
@@ -105,6 +106,26 @@ pub struct PackedColumnResult {
     pub hydraulics_ok: bool,
     /// The column's internal diameter, m - the stated one, or the sized one where none was stated.
     pub internal_diameter: Length,
+    /// The volumetric gas-film coefficient, 1/s.
+    pub k_ga: f64,
+    /// The volumetric liquid-film coefficient, 1/s.
+    pub k_la: f64,
+    /// The packing's wetted area per unit volume.
+    pub wetted_area: f64,
+    /// The gas-side height of a transfer unit, m.
+    pub htu_g: Length,
+    /// The liquid-side height of a transfer unit, m.
+    pub htu_l: Length,
+    /// The overall height of a transfer unit, m.
+    pub htu_og: Length,
+    /// Whether the liquid load reaches the minimum wetting rate.
+    pub wetting_ok: bool,
+    /// The bed's pressure gradient, Pa/m.
+    pub pressure_drop_per_meter: Pressure,
+    /// The packing's resolved name.
+    pub resolved_packing: String,
+    /// The packing's resolved factor, 1/m.
+    pub resolved_packing_factor: f64,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
@@ -177,6 +198,16 @@ impl PackedColumnResult {
             packing_pressure_drop: report.packing_pressure_drop,
             hydraulics_ok: report.hydraulics_ok,
             internal_diameter: report.internal_diameter,
+            k_ga: report.k_ga,
+            k_la: report.k_la,
+            wetted_area: report.wetted_area,
+            htu_g: meters(report.htu_g),
+            htu_l: meters(report.htu_l),
+            htu_og: meters(report.htu_og),
+            wetting_ok: report.wetting_ok,
+            pressure_drop_per_meter: pascals(report.pressure_drop_per_meter.value),
+            resolved_packing: report.resolved_packing,
+            resolved_packing_factor: report.resolved_packing_factor,
             warnings,
         }
     }
@@ -447,23 +478,27 @@ mod report {
             out.theoretical_stages
         );
         assert!(
-            close(out.percent_flood, 15.053_642_072_827_294),
+            close(out.percent_flood, 9.115_432_950_450_494),
             "percent_flood: {}",
             out.percent_flood
         );
         assert!(
-            close(out.flooding_velocity, 0.508_073_023_146_439_5),
+            close(out.flooding_velocity, 0.839_054_982_783_654_9),
             "flooding_velocity: {}",
             out.flooding_velocity
         );
         assert!(
-            close(out.packing_pressure_drop.value, 0.640_829_527_984_597_7),
+            close(out.packing_pressure_drop.value, 0.206_132_647_071_490_95),
             "packing_pressure_drop: {}",
             out.packing_pressure_drop.value
         );
         assert!(
             !out.hydraulics_ok,
             "the class's own row is outside the 40-to-80-per-cent window"
+        );
+        assert!(
+            !out.wetting_ok,
+            "the class's own row is below the wetting rate"
         );
         assert!(
             close(out.internal_diameter.value, 0.3),
@@ -698,17 +733,17 @@ mod surface_tension {
         let close = |got: f64, want: f64| (got - want).abs() / want.abs() < 1e-5;
         let control = hydraulics(DESIGNER_SURFACE_TENSION_N_PER_M);
         assert!(
-            close(control.flooding_velocity, 0.508_073_023_146_439_5),
+            close(control.flooding_velocity, 0.839_054_982_783_654_9),
             "the flooding velocity pins the tray state: {}",
             control.flooding_velocity
         );
         assert!(
-            close(control.percent_flood, 15.053_642_072_827_294),
+            close(control.percent_flood, 9.115_432_950_450_494),
             "the load pins the tray state: {}",
             control.percent_flood
         );
         assert!(
-            close(control.total_pressure_drop.value, 0.640_829_527_984_597_7),
+            close(control.total_pressure_drop.value, 0.206_132_647_071_490_95),
             "the pressure drop pins the tray state: {}",
             control.total_pressure_drop.value
         );
@@ -716,7 +751,7 @@ mod surface_tension {
         // **And then the reading: `wetted_area` is the one output that separates the candidates,
         // because Onda's expression reads sigma and the liquid side and no diffusivity.**
         assert!(
-            close(control.wetted_area, 72.582_813_354_706_25),
+            close(control.wetted_area, 102.206_377_563_754_26),
             "the designer's own 0.02 fallback reproduces the capture's wetted area: {}",
             control.wetted_area
         );
@@ -726,7 +761,7 @@ mod surface_tension {
         ] {
             let out = hydraulics(rival);
             assert!(
-                !close(out.wetted_area, 72.582_813_354_706_25),
+                !close(out.wetted_area, 102.206_377_563_754_26),
                 "{label} must NOT reproduce it, or the capture cannot decide: {}",
                 out.wetted_area
             );

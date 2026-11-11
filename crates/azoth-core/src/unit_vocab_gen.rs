@@ -21,18 +21,24 @@ pub const DIMENSION_IDS: &[&str] = &[
     "volume_rate",
     "mass",
     "mass_rate",
+    "time",
     "amount",
     "molar_flow",
+    "amount_concentration_rate",
     "mass_density",
+    "mass_flux",
     "velocity",
     "pressure",
+    "force",
     "dynamic_viscosity",
     "diffusion_coefficient",
     "thermodynamic_temperature",
     "power",
+    "volumetric_power_density",
     "specific_heat_capacity",
     "thermal_conductivity",
     "heat_transfer",
+    "heat_flux_density",
     "thermal_conductance",
     "surface_tension",
     "molar_mass",
@@ -49,6 +55,9 @@ pub const DIMENSION_IDS: &[&str] = &[
     "per_temperature",
     "per_temperature_squared",
     "per_temperature_cubed",
+    "per_time",
+    "inverse_length",
+    "pressure_gradient",
     "molality",
     "amount_concentration",
 ];
@@ -62,18 +71,24 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("volume_rate", [3, 0, -1, 0, 0, 0, 0]),
     ("mass", [0, 1, 0, 0, 0, 0, 0]),
     ("mass_rate", [0, 1, -1, 0, 0, 0, 0]),
+    ("time", [0, 0, 1, 0, 0, 0, 0]),
     ("amount", [0, 0, 0, 0, 0, 1, 0]),
     ("molar_flow", [0, 0, -1, 0, 0, 1, 0]),
+    ("amount_concentration_rate", [-3, 0, -1, 0, 0, 1, 0]),
     ("mass_density", [-3, 1, 0, 0, 0, 0, 0]),
+    ("mass_flux", [-2, 1, -1, 0, 0, 0, 0]),
     ("velocity", [1, 0, -1, 0, 0, 0, 0]),
     ("pressure", [-1, 1, -2, 0, 0, 0, 0]),
+    ("force", [1, 1, -2, 0, 0, 0, 0]),
     ("dynamic_viscosity", [-1, 1, -1, 0, 0, 0, 0]),
     ("diffusion_coefficient", [2, 0, -1, 0, 0, 0, 0]),
     ("thermodynamic_temperature", [0, 0, 0, 0, 1, 0, 0]),
     ("power", [2, 1, -3, 0, 0, 0, 0]),
+    ("volumetric_power_density", [-1, 1, -3, 0, 0, 0, 0]),
     ("specific_heat_capacity", [2, 0, -2, 0, -1, 0, 0]),
     ("thermal_conductivity", [1, 1, -3, 0, -1, 0, 0]),
     ("heat_transfer", [0, 1, -3, 0, -1, 0, 0]),
+    ("heat_flux_density", [0, 1, -3, 0, 0, 0, 0]),
     ("thermal_conductance", [2, 1, -3, 0, -1, 0, 0]),
     ("surface_tension", [0, 1, -2, 0, 0, 0, 0]),
     ("molar_mass", [0, 1, 0, 0, 0, -1, 0]),
@@ -102,6 +117,9 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("per_temperature", [0, 0, 0, 0, -1, 0, 0]),
     ("per_temperature_squared", [0, 0, 0, 0, -2, 0, 0]),
     ("per_temperature_cubed", [0, 0, 0, 0, -3, 0, 0]),
+    ("per_time", [0, 0, -1, 0, 0, 0, 0]),
+    ("inverse_length", [-1, 0, 0, 0, 0, 0, 0]),
+    ("pressure_gradient", [-2, 1, -2, 0, 0, 0, 0]),
     ("molality", [0, -1, 0, 0, 0, 1, 0]),
     ("amount_concentration", [-3, 0, 0, 0, 0, 1, 0]),
 ];
@@ -131,17 +149,23 @@ pub const UNIT_NAMES: &[&str] = &[
     "m**3/s",
     "kg/s",
     "mol/s",
+    "mol/(m**3*s)",
     "mol",
     "kg",
     "kg/m**3",
+    "kg/(m**2*s)",
     "m/s",
     "m**2/s",
     "Pa",
+    "N",
+    "s",
+    "h",
     "Pa*s",
     "K",
     "W",
     "J/(kg*K)",
     "W/(m*K)",
+    "W/m**2",
     "W/(m**2*K)",
     "W/K",
     "N/m",
@@ -160,6 +184,9 @@ pub const UNIT_NAMES: &[&str] = &[
     "1/K",
     "1/K**2",
     "1/K**3",
+    "1/s",
+    "1/m",
+    "Pa/m",
     "mol/kg",
     "mol/m**3",
     "kmol/m**3",
@@ -178,6 +205,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "Btu",
     "kW",
     "MW",
+    "W/m**3",
     "hp",
     "ft",
     "in",
@@ -207,17 +235,23 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("m**3/s", [3, 0, -1, 0, 0, 0, 0]),
     ("kg/s", [0, 1, -1, 0, 0, 0, 0]),
     ("mol/s", [0, 0, -1, 0, 0, 1, 0]),
+    ("mol/(m**3*s)", [-3, 0, -1, 0, 0, 1, 0]),
     ("mol", [0, 0, 0, 0, 0, 1, 0]),
     ("kg", [0, 1, 0, 0, 0, 0, 0]),
     ("kg/m**3", [-3, 1, 0, 0, 0, 0, 0]),
+    ("kg/(m**2*s)", [-2, 1, -1, 0, 0, 0, 0]),
     ("m/s", [1, 0, -1, 0, 0, 0, 0]),
     ("m**2/s", [2, 0, -1, 0, 0, 0, 0]),
     ("Pa", [-1, 1, -2, 0, 0, 0, 0]),
+    ("N", [1, 1, -2, 0, 0, 0, 0]),
+    ("s", [0, 0, 1, 0, 0, 0, 0]),
+    ("h", [0, 0, 1, 0, 0, 0, 0]),
     ("Pa*s", [-1, 1, -1, 0, 0, 0, 0]),
     ("K", [0, 0, 0, 0, 1, 0, 0]),
     ("W", [2, 1, -3, 0, 0, 0, 0]),
     ("J/(kg*K)", [2, 0, -2, 0, -1, 0, 0]),
     ("W/(m*K)", [1, 1, -3, 0, -1, 0, 0]),
+    ("W/m**2", [0, 1, -3, 0, 0, 0, 0]),
     ("W/(m**2*K)", [0, 1, -3, 0, -1, 0, 0]),
     ("W/K", [2, 1, -3, 0, -1, 0, 0]),
     ("N/m", [0, 1, -2, 0, 0, 0, 0]),
@@ -236,6 +270,9 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("1/K", [0, 0, 0, 0, -1, 0, 0]),
     ("1/K**2", [0, 0, 0, 0, -2, 0, 0]),
     ("1/K**3", [0, 0, 0, 0, -3, 0, 0]),
+    ("1/s", [0, 0, -1, 0, 0, 0, 0]),
+    ("1/m", [-1, 0, 0, 0, 0, 0, 0]),
+    ("Pa/m", [-2, 1, -2, 0, 0, 0, 0]),
     ("mol/kg", [0, -1, 0, 0, 0, 1, 0]),
     ("mol/m**3", [-3, 0, 0, 0, 0, 1, 0]),
     ("kmol/m**3", [-3, 0, 0, 0, 0, 1, 0]),
@@ -254,6 +291,7 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("Btu", [2, 1, -2, 0, 0, 0, 0]),
     ("kW", [2, 1, -3, 0, 0, 0, 0]),
     ("MW", [2, 1, -3, 0, 0, 0, 0]),
+    ("W/m**3", [-1, 1, -3, 0, 0, 0, 0]),
     ("hp", [2, 1, -3, 0, 0, 0, 0]),
     ("ft", [1, 0, 0, 0, 0, 0, 0]),
     ("in", [1, 0, 0, 0, 0, 0, 0]),
@@ -302,16 +340,25 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("m**3/s", |v| crate::units::cubic_meters_per_second(v).value),
     ("kg/s", |v| crate::units::kilograms_per_second(v).value),
     ("mol/s", |v| crate::units::moles_per_second(v).value),
+    ("mol/(m**3*s)", |v| {
+        crate::units::moles_per_cubic_meter_second(v).value
+    }),
     ("mol", |v| crate::units::moles(v).value),
     ("kg", |v| crate::units::kilograms(v).value),
     ("kg/m**3", |v| {
         crate::units::kilograms_per_cubic_meter(v).value
+    }),
+    ("kg/(m**2*s)", |v| {
+        crate::units::kilograms_per_square_meter_second(v).value
     }),
     ("m/s", |v| crate::units::meters_per_second(v).value),
     ("m**2/s", |v| {
         crate::units::square_meters_per_second(v).value
     }),
     ("Pa", |v| crate::units::pascals(v).value),
+    ("N", |v| crate::units::newtons(v).value),
+    ("s", |v| crate::units::seconds(v).value),
+    ("h", |v| crate::units::hours(v).value),
     ("Pa*s", |v| crate::units::pascal_seconds(v).value),
     ("K", |v| crate::units::kelvins(v).value),
     ("W", |v| crate::units::watts(v).value),
@@ -319,6 +366,7 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
         crate::units::joules_per_kilogram_kelvin(v).value
     }),
     ("W/(m*K)", |v| crate::units::watts_per_meter_kelvin(v).value),
+    ("W/m**2", |v| crate::units::watts_per_square_meter(v).value),
     ("W/(m**2*K)", |v| {
         crate::units::watts_per_square_meter_kelvin(v).value
     }),
@@ -341,6 +389,9 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("1/K", |v| v),
     ("1/K**2", |v| v),
     ("1/K**3", |v| v),
+    ("1/s", |v| crate::units::per_second(v).value),
+    ("1/m", |v| v),
+    ("Pa/m", |v| v),
     ("mol/kg", |v| crate::units::moles_per_kilogram(v).value),
     ("mol/m**3", |v| crate::units::moles_per_cubic_meter(v).value),
     ("kmol/m**3", |v| {
@@ -361,6 +412,7 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("Btu", |v| crate::units::british_thermal_units(v).value),
     ("kW", |v| crate::units::kilowatts(v).value),
     ("MW", |v| crate::units::megawatts(v).value),
+    ("W/m**3", |v| crate::units::watts_per_cubic_meter(v).value),
     ("hp", |v| crate::units::mechanical_horsepower(v).value),
     ("ft", |v| crate::units::feet(v).value),
     ("in", |v| crate::units::inches(v).value),
@@ -556,14 +608,19 @@ pub const DIMENSION_ASSERTIONS: fn() = || {
     let _: uom::si::f64::AmountOfSubstance = crate::units::moles(1.0);
     let _: uom::si::f64::Mass = crate::units::kilograms(1.0);
     let _: uom::si::f64::MassDensity = crate::units::kilograms_per_cubic_meter(1.0);
+    let _: uom::si::f64::MassFlux = crate::units::kilograms_per_square_meter_second(1.0);
     let _: uom::si::f64::Velocity = crate::units::meters_per_second(1.0);
     let _: uom::si::f64::DiffusionCoefficient = crate::units::square_meters_per_second(1.0);
     let _: uom::si::f64::Pressure = crate::units::pascals(1.0);
+    let _: uom::si::f64::Force = crate::units::newtons(1.0);
+    let _: uom::si::f64::Time = crate::units::seconds(1.0);
+    let _: uom::si::f64::Time = crate::units::hours(1.0);
     let _: uom::si::f64::DynamicViscosity = crate::units::pascal_seconds(1.0);
     let _: uom::si::f64::ThermodynamicTemperature = crate::units::kelvins(1.0);
     let _: uom::si::f64::Power = crate::units::watts(1.0);
     let _: uom::si::f64::SpecificHeatCapacity = crate::units::joules_per_kilogram_kelvin(1.0);
     let _: uom::si::f64::ThermalConductivity = crate::units::watts_per_meter_kelvin(1.0);
+    let _: uom::si::f64::HeatFluxDensity = crate::units::watts_per_square_meter(1.0);
     let _: uom::si::f64::HeatTransfer = crate::units::watts_per_square_meter_kelvin(1.0);
     let _: uom::si::f64::ThermalConductance = crate::units::watts_per_kelvin(1.0);
     let _: uom::si::f64::SurfaceTension = crate::units::newtons_per_meter(1.0);
@@ -574,6 +631,7 @@ pub const DIMENSION_ASSERTIONS: fn() = || {
     let _: uom::si::f64::MolarHeatCapacity = crate::units::joules_per_mole_kelvin(1.0);
     let _: uom::si::f64::ElectricCharge = crate::units::coulombs(1.0);
     let _: uom::si::f64::Length = crate::units::angstroms(1.0);
+    let _: uom::si::f64::Frequency = crate::units::per_second(1.0);
     let _: uom::si::f64::Molality = crate::units::moles_per_kilogram(1.0);
     let _: uom::si::f64::MolarConcentration = crate::units::moles_per_cubic_meter(1.0);
     let _: uom::si::f64::MolarConcentration = crate::units::kilomoles_per_cubic_meter(1.0);
@@ -592,6 +650,7 @@ pub const DIMENSION_ASSERTIONS: fn() = || {
     let _: uom::si::f64::Energy = crate::units::british_thermal_units(1.0);
     let _: uom::si::f64::Power = crate::units::kilowatts(1.0);
     let _: uom::si::f64::Power = crate::units::megawatts(1.0);
+    let _: uom::si::f64::VolumetricPowerDensity = crate::units::watts_per_cubic_meter(1.0);
     let _: uom::si::f64::Power = crate::units::mechanical_horsepower(1.0);
     let _: uom::si::f64::Length = crate::units::feet(1.0);
     let _: uom::si::f64::Length = crate::units::inches(1.0);
@@ -629,6 +688,10 @@ pub const PINT_ASSERTED_UNITS: &[(&str, &str)] = &[
         "uom has no molar-flow quantity, and no crate outside uom can add one: `quantity!` runs inside `uom::si` and the `Units` trait `system!` assembles is a closed list. Every unit of the dimension converts through this crate's `MolarFlow` instead - `mol/s` itself, which is the SI base, through `moles_per_second`, and `kmol/h` through `kilomoles_per_hour` - so none of them gets a type ascription.",
     ),
     (
+        "mol/(m**3*s)",
+        "uom carries a molar concentration and a molar flow, and no quantity for one over a volume over a time: every unit of the dimension converts through this crate's `MolarRateDensity` instead - `mol/(m**3*s)` itself, the SI base, through `moles_per_cubic_meter_second` - so none of them gets a type ascription.",
+    ),
+    (
         "Pa*m**6/mol**2",
         "uom carries a pressure and a molar volume, and no quantity for their product with a length to the sixth. The unit is already its own SI base, so its conversion is the identity.",
     ),
@@ -659,6 +722,14 @@ pub const PINT_ASSERTED_UNITS: &[(&str, &str)] = &[
     (
         "1/K**3",
         "uom carries a temperature and not its reciprocal. The unit is already its own SI base, so its conversion is the identity.",
+    ),
+    (
+        "1/m",
+        "uom has no reciprocal-length quantity. The unit is its own SI base, so its conversion is the identity.",
+    ),
+    (
+        "Pa/m",
+        "uom has no pressure-gradient quantity. The unit is its own SI base, so its conversion is the identity.",
     ),
     (
         "kmol/h",

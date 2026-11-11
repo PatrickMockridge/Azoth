@@ -1,8 +1,10 @@
 id = "eos.fuller_schettler_giddings_diffusivity"
 name = "Gas binary diffusivity from the Fuller-Schettler-Giddings correlation"
+summary = "Gas binary diffusivity from the Fuller-Schettler-Giddings correlation. Use it for gas mixing and mass-transfer estimates when diffusion volumes are known."
 equation = "D = 1.013e-3 * T**1.75 * sqrt(1/MA + 1/MB) / (P * (VA**(1/3) + VB**(1/3))**2)   [cm**2/s], with MA and MB in g/mol, P in bar, T in K and VA, VB in cm**3/mol; D*1e-4 recovers m**2/s."
 latex = '''D_{AB} = 1.013\times10^{-3}\,\frac{T^{1.75}\sqrt{\frac{1}{M_A}+\frac{1}{M_B}}}{P\left(V_A^{1/3}+V_B^{1/3}\right)^{2}}'''
-assumptions = ["`VA` and `VB` are *diffusion volumes*, not molar volumes, and the caller resolves each with `azoth_eos::fuller_diffusion_volume`: the special-molecule table, then `0.285*Vc`, then `max(10, 0.95*M)` - the class's own three rungs.\n", "**the pressure is in bar, and the class says so twice over**: `calcBinaryDiffusionCoefficient` divides by the bara pressure with the constant `1.013e-3` - Poling's Table 11-1 pair - while its javadoc writes `1.013e-2` with `P` in atm. The port follows the code.\n", "the temperature is the gas phase's own, and a state outside the class's validated `[200, 2000]` K is *warned* about rather than refused, which is `Diffusivity.enableTemperatureWarnings` over `T_MIN`/`T_MAX`.\n", "the correlation is for a *binary* pair in the gas phase; the class answers a matrix over the phase's components, and this id is one entry of it.\n"]
+assumptions = ["the temperature is the gas phase's own; outside `[200, 2000]` K the calculation warns rather than refuses.\n", "the correlation is for a binary pair in the gas phase; a mixture's diffusivity is one entry of its matrix.\n"]
+notes = ["`VA` and `VB` are *diffusion volumes*, not molar volumes, and the caller resolves each with `azoth_eos::fuller_diffusion_volume`: the special-molecule table, then `0.285*Vc`, then `max(10, 0.95*M)` - the class's own three rungs.\n", "**the pressure is in bar, and the class says so twice over**: `calcBinaryDiffusionCoefficient` divides by the bara pressure with the constant `1.013e-3` - Poling's Table 11-1 pair - while its javadoc writes `1.013e-2` with `P` in atm. The port follows the code.\n"]
 references = ["Fuller, E. N.; Schettler, P. D.; Giddings, J. C. (1966). \\\"A new method for prediction of binary gas-phase diffusion coefficients.\\\" Ind. Eng. Chem. 58(5), 18-27. DOI 10.1021/ie50677a007.", "Fuller, E. N.; Ensley, K.; Giddings, J. C. (1969). \\\"Diffusion of halogenated hydrocarbons in helium.\\\" J. Phys. Chem. 73(11), 3679-3685. DOI 10.1021/j100845a020.", "Poling, B. E.; Prausnitz, J. M.; O'Connell, J. P. (2001). \\\"The Properties of Gases and Liquids\\\", 5th ed., McGraw-Hill, Table 11-1 - the diffusion-volume increments and the pair `1.00e-3` with `P` in bar.", "`validation/neqsim/captures/fuller_probe.tsv` - two pairs whose diffusivity is measured (methane/nitrogen and CO2/nitrogen at 298.15 K and one atmosphere, Marrero & Mason 1972), the class's two scaling rows, and two pairs that exercise the diffusion-volume ladder's second rung.\n"]
 [source]
 standard = "Fuller, E. N.; Schettler, P. D.; Giddings, J. C. (1966)"
@@ -17,7 +19,7 @@ unit = "kg/mol"
 description = "Molar mass of the second.\n"
 [inputs.VA]
 unit = "m**3/mol"
-description = "Diffusion volume of the first component, in NeqSim's cm**3/mol times 1e-6; see the resolution ladder in the assumptions.\n"
+description = "Diffusion volume of the first component.\n"
 [inputs.VB]
 unit = "m**3/mol"
 description = "Diffusion volume of the second.\n"

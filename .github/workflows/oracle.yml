@@ -1,11 +1,11 @@
 name: oracle
 
-# **The NeqSim sweep, which has never run in CI.**
+# **The NeqSim sweep, run weekly.**
 #
 # Every number the port is held to came from NeqSim, and `validation/neqsim/captures/*.tsv` is
 # where those readings live. `tools/oracle_sweep.py` re-runs the probes against the jar and
 # reports a capture that has moved - so it is the only thing that can say whether the oracle is
-# still the oracle. It ran nowhere but a developer's box, when someone remembered.
+# still the oracle.
 #
 # **Weekly rather than nightly**, because the cost is setup rather than compute: a JDK, a full
 # Maven build of NeqSim, and a clone at the pinned revision. It can only move when the pin in
@@ -31,6 +31,7 @@ jobs:
   sweep:
     name: the NeqSim captures
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -40,7 +41,9 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-          cache: maven
+      # `cache: maven` is not an option: setup-java keys it by finding a `pom.xml` in the
+      # checkout, and the NeqSim pom only exists under `/tmp` after the clone. The repository
+      # cache below is the Maven cache, keyed by the pin.
       # **The pin, read out of the manifest** the same way every other tool reads it.
       - id: pin
         run: |
@@ -64,8 +67,16 @@ jobs:
       # a developer puts the jar they built. `.gitignore` keeps it out of the tree.
       - name: Put the jar where the sweep looks for it
         run: |
-          jar=$(find /tmp/neqsim -name 'neqsim-*.jar' -not -name '*sources*' | head -1)
-          test -n "$jar" || { echo "::error::the NeqSim build produced no jar"; exit 1; }
-          cp "$jar" "validation/neqsim/neqsim-${{ steps.pin.outputs.short }}.jar"
+          mapfile -t jars < <(
+            find /tmp/neqsim/target -maxdepth 1 -name 'neqsim-*.jar' \
+              -not -name '*-sources.jar' -not -name '*-javadoc.jar' \
+              -not -name '*-tests.jar' | sort
+          )
+          test "${#jars[@]}" -eq 1 || {
+            echo "::error::the NeqSim build produced ${#jars[@]} candidate jars, not one"
+            printf '  %s\n' "${jars[@]}"
+            exit 1
+          }
+          cp "${jars[0]}" "validation/neqsim/neqsim-${{ steps.pin.outputs.short }}.jar"
       - name: The sweep
         run: python tools/oracle_sweep.py

@@ -4,6 +4,8 @@
 
 `eos.vdw1f_mix_binary`
 
+van der Waals one-fluid mixing rules for a binary mixture. Use it to combine pure-component attraction and co-volume parameters with an interaction parameter.
+
 ## Equation
 
 $$
@@ -52,7 +54,7 @@ The classical mixing rule. Its modern form, and the role of k12, are set out in 
 | `a_mix > 0` | raises | `a_mix` is a quadratic form in `(z1, z2)` with matrix `[[a1, a12], [a12, a2]]` where `a12 = (1 - k12)*sqrt(a1*a2)`, so it is non-negative for every composition exactly when `0 <= k12 <= 2`. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

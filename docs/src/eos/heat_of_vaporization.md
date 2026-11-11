@@ -4,6 +4,8 @@
 
 `eos.heat_of_vaporization`
 
+Latent heat of vaporisation from a temperature-dependent correlation. Use it for duty and flash calculations when a component's latent heat is needed.
+
 ## Equation
 
 $$
@@ -22,11 +24,19 @@ hov = 1e-3 * c0 * (1 - Tr)**(c1 + c2*Tr + c3*Tr**2)
 
 the correlation NeqSim master evaluates in `thermo/component/Component.java`, ported verbatim
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the four coefficients are the raw `heatofvaporizationcoefs1..4` NeqSim ships, in its internal unit; the `1e-3` in the equation is what recovers `J/mol` from them. NOT CHECKED - the coefficients come from the caller.
+
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
-| `c0` | dimensionless | The first heat-of-vaporisation coefficient, NeqSim's internal scale. |
+| `c0` | dimensionless | The first heat-of-vaporisation coefficient, in the correlation's internal scale. |
 | `c1` | dimensionless | The exponent's constant term. |
 | `c2` | dimensionless | The exponent's linear term. |
 | `c3` | dimensionless | The exponent's quadratic term. |
@@ -49,17 +59,15 @@ the correlation NeqSim master evaluates in `thermo/component/Component.java`, po
 | `T > 0` | raises | An absolute temperature; zero and below are not states. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- the four coefficients are the raw `heatofvaporizationcoefs1..4` NeqSim ships, in its internal unit; the `1e-3` in the equation is what recovers `J/mol` from them. NOT CHECKED - the coefficients come from the caller.
-
 - `Tr` is reduced against the critical temperature the caller supplies.
 
-- the correlation is a fit of limited range; NeqSim's own data is inconsistent across components (methane's `c0` is three orders of magnitude smaller than n-butane's), which this calc reproduces rather than repairs.
+- the correlation is a fit of limited range; the library's data are inconsistent across components (methane's `c0` is three orders of magnitude smaller than n-butane's), and this calculation reproduces them rather than repairing them.
 
 - this calc returns a pure-component property and says nothing about a mixture or a phase.
 

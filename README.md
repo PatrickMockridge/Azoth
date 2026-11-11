@@ -1,10 +1,32 @@
 # azoth
 
+[![PyPI](https://img.shields.io/pypi/v/azoth-engine.svg)](https://pypi.org/project/azoth-engine/)
+
 Chemical-engineering calculations — equations of state, flashes, property models, and the
 hydraulics and heat transfer around them — **written twice from one declaration, once in
 Rust and once in Python**, with an agentic layer on top. The algorithms are ported from
 [NeqSim](https://github.com/equinor/neqsim) under Apache-2.0 and credited in
 [`NOTICE`](NOTICE).
+
+## Try the editor
+
+**[Open the flowsheet editor →](https://patrickmockridge.github.io/azoth/)** ·
+**[Read the user manual →](https://patrickmockridge.github.io/azoth/manual/)**
+
+![The editor showing the demo flowsheet](docs/src/images/editor.png)
+
+Nothing to install. The editor and the calculation engine are compiled to WebAssembly and run in
+your browser; no case is uploaded and no server is behind the page.
+
+1. The demo flowsheet — two feeds meeting at a mixer, then a pump, heater, separator and live recycle — opens on its own.
+2. Press **Solve** to run it. Temperatures, pressures and flows appear on the drawing, and the
+   Workbook lists every stream.
+3. Click a unit operation or a stream to read its inputs, its results and where the model came
+   from. Case → Examples opens other worked cases.
+
+The port is incomplete and every shipped model is marked `unverified` or `partially_verified`, so
+these are **screening values, not design deliverables** — [the book says why and what is
+missing](docs/src/index.md#not-for-design-work-yet).
 
 ## Every number says what it rests on
 
@@ -27,7 +49,7 @@ r.provenance.rust_sha256  # the bytes of the kernel that produced this number
 
 The last line is the one that changes what is possible. It is not a claim in a manual; it is
 a claim a machine can check against the tree, and
-`python/tests/test_provenance.py` recomputes all 234 of them. `r.to_json()`
+`python/tests/test_provenance.py` recomputes all 280 of them. `r.to_json()`
 carries the block, so the same holds for a result written to a file, served over MCP, or
 handed to an agent.
 
@@ -59,7 +81,9 @@ them different.
   failure" reads the other way round, and that reading cost a session: a probe that
   subtracted the wrong quantity reported a NeqSim defect that was azoth's own.
 - **An agentic layer.** Ninety skills under `skills/` teach an agent to call the library,
-  and a four-role HAZOP team chains them.
+  and a four-role HAZOP team chains them. A calculation run can also be emitted as an
+  r-gen claim bundle — the spec, result, both implementations' agreement and the external
+  cases as anchored evidence — with `python -m azoth.rgen`.
 
 ## Inherent safety
 
@@ -93,7 +117,7 @@ chemistry that cannot run away over a relief valve that catches it.
 - **A formal layer underneath, and a gate on it.** A quantity's dimension and the
   arithmetic over it are meant to be a proved construction, so a dimension that does not
   compose fails rather than converting. What reaches Lean today is the dimension group, the
-  72-unit vocabulary, the fractional-power conventions, the raw-to-normalised derivative,
+  82-unit vocabulary, the fractional-power conventions, the raw-to-normalised derivative,
   the first-order sensitivity of a solution and the keycard's non-amplification — each
   behind an axiom gate that fails the build on a `sorry`, including one inside a vendored
   dependency. **The physics kernels are measured, not proved**, and
@@ -126,18 +150,24 @@ yet](docs/src/index.md#not-for-design-work-yet) about the placeholder fitting co
 
 ## Install
 
-**Not on PyPI yet.** `azoth-engine` is the name 0.1 will publish under, and 0.1 is
-**to be announced** - it goes up once the Python surface is settled. Nothing is uploaded
-under that name today, so `pip install azoth-engine` has nothing to fetch. Until then,
-from a checkout:
+**On PyPI as `azoth-engine`.** Python 3.12 or later:
 
 ```bash
-pip install maturin
-pip install .
+pip install azoth-engine
 ```
+
+Wheels are published for Linux (x86_64 and aarch64), macOS (Intel and Apple silicon) and
+Windows; any other platform builds from the sdist, which needs `maturin` and a Rust toolchain.
+Every release is signed with cosign keyless signing, and the signature bundles are attached
+to the [GitHub release](https://github.com/PatrickMockridge/azoth/releases).
 
 The distribution name is `azoth-engine` because `azoth` is taken on PyPI; `import azoth`
 is what the package has always been and is unchanged by it.
+
+Worked examples live in [`notebooks/`](notebooks/README.md): five executed notebooks from a
+single Reynolds number through a phase envelope and a flowsheet with a recycle to the batch API
+and pandas. They read no repository file and run against the installed wheel.
+[Python scripting and Jupyter](docs/src/using/python.md) explains the API they use.
 
 ## Running the tests
 
@@ -177,7 +207,7 @@ Units cross the API as `pint` quantities; a bare number where a length is expect
 
 ## The book
 
-The full catalog — 79 calculations and 155 models, each with its equation, source, valid
+The full catalog — 98 calculations and 182 models, each with its equation, source, valid
 range and a worked example — is in [the book](docs/src/index.md), generated from the same
 spec files as the code.
 

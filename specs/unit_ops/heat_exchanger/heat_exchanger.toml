@@ -14,6 +14,14 @@ description = "pin the hot outlet at this temperature and energy-balance the col
 [parameters.cold_outlet_temperature]
 unit = "K"
 description = "pin the cold outlet at this temperature and energy-balance the hot side against it"
+[parameters.use_delta_t]
+description = "run `runDeltaT` instead of the rating: perturb each side by `delta_t`, set the side with the larger swing and close the other; a pinned outlet still wins"
+[parameters.delta_t]
+unit = "K"
+description = "the `runDeltaT` step, 1.0 K by default"
+[parameters.guess_out_temperature]
+unit = "K"
+description = "the class's `guessOutTemperature`, 403.15 K by default; carried and unread because the answering branch overwrites its seed"
 [[ports]]
 name = "hot_in"
 direction = "in"

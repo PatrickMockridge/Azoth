@@ -100,7 +100,8 @@ fn the_fugacity_coefficient_is_gamma_times_p0_over_p() {
     }
 }
 
-/// The activity coefficients are `eos.unifac_activity_coefficients`', not a second copy.
+/// The activity coefficients are `eos.unifac_activity_coefficients`', not a second copy -
+/// with the group array and the group list agreed, where the class threw (upstream #3769).
 #[test]
 fn the_activity_coefficients_are_the_unifac_models() {
     let names = ["methanol", "water"];
@@ -152,13 +153,13 @@ fn the_henry_arms_follow_the_same_rules_as_nrtl() {
         ReferenceState::Henry(HenryState::Iapws(_))
     ));
 
-    // n-butane has UNIFAC groups, so this is the Henry-row refusal and not the
-    // group-coverage one.
-    let err = ge_unifac_phase_parameters(&["water", "n-butane"], None).unwrap_err();
-    assert!(
-        matches!(err, AzothError::PropertyUnavailable { .. }),
-        "{err:?}"
-    );
+    // n-butane's Henry row is fitted now (upstream PR #4045), so the arm resolves rather
+    // than refusing; the two rules it follows are still the NRTL model's.
+    let dry = ge_unifac_phase_parameters(&["water", "n-butane"], None).unwrap();
+    assert!(matches!(
+        dry.references[1],
+        ReferenceState::Henry(HenryState::Database { .. })
+    ));
 }
 
 /// A component with no UNIFAC group assignment is refused rather than given `r = q = 0`.

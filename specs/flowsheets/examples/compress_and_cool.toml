@@ -1,0 +1,65 @@
+# A gas is compressed, cooled and separated into a vapour and a liquid.
+id = "flowsheets.example_compress_and_cool"
+name = "Compress, cool and separate"
+
+products = ["sales_gas", "condensate"]
+
+[[inputs]]
+name = "feed_1"
+components = ["methane", "ethane"]
+n = 10.0
+z = [0.5, 0.5]
+P = 20.0e5
+T = 300.0
+
+[[instances]]
+id = "c1"
+unit = "unit_ops.compressor"
+[instances.parameters]
+outlet_pressure = 60.0e5
+isentropic_efficiency = 0.8
+
+[[instances]]
+id = "cool1"
+unit = "unit_ops.cooler"
+[instances.parameters]
+outlet_temperature = 250.0
+
+[[instances]]
+id = "sep1"
+unit = "unit_ops.separator"
+[instances.parameters]
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+
+[[connections]]
+from = "feed_1"
+to = "c1.inlet"
+
+[[connections]]
+from = "c1.outlet"
+to = "cool1.inlet"
+
+[[connections]]
+from = "cool1.outlet"
+to = "sep1.feed"
+
+[[connections]]
+from = "sep1.vapour"
+to = "sales_gas"
+
+[[connections]]
+from = "sep1.liquid"
+to = "condensate"
+
+[layout.inputs]
+feed_1 = [0.0, 60.0]
+
+[layout.instances]
+c1 = [280.0, 60.0]
+cool1 = [560.0, 60.0]
+sep1 = [840.0, 60.0]
+
+[layout.products]
+sales_gas = [1120.0, 0.0]
+condensate = [1120.0, 140.0]

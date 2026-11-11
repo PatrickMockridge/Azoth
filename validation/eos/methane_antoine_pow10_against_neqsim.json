@@ -4,9 +4,9 @@
   "source": {
     "attribution": "NeqSim master, `getAntoineVaporPressure` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
-    "notes": "NeqSim's Antoine vapour-pressure correlation, the `pow10` form, for methane. The coefficients are NeqSim's internal scale and the `1e5` factors recover pascals from NeqSim's bar output."
+    "notes": "NeqSim's Antoine vapour-pressure correlation, the `pow10` form, for methane at a state the class admits. The coefficients are NeqSim's internal scale and the `1e5` factors recover pascals from NeqSim's bar output."
   },
-  "derivation": "The driver ran `getAntoineVaporPressure(300.0)` for methane and printed `562.5298119539252` bar.\n\nazoth's `eos.antoine_vapor_pressure` with form `pow10` reproduces it exactly.",
+  "derivation": "The driver ran `getAntoineVaporPressure(150.0)` for methane and printed `9.292959523003073` bar - below its 190.56 K critical temperature and inside the 4.599 MPa critical pressure.\n\nAt 300 K the same correlation gives `562.53` bar, above `Pc`, and the class answers `NaN`: upstream PR #4106 rejects that extrapolation, and `azoth` refuses it. This file used to record the 300 K value.",
   "inputs": {
     "A": 5.23243,
     "B": 891.0098,
@@ -16,10 +16,10 @@
     "form": "pow10",
     "Tc": 190.56,
     "Pc": 4599000.0,
-    "T": 300.0
+    "T": 150.0
   },
   "expected": {
-    "p_sat": 56252981.19539252
+    "p_sat": 929295.9523003073
   },
   "tolerance": 1e-12
 }

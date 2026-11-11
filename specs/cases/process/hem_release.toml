@@ -1,0 +1,164 @@
+model = "process.hem_release"
+[[cases]]
+id = "no_forward_flow_at_receiving_pressure"
+tolerance = 1.0e-9
+source = "NeqSim `ReleaseFlowModelTest.unchokedLimitAndNoForwardFlow`: methane at 300 K and 5 bar with the receiving pressure equal to the upstream pressure, from `validation/neqsim/captures/process_hem_release.tsv` (`methane_5bara_no_flow_at`). The class returns a valid result with zero rate, no ambient station and `NO_FORWARD_FLOW`.\n"
+[cases.inputs]
+components = ["methane"]
+upstream_z = [1.0]
+upstream_t = 300.0
+upstream_p = 500000.0
+diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 500000.0
+[cases.expected]
+status = "valid"
+mass_flow_rate = 0.0
+choked = false
+[[cases]]
+id = "no_forward_flow_above_receiving_pressure"
+tolerance = 1.0e-9
+source = "The same state with the receiving pressure above the upstream pressure (`methane_5bara_no_flow_above`), which `ReleaseFlowEnsembleTest` uses as a genuine zero rather than a failure. The class reports the same true zero.\n"
+[cases.inputs]
+components = ["methane"]
+upstream_z = [1.0]
+upstream_t = 300.0
+upstream_p = 500000.0
+diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 600000.0
+[cases.expected]
+status = "valid"
+mass_flow_rate = 0.0
+choked = false
+[[cases]]
+id = "cold_co2_is_unsupported"
+tolerance = 1.0e-9
+source = "NeqSim `ReleaseFlowBenchmarkTest.denseFluidHighBackpressureAndCo2SolidRiskAreExplicit`: CO2 at 210 K and 20 bar is outside the model's solid-capable range (`cold_co2_unsupported`). The class returns `UNSUPPORTED` before the first flash, with the 216.592 K guard's message.\n"
+[cases.inputs]
+components = ["CO2"]
+upstream_z = [1.0]
+upstream_t = 210.0
+upstream_p = 2000000.0
+diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 100000.0
+[cases.expected]
+status = "unsupported"
+choked = false
+[[cases]]
+id = "methane_50bara_choked"
+tolerance = 2.0e-5
+source = "The class's documentation state (`methane_50bara_choked`): methane at 300 K and 50 bar through a 1 cm opening with `Cd = 0.62` into 1 atm. The throat is an interior maximum, so the flow is choked and the class reports the throat's equilibrium sound speed. **Tolerance**: the worst field is the rate at `8.7e-6` relative; the sound speed agrees to `2.6e-6`.\n"
+[cases.inputs]
+components = ["methane"]
+upstream_z = [1.0]
+upstream_t = 300.0
+upstream_p = 5000000.0
+diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 101325.0
+[cases.expected]
+status = "valid"
+mass_flow_rate = 0.4381450811542028
+choked = true
+throat_sound_speed = 399.6577771524907
+[[cases]]
+id = "methane_dilute_choked"
+tolerance = 2.0e-5
+source = "`ReleaseFlowBenchmarkTest.diluteGasBackpressureSweepMatchesIndependentPerfectGasEquation`'s choked state (`methane_dilute_0_1bara`): methane at 300 K and 0.1 bar into 500 Pa. The rate agrees with the independent perfect-gas equation to 1.5% in the class's test, and with this port to `6.8e-6`.\n"
+[cases.inputs]
+components = ["methane"]
+upstream_z = [1.0]
+upstream_t = 300.0
+upstream_p = 10000.0
+diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 500.0
+[cases.expected]
+status = "valid"
+mass_flow_rate = 0.0008266657043237211
+choked = true
+throat_sound_speed = 421.0527202088236
+[[cases]]
+id = "methane_dilute_unchoked"
+tolerance = 2.0e-5
+source = "The same dilute fluid at a receiving pressure of 70% of upstream (`methane_dilute_back_0.7`), where the throat is the receiving-pressure state and the class reports the flow unchoked.\n"
+[cases.inputs]
+components = ["methane"]
+upstream_z = [1.0]
+upstream_t = 300.0
+upstream_p = 10000.0
+diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 7000.0
+[cases.expected]
+status = "valid"
+mass_flow_rate = 0.0007777493636431866
+choked = false
+[[cases]]
+id = "methane_5bara_unchoked"
+tolerance = 2.0e-5
+source = "`ReleaseFlowModelTest.unchokedLimitAndNoForwardFlow`'s receiving state (`methane_5bara_unchoked`): methane at 5 bar into 4.9 bar. The throat is the receiving-pressure state, so the flow is not choked and no sound speed is reported.\n"
+[cases.inputs]
+components = ["methane"]
+upstream_z = [1.0]
+upstream_t = 300.0
+upstream_p = 500000.0
+diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 490000.0
+[cases.expected]
+status = "valid"
+mass_flow_rate = 0.012272926999797266
+choked = false
+[[cases]]
+id = "methane_ethane_is_choked"
+tolerance = 2.0e-5
+source = "`ReleaseFlowModelTest.mixtureGasAndUnresolvedFlashingBoundaryAreDistinguished`'s mixture (`methane_ethane_5bara`): methane 1.0 and ethane 0.1 by amount at 300 K and 5 bar into 1 bar. The normalised feed is `1/1.1` and `0.1/1.1`, and the class reports the ambient station's methane fraction at that value to `1e-10`.\n"
+[cases.inputs]
+components = ["methane", "ethane"]
+upstream_z = [0.9090909090909091, 0.09090909090909091]
+upstream_t = 300.0
+upstream_p = 500000.0
+diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 100000.0
+[cases.expected]
+status = "valid"
+mass_flow_rate = 0.0430228233865986
+choked = true
+throat_sound_speed = 401.61303937899675
+[[cases]]
+id = "propane_flashes_through_the_opening"
+tolerance = 2.0e-5
+source = "`ReleaseFlowModelTest.liquidFlashingUsesMassFractionsAndPreservesInventory` (`propane_20bara`): propane at 300 K and 20 bar into 3 bar. The flux maximum sits on the saturated-liquid side of the crossing, where the class emits `THROAT_MACH_MISMATCH` because the phase-boundary maximum is not at Mach one; the ambient station is two-phase. The rate agrees to `2.8e-7` and the sound speed to `4.2e-6`.\n"
+[cases.inputs]
+components = ["propane"]
+upstream_z = [1.0]
+upstream_t = 300.0
+upstream_p = 2000000.0
+diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 300000.0
+[cases.expected]
+status = "valid_with_warnings"
+mass_flow_rate = 1.5722609229672633
+choked = true
+throat_sound_speed = 544.492588982901
+[[cases]]
+id = "dense_co2_is_unchoked"
+tolerance = 2.0e-5
+source = "`ReleaseFlowBenchmarkTest.denseFluidHighBackpressureAndCo2SolidRiskAreExplicit` (`dense_co2_120bara`): CO2 at 310 K and 120 bar into 110 bar. The receiving pressure is close enough that the throat is the receiving-pressure state, and the upstream density is above 200 kg/m3.\n"
+[cases.inputs]
+components = ["CO2"]
+upstream_z = [1.0]
+upstream_t = 310.0
+upstream_p = 12000000.0
+diameter = 0.01
+discharge_coefficient = 0.62
+back_pressure = 11000000.0
+[cases.expected]
+status = "valid"
+mass_flow_rate = 1.810884466382253
+choked = false

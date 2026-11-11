@@ -55,7 +55,7 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
-- **the three roles are fixed before the fractions are solved**: an EoS gas, an EoS oil and a GE aqueous phase. There is no stability test and no phase is added or removed, which is what makes the answer pinnable - and what makes it unusable on a fluid whose phases are not already known.
+- **the roles are fixed by the feed before the fractions are solved** - an EoS gas, an EoS oil and a GE aqueous phase - and a role the feed gives no candidate is dropped first, as `activateSupportedHybridPhaseRoles` does: a CO2/water state is a gas and a brine, not three roles.
 - **every vector is in the roles' own order, `[gas, oil, aqueous]`**, which is upstream's: `SystemEosGE` maps slot 0 to the gas, slot 2 to the oil and slot 1 to the GE liquid, then *indexes* them gas-oil-aqueous. Creation order is not array order.
 - across-phase equilibrium is between an EoS phase and a GE one: `ln(x_i phi_i P)` agrees to `1e-5` between a cubic's phase and the Pitzer model's, which is the seam this id exists for. Both residual columns are reported because the answer is *for* them.
 - **an ion is confined to the aqueous role by two exact rules, not a penalty**: its inverse coefficient is `0` in the other roles, so it never enters a gradient, and its composition there is written as `1e-50` rather than computed. The contract's `1e-40` is the tolerance that floor is read at.

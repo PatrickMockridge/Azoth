@@ -1,0 +1,104 @@
+model = "eos.brine_mixing_scale_evaluator"
+
+# The capture's `brine_mixing` rows. mg/L to kg/m3 by 1e-3, C to K by +273.15, bara to Pa by
+# 1e5. Iron and carbonate are not carried by the class and every blend holds them at zero.
+
+[[cases]]
+id = "mixing_11"
+tolerance = 1.0e-09
+source = "The capture's `mixing_11` rows: the upstream test's barium/strontium formation water against sulphate seawater at 60 C, 100 bara and pH 6.0, eleven points. Barite peaks at 70 percent formation water at 4.1547.\n"
+[cases.inputs]
+brine_a = [
+    { calcium = 5.0, barium = 0.3, strontium = 0.8, magnesium = 0.5, sodium = 30.0, potassium = 0.4, chloride = 55.0, sulphate = 0.0, bicarbonate = 0.4 },
+]
+brine_b = [
+    { calcium = 0.4, barium = 0.0, strontium = 0.008, magnesium = 1.3, sodium = 11.0, potassium = 0.4, chloride = 19.0, sulphate = 2.7, bicarbonate = 0.14 },
+]
+temperature = 333.15
+pressure = 1.0e7
+ph = 6.0
+steps = 11
+[cases.expected]
+worst_fraction_a = 0.7
+worst_mineral = "BaSO4"
+worst_saturation_index = 4.154711564966543
+points = [
+    { fraction_a = 0.0, si_caco3 = -1.3795591383150576, si_baso4 = -8.072442643843596, si_caso4 = 0.006857090708146885, si_srso4 = -1.6922553591975804 },
+    { fraction_a = 0.1, si_caco3 = -0.9123756907222873, si_baso4 = 3.281920635573397, si_caso4 = 0.3543029953784256, si_srso4 = -0.6398214165022846 },
+    { fraction_a = 0.2, si_caco3 = -0.5932687627500659, si_baso4 = 3.601636416136442, si_caso4 = 0.5590642602397704, si_srso4 = -0.3404987945810829 },
+    { fraction_a = 0.3, si_caco3 = -0.3312207134388139, si_baso4 = 3.7967824415215885, si_caso4 = 0.7079650976722802, si_srso4 = -0.15236898773719254 },
+    { fraction_a = 0.4, si_caco3 = -0.09954805660357557, si_baso4 = 3.9376856965751195, si_caso4 = 0.8237576321427804, si_srso4 = -0.01501681119195375 },
+    { fraction_a = 0.5, si_caco3 = 0.11331650020186856, si_baso4 = 4.043189336695914, si_caso4 = 0.9134670050803426, si_srso4 = 0.0883421604622514 },
+    { fraction_a = 0.6, si_caco3 = 0.3134401710628332, si_baso4 = 4.117332975237079, si_caso4 = 0.9767527160332996, si_srso4 = 0.1610501134582627 },
+    { fraction_a = 0.7, si_caco3 = 0.5043963563216387, si_baso4 = 4.154711564966543, si_caso4 = 1.0062060040469119, si_srso4 = 0.1974002999558051 },
+    { fraction_a = 0.8, si_caco3 = 0.6884621018193755, si_baso4 = 4.135003033578822, si_caso4 = 0.9804571182382182, si_srso4 = 0.17691886485473685 },
+    { fraction_a = 0.9, si_caco3 = 0.8671740232008869, si_baso4 = 3.986149433722609, si_caso4 = 0.8268466857018488, si_srso4 = 0.027463165246042642 },
+    { fraction_a = 1.0, si_caco3 = 1.0416155205107964, si_baso4 = -8.313575300869248, si_caso4 = -11.476721387971768, si_srso4 = -12.27274385088555 },
+]
+
+[[cases]]
+id = "mixing_21"
+tolerance = 1.0e-09
+source = "The capture's `mixing_21` rows: the upstream test's second pair at 80 C, 100 bara and pH 6.2, twenty-one points. Barite peaks at 65 percent formation water at 4.0486.\n"
+[cases.inputs]
+brine_a = [
+    { calcium = 2.0, barium = 0.5, strontium = 0.2, magnesium = 0.3, sodium = 25.0, potassium = 0.3, chloride = 45.0, sulphate = 0.0, bicarbonate = 0.3 },
+]
+brine_b = [
+    { calcium = 0.4, barium = 0.0, strontium = 0.008, magnesium = 1.3, sodium = 11.0, potassium = 0.4, chloride = 19.0, sulphate = 2.8, bicarbonate = 0.14 },
+]
+temperature = 353.15
+pressure = 1.0e7
+ph = 6.2
+steps = 21
+[cases.expected]
+worst_fraction_a = 0.65
+worst_mineral = "BaSO4"
+worst_saturation_index = 4.0485505005539615
+points = [
+    { fraction_a = 0.0, si_caco3 = -0.9873571817254163, si_baso4 = -8.15593617926975, si_caso4 = 0.09604228707634732, si_srso4 = -2.47634981128195 },
+    { fraction_a = 0.05, si_caco3 = -0.866575982456963, si_baso4 = 3.0994282881379034, si_caso4 = 0.17041341191692894, si_srso4 = -2.138737251666787 },
+    { fraction_a = 0.1, si_caco3 = -0.758335287050155, si_baso4 = 3.3954082107690517, si_caso4 = 0.23231012851471, si_srso4 = -1.9547310884795701 },
+    { fraction_a = 0.15, si_caco3 = -0.6592994637181491, si_baso4 = 3.566000512760783, si_caso4 = 0.28480311842844674, si_srso4 = -1.8289511309042012 },
+    { fraction_a = 0.2, si_caco3 = -0.5673076487865085, si_baso4 = 3.684765004271143, si_caso4 = 0.32978139577788834, si_srso4 = -1.7344552141207785 },
+    { fraction_a = 0.25, si_caco3 = -0.48087832281670373, si_baso4 = 3.7745740708923288, si_caso4 = 0.3684379399516926, si_srso4 = -1.659886114056329 },
+    { fraction_a = 0.3, si_caco3 = -0.39895073971444894, si_baso4 = 3.8454416473461652, si_caso4 = 0.4015169555161293, si_srso4 = -1.599483971280658 },
+    { fraction_a = 0.35, si_caco3 = -0.3207389912857721, si_baso4 = 3.902528719051859, si_caso4 = 0.42944579848060993, si_srso4 = -1.5500296879895954 },
+    { fraction_a = 0.4, si_caco3 = -0.24564445318320338, si_baso4 = 3.948716895544268, si_caso4 = 0.45240413425454395, si_srso4 = -1.509655446809802 },
+    { fraction_a = 0.45, si_caco3 = -0.17320061212589266, si_baso4 = 3.985634321285307, si_caso4 = 0.4703537209196025, si_srso4 = -1.4773144014747892 },
+    { fraction_a = 0.5, si_caco3 = -0.10303686539023715, si_baso4 = 4.014112830152513, si_caso4 = 0.4830379626035759, si_srso4 = -1.452532038167547 },
+    { fraction_a = 0.55, si_caco3 = -0.03485395172996064, si_baso4 = 4.034390048631849, si_caso4 = 0.48995121952493115, si_srso4 = -1.4353025127702157 },
+    { fraction_a = 0.6, si_caco3 = 0.03159320944696731, si_baso4 = 4.046167153558794, si_caso4 = 0.49026870228482533, si_srso4 = -1.4260815922792647 },
+    { fraction_a = 0.65, si_caco3 = 0.09650780425426575, si_baso4 = 4.0485505005539615, si_caso4 = 0.4827135267458127, si_srso4 = -1.4258729843397164 },
+    { fraction_a = 0.7, si_caco3 = 0.16006011145223553, si_baso4 = 4.039848891200383, si_caso4 = 0.4653083298703562, si_srso4 = -1.4364473627958576 },
+    { fraction_a = 0.75, si_caco3 = 0.22239420135415067, si_baso4 = 4.017115756531689, si_caso4 = 0.4348883665353718, si_srso4 = -1.4608101221980592 },
+    { fraction_a = 0.8, si_caco3 = 0.2836330129520288, si_baso4 = 3.9751225335938463, si_caso4 = 0.38605571906722247, si_srso4 = -1.5042343002423513 },
+    { fraction_a = 0.85, si_caco3 = 0.34388225935362904, si_baso4 = 3.903784307984779, si_caso4 = 0.30859194082409314, si_srso4 = -1.576839060671201 },
+    { fraction_a = 0.9, si_caco3 = 0.4032334720927029, si_baso4 = 3.7801534322159966, si_caso4 = 0.17944263652566583, si_srso4 = -1.7015988543668046 },
+    { fraction_a = 0.95, si_caco3 = 0.46176640275076686, si_baso4 = 3.53058954596421, si_caso4 = -0.07511893988163099, si_srso4 = -1.9521753185590036 },
+    { fraction_a = 1.0, si_caco3 = 0.519550938209763, si_baso4 = -8.582402147472612, si_caso4 = -12.192658261069177, si_srso4 = -14.066080355091454 },
+]
+
+[[cases]]
+id = "steps_floor"
+tolerance = 1.0e-09
+source = "The capture's `steps_floor` rows: the same pair with `setSteps(1)`, which the class floors at two points; the end points are the eleven-point case's ends, and the worst is CaCO3 at all formation water.\n"
+[cases.inputs]
+brine_a = [
+    { calcium = 5.0, barium = 0.3, strontium = 0.8, magnesium = 0.5, sodium = 30.0, potassium = 0.4, chloride = 55.0, sulphate = 0.0, bicarbonate = 0.4 },
+]
+brine_b = [
+    { calcium = 0.4, barium = 0.0, strontium = 0.008, magnesium = 1.3, sodium = 11.0, potassium = 0.4, chloride = 19.0, sulphate = 2.7, bicarbonate = 0.14 },
+]
+temperature = 333.15
+pressure = 1.0e7
+ph = 6.0
+steps = 1
+[cases.expected]
+worst_fraction_a = 1.0
+worst_mineral = "CaCO3"
+worst_saturation_index = 1.0416155205107964
+points = [
+    { fraction_a = 0.0, si_caco3 = -1.3795591383150576, si_baso4 = -8.072442643843596, si_caso4 = 0.006857090708146885, si_srso4 = -1.6922553591975804 },
+    { fraction_a = 1.0, si_caco3 = 1.0416155205107964, si_baso4 = -8.313575300869248, si_caso4 = -11.476721387971768, si_srso4 = -12.27274385088555 },
+]

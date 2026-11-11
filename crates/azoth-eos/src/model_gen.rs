@@ -5,12 +5,14 @@
 //!   - specs/models/eos/aqueous_viscosity.toml
 //!   - specs/models/eos/argon_solid_phase.toml
 //!   - specs/models/eos/barite_celestite_solid_solution.toml
+//!   - specs/models/eos/brine_mixing_scale_evaluator.toml
 //!   - specs/models/eos/bubble_pressure.toml
 //!   - specs/models/eos/bubble_temperature.toml
 //!   - specs/models/eos/bwrs_phase.toml
 //!   - specs/models/eos/calc_ionic_composition.toml
 //!   - specs/models/eos/capillary_dew_point.toml
 //!   - specs/models/eos/cdft_surface_tension.toml
+//!   - specs/models/eos/closed_loop_deposition_solver.toml
 //!   - specs/models/eos/co2_brine_phase_equilibrium.toml
 //!   - specs/models/eos/co2_phase.toml
 //!   - specs/models/eos/critical_point.toml
@@ -20,6 +22,7 @@
 //!   - specs/models/eos/effective_diffusion.toml
 //!   - specs/models/eos/electrolyte_cpa_statoil_phase.toml
 //!   - specs/models/eos/eos_cg_phase.toml
+//!   - specs/models/eos/equilibrium_sound_speed.toml
 //!   - specs/models/eos/filippov_conductivity.toml
 //!   - specs/models/eos/flowline_scale_profile.toml
 //!   - specs/models/eos/freezing_point.toml
@@ -45,6 +48,7 @@
 //!   - specs/models/eos/hydrate_fraction.toml
 //!   - specs/models/eos/hydrate_inhibitor_concentration.toml
 //!   - specs/models/eos/hydrate_inhibitor_wt.toml
+//!   - specs/models/eos/hydrate_risk_map.toml
 //!   - specs/models/eos/hydrogen_phase.toml
 //!   - specs/models/eos/interface_properties.toml
 //!   - specs/models/eos/kent_eisenberg_phase.toml
@@ -60,8 +64,13 @@
 //!   - specs/models/eos/pcsaft_rahmat_phase.toml
 //!   - specs/models/eos/ph_flash.toml
 //!   - specs/models/eos/phase_transport.toml
+//!   - specs/models/eos/pipe_beggs_and_brills.toml
+//!   - specs/models/eos/pipeline_cooldown.toml
+//!   - specs/models/eos/pitzer_hydrate_formation_pressure.toml
+//!   - specs/models/eos/pitzer_hydrate_formation_temperature.toml
 //!   - specs/models/eos/pitzer_phase.toml
 //!   - specs/models/eos/pr_cpa_phase.toml
+//!   - specs/models/eos/production_chemical_scale_scenario.toml
 //!   - specs/models/eos/ps_flash.toml
 //!   - specs/models/eos/pt_flash.toml
 //!   - specs/models/eos/pt_phase_envelope.toml
@@ -74,9 +83,15 @@
 //!   - specs/models/eos/saft_vr_mie_phase.toml
 //!   - specs/models/eos/salt_precipitation.toml
 //!   - specs/models/eos/saturate_with_water.toml
+//!   - specs/models/eos/scale_control_assessor.toml
+//!   - specs/models/eos/scale_deposition_accumulator.toml
+//!   - specs/models/eos/scale_remediation_advisor.toml
 //!   - specs/models/eos/soreide_whitson_phase.toml
+//!   - specs/models/eos/sound_speed.toml
 //!   - specs/models/eos/srk_cpa_phase.toml
 //!   - specs/models/eos/stability_test.toml
+//!   - specs/models/eos/stream_scale_analyzer.toml
+//!   - specs/models/eos/surf_cooldown.toml
 //!   - specs/models/eos/th_flash.toml
 //!   - specs/models/eos/thermal_conductivity.toml
 //!   - specs/models/eos/tp_flash_saft.toml
@@ -92,6 +107,7 @@
 //!   - specs/models/eos/unifac_psrk_activity_coefficients.toml
 //!   - specs/models/eos/unifac_umrpru_activity_coefficients.toml
 //!   - specs/models/eos/uniquac_activity_coefficients.toml
+//!   - specs/models/eos/valve_scale_drift.toml
 //!   - specs/models/eos/van_laar_acid_activity_coefficients.toml
 //!   - specs/models/eos/vh_flash.toml
 //!   - specs/models/eos/viscosity.toml
@@ -399,7 +415,7 @@ static AQUEOUS_VISCOSITY_CASES: &[TestCase] = &[
         strings: &[],
         vectors: &[("z", &[1.0])],
         matrices: &[],
-        expected: &[("viscosity", 0.0004955318590786208)],
+        expected: &[("viscosity", 0.0005305720894530389)],
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
@@ -419,6 +435,25 @@ static AQUEOUS_VISCOSITY_CASES: &[TestCase] = &[
         vectors: &[("z", &[1.0])],
         matrices: &[],
         expected: &[("viscosity", 0.03461914543810686)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "water_teg_mixture_at_300_k_and_5_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 300.0), ("P", 500000.0)],
+        flags: &[],
+        lists: &[("components", &["water", "TEG"])],
+        strings: &[],
+        vectors: &[("z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[("viscosity", 0.027140221192857243)],
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
@@ -924,6 +959,1156 @@ pub static BARITE_CELESTITE_SOLID_SOLUTION_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&BARITE_CELESTITE_SOLID_SOLUTION_ALGORITHM),
     checks: BARITE_CELESTITE_SOLID_SOLUTION_CHECKS,
     cases: BARITE_CELESTITE_SOLID_SOLUTION_CASES,
+};
+
+static BRINE_MIXING_SCALE_EVALUATOR_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A state has a positive pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "ph",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(14.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.",
+        },
+    },
+];
+
+static BRINE_MIXING_SCALE_EVALUATOR_CASES: &[TestCase] = &[
+    TestCase {
+        id: "mixing_11",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+            ("ph", 6.0),
+            ("steps", 11.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("worst_fraction_a", 0.7),
+            ("worst_saturation_index", 4.154711564966543),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("worst_mineral", "BaSO4")],
+        records: &[
+            (
+                "brine_a",
+                &[&[
+                    RecordField {
+                        name: "calcium",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "barium",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "strontium",
+                        value: FieldValue::Number(0.8),
+                    },
+                    RecordField {
+                        name: "magnesium",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "sodium",
+                        value: FieldValue::Number(30.0),
+                    },
+                    RecordField {
+                        name: "potassium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "chloride",
+                        value: FieldValue::Number(55.0),
+                    },
+                    RecordField {
+                        name: "sulphate",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "bicarbonate",
+                        value: FieldValue::Number(0.4),
+                    },
+                ]],
+            ),
+            (
+                "brine_b",
+                &[&[
+                    RecordField {
+                        name: "calcium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "barium",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "strontium",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "magnesium",
+                        value: FieldValue::Number(1.3),
+                    },
+                    RecordField {
+                        name: "sodium",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "potassium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "chloride",
+                        value: FieldValue::Number(19.0),
+                    },
+                    RecordField {
+                        name: "sulphate",
+                        value: FieldValue::Number(2.7),
+                    },
+                    RecordField {
+                        name: "bicarbonate",
+                        value: FieldValue::Number(0.14),
+                    },
+                ]],
+            ),
+        ],
+        expected_records: &[(
+            "points",
+            &[
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-1.3795591383150576),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(-8.072442643843596),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.006857090708146885),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.6922553591975804),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.9123756907222873),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.281920635573397),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.3543029953784256),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-0.6398214165022846),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.5932687627500659),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.601636416136442),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.5590642602397704),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-0.3404987945810829),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.3312207134388139),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.7967824415215885),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.7079650976722802),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-0.15236898773719254),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.09954805660357557),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.9376856965751195),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.8237576321427804),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-0.01501681119195375),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.11331650020186856),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.043189336695914),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.9134670050803426),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(0.0883421604622514),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.6),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.3134401710628332),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.117332975237079),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.9767527160332996),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(0.1610501134582627),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.7),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.5043963563216387),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.154711564966543),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(1.0062060040469119),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(0.1974002999558051),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.8),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.6884621018193755),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.135003033578822),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.9804571182382182),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(0.17691886485473685),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.9),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.8671740232008869),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.986149433722609),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.8268466857018488),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(0.027463165246042642),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(1.0416155205107964),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(-8.313575300869248),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(-11.476721387971768),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-12.27274385088555),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "mixing_21",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("temperature", 353.15),
+            ("pressure", 10000000.0),
+            ("ph", 6.2),
+            ("steps", 21.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("worst_fraction_a", 0.65),
+            ("worst_saturation_index", 4.0485505005539615),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("worst_mineral", "BaSO4")],
+        records: &[
+            (
+                "brine_a",
+                &[&[
+                    RecordField {
+                        name: "calcium",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "barium",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "strontium",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "magnesium",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "sodium",
+                        value: FieldValue::Number(25.0),
+                    },
+                    RecordField {
+                        name: "potassium",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "chloride",
+                        value: FieldValue::Number(45.0),
+                    },
+                    RecordField {
+                        name: "sulphate",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "bicarbonate",
+                        value: FieldValue::Number(0.3),
+                    },
+                ]],
+            ),
+            (
+                "brine_b",
+                &[&[
+                    RecordField {
+                        name: "calcium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "barium",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "strontium",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "magnesium",
+                        value: FieldValue::Number(1.3),
+                    },
+                    RecordField {
+                        name: "sodium",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "potassium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "chloride",
+                        value: FieldValue::Number(19.0),
+                    },
+                    RecordField {
+                        name: "sulphate",
+                        value: FieldValue::Number(2.8),
+                    },
+                    RecordField {
+                        name: "bicarbonate",
+                        value: FieldValue::Number(0.14),
+                    },
+                ]],
+            ),
+        ],
+        expected_records: &[(
+            "points",
+            &[
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.9873571817254163),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(-8.15593617926975),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.09604228707634732),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-2.47634981128195),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.866575982456963),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.0994282881379034),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.17041341191692894),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-2.138737251666787),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.758335287050155),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.3954082107690517),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.23231012851471),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.9547310884795701),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.15),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.6592994637181491),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.566000512760783),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.28480311842844674),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.8289511309042012),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.5673076487865085),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.684765004271143),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.32978139577788834),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.7344552141207785),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.25),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.48087832281670373),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.7745740708923288),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.3684379399516926),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.659886114056329),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.39895073971444894),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.8454416473461652),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.4015169555161293),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.599483971280658),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.35),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.3207389912857721),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.902528719051859),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.42944579848060993),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.5500296879895954),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.24564445318320338),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.948716895544268),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.45240413425454395),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.509655446809802),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.45),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.17320061212589266),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.985634321285307),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.4703537209196025),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.4773144014747892),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.10303686539023715),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.014112830152513),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.4830379626035759),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.452532038167547),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.55),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-0.03485395172996064),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.034390048631849),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.48995121952493115),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.4353025127702157),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.6),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.03159320944696731),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.046167153558794),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.49026870228482533),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.4260815922792647),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.65),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.09650780425426575),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.0485505005539615),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.4827135267458127),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.4258729843397164),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.7),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.16006011145223553),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.039848891200383),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.4653083298703562),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.4364473627958576),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.75),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.22239420135415067),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(4.017115756531689),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.4348883665353718),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.4608101221980592),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.8),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.2836330129520288),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.9751225335938463),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.38605571906722247),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.5042343002423513),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.85),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.34388225935362904),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.903784307984779),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.30859194082409314),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.576839060671201),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.9),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.4032334720927029),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.7801534322159966),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.17944263652566583),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.7015988543668046),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.95),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.46176640275076686),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(3.53058954596421),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(-0.07511893988163099),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.9521753185590036),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(0.519550938209763),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(-8.582402147472612),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(-12.192658261069177),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-14.066080355091454),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "steps_floor",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+            ("ph", 6.0),
+            ("steps", 1.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("worst_fraction_a", 1.0),
+            ("worst_saturation_index", 1.0416155205107964),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("worst_mineral", "CaCO3")],
+        records: &[
+            (
+                "brine_a",
+                &[&[
+                    RecordField {
+                        name: "calcium",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "barium",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "strontium",
+                        value: FieldValue::Number(0.8),
+                    },
+                    RecordField {
+                        name: "magnesium",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "sodium",
+                        value: FieldValue::Number(30.0),
+                    },
+                    RecordField {
+                        name: "potassium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "chloride",
+                        value: FieldValue::Number(55.0),
+                    },
+                    RecordField {
+                        name: "sulphate",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "bicarbonate",
+                        value: FieldValue::Number(0.4),
+                    },
+                ]],
+            ),
+            (
+                "brine_b",
+                &[&[
+                    RecordField {
+                        name: "calcium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "barium",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "strontium",
+                        value: FieldValue::Number(0.008),
+                    },
+                    RecordField {
+                        name: "magnesium",
+                        value: FieldValue::Number(1.3),
+                    },
+                    RecordField {
+                        name: "sodium",
+                        value: FieldValue::Number(11.0),
+                    },
+                    RecordField {
+                        name: "potassium",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "chloride",
+                        value: FieldValue::Number(19.0),
+                    },
+                    RecordField {
+                        name: "sulphate",
+                        value: FieldValue::Number(2.7),
+                    },
+                    RecordField {
+                        name: "bicarbonate",
+                        value: FieldValue::Number(0.14),
+                    },
+                ]],
+            ),
+        ],
+        expected_records: &[(
+            "points",
+            &[
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(-1.3795591383150576),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(-8.072442643843596),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(0.006857090708146885),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-1.6922553591975804),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "fraction_a",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "si_caco3",
+                        value: FieldValue::Number(1.0416155205107964),
+                    },
+                    RecordField {
+                        name: "si_baso4",
+                        value: FieldValue::Number(-8.313575300869248),
+                    },
+                    RecordField {
+                        name: "si_caso4",
+                        value: FieldValue::Number(-11.476721387971768),
+                    },
+                    RecordField {
+                        name: "si_srso4",
+                        value: FieldValue::Number(-12.27274385088555),
+                    },
+                ],
+            ],
+        )],
+    },
+];
+
+/// Registry entry for `eos.brine_mixing_scale_evaluator`.
+pub static BRINE_MIXING_SCALE_EVALUATOR_SPEC: ModelSpec = ModelSpec {
+    id: "eos.brine_mixing_scale_evaluator",
+    kind: "direct",
+    algorithm: None,
+    checks: BRINE_MIXING_SCALE_EVALUATOR_CHECKS,
+    cases: BRINE_MIXING_SCALE_EVALUATOR_CASES,
 };
 
 static BUBBLE_PRESSURE_CHECKS: &[SpecCheck] = &[
@@ -1849,6 +3034,440 @@ pub static CDFT_SURFACE_TENSION_SPEC: ModelSpec = ModelSpec {
     cases: CDFT_SURFACE_TENSION_CASES,
 };
 
+static CLOSED_LOOP_DEPOSITION_SOLVER_CHECKS: &[SpecCheck] = &[];
+
+static CLOSED_LOOP_DEPOSITION_SOLVER_CASES: &[TestCase] = &[
+    TestCase {
+        id: "base_1yr",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("service_time", 31557600.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+            ("tolerance", 0.0001),
+            ("max_iterations", 10.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.85, 0.05, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("iterations_taken", 1.0),
+            ("final_effective_diameter", 0.09998794649351135),
+        ],
+        expected_vectors: &[
+            ("diameter_history", &[0.1]),
+            ("max_thickness_history", &[6.026753244324614e-06]),
+            ("velocity_history", &[2.347648653523357]),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "service_1000yr",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("service_time", 31557600000.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+            ("tolerance", 0.0001),
+            ("max_iterations", 10.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.85, 0.05, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("iterations_taken", 3.0),
+            ("final_effective_diameter", 0.08794649351135078),
+        ],
+        expected_vectors: &[
+            (
+                "diameter_history",
+                &[0.1, 0.08794649351135078, 0.08794649351135078],
+            ),
+            (
+                "max_thickness_history",
+                &[
+                    0.006026753244324614,
+                    0.006026753244324614,
+                    0.006026753244324614,
+                ],
+            ),
+            (
+                "velocity_history",
+                &[2.347648653523357, 3.041163776065383, 3.041163776065383],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "max_iterations_2",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("service_time", 31557600000.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+            ("tolerance", 0.0001),
+            ("max_iterations", 2.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.85, 0.05, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("iterations_taken", 2.0),
+            ("final_effective_diameter", 0.08794649351135078),
+        ],
+        expected_vectors: &[
+            ("diameter_history", &[0.1, 0.08794649351135078]),
+            (
+                "max_thickness_history",
+                &[0.006026753244324614, 0.006026753244324614],
+            ),
+            ("velocity_history", &[2.347648653523357, 3.041163776065383]),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "blocked",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("service_time", 315576000000000.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+            ("tolerance", 0.0001),
+            ("max_iterations", 10.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.85, 0.05, 0.1])],
+        matrices: &[],
+        expected: &[("iterations_taken", 1.0), ("final_effective_diameter", 0.0)],
+        expected_vectors: &[
+            ("diameter_history", &[0.1]),
+            ("max_thickness_history", &[60.26753244324614]),
+            ("velocity_history", &[2.347648653523357]),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "no_scale",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+            ("calcium", 0.01),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 4.0),
+            ("service_time", 31557600000.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+            ("tolerance", 0.0001),
+            ("max_iterations", 10.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.85, 0.05, 0.1])],
+        matrices: &[],
+        expected: &[("iterations_taken", 1.0), ("final_effective_diameter", 0.1)],
+        expected_vectors: &[
+            ("diameter_history", &[0.1]),
+            ("max_thickness_history", &[0.0]),
+            ("velocity_history", &[2.347648653523357]),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "inhibited_0_5",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("service_time", 31557600000.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.5),
+            ("tolerance", 0.0001),
+            ("max_iterations", 10.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.85, 0.05, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("iterations_taken", 3.0),
+            ("final_effective_diameter", 0.0939732467556754),
+        ],
+        expected_vectors: &[
+            (
+                "diameter_history",
+                &[0.1, 0.0939732467556754, 0.0939732467556754],
+            ),
+            (
+                "max_thickness_history",
+                &[
+                    0.003013376622162307,
+                    0.0030133766221623064,
+                    0.0030133766221623064,
+                ],
+            ),
+            (
+                "velocity_history",
+                &[2.347648653523357, 2.660496130931978, 2.660496130931978],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "large_tolerance",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("service_time", 31557600000.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+            ("tolerance", 0.02),
+            ("max_iterations", 10.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.85, 0.05, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("iterations_taken", 1.0),
+            ("final_effective_diameter", 0.08794649351135078),
+        ],
+        expected_vectors: &[
+            ("diameter_history", &[0.1]),
+            ("max_thickness_history", &[0.006026753244324614]),
+            ("velocity_history", &[2.347648653523357]),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "pr_eos",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("service_time", 31557600000.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+            ("tolerance", 0.0001),
+            ("max_iterations", 10.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "pr")],
+        vectors: &[("inlet_z", &[0.85, 0.05, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("iterations_taken", 3.0),
+            ("final_effective_diameter", 0.08794649351135078),
+        ],
+        expected_vectors: &[
+            (
+                "diameter_history",
+                &[0.1, 0.08794649351135078, 0.08794649351135078],
+            ),
+            (
+                "max_thickness_history",
+                &[
+                    0.006026753244324614,
+                    0.006026753244324614,
+                    0.006026753244324614,
+                ],
+            ),
+            (
+                "velocity_history",
+                &[2.316614002995081, 3.0008964518525576, 3.0008964518525576],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+/// Registry entry for `eos.closed_loop_deposition_solver`.
+pub static CLOSED_LOOP_DEPOSITION_SOLVER_SPEC: ModelSpec = ModelSpec {
+    id: "eos.closed_loop_deposition_solver",
+    kind: "direct",
+    algorithm: None,
+    checks: CLOSED_LOOP_DEPOSITION_SOLVER_CHECKS,
+    cases: CLOSED_LOOP_DEPOSITION_SOLVER_CASES,
+};
+
 static CO2_BRINE_PHASE_EQUILIBRIUM_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -2336,7 +3955,7 @@ static DESMUKH_MATHER_PHASE_CASES: &[TestCase] = &[
                     -4.09271615638785,
                     -34.538776394910684,
                     -34.538776394910684,
-                    3.1621179888375215,
+                    2.580841036729538,
                 ],
             ),
         ],
@@ -3048,6 +4667,244 @@ pub static EOS_CG_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&EOS_CG_PHASE_ALGORITHM),
     checks: EOS_CG_PHASE_CHECKS,
     cases: EOS_CG_PHASE_CASES,
+};
+
+static EQUILIBRIUM_SOUND_SPEED_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "relative_pressure_step",
+            min: Some(1e-06),
+            min_inclusive: true,
+            max: Some(0.05),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the class refuses a step outside this band",
+        },
+    },
+];
+
+static EQUILIBRIUM_SOUND_SPEED_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_dense_single_phase_matches_the_frozen_phase_speed",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 298.15), ("P", 15000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2"])],
+        strings: &[],
+        vectors: &[("z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("sound_speed", 456.22605621637035),
+            ("specific_entropy", -1537.9517199354361),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("status", "converged"), ("stencil", "central")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_dilute_gas_is_the_ideal_gas_limit",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 350.0), ("P", 100.0)],
+        flags: &[],
+        lists: &[("components", &["nitrogen"])],
+        strings: &[],
+        vectors: &[("z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("sound_speed", 381.164655551199),
+            ("specific_entropy", 2311.7371165344334),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("status", "converged"), ("stencil", "central")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_pure_two_phase_state_needs_its_entropy",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("T", 278.5666675376772),
+            ("P", 4000000.0),
+            ("specific_entropy", -1537.9517199354361),
+        ],
+        flags: &[],
+        lists: &[("components", &["CO2"])],
+        strings: &[],
+        vectors: &[("z", &[1.0])],
+        matrices: &[],
+        expected: &[("sound_speed", 57.08170902262859)],
+        expected_vectors: &[],
+        expected_strings: &[("status", "converged"), ("stencil", "central")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_mixture_isentrope_at_50_bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 281.25682342699747), ("P", 5000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2", "nitrogen"])],
+        strings: &[],
+        vectors: &[("z", &[0.98, 0.02])],
+        matrices: &[],
+        expected: &[("sound_speed", 65.07419681239787)],
+        expected_vectors: &[],
+        expected_strings: &[("status", "converged"), ("stencil", "central")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_mixture_isentrope_at_40_bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 273.8452560336327), ("P", 4000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2", "nitrogen"])],
+        strings: &[],
+        vectors: &[("z", &[0.98, 0.02])],
+        matrices: &[],
+        expected: &[("sound_speed", 74.59183532302463)],
+        expected_vectors: &[],
+        expected_strings: &[("status", "converged"), ("stencil", "central")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_mixture_isentrope_at_20_bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 251.43555697412125), ("P", 2000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2", "nitrogen"])],
+        strings: &[],
+        vectors: &[("z", &[0.98, 0.02])],
+        matrices: &[],
+        expected: &[("sound_speed", 98.59046444891426)],
+        expected_vectors: &[],
+        expected_strings: &[("status", "converged"), ("stencil", "central")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_hydrogen_impurity_isentrope",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 272.9851566013508), ("P", 4000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2", "hydrogen"])],
+        strings: &[],
+        vectors: &[("z", &[0.98, 0.02])],
+        matrices: &[],
+        expected: &[("sound_speed", 82.66230938135733)],
+        expected_vectors: &[],
+        expected_strings: &[("status", "converged"), ("stencil", "central")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "a_wide_pressure_step_agrees_with_the_default",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("T", 273.8452560336327),
+            ("P", 4000000.0),
+            ("relative_pressure_step", 0.01),
+        ],
+        flags: &[],
+        lists: &[("components", &["CO2", "nitrogen"])],
+        strings: &[],
+        vectors: &[("z", &[0.98, 0.02])],
+        matrices: &[],
+        expected: &[("sound_speed", 74.59166484463425)],
+        expected_vectors: &[],
+        expected_strings: &[("status", "converged"), ("stencil", "central")],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+static EQUILIBRIUM_SOUND_SPEED_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "fixed_entropy_pressure_stencil",
+    convergence: "relative",
+    tolerance: 0.002,
+    max_iterations: 11,
+    bracket: None,
+    initialisation: Some("flash_at_stated_state"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.equilibrium_sound_speed`.
+pub static EQUILIBRIUM_SOUND_SPEED_SPEC: ModelSpec = ModelSpec {
+    id: "eos.equilibrium_sound_speed",
+    kind: "procedure",
+    algorithm: Some(&EQUILIBRIUM_SOUND_SPEED_ALGORITHM),
+    checks: EQUILIBRIUM_SOUND_SPEED_CHECKS,
+    cases: EQUILIBRIUM_SOUND_SPEED_CASES,
 };
 
 static FILIPPOV_CONDUCTIVITY_CHECKS: &[SpecCheck] = &[
@@ -5764,9 +7621,9 @@ static GE_NRTL_PHASE_CASES: &[TestCase] = &[
         expected_vectors: &[
             ("gamma", &[1.0549706965727317, 9.265615100322021]),
             ("ln_gamma", &[0.05351299078183234, 2.2263102472068073]),
-            ("ln_phi", &[-4.024520470177667, -7.865632584786245]),
+            ("ln_phi", &[-4.024520470177667, -8.444639877223903]),
             ("p_sat", &[16940.747558344778, 0.0]),
-            ("henry", &[0.0, 5165450.928785165]),
+            ("henry", &[0.0, 2895000.000000065]),
             ("gamma_inf", &[1.0, 124733.5617579047]),
         ],
         expected_strings: &[],
@@ -5959,9 +7816,9 @@ static GE_UNIFAC_PHASE_CASES: &[TestCase] = &[
         expected_vectors: &[
             ("gamma", &[1.000114520860398, 1.8754338464820117]),
             ("ln_gamma", &[0.00011451430338496486, 0.6288400174474484]),
-            ("ln_phi", &[-4.077918946656115, 1.6307163587830213]),
+            ("ln_phi", &[-4.077918946656115, 1.0517090663453632]),
             ("p_sat", &[16940.747558344778, 0.0]),
-            ("henry", &[0.0, 5165450.928785165]),
+            ("henry", &[0.0, 2895000.000000065]),
             ("gamma_inf", &[1.0, 1.8967010016834327]),
         ],
         expected_strings: &[],
@@ -6413,9 +8270,9 @@ static GE_WILSON_PHASE_CASES: &[TestCase] = &[
         expected_vectors: &[
             ("gamma", &[1.0002027278279388, 2.6633472699415957]),
             ("ln_gamma", &[0.0002027072814295844, 0.9795837038654425]),
-            ("ln_phi", &[-4.07783075367807, 1.621992407101495]),
+            ("ln_phi", &[-4.07783075367807, 1.042985114663837]),
             ("p_sat", &[16940.747558344778, 0.0]),
-            ("henry", &[0.0, 5165450.928785165]),
+            ("henry", &[0.0, 2895000.000000065]),
             ("gamma_inf", &[1.0, 2.7171504438636984]),
         ],
         expected_strings: &[],
@@ -7846,6 +9703,702 @@ pub static HYDRATE_INHIBITOR_WT_SPEC: ModelSpec = ModelSpec {
     cases: HYDRATE_INHIBITOR_WT_CASES,
 };
 
+static HYDRATE_RISK_MAP_CHECKS: &[SpecCheck] = &[];
+
+static HYDRATE_RISK_MAP_CASES: &[TestCase] = &[
+    TestCase {
+        id: "four_points",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[
+            ("z", &[0.82, 0.06, 0.03, 0.09]),
+            ("distances", &[0.0, 10000.0, 25000.0, 50000.0]),
+            ("pressures", &[10000000.0, 9500000.0, 8000000.0, 6000000.0]),
+            ("temperatures", &[303.15, 298.15, 288.15, 281.15]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("critical_point_count", 2.0),
+            ("unknown_point_count", 0.0),
+            ("total_points", 4.0),
+            ("minimum_subcooling", -9.206761518400754),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("overall_risk", "critical")],
+        records: &[],
+        expected_records: &[(
+            "points",
+            &[
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(10000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(303.15),
+                    },
+                    RecordField {
+                        name: "hydrate_temperature",
+                        value: FieldValue::Number(293.627585881478),
+                    },
+                    RecordField {
+                        name: "subcooling",
+                        value: FieldValue::Number(9.522414118521965),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("low"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(10000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(9500000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(298.15),
+                    },
+                    RecordField {
+                        name: "hydrate_temperature",
+                        value: FieldValue::Number(293.3304441618965),
+                    },
+                    RecordField {
+                        name: "subcooling",
+                        value: FieldValue::Number(4.819555838103497),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("medium"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(25000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(8000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(288.15),
+                    },
+                    RecordField {
+                        name: "hydrate_temperature",
+                        value: FieldValue::Number(292.2840773927619),
+                    },
+                    RecordField {
+                        name: "subcooling",
+                        value: FieldValue::Number(-4.134077392761924),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("critical"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(50000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(6000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(281.15),
+                    },
+                    RecordField {
+                        name: "hydrate_temperature",
+                        value: FieldValue::Number(290.35676151840073),
+                    },
+                    RecordField {
+                        name: "subcooling",
+                        value: FieldValue::Number(-9.206761518400754),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("critical"),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "bands",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[
+            ("z", &[0.82, 0.06, 0.03, 0.09]),
+            ("distances", &[0.0, 5000.0, 10000.0, 20000.0]),
+            (
+                "pressures",
+                &[12000000.0, 11000000.0, 10000000.0, 9000000.0],
+            ),
+            ("temperatures", &[298.15, 293.15, 285.15, 293.15]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("critical_point_count", 2.0),
+            ("unknown_point_count", 0.0),
+            ("total_points", 4.0),
+            ("minimum_subcooling", -8.477585881478035),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("overall_risk", "critical")],
+        records: &[],
+        expected_records: &[(
+            "points",
+            &[
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(12000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(298.15),
+                    },
+                    RecordField {
+                        name: "hydrate_temperature",
+                        value: FieldValue::Number(294.6346950906306),
+                    },
+                    RecordField {
+                        name: "subcooling",
+                        value: FieldValue::Number(3.5153049093693767),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("medium"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(5000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(11000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(293.15),
+                    },
+                    RecordField {
+                        name: "hydrate_temperature",
+                        value: FieldValue::Number(294.16280400803936),
+                    },
+                    RecordField {
+                        name: "subcooling",
+                        value: FieldValue::Number(-1.0128040080393816),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("critical"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(10000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(10000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(285.15),
+                    },
+                    RecordField {
+                        name: "hydrate_temperature",
+                        value: FieldValue::Number(293.627585881478),
+                    },
+                    RecordField {
+                        name: "subcooling",
+                        value: FieldValue::Number(-8.477585881478035),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("critical"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(20000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(9000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(293.15),
+                    },
+                    RecordField {
+                        name: "hydrate_temperature",
+                        value: FieldValue::Number(293.00982868061556),
+                    },
+                    RecordField {
+                        name: "subcooling",
+                        value: FieldValue::Number(0.14017131938442162),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("high"),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "custom_thresholds",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("high_risk_subcooling", 1.0),
+            ("medium_risk_subcooling", 2.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[
+            ("z", &[0.82, 0.06, 0.03, 0.09]),
+            ("distances", &[0.0, 10000.0, 25000.0, 50000.0]),
+            ("pressures", &[10000000.0, 9500000.0, 8000000.0, 6000000.0]),
+            ("temperatures", &[303.15, 298.15, 288.15, 281.15]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("critical_point_count", 2.0),
+            ("unknown_point_count", 0.0),
+            ("total_points", 4.0),
+            ("minimum_subcooling", -9.206761518400754),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("overall_risk", "critical")],
+        records: &[],
+        expected_records: &[(
+            "points",
+            &[
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(10000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(303.15),
+                    },
+                    RecordField {
+                        name: "hydrate_temperature",
+                        value: FieldValue::Number(293.627585881478),
+                    },
+                    RecordField {
+                        name: "subcooling",
+                        value: FieldValue::Number(9.522414118521965),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("low"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(10000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(9500000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(298.15),
+                    },
+                    RecordField {
+                        name: "hydrate_temperature",
+                        value: FieldValue::Number(293.3304441618965),
+                    },
+                    RecordField {
+                        name: "subcooling",
+                        value: FieldValue::Number(4.819555838103497),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("low"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(25000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(8000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(288.15),
+                    },
+                    RecordField {
+                        name: "hydrate_temperature",
+                        value: FieldValue::Number(292.2840773927619),
+                    },
+                    RecordField {
+                        name: "subcooling",
+                        value: FieldValue::Number(-4.134077392761924),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("critical"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(50000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(6000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(281.15),
+                    },
+                    RecordField {
+                        name: "hydrate_temperature",
+                        value: FieldValue::Number(290.35676151840073),
+                    },
+                    RecordField {
+                        name: "subcooling",
+                        value: FieldValue::Number(-9.206761518400754),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("critical"),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "one_point",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[
+            ("z", &[0.82, 0.06, 0.03, 0.09]),
+            ("distances", &[0.0]),
+            ("pressures", &[10000000.0]),
+            ("temperatures", &[293.15]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("critical_point_count", 1.0),
+            ("unknown_point_count", 0.0),
+            ("total_points", 1.0),
+            ("minimum_subcooling", -0.47758588147803493),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("overall_risk", "critical")],
+        records: &[],
+        expected_records: &[(
+            "points",
+            &[&[
+                RecordField {
+                    name: "distance",
+                    value: FieldValue::Number(0.0),
+                },
+                RecordField {
+                    name: "pressure",
+                    value: FieldValue::Number(10000000.0),
+                },
+                RecordField {
+                    name: "actual_temperature",
+                    value: FieldValue::Number(293.15),
+                },
+                RecordField {
+                    name: "hydrate_temperature",
+                    value: FieldValue::Number(293.627585881478),
+                },
+                RecordField {
+                    name: "subcooling",
+                    value: FieldValue::Number(-0.47758588147803493),
+                },
+                RecordField {
+                    name: "risk_level",
+                    value: FieldValue::Name("critical"),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "dry",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[
+            ("z", &[0.9, 0.07, 0.03]),
+            ("distances", &[0.0, 10000.0, 25000.0, 50000.0]),
+            ("pressures", &[10000000.0, 9500000.0, 8000000.0, 6000000.0]),
+            ("temperatures", &[303.15, 298.15, 288.15, 281.15]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("critical_point_count", 0.0),
+            ("unknown_point_count", 4.0),
+            ("total_points", 4.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("overall_risk", "unknown")],
+        records: &[],
+        expected_records: &[(
+            "points",
+            &[
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(10000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(303.15),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("unknown"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(10000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(9500000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(298.15),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("unknown"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(25000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(8000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(288.15),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("unknown"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(50000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(6000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(281.15),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("unknown"),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "water_zero",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[
+            ("z", &[0.82, 0.06, 0.03, 0.0]),
+            ("distances", &[0.0, 10000.0, 25000.0, 50000.0]),
+            ("pressures", &[10000000.0, 9500000.0, 8000000.0, 6000000.0]),
+            ("temperatures", &[303.15, 298.15, 288.15, 281.15]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("critical_point_count", 0.0),
+            ("unknown_point_count", 4.0),
+            ("total_points", 4.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("overall_risk", "unknown")],
+        records: &[],
+        expected_records: &[(
+            "points",
+            &[
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(10000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(303.15),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("unknown"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(10000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(9500000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(298.15),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("unknown"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(25000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(8000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(288.15),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("unknown"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "distance",
+                        value: FieldValue::Number(50000.0),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(6000000.0),
+                    },
+                    RecordField {
+                        name: "actual_temperature",
+                        value: FieldValue::Number(281.15),
+                    },
+                    RecordField {
+                        name: "risk_level",
+                        value: FieldValue::Name("unknown"),
+                    },
+                ],
+            ],
+        )],
+    },
+];
+
+/// Registry entry for `eos.hydrate_risk_map`.
+pub static HYDRATE_RISK_MAP_SPEC: ModelSpec = ModelSpec {
+    id: "eos.hydrate_risk_map",
+    kind: "direct",
+    algorithm: None,
+    checks: HYDRATE_RISK_MAP_CHECKS,
+    cases: HYDRATE_RISK_MAP_CASES,
+};
+
 static HYDROGEN_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -8460,7 +11013,7 @@ static KENT_EISENBERG_PHASE_CASES: &[TestCase] = &[
                     -4.212658282214335,
                     18.420680743952367,
                     18.420680743952367,
-                    2.7069240672486448,
+                    2.1256471151406604,
                 ],
             ),
         ],
@@ -8491,7 +11044,7 @@ static KENT_EISENBERG_PHASE_CASES: &[TestCase] = &[
                     -5.058119157801453,
                     18.420680743952367,
                     18.420680743952367,
-                    2.3351395840225817,
+                    1.7561322915849262,
                 ],
             ),
         ],
@@ -8522,7 +11075,7 @@ static KENT_EISENBERG_PHASE_CASES: &[TestCase] = &[
                     -1.5990198338566504,
                     18.420680743952367,
                     18.420680743952367,
-                    3.5581577891204947,
+                    3.3066289684773054,
                 ],
             ),
         ],
@@ -12062,6 +14615,2404 @@ pub static PHASE_TRANSPORT_SPEC: ModelSpec = ModelSpec {
     cases: PHASE_TRANSPORT_CASES,
 };
 
+static PIPE_BEGGS_AND_BRILLS_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "inlet_n",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A flowing pipe has a positive molar flow.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "inlet_t",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "inlet_p",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A state has a positive pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "length",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A segment has a length; the inclination is `asin(elevation/length)`.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "diameter",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pipe with no diameter has no area.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "number_of_increments",
+            min: Some(1.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The class refuses a non-positive increment count.",
+        },
+    },
+];
+
+static PIPE_BEGGS_AND_BRILLS_CASES: &[TestCase] = &[
+    TestCase {
+        id: "two_phase_0_1m",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.85, 0.05, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("outlet_pressure", 9959435.834794452),
+            ("total_pressure_drop", 40564.165205547906),
+        ],
+        expected_vectors: &[
+            (
+                "pressure_profile",
+                &[
+                    10000000.0,
+                    9995950.913526125,
+                    9991900.203946266,
+                    9987847.869095618,
+                    9983793.906805007,
+                    9979738.314900877,
+                    9975681.091205271,
+                    9971622.23353583,
+                    9967561.739705767,
+                    9963499.607523864,
+                    9959435.834794452,
+                ],
+            ),
+            (
+                "pressure_drop_profile",
+                &[
+                    0.0,
+                    4049.0864738741743,
+                    4050.7095798590394,
+                    4052.3348506479006,
+                    4053.962290610956,
+                    4055.5919041312573,
+                    4057.2236956049405,
+                    4058.857669441151,
+                    4060.4938300621225,
+                    4062.1321819032974,
+                    4063.7727294132656,
+                ],
+            ),
+            ("temperature_profile", &[333.15]),
+            (
+                "liquid_holdup_profile",
+                &[
+                    0.08079594230649523,
+                    0.08077323707755536,
+                    0.08075051935315984,
+                    0.08072778911630121,
+                    0.08070504634993603,
+                    0.0806822910369835,
+                    0.08065952316032622,
+                    0.08063674270281018,
+                    0.08061394964724342,
+                    0.08059114397639804,
+                    0.0805683256730073,
+                ],
+            ),
+            (
+                "mixture_superficial_velocity_profile",
+                &[
+                    2.342667241158166,
+                    2.343659784384923,
+                    2.344653568863879,
+                    2.345648597166225,
+                    2.346644871870566,
+                    2.3476423955629553,
+                    2.3486411708369217,
+                    2.349641200293496,
+                    2.3506424865412385,
+                    2.351645032196266,
+                    2.352648839882289,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "two_phase_0_2m",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.2),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.85, 0.05, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("outlet_pressure", 9998813.138072135),
+            ("total_pressure_drop", 1186.8619278658343),
+        ],
+        expected_vectors: &[
+            (
+                "pressure_profile",
+                &[
+                    10000000.0,
+                    9999881.320180591,
+                    9999762.638945017,
+                    9999643.956293222,
+                    9999525.272225155,
+                    9999406.586740766,
+                    9999287.899840001,
+                    9999169.211522806,
+                    9999050.521789132,
+                    9998931.830638925,
+                    9998813.138072135,
+                ],
+            ),
+            (
+                "pressure_drop_profile",
+                &[
+                    0.0,
+                    118.67981940799186,
+                    118.68123557518409,
+                    118.68265179455493,
+                    118.68406806611262,
+                    118.68548438985468,
+                    118.68690076578677,
+                    118.6883171939105,
+                    118.68973367423222,
+                    118.69115020675237,
+                    118.69256679147625,
+                ],
+            ),
+            ("temperature_profile", &[333.15]),
+            (
+                "liquid_holdup_profile",
+                &[
+                    0.10915322419171157,
+                    0.10915232518849861,
+                    0.10915142617062219,
+                    0.10915052713808188,
+                    0.10914962809087728,
+                    0.10914872902900759,
+                    0.10914782995247221,
+                    0.10914693086127075,
+                    0.1091460317554028,
+                    0.10914513263486747,
+                    0.10914423349966405,
+                ],
+            ),
+            (
+                "mixture_superficial_velocity_profile",
+                &[
+                    0.5856668102895415,
+                    0.5856740802219137,
+                    0.5856813504218527,
+                    0.5856886208893753,
+                    0.5856958916244965,
+                    0.5857031626272333,
+                    0.585710433897602,
+                    0.585717705435618,
+                    0.5857249772412976,
+                    0.5857322493146568,
+                    0.5857395216557125,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "uphill_100m",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 100.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.85, 0.05, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("outlet_pressure", 9765641.884890754),
+            ("total_pressure_drop", 234358.11510924652),
+        ],
+        expected_vectors: &[
+            (
+                "pressure_profile",
+                &[
+                    10000000.0,
+                    9976440.968129836,
+                    9952909.46722645,
+                    9929405.441787535,
+                    9905928.836170683,
+                    9882479.594592541,
+                    9859057.661127966,
+                    9835662.979709147,
+                    9812295.49412474,
+                    9788955.148018975,
+                    9765641.884890754,
+                ],
+            ),
+            (
+                "pressure_drop_profile",
+                &[
+                    0.0,
+                    23559.03187016403,
+                    23531.500903386433,
+                    23504.025438915163,
+                    23476.605616852237,
+                    23449.24157814061,
+                    23421.93346457607,
+                    23394.681418818975,
+                    23367.485584406488,
+                    23340.346105764853,
+                    23313.263128221704,
+                ],
+            ),
+            ("temperature_profile", &[333.15]),
+            (
+                "liquid_holdup_profile",
+                &[
+                    0.14885721849144207,
+                    0.14861092077359006,
+                    0.1483647684740306,
+                    0.14811876104720384,
+                    0.14787289794487546,
+                    0.1476271786161035,
+                    0.14738160250720572,
+                    0.14713616906172727,
+                    0.1468908777204072,
+                    0.14664572792114408,
+                    0.14640071909896518,
+                ],
+            ),
+            (
+                "mixture_superficial_velocity_profile",
+                &[
+                    2.342667241158166,
+                    2.348454045571489,
+                    2.35426273896204,
+                    2.3600934375371594,
+                    2.3659462584230257,
+                    2.371821319674276,
+                    2.3777187402837523,
+                    2.3836386401923826,
+                    2.3895811402991725,
+                    2.3955463624713382,
+                    2.4015344295545633,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "downhill_100m",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", -100.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.85, 0.05, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("outlet_pressure", 10066787.828715872),
+            ("total_pressure_drop", -66787.82871587145),
+        ],
+        expected_vectors: &[
+            (
+                "pressure_profile",
+                &[
+                    10000000.0,
+                    10006638.338265449,
+                    10013285.64502432,
+                    10019941.927478794,
+                    10026607.19282914,
+                    10033281.448273694,
+                    10039964.70100887,
+                    10046656.958229128,
+                    10053358.227126997,
+                    10060068.51489304,
+                    10066787.828715872,
+                ],
+            ),
+            (
+                "pressure_drop_profile",
+                &[
+                    0.0,
+                    -6638.338265448668,
+                    -6647.3067588701915,
+                    -6656.282454475161,
+                    -6665.265350345391,
+                    -6674.255444555551,
+                    -6683.25273517339,
+                    -6692.257220259531,
+                    -6701.268897867681,
+                    -6710.28776604458,
+                    -6719.3138228298085,
+                ],
+            ),
+            ("temperature_profile", &[333.15]),
+            (
+                "liquid_holdup_profile",
+                &[
+                    0.04883517699246926,
+                    0.04885130767877704,
+                    0.04886745318227879,
+                    0.04888361349717903,
+                    0.04889978861764044,
+                    0.04891597853778297,
+                    0.04893218325168455,
+                    0.04894840275338079,
+                    0.04896463703686525,
+                    0.0489808860960886,
+                    0.048997149924959654,
+                ],
+            ),
+            (
+                "mixture_superficial_velocity_profile",
+                &[
+                    2.342667241158166,
+                    2.341041821627499,
+                    2.3394164689928547,
+                    2.3377911861533156,
+                    2.336165976006077,
+                    2.334540841446435,
+                    2.3329157853677507,
+                    2.3312908106614487,
+                    2.3296659202169847,
+                    2.328041116921841,
+                    2.3264164036614905,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "half_water",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.5, 0.05, 0.45])],
+        matrices: &[],
+        expected: &[
+            ("outlet_pressure", 9970971.472794661),
+            ("total_pressure_drop", 29028.52720533957),
+        ],
+        expected_vectors: &[
+            (
+                "pressure_profile",
+                &[
+                    10000000.0,
+                    9997100.527980464,
+                    9994200.306538949,
+                    9991299.334985286,
+                    9988397.612628352,
+                    9985495.138776073,
+                    9982591.912735414,
+                    9979687.93381238,
+                    9976783.201312017,
+                    9973877.714538405,
+                    9970971.472794661,
+                ],
+            ),
+            (
+                "pressure_drop_profile",
+                &[
+                    0.0,
+                    2899.4720195351897,
+                    2900.2214415153367,
+                    2900.9715536632534,
+                    2901.722356932567,
+                    2902.47385227878,
+                    2903.2260406594023,
+                    2903.978923033907,
+                    2904.7325003636925,
+                    2905.486773612165,
+                    2906.2417437446884,
+                ],
+            ),
+            ("temperature_profile", &[333.15]),
+            (
+                "liquid_holdup_profile",
+                &[
+                    0.21654402430142677,
+                    0.21650273478880466,
+                    0.21646142954671554,
+                    0.2164201085606905,
+                    0.2163787718162384,
+                    0.21633741929884706,
+                    0.2162960509939832,
+                    0.21625466688709183,
+                    0.21621326696359636,
+                    0.21617185120889904,
+                    0.2161304196083803,
+                ],
+            ),
+            (
+                "mixture_superficial_velocity_profile",
+                &[
+                    1.4962902958883237,
+                    1.4967243823968972,
+                    1.4971588454380071,
+                    1.497593685549866,
+                    1.4980289032717626,
+                    1.4984644991440572,
+                    1.4989004737081872,
+                    1.4993368275066683,
+                    1.499773561083101,
+                    1.5002106749821684,
+                    1.5006481697496414,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "oil_water_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "n-octane", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.5, 0.25, 0.25])],
+        matrices: &[],
+        expected: &[
+            ("outlet_pressure", 9932568.73277464),
+            ("total_pressure_drop", 67431.26722536061),
+        ],
+        expected_vectors: &[
+            (
+                "pressure_profile",
+                &[
+                    10000000.0,
+                    9993273.807321144,
+                    9986543.871083371,
+                    9979810.183991814,
+                    9973072.738728393,
+                    9966331.527951702,
+                    9959586.54429692,
+                    9952837.78037569,
+                    9946085.228776025,
+                    9939328.882062199,
+                    9932568.73277464,
+                ],
+            ),
+            (
+                "pressure_drop_profile",
+                &[
+                    0.0,
+                    6726.192678856153,
+                    6729.93623777304,
+                    6733.687091556286,
+                    6737.445263421973,
+                    6741.210776689683,
+                    6744.983654782995,
+                    6748.763921230174,
+                    6752.551599664709,
+                    6756.346713825943,
+                    6760.149287559679,
+                ],
+            ),
+            ("temperature_profile", &[333.15]),
+            (
+                "liquid_holdup_profile",
+                &[
+                    0.4828108752566509,
+                    0.4826175690609327,
+                    0.4824241006342148,
+                    0.4822304696255257,
+                    0.48203667568271485,
+                    0.48184271845244375,
+                    0.48164859758018147,
+                    0.481454312710199,
+                    0.48125986348556477,
+                    0.48106524954813673,
+                    0.4808704705385577,
+                ],
+            ),
+            (
+                "mixture_superficial_velocity_profile",
+                &[
+                    1.5156331851337914,
+                    1.516530976442737,
+                    1.5174305601652978,
+                    1.518331942066136,
+                    1.5192351279357494,
+                    1.520140123590626,
+                    1.5210469348733926,
+                    1.521955567652966,
+                    1.5228660278247028,
+                    1.5237783213105554,
+                    1.5246924540592246,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "gas_only",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("outlet_pressure", 9971927.703484392),
+            ("total_pressure_drop", 28072.29651560732),
+        ],
+        expected_vectors: &[
+            (
+                "pressure_profile",
+                &[
+                    10000000.0,
+                    9997196.418305526,
+                    9994392.027848583,
+                    9991586.827920452,
+                    9988780.817811403,
+                    9985973.99681069,
+                    9983166.36420654,
+                    9980357.919286164,
+                    9977548.661335746,
+                    9974738.589640446,
+                    9971927.703484392,
+                ],
+            ),
+            (
+                "pressure_drop_profile",
+                &[
+                    0.0,
+                    2803.581694473494,
+                    2804.390456944246,
+                    2805.199928130429,
+                    2806.0101090478747,
+                    2806.821000714443,
+                    2807.6326041500383,
+                    2808.4449203766007,
+                    2809.2579504181317,
+                    2810.0716953006727,
+                    2810.886156052337,
+                ],
+            ),
+            ("temperature_profile", &[333.15]),
+            (
+                "liquid_holdup_profile",
+                &[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            ),
+            (
+                "mixture_superficial_velocity_profile",
+                &[
+                    2.600907367789081,
+                    2.601668875962342,
+                    2.6024310501125356,
+                    2.603193891193803,
+                    2.6039574001621943,
+                    2.604721577975673,
+                    2.6054864255941244,
+                    2.6062519439793563,
+                    2.6070181340951035,
+                    2.6077849969070432,
+                    2.608552533382786,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "water_only",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+        ],
+        flags: &[],
+        lists: &[("components", &["water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("outlet_pressure", 9996164.906177832),
+            ("total_pressure_drop", 3835.0938221682895),
+        ],
+        expected_vectors: &[
+            (
+                "pressure_profile",
+                &[
+                    10000000.0,
+                    9999616.490653083,
+                    9999232.98129832,
+                    9998849.471935714,
+                    9998465.962565262,
+                    9998082.453186966,
+                    9997698.94380083,
+                    9997315.434406847,
+                    9996931.925005019,
+                    9996548.415595347,
+                    9996164.906177832,
+                ],
+            ),
+            (
+                "pressure_drop_profile",
+                &[
+                    0.0,
+                    383.5093469180229,
+                    383.5093547622361,
+                    383.50936260643675,
+                    383.50937045062426,
+                    383.5093782947992,
+                    383.5093861389613,
+                    383.5093939831108,
+                    383.50940182724713,
+                    383.50940967137075,
+                    383.5094175154815,
+                ],
+            ),
+            ("temperature_profile", &[333.15]),
+            (
+                "liquid_holdup_profile",
+                &[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+            ),
+            (
+                "mixture_superficial_velocity_profile",
+                &[
+                    0.18915846515184345,
+                    0.1891584844260701,
+                    0.18915850370032414,
+                    0.1891585229746053,
+                    0.18915854224891393,
+                    0.18915856152324984,
+                    0.18915858079761305,
+                    0.18915860007200358,
+                    0.18915861934642142,
+                    0.18915863862086657,
+                    0.18915865789533912,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "rough_1e_3",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 80.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 0.001),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.85, 0.05, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("outlet_pressure", 9884161.686835255),
+            ("total_pressure_drop", 115838.31316474402),
+        ],
+        expected_vectors: &[
+            (
+                "pressure_profile",
+                &[
+                    10000000.0,
+                    9988477.819042435,
+                    9976942.077759184,
+                    9965392.724277785,
+                    9953829.706423018,
+                    9942252.971714305,
+                    9930662.467363108,
+                    9919058.140270283,
+                    9907439.937023412,
+                    9895807.803894103,
+                    9884161.686835255,
+                ],
+            ),
+            (
+                "pressure_drop_profile",
+                &[
+                    0.0,
+                    11522.18095756538,
+                    11535.741283251371,
+                    11549.353481397542,
+                    11563.017854768093,
+                    11576.734708713218,
+                    11590.504351196729,
+                    11604.327092824045,
+                    11618.2032468707,
+                    11632.133129310938,
+                    11646.117058846996,
+                ],
+            ),
+            ("temperature_profile", &[333.15]),
+            (
+                "liquid_holdup_profile",
+                &[
+                    0.08079594230649523,
+                    0.08073132283601708,
+                    0.08066659978953261,
+                    0.08060177276050154,
+                    0.08053684133985346,
+                    0.08047180511596753,
+                    0.08040666367464894,
+                    0.08034141659910615,
+                    0.08027606346992829,
+                    0.08021060386506053,
+                    0.08014503735978223,
+                ],
+            ),
+            (
+                "mixture_superficial_velocity_profile",
+                &[
+                    2.342667241158166,
+                    2.345493860930327,
+                    2.348330659988887,
+                    2.351177699133418,
+                    2.3540350396701397,
+                    2.356902743417358,
+                    2.3597808727109952,
+                    2.3626694904101866,
+                    2.365568659902948,
+                    2.3684784451119265,
+                    2.3713989105002162,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "intermittent_liquid_rich",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 800.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.5, 0.05, 0.45])],
+        matrices: &[],
+        expected: &[
+            ("outlet_pressure", 6855981.595157943),
+            ("total_pressure_drop", 3144018.4048420577),
+        ],
+        expected_vectors: &[
+            (
+                "pressure_profile",
+                &[
+                    10000000.0,
+                    9732174.182963563,
+                    9456648.297625972,
+                    9172706.367603559,
+                    8879517.77409563,
+                    8576110.070098436,
+                    8261332.958892947,
+                    7933809.672993027,
+                    7591869.945155563,
+                    7233455.325937214,
+                    6855981.595157943,
+                ],
+            ),
+            (
+                "pressure_drop_profile",
+                &[
+                    0.0,
+                    267825.8170364377,
+                    275525.8853375903,
+                    283941.9300224141,
+                    293188.5935079273,
+                    303407.7039971948,
+                    314777.1112054887,
+                    327523.28589992,
+                    341939.72783746454,
+                    358414.61921834823,
+                    377473.7307792721,
+                ],
+            ),
+            ("temperature_profile", &[333.15]),
+            (
+                "liquid_holdup_profile",
+                &[
+                    0.14385651959951218,
+                    0.14112958927807168,
+                    0.13829372748671465,
+                    0.13533840905720165,
+                    0.13225133451990886,
+                    0.12901798853642782,
+                    0.12562104850769015,
+                    0.122039576948993,
+                    0.11824789374782964,
+                    0.11421396044152157,
+                    0.1098969948854688,
+                ],
+            ),
+            (
+                "mixture_superficial_velocity_profile",
+                &[
+                    14.962902958883232,
+                    15.375321103744618,
+                    15.825132527700067,
+                    16.318218401896896,
+                    16.86183505795919,
+                    17.465055660943197,
+                    18.139398056702095,
+                    18.89973895671939,
+                    19.765682225639146,
+                    20.76367330262723,
+                    21.930391436934052,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "slug_liquid_dominant",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("inlet_n", 320.0),
+            ("inlet_p", 10000000.0),
+            ("inlet_t", 333.15),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("elevation", 0.0),
+            ("number_of_increments", 10.0),
+            ("roughness", 1e-05),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("inlet_z", &[0.2, 0.05, 0.75])],
+        matrices: &[],
+        expected: &[
+            ("outlet_pressure", 9761414.944011988),
+            ("total_pressure_drop", 238585.05598801115),
+        ],
+        expected_vectors: &[
+            (
+                "pressure_profile",
+                &[
+                    10000000.0,
+                    9976352.954514507,
+                    9952659.79015654,
+                    9928920.186305825,
+                    9905133.818710532,
+                    9881300.359429492,
+                    9857419.476773247,
+                    9833490.835243875,
+                    9809514.095473573,
+                    9785488.914161943,
+                    9761414.944011988,
+                ],
+            ),
+            (
+                "pressure_drop_profile",
+                &[
+                    0.0,
+                    23647.04548549251,
+                    23693.16435796856,
+                    23739.603850714462,
+                    23786.36759529407,
+                    23833.459281040818,
+                    23880.88265624489,
+                    23928.64152937024,
+                    23976.73977030272,
+                    24025.181311629894,
+                    24073.97014995349,
+                ],
+            ),
+            ("temperature_profile", &[333.15]),
+            (
+                "liquid_holdup_profile",
+                &[
+                    0.32879786970308267,
+                    0.32840714497958257,
+                    0.3280149843212257,
+                    0.327621376964411,
+                    0.3272263120144861,
+                    0.32682977844353245,
+                    0.32643176508810473,
+                    0.3260322606469188,
+                    0.32563125367849216,
+                    0.32522873259873086,
+                    0.32482468567846495,
+                ],
+            ),
+            (
+                "mixture_superficial_velocity_profile",
+                &[
+                    3.076549297509703,
+                    3.0829896900009843,
+                    3.089474982276677,
+                    3.096005683023242,
+                    3.1025823090137723,
+                    3.1092053852740418,
+                    3.1158754452527235,
+                    3.122593030995933,
+                    3.1293586933261937,
+                    3.136172992025994,
+                    3.1430364960260344,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+/// Registry entry for `eos.pipe_beggs_and_brills`.
+pub static PIPE_BEGGS_AND_BRILLS_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pipe_beggs_and_brills",
+    kind: "direct",
+    algorithm: None,
+    checks: PIPE_BEGGS_AND_BRILLS_CHECKS,
+    cases: PIPE_BEGGS_AND_BRILLS_CASES,
+};
+
+static PIPELINE_COOLDOWN_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "internal_diameter",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The bore's area divides by the diameter.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "wall_thickness",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A wall thickness cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "insulation_thickness",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "Zero is a bare pipe.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "coating_thickness",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "Zero is an uncoated pipe.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "steel_density",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A density is positive.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "steel_specific_heat",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A specific heat is positive.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "insulation_conductivity",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The layer resistance divides by the conductivity.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "fluid_density",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A density is positive.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "fluid_specific_heat",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A specific heat is positive.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "initial_fluid_temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "ambient_temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "time_step",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The step count divides by the step.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "total_time",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The horizon divides by the step.",
+        },
+    },
+];
+
+static PIPELINE_COOLDOWN_CASES: &[TestCase] = &[
+    TestCase {
+        id: "u3_default",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0127),
+            ("insulation_thickness", 0.05),
+            ("coating_thickness", 0.006),
+            ("steel_density", 7850.0),
+            ("steel_specific_heat", 500.0),
+            ("insulation_conductivity", 0.17),
+            ("fluid_density", 750.0),
+            ("fluid_specific_heat", 2200.0),
+            ("initial_fluid_temperature", 353.15),
+            ("ambient_temperature", 277.15),
+            ("time_step", 300.0),
+            ("total_time", 172800.0),
+            ("overall_u_value", 3.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("time_constant", 48293.79854368931),
+            ("calculated_u_value", 2.8097392102987873),
+            ("effective_u_value", 3.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "u1_5",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0127),
+            ("insulation_thickness", 0.05),
+            ("coating_thickness", 0.006),
+            ("steel_density", 7850.0),
+            ("steel_specific_heat", 500.0),
+            ("insulation_conductivity", 0.17),
+            ("fluid_density", 750.0),
+            ("fluid_specific_heat", 2200.0),
+            ("initial_fluid_temperature", 353.15),
+            ("ambient_temperature", 277.15),
+            ("time_step", 300.0),
+            ("total_time", 172800.0),
+            ("overall_u_value", 1.5),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("time_constant", 96587.59708737861),
+            ("calculated_u_value", 2.8097392102987873),
+            ("effective_u_value", 1.5),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "u6",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0127),
+            ("insulation_thickness", 0.05),
+            ("coating_thickness", 0.006),
+            ("steel_density", 7850.0),
+            ("steel_specific_heat", 500.0),
+            ("insulation_conductivity", 0.17),
+            ("fluid_density", 750.0),
+            ("fluid_specific_heat", 2200.0),
+            ("initial_fluid_temperature", 353.15),
+            ("ambient_temperature", 277.15),
+            ("time_step", 300.0),
+            ("total_time", 172800.0),
+            ("overall_u_value", 6.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("time_constant", 24146.899271844653),
+            ("calculated_u_value", 2.8097392102987873),
+            ("effective_u_value", 6.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "layers_ins50",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0127),
+            ("insulation_thickness", 0.05),
+            ("coating_thickness", 0.006),
+            ("steel_density", 7850.0),
+            ("steel_specific_heat", 500.0),
+            ("insulation_conductivity", 0.17),
+            ("fluid_density", 750.0),
+            ("fluid_specific_heat", 2200.0),
+            ("initial_fluid_temperature", 353.15),
+            ("ambient_temperature", 277.15),
+            ("time_step", 300.0),
+            ("total_time", 172800.0),
+            ("external_htc", 300.0),
+        ],
+        flags: &[("use_layer_calculation", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("time_constant", 51564.00106459035),
+            ("calculated_u_value", 2.8097392102987873),
+            ("effective_u_value", 2.8097392102987873),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "layers_bare",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0127),
+            ("insulation_thickness", 0.0),
+            ("coating_thickness", 0.006),
+            ("steel_density", 7850.0),
+            ("steel_specific_heat", 500.0),
+            ("insulation_conductivity", 0.17),
+            ("fluid_density", 750.0),
+            ("fluid_specific_heat", 2200.0),
+            ("initial_fluid_temperature", 353.15),
+            ("ambient_temperature", 277.15),
+            ("time_step", 300.0),
+            ("total_time", 172800.0),
+            ("external_htc", 300.0),
+        ],
+        flags: &[("use_layer_calculation", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("time_constant", 494.53501137510625),
+            ("calculated_u_value", 276.92644455699184),
+            ("effective_u_value", 276.92644455699184),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "layers_htc500",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0127),
+            ("insulation_thickness", 0.05),
+            ("coating_thickness", 0.006),
+            ("steel_density", 7850.0),
+            ("steel_specific_heat", 500.0),
+            ("insulation_conductivity", 0.17),
+            ("fluid_density", 750.0),
+            ("fluid_specific_heat", 2200.0),
+            ("initial_fluid_temperature", 353.15),
+            ("ambient_temperature", 277.15),
+            ("time_step", 300.0),
+            ("total_time", 172800.0),
+            ("external_htc", 500.0),
+        ],
+        flags: &[("use_layer_calculation", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("time_constant", 51370.82587041561),
+            ("calculated_u_value", 2.8203049722528393),
+            ("effective_u_value", 2.8203049722528393),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "ceil_steps",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0127),
+            ("insulation_thickness", 0.05),
+            ("coating_thickness", 0.006),
+            ("steel_density", 7850.0),
+            ("steel_specific_heat", 500.0),
+            ("insulation_conductivity", 0.17),
+            ("fluid_density", 750.0),
+            ("fluid_specific_heat", 2200.0),
+            ("initial_fluid_temperature", 353.15),
+            ("ambient_temperature", 277.15),
+            ("time_step", 10800.0),
+            ("total_time", 36000.0),
+            ("overall_u_value", 3.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("time_constant", 48293.79854368931),
+            ("calculated_u_value", 2.8097392102987873),
+            ("effective_u_value", 3.0),
+        ],
+        expected_vectors: &[
+            ("time", &[0.0, 10800.0, 21600.0, 32400.0, 43200.0]),
+            (
+                "fluid_temperature",
+                &[
+                    353.15,
+                    336.15402899023445,
+                    322.9588873300056,
+                    312.7145910003952,
+                    304.76123892648883,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "target_exact",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0127),
+            ("insulation_thickness", 0.05),
+            ("coating_thickness", 0.006),
+            ("steel_density", 7850.0),
+            ("steel_specific_heat", 500.0),
+            ("insulation_conductivity", 0.17),
+            ("fluid_density", 750.0),
+            ("fluid_specific_heat", 2200.0),
+            ("initial_fluid_temperature", 353.15),
+            ("ambient_temperature", 277.15),
+            ("time_step", 3600.0),
+            ("total_time", 36000.0),
+            ("overall_u_value", 3.0),
+            ("target_temperature", 353.15),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("time_constant", 48293.79854368931),
+            ("calculated_u_value", 2.8097392102987873),
+            ("effective_u_value", 3.0),
+            ("time_to_reach_target", 0.0),
+        ],
+        expected_vectors: &[
+            (
+                "time",
+                &[
+                    0.0, 3600.0, 7200.0, 10800.0, 14400.0, 18000.0, 21600.0, 25200.0, 28800.0,
+                    32400.0, 36000.0,
+                ],
+            ),
+            (
+                "fluid_temperature",
+                &[
+                    353.15,
+                    347.4846763300781,
+                    342.24166703232703,
+                    337.3894912171571,
+                    332.8990146979912,
+                    328.74327505926294,
+                    324.8973197644994,
+                    321.3380563324317,
+                    318.0441136815374,
+                    314.9957138104783,
+                    312.1745530439574,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "target_unreached",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0127),
+            ("insulation_thickness", 0.05),
+            ("coating_thickness", 0.006),
+            ("steel_density", 7850.0),
+            ("steel_specific_heat", 500.0),
+            ("insulation_conductivity", 0.17),
+            ("fluid_density", 750.0),
+            ("fluid_specific_heat", 2200.0),
+            ("initial_fluid_temperature", 353.15),
+            ("ambient_temperature", 277.15),
+            ("time_step", 3600.0),
+            ("total_time", 36000.0),
+            ("overall_u_value", 3.0),
+            ("target_temperature", 270.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("time_constant", 48293.79854368931),
+            ("calculated_u_value", 2.8097392102987873),
+            ("effective_u_value", 3.0),
+        ],
+        expected_vectors: &[
+            (
+                "time",
+                &[
+                    0.0, 3600.0, 7200.0, 10800.0, 14400.0, 18000.0, 21600.0, 25200.0, 28800.0,
+                    32400.0, 36000.0,
+                ],
+            ),
+            (
+                "fluid_temperature",
+                &[
+                    353.15,
+                    347.4846763300781,
+                    342.24166703232703,
+                    337.3894912171571,
+                    332.8990146979912,
+                    328.74327505926294,
+                    324.8973197644994,
+                    321.3380563324317,
+                    318.0441136815374,
+                    314.9957138104783,
+                    312.1745530439574,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "heat_up",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0127),
+            ("insulation_thickness", 0.05),
+            ("coating_thickness", 0.006),
+            ("steel_density", 7850.0),
+            ("steel_specific_heat", 500.0),
+            ("insulation_conductivity", 0.17),
+            ("fluid_density", 750.0),
+            ("fluid_specific_heat", 2200.0),
+            ("initial_fluid_temperature", 277.15),
+            ("ambient_temperature", 300.0),
+            ("time_step", 3600.0),
+            ("total_time", 36000.0),
+            ("overall_u_value", 3.0),
+            ("target_temperature", 300.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("time_constant", 48293.79854368931),
+            ("calculated_u_value", 2.8097392102987873),
+            ("effective_u_value", 3.0),
+        ],
+        expected_vectors: &[
+            (
+                "time",
+                &[
+                    0.0, 3600.0, 7200.0, 10800.0, 14400.0, 18000.0, 21600.0, 25200.0, 28800.0,
+                    32400.0, 36000.0,
+                ],
+            ),
+            (
+                "fluid_temperature",
+                &[
+                    277.15,
+                    278.8533242876015,
+                    280.429676425149,
+                    281.888521390631,
+                    283.23861860724867,
+                    284.48807453810315,
+                    285.64439136027875,
+                    286.71451201057806,
+                    287.70486187337985,
+                    288.6213873609285,
+                    289.46959161770485,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "steel_8000_450",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0127),
+            ("insulation_thickness", 0.05),
+            ("coating_thickness", 0.006),
+            ("steel_density", 8000.0),
+            ("steel_specific_heat", 450.0),
+            ("insulation_conductivity", 0.17),
+            ("fluid_density", 750.0),
+            ("fluid_specific_heat", 2200.0),
+            ("initial_fluid_temperature", 353.15),
+            ("ambient_temperature", 277.15),
+            ("time_step", 3600.0),
+            ("total_time", 36000.0),
+            ("overall_u_value", 3.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("time_constant", 47356.3055697496),
+            ("calculated_u_value", 2.8097392102987873),
+            ("effective_u_value", 3.0),
+        ],
+        expected_vectors: &[
+            (
+                "time",
+                &[
+                    0.0, 3600.0, 7200.0, 10800.0, 14400.0, 18000.0, 21600.0, 25200.0, 28800.0,
+                    32400.0, 36000.0,
+                ],
+            ),
+            (
+                "fluid_temperature",
+                &[
+                    353.15,
+                    347.37252228698406,
+                    342.0342452150786,
+                    337.10178099592105,
+                    332.5442799622428,
+                    328.3332376213162,
+                    324.4423163760905,
+                    320.8471807989884,
+                    317.5253454280965,
+                    314.4560341338051,
+                    311.6200501763173,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "coating_20mm",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0127),
+            ("insulation_thickness", 0.05),
+            ("coating_thickness", 0.02),
+            ("steel_density", 7850.0),
+            ("steel_specific_heat", 500.0),
+            ("insulation_conductivity", 0.17),
+            ("fluid_density", 750.0),
+            ("fluid_specific_heat", 2200.0),
+            ("initial_fluid_temperature", 353.15),
+            ("ambient_temperature", 277.15),
+            ("time_step", 3600.0),
+            ("total_time", 36000.0),
+            ("overall_u_value", 3.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("time_constant", 45069.6059847401),
+            ("calculated_u_value", 2.623795892344959),
+            ("effective_u_value", 3.0),
+        ],
+        expected_vectors: &[
+            (
+                "time",
+                &[
+                    0.0, 3600.0, 7200.0, 10800.0, 14400.0, 18000.0, 21600.0, 25200.0, 28800.0,
+                    32400.0, 36000.0,
+                ],
+            ),
+            (
+                "fluid_temperature",
+                &[
+                    353.15,
+                    347.07939001746234,
+                    341.4936787922943,
+                    336.35413433453516,
+                    331.62511842797295,
+                    327.2738395104891,
+                    323.2701252934432,
+                    319.5862135434134,
+                    316.19655957554835,
+                    313.0776591236658,
+                    310.2078853588588,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "coarse_1h",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0127),
+            ("insulation_thickness", 0.05),
+            ("coating_thickness", 0.006),
+            ("steel_density", 7850.0),
+            ("steel_specific_heat", 500.0),
+            ("insulation_conductivity", 0.17),
+            ("fluid_density", 750.0),
+            ("fluid_specific_heat", 2200.0),
+            ("initial_fluid_temperature", 353.15),
+            ("ambient_temperature", 277.15),
+            ("time_step", 3600.0),
+            ("total_time", 36000.0),
+            ("overall_u_value", 3.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("time_constant", 48293.79854368931),
+            ("calculated_u_value", 2.8097392102987873),
+            ("effective_u_value", 3.0),
+        ],
+        expected_vectors: &[
+            (
+                "time",
+                &[
+                    0.0, 3600.0, 7200.0, 10800.0, 14400.0, 18000.0, 21600.0, 25200.0, 28800.0,
+                    32400.0, 36000.0,
+                ],
+            ),
+            (
+                "fluid_temperature",
+                &[
+                    353.15,
+                    347.4846763300781,
+                    342.24166703232703,
+                    337.3894912171571,
+                    332.8990146979912,
+                    328.74327505926294,
+                    324.8973197644994,
+                    321.3380563324317,
+                    318.0441136815374,
+                    314.9957138104783,
+                    312.1745530439574,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+/// Registry entry for `eos.pipeline_cooldown`.
+pub static PIPELINE_COOLDOWN_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pipeline_cooldown",
+    kind: "direct",
+    algorithm: None,
+    checks: PIPELINE_COOLDOWN_CHECKS,
+    cases: PIPELINE_COOLDOWN_CASES,
+};
+
+static PITZER_HYDRATE_FORMATION_PRESSURE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(273.15),
+            min_inclusive: true,
+            max: Some(323.15),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The class's own window: the pressure solve refuses a temperature outside it.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "minimum_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "maximum_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute pressure.",
+        },
+    },
+];
+
+static PITZER_HYDRATE_FORMATION_PRESSURE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "co2_water_278k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("T", 278.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk")],
+        vectors: &[(
+            "moles",
+            &[10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0],
+        )],
+        matrices: &[],
+        expected: &[
+            ("pressure", 2221136.2285557976),
+            ("water_activity", 0.9795219483984382),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_i")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "co2_nacl_5wt_278k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("T", 278.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk"), ("pitzer_dataset", "phreeqc_co2_chloride")],
+        vectors: &[(
+            "moles",
+            &[
+                10.0,
+                55.508435061791985,
+                0.9006088115566122,
+                0.0,
+                0.0,
+                0.0,
+                0.9006088115566122,
+            ],
+        )],
+        matrices: &[],
+        expected: &[
+            ("pressure", 2956387.148120002),
+            ("water_activity", 0.945688038723503),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_i")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "co2_water_280k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("T", 280.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk")],
+        vectors: &[(
+            "moles",
+            &[10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0],
+        )],
+        matrices: &[],
+        expected: &[
+            ("pressure", 2924806.234264403),
+            ("water_activity", 0.9757992693376938),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_i")],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+static PITZER_HYDRATE_FORMATION_PRESSURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "pitzer_hydrate_scan_bisection",
+    convergence: "absolute",
+    tolerance: 1e-08,
+    max_iterations: 70,
+    bracket: None,
+    initialisation: Some("pressure_lower_bound"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.pitzer_hydrate_formation_pressure`.
+pub static PITZER_HYDRATE_FORMATION_PRESSURE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pitzer_hydrate_formation_pressure",
+    kind: "procedure",
+    algorithm: Some(&PITZER_HYDRATE_FORMATION_PRESSURE_ALGORITHM),
+    checks: PITZER_HYDRATE_FORMATION_PRESSURE_CHECKS,
+    cases: PITZER_HYDRATE_FORMATION_PRESSURE_CASES,
+};
+
+static PITZER_HYDRATE_FORMATION_TEMPERATURE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: Some(100000000.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The class's own window: 0 < P <= 1000 bara.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "minimum_temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "maximum_temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature.",
+        },
+    },
+];
+
+static PITZER_HYDRATE_FORMATION_TEMPERATURE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "co2_water_30bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("P", 3000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk")],
+        vectors: &[(
+            "moles",
+            &[10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0],
+        )],
+        matrices: &[],
+        expected: &[
+            ("temperature", 280.17475098609924),
+            ("water_activity", 0.9754346764318317),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_i")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "co2_nacl_1molal_30bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("P", 3000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk"), ("pitzer_dataset", "phreeqc_co2_chloride")],
+        vectors: &[(
+            "moles",
+            &[
+                10.0,
+                55.508435061791985,
+                0.9999936196592771,
+                0.0,
+                0.0,
+                0.0,
+                0.9999936196592771,
+            ],
+        )],
+        matrices: &[],
+        expected: &[
+            ("temperature", 277.8689917945862),
+            ("water_activity", 0.9421844191719909),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_i")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "methane_water_50bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("P", 5000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["methane", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk")],
+        vectors: &[(
+            "moles",
+            &[10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0],
+        )],
+        matrices: &[],
+        expected: &[
+            ("temperature", 279.82848044395445),
+            ("water_activity", 0.9999999999991899),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_i")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "co2_methane_mixture_50bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("P", 5000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "CO2", "methane", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-",
+            ],
+        )],
+        strings: &[("cubic", "srk")],
+        vectors: &[(
+            "moles",
+            &[5.0, 5.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0],
+        )],
+        matrices: &[],
+        expected: &[
+            ("temperature", 282.7388953781128),
+            ("water_activity", 0.9842564673248485),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_ii")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "structure_pinned_to_sii",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("P", 3000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "Na+", "K+", "Ca++", "Mg++", "Cl-"],
+        )],
+        strings: &[("cubic", "srk"), ("structure", "sii")],
+        vectors: &[(
+            "moles",
+            &[10.0, 55.508435061791985, 0.0, 0.0, 0.0, 0.0, 0.0],
+        )],
+        matrices: &[],
+        expected: &[
+            ("temperature", 278.39950651168823),
+            ("water_activity", 0.9742596461289182),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_ii")],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+static PITZER_HYDRATE_FORMATION_TEMPERATURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "pitzer_hydrate_scan_bisection",
+    convergence: "absolute",
+    tolerance: 1e-08,
+    max_iterations: 70,
+    bracket: None,
+    initialisation: Some("henry_floor"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.pitzer_hydrate_formation_temperature`.
+pub static PITZER_HYDRATE_FORMATION_TEMPERATURE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pitzer_hydrate_formation_temperature",
+    kind: "procedure",
+    algorithm: Some(&PITZER_HYDRATE_FORMATION_TEMPERATURE_ALGORITHM),
+    checks: PITZER_HYDRATE_FORMATION_TEMPERATURE_CHECKS,
+    cases: PITZER_HYDRATE_FORMATION_TEMPERATURE_CASES,
+};
+
 static PITZER_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -12305,7 +17256,7 @@ static PITZER_PHASE_CASES: &[TestCase] = &[
             (
                 "ln_phi",
                 &[
-                    5.702596715805247,
+                    5.123589423367589,
                     -5.740923980504025,
                     24.904530096244574,
                     24.904530096244574,
@@ -12313,7 +17264,7 @@ static PITZER_PHASE_CASES: &[TestCase] = &[
             ),
             (
                 "henry",
-                &[51.65450928785164, 0.0, 1000000000000.0, 1000000000000.0],
+                &[28.950000000000646, 0.0, 1000000000000.0, 1000000000000.0],
             ),
             (
                 "gamma_inf",
@@ -12430,8 +17381,8 @@ static PITZER_PHASE_CASES: &[TestCase] = &[
         expected_vectors: &[
             ("gamma", &[1.0, 1.0]),
             ("ln_gamma", &[0.0, 0.0]),
-            ("ln_phi", &[22.352588957775026, -3.4618442318936333]),
-            ("henry", &[93008543.19275573, 0.0]),
+            ("ln_phi", &[6.3201351281092055, -3.4618442318936333]),
+            ("henry", &[10.132499999999954, 0.0]),
             ("gamma_inf", &[1.0, 1.0]),
             ("molality", &[0.055509297807382736, 55.50929780738274]),
         ],
@@ -12490,8 +17441,8 @@ static PITZER_PHASE_CASES: &[TestCase] = &[
         expected_vectors: &[
             ("gamma", &[1.0, 1.0]),
             ("ln_gamma", &[0.0, 0.0]),
-            ("ln_phi", &[7.9967552088819165, -3.4618442318936333]),
-            ("henry", &[51.65450928785164, 0.0]),
+            ("ln_phi", &[7.417747916444259, -3.4618442318936333]),
+            ("henry", &[28.950000000000646, 0.0]),
             ("gamma_inf", &[1.0, 1.0]),
             ("molality", &[2.7754648903691366, 55.50929780738274]),
         ],
@@ -12574,6 +17525,2704 @@ pub static PR_CPA_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: PR_CPA_PHASE_CHECKS,
     cases: PR_CPA_PHASE_CASES,
+};
+
+static PRODUCTION_CHEMICAL_SCALE_SCENARIO_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A state has a positive pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "ph",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(14.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.",
+        },
+    },
+];
+
+static PRODUCTION_CHEMICAL_SCALE_SCENARIO_CASES: &[TestCase] = &[
+    TestCase {
+        id: "caustic_100",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.612286718254484),
+            ("treated_bicarbonate", 0.8761187807037203),
+            ("base_dose_equivalents", 1.2500937570317774),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("ph_adjuster"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("caustic"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("NaOH"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(50.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.1),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.423208147780234),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6564148549680096),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4632431345215311),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.24836279383147514),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.516801978049319),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0033453720183884705),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0033453720183882485),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.0009388765418312239),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.1517345028756344),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.15601875143585409),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "mdea_200",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.574404485391451),
+            ("treated_bicarbonate", 0.8511049682652292),
+            ("base_dose_equivalents", 0.839186660288848),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("ph_adjuster"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("mdea"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("MDEA"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(50.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.2),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.422109565057132),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6575134376911118),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4629334211803143),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.29881657410294227),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.5686640543851054),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0022467892952864332),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.002246789295285989),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.0006291632006144021),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.10128072260416726),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.10415667510006776),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "hcl_100",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.464653452086296),
+            ("treated_bicarbonate", 0.7749387898370603),
+            ("base_dose_equivalents", -0.41139848056827844),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("acid"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("acid"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("HCl"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(15.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.1),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.418759793057685),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6608632096905587),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.46199742905131225),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4492581867413085),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.7233914311519204),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.0011029827041606488),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.0011029827041608709),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.00030682892838762577),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.04916089003419899),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.050570701666747264),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "triazine_100",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.5),
+            ("treated_bicarbonate", 0.8),
+            ("base_dose_equivalents", 0.0),
+            ("scavenger_capacity", 0.007202789812955723),
+            ("residual_dissolved_h2s", 0.01279721018704428),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("h2s_scavenger"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("scavenger"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("MEA-triazine"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(40.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.1),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "model_warnings",
+                &[
+                    &[
+                        RecordField {
+                            name: "code",
+                            value: FieldValue::Name("triazine_spent_product"),
+                        },
+                        RecordField {
+                            name: "message",
+                            value: FieldValue::Name(
+                                "Check dithiazine/amorphous spent-product deposition; scavenger removal is not mineral equilibrium",
+                            ),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "code",
+                            value: FieldValue::Name("h2s_scavenger_under_capacity"),
+                        },
+                        RecordField {
+                            name: "message",
+                            value: FieldValue::Name(
+                                "Calculated dissolved-H2S load exceeds the practical active scavenger capacity",
+                            ),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "triazine_10",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.5),
+            ("treated_bicarbonate", 0.8),
+            ("base_dose_equivalents", 0.0),
+            ("scavenger_capacity", 0.0007202789812955722),
+            ("residual_dissolved_h2s", 0.01927972101870443),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("h2s_scavenger"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("scavenger"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("MEA-triazine"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(40.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.01),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "model_warnings",
+                &[
+                    &[
+                        RecordField {
+                            name: "code",
+                            value: FieldValue::Name("triazine_spent_product"),
+                        },
+                        RecordField {
+                            name: "message",
+                            value: FieldValue::Name(
+                                "Check dithiazine/amorphous spent-product deposition; scavenger removal is not mineral equilibrium",
+                            ),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "code",
+                            value: FieldValue::Name("h2s_scavenger_under_capacity"),
+                        },
+                        RecordField {
+                            name: "message",
+                            value: FieldValue::Name(
+                                "Calculated dissolved-H2S load exceeds the practical active scavenger capacity",
+                            ),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "scale_inhibitor_10",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.5),
+            ("treated_bicarbonate", 0.8),
+            ("base_dose_equivalents", 0.0),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("scale_inhibitor"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("si"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("phosphonate"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(30.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.01),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "model_warnings",
+                &[&[
+                    RecordField {
+                        name: "code",
+                        value: FieldValue::Name("inhibitor_is_kinetic"),
+                    },
+                    RecordField {
+                        name: "message",
+                        value: FieldValue::Name(
+                            "Scale inhibitor does not change thermodynamic SI; evaluate MIC and growth control separately with ScaleControlAssessor",
+                        ),
+                    },
+                ]],
+            ),
+        ],
+    },
+    TestCase {
+        id: "corrosion_inhibitor_10",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.5),
+            ("treated_bicarbonate", 0.8),
+            ("base_dose_equivalents", 0.0),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("other"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("ci"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("imidazoline"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(20.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.01),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "model_warnings",
+                &[&[
+                    RecordField {
+                        name: "code",
+                        value: FieldValue::Name("no_equilibrium_effect_ci"),
+                    },
+                    RecordField {
+                        name: "message",
+                        value: FieldValue::Name(
+                            "Chemical retained in audit trail; no supported stoichiometric effect on this aqueous scale scenario",
+                        ),
+                    },
+                ]],
+            ),
+        ],
+    },
+    TestCase {
+        id: "huge_caustic",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 12.52246120309228),
+            ("treated_bicarbonate", 0.005387695012895745),
+            ("base_dose_equivalents", 62.504687851588855),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("ph_adjuster"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("caustic"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("NaOH"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(50.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(5.0),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.593267701220774),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.4863553015274698),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.7516010698859693),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(3.445865139181771),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(3.635843443768905),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.17340492545892827),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.17340492545892805),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.28929681190626944),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(3.8459624358888806),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(4.308664173254078),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "model_warnings",
+                &[&[
+                    RecordField {
+                        name: "code",
+                        value: FieldValue::Name("chemical_induced_calcite_risk"),
+                    },
+                    RecordField {
+                        name: "message",
+                        value: FieldValue::Name(
+                            "Base-equivalent dosing increased calcite SI by 3.85",
+                        ),
+                    },
+                ]],
+            ),
+        ],
+    },
+    TestCase {
+        id: "bdot",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "bdot")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.51828261991834),
+            ("treated_bicarbonate", 0.8127783997063651),
+            ("base_dose_equivalents", 0.209796665072212),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("ph_adjuster"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("mdea"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("MDEA"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(50.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.05),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(0.6669205869710103),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-3.4127024157772334),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.2152464467705353),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.153039485497945),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.4257629182760083),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(0.6674826794323343),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-3.412140323315909),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.215403321590899),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.127878914054967),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.399883379551343),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.000562092461323993),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0005620924613243261),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.00015687482036375044),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.025160571442977897),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.02587953872466553),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "pitzer",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+            ("pitzer_ionic_strength_molal", 1.2),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "pitzer_binary")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.51828261991834),
+            ("treated_bicarbonate", 0.8127783997063651),
+            ("base_dose_equivalents", 0.209796665072212),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("ph_adjuster"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("mdea"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("MDEA"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(50.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.05),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(0.26048251916882753),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-3.7575856531386673),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.56233740129713),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.3766734311564868),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.678533528887676),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(0.2610446116301516),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-3.7570235606773434),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.5624942761174943),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.351512859713509),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-2.6526539901630106),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0005620924613240486),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.000562092461323882),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(-0.00015687482036419453),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.025160571442977897),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.02587953872466553),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "unsupported_adjuster",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.1),
+            ("iron", 0.005),
+            ("magnesium", 0.5),
+            ("sodium", 20.0),
+            ("sulphate", 0.5),
+            ("bicarbonate", 0.8),
+            ("total_dissolved_solids", 80.0),
+            ("ph", 6.5),
+            ("dissolved_h2s", 0.02),
+            ("temperature", 333.15),
+            ("pressure", 10000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("treated_ph", 6.5),
+            ("treated_bicarbonate", 0.8),
+            ("base_dose_equivalents", 0.0),
+            ("scavenger_capacity", 0.0),
+            ("residual_dissolved_h2s", 0.02),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "chemicals",
+            &[&[
+                RecordField {
+                    name: "chemical_type",
+                    value: FieldValue::Name("ph_adjuster"),
+                },
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("bespoke"),
+                },
+                RecordField {
+                    name: "active_ingredient",
+                    value: FieldValue::Name("KOH"),
+                },
+                RecordField {
+                    name: "active_wt_pct",
+                    value: FieldValue::Number(45.0),
+                },
+                RecordField {
+                    name: "dosage",
+                    value: FieldValue::Number(0.1),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "baseline_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "treated_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4198627757618456),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.6597602269863978),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.4623042579796999),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.40009729670710953),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.6728207294851731),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "si_change",
+                &[
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("BaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("SrSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaSO4"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("CaCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "mineral",
+                            value: FieldValue::Name("FeCO3"),
+                        },
+                        RecordField {
+                            name: "change",
+                            value: FieldValue::Number(0.0),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "model_warnings",
+                &[&[
+                    RecordField {
+                        name: "code",
+                        value: FieldValue::Name("unsupported_ph_adjuster_bespoke"),
+                    },
+                    RecordField {
+                        name: "message",
+                        value: FieldValue::Name(
+                            "No acid/base-equivalent model for active ingredient KOH",
+                        ),
+                    },
+                ]],
+            ),
+        ],
+    },
+];
+
+/// Registry entry for `eos.production_chemical_scale_scenario`.
+pub static PRODUCTION_CHEMICAL_SCALE_SCENARIO_SPEC: ModelSpec = ModelSpec {
+    id: "eos.production_chemical_scale_scenario",
+    kind: "direct",
+    algorithm: None,
+    checks: PRODUCTION_CHEMICAL_SCALE_SCENARIO_CHECKS,
+    cases: PRODUCTION_CHEMICAL_SCALE_SCENARIO_CASES,
 };
 
 static PS_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
@@ -13988,6 +21637,1632 @@ pub static SATURATE_WITH_WATER_SPEC: ModelSpec = ModelSpec {
     cases: SATURATE_WITH_WATER_CASES,
 };
 
+static SCALE_CONTROL_ASSESSOR_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A state has a positive pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "co2_partial_pressure",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A partial pressure cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "calcium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "barium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "strontium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "iron",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "magnesium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "sodium",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "bicarbonate",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "sulphate",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "total_dissolved_solids",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A concentration cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "ph",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(14.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.",
+        },
+    },
+];
+
+static SCALE_CONTROL_ASSESSOR_CASES: &[TestCase] = &[
+    TestCase {
+        id: "rca_state",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 20.0),
+            ("bicarbonate", 0.8),
+            ("sulphate", 0.5),
+            ("total_dissolved_solids", 80.0),
+            ("temperature", 353.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 200000.0),
+            ("ph", 7.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("worst_kinetic_risk_index", 2.4351734337231576)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "inhibitors",
+            &[&[
+                RecordField {
+                    name: "scale_type",
+                    value: FieldValue::Name("caco3"),
+                },
+                RecordField {
+                    name: "inhibitor_chemistry",
+                    value: FieldValue::Name("phosphonate"),
+                },
+                RecordField {
+                    name: "temperature",
+                    value: FieldValue::Number(353.15),
+                },
+                RecordField {
+                    name: "saturation_ratio",
+                    value: FieldValue::Number(1.6851624454329173),
+                },
+                RecordField {
+                    name: "total_dissolved_solids",
+                    value: FieldValue::Number(80.0),
+                },
+                RecordField {
+                    name: "calcium",
+                    value: FieldValue::Number(2.0),
+                },
+                RecordField {
+                    name: "available_dose",
+                    value: FieldValue::Number(0.02),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "thermodynamic_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CACO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(0.22664177212405553),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("BASO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(2.4351734337231576),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("SRSO4"),
+                    }],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CASO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-0.09682449444821394),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("FECO3"),
+                    }],
+                ],
+            ),
+            (
+                "kinetic_risk_index",
+                &[
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CACO3"),
+                        },
+                        RecordField {
+                            name: "risk_index",
+                            value: FieldValue::Number(-2.187371248783493),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("BASO4"),
+                        },
+                        RecordField {
+                            name: "risk_index",
+                            value: FieldValue::Number(2.4351734337231576),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("SRSO4"),
+                    }],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CASO4"),
+                        },
+                        RecordField {
+                            name: "risk_index",
+                            value: FieldValue::Number(-0.09682449444821394),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("FECO3"),
+                    }],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "skill_state",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.2),
+            ("barium", 0.25),
+            ("strontium", 0.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.3),
+            ("sulphate", 1.8),
+            ("total_dissolved_solids", 90.0),
+            ("temperature", 368.15),
+            ("pressure", 15000000.0),
+            ("co2_partial_pressure", 200000.0),
+            ("ph", 6.2),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("worst_kinetic_risk_index", 3.205981481024372)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "inhibitors",
+            &[&[
+                RecordField {
+                    name: "scale_type",
+                    value: FieldValue::Name("baso4"),
+                },
+                RecordField {
+                    name: "inhibitor_chemistry",
+                    value: FieldValue::Name("phosphonate"),
+                },
+                RecordField {
+                    name: "temperature",
+                    value: FieldValue::Number(368.15),
+                },
+                RecordField {
+                    name: "saturation_ratio",
+                    value: FieldValue::Number(12.0),
+                },
+                RecordField {
+                    name: "total_dissolved_solids",
+                    value: FieldValue::Number(90.0),
+                },
+                RecordField {
+                    name: "calcium",
+                    value: FieldValue::Number(1.2),
+                },
+                RecordField {
+                    name: "available_dose",
+                    value: FieldValue::Number(0.015),
+                },
+            ]],
+        )],
+        expected_records: &[
+            (
+                "thermodynamic_si",
+                &[
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CACO3"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(-1.2245006188239176),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("BASO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(4.202408639478794),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("SRSO4"),
+                    }],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CASO4"),
+                        },
+                        RecordField {
+                            name: "saturation_index",
+                            value: FieldValue::Number(0.48292792588753775),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("FECO3"),
+                    }],
+                ],
+            ),
+            (
+                "kinetic_risk_index",
+                &[
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CACO3"),
+                        },
+                        RecordField {
+                            name: "risk_index",
+                            value: FieldValue::Number(-1.2245006188239176),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("BASO4"),
+                        },
+                        RecordField {
+                            name: "risk_index",
+                            value: FieldValue::Number(3.205981481024372),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("SRSO4"),
+                    }],
+                    &[
+                        RecordField {
+                            name: "scale",
+                            value: FieldValue::Name("CASO4"),
+                        },
+                        RecordField {
+                            name: "risk_index",
+                            value: FieldValue::Number(0.48292792588753775),
+                        },
+                    ],
+                    &[RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("FECO3"),
+                    }],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "huge_dose",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 2.0),
+            ("barium", 0.05),
+            ("strontium", 0.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 20.0),
+            ("bicarbonate", 0.8),
+            ("sulphate", 0.5),
+            ("total_dissolved_solids", 80.0),
+            ("temperature", 353.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 200000.0),
+            ("ph", 7.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("worst_kinetic_risk_index", 2.4351734337231576)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "inhibitors",
+            &[&[
+                RecordField {
+                    name: "scale_type",
+                    value: FieldValue::Name("caco3"),
+                },
+                RecordField {
+                    name: "inhibitor_chemistry",
+                    value: FieldValue::Name("phosphonate"),
+                },
+                RecordField {
+                    name: "temperature",
+                    value: FieldValue::Number(353.15),
+                },
+                RecordField {
+                    name: "saturation_ratio",
+                    value: FieldValue::Number(1.6851624454329173),
+                },
+                RecordField {
+                    name: "total_dissolved_solids",
+                    value: FieldValue::Number(80.0),
+                },
+                RecordField {
+                    name: "calcium",
+                    value: FieldValue::Number(2.0),
+                },
+                RecordField {
+                    name: "available_dose",
+                    value: FieldValue::Number(1000.0),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "kinetic_risk_index",
+            &[
+                &[
+                    RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("CACO3"),
+                    },
+                    RecordField {
+                        name: "risk_index",
+                        value: FieldValue::Number(-2.773358227875944),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("BASO4"),
+                    },
+                    RecordField {
+                        name: "risk_index",
+                        value: FieldValue::Number(2.4351734337231576),
+                    },
+                ],
+                &[RecordField {
+                    name: "scale",
+                    value: FieldValue::Name("SRSO4"),
+                }],
+                &[
+                    RecordField {
+                        name: "scale",
+                        value: FieldValue::Name("CASO4"),
+                    },
+                    RecordField {
+                        name: "risk_index",
+                        value: FieldValue::Number(-0.09682449444821394),
+                    },
+                ],
+                &[RecordField {
+                    name: "scale",
+                    value: FieldValue::Name("FECO3"),
+                }],
+            ],
+        )],
+    },
+];
+
+/// Registry entry for `eos.scale_control_assessor`.
+pub static SCALE_CONTROL_ASSESSOR_SPEC: ModelSpec = ModelSpec {
+    id: "eos.scale_control_assessor",
+    kind: "direct",
+    algorithm: None,
+    checks: SCALE_CONTROL_ASSESSOR_CHECKS,
+    cases: SCALE_CONTROL_ASSESSOR_CASES,
+};
+
+static SCALE_DEPOSITION_ACCUMULATOR_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "ph",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(14.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pH outside the aqueous range is a caller's mistake rather than a state; the arithmetic still runs.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "diameter",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pipe with no diameter has no wall area for the class to deposit on; the arithmetic still runs and the result is empty.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "length",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A pipe with no length has no wall area; the arithmetic still runs and the result is empty.",
+        },
+    },
+];
+
+static SCALE_DEPOSITION_ACCUMULATOR_CASES: &[TestCase] = &[
+    TestCase {
+        id: "base",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("diameter", 0.1),
+            ("length", 1000.0),
+            ("service_time", 31557600.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("segment_temperatures", &[333.15]),
+            ("segment_pressures", &[10000000.0]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("total_deposition_mass", 5.112073003689538),
+            ("max_thickness", 6.026753244324613e-06),
+            ("time_to_blockage", 130906305271.9047),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "segments",
+            &[&[
+                RecordField {
+                    name: "saturation_index",
+                    value: FieldValue::Number(0.013908764040233352),
+                },
+                RecordField {
+                    name: "deposition_mass",
+                    value: FieldValue::Number(5.112073003689538),
+                },
+                RecordField {
+                    name: "thickness",
+                    value: FieldValue::Number(6.026753244324613e-06),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "inhibitor_half",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("diameter", 0.1),
+            ("length", 1000.0),
+            ("service_time", 31557600.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.5),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("segment_temperatures", &[333.15]),
+            ("segment_pressures", &[10000000.0]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("total_deposition_mass", 2.556036501844769),
+            ("max_thickness", 3.0133766221623067e-06),
+            ("time_to_blockage", 261812610543.8094),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "segments",
+            &[&[
+                RecordField {
+                    name: "saturation_index",
+                    value: FieldValue::Number(0.013908764040233352),
+                },
+                RecordField {
+                    name: "deposition_mass",
+                    value: FieldValue::Number(2.556036501844769),
+                },
+                RecordField {
+                    name: "thickness",
+                    value: FieldValue::Number(3.0133766221623067e-06),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "service_5yr",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("diameter", 0.1),
+            ("length", 1000.0),
+            ("service_time", 157788000.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("segment_temperatures", &[333.15]),
+            ("segment_pressures", &[10000000.0]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("total_deposition_mass", 25.56036501844769),
+            ("max_thickness", 3.0133766221623074e-05),
+            ("time_to_blockage", 130906305271.9047),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "segments",
+            &[&[
+                RecordField {
+                    name: "saturation_index",
+                    value: FieldValue::Number(0.013908764040233352),
+                },
+                RecordField {
+                    name: "deposition_mass",
+                    value: FieldValue::Number(25.56036501844769),
+                },
+                RecordField {
+                    name: "thickness",
+                    value: FieldValue::Number(3.0133766221623074e-05),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "base_rate_doubled",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("diameter", 0.1),
+            ("length", 1000.0),
+            ("service_time", 31557600.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 3.168808781402895e-08),
+            ("inhibitor_efficiency", 0.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("segment_temperatures", &[333.15]),
+            ("segment_pressures", &[10000000.0]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("total_deposition_mass", 10.224146007379076),
+            ("max_thickness", 1.2053506488649227e-05),
+            ("time_to_blockage", 65453152635.95235),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "segments",
+            &[&[
+                RecordField {
+                    name: "saturation_index",
+                    value: FieldValue::Number(0.013908764040233352),
+                },
+                RecordField {
+                    name: "deposition_mass",
+                    value: FieldValue::Number(10.224146007379076),
+                },
+                RecordField {
+                    name: "thickness",
+                    value: FieldValue::Number(1.2053506488649227e-05),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "cooled_profile",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("bicarbonate", 0.5),
+            ("sulphate", 0.1),
+            ("barium", 0.01),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 6.5),
+            ("diameter", 0.1),
+            ("length", 1000.0),
+            ("service_time", 31557600.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            (
+                "segment_temperatures",
+                &[
+                    333.15,
+                    295.7630284790509,
+                    293.18764045683355,
+                    293.1423035510404,
+                    293.1341132975394,
+                    293.14159951262286,
+                    293.13339840650065,
+                    293.14157924182285,
+                    293.13336715453545,
+                    293.1415677292142,
+                    293.13334463084226,
+                ],
+            ),
+            (
+                "segment_pressures",
+                &[
+                    10000000.0,
+                    9996070.33961295,
+                    9993125.976391863,
+                    9990247.608621769,
+                    9987368.993896373,
+                    9984489.15937836,
+                    9981607.692955472,
+                    9978725.003532436,
+                    9975840.660188211,
+                    9972955.090610037,
+                    9970067.86273677,
+                ],
+            ),
+        ],
+        matrices: &[],
+        expected: &[
+            ("total_deposition_mass", 0.4647339094263216),
+            ("max_thickness", 6.026753244324614e-06),
+            ("time_to_blockage", 130906305271.9047),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "segments",
+            &[
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(0.013908764040233352),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.4647339094263216),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(6.026753244324614e-06),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.3134979056496238),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.3384900821623057),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33890580225081696),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33895637758087044),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33885280183028277),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33890345297006963),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.3387930190702319),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33884374657876604),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33873309028626875),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "saturation_index",
+                        value: FieldValue::Number(-0.33878389436663964),
+                    },
+                    RecordField {
+                        name: "deposition_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "thickness",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "no_calcite",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 0.01),
+            ("bicarbonate", 0.01),
+            ("sulphate", 0.1),
+            ("barium", 0.0),
+            ("sodium", 20.0),
+            ("total_dissolved_solids", 50.0),
+            ("ph", 4.0),
+            ("diameter", 0.1),
+            ("length", 1000.0),
+            ("service_time", 31557600.0),
+            ("scale_density", 2700.0),
+            ("base_rate", 1.5844043908606945e-08),
+            ("inhibitor_efficiency", 0.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("segment_temperatures", &[333.15]),
+            ("segment_pressures", &[10000000.0]),
+        ],
+        matrices: &[],
+        expected: &[("total_deposition_mass", 0.0), ("max_thickness", 0.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[(
+            "segments",
+            &[&[
+                RecordField {
+                    name: "saturation_index",
+                    value: FieldValue::Number(-5.547666164411428),
+                },
+                RecordField {
+                    name: "deposition_mass",
+                    value: FieldValue::Number(0.0),
+                },
+                RecordField {
+                    name: "thickness",
+                    value: FieldValue::Number(0.0),
+                },
+            ]],
+        )],
+    },
+];
+
+/// Registry entry for `eos.scale_deposition_accumulator`.
+pub static SCALE_DEPOSITION_ACCUMULATOR_SPEC: ModelSpec = ModelSpec {
+    id: "eos.scale_deposition_accumulator",
+    kind: "direct",
+    algorithm: None,
+    checks: SCALE_DEPOSITION_ACCUMULATOR_CHECKS,
+    cases: SCALE_DEPOSITION_ACCUMULATOR_CASES,
+};
+
+static SCALE_REMEDIATION_ADVISOR_CHECKS: &[SpecCheck] = &[];
+
+static SCALE_REMEDIATION_ADVISOR_CASES: &[TestCase] = &[
+    TestCase {
+        id: "calcite",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[("deposit", "calcite")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[("canonical_key", "CaCO3")],
+        records: &[],
+        expected_records: &[(
+            "options",
+            &[
+                &[
+                    RecordField {
+                        name: "scale_type",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "category",
+                        value: FieldValue::Name("MINERAL_SCALE"),
+                    },
+                    RecordField {
+                        name: "dissolver",
+                        value: FieldValue::Name(
+                            "Hydrochloric acid (HCl) with corrosion inhibitor and iron-control agent",
+                        ),
+                    },
+                    RecordField {
+                        name: "concentration",
+                        value: FieldValue::Name("5-15 wt%"),
+                    },
+                    RecordField {
+                        name: "method",
+                        value: FieldValue::Name(
+                            "Acid soak or circulation, then neutralise and flush",
+                        ),
+                    },
+                    RecordField {
+                        name: "effectiveness",
+                        value: FieldValue::Name("HIGH"),
+                    },
+                    RecordField {
+                        name: "min_temperature",
+                        value: FieldValue::Number(293.15),
+                    },
+                    RecordField {
+                        name: "max_temperature",
+                        value: FieldValue::Number(353.15),
+                    },
+                    RecordField {
+                        name: "cautions",
+                        value: FieldValue::Name(
+                            "Corrosive; CO2 evolution can pressurise; mandatory corrosion inhibitor and spent-acid neutralisation; verify metallurgy",
+                        ),
+                    },
+                    RecordField {
+                        name: "standard",
+                        value: FieldValue::Name("NACE SP0296"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "scale_type",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "category",
+                        value: FieldValue::Name("MINERAL_SCALE"),
+                    },
+                    RecordField {
+                        name: "dissolver",
+                        value: FieldValue::Name("Chelant (EDTA/HEDTA) buffered near-neutral"),
+                    },
+                    RecordField {
+                        name: "concentration",
+                        value: FieldValue::Name("10-20 wt%"),
+                    },
+                    RecordField {
+                        name: "method",
+                        value: FieldValue::Name("Extended soak (slower, low corrosion)"),
+                    },
+                    RecordField {
+                        name: "effectiveness",
+                        value: FieldValue::Name("MEDIUM"),
+                    },
+                    RecordField {
+                        name: "min_temperature",
+                        value: FieldValue::Number(313.15),
+                    },
+                    RecordField {
+                        name: "max_temperature",
+                        value: FieldValue::Number(363.15),
+                    },
+                    RecordField {
+                        name: "cautions",
+                        value: FieldValue::Name(
+                            "Slower than acid but far less corrosive; check chelant biodegradability and disposal",
+                        ),
+                    },
+                    RecordField {
+                        name: "standard",
+                        value: FieldValue::Name("NACE TM0374"),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "barite",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[("deposit", "barite")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[("canonical_key", "BaSO4")],
+        records: &[],
+        expected_records: &[(
+            "options",
+            &[&[
+                RecordField {
+                    name: "scale_type",
+                    value: FieldValue::Name("BaSO4"),
+                },
+                RecordField {
+                    name: "category",
+                    value: FieldValue::Name("MINERAL_SCALE"),
+                },
+                RecordField {
+                    name: "dissolver",
+                    value: FieldValue::Name("High-pH chelant (DTPA/EDTA at pH~12) with synergist"),
+                },
+                RecordField {
+                    name: "concentration",
+                    value: FieldValue::Name("20-40 wt%"),
+                },
+                RecordField {
+                    name: "method",
+                    value: FieldValue::Name("Hot soak, long contact, multiple stages"),
+                },
+                RecordField {
+                    name: "effectiveness",
+                    value: FieldValue::Name("LOW"),
+                },
+                RecordField {
+                    name: "min_temperature",
+                    value: FieldValue::Number(333.15),
+                },
+                RecordField {
+                    name: "max_temperature",
+                    value: FieldValue::Number(393.15),
+                },
+                RecordField {
+                    name: "cautions",
+                    value: FieldValue::Name(
+                        "Acid-insoluble; slow dissolution; milling/mechanical removal often required",
+                    ),
+                },
+                RecordField {
+                    name: "standard",
+                    value: FieldValue::Name("NACE TM0374"),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "unmatched_name_keeps_its_spelling",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[("deposit", "some-mystery-deposit")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[("canonical_key", "some-mystery-deposit")],
+        records: &[],
+        expected_records: &[(
+            "options",
+            &[&[
+                RecordField {
+                    name: "scale_type",
+                    value: FieldValue::Name("UNKNOWN"),
+                },
+                RecordField {
+                    name: "category",
+                    value: FieldValue::Name("UNSPECIFIED"),
+                },
+                RecordField {
+                    name: "dissolver",
+                    value: FieldValue::Name(
+                        "Sample and identify deposit (XRD/SEM-EDX) before selecting solvent",
+                    ),
+                },
+                RecordField {
+                    name: "concentration",
+                    value: FieldValue::Name("n/a"),
+                },
+                RecordField {
+                    name: "method",
+                    value: FieldValue::Name("Deposit sampling and lab identification"),
+                },
+                RecordField {
+                    name: "effectiveness",
+                    value: FieldValue::Name("HIGH"),
+                },
+                RecordField {
+                    name: "min_temperature",
+                    value: FieldValue::Number(273.15),
+                },
+                RecordField {
+                    name: "max_temperature",
+                    value: FieldValue::Number(473.15),
+                },
+                RecordField {
+                    name: "cautions",
+                    value: FieldValue::Name(
+                        "Do not select a dissolver blindly - acid dissolves carbonate/sulfide but not sulfate scale; identify first",
+                    ),
+                },
+                RecordField {
+                    name: "standard",
+                    value: FieldValue::Name("NACE TM0374"),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "alias_is_case_insensitive",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[("deposit", "Barite")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[("canonical_key", "BaSO4")],
+        records: &[],
+        expected_records: &[(
+            "options",
+            &[&[
+                RecordField {
+                    name: "scale_type",
+                    value: FieldValue::Name("BaSO4"),
+                },
+                RecordField {
+                    name: "category",
+                    value: FieldValue::Name("MINERAL_SCALE"),
+                },
+                RecordField {
+                    name: "dissolver",
+                    value: FieldValue::Name("High-pH chelant (DTPA/EDTA at pH~12) with synergist"),
+                },
+                RecordField {
+                    name: "concentration",
+                    value: FieldValue::Name("20-40 wt%"),
+                },
+                RecordField {
+                    name: "method",
+                    value: FieldValue::Name("Hot soak, long contact, multiple stages"),
+                },
+                RecordField {
+                    name: "effectiveness",
+                    value: FieldValue::Name("LOW"),
+                },
+                RecordField {
+                    name: "min_temperature",
+                    value: FieldValue::Number(333.15),
+                },
+                RecordField {
+                    name: "max_temperature",
+                    value: FieldValue::Number(393.15),
+                },
+                RecordField {
+                    name: "cautions",
+                    value: FieldValue::Name(
+                        "Acid-insoluble; slow dissolution; milling/mechanical removal often required",
+                    ),
+                },
+                RecordField {
+                    name: "standard",
+                    value: FieldValue::Name("NACE TM0374"),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "dithiazine_order",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[("deposit", "dithiazine")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[("canonical_key", "Dithiazine")],
+        records: &[],
+        expected_records: &[(
+            "options",
+            &[
+                &[
+                    RecordField {
+                        name: "scale_type",
+                        value: FieldValue::Name("Dithiazine"),
+                    },
+                    RecordField {
+                        name: "category",
+                        value: FieldValue::Name("SCAVENGER_SOLIDS"),
+                    },
+                    RecordField {
+                        name: "dissolver",
+                        value: FieldValue::Name(
+                            "Proprietary dithiazine dissolver (glycolic-acid or oxidiser based) with surfactant",
+                        ),
+                    },
+                    RecordField {
+                        name: "concentration",
+                        value: FieldValue::Name("10-30 wt%"),
+                    },
+                    RecordField {
+                        name: "method",
+                        value: FieldValue::Name("Hot circulation with surfactant"),
+                    },
+                    RecordField {
+                        name: "effectiveness",
+                        value: FieldValue::Name("MEDIUM"),
+                    },
+                    RecordField {
+                        name: "min_temperature",
+                        value: FieldValue::Number(313.15),
+                    },
+                    RecordField {
+                        name: "max_temperature",
+                        value: FieldValue::Number(353.15),
+                    },
+                    RecordField {
+                        name: "cautions",
+                        value: FieldValue::Name(
+                            "Amorphous triazine-scavenger reaction product; RESTORE water pH control (7.5-9.5) and review scavenger dose to prevent recurrence",
+                        ),
+                    },
+                    RecordField {
+                        name: "standard",
+                        value: FieldValue::Name("NACE TM0374"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "scale_type",
+                        value: FieldValue::Name("Dithiazine"),
+                    },
+                    RecordField {
+                        name: "category",
+                        value: FieldValue::Name("SCAVENGER_SOLIDS"),
+                    },
+                    RecordField {
+                        name: "dissolver",
+                        value: FieldValue::Name(
+                            "Aromatic solvent (xylene) plus hot water/surfactant",
+                        ),
+                    },
+                    RecordField {
+                        name: "concentration",
+                        value: FieldValue::Name("neat solvent"),
+                    },
+                    RecordField {
+                        name: "method",
+                        value: FieldValue::Name("Solvent soak"),
+                    },
+                    RecordField {
+                        name: "effectiveness",
+                        value: FieldValue::Name("LOW"),
+                    },
+                    RecordField {
+                        name: "min_temperature",
+                        value: FieldValue::Number(313.15),
+                    },
+                    RecordField {
+                        name: "max_temperature",
+                        value: FieldValue::Number(353.15),
+                    },
+                    RecordField {
+                        name: "cautions",
+                        value: FieldValue::Name(
+                            "Only partial; mechanical trim/bridle cleaning usually still needed",
+                        ),
+                    },
+                    RecordField {
+                        name: "standard",
+                        value: FieldValue::Name("NACE TM0374"),
+                    },
+                ],
+            ],
+        )],
+    },
+];
+
+/// Registry entry for `eos.scale_remediation_advisor`.
+pub static SCALE_REMEDIATION_ADVISOR_SPEC: ModelSpec = ModelSpec {
+    id: "eos.scale_remediation_advisor",
+    kind: "direct",
+    algorithm: None,
+    checks: SCALE_REMEDIATION_ADVISOR_CHECKS,
+    cases: SCALE_REMEDIATION_ADVISOR_CASES,
+};
+
 static SOREIDE_WHITSON_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -14168,6 +23443,213 @@ pub static SOREIDE_WHITSON_PHASE_SPEC: ModelSpec = ModelSpec {
     cases: SOREIDE_WHITSON_PHASE_CASES,
 };
 
+static SOUND_SPEED_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+];
+
+static SOUND_SPEED_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_nine_component_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 297.15), ("P", 4800000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "nitrogen",
+                "CO2",
+                "methane",
+                "ethane",
+                "propane",
+                "i-butane",
+                "n-butane",
+                "i-pentane",
+                "n-pentane",
+            ],
+        )],
+        strings: &[],
+        vectors: &[(
+            "z",
+            &[
+                0.01208165393330526,
+                0.013435200224588424,
+                0.8820509735507028,
+                0.05271812147827308,
+                0.03291624055024163,
+                0.0008221540435942168,
+                0.004882792917443703,
+                0.0005614710541619043,
+                0.000531392247688945,
+            ],
+        )],
+        matrices: &[],
+        expected: &[
+            ("sound_speed", 390.7205902869134),
+            ("system_sound_speed", 390.7205902869134),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("phase", "all_vapour")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_nine_component_gas_cold",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 250.15), ("P", 6095000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "nitrogen",
+                "CO2",
+                "methane",
+                "ethane",
+                "propane",
+                "i-butane",
+                "n-butane",
+                "i-pentane",
+                "n-pentane",
+            ],
+        )],
+        strings: &[],
+        vectors: &[(
+            "z",
+            &[
+                0.01208165393330526,
+                0.013435200224588424,
+                0.8820509735507028,
+                0.05271812147827308,
+                0.03291624055024163,
+                0.0008221540435942168,
+                0.004882792917443703,
+                0.0005614710541619043,
+                0.000531392247688945,
+            ],
+        )],
+        matrices: &[],
+        expected: &[
+            ("sound_speed", 336.3275242593267),
+            ("system_sound_speed", 336.3275242593267),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("phase", "all_vapour")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_two_phase_state_weights_the_phases",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.01,
+        numbers: &[("T", 250.0), ("P", 3000000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("sound_speed", 373.6430578285567),
+            ("system_sound_speed", 685.5795111384601),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("phase", "two_phase")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "liquid_propane",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 293.15), ("P", 10000000.0)],
+        flags: &[],
+        lists: &[("components", &["propane"])],
+        strings: &[],
+        vectors: &[("z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("sound_speed", 706.7752466817828),
+            ("system_sound_speed", 706.7752466817828),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("phase", "all_liquid")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_ideal_gas_limit",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("T", 300.15), ("P", 100000.0)],
+        flags: &[],
+        lists: &[("components", &["methane"])],
+        strings: &[],
+        vectors: &[("z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("sound_speed", 449.53013355407364),
+            ("system_sound_speed", 449.53013355407364),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("phase", "all_vapour")],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+/// Registry entry for `eos.sound_speed`.
+pub static SOUND_SPEED_SPEC: ModelSpec = ModelSpec {
+    id: "eos.sound_speed",
+    kind: "direct",
+    algorithm: None,
+    checks: SOUND_SPEED_CHECKS,
+    cases: SOUND_SPEED_CASES,
+};
+
 static SRK_CPA_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -14344,6 +23826,1730 @@ pub static STABILITY_TEST_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&STABILITY_TEST_ALGORITHM),
     checks: STABILITY_TEST_CHECKS,
     cases: STABILITY_TEST_CASES,
+};
+
+static STREAM_SCALE_ANALYZER_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A state has a positive pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "co2_partial_pressure",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A partial pressure cannot be negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "water_flow",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A throughput cannot be negative.",
+        },
+    },
+];
+
+static STREAM_SCALE_ANALYZER_CASES: &[TestCase] = &[
+    TestCase {
+        id: "sulphate_limited_davies",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+            ("water_flow", 0.0011574074074074073),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_scale_mass", 1.6994196722154926),
+            ("total_scale_rate", 0.001966920916916079),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "BaSO4")],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("BaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(4.876927696794577),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(8.355304428255001e-10),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(1.6994196722154926),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.001966920916916079),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("SrSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.6239941092936203),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-0.024562773607350038),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.5172688634939727),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-0.13128801940699758),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-6.977584279583682),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-6.977584279583682),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "sulphate_limited_bdot",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+            ("water_flow", 0.0011574074074074073),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "bdot")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_scale_mass", 1.6977826379846324),
+            ("total_scale_rate", 0.001965026201371102),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "BaSO4")],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("BaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(3.6375202399726745),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(4.841367472462266e-11),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(1.6977826379846324),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.001965026201371102),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("SrSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-0.615413347528282),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-1.2625284691246774),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-0.7221385933279296),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-1.369253714924325),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-8.216991736405584),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-8.216991736405584),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "co_precipitation",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 0.5),
+            ("barium", 0.1),
+            ("strontium", 2.5),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.1),
+            ("sulphate", 4.0),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+            ("water_flow", 0.0028935185185185184),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_scale_mass", 4.292748019675318),
+            ("total_scale_rate", 0.012421145890264228),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "SrSO4")],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("BaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(4.445020684845298),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(3.5926079406150245e-09),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.16993331841713222),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.000491705203753276),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("SrSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(1.112905851296717),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-9.575771742875196e-14),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(4.00233592985708),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.011580833130373494),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.562231451720118),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(8.688590473644248e-14),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.12047877140110569),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0003486075561374586),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-7.377023818186227),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-7.452860219247141),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "zero_flow",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+            ("water_flow", 0.0),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_scale_mass", 1.6994196722154926),
+            ("total_scale_rate", 0.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "BaSO4")],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("BaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(4.876927696794577),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(8.355304428255001e-10),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(1.6994196722154926),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("SrSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.6239941092936203),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-0.024562773607350038),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.5172688634939727),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-0.13128801940699758),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-6.977584279583682),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-6.977584279583682),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "no_minerals",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 0.0),
+            ("barium", 0.0),
+            ("strontium", 0.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.0),
+            ("sulphate", 0.0),
+            ("total_dissolved_solids", 0.001),
+            ("temperature", 298.15),
+            ("pressure", 101300.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 7.0),
+            ("water_flow", 1.1574074074074073e-05),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("total_scale_mass", 0.0), ("total_scale_rate", 0.0)],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "none")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "absent_barium",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 0.0),
+            ("strontium", 0.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 0.0),
+            ("water_flow", 0.0011574074074074073),
+        ],
+        flags: &[
+            ("auto_ph", false),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_scale_mass", 0.7303150836515322),
+            ("total_scale_rate", 0.0008452720875596437),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "CaSO4")],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.5172688634939727),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(8.601801001654469e-14),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.7303150836515322),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0008452720875596437),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaCO3"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(-6.977584279583682),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-7.127062544742807),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "auto_ph",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("calcium", 1.0),
+            ("barium", 1.0),
+            ("strontium", 3.0),
+            ("iron", 0.0),
+            ("magnesium", 0.0),
+            ("sodium", 0.0),
+            ("bicarbonate", 0.2),
+            ("sulphate", 1.5),
+            ("total_dissolved_solids", 60.0),
+            ("temperature", 343.15),
+            ("pressure", 10000000.0),
+            ("co2_partial_pressure", 100000.0),
+            ("ph", 6.5),
+            ("water_flow", 0.0011574074074074073),
+        ],
+        flags: &[
+            ("auto_ph", true),
+            ("second_order_pressure_correction", false),
+        ],
+        lists: &[],
+        strings: &[("activity_model", "davies")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("total_scale_mass", 1.6994196722154904),
+            ("total_scale_rate", 0.0019669209169160765),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("dominant_scale", "BaSO4")],
+        records: &[],
+        expected_records: &[(
+            "minerals",
+            &[
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("BaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(4.876927696792897),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(8.354946662765598e-10),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(1.6994196722154904),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0019669209169160765),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("SrSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.623994109291941),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-0.024562773614825117),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "mineral",
+                        value: FieldValue::Name("CaSO4"),
+                    },
+                    RecordField {
+                        name: "initial_si",
+                        value: FieldValue::Number(0.5172688634965064),
+                    },
+                    RecordField {
+                        name: "final_si",
+                        value: FieldValue::Number(-0.1312880194102597),
+                    },
+                    RecordField {
+                        name: "precipitated_mass",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "scale_rate",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+];
+
+/// Registry entry for `eos.stream_scale_analyzer`.
+pub static STREAM_SCALE_ANALYZER_SPEC: ModelSpec = ModelSpec {
+    id: "eos.stream_scale_analyzer",
+    kind: "direct",
+    algorithm: None,
+    checks: STREAM_SCALE_ANALYZER_CHECKS,
+    cases: STREAM_SCALE_ANALYZER_CASES,
+};
+
+static SURF_COOLDOWN_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "operating_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The state has a positive pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "flash_temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "seabed_temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+];
+
+static SURF_COOLDOWN_CASES: &[TestCase] = &[
+    TestCase {
+        id: "wet_u2_5",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 44492.435713666484),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40923.983763683995),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "ok")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "wet_u1_5",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 1.5),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 74263.16567199984),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 1.5),
+            ("time_constant", 68206.63960614),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "ok")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "wet_u6",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 6.0),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 18443.200793547385),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 6.0),
+            ("time_constant", 17051.659901535),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "critical")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "layers",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("external_htc", 500.0),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 37277.46847114684),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.981752570396536),
+            ("time_constant", 34312.02187095089),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "ok")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "no_required",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 3.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 44492.435713666484),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40923.983763683995),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "ok")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "req_half",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 14400.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 44492.435713666484),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40923.983763683995),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "ok")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "req_1_2t",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 34560.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 44492.435713666484),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40923.983763683995),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "ok")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "req_2t",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 57600.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 44492.435713666484),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40923.983763683995),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "marginal")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "operating_override",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("operating_temperature", 308.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 16893.195616896453),
+            ("initial_fluid_temperature", 308.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40923.983763683995),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "critical")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "initial_below_target",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("operating_temperature", 293.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 0.0),
+            ("initial_fluid_temperature", 293.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40923.983763683995),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "critical")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "seabed_300k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 300.0),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 300.0),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40923.983763683995),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "no_hydrate_risk")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "dry",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.9, 0.07, 0.03])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.0),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40334.89508953456),
+            ("fluid_density", 86.12024725861052),
+            ("fluid_specific_heat", 2968.289653131351),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "no_hydrate_risk")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "wet_require",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[("require_water", true)],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 44492.435713666484),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40923.983763683995),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "ok")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "cold_operating",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("operating_temperature", 288.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 0.0),
+            ("initial_fluid_temperature", 288.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40923.983763683995),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "critical")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "low_pressure",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 1000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 275.8839254254754),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 36652.13256073724),
+            ("fluid_density", 6.938091986832445),
+            ("fluid_specific_heat", 2470.0369075525364),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "no_hydrate_risk")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "margin_1",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 1.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 48681.31190138289),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 1.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40923.983763683995),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "ok")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "margin_5",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 5.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 300.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 40694.09483933296),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 5.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40923.983763683995),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "ok")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "dt_600",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("operating_pressure", 12000000.0),
+            ("flash_temperature", 338.15),
+            ("internal_diameter", 0.254),
+            ("wall_thickness", 0.0159),
+            ("insulation_thickness", 0.06),
+            ("coating_thickness", 0.006),
+            ("insulation_conductivity", 0.22),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("hydrate_margin", 3.0),
+            ("required_no_touch_time", 28800.0),
+            ("total_time", 259200.0),
+            ("time_step", 600.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+        vectors: &[("z", &[0.82, 0.06, 0.03, 0.09])],
+        matrices: &[],
+        expected: &[
+            ("water_mole_fraction", 0.09000000000000001),
+            ("no_touch_time", 44328.38366298987),
+            ("initial_fluid_temperature", 338.15),
+            ("hydrate_equilibrium_temperature", 294.6346950906306),
+            ("hydrate_margin", 3.0),
+            ("seabed_temperature", 277.15),
+            ("overall_u_value", 2.5),
+            ("time_constant", 40923.983763683995),
+            ("fluid_density", 93.86985158263911),
+            ("fluid_specific_heat", 3129.6385757167163),
+            ("internal_diameter", 0.254),
+            ("insulation_thickness", 0.06),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("verdict", "ok")],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+/// Registry entry for `eos.surf_cooldown`.
+pub static SURF_COOLDOWN_SPEC: ModelSpec = ModelSpec {
+    id: "eos.surf_cooldown",
+    kind: "direct",
+    algorithm: None,
+    checks: SURF_COOLDOWN_CHECKS,
+    cases: SURF_COOLDOWN_CASES,
 };
 
 static TH_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
@@ -15910,6 +27116,357 @@ pub static UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: UNIQUAC_ACTIVITY_COEFFICIENTS_CHECKS,
     cases: UNIQUAC_ACTIVITY_COEFFICIENTS_CASES,
+};
+
+static VALVE_SCALE_DRIFT_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "port_diameter",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The class treats a port at or below zero as fully open while the deposit still grows; the arithmetic still runs.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "growth_rate",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The class's setter clamps a negative growth rate to zero; the warning names it and the arithmetic still runs.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "elapsed_time",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A negative total time is not a state; the class ignores a negative step, so the model clamps it.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "clean_opening_percent",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(100.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An opening outside the valve's range is a caller's mistake rather than a state; the capping still runs.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "valve_kv",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The class does not clamp the valve's coefficient; a negative one is a caller's mistake and the arithmetic still runs.",
+        },
+    },
+];
+
+static VALVE_SCALE_DRIFT_CASES: &[TestCase] = &[
+    TestCase {
+        id: "thirty_days",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("port_diameter", 0.05),
+            ("growth_rate", 3.168808781402895e-11),
+            ("elapsed_time", 2592000.0),
+            ("clean_opening_percent", 50.0),
+            ("valve_kv", 100.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("deposit_thickness", 8.213552361396305e-05),
+            ("elapsed_time", 2592000.0),
+            ("open_area_fraction", 0.9934399521016661),
+            ("fouling_fraction", 0.006560047898333865),
+            ("effective_kv", 99.34399521016661),
+            ("time_to_plug", 786348000.0000001),
+            ("opening_percent", 50.3301683148768),
+            ("time_to_pin", 228483176.0506852),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "one_year",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("port_diameter", 0.05),
+            ("growth_rate", 3.168808781402895e-11),
+            ("elapsed_time", 31557600.0),
+            ("clean_opening_percent", 50.0),
+            ("valve_kv", 100.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("deposit_thickness", 0.001),
+            ("open_area_fraction", 0.9216),
+            ("fouling_fraction", 0.07840000000000003),
+            ("effective_kv", 92.16),
+            ("time_to_plug", 757382400.0000001),
+            ("opening_percent", 54.25347222222222),
+            ("time_to_pin", 199517576.05068517),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "pinned",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("port_diameter", 0.05),
+            ("growth_rate", 3.168808781402895e-11),
+            ("elapsed_time", 864000000.0),
+            ("clean_opening_percent", 50.0),
+            ("valve_kv", 100.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("deposit_thickness", 0.02737850787132101),
+            ("open_area_fraction", 0.0),
+            ("fouling_fraction", 0.999999),
+            ("effective_kv", 0.0),
+            ("time_to_plug", 0.0),
+            ("opening_percent", 100.0),
+            ("time_to_pin", 0.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "not_advanced",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("port_diameter", 0.05),
+            ("growth_rate", 3.168808781402895e-11),
+            ("elapsed_time", 0.0),
+            ("clean_opening_percent", 50.0),
+            ("valve_kv", 100.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("deposit_thickness", 0.0),
+            ("open_area_fraction", 1.0),
+            ("fouling_fraction", 0.0),
+            ("effective_kv", 100.0),
+            ("time_to_plug", 788940000.0000001),
+            ("opening_percent", 50.0),
+            ("time_to_pin", 231075176.05068517),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "zero_growth",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("port_diameter", 0.05),
+            ("growth_rate", 0.0),
+            ("elapsed_time", 31557600.0),
+            ("clean_opening_percent", 50.0),
+            ("valve_kv", 100.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("deposit_thickness", 0.0),
+            ("open_area_fraction", 1.0),
+            ("fouling_fraction", 0.0),
+            ("effective_kv", 100.0),
+            ("opening_percent", 50.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "no_port",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("port_diameter", 0.0),
+            ("growth_rate", 3.168808781402895e-11),
+            ("elapsed_time", 31557600.0),
+            ("clean_opening_percent", 50.0),
+            ("valve_kv", 100.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("deposit_thickness", 0.001),
+            ("open_area_fraction", 1.0),
+            ("fouling_fraction", 0.0),
+            ("effective_kv", 100.0),
+            ("opening_percent", 50.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "clean_opening_100",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("port_diameter", 0.05),
+            ("growth_rate", 3.168808781402895e-11),
+            ("elapsed_time", 864000000.0),
+            ("clean_opening_percent", 100.0),
+            ("valve_kv", 100.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("deposit_thickness", 0.02737850787132101),
+            ("open_area_fraction", 0.0),
+            ("fouling_fraction", 0.999999),
+            ("effective_kv", 0.0),
+            ("time_to_plug", 0.0),
+            ("opening_percent", 100.0),
+            ("time_to_pin", 0.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "from_kinetics",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("port_diameter", 0.05),
+            ("growth_rate", 1.2833675564681726e-08),
+            ("elapsed_time", 2592000.0),
+            ("clean_opening_percent", 50.0),
+            ("valve_kv", 100.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("deposit_thickness", 0.03326488706365503),
+            ("open_area_fraction", 0.0),
+            ("fouling_fraction", 0.999999),
+            ("effective_kv", 0.0),
+            ("time_to_plug", 0.0),
+            ("opening_percent", 100.0),
+            ("time_to_pin", 0.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+/// Registry entry for `eos.valve_scale_drift`.
+pub static VALVE_SCALE_DRIFT_SPEC: ModelSpec = ModelSpec {
+    id: "eos.valve_scale_drift",
+    kind: "direct",
+    algorithm: None,
+    checks: VALVE_SCALE_DRIFT_CHECKS,
+    cases: VALVE_SCALE_DRIFT_CASES,
 };
 
 static VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_CHECKS: &[SpecCheck] = &[
@@ -18039,12 +29596,14 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &AQUEOUS_VISCOSITY_SPEC,
     &ARGON_SOLID_PHASE_SPEC,
     &BARITE_CELESTITE_SOLID_SOLUTION_SPEC,
+    &BRINE_MIXING_SCALE_EVALUATOR_SPEC,
     &BUBBLE_PRESSURE_SPEC,
     &BUBBLE_TEMPERATURE_SPEC,
     &BWRS_PHASE_SPEC,
     &CALC_IONIC_COMPOSITION_SPEC,
     &CAPILLARY_DEW_POINT_SPEC,
     &CDFT_SURFACE_TENSION_SPEC,
+    &CLOSED_LOOP_DEPOSITION_SOLVER_SPEC,
     &CO2_BRINE_PHASE_EQUILIBRIUM_SPEC,
     &CO2_PHASE_SPEC,
     &CRITICAL_POINT_SPEC,
@@ -18054,6 +29613,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &EFFECTIVE_DIFFUSION_SPEC,
     &ELECTROLYTE_CPA_STATOIL_PHASE_SPEC,
     &EOS_CG_PHASE_SPEC,
+    &EQUILIBRIUM_SOUND_SPEED_SPEC,
     &FILIPPOV_CONDUCTIVITY_SPEC,
     &FLOWLINE_SCALE_PROFILE_SPEC,
     &FREEZING_POINT_SPEC,
@@ -18079,6 +29639,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &HYDRATE_FRACTION_SPEC,
     &HYDRATE_INHIBITOR_CONCENTRATION_SPEC,
     &HYDRATE_INHIBITOR_WT_SPEC,
+    &HYDRATE_RISK_MAP_SPEC,
     &HYDROGEN_PHASE_SPEC,
     &INTERFACE_PROPERTIES_SPEC,
     &KENT_EISENBERG_PHASE_SPEC,
@@ -18094,8 +29655,13 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PCSAFT_RAHMAT_PHASE_SPEC,
     &PH_FLASH_SPEC,
     &PHASE_TRANSPORT_SPEC,
+    &PIPE_BEGGS_AND_BRILLS_SPEC,
+    &PIPELINE_COOLDOWN_SPEC,
+    &PITZER_HYDRATE_FORMATION_PRESSURE_SPEC,
+    &PITZER_HYDRATE_FORMATION_TEMPERATURE_SPEC,
     &PITZER_PHASE_SPEC,
     &PR_CPA_PHASE_SPEC,
+    &PRODUCTION_CHEMICAL_SCALE_SCENARIO_SPEC,
     &PS_FLASH_SPEC,
     &PT_FLASH_SPEC,
     &PT_PHASE_ENVELOPE_SPEC,
@@ -18108,9 +29674,15 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &SAFT_VR_MIE_PHASE_SPEC,
     &SALT_PRECIPITATION_SPEC,
     &SATURATE_WITH_WATER_SPEC,
+    &SCALE_CONTROL_ASSESSOR_SPEC,
+    &SCALE_DEPOSITION_ACCUMULATOR_SPEC,
+    &SCALE_REMEDIATION_ADVISOR_SPEC,
     &SOREIDE_WHITSON_PHASE_SPEC,
+    &SOUND_SPEED_SPEC,
     &SRK_CPA_PHASE_SPEC,
     &STABILITY_TEST_SPEC,
+    &STREAM_SCALE_ANALYZER_SPEC,
+    &SURF_COOLDOWN_SPEC,
     &TH_FLASH_SPEC,
     &THERMAL_CONDUCTIVITY_SPEC,
     &TP_FLASH_SAFT_SPEC,
@@ -18126,6 +29698,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &UNIFAC_PSRK_ACTIVITY_COEFFICIENTS_SPEC,
     &UNIFAC_UMRPRU_ACTIVITY_COEFFICIENTS_SPEC,
     &UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC,
+    &VALVE_SCALE_DRIFT_SPEC,
     &VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_SPEC,
     &VH_FLASH_SPEC,
     &VISCOSITY_SPEC,

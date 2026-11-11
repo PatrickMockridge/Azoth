@@ -1,5 +1,6 @@
 id = "eos.pr78_kappa"
 name = "Peng-Robinson (1978) attraction-parameter coefficient"
+summary = "Peng-Robinson (1978) attraction-parameter coefficient from the acentric factor. Use it when assembling a Peng-Robinson EOS with the 1978 kappa form."
 equation = """\
     kappa = 0.379642 + 1.48503*omega - 0.164423*omega**2 + 0.01666*omega**3   if omega > 0.49\n\
     kappa = 0.37464 + 1.54226*omega - 0.26992*omega**2                        otherwise\n\

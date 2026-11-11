@@ -4,6 +4,8 @@
 
 `eos.pr_molar_volume`
 
+Molar volume from a compressibility factor, temperature and pressure. Use it to turn a cubic EOS root into a volume.
+
 ## Equation
 
 $$
@@ -47,7 +49,7 @@ Clapeyron, É. (1834); van der Waals, J. D. (1873) for the compressibility facto
 | `P > 0` | raises | `P` is a divisor, and zero pressure is the infinite-volume limit - which is arithmetic rather than a state this calc can answer for. A negative pressure would give a negative volume. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

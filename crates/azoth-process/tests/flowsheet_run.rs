@@ -18,6 +18,57 @@ fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
+/// Every flowsheet document, including the worked examples under `examples/`.
+///
+/// **Recursive so a shipped example is executed rather than merely stored.** The editor opens
+/// every document here, and a document no solver test reaches is an example that can rot.
+fn flowsheet_paths(directory: &Path, into: &mut Vec<PathBuf>) {
+    let mut entries: Vec<PathBuf> = std::fs::read_dir(directory)
+        .unwrap_or_else(|error| panic!("{}: {error}", directory.display()))
+        .map(|entry| entry.expect("readable entry").path())
+        .collect();
+    entries.sort();
+    for path in entries {
+        if path.is_dir() {
+            flowsheet_paths(&path, into);
+        } else if path.extension().and_then(|e| e.to_str()) == Some("toml") {
+            into.push(path);
+        }
+    }
+}
+
+fn flowsheets() -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    flowsheet_paths(&root().join("specs/flowsheets"), &mut paths);
+    paths
+}
+
+/// **The worked examples solve, and the editor's menu is not a set of broken invitations.**
+#[test]
+fn every_example_solves() {
+    let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
+    let feeds = BTreeMap::new();
+    let mut checked = 0;
+    for path in flowsheets() {
+        if !path.to_string_lossy().contains("/examples/") {
+            continue;
+        }
+        let text = std::fs::read_to_string(&path).expect("readable");
+        let flowsheet = Flowsheet::from_toml(&text)
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        let report = run(&flowsheet, &palette, &feeds, ExecutionOrder::Insertion)
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        assert!(report.converged, "{} did not converge", path.display());
+        assert!(
+            !report.streams.is_empty(),
+            "{} ran and bound no stream",
+            path.display()
+        );
+        checked += 1;
+    }
+    assert!(checked >= 4, "only {checked} example(s) were found");
+}
+
 /// **The shipped flowsheet, run.** Feed, pump, heat, separate, and the liquid recycled back to
 /// the mixer - so the second pass's mixer has two inlets and the tear closes.
 #[test]
@@ -169,13 +220,11 @@ fn a_tear_that_carries_material_converges() {
         "the residual moved, so the loop is not the fixed cycle the growth describes"
     );
 
-    // **The purge that would give it one is not expressible today, and that is a gap rather than
-    // a decision.** A product connection *reports* a stream and does not consume it - every
-    // connection naming a stream reads it - so adding one changes nothing (measured: the residual
-    // is unchanged to fifteen digits). What the loop needs is a **split**, and `unit_ops.splitter`
-    // declares its outlets as one `many` port named `products`, which a connection cannot address
-    // one of. `ExecutionOrder` and this loop are both wired for `many` *inlets* and not for `many`
-    // outlets, and closing it means giving a connection a way to name the index.
+    // **The purge that would give it one is a split, not a product.** A product connection
+    // *reports* a stream and does not consume it, so adding one changes nothing (measured: the
+    // residual is unchanged to fifteen digits). A splitter's `products[0]`/`[1]` can be addressed
+    // by position, which is what the purge_and_recycle example uses; this test's point is that the
+    // unsplit loop has no steady state, not that the split is unexpressible.
 }
 
 /// The shipped flowsheet as written, with no condensing and therefore no liquid in the loop - the
@@ -277,7 +326,9 @@ fn the_session_addresses_every_value_by_a_stable_path() {
 /// `SimulationInterface.run()` defaults to `run(UUID.randomUUID())`, but a **recycle** needs the
 /// sequential loop around it. So this is the only external measurement of the executor, and it
 /// holds the loop's *convergence* - the pass it stopped on and the residual it stopped with - as
-/// well as its destination.
+/// well as its destination. **The class's `Recycle` has no outlet before `run` and its
+/// `applyStreamValues` drops the accelerated temperature, pressure and flow** (issues #4000,
+/// #3999); this port's loop writes the whole stream.
 ///
 /// The row is `demo_condensing`: the shipped graph with the heater at 250 K, which is the one
 /// whose tear carries material. At 320 K the separator's liquid is nil and NeqSim **deactivates**
@@ -417,13 +468,8 @@ fn composition(field: &str) -> Vec<f64> {
 /// both change. What is claimed is the value.
 #[test]
 fn every_shipped_flowsheet_round_trips() {
-    let directory = root().join("specs/flowsheets");
     let mut checked = 0;
-    for entry in std::fs::read_dir(&directory).expect("the flowsheets are there") {
-        let path = entry.expect("readable").path();
-        if path.extension().and_then(|e| e.to_str()) != Some("toml") {
-            continue;
-        }
+    for path in flowsheets() {
         let text = std::fs::read_to_string(&path).expect("readable");
         let original = Flowsheet::from_toml(&text)
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()));

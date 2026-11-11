@@ -4,6 +4,8 @@
 
 `eos.twucoon_statoil_alpha`
 
+Twu-Coon Statoil alpha function. Use it when a cubic EOS needs this attraction-temperature form for heavy components.
+
 ## Equation
 
 $$
@@ -23,6 +25,14 @@ alpha = Tr**(c*(b-1)) * exp(a*(1 - Tr**(b*c)))
 `alpha(temperature)`, ported verbatim
 
 DOI: [10.1016/0378-3812(94)02601-V](https://doi.org/10.1016/0378-3812(94)02601-V)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the formula is arithmetic-identical to `twucoon_param_alpha`; NeqSim ships both classes, selecting this one for mercury.
+
 
 ## Inputs
 
@@ -48,7 +58,7 @@ DOI: [10.1016/0378-3812(94)02601-V](https://doi.org/10.1016/0378-3812(94)02601-V
 | `Tr > 0` | raises | the formula takes fractional powers of `Tr`; zero and below are not states |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
@@ -57,8 +67,6 @@ satisfy for the result to mean what it says.
 - the three parameters are the caller's fitted Twu-Coon parameters, not the cubic's `a` and `b`.
 
 - the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.
-
-- the formula is arithmetic-identical to `twucoon_param_alpha`; NeqSim ships both classes, selecting this one for mercury.
 
 
 

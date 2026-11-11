@@ -139,3 +139,832 @@ cold_out_z = [0.5, 0.5]
 cold_out_p = 500000.0
 cold_out_t = 320.0
 cold_out_h = -18022.51221053017
+
+[[cases]]
+id = "the_delta_t_closure_on_the_class_test_fluid"
+tolerance = 3e-04
+source = "The `heat_exchanger_delta_t` capture's `pr_test_run2_delta_t_1` row: the class's own `HeatExchangerTest.testRun2` fluid on PR, through `setDeltaT(1.0)`. **The class sets the cold side** - the perturbed 334.15 K outlet is the second's - and closes the hot side at the duty. The `ua_value` is `dH / (T_out,set - T_in,set)`: 331126.16 W over 21 K.\n"
+[cases.inputs]
+hot_components = ["methane", "ethane", "n-heptane"]
+hot_in_n = 243.0
+hot_in_z = [0.4938271604938271, 0.4938271604938271, 0.012345679012345678]
+hot_in_p = 2000000.0
+hot_in_t = 333.15
+cold_components = ["methane", "ethane"]
+cold_in_n = 340.0
+cold_in_z = [0.6470588235294118, 0.35294117647058826]
+cold_in_p = 2000000.0
+cold_in_t = 313.15
+flow_arrangement = "counterflow"
+use_delta_t = true
+delta_t = 1.0
+[cases.expected]
+hot_out_t = 309.51430343320936
+hot_out_h = 746.0692431959535
+cold_out_t = 334.15
+cold_out_h = 2063.781003522744
+duty = 331126.16235200467
+ua_value = 15767.912492952604
+delta_t_side = "cold"
+
+[[cases]]
+id = "the_delta_t_closure_on_the_streams_swapped"
+tolerance = 3e-04
+source = "The capture's `pr_test_run2_swapped_delta_t_1` row: the same two fluids with the cold one as the first stream. **The class's swap is index-based, not hot/cold-based** - the first stream is now the one it sets, and the conductance and duty are the same to the last digit.\n"
+[cases.inputs]
+hot_components = ["methane", "ethane"]
+hot_in_n = 340.0
+hot_in_z = [0.6470588235294118, 0.35294117647058826]
+hot_in_p = 2000000.0
+hot_in_t = 313.15
+cold_components = ["methane", "ethane", "n-heptane"]
+cold_in_n = 243.0
+cold_in_z = [0.4938271604938271, 0.4938271604938271, 0.012345679012345678]
+cold_in_p = 2000000.0
+cold_in_t = 333.15
+flow_arrangement = "counterflow"
+use_delta_t = true
+delta_t = 1.0
+[cases.expected]
+hot_out_t = 334.15
+hot_out_h = 2063.781003522744
+cold_out_t = 309.51430343320936
+cold_out_h = 746.0692431959535
+# The port's duty is positive when the **hot argument** cools. Here the first
+# stream is the physically cold one, so it is heated and the release is negative.
+duty = -331126.16235200467
+ua_value = 15767.912492952604
+delta_t_side = "hot"
+
+[[cases]]
+id = "the_delta_t_closure_at_near_equal_capacities"
+tolerance = 3e-04
+source = "The capture's `pr_near_equal_cr_delta_t_1` row: the same fluid and flow on both sides, 100 K apart. **The hot side is the one set**, at `T_cold_in - delta_t = 299` K, and the cold side is closed at 401.735 K - a `Cr` near one changes which side the class chooses.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.5, 0.5]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["methane", "n-butane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 2000000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+use_delta_t = true
+delta_t = 1.0
+[cases.expected]
+hot_out_t = 299.0
+hot_out_h = -7689.143833245269
+cold_out_t = 401.7354963625766
+cold_out_h = 8364.101279895709
+duty = 15901.284453854947
+ua_value = 157.4384599391579
+delta_t_side = "hot"
+
+[[cases]]
+id = "a_pinned_outlet_wins_over_use_delta_t"
+tolerance = 3e-04
+source = "The `a_pinned_hot_outlet` state with `use_delta_t` also stated. **`runDeltaT` delegates to `runSpecifiedStream` when an outlet is specified**, so the pin runs and the delta-T branch is unreachable; the result is the pin's own and carries a `FALLBACK_TO_INPUT` warning naming the ignored flag.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+hot_outlet_temperature = 350.0
+use_delta_t = true
+delta_t = 1.0
+[cases.expected]
+hot_out_t = 350.0
+hot_out_h = 3219.4541058847717
+cold_out_t = 318.43800346001626
+cold_out_h = -18273.273337934537
+
+[[cases]]
+id = "the_rating_state_is_the_twostream_estimate"
+tolerance = 0.0005
+source = "`process_heat_exchanger_mechanical_design.tsv`'s `rating_ua_100`: the rating state's four temperatures give the LMTD and approach, and each type's own typical coefficient divides its area.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+ua = 100.0
+mechanical_design = true
+[cases.expected]
+mechanical_selected_type = "plate_and_frame"
+mechanical_selected_area = 0.1
+log_mean_temperature_difference = 34.38376494949978
+mechanical_approach_temperature = 13.75707990040786
+used_overall_heat_transfer_coefficient = 500.0
+calculated_ua = 100.0
+mechanical_types = [
+    { mechanical_type = "shell_and_tube", required_area = 0.1724137931034483, required_ua = 100.0, overall_heat_transfer_coefficient = 580.0, approach_temperature = 13.75707990040786, inner_diameter = 0.3, outer_diameter = 0.324, wall_thickness = 0.012, estimated_length = 6.0, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.6000000000000001, estimated_weight = 532.6884503426853, module_length = 7.5, module_width = 1.124, module_height = 1.124 },
+    { mechanical_type = "plate_and_frame", required_area = 0.1, required_ua = 100.0, overall_heat_transfer_coefficient = 1150.0, approach_temperature = 13.75707990040786, inner_diameter = 0.1784124116152771, outer_diameter = 0.19441241161527711, wall_thickness = 0.008, estimated_length = 0.633, tube_count = 11.0, tube_passes = 5.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.1, estimated_weight = 132.0, module_length = 0.633, module_width = 1.0, module_height = 1.8 },
+    { mechanical_type = "air_cooler", required_area = 1.1111111111111112, required_ua = 100.0, overall_heat_transfer_coefficient = 90.0, approach_temperature = 13.75707990040786, inner_diameter = 2.5231325220201604, outer_diameter = 2.5351325220201604, wall_thickness = 0.006, estimated_length = 2.23606797749979, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 2.7777777777777777, estimated_pressure_drop = 0.011111111111111112, estimated_weight = 225.0, module_length = 2.23606797749979, module_width = 2.23606797749979, module_height = 3.2 },
+    { mechanical_type = "double_pipe", required_area = 0.2857142857142857, required_ua = 100.0, overall_heat_transfer_coefficient = 350.0, approach_temperature = 13.75707990040786, inner_diameter = 0.05, outer_diameter = 0.11, wall_thickness = 0.005, estimated_length = 2.5, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.2, estimated_weight = 33.90956570468483, module_length = 3.0, module_width = 0.71, module_height = 0.71 },
+    { mechanical_type = "plate_fin", required_area = 0.16666666666666666, required_ua = 100.0, overall_heat_transfer_coefficient = 600.0, approach_temperature = 13.75707990040786, inner_diameter = 0.030285343213868998, outer_diameter = 0.033485343213869, wall_thickness = 0.0016, estimated_length = 0.181712059283214, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 0.16666666666666666, estimated_pressure_drop = 0.005451361778496419, estimated_weight = 0.13649999999999998, module_length = 2.181712059283214, module_width = 0.830285343213869, module_height = 0.530285343213869 },
+]
+
+[[cases]]
+id = "a_higher_conductance_sizes_a_smaller_exchanger"
+tolerance = 0.0005
+source = "`process_heat_exchanger_mechanical_design.tsv`'s `rating_ua_300`: the same exchanger at UA 300. The approach is 0.687 K and every area is its UA over the type's own coefficient - the plate-and-frame's 0.261 m2.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+ua = 300.0
+mechanical_design = true
+[cases.expected]
+mechanical_selected_type = "plate_and_frame"
+mechanical_selected_area = 0.2608695652173913
+log_mean_temperature_difference = 13.443177692876876
+mechanical_approach_temperature = 0.6869321359658898
+used_overall_heat_transfer_coefficient = 500.0
+calculated_ua = 300.0
+mechanical_types = [
+    { mechanical_type = "shell_and_tube", required_area = 0.5172413793103449, required_ua = 300.0, overall_heat_transfer_coefficient = 580.0, approach_temperature = 5.0, inner_diameter = 0.3, outer_diameter = 0.324, wall_thickness = 0.012, estimated_length = 6.0, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.6000000000000001, estimated_weight = 532.6884503426853, module_length = 7.5, module_width = 1.124, module_height = 1.124 },
+    { mechanical_type = "plate_and_frame", required_area = 0.2608695652173913, required_ua = 300.0, overall_heat_transfer_coefficient = 1150.0, approach_temperature = 2.0, inner_diameter = 0.2881620405486517, outer_diameter = 0.3041620405486517, wall_thickness = 0.008, estimated_length = 0.633, tube_count = 11.0, tube_passes = 5.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.1, estimated_weight = 132.0, module_length = 0.633, module_width = 1.0, module_height = 1.8 },
+    { mechanical_type = "air_cooler", required_area = 3.3333333333333335, required_ua = 300.0, overall_heat_transfer_coefficient = 90.0, approach_temperature = 12.0, inner_diameter = 2.5231325220201604, outer_diameter = 2.5351325220201604, wall_thickness = 0.006, estimated_length = 2.23606797749979, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 8.333333333333334, estimated_pressure_drop = 0.03333333333333333, estimated_weight = 225.0, module_length = 2.23606797749979, module_width = 2.23606797749979, module_height = 3.2 },
+    { mechanical_type = "double_pipe", required_area = 0.8571428571428571, required_ua = 300.0, overall_heat_transfer_coefficient = 350.0, approach_temperature = 8.0, inner_diameter = 0.05, outer_diameter = 0.11, wall_thickness = 0.005, estimated_length = 5.45674090600784, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.43653927248062724, estimated_weight = 74.01428571428572, module_length = 5.95674090600784, module_width = 0.71, module_height = 0.71 },
+    { mechanical_type = "plate_fin", required_area = 0.5, required_ua = 300.0, overall_heat_transfer_coefficient = 600.0, approach_temperature = 1.5, inner_diameter = 0.043679023236814954, outer_diameter = 0.046879023236814955, wall_thickness = 0.0016, estimated_length = 0.26207413942088975, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 0.5, estimated_pressure_drop = 0.007862224182626693, estimated_weight = 0.4095, module_length = 2.2620741394208896, module_width = 0.843679023236815, module_height = 0.5436790232368149 },
+]
+
+[[cases]]
+id = "the_manual_selection_wins_over_the_area_ranking"
+tolerance = 0.0005
+source = "`process_heat_exchanger_mechanical_design.tsv`'s `manual_shell_and_tube`: the manual pick is not the area winner - plate-and-frame is - so this row says the selection is the manual one's.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+ua = 100.0
+mechanical_design = true
+mechanical_type = "shell_and_tube"
+[cases.expected]
+mechanical_selected_type = "shell_and_tube"
+mechanical_selected_area = 0.1724137931034483
+log_mean_temperature_difference = 34.38376494949978
+mechanical_approach_temperature = 13.75707990040786
+used_overall_heat_transfer_coefficient = 500.0
+calculated_ua = 100.0
+mechanical_types = [
+    { mechanical_type = "shell_and_tube", required_area = 0.1724137931034483, required_ua = 100.0, overall_heat_transfer_coefficient = 580.0, approach_temperature = 13.75707990040786, inner_diameter = 0.3, outer_diameter = 0.324, wall_thickness = 0.012, estimated_length = 6.0, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.6000000000000001, estimated_weight = 532.6884503426853, module_length = 7.5, module_width = 1.124, module_height = 1.124 },
+    { mechanical_type = "plate_and_frame", required_area = 0.1, required_ua = 100.0, overall_heat_transfer_coefficient = 1150.0, approach_temperature = 13.75707990040786, inner_diameter = 0.1784124116152771, outer_diameter = 0.19441241161527711, wall_thickness = 0.008, estimated_length = 0.633, tube_count = 11.0, tube_passes = 5.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.1, estimated_weight = 132.0, module_length = 0.633, module_width = 1.0, module_height = 1.8 },
+    { mechanical_type = "air_cooler", required_area = 1.1111111111111112, required_ua = 100.0, overall_heat_transfer_coefficient = 90.0, approach_temperature = 13.75707990040786, inner_diameter = 2.5231325220201604, outer_diameter = 2.5351325220201604, wall_thickness = 0.006, estimated_length = 2.23606797749979, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 2.7777777777777777, estimated_pressure_drop = 0.011111111111111112, estimated_weight = 225.0, module_length = 2.23606797749979, module_width = 2.23606797749979, module_height = 3.2 },
+    { mechanical_type = "double_pipe", required_area = 0.2857142857142857, required_ua = 100.0, overall_heat_transfer_coefficient = 350.0, approach_temperature = 13.75707990040786, inner_diameter = 0.05, outer_diameter = 0.11, wall_thickness = 0.005, estimated_length = 2.5, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.2, estimated_weight = 33.90956570468483, module_length = 3.0, module_width = 0.71, module_height = 0.71 },
+    { mechanical_type = "plate_fin", required_area = 0.16666666666666666, required_ua = 100.0, overall_heat_transfer_coefficient = 600.0, approach_temperature = 13.75707990040786, inner_diameter = 0.030285343213868998, outer_diameter = 0.033485343213869, wall_thickness = 0.0016, estimated_length = 0.181712059283214, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 0.16666666666666666, estimated_pressure_drop = 0.005451361778496419, estimated_weight = 0.13649999999999998, module_length = 2.181712059283214, module_width = 0.830285343213869, module_height = 0.530285343213869 },
+]
+
+[[cases]]
+id = "the_lightest_candidate_is_selected"
+tolerance = 0.0005
+source = "`process_heat_exchanger_mechanical_design.tsv`'s `min_weight`: the ranking's lightest row, the plate-fin at 0.136 kg. The area winner is the plate-and-frame, so the criterion is what moved it.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+ua = 100.0
+mechanical_design = true
+mechanical_selection = "min_weight"
+[cases.expected]
+mechanical_selected_type = "plate_fin"
+mechanical_selected_area = 0.16666666666666666
+log_mean_temperature_difference = 34.38376494949978
+mechanical_approach_temperature = 13.75707990040786
+used_overall_heat_transfer_coefficient = 500.0
+calculated_ua = 100.0
+mechanical_types = [
+    { mechanical_type = "shell_and_tube", required_area = 0.1724137931034483, required_ua = 100.0, overall_heat_transfer_coefficient = 580.0, approach_temperature = 13.75707990040786, inner_diameter = 0.3, outer_diameter = 0.324, wall_thickness = 0.012, estimated_length = 6.0, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.6000000000000001, estimated_weight = 532.6884503426853, module_length = 7.5, module_width = 1.124, module_height = 1.124 },
+    { mechanical_type = "plate_and_frame", required_area = 0.1, required_ua = 100.0, overall_heat_transfer_coefficient = 1150.0, approach_temperature = 13.75707990040786, inner_diameter = 0.1784124116152771, outer_diameter = 0.19441241161527711, wall_thickness = 0.008, estimated_length = 0.633, tube_count = 11.0, tube_passes = 5.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.1, estimated_weight = 132.0, module_length = 0.633, module_width = 1.0, module_height = 1.8 },
+    { mechanical_type = "air_cooler", required_area = 1.1111111111111112, required_ua = 100.0, overall_heat_transfer_coefficient = 90.0, approach_temperature = 13.75707990040786, inner_diameter = 2.5231325220201604, outer_diameter = 2.5351325220201604, wall_thickness = 0.006, estimated_length = 2.23606797749979, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 2.7777777777777777, estimated_pressure_drop = 0.011111111111111112, estimated_weight = 225.0, module_length = 2.23606797749979, module_width = 2.23606797749979, module_height = 3.2 },
+    { mechanical_type = "double_pipe", required_area = 0.2857142857142857, required_ua = 100.0, overall_heat_transfer_coefficient = 350.0, approach_temperature = 13.75707990040786, inner_diameter = 0.05, outer_diameter = 0.11, wall_thickness = 0.005, estimated_length = 2.5, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.2, estimated_weight = 33.90956570468483, module_length = 3.0, module_width = 0.71, module_height = 0.71 },
+    { mechanical_type = "plate_fin", required_area = 0.16666666666666666, required_ua = 100.0, overall_heat_transfer_coefficient = 600.0, approach_temperature = 13.75707990040786, inner_diameter = 0.030285343213868998, outer_diameter = 0.033485343213869, wall_thickness = 0.0016, estimated_length = 0.181712059283214, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 0.16666666666666666, estimated_pressure_drop = 0.005451361778496419, estimated_weight = 0.13649999999999998, module_length = 2.181712059283214, module_width = 0.830285343213869, module_height = 0.530285343213869 },
+]
+
+[[cases]]
+id = "the_smallest_pressure_drop_is_selected"
+tolerance = 0.0005
+source = "`process_heat_exchanger_mechanical_design.tsv`'s `min_pressure_drop`: the smallest of the qualitative proxies - the plate-fin's again - ranked by a different field from the weight.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+ua = 100.0
+mechanical_design = true
+mechanical_selection = "min_pressure_drop"
+[cases.expected]
+mechanical_selected_type = "plate_fin"
+mechanical_selected_area = 0.16666666666666666
+log_mean_temperature_difference = 34.38376494949978
+mechanical_approach_temperature = 13.75707990040786
+used_overall_heat_transfer_coefficient = 500.0
+calculated_ua = 100.0
+mechanical_types = [
+    { mechanical_type = "shell_and_tube", required_area = 0.1724137931034483, required_ua = 100.0, overall_heat_transfer_coefficient = 580.0, approach_temperature = 13.75707990040786, inner_diameter = 0.3, outer_diameter = 0.324, wall_thickness = 0.012, estimated_length = 6.0, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.6000000000000001, estimated_weight = 532.6884503426853, module_length = 7.5, module_width = 1.124, module_height = 1.124 },
+    { mechanical_type = "plate_and_frame", required_area = 0.1, required_ua = 100.0, overall_heat_transfer_coefficient = 1150.0, approach_temperature = 13.75707990040786, inner_diameter = 0.1784124116152771, outer_diameter = 0.19441241161527711, wall_thickness = 0.008, estimated_length = 0.633, tube_count = 11.0, tube_passes = 5.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.1, estimated_weight = 132.0, module_length = 0.633, module_width = 1.0, module_height = 1.8 },
+    { mechanical_type = "air_cooler", required_area = 1.1111111111111112, required_ua = 100.0, overall_heat_transfer_coefficient = 90.0, approach_temperature = 13.75707990040786, inner_diameter = 2.5231325220201604, outer_diameter = 2.5351325220201604, wall_thickness = 0.006, estimated_length = 2.23606797749979, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 2.7777777777777777, estimated_pressure_drop = 0.011111111111111112, estimated_weight = 225.0, module_length = 2.23606797749979, module_width = 2.23606797749979, module_height = 3.2 },
+    { mechanical_type = "double_pipe", required_area = 0.2857142857142857, required_ua = 100.0, overall_heat_transfer_coefficient = 350.0, approach_temperature = 13.75707990040786, inner_diameter = 0.05, outer_diameter = 0.11, wall_thickness = 0.005, estimated_length = 2.5, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.2, estimated_weight = 33.90956570468483, module_length = 3.0, module_width = 0.71, module_height = 0.71 },
+    { mechanical_type = "plate_fin", required_area = 0.16666666666666666, required_ua = 100.0, overall_heat_transfer_coefficient = 600.0, approach_temperature = 13.75707990040786, inner_diameter = 0.030285343213868998, outer_diameter = 0.033485343213869, wall_thickness = 0.0016, estimated_length = 0.181712059283214, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 0.16666666666666666, estimated_pressure_drop = 0.005451361778496419, estimated_weight = 0.13649999999999998, module_length = 2.181712059283214, module_width = 0.830285343213869, module_height = 0.530285343213869 },
+]
+
+[[cases]]
+id = "a_pinned_state_reads_the_500_default"
+tolerance = 0.0005
+source = "`process_heat_exchanger_mechanical_design.tsv`'s `pinned_hot_outlet_default_ua`: `run` writes neither the duty nor the effectiveness field, so the estimate sees zero duty and reads the class's 500 default UA.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+hot_outlet_temperature = 350.0
+mechanical_design = true
+[cases.expected]
+mechanical_selected_type = "plate_and_frame"
+mechanical_selected_area = 0.43478260869565216
+log_mean_temperature_difference = 64.4990589168491
+mechanical_approach_temperature = 50.0
+used_overall_heat_transfer_coefficient = 500.0
+calculated_ua = 500.0
+mechanical_types = [
+    { mechanical_type = "shell_and_tube", required_area = 0.8620689655172413, required_ua = 500.0, overall_heat_transfer_coefficient = 580.0, approach_temperature = 50.0, inner_diameter = 0.3, outer_diameter = 0.324, wall_thickness = 0.012, estimated_length = 6.0, tube_count = 3.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.6000000000000001, estimated_weight = 532.6884503426853, module_length = 7.5, module_width = 1.124, module_height = 1.124 },
+    { mechanical_type = "plate_and_frame", required_area = 0.43478260869565216, required_ua = 500.0, overall_heat_transfer_coefficient = 1150.0, approach_temperature = 50.0, inner_diameter = 0.3720155946846915, outer_diameter = 0.3880155946846915, wall_thickness = 0.008, estimated_length = 0.633, tube_count = 11.0, tube_passes = 5.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.1, estimated_weight = 132.0, module_length = 0.633, module_width = 1.0, module_height = 1.8 },
+    { mechanical_type = "air_cooler", required_area = 5.555555555555555, required_ua = 500.0, overall_heat_transfer_coefficient = 90.0, approach_temperature = 50.0, inner_diameter = 2.5231325220201604, outer_diameter = 2.5351325220201604, wall_thickness = 0.006, estimated_length = 2.23606797749979, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 13.88888888888889, estimated_pressure_drop = 0.05555555555555555, estimated_weight = 225.0, module_length = 2.23606797749979, module_width = 2.23606797749979, module_height = 3.2 },
+    { mechanical_type = "double_pipe", required_area = 1.4285714285714286, required_ua = 500.0, overall_heat_transfer_coefficient = 350.0, approach_temperature = 50.0, inner_diameter = 0.05, outer_diameter = 0.11, wall_thickness = 0.005, estimated_length = 9.094568176679735, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.7275654541343788, estimated_weight = 123.35714285714286, module_length = 9.594568176679735, module_width = 0.71, module_height = 0.71 },
+    { mechanical_type = "plate_fin", required_area = 0.8333333333333334, required_ua = 500.0, overall_heat_transfer_coefficient = 600.0, approach_temperature = 50.0, inner_diameter = 0.051787208432564326, outer_diameter = 0.05498720843256433, wall_thickness = 0.0016, estimated_length = 0.31072325059538597, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 0.8333333333333334, estimated_pressure_drop = 0.009321697517861579, estimated_weight = 0.6825, module_length = 2.310723250595386, module_width = 0.8517872084325644, module_height = 0.5517872084325643 },
+]
+
+[[cases]]
+id = "a_pinned_state_reads_the_stated_ua"
+tolerance = 0.0005
+source = "`process_heat_exchanger_mechanical_design.tsv`'s `pinned_hot_outlet_stated_ua`: the same pinned state with UA 200. The setter's value is read here although `run` itself does not read it in this mode.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+ua = 200.0
+hot_outlet_temperature = 350.0
+mechanical_design = true
+[cases.expected]
+mechanical_selected_type = "plate_and_frame"
+mechanical_selected_area = 0.17391304347826086
+log_mean_temperature_difference = 64.4990589168491
+mechanical_approach_temperature = 50.0
+used_overall_heat_transfer_coefficient = 500.0
+calculated_ua = 200.0
+mechanical_types = [
+    { mechanical_type = "shell_and_tube", required_area = 0.3448275862068966, required_ua = 200.0, overall_heat_transfer_coefficient = 580.0, approach_temperature = 50.0, inner_diameter = 0.3, outer_diameter = 0.324, wall_thickness = 0.012, estimated_length = 6.0, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.6000000000000001, estimated_weight = 532.6884503426853, module_length = 7.5, module_width = 1.124, module_height = 1.124 },
+    { mechanical_type = "plate_and_frame", required_area = 0.17391304347826086, required_ua = 200.0, overall_heat_transfer_coefficient = 1150.0, approach_temperature = 50.0, inner_diameter = 0.23528332086113085, outer_diameter = 0.25128332086113087, wall_thickness = 0.008, estimated_length = 0.633, tube_count = 11.0, tube_passes = 5.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.1, estimated_weight = 132.0, module_length = 0.633, module_width = 1.0, module_height = 1.8 },
+    { mechanical_type = "air_cooler", required_area = 2.2222222222222223, required_ua = 200.0, overall_heat_transfer_coefficient = 90.0, approach_temperature = 50.0, inner_diameter = 2.5231325220201604, outer_diameter = 2.5351325220201604, wall_thickness = 0.006, estimated_length = 2.23606797749979, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 5.555555555555555, estimated_pressure_drop = 0.022222222222222223, estimated_weight = 225.0, module_length = 2.23606797749979, module_width = 2.23606797749979, module_height = 3.2 },
+    { mechanical_type = "double_pipe", required_area = 0.5714285714285714, required_ua = 200.0, overall_heat_transfer_coefficient = 350.0, approach_temperature = 50.0, inner_diameter = 0.05, outer_diameter = 0.11, wall_thickness = 0.005, estimated_length = 3.6378272706718935, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.2910261816537515, estimated_weight = 49.34285714285714, module_length = 4.1378272706718935, module_width = 0.71, module_height = 0.71 },
+    { mechanical_type = "plate_fin", required_area = 0.3333333333333333, required_ua = 200.0, overall_heat_transfer_coefficient = 600.0, approach_temperature = 50.0, inner_diameter = 0.0381571414184444, outer_diameter = 0.041357141418444404, wall_thickness = 0.0016, estimated_length = 0.22894284851066643, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 0.3333333333333333, estimated_pressure_drop = 0.006868285455319993, estimated_weight = 0.27299999999999996, module_length = 2.2289428485106666, module_width = 0.8381571414184444, module_height = 0.5381571414184444 },
+]
+
+[[cases]]
+id = "the_delta_t_state_reads_its_computed_conductance"
+tolerance = 0.0005
+source = "`process_heat_exchanger_mechanical_design.tsv`'s `delta_t`: the closure's computed UA is the estimate's, and the effectiveness field stays zero because that mode does not rate.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.5, 0.5]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["methane", "n-butane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 2000000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+use_delta_t = true
+delta_t = 1.0
+mechanical_design = true
+[cases.expected]
+mechanical_selected_type = "plate_and_frame"
+mechanical_selected_area = 0.136903008642746
+log_mean_temperature_difference = 1.3341285819191462
+mechanical_approach_temperature = 1.0
+used_overall_heat_transfer_coefficient = 500.0
+calculated_ua = 157.4384599391579
+mechanical_types = [
+    { mechanical_type = "shell_and_tube", required_area = 0.27144562058475497, required_ua = 157.4384599391579, overall_heat_transfer_coefficient = 580.0, approach_temperature = 5.0, inner_diameter = 0.3, outer_diameter = 0.324, wall_thickness = 0.012, estimated_length = 6.0, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.6000000000000001, estimated_weight = 532.6884503426853, module_length = 7.5, module_width = 1.124, module_height = 1.124 },
+    { mechanical_type = "plate_and_frame", required_area = 0.136903008642746, required_ua = 157.4384599391579, overall_heat_transfer_coefficient = 1150.0, approach_temperature = 2.0, inner_diameter = 0.20875243974452368, outer_diameter = 0.2247524397445237, wall_thickness = 0.008, estimated_length = 0.633, tube_count = 11.0, tube_passes = 5.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.1, estimated_weight = 132.0, module_length = 0.633, module_width = 1.0, module_height = 1.8 },
+    { mechanical_type = "air_cooler", required_area = 1.7493162215461988, required_ua = 157.4384599391579, overall_heat_transfer_coefficient = 90.0, approach_temperature = 12.0, inner_diameter = 2.5231325220201604, outer_diameter = 2.5351325220201604, wall_thickness = 0.006, estimated_length = 2.23606797749979, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 4.373290553865497, estimated_pressure_drop = 0.017493162215461988, estimated_weight = 225.0, module_length = 2.23606797749979, module_width = 2.23606797749979, module_height = 3.2 },
+    { mechanical_type = "double_pipe", required_area = 0.44982417125473684, required_ua = 157.4384599391579, overall_heat_transfer_coefficient = 350.0, approach_temperature = 8.0, inner_diameter = 0.05, outer_diameter = 0.11, wall_thickness = 0.005, estimated_length = 2.863669615096265, tube_count = 2.0, tube_passes = 2.0, fin_surface_area = 0.0, estimated_pressure_drop = 0.2290935692077012, estimated_weight = 38.842317187846525, module_length = 3.363669615096265, module_width = 0.71, module_height = 0.71 },
+    { mechanical_type = "plate_fin", required_area = 0.2623974332319298, required_ua = 157.4384599391579, overall_heat_transfer_coefficient = 600.0, approach_temperature = 1.5, inner_diameter = 0.03523190373767395, outer_diameter = 0.03843190373767395, wall_thickness = 0.0016, estimated_length = 0.2113914224260437, tube_count = 0.0, tube_passes = 0.0, fin_surface_area = 0.2623974332319298, estimated_pressure_drop = 0.006341742672781311, estimated_weight = 0.21490349781695053, module_length = 2.211391422426044, module_width = 0.835231903737674, module_height = 0.5352319037376739 },
+]
+
+
+[[cases]]
+id = "the_rating_mode_on_the_fouling_test"
+tolerance = 5e-04
+source = "The capture's `tube_30_shell_110` row: `HeatExchanger.runThermalHydraulicRating` on the fouling test's geometry, the tube side at 30 C and 8 kg/s, the shell at 110 C and 10 kg/s. The correlated UA, both drops, both film coefficients and the closed outlets are the class's own; `ntu` is the port's derived capacity figure and is not asserted, because the class has no getter for it.\n"
+[cases.inputs]
+
+hot_components = ["n-heptane", "n-octane"]
+hot_in_n = 95.77342306664585
+hot_in_z = [0.7, 0.3]
+hot_in_p = 2000000.0
+hot_in_t = 383.15
+cold_components = ["n-heptane", "n-octane"]
+cold_in_n = 76.61873845331667
+cold_in_z = [0.7, 0.3]
+cold_in_p = 2000000.0
+cold_in_t = 303.15
+flow_arrangement = "counterflow"
+use_rating_pressure_drop = true
+rating_area = 31.41592653589793
+rating_tube_side = "cold"
+rating_tube_outside_diameter = 0.025
+rating_tube_inside_diameter = 0.020
+rating_tube_length = 4.0
+rating_tube_count = 100.0
+rating_tube_passes = 2.0
+rating_tube_pitch = 0.032
+rating_triangular_pitch = true
+rating_fouling_tube = 0.0
+rating_fouling_shell = 0.0
+[cases.expected]
+rating_u = 428.3626191574183
+rating_ua = 13457.408574174277
+rating_area = 31.41592653589793
+tube_side_pressure_drop = 2893.9548107873375
+shell_side_pressure_drop = 1994.6322377452318
+tube_side_heat_transfer_coefficient = 980.974228989477
+shell_side_heat_transfer_coefficient = 993.4561069744582
+tube_side_reynolds = 21858.01740706331
+shell_side_reynolds = 40440.63924047246
+tube_side_velocity = 0.7526673931684609
+shell_side_velocity = 0.745163867444134
+duty = 652595.0077571755
+hot_out_t = 356.718796606001
+cold_out_t = 339.7261515675877
+hot_out_p = 1998005.3677622546
+cold_out_p = 1997106.0451892125
+effectiveness = 0.4364287940197899
+jc = 1.0
+jl = 1.0
+jb = 1.0
+js = 1.0
+jr = 1.0
+
+
+[[cases]]
+id = "the_rating_mode_with_the_sides_swapped"
+tolerance = 5e-04
+source = "The capture's `tube_110_shell_30` row: the same geometry and flows with the tube at 110 C and the shell at 30 C. `rating_tube_side = hot` is the declaration the class's stream 0 has no counterpart for, and the two drops follow the tube and shell, not hot and cold.\n"
+[cases.inputs]
+
+hot_components = ["n-heptane", "n-octane"]
+hot_in_n = 76.61873845331667
+hot_in_z = [0.7, 0.3]
+hot_in_p = 2000000.0
+hot_in_t = 383.15
+cold_components = ["n-heptane", "n-octane"]
+cold_in_n = 95.77342306664585
+cold_in_z = [0.7, 0.3]
+cold_in_p = 2000000.0
+cold_in_t = 303.15
+flow_arrangement = "counterflow"
+use_rating_pressure_drop = true
+rating_area = 31.41592653589793
+rating_tube_side = "hot"
+rating_tube_outside_diameter = 0.025
+rating_tube_inside_diameter = 0.020
+rating_tube_length = 4.0
+rating_tube_count = 100.0
+rating_tube_passes = 2.0
+rating_tube_pitch = 0.032
+rating_triangular_pitch = true
+rating_fouling_tube = 0.0
+rating_fouling_shell = 0.0
+[cases.expected]
+rating_u = 478.1388134317786
+rating_ua = 15021.173836734164
+tube_side_pressure_drop = 2857.8478174518095
+shell_side_pressure_drop = 2023.8491620360012
+tube_side_heat_transfer_coefficient = 1258.4977563127186
+shell_side_heat_transfer_coefficient = 957.3455923537474
+tube_side_velocity = 0.8301755904204547
+shell_side_velocity = 0.6755926722784618
+duty = 696460.0730158425
+hot_out_t = 347.5523522250111
+cold_out_t = 334.5492271138559
+hot_out_p = 1997142.1521825484
+cold_out_p = 1997976.150837964
+effectiveness = 0.4657639518173235
+
+
+[[cases]]
+id = "the_rating_mode_at_equal_inlets"
+tolerance = 5e-04
+source = "The capture's `equal_inlets_60` row: no driving force, so the class's `abs(dT) > 1e-10` gate leaves the duty and effectiveness at zero while both correlated pressure drops still move the outlets.\n"
+[cases.inputs]
+
+hot_components = ["n-heptane", "n-octane"]
+hot_in_n = 95.77342306664585
+hot_in_z = [0.7, 0.3]
+hot_in_p = 2000000.0
+hot_in_t = 333.15
+cold_components = ["n-heptane", "n-octane"]
+cold_in_n = 76.61873845331667
+cold_in_z = [0.7, 0.3]
+cold_in_p = 2000000.0
+cold_in_t = 333.15
+flow_arrangement = "counterflow"
+use_rating_pressure_drop = true
+rating_area = 31.41592653589793
+rating_tube_side = "cold"
+rating_tube_outside_diameter = 0.025
+rating_tube_inside_diameter = 0.020
+rating_tube_length = 4.0
+rating_tube_count = 100.0
+rating_tube_passes = 2.0
+rating_tube_pitch = 0.032
+rating_triangular_pitch = true
+rating_fouling_tube = 0.0
+rating_fouling_shell = 0.0
+[cases.expected]
+rating_u = 447.12100228135114
+rating_ua = 14046.720560327978
+tube_side_pressure_drop = 2865.699046040555
+shell_side_pressure_drop = 2006.3805505563944
+tube_side_heat_transfer_coefficient = 1080.1504855426929
+shell_side_heat_transfer_coefficient = 974.9965981389071
+duty = 0.0
+hot_out_t = 333.15084004539443
+cold_out_t = 333.1511998223249
+hot_out_p = 1997991.9361944945
+cold_out_p = 1997134.3009539595
+effectiveness = 0.0
+
+
+[[cases]]
+id = "the_rating_mode_with_a_deposit_layer"
+tolerance = 5e-04
+source = "The capture's `deposit_layer` row: a 1 mm deposit at 0.2 W/(m K) conductivity. The effective bore and the resistance are the calculator's, and the correlated UA carries the whole effect.\n"
+[cases.inputs]
+
+hot_components = ["n-heptane", "n-octane"]
+hot_in_n = 95.77342306664585
+hot_in_z = [0.7, 0.3]
+hot_in_p = 2000000.0
+hot_in_t = 383.15
+cold_components = ["n-heptane", "n-octane"]
+cold_in_n = 76.61873845331667
+cold_in_z = [0.7, 0.3]
+cold_in_p = 2000000.0
+cold_in_t = 303.15
+flow_arrangement = "counterflow"
+use_rating_pressure_drop = true
+rating_area = 31.41592653589793
+rating_tube_side = "cold"
+rating_tube_outside_diameter = 0.025
+rating_tube_inside_diameter = 0.020
+rating_tube_length = 4.0
+rating_tube_count = 100.0
+rating_tube_passes = 2.0
+rating_tube_pitch = 0.032
+rating_triangular_pitch = true
+rating_fouling_tube = 0.0
+rating_fouling_shell = 0.0
+rating_tube_fouling_layer_thickness = 0.001
+rating_tube_fouling_layer_conductivity = 0.2
+[cases.expected]
+rating_u = 113.55825012997927
+rating_ua = 3567.5376436285505
+tube_side_pressure_drop = 4654.50064285779
+shell_side_pressure_drop = 1994.6322377452318
+tube_side_heat_transfer_coefficient = 1196.4992639075667
+shell_side_heat_transfer_coefficient = 993.4561069744582
+duty = 243538.5658024593
+hot_out_t = 373.4582441474701
+cold_out_t = 317.1307216289101
+hot_out_p = 1998005.3677622546
+cold_out_p = 1995345.4993571423
+effectiveness = 0.1628686111709041
+
+
+[[cases]]
+id = "the_rating_mode_with_bell_delaware"
+tolerance = 5e-04
+source = "The capture's `bell_delaware` row: the same state as the first case with `bell_delaware`. The tube side is bit-identical and the shell drop grows from 1.99 to 3.27 kPa; the four correction factors are the calculator's own.\n"
+[cases.inputs]
+
+hot_components = ["n-heptane", "n-octane"]
+hot_in_n = 95.77342306664585
+hot_in_z = [0.7, 0.3]
+hot_in_p = 2000000.0
+hot_in_t = 383.15
+cold_components = ["n-heptane", "n-octane"]
+cold_in_n = 76.61873845331667
+cold_in_z = [0.7, 0.3]
+cold_in_p = 2000000.0
+cold_in_t = 303.15
+flow_arrangement = "counterflow"
+use_rating_pressure_drop = true
+rating_area = 31.41592653589793
+rating_tube_side = "cold"
+rating_tube_outside_diameter = 0.025
+rating_tube_inside_diameter = 0.020
+rating_tube_length = 4.0
+rating_tube_count = 100.0
+rating_tube_passes = 2.0
+rating_tube_pitch = 0.032
+rating_triangular_pitch = true
+rating_fouling_tube = 0.0
+rating_fouling_shell = 0.0
+rating_shell_side_method = "bell_delaware"
+[cases.expected]
+rating_u = 358.73325476545796
+rating_ua = 11269.937577695184
+tube_side_pressure_drop = 2893.9548107873375
+shell_side_pressure_drop = 3265.630605870124
+tube_side_heat_transfer_coefficient = 980.974228989477
+shell_side_heat_transfer_coefficient = 685.0709516496196
+duty = 583985.1423169624
+hot_out_t = 359.56837074936686
+cold_out_t = 336.00999751213334
+hot_out_p = 1996734.36939413
+cold_out_p = 1997106.0451892125
+effectiveness = 0.39054532804777636
+jc = 1.054
+jl = 0.7123109582535239
+jb = 0.5394836194862993
+js = 1.0
+jr = 1.0
+[[cases]]
+id = "the_dynamic_gate_falls_back_to_the_rating"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `gate_disabled_default`: the dynamic model is disabled, so `runTransient` delegates to `Heater.runTransient`, which re-runs the steady rating. The wall and holdup outputs are absent because the class's fields stay NaN.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 1000000.0
+hot_in_t = 353.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 1000000.0
+cold_in_t = 293.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 1.0
+dynamic_model_enabled = false
+transient_tube_side = "cold"
+[cases.expected]
+hot_out_t = 353.06105521851066
+cold_out_t = 293.24444470482376
+duty = 5990.821688483828
+[[cases]]
+id = "the_first_dynamic_step_seeds_the_wall"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `wall_only_step_1`: the enabled branch seeds the wall to the mean of the two inlet temperatures, `(353.15 + 293.15)/2 = 323.15`, and the outlet shift is the heat rate applied as though it were a joule.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 1000000.0
+hot_in_t = 353.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 1000000.0
+cold_in_t = 293.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 1.0
+dynamic_model_enabled = true
+transient_tube_side = "cold"
+wall_mass = 200.0
+wall_cp = 500.0
+heat_transfer_area = 20.0
+shell_side_htc = 500.0
+tube_side_htc = 800.0
+[cases.expected]
+wall_temperature = 321.35
+hot_out_t = 348.6848889155141
+cold_out_t = 300.6934680836265
+duty = 300000.0
+[[cases]]
+id = "the_tenth_dynamic_step_is_carried"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `wall_only_step_10`, restated as its own initial state: the wall is step 9's output, so this is the carried-state contract the outputs exist for.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 1000000.0
+hot_in_t = 353.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 1000000.0
+cold_in_t = 293.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 1.0
+dynamic_model_enabled = true
+transient_tube_side = "cold"
+wall_mass = 200.0
+wall_cp = 500.0
+wall_temperature = 316.68758745921207
+heat_transfer_area = 20.0
+shell_side_htc = 500.0
+tube_side_htc = 800.0
+[cases.expected]
+wall_temperature = 316.5678147198169
+hot_out_t = 347.72009257003145
+cold_out_t = 299.0726092499483
+duty = 364624.1246219836
+[[cases]]
+id = "the_zero_step_still_shifts_the_outlets"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `dt_quirk_0.0`: at `dt = 0` the wall does not move, but the outlet shift is not multiplied by `dt` and still applies, so the outlets equal the `dt = 1` step's.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 1000000.0
+hot_in_t = 353.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 1000000.0
+cold_in_t = 293.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 0.0
+dynamic_model_enabled = true
+transient_tube_side = "cold"
+wall_mass = 200.0
+wall_cp = 500.0
+wall_temperature = 323.15
+heat_transfer_area = 20.0
+shell_side_htc = 500.0
+tube_side_htc = 800.0
+[cases.expected]
+wall_temperature = 323.15
+hot_out_t = 348.6848889155141
+cold_out_t = 300.6934680836265
+duty = 300000.0
+[[cases]]
+id = "the_holdup_step_carries_three_temperatures"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `holdup_step_1`: both CSTR holdups are seeded from their inlets and advance one second against the pre-step wall.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 3000000.0
+hot_in_t = 423.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 3000000.0
+cold_in_t = 303.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 1.0
+dynamic_model_enabled = true
+transient_tube_side = "cold"
+wall_mass = 400.0
+wall_cp = 500.0
+shell_holdup_volume = 40.0
+tube_holdup_volume = 30.0
+heat_transfer_area = 2.0
+shell_side_htc = 500.0
+tube_side_htc = 800.0
+[cases.expected]
+wall_temperature = 362.9703196616055
+shell_fluid_temperature = 423.10975376724326
+tube_fluid_temperature = 303.2151115961644
+hot_out_t = 422.34923711614977
+cold_out_t = 304.5666193182062
+duty = 59959.752259057015
+[[cases]]
+id = "the_zero_holdup_control_is_the_wall_only"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `holdup_zero_step_1`: the same state with both holdup volumes zero, so the wall sees the inlet temperatures and the two CSTR outputs stay absent.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 3000000.0
+hot_in_t = 423.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 3000000.0
+cold_in_t = 303.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 1.0
+dynamic_model_enabled = true
+transient_tube_side = "cold"
+wall_mass = 400.0
+wall_cp = 500.0
+shell_holdup_volume = 0.0
+tube_holdup_volume = 0.0
+heat_transfer_area = 2.0
+shell_side_htc = 500.0
+tube_side_htc = 800.0
+[cases.expected]
+wall_temperature = 362.97
+hot_out_t = 422.34869938459036
+cold_out_t = 304.56815792845026
+duty = 59999.99849079922
+[[cases]]
+id = "the_hot_tube_mapping_reverses_the_class_duty"
+tolerance = 3e-04
+source = "`process_heat_exchanger_transient.tsv`'s `tube_hot_mapping`: the constructor's stream 0 is the cold side, so the shell is cold and the tube is hot. The class's duty is the shell's `qShellToWall = -300 000`; this id's duty is the hot side's release, `480 000`.\n"
+[cases.inputs]
+hot_components = ["methane"]
+hot_in_n = 1731.4578182246325
+hot_in_z = [1.0]
+hot_in_p = 1000000.0
+hot_in_t = 353.15
+cold_components = ["methane"]
+cold_in_n = 1731.4578182246325
+cold_in_z = [1.0]
+cold_in_p = 1000000.0
+cold_in_t = 293.15
+ua = 100.0
+flow_arrangement = "counterflow"
+time_step = 1.0
+dynamic_model_enabled = true
+transient_tube_side = "hot"
+wall_mass = 200.0
+wall_cp = 500.0
+heat_transfer_area = 20.0
+shell_side_htc = 500.0
+tube_side_htc = 800.0
+[cases.expected]
+wall_temperature = 324.95
+hot_out_t = 345.9950115183969
+cold_out_t = 297.8703489580375
+duty = 479999.9989547981

@@ -164,7 +164,7 @@ fn wegstein_reproduces_the_captured_q_factors() {
 /// the rule is that the class wins where the two disagree - so this test asserts **both** halves:
 /// the divergence, and that the port diverges with it.
 ///
-/// **It is an upstream defect and it is worth reporting**: a `Recycle` declaring
+/// **It is an upstream defect (#3997), and the flowsheet refuses `broyden` because of it**: a `Recycle` declaring
 /// `accelerationMethod = BROYDEN` is pushed away from its solution by the accelerator, where
 /// `DIRECT_SUBSTITUTION` would converge and `WEGSTEIN` would accelerate.
 #[test]

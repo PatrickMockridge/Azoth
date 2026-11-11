@@ -65,12 +65,16 @@ use std::net::{TcpListener, TcpStream};
 use std::path::Path;
 
 use azoth_core::{AzothError, Result};
+use azoth_sheets::workspace::{Command as SheetCommand, SheetWorkspace};
 use serde_json::{Value, json};
 
 use crate::session::Session;
 
 /// The request path the editor's calls go to. One route, because there is one kind of call.
 const ROUTE: &str = "/rpc";
+
+/// The calculation book's route: a second document, with its own commands and envelope.
+const SHEETS_ROUTE: &str = "/sheets";
 
 /// The request path an agent's calls go to — the same session, the same envelope, a second door.
 ///
@@ -96,10 +100,18 @@ const MAX_BODY: usize = 1024 * 1024;
 pub fn serve(
     flowsheet: &Path,
     palette_dir: &Path,
+    calc_book: Option<&Path>,
     port: u16,
     allow_origins: &[String],
 ) -> Result<()> {
     let mut session = Session::open(flowsheet, palette_dir, true)?;
+    let book = match calc_book {
+        Some(path) => std::fs::read_to_string(path).map_err(|error| {
+            AzothError::invalid_input("calc-book", format!("{}: {error}", path.display()))
+        })?,
+        None => String::new(),
+    };
+    let mut sheets = SheetWorkspace::open(&book)?;
 
     let listener = TcpListener::bind(("127.0.0.1", port))
         .map_err(|error| AzothError::invalid_input("port", format!("127.0.0.1:{port}: {error}")))?;
@@ -117,7 +129,7 @@ pub fn serve(
     for stream in listener.incoming() {
         let stream =
             stream.map_err(|error| AzothError::invalid_input("socket", error.to_string()))?;
-        if let Err(error) = handle(stream, &mut session, allow_origins) {
+        if let Err(error) = handle(stream, &mut session, &mut sheets, allow_origins) {
             // A connection that fails is a client's problem and not this process's: it is written
             // to stderr and the next one is accepted.
             eprintln!("azoth: {error}");
@@ -130,6 +142,7 @@ pub fn serve(
 fn handle(
     stream: TcpStream,
     session: &mut Session,
+    sheets: &mut SheetWorkspace,
     allow_origins: &[String],
 ) -> std::result::Result<(), String> {
     let mut reader = BufReader::new(stream.try_clone().map_err(|e| e.to_string())?);
@@ -173,11 +186,11 @@ fn handle(
             crate::mcp_http::Answer::Accepted => write_raw(&mut writer, 202, "", cors.as_deref()),
         };
     }
-    if request.method != "POST" || request.path != ROUTE {
+    if request.method != "POST" || (request.path != ROUTE && request.path != SHEETS_ROUTE) {
         return write_json(
             &mut writer,
             404,
-            &json!({ "error": format!("no route; every call is a POST to {ROUTE} or {MCP_ROUTE}") }),
+            &json!({ "error": format!("no route; every call is a POST to {ROUTE}, {SHEETS_ROUTE} or {MCP_ROUTE}") }),
             cors.as_deref(),
         );
     }
@@ -194,7 +207,11 @@ fn handle(
         }
     };
 
-    let answer = dispatch(session, &body);
+    let answer = if request.path == SHEETS_ROUTE {
+        sheet_dispatch(sheets, &body)
+    } else {
+        dispatch(session, &body)
+    };
     match answer {
         Ok(envelope) => write_json(&mut writer, 200, &envelope, cors.as_deref()),
         Err(sentence) => write_json(
@@ -257,6 +274,39 @@ fn dispatch(session: &mut Session, body: &Value) -> std::result::Result<Value, S
         // else's edit.
         _ => session.settle(run),
     }
+}
+
+/// One request body, as a calculation-book call.
+///
+/// `{"command": {…}}` is an edit, `{"calculate": "sheet"|null}` runs one sheet or every stale
+/// sheet, and `{"command": null}` asks for the envelope as it stands. A book is a second
+/// document, so it is a second route rather than a key on the flowsheet's body.
+fn sheet_dispatch(sheets: &mut SheetWorkspace, body: &Value) -> std::result::Result<Value, String> {
+    let object = body
+        .as_object()
+        .ok_or_else(|| "the request body is not an object".to_string())?;
+    if object.len() != 1 {
+        return Err("a sheet request carries one of `command` or `calculate`".to_string());
+    }
+    if let Some(calculate) = object.get("calculate") {
+        match calculate {
+            Value::Null => sheets.calculate(None),
+            Value::String(id) => sheets.calculate(Some(id)),
+            _ => return Err("`calculate` takes a sheet id or null".to_string()),
+        }
+        .map_err(|error| error.to_string())?;
+    } else {
+        match object.get("command") {
+            Some(Value::Null) | None => {}
+            Some(command) => {
+                let command: SheetCommand =
+                    serde_json::from_value(command.clone()).map_err(|error| error.to_string())?;
+                sheets.apply(&command).map_err(|error| error.to_string())?;
+            }
+        }
+    }
+    let text = sheets.to_json().map_err(|error| error.to_string())?;
+    serde_json::from_str(&text).map_err(|error| error.to_string())
 }
 
 /// The parts of a request this server reads, and nothing else.

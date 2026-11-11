@@ -13,18 +13,19 @@ import { resolve } from "node:path";
 
 import { expect, it } from "vitest";
 
-/** The stylesheet files, by name, relative to the package root the runner is started in. */
-const FILES = [
-  "tokens.css",
-  "base.css",
-  "chrome.css",
-  "canvas.css",
-  "forms.css",
-  "tables.css",
-] as const;
-
 const read = (name: string): string =>
   readFileSync(resolve(process.cwd(), "src/styles", name), "utf8");
+
+/**
+ * Every stylesheet the editor imports, read from the one list that cannot drift.
+ *
+ * **This used to be a second hand-written list**, and it missed `calculations.css`, `overview.css`,
+ * `feed.css`, `guide.css` and `report.css` - including an undefined `--bg` in the report. The
+ * imports in `index.css` are the source; the assertions below still name the important surfaces.
+ */
+const FILES = [...read("index.css").matchAll(/@import\s+"\.\/([^"]+)";/g)].map(
+  (match) => match[1] ?? "",
+);
 
 /**
  * The declarations inside one top-level block, by selector.
@@ -58,6 +59,35 @@ function block(css: string, selector: string): string {
     cursor = end;
   }
   throw new Error(`no \`${selector}\` block in the stylesheet`);
+}
+
+/**
+ * A stylesheet without its top-level `@media print` block.
+ *
+ * **The paper palette is not a theme.** It is a fixed white-and-black rendering that a screen
+ * theme cannot reach, so the literal-colour rule would fail on values that are deliberately not
+ * tokens. The block is removed by brace depth rather than a regex, because it need not be last.
+ */
+function withoutPrint(css: string): string {
+  const at = css.indexOf("@media print");
+  if (at === -1) {
+    return css;
+  }
+  const open = css.indexOf("{", at);
+  if (open === -1) {
+    return css.slice(0, at);
+  }
+  let depth = 1;
+  let end = open + 1;
+  while (end < css.length && depth > 0) {
+    if (css[end] === "{") {
+      depth += 1;
+    } else if (css[end] === "}") {
+      depth -= 1;
+    }
+    end += 1;
+  }
+  return css.slice(0, at) + css.slice(end);
 }
 
 /** The one capture group of a match, which every pattern here always has. */
@@ -111,7 +141,7 @@ it("writes no literal colour or duration outside the token file", () => {
   const colour = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/;
   const duration = /[0-9.]+m?s\b/;
   for (const file of FILES.filter((name) => name !== "tokens.css")) {
-    const css = read(file).replace(/\/\*[\s\S]*?\*\//g, "");
+    const css = withoutPrint(read(file).replace(/\/\*[\s\S]*?\*\//g, ""));
     for (const line of css.split("\n")) {
       // A declaration is where a value lives; a selector line cannot be one, because this
       // stylesheet has no `.` or `#` in front of a number.
@@ -122,4 +152,48 @@ it("writes no literal colour or duration outside the token file", () => {
       expect(duration.test(line), `${file}: ${line.trim()}`).toBe(false);
     }
   }
+});
+
+it("covers the stylesheets the editor actually imports", () => {
+  expect(FILES).toEqual(
+    expect.arrayContaining([
+      "calculations.css",
+      "overview.css",
+      "feed.css",
+      "guide.css",
+      "report.css",
+    ]),
+  );
+});
+
+/**
+ * **The PFD plate is not `.unit`.** An unscoped `.unit` rule put a 168px node plate around every
+ * unit string in a field, a table and a result; the plate is now `.unit-plate` and this keeps the
+ * two vocabularies apart.
+ */
+it("gives the PFD plate its own class", () => {
+  const canvas = read("canvas.css").replace(/\/\*[\s\S]*?\*\//g, "");
+  expect(canvas).toMatch(/^\.unit-plate\s*\{/m);
+  expect(canvas).not.toMatch(/^\.unit(?!-)/m);
+});
+
+it("gives the sheet name and picker search a themed well", () => {
+  expect(block(read("calculations.css"), ".calc-sheet-name input")).toMatch(
+    /background:\s*var\(--bg-input\)/,
+  );
+  expect(block(read("calculations.css"), ".calc-sheet-name input")).toMatch(
+    /border:\s*1px solid var\(--line-strong\)/,
+  );
+  expect(block(read("calculations.css"), ".calc-search")).toMatch(
+    /background:\s*var\(--bg-input\)/,
+  );
+});
+
+it("gives the report an opaque screen background", () => {
+  expect(block(read("report.css"), ".report")).toMatch(/background:\s*var\(--bg-app\)/);
+});
+
+it("tells the browser which colour scheme is in force", () => {
+  expect(block(read("tokens.css"), ":root")).toContain("color-scheme: dark");
+  expect(block(read("tokens.css"), '[data-theme="light"]')).toContain("color-scheme: light");
 });

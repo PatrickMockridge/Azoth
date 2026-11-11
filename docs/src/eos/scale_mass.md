@@ -4,6 +4,8 @@
 
 `eos.scale_mass`
 
+Mass of scale precipitated from a supersaturation index and ion concentrations. Use it to estimate a scaling mass from a water analysis.
+
 ## Equation
 
 $$
@@ -25,6 +27,22 @@ mass = moles * M_mineral
 **NeqSim master `ScaleMassCalculator`**
 
 `calcCaCO3Mass`, `calcBaSO4Mass`, `calcSrSO4Mass`, `calcCaSO4Mass` and `calcFeCO3Mass`, ported as one arm per mineral.
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the fraction is **capped at 0.99**, so every SI above about 2 gives the same mass; the capture's SI 2.5 and SI 5 rows are identical.
+
+- an SI at or below zero returns zero before the fraction is computed; the limiting concentration is still reported.
+
+- the five minerals differ only in molar mass: CaCO3 100.09, BaSO4 233.39, SrSO4 183.68, CaSO4 136.14, FeCO3 115.85 g/mol - the class's own constants.
+
+- **the class's held water volume is never read by the calculation**: `setWaterVolume` only feeds a JSON report. The mass is per litre, and this calc takes no volume.
+
+- the class's results map is never populated and its `toJson` always reports an empty list; neither is a calculation, so both are outside this spec.
+
 
 ## Inputs
 
@@ -54,24 +72,13 @@ mass = moles * M_mineral
 | `anion_concentration >= 0` | raises | A concentration cannot be negative. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **the answer is the class's approximation, not an equilibrium.** It takes the limiting ion's concentration, multiplies by `1 - 10^-SI`, and calls that the precipitated amount; an exact calculation would iterate the equilibrium.
-
-- the fraction is **capped at 0.99**, so every SI above about 2 gives the same mass; the capture's SI 2.5 and SI 5 rows are identical.
-
-- an SI at or below zero returns zero before the fraction is computed; the limiting concentration is still reported.
-
-- the five minerals differ only in molar mass: CaCO3 100.09, BaSO4 233.39, SrSO4 183.68, CaSO4 136.14, FeCO3 115.85 g/mol - the class's own constants.
-
-- **the class's held water volume is never read by the calculation**: `setWaterVolume` only feeds a JSON report. The mass is per litre, and this calc takes no volume.
-
-- the class's results map is never populated and its `toJson` always reports an empty list; neither is a calculation, so both are outside this spec.
-
+- The answer is an approximation, not an equilibrium: it takes the limiting ion's concentration, multiplies by `1 - 10^-SI`, and calls that the precipitated amount. An exact calculation would iterate the equilibrium.
 
 
 

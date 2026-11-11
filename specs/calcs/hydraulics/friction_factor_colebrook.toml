@@ -1,5 +1,6 @@
 id = "hydraulics.friction_factor_colebrook"
 name = "Colebrook-White friction factor (implicit)"
+summary = "Solves the Colebrook-White equation for the Darcy friction factor at a Reynolds number and relative roughness. Use it where the implicit turbulent-flow factor is required."
 equation = "1 / f**0.5 = -2 * log10(relative_roughness / 3.7 + 2.51 / (Re * f**0.5))"
 latex = """\
     \\frac{1}{\\sqrt{f}} = -2\\,\\log_{10}\\!\\left(\\frac{\\varepsilon/D}{3.7} + \

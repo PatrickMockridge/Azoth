@@ -55,10 +55,11 @@ outlets `c'₁ … c'ₙ`, with `n(c)` the molar-flow field of a channel:
              Σᵢ ḣ(cᵢ)  =  Σⱼ ḣ(c'ⱼ) + duty    enthalpy
 ```
 
-*Status: **specified**. The `ports` layer exists: `specs/unit_ops/` declares 29 unit
+*Status: **specified**. The `ports` layer exists: `specs/unit_ops/` declares 31 unit
 operations, each with typed channels carrying a polarity and a multiplicity, and
 `azoth_process::validate` holds a flowsheet to the discipline above in Rust — a `one` port
-consumed exactly once, a `many` port at least once, every feed and product used once, and
+consumed exactly once, a `many` port at least its declared minimum (one by default), every feed
+and product used once, and
 every loop passing through a declared recycle. What is absent is the theorem, and
 `Azoth/Process.lean` states why: the balance is a lemma about *values* crossing channels, and
 this development's barbs record a channel rather than a magnitude. So the balance is *checked*
@@ -83,7 +84,7 @@ U  ≅  f(x₁, …, xₘ)
 ```
 
 *Status: **proved**, as `Azoth.Process.unit_op_is_extensional` in
-[`Azoth/Process.lean`](https://github.com/PatrickMockridge/Azoth/blob/main/lean/Azoth/Process.lean).
+[`Azoth/Process.lean`](https://github.com/PatrickMockridge/azoth/blob/main/lean/Azoth/Process.lean).
 A port declaration encodes to a process, so the claim relates two such processes rather than a
 process and a value, and the three hypotheses land as three predicates: **`Declares P C`** is
 "only its declared channels", **`Inert P`** is "total, and no other interaction", and the

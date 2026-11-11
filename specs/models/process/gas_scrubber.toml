@@ -9,7 +9,9 @@ assumptions = [
     "**the three parameters are the separator's**, and the entry declares all three for the reason the separator does: a scrubber holds its feed's temperature unless a `heat_input` moves the flash, and a pressure drop is not a throttling.",
     "**an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)`, so accepting one would let a case hand over a state that does not exist.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `GasScrubber` also carries a mechanical design with a mesh pad, a liquid level and a vessel sizing, and a `runTransient`. **None is here**: the capacity metric reads the vessel's size and its design K, and nothing else of them.",
+    "**the mechanical design is a second sizing machine**: the separator's `calcDesign` runs first on the separator standard's `1.0` safety, then this subclass re-sizes at the scrubber standard's `1.1`, `Fg = 1`, `length = 5 d` and a module `2 d` high.",
+    "**the design basis is declared as inputs at the standards' own values**: volume safety `1.1`, the `100` bara maximum operation pressure, `425` MPa allowable stress, joint efficiency `1.0` and no corrosion allowance. The levels and nozzle formulas are the separator's.",
+    "NeqSim's `GasScrubber` also carries a mesh pad, vane pack and cyclone surface, and a `runTransient`. **None is here**: `calcDesign` sets none of them, and the capture prints them at their absent defaults.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/GasScrubber.java`, whose steady state is `Separator.run`'s.",
@@ -50,10 +52,59 @@ description = "the vessel's internal diameter, which `getSepCrossArea` is `pi d*
 unit = "m/s"
 optional = true
 description = "the Souders-Brown `K` the vessel is designed to: the settling velocity per root of the density ratio, `0.04` to `0.10` m/s for a vertical scrubber and `0.11` by `Separator`'s own initialiser. **Absent means the metric is not computed**, as with the diameter.\n"
+[inputs.safety_factor]
+unit = "dimensionless"
+optional = true
+description = "the factor `sizeFromFlow` multiplies the gas volumetric flow by. **Absent leaves `required_diameter` absent**; present requires the diameter and load factor.\n"
+[inputs.mesh_pad_area]
+unit = "m**2"
+optional = true
+description = "`configureMeshPad`'s face area; a positive area turns `has_mesh_pad` on. Requires `mechanical_design`.\n"
+[inputs.mesh_pad_thickness]
+unit = "mm"
+optional = true
+description = "the mesh pad's thickness. **Absent is the class's `100` mm.** Requires `mechanical_design`.\n"
+[inputs.mesh_pad_elevation]
+unit = "m"
+optional = true
+description = "`setMeshPadElevation`'s elevation. **Absent is `0`.** Requires `mechanical_design`.\n"
 [inputs.heat_input]
 unit = "W"
 optional = true
 description = "heat added to the feed before the flash. When omitted the flash is at the feed's temperature; when given it is at the enthalpy the duty implies and both outlets are at the temperature that solves for.\n"
+[inputs.mechanical_design]
+type = "boolean"
+optional = true
+description = "run `GasScrubberMechanicalDesign.calcDesign` and publish its vessel. **Absent is false**; present requires `design_gas_load_factor`, and the group below is refused without it.\n"
+[inputs.orientation]
+type = "enum"
+values = ["horizontal", "vertical"]
+optional = true
+description = "the vessel's orientation, which picks the gas area in the design. **Absent is the class's `vertical`**; the capacity metric does not read it.\n"
+[inputs.volume_safety_factor]
+unit = "dimensionless"
+optional = true
+description = "`getVolumetricDesignFactor` from the scrubber standard. **Absent is the class default's `1.1`** - not the separator's `1.0`.\n"
+[inputs.design_liquid_level_fraction]
+unit = "dimensionless"
+optional = true
+description = "the horizontal gas area's derating, `1 - f`; a vertical vessel ignores it. **Absent is `0.8`**, which is what the base class leaves after its own `calcDesign`.\n"
+[inputs.max_operation_pressure]
+unit = "Pa"
+optional = true
+description = "`getMaxOperationPressure`, the pressure the ASME wall-thickness formula divides by. **Absent is `100` bara.**\n"
+[inputs.allowable_stress]
+unit = "Pa"
+optional = true
+description = "the material plate standard's allowable stress. **Absent is `425` MPa.**\n"
+[inputs.joint_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the plate joint-efficiency factor. **Absent is `1.0`.**\n"
+[inputs.corrosion_allowance]
+unit = "mm"
+optional = true
+description = "the corrosion allowance the wall thickness adds. **Absent is `0`.**\n"
 [outputs]
 [outputs.vapour_n]
 unit = "mol/s"
@@ -93,6 +144,154 @@ description = "the liquid outlet's molar enthalpy at its own state.\n"
 unit = "dimensionless"
 optional = true
 description = "`getCapacityUtilization`: the vapour's volumetric flow over what the cross-section admits at the design load factor, `Q / (K sqrt((rho_l - rho_g)/rho_g) A)`. Present only when both mechanical inputs are supplied.\n"
+[outputs.required_diameter]
+unit = "m"
+optional = true
+description = "`sizeFromFlow(safety_factor)`'s diameter. Absent when no safety factor or no gas.\n"
+[outputs.has_mesh_pad]
+type = "boolean"
+optional = true
+description = "whether a positive mesh-pad area was configured. Present with the design.\n"
+[outputs.mesh_pad_area]
+unit = "m**2"
+optional = true
+description = "the configured mesh-pad face area, `0` when none.\n"
+[outputs.mesh_pad_thickness]
+unit = "mm"
+optional = true
+description = "the mesh pad's thickness, `100` by default.\n"
+[outputs.mesh_pad_elevation]
+unit = "m"
+optional = true
+description = "the mesh pad's elevation, `0` by default.\n"
+[outputs.has_inlet_cyclones]
+type = "boolean"
+optional = true
+description = "whether inlet cyclones are configured; the class's default is none.\n"
+[outputs.has_demisting_cyclones]
+type = "boolean"
+optional = true
+description = "whether demisting cyclones are configured; the class's default is none.\n"
+[outputs.design_inner_diameter]
+unit = "m"
+optional = true
+description = "`calcDesign`'s sized internal diameter, from the gas flow, the design `K` and the orientation's gas area. Absent unless `mechanical_design`.\n"
+[outputs.design_tantan_length]
+unit = "m"
+optional = true
+description = "the tangent-to-tangent length, always `5 d` for this class.\n"
+[outputs.design_outer_diameter]
+unit = "m"
+optional = true
+description = "the inside diameter plus twice the wall thickness.\n"
+[outputs.design_wall_thickness]
+unit = "m"
+optional = true
+description = "the ASME wall thickness at the stated pressure, allowable stress, joint efficiency and corrosion allowance.\n"
+[outputs.max_design_gas_volume_flow]
+unit = "m**3/h"
+optional = true
+description = "the design velocity over the sized gas area, in m3/hr.\n"
+[outputs.vessel_shell_weight]
+unit = "kg"
+optional = true
+description = "the class's empty-shell estimate, `0.032 wall_mm d_mm L`.\n"
+[outputs.piping_weight]
+unit = "kg"
+optional = true
+description = "the class's piping allowance, `0.4` of the shell weight.\n"
+[outputs.structural_weight]
+unit = "kg"
+optional = true
+description = "the class's structural allowance, `0.1` of the shell weight.\n"
+[outputs.electrical_weight]
+unit = "kg"
+optional = true
+description = "the class's electrical allowance, `0.08` of the shell weight.\n"
+[outputs.internals_weight]
+unit = "kg"
+optional = true
+description = "the internals' weight. `0.0` here: the class leaves it at zero without internals sections, and this port builds none.\n"
+[outputs.total_weight]
+unit = "kg"
+optional = true
+description = "the shell plus the class's piping, structural and electrical allowances.\n"
+[outputs.module_width]
+unit = "m"
+optional = true
+description = "`2 d`.\n"
+[outputs.module_length]
+unit = "m"
+optional = true
+description = "`1.5 L` - the class writes `2.5 d` first and overwrites it with this.\n"
+[outputs.module_height]
+unit = "m"
+optional = true
+description = "`2 d`, with no separator's `+ 1`.\n"
+[outputs.vessel_volume]
+unit = "m**3"
+optional = true
+description = "the cylinder's internal volume, `pi (d/2)^2 L`.\n"
+[outputs.hhll]
+unit = "m"
+optional = true
+description = "the high-high liquid level, `0.80 d`.\n"
+[outputs.hll]
+unit = "m"
+optional = true
+description = "the high liquid level, `0.70 d`.\n"
+[outputs.nll]
+unit = "m"
+optional = true
+description = "the normal liquid level, `0.50 d`.\n"
+[outputs.lll]
+unit = "m"
+optional = true
+description = "the low liquid level, `0.30 d`.\n"
+[outputs.llll]
+unit = "m"
+optional = true
+description = "the low-low liquid level, `0.15 d`.\n"
+[outputs.weir_height]
+unit = "m"
+optional = true
+description = "the weir height, `0.25 d`.\n"
+[outputs.nil]
+unit = "m"
+optional = true
+description = "the normal interface level, `0.20 d`.\n"
+[outputs.effective_length_liquid]
+unit = "m"
+optional = true
+description = "the effective liquid separation length, `0.82 L`.\n"
+[outputs.effective_length_gas]
+unit = "m"
+optional = true
+description = "the effective gas separation length, `0.64 L`.\n"
+[outputs.inlet_nozzle_id]
+unit = "m"
+optional = true
+description = "the inlet nozzle's inside diameter at API 12J's `8000 Pa` momentum limit, rounded up in `50` mm steps with a `50` mm floor.\n"
+[outputs.gas_outlet_nozzle_id]
+unit = "m"
+optional = true
+description = "the gas outlet nozzle's inside diameter at `20` m/s, rounded up in `50` mm steps.\n"
+[outputs.oil_outlet_nozzle_id]
+unit = "m"
+optional = true
+description = "the oil outlet nozzle's inside diameter at `1.5` m/s, rounded up in `25` mm steps with a `50` mm floor.\n"
+[outputs.surge_volume]
+unit = "m**3"
+optional = true
+description = "the volume between NLL and HLL over the effective liquid length.\n"
+[outputs.surge_time]
+unit = "s"
+optional = true
+description = "the surge volume over the liquid flow, with the class's unit slip: m3/s divided as though m3/hr.\n"
+[outputs.liquid_retention_time]
+unit = "s"
+optional = true
+description = "the volume at NLL over the same flow, again as though m3/hr.\n"
 [[valid_range]]
 quantity = "pressure_drop"
 min = 0
@@ -119,6 +318,46 @@ max = 1
 max_inclusive = true
 severity = "error"
 rationale = "an entrainment fraction is a fraction\n"
+[[valid_range]]
+quantity = "volume_safety_factor"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a flow multiplier; zero sizes nothing\n"
+[[valid_range]]
+quantity = "design_liquid_level_fraction"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = false
+severity = "error"
+rationale = "a fraction of the cross-section; at one there is no gas area\n"
+[[valid_range]]
+quantity = "max_operation_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a pressure the wall thickness divides by\n"
+[[valid_range]]
+quantity = "allowable_stress"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the ASME denominator subtracts the pressure from twice it\n"
+[[valid_range]]
+quantity = "joint_efficiency"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a weld joint efficiency is at most one\n"
+[[valid_range]]
+quantity = "corrosion_allowance"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "an allowance adds metal; a negative one removes it\n"
 [implementations]
 python = "azoth.process.gas_scrubber"
 rust = "azoth_process::gas_scrubber"

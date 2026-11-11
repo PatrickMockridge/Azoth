@@ -4,6 +4,8 @@
 
 `eos.pr_mass_density`
 
+Mass density from a molar volume and molar mass. Use it to convert a cubic EOS molar volume into the density a hydraulic calculation needs.
+
 ## Equation
 
 $$
@@ -45,7 +47,7 @@ Molar mass is the mass per amount of substance, so a mass density is a molar mas
 | `v > 0` | raises | `v` is a divisor, and molar volume is strictly positive for any real state; zero is the zero-volume limit, which is arithmetic rather than a state. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

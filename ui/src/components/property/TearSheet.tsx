@@ -16,6 +16,7 @@
  * honest fallback rather than an empty dropdown.
  */
 
+import { DraftField } from "../DraftField";
 import type { EditorCommand, RecycleField } from "../../wire/commands";
 import { accelerationNames } from "../../wire/field";
 import type { Catalogue, GraphEdge } from "../../wire/types";
@@ -108,13 +109,13 @@ export function TearSheet({
                     ))}
                   </select>
                 ) : (
-                  <input
+                  <DraftField
                     value={value === null ? "" : String(value)}
-                    inputMode={kind === "number" ? "decimal" : "text"}
+                    kind={kind === "number" ? "number" : "text"}
                     placeholder="the class's default"
-                    onChange={(event) => {
-                      const raw = event.target.value;
-                      if (raw === "") {
+                    label={field}
+                    onCommit={(next) => {
+                      if (next === "") {
                         // An emptied field is an unset, which the command model now has.
                         onCommand({
                           command: "unset_recycle_field",
@@ -127,7 +128,7 @@ export function TearSheet({
                         command: "set_recycle",
                         stream: edge.data.path,
                         field,
-                        value: kind === "number" ? Number(raw) : raw,
+                        value: next,
                       });
                     }}
                   />

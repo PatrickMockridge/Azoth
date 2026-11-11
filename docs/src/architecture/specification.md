@@ -39,7 +39,7 @@ SAFT, reference/Helmholtz, electrolyte, solid/hydrate, bases), **~105 flash oper
 and ~60 saturation operations, **~60 physical-property methods**, 25 alpha functions and
 15 mixing rules, over a **~90-field component model**.
 
-azoth has **234 ids** — 79 calculations and 155 models.
+azoth has **280 ids** — 98 calculations and 182 models.
 
 ## The ledger
 
@@ -67,7 +67,7 @@ their units, the valid range, the assumptions that are *not* checked, and the ca
 class that would close it, and `tools/check_unported.py` holds every row to *both*
 implementations — so a row neither refuses fails the build, and a row one refuses and the
 other carries is the divergence the field was built to make visible. The models declare
-**27 refusals**, and no spec may say the same thing in a sentence instead,
+**37 refusals**, and no spec may say the same thing in a sentence instead,
 because a sentence is a claim nothing holds: it drifts from the code silently, and the same
 fact written twice in two files is how a corrected claim left its twin lying.
 
@@ -95,10 +95,10 @@ exclusion list, and the port's NeqSim probe and its capture.
 
 **Three surfaces the tranche has taken are not in that nine, because it took them: the pyo3
 wrapper, the bridge adapter and the Python result dataclass.** The wrapper is generated for
-**174** of the registered ids and hand-written for **60**: a kernel that takes a record or a
+**214** of the registered ids and hand-written for **66**: a kernel that takes a record or a
 mixture the spec does not name is one the generator refuses rather than guesses at, and so is one
 whose signature disagrees with the order the bridge passes it in. The bridge adapter is generated
-for **232** and hand-written for **2**, and its rule is narrower because its boundary is a Python
+for **278** and hand-written for **2**, and its rule is narrower because its boundary is a Python
 signature rather than a Rust one: its signature is the public wrapper's, its call is the
 `#[pyfunction]`'s own order, and every argument on either side must be an input the spec declares,
 a field of the `params` record the wrapper's annotation names, or one expression a boundary object
@@ -106,7 +106,7 @@ resolves into. A `molar_mass` is the one expansion that is not an expression - a
 carries none and the correlation cannot default one, so it crosses behind a guard whose sentence is
 read from the id's own reference implementation.
 
-**The result dataclass is generated for **234** and hand-written for **0**.** One frozen class per registered id, its fields
+**The result dataclass is generated for **280** and hand-written for **0**.** One frozen class per registered id, its fields
 in `CalcResult::FIELDS` order, each annotation from the transport's Rust type beside the unit the
 spec declares, and each doc from the spec's own `description` — so the field prose has one home
 and `tools/gen_python_result.py` can emit the whole file without a paraphrase. What stays
@@ -184,11 +184,11 @@ counts.
 
 **`pvtsimulation/` is two things and the P9 row above names the half that is physics.** Its
 `flowassurance/` holds the hydrate, wax, asphaltene, scale, corrosion and cooldown
-calculations, which belong to the tranche that backs each — P9 for the first four, and **no
-tranche for the last two**. Corrosion and cooldown are not waiting on a tranche that will
-come; [the port roadmap](../../../ROADMAP.md) carries them under Tier 4 and names them, the
-same place the rest of the long tail lives, so that "the tranche that backs each" resolves for
-every one of the six rather than for four of them. The rest
+calculations, and each carryable one is backed: the seven scale ids, the de Waard-Milliams
+corrosion, erosion, emulsion, pipeline and surface cooldown, and the hydrate risk map all
+have ids. **One class is left, and it is named rather than left waiting**:
+`CO2CorrosionAnalyzer` needs an electrolyte-CPA flash for pH that this tree has no system
+route for, and [the port roadmap](../../../ROADMAP.md) carries it under Tier 4. The rest
 of the tree is the simulation suite (`DifferentialLiberation`, `ConstantVolumeDepletion`,
 `SwellingTest`, `SaturationPressure`, `SeparatorTest`, `GOR`, `MMPCalculator`), the model
 tuning and the reservoir properties, and it is here.
@@ -371,7 +371,7 @@ page:
   [Processes and channels](../calculus/process.md) states a unit operation as a
   process on typed, directional channels, and that statement is what tranche P11
   builds the tier against. **It is no longer a bare specification**: `specs/unit_ops/`
-  declares 29 unit operations with typed channels, `crates/azoth-process` carries the
+  declares 31 unit operations with typed channels, `crates/azoth-process` carries the
   loader and `azoth_process::validate`, and a cargo test holds every shipped palette entry
   and flowsheet to the calculus's rules. **The interpreter is built too** — tranche P12's
   `executor` module runs a flowsheet to its steady state, and what it reaches is named in

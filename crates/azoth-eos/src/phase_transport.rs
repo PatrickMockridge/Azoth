@@ -71,6 +71,54 @@ impl std::str::FromStr for PhaseKind {
 /// reachable: the common-phase ladder answers **zero** for a component whose LIQVISC model is 2.
 const MIN_ETA_CP: f64 = 0.01;
 
+/// The phase's viscosity alone.
+///
+/// `phase_transport` refuses a one-component mixture because its *effective diffusivity*
+/// divides by the sum over the other components; a caller that wants only the viscosity -
+/// a single-component pipeline segment, say - has no such division and asks here.
+///
+/// # Errors
+/// * [`azoth_core::AzothError::InvalidInput`] if `z` is not a composition of the mixture.
+pub(crate) fn viscosity_only(
+    mixture: &Mixture,
+    phase: PhaseKind,
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+) -> Result<f64> {
+    let components = mixture.components();
+    let count = components.len();
+    if z.len() != count {
+        return Err(AzothError::invalid_input(
+            "z",
+            format!(
+                "a mixture of {count} components needs {count} mole fractions, got {}",
+                z.len()
+            ),
+        ));
+    }
+    let molar_mass: Vec<f64> = components
+        .iter()
+        .map(|component| {
+            component.molar_mass.ok_or_else(|| {
+                AzothError::invalid_input(
+                    "components",
+                    "a component carries no molar mass, and every correlation here is a function of one",
+                )
+            })
+        })
+        .collect::<Result<Vec<f64>>>()?;
+    let _ = molar_mass;
+    match phase {
+        PhaseKind::Aqueous => Ok(
+            crate::aqueous_viscosity::aqueous_viscosity(mixture, t, p, z)?
+                .viscosity
+                .value,
+        ),
+        PhaseKind::Gas | PhaseKind::Oil => Ok(viscosity(mixture, t, p, z)?.mu.value),
+    }
+}
+
 /// A phase's viscosity, thermal conductivity, binary diffusivity matrix and effective
 /// diffusivities - the four the segment model's transport snapshot reads.
 ///

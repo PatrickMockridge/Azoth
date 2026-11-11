@@ -72,20 +72,29 @@ GENERATED_BANNER = "GENERATED FILE - DO NOT EDIT BY HAND."
 #: this map rather than restated beside it.
 UOM_TYPES: dict[tuple[int, ...], str | None] = {
     (0, 0, 0, 0, 0, 0, 0): None,  # dimensionless: a ratio, carried as a bare f64
+    (0, 0, -1, 0, 0, 0, 0): "Frequency",
+    (-1, 0, 0, 0, 0, 0, 0): None,  # reciprocal length: no uom quantity
+    (-2, 1, -2, 0, 0, 0, 0): None,  # pressure gradient: no uom quantity
     (1, 0, 0, 0, 0, 0, 0): "Length",
     (0, 0, 0, 0, 0, 1, 0): "AmountOfSubstance",
     (2, 1, -2, 0, 0, 0, 0): "Energy",
     (0, 1, 0, 0, 0, 0, 0): "Mass",
     (2, 0, 0, 0, 0, 0, 0): "Area",
     (3, 0, 0, 0, 0, 0, 0): "Volume",
+    (-1, 1, -3, 0, 0, 0, 0): "VolumetricPowerDensity",
     (3, 0, -1, 0, 0, 0, 0): "VolumeRate",
     (0, 1, -1, 0, 0, 0, 0): "MassRate",
     (0, 0, -1, 0, 0, 1, 0): None,  # MolarFlow: uom has no molar-flow quantity
+    (-3, 0, -1, 0, 0, 1, 0): None,  # MolarRateDensity: no amount-per-volume-per-time quantity
+    (0, 0, 1, 0, 0, 0, 0): "Time",
     (-3, 1, 0, 0, 0, 0, 0): "MassDensity",
     (-3, 0, 0, 0, 0, 1, 0): "MolarConcentration",
     (1, 0, -1, 0, 0, 0, 0): "Velocity",
+    (-2, 1, -1, 0, 0, 0, 0): "MassFlux",
     (2, 0, -1, 0, 0, 0, 0): "DiffusionCoefficient",
     (-1, 1, -2, 0, 0, 0, 0): "Pressure",
+    # `F = ma`, over the existing length, mass and time slots: no new base slot.
+    (1, 1, -2, 0, 0, 0, 0): "Force",
     (-1, 1, -1, 0, 0, 0, 0): "DynamicViscosity",
     (0, 0, 0, 0, 1, 0, 0): "ThermodynamicTemperature",
     (2, 1, -3, 0, 0, 0, 0): "Power",
@@ -96,6 +105,9 @@ UOM_TYPES: dict[tuple[int, ...], str | None] = {
     (2, 0, -2, 0, -1, 0, 0): "SpecificHeatCapacity",
     (1, 1, -3, 0, -1, 0, 0): "ThermalConductivity",
     (0, 1, -3, 0, -1, 0, 0): "HeatTransfer",
+    # A radiated flux, `W/m2`: uom's `HeatFluxDensity`, which is the same exponents as
+    # `HeatTransfer` without the temperature slot.
+    (0, 1, -3, 0, 0, 0, 0): "HeatFluxDensity",
     (0, 1, -2, 0, 0, 0, 0): "SurfaceTension",
     (0, 1, 0, 0, 0, -1, 0): "MolarMass",
     (3, 0, 0, 0, 0, -1, 0): "MolarVolume",
@@ -161,21 +173,26 @@ LEAN_DIMENSIONS: dict[str, str] = {
     "m**3/s": "Dimension.Volume / Dimension.Time",
     "kg/s": "Dimension.Mass / Dimension.Time",
     "kg": "Dimension.Mass",
+    "s": "Dimension.Time",
     "mol": "Dimension.AmountOfSubstance",
     "mol/s": "Dimension.AmountOfSubstance / Dimension.Time",
+    "mol/(m**3*s)": "Dimension.AmountOfSubstance / (Dimension.Volume * Dimension.Time)",
     "kg/m**3": "Dimension.Mass / Dimension.Volume",
     "mol/m**3": "Dimension.AmountOfSubstance / Dimension.Volume",
     "kmol/m**3": "Dimension.AmountOfSubstance / Dimension.Volume",
     "m/s": "Dimension.Speed",
+    "kg/(m**2*s)": "Dimension.Mass / (Dimension.Area * Dimension.Time)",
     "m**2/s": "Dimension.Area / Dimension.Time",
     "Pa": "Dimension.Pressure",
     "Pa*s": "Dimension.Pressure * Dimension.Time",
     "K": "Dimension.Temperature",
     "W": "Dimension.Power",
+    "W/m**2": "Dimension.Power / Dimension.Area",
     "J/(kg*K)": "Dimension.Energy / (Dimension.Mass * Dimension.Temperature)",
     "W/(m*K)": "Dimension.Power / (Dimension.Length * Dimension.Temperature)",
     "W/(m**2*K)": "Dimension.Power / (Dimension.Area * Dimension.Temperature)",
     "W/K": "Dimension.Power / Dimension.Temperature",
+    "N": "Dimension.Force",
     "N/m": "Dimension.Force / Dimension.Length",
     "kg/mol": "Dimension.Mass / Dimension.AmountOfSubstance",
     "m**3/mol": "Dimension.Volume / Dimension.AmountOfSubstance",
@@ -191,6 +208,11 @@ LEAN_DIMENSIONS: dict[str, str] = {
     # slots and not a slot of its own: `lean-units` derives it the same way.
     "C": "Dimension.Charge",
     "angstrom": "Dimension.Length",
+    "1/s": "Dimension.Time ^ (-1 : ℚ)",
+    "1/m": "Dimension.Length ^ (-1 : ℚ)",
+    "Pa/m": "Dimension.Pressure / Dimension.Length",
+    "h": "Dimension.Time",
+    "W/m**3": "Dimension.Power / Dimension.Volume",
     "1/K": "Dimension.Temperature ^ (-1 : ℚ)",
     "1/K**2": "Dimension.Temperature ^ (-2 : ℚ)",
     "1/K**3": "Dimension.Temperature ^ (-3 : ℚ)",

@@ -12,6 +12,7 @@
 use azoth_core::{CalcResult, Warning};
 
 use crate::models::absorption_column::AbsorptionColumnResult;
+use crate::models::anti_surge_recycle::AntiSurgeRecycleResult;
 use crate::models::component_splitter::ComponentSplitterResult;
 use crate::models::compressor::CompressorResult;
 use crate::models::cooler::CoolerResult;
@@ -24,7 +25,10 @@ use crate::models::gas_scrubber::GasScrubberResult;
 use crate::models::gibbs_reactor::GibbsReactorResult;
 use crate::models::heat_exchanger::HeatExchangerResult;
 use crate::models::heater::HeaterResult;
+use crate::models::hem_release::HemReleaseResult;
+use crate::models::leak_blowdown::LeakBlowdownResult;
 use crate::models::manifold::ManifoldResult;
+use crate::models::map_turbo_expander_compressor::MapTurboExpanderResult;
 use crate::models::mixer::MixerResult;
 use crate::models::packed_column::PackedColumnResult;
 use crate::models::pipe::PipeResult;
@@ -32,6 +36,8 @@ use crate::models::plug_flow_reactor::PlugFlowReactorResult;
 use crate::models::pump::PumpResult;
 use crate::models::rate_based_packed_column::RateBasedPackedColumnResult;
 use crate::models::separator::SeparatorResult;
+use crate::models::separator_capacity_assessment::SeparatorCapacityAssessmentResult;
+use crate::models::separator_performance::SeparatorPerformanceResult;
 use crate::models::shortcut_distillation_column::ShortcutDistillationColumnResult;
 use crate::models::splitter::SplitterResult;
 use crate::models::stirred_tank_reactor::StirredTankReactorResult;
@@ -39,6 +45,7 @@ use crate::models::stripping_column::StrippingColumnResult;
 use crate::models::tank::TankResult;
 use crate::models::three_phase_separator::ThreePhaseSeparatorResult;
 use crate::models::throttling_valve::ThrottlingValveResult;
+use crate::models::turbo_expander_compressor::TurboExpanderResult;
 
 impl CalcResult for AbsorptionColumnResult {
     const CALC_ID: &'static str = "process.absorption_column";
@@ -88,6 +95,25 @@ impl CalcResult for AbsorptionColumnResult {
     }
 }
 
+impl CalcResult for AntiSurgeRecycleResult {
+    const CALC_ID: &'static str = "process.anti_surge_recycle";
+    const FIELDS: &'static [&'static str] = &[
+        "recycle_active",
+        "converged",
+        "iterations",
+        "recycle_mass_flow",
+        "inlet_volume_flow",
+        "surge_flow",
+        "control_flow",
+        "distance_to_surge",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 impl CalcResult for ComponentSplitterResult {
     const CALC_ID: &'static str = "process.component_splitter";
     const FIELDS: &'static [&'static str] = &[
@@ -112,7 +138,34 @@ impl CalcResult for ComponentSplitterResult {
 impl CalcResult for CompressorResult {
     const CALC_ID: &'static str = "process.compressor";
     const FIELDS: &'static [&'static str] = &[
-        "outlet_n", "outlet_z", "outlet_p", "outlet_t", "outlet_h", "warnings",
+        "outlet_n",
+        "outlet_z",
+        "outlet_p",
+        "outlet_t",
+        "outlet_h",
+        "polytropic_head",
+        "polytropic_efficiency",
+        "polytropic_exponent",
+        "total_deposit_mass",
+        "deposit_volume",
+        "film_thickness",
+        "area_blockage_fraction",
+        "efficiency_multiplier",
+        "head_multiplier",
+        "degradation_factor",
+        "fouling_factor",
+        "power",
+        "shaft_speed",
+        "surge_flow_rate",
+        "surge_flow_rate_margin",
+        "surge_flow_rate_std",
+        "distance_to_surge",
+        "control_line_flow",
+        "distance_to_control_line",
+        "required_recycle_fraction",
+        "anti_surge_recycle_power",
+        "recycle_fraction",
+        "warnings",
     ];
 
     fn warnings(&self) -> &[Warning] {
@@ -129,6 +182,8 @@ impl CalcResult for CoolerResult {
         "outlet_t",
         "outlet_h",
         "outlet_duty",
+        "cooling_valve_opening",
+        "equilibrium_outlet_temperature",
         "warnings",
     ];
 
@@ -163,6 +218,8 @@ impl CalcResult for DistillationColumnResult {
         "temperature_residual",
         "mass_residual",
         "energy_residual",
+        "top_specification_residual",
+        "bottom_specification_residual",
         "fs_factor",
         "fs_factor_utilization",
         "fs_factor_within_design_limit",
@@ -210,6 +267,23 @@ impl CalcResult for EjectorResult {
         "suction_nozzle_velocity",
         "mixing_velocity",
         "diffuser_velocity",
+        "motive_nozzle_throat_area",
+        "motive_nozzle_diameter",
+        "suction_inlet_area",
+        "suction_inlet_diameter",
+        "mixing_chamber_area",
+        "mixing_chamber_diameter",
+        "diffuser_outlet_area",
+        "diffuser_outlet_diameter",
+        "motive_nozzle_effective_length",
+        "suction_inlet_length",
+        "mixing_chamber_length",
+        "diffuser_outlet_length",
+        "body_volume",
+        "connected_piping_volume",
+        "total_volume",
+        "suction_connection_length",
+        "discharge_connection_length",
         "warnings",
     ];
 
@@ -221,7 +295,19 @@ impl CalcResult for EjectorResult {
 impl CalcResult for ExpanderResult {
     const CALC_ID: &'static str = "process.expander";
     const FIELDS: &'static [&'static str] = &[
-        "outlet_n", "outlet_z", "outlet_p", "outlet_t", "outlet_h", "warnings",
+        "outlet_n",
+        "outlet_z",
+        "outlet_p",
+        "outlet_t",
+        "outlet_h",
+        "power",
+        "recovered_power_utilization",
+        "max_utilization",
+        "capacity_exceeded",
+        "hard_limit_exceeded",
+        "bottleneck_constraint",
+        "reported_isentropic_efficiency",
+        "warnings",
     ];
 
     fn warnings(&self) -> &[Warning] {
@@ -237,7 +323,38 @@ impl CalcResult for FilterResult {
         "outlet_p",
         "outlet_t",
         "outlet_h",
+        "clean_drop",
         "applied_drop",
+        "nominal_removal_efficiency",
+        "outlet_particle_concentration",
+        "captured_rate",
+        "unrestricted_drop",
+        "bypass_fraction",
+        "loading_fraction",
+        "breakthrough_fraction",
+        "current_removal_efficiency",
+        "solids_loading",
+        "differential_pressure_utilization",
+        "replacement_required",
+        "holdup_residence_time",
+        "design_pressure",
+        "design_temperature",
+        "required_elements",
+        "vessel_inner_diameter",
+        "vessel_outer_diameter",
+        "vessel_length",
+        "shell_thickness",
+        "head_thickness",
+        "effective_element_area",
+        "calculated_face_velocity",
+        "required_nozzle_diameter",
+        "selected_nozzle_diameter",
+        "calculated_nozzle_velocity",
+        "empty_vessel_weight",
+        "total_equipped_weight",
+        "collapse_pressure_utilization",
+        "differential_pressure_design_acceptable",
+        "design_media_area",
         "warnings",
     ];
 
@@ -256,6 +373,15 @@ impl CalcResult for FlareResult {
         "product_h",
         "heat_duty",
         "co2_emission",
+        "radiation_flux",
+        "radiation_distance",
+        "exit_velocity",
+        "momentum_flux",
+        "standard_volume_rate",
+        "heat_utilization",
+        "mass_utilization",
+        "molar_utilization",
+        "overloaded",
         "warnings",
     ];
 
@@ -278,6 +404,43 @@ impl CalcResult for GasScrubberResult {
         "liquid_t",
         "liquid_h",
         "capacity_utilization",
+        "required_diameter",
+        "has_mesh_pad",
+        "mesh_pad_area",
+        "mesh_pad_thickness",
+        "mesh_pad_elevation",
+        "has_inlet_cyclones",
+        "has_demisting_cyclones",
+        "design_inner_diameter",
+        "design_tantan_length",
+        "design_outer_diameter",
+        "design_wall_thickness",
+        "max_design_gas_volume_flow",
+        "vessel_shell_weight",
+        "piping_weight",
+        "structural_weight",
+        "electrical_weight",
+        "internals_weight",
+        "total_weight",
+        "module_width",
+        "module_length",
+        "module_height",
+        "vessel_volume",
+        "hhll",
+        "hll",
+        "nll",
+        "lll",
+        "llll",
+        "weir_height",
+        "nil",
+        "effective_length_liquid",
+        "effective_length_gas",
+        "inlet_nozzle_id",
+        "gas_outlet_nozzle_id",
+        "oil_outlet_nozzle_id",
+        "surge_volume",
+        "surge_time",
+        "liquid_retention_time",
         "warnings",
     ];
 
@@ -300,6 +463,20 @@ impl CalcResult for GibbsReactorResult {
         "lagrange_multipliers",
         "element_balance_difference",
         "gibbs_energy_history",
+        "vessel_diameter",
+        "vessel_length",
+        "shell_thickness",
+        "head_thickness",
+        "design_pressure",
+        "design_temperature",
+        "catalyst_volume",
+        "catalyst_mass",
+        "bed_pressure_drop",
+        "empty_vessel_weight",
+        "total_equipped_weight",
+        "reactor_type",
+        "number_of_beds",
+        "condition_number_history",
         "warnings",
     ];
 
@@ -327,6 +504,34 @@ impl CalcResult for HeatExchangerResult {
         "c_min",
         "c_max",
         "capacity_ratio",
+        "ua_value",
+        "delta_t_side",
+        "wall_temperature",
+        "shell_fluid_temperature",
+        "tube_fluid_temperature",
+        "mechanical_selected_type",
+        "mechanical_selected_area",
+        "log_mean_temperature_difference",
+        "mechanical_approach_temperature",
+        "used_overall_heat_transfer_coefficient",
+        "calculated_ua",
+        "rating_u",
+        "rating_ua",
+        "rating_area",
+        "tube_side_pressure_drop",
+        "shell_side_pressure_drop",
+        "tube_side_heat_transfer_coefficient",
+        "shell_side_heat_transfer_coefficient",
+        "tube_side_reynolds",
+        "shell_side_reynolds",
+        "tube_side_velocity",
+        "shell_side_velocity",
+        "jc",
+        "jl",
+        "jb",
+        "js",
+        "jr",
+        "mechanical_types",
         "warnings",
     ];
 
@@ -344,6 +549,117 @@ impl CalcResult for HeaterResult {
         "outlet_t",
         "outlet_h",
         "outlet_duty",
+        "max_outlet_temperature_utilization",
+        "min_outlet_temperature_utilization",
+        "max_utilization",
+        "capacity_exceeded",
+        "hard_limit_exceeded",
+        "bottleneck_constraint",
+        "instrument_count",
+        "analog_input_count",
+        "analog_output_count",
+        "digital_input_count",
+        "digital_output_count",
+        "total_io_count",
+        "safety_instrument_count",
+        "instruments",
+        "shaft_power",
+        "electrical_input_power",
+        "apparent_power",
+        "reactive_power",
+        "power_factor",
+        "rated_voltage",
+        "frequency_hz",
+        "full_load_current",
+        "starting_current",
+        "total_electrical_losses",
+        "motor_rated_power",
+        "motor_efficiency",
+        "motor_power_factor",
+        "motor_rated_speed",
+        "motor_locked_rotor_multiplier",
+        "total_auxiliary_power",
+        "total_connected_power",
+        "cable_length",
+        "cable_cross_section",
+        "cable_ampacity",
+        "cable_voltage_drop",
+        "cable_short_circuit_withstand",
+        "switchgear_starter",
+        "switchgear_type",
+        "switchgear_circuit_breaker",
+        "switchgear_fuse",
+        "switchgear_rated_current",
+        "switchgear_short_circuit",
+        "switchgear_weight",
+        "vfd_rated_power",
+        "vfd_rated_current",
+        "vfd_input_voltage",
+        "vfd_topology",
+        "vfd_pulse_configuration",
+        "vfd_efficiency",
+        "vfd_input_power_factor",
+        "vfd_thd_current",
+        "vfd_has_active_rectifier",
+        "vfd_requires_input_filter",
+        "vfd_heat_dissipation",
+        "vfd_cooling_method",
+        "vfd_weight",
+        "vfd_enclosure_rating",
+        "has_supply_temperature",
+        "has_return_temperature",
+        "has_approach_temperature",
+        "has_heat_capacity_rate",
+        "has_overall_heat_transfer_coefficient",
+        "mechanical_selected_type",
+        "mechanical_selected_area",
+        "log_mean_temperature_difference",
+        "mechanical_approach_temperature",
+        "used_overall_heat_transfer_coefficient",
+        "calculated_ua",
+        "mechanical_types",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for HemReleaseResult {
+    const CALC_ID: &'static str = "process.hem_release";
+    const FIELDS: &'static [&'static str] = &[
+        "status",
+        "mass_flow_rate",
+        "choked",
+        "throat_sound_speed",
+        "component_mole_fractions",
+        "component_mass_fractions",
+        "stations",
+        "diagnostics",
+        "diagnostic_codes",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for LeakBlowdownResult {
+    const CALC_ID: &'static str = "process.leak_blowdown";
+    const FIELDS: &'static [&'static str] = &[
+        "status",
+        "scenario_name",
+        "hole_diameter",
+        "number_of_points",
+        "recorded_points",
+        "points",
+        "total_mass_released",
+        "peak_mass_flow_rate",
+        "time_to_empty",
+        "diagnostics",
+        "diagnostic_codes",
         "warnings",
     ];
 
@@ -368,6 +684,33 @@ impl CalcResult for ManifoldResult {
     }
 }
 
+impl CalcResult for MapTurboExpanderResult {
+    const CALC_ID: &'static str = "process.map_turbo_expander_compressor";
+    const FIELDS: &'static [&'static str] = &[
+        "expander_outlet_n",
+        "expander_outlet_z",
+        "expander_outlet_p",
+        "expander_outlet_t",
+        "expander_outlet_h",
+        "compressor_outlet_n",
+        "compressor_outlet_z",
+        "compressor_outlet_p",
+        "compressor_outlet_t",
+        "compressor_outlet_h",
+        "shaft_speed",
+        "available_shaft_power",
+        "consumed_compressor_power",
+        "power_balance_residual",
+        "speed_limited",
+        "operating_status",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 impl CalcResult for MixerResult {
     const CALC_ID: &'static str = "process.mixer";
     const FIELDS: &'static [&'static str] = &[
@@ -375,6 +718,8 @@ impl CalcResult for MixerResult {
         "product_z",
         "product_p",
         "product_t",
+        "inlet_pressure_spread",
+        "pressure_mismatch",
         "product_h",
         "warnings",
     ];
@@ -421,6 +766,16 @@ impl CalcResult for PackedColumnResult {
         "packing_pressure_drop",
         "hydraulics_ok",
         "internal_diameter",
+        "k_ga",
+        "k_la",
+        "wetted_area",
+        "htu_g",
+        "htu_l",
+        "htu_og",
+        "wetting_ok",
+        "pressure_drop_per_meter",
+        "resolved_packing",
+        "resolved_packing_factor",
         "warnings",
     ];
 
@@ -437,6 +792,7 @@ impl CalcResult for PipeResult {
         "outlet_p",
         "outlet_t",
         "outlet_h",
+        "effective_length",
         "pressure_drop",
         "warnings",
     ];
@@ -462,6 +818,9 @@ impl CalcResult for PlugFlowReactorResult {
         "temperature_profile",
         "pressure_profile",
         "conversion_profile",
+        "reaction_rate_profile",
+        "molar_flow_profile",
+        "residence_time",
         "warnings",
     ];
 
@@ -473,7 +832,18 @@ impl CalcResult for PlugFlowReactorResult {
 impl CalcResult for PumpResult {
     const CALC_ID: &'static str = "process.pump";
     const FIELDS: &'static [&'static str] = &[
-        "outlet_n", "outlet_z", "outlet_p", "outlet_t", "outlet_h", "warnings",
+        "outlet_n",
+        "outlet_z",
+        "outlet_p",
+        "outlet_t",
+        "outlet_h",
+        "head",
+        "efficiency",
+        "npsh_required",
+        "npsh_available",
+        "cavitating",
+        "power",
+        "warnings",
     ];
 
     fn warnings(&self) -> &[Warning] {
@@ -536,8 +906,134 @@ impl CalcResult for RateBasedPackedColumnResult {
 impl CalcResult for SeparatorResult {
     const CALC_ID: &'static str = "process.separator";
     const FIELDS: &'static [&'static str] = &[
-        "vapour_n", "vapour_z", "vapour_p", "vapour_t", "vapour_h", "liquid_n", "liquid_z",
-        "liquid_p", "liquid_t", "liquid_h", "warnings",
+        "vapour_n",
+        "vapour_z",
+        "vapour_p",
+        "vapour_t",
+        "vapour_h",
+        "liquid_n",
+        "liquid_z",
+        "liquid_p",
+        "liquid_t",
+        "liquid_h",
+        "capacity_utilization",
+        "max_allowable_gas_velocity",
+        "gas_superficial_velocity",
+        "gas_load_factor",
+        "is_overloaded",
+        "gas_area_fraction",
+        "rated_gas_load_factor_by_phase",
+        "required_diameter",
+        "design_inner_diameter",
+        "design_tantan_length",
+        "design_outer_diameter",
+        "design_wall_thickness",
+        "max_design_gas_volume_flow",
+        "vessel_shell_weight",
+        "piping_weight",
+        "structural_weight",
+        "electrical_weight",
+        "internals_weight",
+        "total_weight",
+        "module_width",
+        "module_length",
+        "module_height",
+        "vessel_volume",
+        "hhll",
+        "hll",
+        "nll",
+        "lll",
+        "llll",
+        "weir_height",
+        "nil",
+        "effective_length_liquid",
+        "effective_length_gas",
+        "inlet_nozzle_id",
+        "gas_outlet_nozzle_id",
+        "oil_outlet_nozzle_id",
+        "surge_volume",
+        "surge_time",
+        "liquid_retention_time",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for SeparatorCapacityAssessmentResult {
+    const CALC_ID: &'static str = "process.separator_capacity_assessment";
+    const FIELDS: &'static [&'static str] = &[
+        "status",
+        "diagnostic",
+        "design_basis_source",
+        "governing_capacity_basis",
+        "gas_area",
+        "gas_density",
+        "liquid_density",
+        "maximum_gas_velocity",
+        "current_gas_flow",
+        "mechanical_design_maximum_gas_flow",
+        "souders_brown_maximum_gas_flow",
+        "maximum_gas_flow",
+        "utilization",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for SeparatorPerformanceResult {
+    const CALC_ID: &'static str = "process.separator_performance";
+    const FIELDS: &'static [&'static str] = &[
+        "oil_in_gas",
+        "water_in_gas",
+        "gas_in_oil",
+        "gas_in_water",
+        "oil_in_water",
+        "water_in_oil",
+        "gravity_section_efficiency",
+        "mist_eliminator_efficiency",
+        "overall_gas_liquid_efficiency",
+        "liquid_liquid_gravity_efficiency",
+        "gravity_cut_diameter",
+        "inlet_flow_regime",
+        "inlet_device_bulk_efficiency",
+        "inlet_device_pressure_drop",
+        "inlet_nozzle_velocity",
+        "inlet_momentum_flux",
+        "k_factor",
+        "k_factor_utilization",
+        "mist_eliminator_flooded",
+        "gas_area",
+        "liquid_area",
+        "gas_volume",
+        "liquid_volume",
+        "total_volume",
+        "effective_gas_settling_height",
+        "effective_liquid_settling_height",
+        "gas_residence_time",
+        "liquid_residence_time",
+        "gravity_section_length",
+        "oil_pad_thickness",
+        "water_layer_height",
+        "api_gas_liquid_compliant",
+        "api_liquid_compliant",
+        "api_fully_compliant",
+        "api_gas_liquid_comment",
+        "api_liquid_comment",
+        "api_gravity_cut_diameter",
+        "api_k_factor_utilization",
+        "api_max_k_factor",
+        "api_min_liquid_residence_time",
+        "post_inlet_device_characteristic_diameter",
+        "post_inlet_device_spread",
+        "post_inlet_d50",
+        "post_inlet_d32",
+        "warnings",
     ];
 
     fn warnings(&self) -> &[Warning] {
@@ -582,6 +1078,24 @@ impl CalcResult for SplitterResult {
         "products_p",
         "products_t",
         "products_h",
+        "pressure_drop_value",
+        "pressure_drop_design",
+        "pressure_drop_utilization",
+        "velocity_value",
+        "velocity_design",
+        "velocity_utilization",
+        "max_utilization",
+        "capacity_exceeded",
+        "bottleneck_constraint",
+        "design_header_diameter",
+        "design_branch_diameter",
+        "design_header_length",
+        "design_wall_thickness",
+        "manifold_volume",
+        "design_total_pressure_drop",
+        "header_weight",
+        "branch_weight",
+        "total_weight",
         "warnings",
     ];
 
@@ -599,6 +1113,7 @@ impl CalcResult for StirredTankReactorResult {
         "product_t",
         "product_h",
         "heat_duty",
+        "agitator_power",
         "warnings",
     ];
 
@@ -685,6 +1200,13 @@ impl CalcResult for ThreePhaseSeparatorResult {
         "heavy_liquid_p",
         "heavy_liquid_t",
         "heavy_liquid_h",
+        "water_level",
+        "oil_level",
+        "oil_thickness",
+        "oil_retention_time",
+        "water_retention_time",
+        "interface_settling_time",
+        "settling_time_sufficient",
         "warnings",
     ];
 
@@ -696,7 +1218,49 @@ impl CalcResult for ThreePhaseSeparatorResult {
 impl CalcResult for ThrottlingValveResult {
     const CALC_ID: &'static str = "process.throttling_valve";
     const FIELDS: &'static [&'static str] = &[
-        "outlet_n", "outlet_z", "outlet_p", "outlet_t", "outlet_h", "warnings",
+        "outlet_n",
+        "outlet_z",
+        "outlet_p",
+        "outlet_t",
+        "outlet_h",
+        "kv",
+        "cv",
+        "cg",
+        "choked",
+        "gas_valve",
+        "calculated_molar_flow",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for TurboExpanderResult {
+    const CALC_ID: &'static str = "process.turbo_expander_compressor";
+    const FIELDS: &'static [&'static str] = &[
+        "expander_outlet_n",
+        "expander_outlet_z",
+        "expander_outlet_p",
+        "expander_outlet_t",
+        "expander_outlet_h",
+        "compressor_outlet_n",
+        "compressor_outlet_z",
+        "compressor_outlet_p",
+        "compressor_outlet_t",
+        "compressor_outlet_h",
+        "speed",
+        "power_expander",
+        "power_compressor",
+        "expander_isentropic_efficiency",
+        "expander_design_isentropic_efficiency",
+        "compressor_polytropic_efficiency",
+        "compressor_polytropic_head",
+        "uc_ratio_expander",
+        "qn_ratio_compressor",
+        "igv_opening",
+        "warnings",
     ];
 
     fn warnings(&self) -> &[Warning] {

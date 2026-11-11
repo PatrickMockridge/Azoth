@@ -53,9 +53,9 @@ export interface Bounds {
  * The bound a parameter's range gives, or none.
  *
  * **The library's ranges are a list and usually one entry long.** A parameter can carry more than
- * one — a forbidden band inside an allowed interval is two — and a field draws the first, because
- * an input has one `min` and one `max`. The rationale of the one it drew travels with them, so a
- * violation is explained by the bound that caused it.
+ * one — an efficiency is `(0, 1]`, which is two entries — and an input element has one `min` and
+ * one `max`, so this draws the first only. [`violationOf`] is the one that decides whether a value
+ * is outside, because it reads every range and returns the one that fired.
  */
 export function boundsOf(parameter: FormParameter): Bounds {
   const range: FormRange | undefined = parameter.range[0];
@@ -77,6 +77,108 @@ export function boundsOf(parameter: FormParameter): Bounds {
     rationale: range.rationale,
     severity: range.severity,
   };
+}
+
+/** Whether a number lies in a range's interval, respecting each endpoint's own inclusivity. */
+function inInterval(range: FormRange, value: number): boolean {
+  if (range.min !== null) {
+    if (range.min_inclusive ? value < range.min : value <= range.min) {
+      return false;
+    }
+  }
+  if (range.max !== null) {
+    if (range.max_inclusive ? value > range.max : value >= range.max) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * The range a value violates, or none.
+ *
+ * **Every range is read, not only the first.** A parameter can carry two (`eta > 0` and
+ * `eta <= 1`); taking the first would quote the lower bound's rationale for a value above the
+ * upper one. `band: "inside"` inverts the interval: the band is the forbidden part.
+ */
+export function violationOf(ranges: readonly FormRange[], value: unknown): FormRange | null {
+  if (typeof value !== "number") {
+    return null;
+  }
+  for (const range of ranges) {
+    if (range.severity === null) {
+      continue;
+    }
+    if (range.equals !== null) {
+      if (value !== range.equals) {
+        return range;
+      }
+      continue;
+    }
+    if (range.min === null && range.max === null) {
+      continue;
+    }
+    const inside = inInterval(range, value);
+    if (range.band === "inside" ? inside : !inside) {
+      return range;
+    }
+  }
+  return null;
+}
+
+/** A bound as a reader sees it, in the unit set in force. */
+function boundText(
+  value: number,
+  declared: string | null,
+  units: Units | null,
+): string {
+  const shown =
+    declared === null || units === null ? value : inDisplayUnit(units, value, declared);
+  return String(Number(shown.toPrecision(6)));
+}
+
+/**
+ * A parameter's checked limits as one readable phrase, or `null` where it states none.
+ *
+ * **The numbers are the reader's units, not the document's.** A field shows °F while the bound is
+ * a kelvin; a limit line in the declared unit would disagree with the value beside it.
+ */
+export function rangeTextIn(
+  ranges: readonly FormRange[],
+  declared: string | null,
+  units: Units | null,
+): string | null {
+  const phrases: string[] = [];
+  for (const range of ranges) {
+    if (range.severity === null) {
+      continue;
+    }
+    if (range.equals !== null) {
+      phrases.push(`= ${boundText(range.equals, declared, units)}`);
+      continue;
+    }
+    if (range.min === null && range.max === null) {
+      continue;
+    }
+    const min = range.min === null ? null : boundText(range.min, declared, units);
+    const max = range.max === null ? null : boundText(range.max, declared, units);
+    const low = `${range.min_inclusive ? ">=" : ">"} ${min ?? ""}`.trim();
+    const high = `${range.max_inclusive ? "<=" : "<"} ${max ?? ""}`.trim();
+    let phrase: string;
+    if (min !== null && max !== null) {
+      phrase =
+        range.band === "inside"
+          ? `not between ${min} and ${max}`
+          : `${low} and ${high}`;
+    } else {
+      phrase = min !== null ? low : high;
+      if (range.band === "inside") {
+        phrase = `not ${phrase}`;
+      }
+    }
+    phrases.push(phrase);
+  }
+  return phrases.length === 0 ? null : phrases.join(" and ");
 }
 
 /**
@@ -223,9 +325,26 @@ export function formatQuantity(
   digits = 4,
   units?: Units,
 ): string {
+  const parts = quantityParts(magnitude, unit, digits, units);
+  return `${parts.value} ${parts.unit}`;
+}
+
+/**
+ * A scalar split into the number and the unit a reader asked for.
+ *
+ * **The same conversion as [`formatQuantity`], with the two halves kept apart** - a result row
+ * puts the value in one column and the unit in another, and joining them only to split them again
+ * would be a second formatter waiting to disagree with the first.
+ */
+export function quantityParts(
+  magnitude: number,
+  unit: string,
+  digits = 4,
+  units?: Units,
+): { value: string; unit: string } {
   const shown = units === undefined ? { unit, factor: 1, offset: 0 } : displayOf(units, unit);
   const rounded = Number((magnitude / shown.factor - shown.offset).toPrecision(digits));
-  return `${rounded} ${shown.unit}`;
+  return { value: String(rounded), unit: shown.unit };
 }
 
 /**

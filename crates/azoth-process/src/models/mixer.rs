@@ -9,7 +9,9 @@
 //! fields, because the kernel builds it with [`Stream::from_pt`] and the enthalpy is what
 //! that computes.
 
-use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
+use azoth_core::units::{
+    MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole, pascals,
+};
 use azoth_core::{AzothError, Result, Warning, apply_checks};
 
 use crate::kernels::mixer as kernel;
@@ -27,6 +29,10 @@ pub struct MixerResult {
     pub product_p: Pressure,
     /// Outlet temperature, solved from the joined enthalpy at the outlet pressure.
     pub product_t: ThermodynamicTemperature,
+    /// `getInletPressureSpread`: the active inlets' highest pressure less the lowest.
+    pub inlet_pressure_spread: Pressure,
+    /// `isPressureMismatch`: the spread exceeds `0.5` bar and no outlet was specified.
+    pub pressure_mismatch: bool,
     /// Outlet molar enthalpy, the flow-weighted average of the feeds'.
     pub product_h: MolarEnergy,
     /// Caveats.
@@ -113,7 +119,8 @@ pub fn mixer(
         })
         .collect::<Result<_>>()?;
 
-    let product = kernel(&inlets, outlet_pressure)?;
+    let (product, inlet_pressure_spread, pressure_mismatch) =
+        kernel::mixer_with_diagnostics(&inlets, outlet_pressure)?;
 
     Ok(MixerResult {
         product_n: product.n,
@@ -121,6 +128,8 @@ pub fn mixer(
         product_p: product.p,
         product_t: product.t,
         product_h: joules_per_mole(product.h.value),
+        inlet_pressure_spread: pascals(inlet_pressure_spread),
+        pressure_mismatch,
         warnings,
     })
 }

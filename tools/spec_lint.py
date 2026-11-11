@@ -1165,6 +1165,8 @@ def lint_spec(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     check_identity(report, rel, spec)
     check_input_flags(report, rel, spec)
     check_identifier_names(report, rel, spec)
+    check_record_inputs(report, rel, spec)
+    check_record_outputs(report, rel, spec)
     check_range_checks(report, rel, spec)
     check_worked_example(report, rel, spec)
     check_tests(report, rel, spec)

@@ -16,9 +16,16 @@
  * edit says `false`; Solve says `true`.
  */
 
-import { decodeCatalogue, decodeEnvelope, fieldOf } from "./decode";
-import type { HostedDoor, Opened, Session } from "./session";
-import type { Catalogue, Command, Envelope, ExecutionOrder } from "./types";
+import { decodeCatalogue, decodeEnvelope, decodeSheetEnvelope, fieldOf } from "./decode";
+import type { HostedDoor, Opened, Session, SheetOpened, SheetSession } from "./session";
+import type { SheetCommand } from "./sheetCommands";
+import type {
+  Catalogue,
+  Command,
+  Envelope,
+  ExecutionOrder,
+  SheetEnvelope,
+} from "./types";
 
 /**
  * One request body, and the object it answered with.
@@ -32,8 +39,12 @@ import type { Catalogue, Command, Envelope, ExecutionOrder } from "./types";
  * `Content-Type: application/json` is what makes this a *preflighted* request, which is why the
  * server has to be told `--allow-origin` before a browser will let the answer be read.
  */
-async function post(base: string, body: Record<string, unknown>): Promise<unknown> {
-  const response = await fetch(`${base}/rpc`, {
+async function post(
+  base: string,
+  path: string,
+  body: Record<string, unknown>,
+): Promise<unknown> {
+  const response = await fetch(`${base}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -59,16 +70,16 @@ class HttpSession implements Session {
   }
 
   async apply(command: Command): Promise<Envelope> {
-    return decodeEnvelope(await post(this.#base, { command, run: false }));
+    return decodeEnvelope(await post(this.#base, "/rpc", { command, run: false }));
   }
 
   async run(): Promise<Envelope> {
     // `command: null` is the route's "the envelope as it stands", and `run` is what makes it run.
-    return decodeEnvelope(await post(this.#base, { command: null, run: true }));
+    return decodeEnvelope(await post(this.#base, "/rpc", { command: null, run: true }));
   }
 
   async setOrder(order: ExecutionOrder): Promise<Envelope> {
-    return decodeEnvelope(await post(this.#base, { order, command: null }));
+    return decodeEnvelope(await post(this.#base, "/rpc", { order, command: null }));
   }
 }
 
@@ -83,11 +94,45 @@ export class HttpDoor implements HostedDoor {
   }
 
   async catalogue(withTools = false): Promise<Catalogue> {
-    return decodeCatalogue(await post(this.#base, { catalogue: withTools }));
+    return decodeCatalogue(await post(this.#base, "/rpc", { catalogue: withTools }));
   }
 
   async attach(): Promise<Opened> {
-    const envelope = decodeEnvelope(await post(this.#base, { command: null }));
+    const envelope = decodeEnvelope(await post(this.#base, "/rpc", { command: null }));
     return { session: new HttpSession(this.#base), envelope };
+  }
+}
+
+class HttpSheetSession implements SheetSession {
+  readonly #base: string;
+
+  constructor(base: string) {
+    this.#base = base;
+  }
+
+  async apply(command: SheetCommand): Promise<SheetEnvelope> {
+    return decodeSheetEnvelope(await post(this.#base, "/sheets", { command }));
+  }
+
+  async calculate(sheet: string | null): Promise<SheetEnvelope> {
+    return decodeSheetEnvelope(await post(this.#base, "/sheets", { calculate: sheet }));
+  }
+}
+
+/** The calculation-book half of the served door. */
+export class HttpSheetDoor {
+  readonly kind = "hosted" as const;
+
+  readonly #base: string;
+
+  constructor(base: string) {
+    this.#base = base;
+  }
+
+  async attach(): Promise<SheetOpened> {
+    const envelope = decodeSheetEnvelope(
+      await post(this.#base, "/sheets", { command: null }),
+    );
+    return { session: new HttpSheetSession(this.#base), envelope };
   }
 }

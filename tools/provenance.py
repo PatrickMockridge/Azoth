@@ -126,8 +126,9 @@ NAMESPACE_SUPPORT = {
         "crates/azoth-python/src/hydraulics.rs",
     ),
     "thermal": (
+        # The Python binding is in `wrappers_gen.rs`, shared and generated, so there is no
+        # namespace module beside it to hash.
         "crates/azoth-thermal/src/spec_gen.rs",
-        "crates/azoth-python/src/thermal.rs",
     ),
     "eos": (
         # The mixture layer is the model layer's own arithmetic - components, the

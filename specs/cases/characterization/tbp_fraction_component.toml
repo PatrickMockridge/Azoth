@@ -1,0 +1,174 @@
+model = "characterization.tbp_fraction_component"
+
+# Every expected value is a field of `validation/neqsim/captures/tbp_fraction_component_probe.tsv`,
+# taken from the component's own getters after `addTBPfraction` - `component_*` where the
+# capture has both, because the model's and the component's acentric factors differ.
+
+[[cases]]
+id = "c7"
+tolerance = 1.0e-12
+source = "A C7 cut, the light end of an assay. Every correlation is on its light branch and the reference SRK phase is well below its critical point."
+[cases.inputs]
+molar_mass = 0.095000000000000000
+density = 730.00000000000000
+[cases.expected]
+critical_temperature = 532.48695901285190
+critical_pressure = 3175587.5890185838
+boiling_temperature = 369.89575000000000
+acentric_factor = 0.46493310155686010
+attraction_exponent = 1.1737600510000004
+critical_volume = 0.00034747431090007935
+racket_z = 0.27686767147391916
+racket_z_cpa = 0.27686767147391916
+parachor = 281.60000000000000
+critical_viscosity = 2.7287722379654753e-05
+triple_point_temperature = 164.64930789473686
+heat_of_fusion = 9338.7099334296330
+ideal_gas_enthalpy_of_formation = -186513.00000000000
+cp_a = 0.45758427781335020
+cp_b = 0.54640613805844770
+cp_c = -0.00021114887891555186
+cp_d = 1.0000000000000000e-10
+lennard_jones_diameter = 5.9504888859982010
+lennard_jones_energy = 440.95051259371860
+
+[[cases]]
+id = "c10"
+tolerance = 1.0e-12
+source = "A C10 cut, mid-assay: the same branches, a heavier cut and a lower reduced temperature in the reference phase."
+[cases.inputs]
+molar_mass = 0.13400000000000000
+density = 810.00000000000000
+[cases.expected]
+critical_temperature = 597.84216270418190
+critical_pressure = 2551653.6501347220
+boiling_temperature = 435.34640800000000
+acentric_factor = 0.57656088174243210
+attraction_exponent = 1.3290004766000008
+critical_volume = 0.00045839168658679460
+racket_z = 0.26540657102427430
+racket_z_cpa = 0.26540657102427430
+parachor = 372.86000000000000
+critical_viscosity = 2.7475359045069125e-05
+triple_point_temperature = 227.46946656716418
+heat_of_fusion = 18198.319223563400
+ideal_gas_enthalpy_of_formation = -243554.40000000002
+cp_a = -4.3368279304674380
+cp_b = 0.74094041143058300
+cp_c = -0.00029981199939198370
+cp_d = 1.0000000000000000e-10
+lennard_jones_diameter = 6.6245027375101300
+lennard_jones_energy = 506.83810310154723
+
+[[cases]]
+id = "c15"
+tolerance = 1.0e-12
+source = "A C15 cut, past the light end. Its Rackett compressibility is smaller than C7's even though its molar mass is larger, which is the reference volume moving against the gravity."
+[cases.inputs]
+molar_mass = 0.20600000000000000
+density = 860.00000000000000
+[cases.expected]
+critical_temperature = 679.20250784367140
+critical_pressure = 1908280.7281481067
+boiling_temperature = 535.15943200000000
+acentric_factor = 0.76793326837570670
+attraction_exponent = 1.5849359796000000
+critical_volume = 0.00058066128639747780
+racket_z = 0.26341820154357604
+racket_z_cpa = 0.26341820154357604
+parachor = 541.33999999999990
+critical_viscosity = 2.7477011173361010e-05
+triple_point_temperature = 281.96868990291260
+heat_of_fusion = 34679.392271607110
+ideal_gas_enthalpy_of_formation = -348861.60000000000
+cp_a = -1.4035909830104136
+cp_b = 1.1329390772896282
+cp_c = -0.00046528902165658676
+cp_d = 1.0000000000000000e-10
+lennard_jones_diameter = 7.5602397625439970
+lennard_jones_energy = 605.40026196498260
+
+[[cases]]
+id = "below_the_boiling_point_switch"
+tolerance = 1.0e-12
+source = "A 0.5 kg/mol cut with 0.95 gravity, just below the 540 g/mol switch in the boiling-point correlation - the branch a port that read the threshold in kg/mol would miss."
+[cases.inputs]
+molar_mass = 0.50000000000000000
+density = 950.00000000000000
+[cases.expected]
+critical_temperature = 903.36365608542640
+critical_pressure = 1425269.7684634842
+boiling_temperature = 746.89000000000010
+acentric_factor = 1.3000243327698020
+attraction_exponent = 2.2287871650000004
+critical_volume = 0.00087811793911704010
+racket_z = 0.31941563582348260
+racket_z_cpa = 0.31941563582348260
+parachor = 1229.3000000000000
+critical_viscosity = 3.3603166160432080e-05
+triple_point_temperature = 347.24100000000000
+heat_of_fusion = 103658.36965395969
+ideal_gas_enthalpy_of_formation = -778866.00000000000
+cp_a = 1.2910514881683723
+cp_b = 2.7681569421076504
+cp_c = -0.0011350161915970920
+cp_d = 1.0000000000000000e-10
+lennard_jones_diameter = 8.9783372768371600
+lennard_jones_energy = 973.48970881655520
+
+[[cases]]
+id = "above_it"
+tolerance = 1.0e-12
+source = "A 1.0 kg/mol cut, above the boiling-point switch and below the 1120 g/mol coefficient switch. Its heat-capacity constant term is large because that correlation is linear in molar mass."
+[cases.inputs]
+molar_mass = 1.0000000000000000
+density = 1000.0000000000000
+[cases.expected]
+critical_temperature = 1190.4187572669710
+critical_pressure = 1327049.0357533281
+boiling_temperature = 968.85952621297680
+acentric_factor = 0.97437501523127160
+attraction_exponent = 1.8465706999999998
+critical_volume = 0.0014193752035559664
+racket_z = 0.40499099948136974
+racket_z_cpa = 0.40499099948136974
+parachor = 2399.3000000000000
+critical_viscosity = 4.3276181910288250e-05
+triple_point_temperature = 380.49800000000000
+heat_of_fusion = 227172.49597018990
+ideal_gas_enthalpy_of_formation = -1510166.0000000000
+cp_a = 39.734250447916030
+cp_b = 5.6628984981280020
+cp_c = -0.0022641714964818730
+cp_d = 1.0000000000000000e-10
+lennard_jones_diameter = 10.207796475927196
+lennard_jones_energy = 1133.5578687841014
+
+[[cases]]
+id = "above_the_heavy_switch"
+tolerance = 1.0e-12
+source = "A 1.5 kg/mol cut, past the heavy-coefficient switch. The fitted `m` is large and negative, so `setm`'s root is clamped to -0.99 - the class's own clamp, reproduced."
+[cases.inputs]
+molar_mass = 1.5000000000000000
+density = 1050.0000000000000
+[cases.expected]
+critical_temperature = 1061.1306481989060
+critical_pressure = 1523337.4183940769
+boiling_temperature = 1111.0984812322306
+acentric_factor = -0.99000000000000000
+attraction_exponent = -1.2507576000000000
+critical_volume = 0.0082565011495366970
+racket_z = -8.7078861946035280
+racket_z_cpa = -8.7078861946035280
+parachor = 3569.3000000000000
+critical_viscosity = 5.9231920002874904e-05
+triple_point_temperature = 400.30700000000000
+heat_of_fusion = 358498.88965647180
+ideal_gas_enthalpy_of_formation = -2241466.0000000000
+cp_a = -137.09756814387447
+cp_b = 9.0297001542386500
+cp_c = -0.0033250693325876940
+cp_d = 1.0000000000000000e-10
+lennard_jones_diameter = 10.088776131598761
+lennard_jones_energy = 1015.9593033565815
+

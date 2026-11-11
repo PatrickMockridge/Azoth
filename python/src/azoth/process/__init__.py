@@ -20,6 +20,7 @@ from azoth import _core
 from azoth._dispatch import resolve
 from azoth.core.result import (
     AbsorptionColumnResult,
+    AntiSurgeRecycleResult,
     ComponentSplitterResult,
     CompressorResult,
     CoolerResult,
@@ -32,13 +33,18 @@ from azoth.core.result import (
     GibbsReactorResult,
     HeaterResult,
     HeatExchangerResult,
+    HemReleaseResult,
+    LeakBlowdownResult,
     ManifoldResult,
+    MapTurboExpanderResult,
     MixerResult,
     PackedColumnResult,
     PipeResult,
     PlugFlowReactorResult,
     PumpResult,
     RateBasedPackedColumnResult,
+    SeparatorCapacityAssessmentResult,
+    SeparatorPerformanceResult,
     SeparatorResult,
     ShortcutDistillationColumnResult,
     SplitterResult,
@@ -47,6 +53,7 @@ from azoth.core.result import (
     TankResult,
     ThreePhaseSeparatorResult,
     ThrottlingValveResult,
+    TurboExpanderResult,
 )
 from azoth.core.units import Q
 from azoth.process.flowsheet import (
@@ -70,6 +77,7 @@ __all__ = [
     "Stream",
     "TearResult",
     "absorption_column",
+    "anti_surge_recycle",
     "catalogue",
     "component_splitter",
     "compressor",
@@ -84,8 +92,11 @@ __all__ = [
     "gibbs_reactor",
     "heat_exchanger",
     "heater",
+    "hem_release",
+    "leak_blowdown",
     "load_flowsheet",
     "manifold",
+    "map_turbo_expander_compressor",
     "mixer",
     "packed_column",
     "pipe",
@@ -94,6 +105,7 @@ __all__ = [
     "rate_based_packed_column",
     "run_flowsheet",
     "separator",
+    "separator_capacity_assessment",
     "shortcut_distillation_column",
     "splitter",
     "stirred_tank_reactor",
@@ -120,10 +132,16 @@ _DISTILLATION_COLUMN = "process.distillation_column"
 _COOLER = "process.cooler"
 _EJECTOR = "process.ejector"
 _EXPANDER = "process.expander"
+_TURBO_EXPANDER_COMPRESSOR = "process.turbo_expander_compressor"
+_MAP_TURBO_EXPANDER_COMPRESSOR = "process.map_turbo_expander_compressor"
 _FILTER = "process.filter"
 _FLARE = "process.flare"
 _HEATER = "process.heater"
+_HEM_RELEASE = "process.hem_release"
+_LEAK_BLOWDOWN = "process.leak_blowdown"
 _SEPARATOR = "process.separator"
+_SEPARATOR_CAPACITY_ASSESSMENT = "process.separator_capacity_assessment"
+_SEPARATOR_PERFORMANCE = "process.separator_performance"
 _SHORTCUT_DISTILLATION_COLUMN = "process.shortcut_distillation_column"
 _THROTTLING_VALVE = "process.throttling_valve"
 _GIBBS_REACTOR = "process.gibbs_reactor"
@@ -133,6 +151,7 @@ _SPLITTER = "process.splitter"
 _STIRRED_TANK_REACTOR = "process.stirred_tank_reactor"
 _TANK = "process.tank"
 _THREE_PHASE_SEPARATOR = "process.three_phase_separator"
+_ANTI_SURGE_RECYCLE = "process.anti_surge_recycle"
 
 
 def validate(flowsheet: str, palette_dir: str = "specs/unit_ops") -> list[str]:
@@ -154,23 +173,33 @@ def pump(
     inlet_z: list[float],
     inlet_p: Q,
     inlet_t: Q,
-    outlet_pressure: Q,
     isentropic_efficiency: float,
+    outlet_pressure: Q | None = None,
+    curve: list[dict[str, Q]] | None = None,
+    speed: float | None = None,
+    reference_density: Q | None = None,
+    viscosity: Q | None = None,
+    use_viscosity_correction: bool | None = None,
+    check_npsh: bool | None = None,
+    npsh_margin: float | None = None,
 ) -> PumpResult:
     """Raise a stream's pressure, adding the pump's work as enthalpy.
 
     ``components``, ``inlet_n``, ``inlet_z``, ``inlet_p`` and ``inlet_t`` are the inlet's
-    record - the fluid, its flow, composition, pressure and temperature - and
-    ``outlet_pressure`` and ``isentropic_efficiency`` are ``unit_ops.pump``'s own two
-    parameters. The inlet's molar enthalpy is *not* an input: it is a state function of
-    ``(T, P, z)``, so accepting one would let a caller hand over a state that does not exist.
+    record - the fluid, its flow, composition, pressure and temperature. The inlet's molar
+    enthalpy is *not* an input: it is a state function of ``(T, P, z)``, so accepting one
+    would let a caller hand over a state that does not exist.
 
-    The work is the isentropic head - ``(H(P_out, s_in) - H(P_in)) / eta``, from a flash -
-    and not the incompressible ``v (P_out - P_in)``, which is its linearisation. NeqSim's
-    ``Pump.run`` does the former, because ``calculateAsCompressor`` defaults to ``true``.
+    Without a curve the work is the isentropic head - ``(H(P_out, s_in) - H(P_in)) / eta``,
+    from a flash - and ``outlet_pressure`` is the pressure it reaches. A non-empty ``curve``
+    selects ``PumpChart``'s reduced quadratic instead: the head sets the pressure rise, the
+    chart's efficiency sets the shaft power, and ``outlet_pressure`` is ignored. ``speed``,
+    ``reference_density``, ``viscosity``, ``use_viscosity_correction``, ``check_npsh`` and
+    ``npsh_margin`` are the chart's own surface.
 
     Raises:
-        InvalidInputError: where the shapes disagree or the efficiency is outside ``(0, 1]``.
+        InvalidInputError: where the shapes disagree, the efficiency is outside ``(0, 1]``, a
+            pump with no curve has no outlet pressure, or the curve is not a curve.
 
     See :func:`azoth.process.reference.pump`.
     """
@@ -182,6 +211,13 @@ def pump(
         inlet_t=inlet_t,
         outlet_pressure=outlet_pressure,
         isentropic_efficiency=isentropic_efficiency,
+        curve=curve,
+        speed=speed,
+        reference_density=reference_density,
+        viscosity=viscosity,
+        use_viscosity_correction=use_viscosity_correction,
+        check_npsh=check_npsh,
+        npsh_margin=npsh_margin,
     )
 
 
@@ -763,6 +799,9 @@ def stirred_tank_reactor(
     reactor_temperature: Q | None = None,
     reactor_pressure: Q | None = None,
     pressure_drop: Q | None = None,
+    vessel_volume: Q | None = None,
+    residence_time: Q | None = None,
+    agitator_power_per_volume: Q | None = None,
 ) -> StirredTankReactorResult:
     """React a feed to a conversion of one reactant, then flash the result.
 
@@ -795,6 +834,9 @@ def stirred_tank_reactor(
         reactor_temperature=reactor_temperature,
         reactor_pressure=reactor_pressure,
         pressure_drop=pressure_drop,
+        vessel_volume=vessel_volume,
+        residence_time=residence_time,
+        agitator_power_per_volume=agitator_power_per_volume,
     )
 
 
@@ -893,6 +935,48 @@ def filter(
     inlet_p: Q,
     inlet_t: Q,
     pressure_drop: Q,
+    pressure_drop_model: str | None = None,
+    reference_flow: Q | None = None,
+    flow_exponent: float | None = None,
+    pressure_drop_curve: list[dict[str, Q]] | None = None,
+    media_area: Q | None = None,
+    media_bed_depth: Q | None = None,
+    media_particle_diameter: Q | None = None,
+    media_void_fraction: float | None = None,
+    viscosity: Q | None = None,
+    performance_curve: list[dict[str, Q]] | None = None,
+    particle_size: Q | None = None,
+    nominal_removal_efficiency: float | None = None,
+    inlet_particle_concentration: float | None = None,
+    solids_loading: Q | None = None,
+    loading_capacity: Q | None = None,
+    pressure_drop_increase_at_capacity: Q | None = None,
+    breakthrough_start_fraction: float | None = None,
+    bypass_cracking_pressure: Q | None = None,
+    terminal_pressure_drop: Q | None = None,
+    time_step: Q | None = None,
+    holdup_volume: Q | None = None,
+    solids_loading_rate: Q | None = None,
+    backwash_removal_rate: Q | None = None,
+    regeneration_removal_rate: Q | None = None,
+    backwash_active: bool | None = None,
+    regeneration_active: bool | None = None,
+    mechanical_design: bool | None = None,
+    filter_type: str | None = None,
+    number_of_elements: float | None = None,
+    max_face_velocity: Q | None = None,
+    element_area: Q | None = None,
+    max_nozzle_velocity: Q | None = None,
+    min_ld_ratio: float | None = None,
+    max_ld_ratio: float | None = None,
+    design_pressure_margin: float | None = None,
+    minimum_design_pressure_margin: Q | None = None,
+    design_temperature_margin: Q | None = None,
+    allowable_stress: Q | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: Q | None = None,
+    element_collapse_pressure: Q | None = None,
+    element_integrity_verified: bool | None = None,
 ) -> FilterResult:
     """Drop a stream's pressure by a fixed amount at a constant temperature.
 
@@ -906,6 +990,18 @@ def filter(
     ``applied_drop`` reports what was applied, with a warning when it differs from the
     request.
 
+    ``pressure_drop_model`` selects the class's clean-drop model - ``fixed`` by default, then
+    ``flow_scaled``, ``tabulated`` and ``ergun`` - and the inputs after it are that model's
+    own settings. The beta-ratio ``performance_curve`` (or a scalar
+    ``nominal_removal_efficiency``) with an ``inlet_particle_concentration`` enables the
+    particle capture.
+
+    ``solids_loading`` with a ``loading_capacity`` adds the loading's pressure drop, the
+    breakthrough retention and the optional ``bypass_cracking_pressure`` to the same run;
+    ``terminal_pressure_drop`` is the replacement threshold. A positive ``time_step`` runs one
+    ``runTransient`` step, accreting ``solids_loading_rate`` (or the concentration capture) and
+    subtracting the active backwash and regeneration removals.
+
     See :func:`azoth.process.reference.filter`.
     """
     return resolve(_FILTER)(  # type: ignore[no-any-return]
@@ -915,6 +1011,95 @@ def filter(
         inlet_p=inlet_p,
         inlet_t=inlet_t,
         pressure_drop=pressure_drop,
+        pressure_drop_model=pressure_drop_model,
+        reference_flow=reference_flow,
+        flow_exponent=flow_exponent,
+        pressure_drop_curve=pressure_drop_curve,
+        media_area=media_area,
+        media_bed_depth=media_bed_depth,
+        media_particle_diameter=media_particle_diameter,
+        media_void_fraction=media_void_fraction,
+        viscosity=viscosity,
+        performance_curve=performance_curve,
+        particle_size=particle_size,
+        nominal_removal_efficiency=nominal_removal_efficiency,
+        inlet_particle_concentration=inlet_particle_concentration,
+        solids_loading=solids_loading,
+        loading_capacity=loading_capacity,
+        pressure_drop_increase_at_capacity=pressure_drop_increase_at_capacity,
+        breakthrough_start_fraction=breakthrough_start_fraction,
+        bypass_cracking_pressure=bypass_cracking_pressure,
+        terminal_pressure_drop=terminal_pressure_drop,
+        time_step=time_step,
+        holdup_volume=holdup_volume,
+        solids_loading_rate=solids_loading_rate,
+        backwash_removal_rate=backwash_removal_rate,
+        regeneration_removal_rate=regeneration_removal_rate,
+        backwash_active=backwash_active,
+        regeneration_active=regeneration_active,
+        mechanical_design=mechanical_design,
+        filter_type=filter_type,
+        number_of_elements=number_of_elements,
+        max_face_velocity=max_face_velocity,
+        element_area=element_area,
+        max_nozzle_velocity=max_nozzle_velocity,
+        min_ld_ratio=min_ld_ratio,
+        max_ld_ratio=max_ld_ratio,
+        design_pressure_margin=design_pressure_margin,
+        minimum_design_pressure_margin=minimum_design_pressure_margin,
+        design_temperature_margin=design_temperature_margin,
+        allowable_stress=allowable_stress,
+        joint_efficiency=joint_efficiency,
+        corrosion_allowance=corrosion_allowance,
+        element_collapse_pressure=element_collapse_pressure,
+        element_integrity_verified=element_integrity_verified,
+    )
+
+
+def anti_surge_recycle(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    curve: list[dict[str, Q]],
+    surge_curve: list[dict[str, Q]],
+    speed: float | None = None,
+    surge_control_margin: float | None = None,
+    recycle_cooler_temperature: Q | None = None,
+    damping: float | None = None,
+    tolerance: float | None = None,
+    max_iterations: int | None = None,
+) -> AntiSurgeRecycleResult:
+    """Converge the cooled recycle that holds a charted compressor on its control line.
+
+    **The object is a loop around :func:`compressor`'s chart branch, not a machine.** It runs
+    the natural suction, compares its inlet volume flow with ``surge * (1 + margin)``, and -
+    where the point is short - wires a cooled clone of the suction through a mixer and converges
+    the recycle mass with a damped fixed point. The run-time recycle block is off throughout,
+    because this loop owns the recycle.
+
+    **A converged pass breaks before updating**, so the reported recycle mass is the one the
+    machine last ran at; an exhausted ``max_iterations`` reports the last update instead. A
+    natural inlet at or above the control line opens nothing and reports ``converged`` true
+    with zero passes.
+
+    See :func:`azoth.process.reference.anti_surge_recycle`.
+    """
+    return resolve(_ANTI_SURGE_RECYCLE)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        curve=curve,
+        surge_curve=surge_curve,
+        speed=speed,
+        surge_control_margin=surge_control_margin,
+        recycle_cooler_temperature=recycle_cooler_temperature,
+        damping=damping,
+        tolerance=tolerance,
+        max_iterations=max_iterations,
     )
 
 
@@ -959,10 +1144,32 @@ def compressor(
     inlet_z: list[float],
     inlet_p: Q,
     inlet_t: Q,
-    outlet_pressure: Q,
     isentropic_efficiency: float,
+    use_polytropic_calc: bool | None = None,
+    polytropic_efficiency: float | None = None,
+    polytropic_method: str | None = None,
+    compression_ratio: float | None = None,
+    max_outlet_pressure: Q | None = None,
+    power: Q | None = None,
+    deposit: list[dict[str, Q]] | None = None,
+    wetted_area: Q | None = None,
+    passage_half_height: Q | None = None,
+    outlet_pressure: Q | None = None,
+    curve: list[dict[str, Q]] | None = None,
+    speed: float | None = None,
+    solve_speed: bool | None = None,
+    min_speed: float | None = None,
+    max_speed: float | None = None,
+    limit_speed: bool | None = None,
+    chart_type: str | None = None,
+    chart_conditions: list[float] | None = None,
+    impeller_diameter: Q | None = None,
+    surge_curve: list[dict[str, Q]] | None = None,
+    surge_control_margin: float | None = None,
+    anti_surge_active: bool | None = None,
+    surge_control_factor: float | None = None,
 ) -> CompressorResult:
-    """Raise a stream's pressure along an isentrope, dividing the step by the efficiency.
+    """Raise a stream's pressure along an isentrope or the machine's chart.
 
     **The entropy is derived, not carried.** The record has five fields and ``s`` is not one
     of them: it is a function of ``(T, P, z)``, and the flash at the inlet decides it. At an
@@ -972,8 +1179,20 @@ def compressor(
     ``h_out = h_in + (h_isentropic - h_in) / eta``. :func:`expander` is the same route with a
     multiplication, because an expansion's isentropic difference is negative.
 
+    ``curve`` selects ``CompressorChart``'s fixed-speed branch instead: the pressure is solved
+    from the head, ``speed`` reads the map, and ``chart_type`` names the map class (only the
+    default ``fan_law`` is carried). With ``solve_speed`` the speed is the unknown: a Newton
+    drives the chart's pressure ratio to ``outlet_pressure``, and ``min_speed``/``max_speed``
+    bound it, with ``limit_speed`` pegging an out-of-range answer at the bound.
+
+    ``surge_curve`` is the anti-surge boundary in the same (flow, head) unit as ``curve``.
+    With it the result carries the machine's surge read-outs; with ``anti_surge_active`` set,
+    the run-time recycle block re-runs the machine above the surge flow and reports the
+    fraction and the boosted power.
+
     Raises:
-        InvalidInputError: where the shapes disagree or the efficiency is outside ``(0, 1]``.
+        InvalidInputError: where the shapes disagree, the efficiency is outside ``(0, 1]``, or
+            the chart type is refused.
 
     See :func:`azoth.process.reference.compressor`.
     """
@@ -983,8 +1202,30 @@ def compressor(
         inlet_z=inlet_z,
         inlet_p=inlet_p,
         inlet_t=inlet_t,
-        outlet_pressure=outlet_pressure,
         isentropic_efficiency=isentropic_efficiency,
+        use_polytropic_calc=use_polytropic_calc,
+        polytropic_efficiency=polytropic_efficiency,
+        polytropic_method=polytropic_method,
+        compression_ratio=compression_ratio,
+        max_outlet_pressure=max_outlet_pressure,
+        power=power,
+        deposit=deposit,
+        wetted_area=wetted_area,
+        passage_half_height=passage_half_height,
+        outlet_pressure=outlet_pressure,
+        curve=curve,
+        speed=speed,
+        solve_speed=solve_speed,
+        min_speed=min_speed,
+        max_speed=max_speed,
+        limit_speed=limit_speed,
+        chart_type=chart_type,
+        chart_conditions=chart_conditions,
+        impeller_diameter=impeller_diameter,
+        surge_curve=surge_curve,
+        surge_control_margin=surge_control_margin,
+        anti_surge_active=anti_surge_active,
+        surge_control_factor=surge_control_factor,
     )
 
 
@@ -996,6 +1237,12 @@ def expander(
     inlet_t: Q,
     outlet_pressure: Q,
     isentropic_efficiency: float,
+    use_polytropic_calc: bool | None = None,
+    polytropic_efficiency: float | None = None,
+    number_of_steps: int | None = None,
+    rated_recovered_power: Q | None = None,
+    shaft_power: Q | None = None,
+    outlet_temperature: Q | None = None,
 ) -> ExpanderResult:
     """Drop a stream's pressure along an isentrope, multiplying the step by the efficiency.
 
@@ -1004,6 +1251,14 @@ def expander(
     negative and dividing would make the machine beat the reversible one at any efficiency
     below one. The captured pair of rows is what holds that: `0.75` of the step is
     ``-618.933`` J/mol and the step divided would be ``-1478.8``.
+
+    ``rated_recovered_power`` is ``setRatedRecoveredPower``: a positive rating adds the HARD
+    ``recoveredPower`` constraint, whose utilization is ``|power| / rating`` and whose hard
+    band is ``1.1 x`` the rating. Absent or non-positive creates no constraint.
+
+    ``shaft_power`` states the total power instead of an efficiency and reports the
+    back-computed one; ``outlet_temperature`` solves the efficiency for that outlet. Both are
+    the isentropic branch's, and one at a time.
 
     Raises:
         InvalidInputError: where the shapes disagree or the efficiency is outside ``(0, 1]``.
@@ -1018,6 +1273,160 @@ def expander(
         inlet_t=inlet_t,
         outlet_pressure=outlet_pressure,
         isentropic_efficiency=isentropic_efficiency,
+        use_polytropic_calc=use_polytropic_calc,
+        polytropic_efficiency=polytropic_efficiency,
+        number_of_steps=number_of_steps,
+        rated_recovered_power=rated_recovered_power,
+        shaft_power=shaft_power,
+        outlet_temperature=outlet_temperature,
+    )
+
+
+def map_turbo_expander_compressor(
+    expander_components: list[str],
+    compressor_components: list[str],
+    expander_n: Q,
+    expander_z: list[float],
+    expander_p: Q,
+    expander_t: Q,
+    compressor_n: Q,
+    compressor_z: list[float],
+    compressor_p: Q,
+    compressor_t: Q,
+    expander_out_pressure: Q,
+    expander_isentropic_efficiency: float,
+    shaft_mode: str | None = None,
+    mechanical_efficiency: float | None = None,
+    bearing_loss: Q | None = None,
+    compressor_outlet_pressure: Q | None = None,
+    compressor_isentropic_efficiency: float | None = None,
+    compressor_speed: float | None = None,
+    min_shaft_speed: float | None = None,
+    max_shaft_speed: float | None = None,
+    curve: list[dict[str, Q]] | None = None,
+    chart_type: str | None = None,
+    chart_conditions: list[float] | None = None,
+    impeller_diameter: Q | None = None,
+) -> MapTurboExpanderResult:
+    """Balance a map-driven brake compressor against an expander on one shaft.
+
+    The expander's power, less the mechanical and bearing losses, is what the compressor may
+    consume. ``shaft_mode="balanced_speed"`` bisects the shaft speed over the compressor
+    map's own measured range until the compressor's power meets the available power - pegged
+    at a bound with ``under_power_surge`` or ``over_power_max_speed`` when it cannot.
+    ``specified_pressures`` runs the compressor at its own setting and reports the residual.
+
+    See :func:`azoth.process.reference.map_turbo_expander_compressor`.
+    """
+    return resolve(_MAP_TURBO_EXPANDER_COMPRESSOR)(  # type: ignore[no-any-return]
+        expander_components=expander_components,
+        compressor_components=compressor_components,
+        expander_n=expander_n,
+        expander_z=expander_z,
+        expander_p=expander_p,
+        expander_t=expander_t,
+        compressor_n=compressor_n,
+        compressor_z=compressor_z,
+        compressor_p=compressor_p,
+        compressor_t=compressor_t,
+        expander_out_pressure=expander_out_pressure,
+        expander_isentropic_efficiency=expander_isentropic_efficiency,
+        shaft_mode=shaft_mode,
+        mechanical_efficiency=mechanical_efficiency,
+        bearing_loss=bearing_loss,
+        compressor_outlet_pressure=compressor_outlet_pressure,
+        compressor_isentropic_efficiency=compressor_isentropic_efficiency,
+        compressor_speed=compressor_speed,
+        min_shaft_speed=min_shaft_speed,
+        max_shaft_speed=max_shaft_speed,
+        curve=curve,
+        chart_type=chart_type,
+        chart_conditions=chart_conditions,
+        impeller_diameter=impeller_diameter,
+    )
+
+
+def turbo_expander_compressor(
+    expander_components: list[str],
+    compressor_components: list[str],
+    expander_n: Q,
+    expander_z: list[float],
+    expander_p: Q,
+    expander_t: Q,
+    compressor_n: Q,
+    compressor_z: list[float],
+    compressor_p: Q,
+    compressor_t: Q,
+    expander_out_pressure: Q,
+    impeller_diameter: Q,
+    design_speed: float,
+    design_uc: float,
+    design_qn: float,
+    igv_opening: float | None = None,
+    igv_control_mode: bool | None = None,
+    maximum_igv_area: Q | None = None,
+    igv_area_increase_factor: float | None = None,
+    bearing_loss: Q | None = None,
+    expander_design_isentropic_efficiency: float | None = None,
+    compressor_design_polytropic_efficiency: float | None = None,
+    compressor_design_polytropic_head: Q | None = None,
+    expander_out_temperature: Q | None = None,
+    uc_curve: list[dict[str, float]] | None = None,
+    qn_efficiency_curve: list[dict[str, float]] | None = None,
+    qn_head_curve: list[dict[str, float]] | None = None,
+    chart: list[dict[str, float]] | None = None,
+    igv_penalty_curve: list[dict[str, float]] | None = None,
+) -> TurboExpanderResult:
+    """Balance a turbo-expander and a boost compressor on one shaft.
+
+    **The speed is the only unknown.** The expander's isentropic head comes from one
+    ``PSflash`` at ``expander_out_pressure`` and its efficiency from the velocity-ratio
+    parabola or the 2-D map; the compressor's absorbed power is its design polytropic head
+    scaled by ``(N/N_design)²`` and a Q/N head factor over a Q/N efficiency factor times the
+    design efficiency. A damped Newton on ``N`` drives the expander's power to the
+    compressor's plus the bearing loss ``10 (N/N_design)²``.
+
+    **``chart`` selects the map branch**, whose rows carry ``(igv, uc, efficiency)``; its
+    stage-head grid is not read by the machine. Stating ``expander_out_temperature`` runs
+    the inverse: the required efficiency is solved from the target state and the design
+    efficiency is back-calculated from the converged ratio.
+
+    Raises:
+        InvalidInputError: for a non-positive design or geometry value, an efficiency outside
+            ``(0, 1]``, a non-positive isentropic drop or a map that is not a map.
+
+    See :func:`azoth.process.reference.turbo_expander_compressor`.
+    """
+    return resolve(_TURBO_EXPANDER_COMPRESSOR)(  # type: ignore[no-any-return]
+        expander_components=expander_components,
+        compressor_components=compressor_components,
+        expander_n=expander_n,
+        expander_z=expander_z,
+        expander_p=expander_p,
+        expander_t=expander_t,
+        compressor_n=compressor_n,
+        compressor_z=compressor_z,
+        compressor_p=compressor_p,
+        compressor_t=compressor_t,
+        expander_out_pressure=expander_out_pressure,
+        impeller_diameter=impeller_diameter,
+        design_speed=design_speed,
+        design_uc=design_uc,
+        design_qn=design_qn,
+        igv_opening=igv_opening,
+        igv_control_mode=igv_control_mode,
+        maximum_igv_area=maximum_igv_area,
+        igv_area_increase_factor=igv_area_increase_factor,
+        bearing_loss=bearing_loss,
+        expander_design_isentropic_efficiency=expander_design_isentropic_efficiency,
+        compressor_design_polytropic_efficiency=compressor_design_polytropic_efficiency,
+        compressor_design_polytropic_head=compressor_design_polytropic_head,
+        expander_out_temperature=expander_out_temperature,
+        uc_curve=uc_curve,
+        qn_efficiency_curve=qn_efficiency_curve,
+        qn_head_curve=qn_head_curve,
+        chart=chart,
+        igv_penalty_curve=igv_penalty_curve,
     )
 
 
@@ -1030,6 +1439,18 @@ def cooler(
     outlet_temperature: Q | None = None,
     duty: Q | None = None,
     pressure_drop: Q | None = None,
+    time_step: Q | None = None,
+    dynamic_temperature_control_enabled: bool | None = None,
+    design_mass_flow: Q | None = None,
+    design_inlet_temperature: Q | None = None,
+    design_outlet_temperature: Q | None = None,
+    cooling_medium_temperature: Q | None = None,
+    design_valve_opening: float | None = None,
+    actuator_time_constant: Q | None = None,
+    thermal_time_constant: Q | None = None,
+    cooling_valve_opening: float | None = None,
+    requested_valve_opening: float | None = None,
+    dynamic_outlet_temperature: Q | None = None,
 ) -> CoolerResult:
     """Cool a stream to a stated temperature, or by a stated duty.
 
@@ -1054,6 +1475,18 @@ def cooler(
         outlet_temperature=outlet_temperature,
         duty=duty,
         pressure_drop=pressure_drop,
+        time_step=time_step,
+        dynamic_temperature_control_enabled=dynamic_temperature_control_enabled,
+        design_mass_flow=design_mass_flow,
+        design_inlet_temperature=design_inlet_temperature,
+        design_outlet_temperature=design_outlet_temperature,
+        cooling_medium_temperature=cooling_medium_temperature,
+        design_valve_opening=design_valve_opening,
+        actuator_time_constant=actuator_time_constant,
+        thermal_time_constant=thermal_time_constant,
+        cooling_valve_opening=cooling_valve_opening,
+        requested_valve_opening=requested_valve_opening,
+        dynamic_outlet_temperature=dynamic_outlet_temperature,
     )
 
 
@@ -1066,6 +1499,32 @@ def heater(
     outlet_temperature: Q | None = None,
     duty: Q | None = None,
     pressure_drop: Q | None = None,
+    max_outlet_temperature: Q | None = None,
+    min_outlet_temperature: Q | None = None,
+    instrument_design: bool | None = None,
+    include_safety_instruments: bool | None = None,
+    default_sil_level: float | None = None,
+    heat_exchanger_type: str | None = None,
+    electrical_design: bool | None = None,
+    motor_sizing_margin: float | None = None,
+    motor_poles: float | None = None,
+    efficiency_class: str | None = None,
+    frequency_hz: float | None = None,
+    phases: float | None = None,
+    number_of_fans: float | None = None,
+    instrumentation_power: Q | None = None,
+    cooling_water_pump_power: Q | None = None,
+    cable_length: Q | None = None,
+    use_vfd: bool | None = None,
+    utility_specification: bool | None = None,
+    utility_supply_temperature: Q | None = None,
+    utility_return_temperature: Q | None = None,
+    utility_approach_temperature: Q | None = None,
+    utility_heat_capacity_rate: Q | None = None,
+    utility_overall_heat_transfer_coefficient: Q | None = None,
+    mechanical_design: bool | None = None,
+    mechanical_type: str | None = None,
+    mechanical_selection: str | None = None,
 ) -> HeaterResult:
     """Heat or cool a stream to a stated temperature, or by a stated duty.
 
@@ -1078,6 +1537,11 @@ def heater(
     and ``setDuty`` clear each other's flags: which one the class runs is the order they were
     set in, which these arguments cannot express. With neither, the drop is isothermal,
     because ``run``'s else branch is ``T_in + dT`` with ``dT`` zero.
+
+    ``max_outlet_temperature`` and ``min_outlet_temperature`` are the class's two HARD
+    capacity limits. Supplying either initializes the map; the maximum's utilization is
+    ``outlet_t / limit`` and the minimum's is the inverse, both capped at 9.99. Only the
+    minimum can trip ``hard_limit_exceeded``.
 
     Raises:
         InvalidInputError: for both specifications at once, a pressure drop that leaves a
@@ -1094,6 +1558,32 @@ def heater(
         outlet_temperature=outlet_temperature,
         duty=duty,
         pressure_drop=pressure_drop,
+        max_outlet_temperature=max_outlet_temperature,
+        min_outlet_temperature=min_outlet_temperature,
+        instrument_design=instrument_design,
+        include_safety_instruments=include_safety_instruments,
+        default_sil_level=default_sil_level,
+        heat_exchanger_type=heat_exchanger_type,
+        electrical_design=electrical_design,
+        motor_sizing_margin=motor_sizing_margin,
+        motor_poles=motor_poles,
+        efficiency_class=efficiency_class,
+        frequency_hz=frequency_hz,
+        phases=phases,
+        number_of_fans=number_of_fans,
+        instrumentation_power=instrumentation_power,
+        cooling_water_pump_power=cooling_water_pump_power,
+        cable_length=cable_length,
+        use_vfd=use_vfd,
+        utility_specification=utility_specification,
+        utility_supply_temperature=utility_supply_temperature,
+        utility_return_temperature=utility_return_temperature,
+        utility_approach_temperature=utility_approach_temperature,
+        utility_heat_capacity_rate=utility_heat_capacity_rate,
+        utility_overall_heat_transfer_coefficient=utility_overall_heat_transfer_coefficient,
+        mechanical_design=mechanical_design,
+        mechanical_type=mechanical_type,
+        mechanical_selection=mechanical_selection,
     )
 
 
@@ -1106,6 +1596,11 @@ def pipe(
     length: Q,
     diameter: Q,
     roughness: Q,
+    fittings: list[dict[str, Q]] | None = None,
+    outlet_pressure: Q | None = None,
+    correlation: str | None = None,
+    number_of_increments: int | None = None,
+    elevation: Q | None = None,
 ) -> PipeResult:
     """Drop a stream's pressure along a line, solving the outlet pressure it implies.
 
@@ -1115,9 +1610,10 @@ def pipe(
     two-port machines around it.
 
     **Two equations, one per phase**, chosen by the phase label: a gas takes the compressible
-    ``P1^2 - P2^2`` form and anything else Darcy-Weisbach. **The aqueous viscosity branch is
-    not ported**, so a water line's Reynolds number is ``1.61`` times NeqSim's; the case
-    records it.
+    ``P1^2 - P2^2`` form and anything else Darcy-Weisbach. ``fittings`` adds their ``sum(L/D) D``
+    to the physical length; ``outlet_pressure`` replaces the solved drop with a solved *flow*,
+    ``AdiabaticPipe.calcFlow``'s bisection; ``correlation = "beggs_and_brills"`` runs the ported
+    Beggs-and-Brills march over the same geometry instead.
 
     Raises:
         InvalidInputError: where the geometry is not positive.
@@ -1133,6 +1629,11 @@ def pipe(
         length=length,
         diameter=diameter,
         roughness=roughness,
+        fittings=fittings,
+        outlet_pressure=outlet_pressure,
+        correlation=correlation,
+        number_of_increments=number_of_increments,
+        elevation=elevation,
     )
 
 
@@ -1143,6 +1644,16 @@ def splitter(
     feed_p: Q,
     feed_t: Q,
     split_factors: list[float],
+    design_pressure_drop: Q | None = None,
+    max_design_velocity: Q | None = None,
+    header_diameter: Q | None = None,
+    capacity_analysis_enabled: bool | None = None,
+    mechanical_design: bool | None = None,
+    design_velocity: Q | None = None,
+    max_operation_pressure: Q | None = None,
+    tensile_strength: Q | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: Q | None = None,
 ) -> SplitterResult:
     """Split a stream into several with the same state, in proportion to ``split_factors``.
 
@@ -1152,12 +1663,26 @@ def splitter(
     composition, pressure, temperature and molar enthalpy, and the factors divide the
     flow between them. They are normalised, so only their ratios mean anything.
 
+    ``design_pressure_drop``, ``max_design_velocity``, ``header_diameter`` and
+    ``capacity_analysis_enabled`` are the capacity map's inputs. The first two are the
+    class's setters, so supplying either initializes the map; the third is the mechanical
+    design's header diameter, which the velocity constraint reads; the fourth initializes
+    an otherwise empty map at the class defaults. The map is absent until one of them is
+    used, exactly as ``Splitter``'s is.
+
+    ``mechanical_design`` runs ``SplitterMechanicalDesign.calcDesign`` and publishes the
+    sized header, branch, wall, manifold volume, pressure drop and weights; the five
+    parameters after it are the design's own and are refused without the flag. The design
+    sizes the header, so ``header_diameter`` is refused with it. With both the design and
+    the capacity map asked for, the map's velocity reads the sized diameter.
+
     NeqSim's ``Splitter.run`` returns outlet enthalpies that do not conserve energy, so
     this diverges deliberately rather than reproducing them.
 
     Raises:
-        InvalidInputError: where there is no outlet, or the factors do not sum to a
-            positive value.
+        InvalidInputError: where there is no outlet, the factors do not sum to a positive
+            value, a design input is stated without ``mechanical_design``, a stated
+            ``header_diameter`` meets the flag, or a design division has no answer.
 
     See :func:`azoth.process.reference.splitter`.
     """
@@ -1168,6 +1693,16 @@ def splitter(
         feed_p=feed_p,
         feed_t=feed_t,
         split_factors=split_factors,
+        design_pressure_drop=design_pressure_drop,
+        max_design_velocity=max_design_velocity,
+        header_diameter=header_diameter,
+        capacity_analysis_enabled=capacity_analysis_enabled,
+        mechanical_design=mechanical_design,
+        design_velocity=design_velocity,
+        max_operation_pressure=max_operation_pressure,
+        tensile_strength=tensile_strength,
+        joint_efficiency=joint_efficiency,
+        corrosion_allowance=corrosion_allowance,
     )
 
 
@@ -1217,6 +1752,18 @@ def gas_scrubber(
     internal_diameter: Q | None = None,
     design_gas_load_factor: Q | None = None,
     heat_input: Q | None = None,
+    mechanical_design: bool | None = None,
+    orientation: str | None = None,
+    volume_safety_factor: float | None = None,
+    design_liquid_level_fraction: float | None = None,
+    max_operation_pressure: Q | None = None,
+    allowable_stress: Q | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: Q | None = None,
+    safety_factor: float | None = None,
+    mesh_pad_area: float | None = None,
+    mesh_pad_thickness: Q | None = None,
+    mesh_pad_elevation: Q | None = None,
 ) -> GasScrubberResult:
     """Flash a feed into vapour and liquid, as a scrubber does.
 
@@ -1225,6 +1772,9 @@ def gas_scrubber(
     separator's. **The Souders-Brown capacity metric is the class's own addition**, computed
     when ``internal_diameter`` and ``design_gas_load_factor`` are both given: stated one at a
     time it is refused, because a vessel with a size and no design basis has nothing to check.
+    ``mechanical_design`` runs ``GasScrubberMechanicalDesign.calcDesign`` and publishes the
+    vessel; its basis is the scrubber standard's ``1.1`` volume factor and the default
+    pressure-vessel values.
 
     Raises:
         InvalidInputError: where the shapes disagree, the pressure drop leaves a
@@ -1244,6 +1794,18 @@ def gas_scrubber(
         internal_diameter=internal_diameter,
         design_gas_load_factor=design_gas_load_factor,
         heat_input=heat_input,
+        mechanical_design=mechanical_design,
+        orientation=orientation,
+        volume_safety_factor=volume_safety_factor,
+        design_liquid_level_fraction=design_liquid_level_fraction,
+        max_operation_pressure=max_operation_pressure,
+        allowable_stress=allowable_stress,
+        joint_efficiency=joint_efficiency,
+        corrosion_allowance=corrosion_allowance,
+        safety_factor=safety_factor,
+        mesh_pad_area=mesh_pad_area,
+        mesh_pad_thickness=mesh_pad_thickness,
+        mesh_pad_elevation=mesh_pad_elevation,
     )
 
 
@@ -1253,8 +1815,16 @@ def flare(
     inlet_z: list[float],
     inlet_p: Q,
     inlet_t: Q,
+    flame_height: Q | None = None,
+    radiant_fraction: float | None = None,
+    tip_diameter: Q | None = None,
+    ground_distance: Q | None = None,
+    radiation_flux_threshold: Q | None = None,
+    design_heat_duty_capacity: Q | None = None,
+    design_mass_flow_capacity: Q | None = None,
+    design_molar_flow_capacity: Q | None = None,
 ) -> FlareResult:
-    """A flare's steady state: the record through, and the two numbers beside it.
+    """A flare's steady state: the record through, and the numbers beside it.
 
     ``Flare.run`` clones the inlet into the outlet and changes nothing in it, so the record is
     a pass-through. What the machine computes is its own report: ``heatDuty``, the gas's
@@ -1265,6 +1835,13 @@ def flare(
     **The duty multiplies two reference states**: the calorific value is per *normal* cubic
     metre at 0 C and the flow is at 15 C, which the class's own arithmetic does and this
     reproduces - the case records the ratio.
+
+    ``flame_height``, ``radiant_fraction`` and ``tip_diameter`` are the class's setters, and
+    they clamp rather than refuse. A stated ``ground_distance`` reports the point-source
+    radiation flux at it; a stated ``radiation_flux_threshold`` reports the horizontal distance
+    the flux falls to. **The three design capacities are the class's NaN when unstated**: a
+    utilisation exists only where its design is finite and positive, and ``overloaded`` only
+    where one does.
 
     Raises:
         InvalidInputError: where a component has no row in ISO 6976's table or none in the
@@ -1278,6 +1855,14 @@ def flare(
         inlet_z=inlet_z,
         inlet_p=inlet_p,
         inlet_t=inlet_t,
+        flame_height=flame_height,
+        radiant_fraction=radiant_fraction,
+        tip_diameter=tip_diameter,
+        ground_distance=ground_distance,
+        radiation_flux_threshold=radiation_flux_threshold,
+        design_heat_duty_capacity=design_heat_duty_capacity,
+        design_mass_flow_capacity=design_mass_flow_capacity,
+        design_molar_flow_capacity=design_molar_flow_capacity,
     )
 
 
@@ -1382,6 +1967,15 @@ def three_phase_separator(
     aqueous_in_gas: float = 0.0,
     aqueous_in_oil: float = 0.0,
     heat_input: Q | None = None,
+    internal_diameter: Q | None = None,
+    separator_length: Q | None = None,
+    nll_fraction: float | None = None,
+    nil_fraction: float | None = None,
+    water_level: Q | None = None,
+    oil_level: Q | None = None,
+    gas_outlet_flow_fraction: float | None = None,
+    oil_outlet_flow_fraction: float | None = None,
+    water_outlet_flow_fraction: float | None = None,
 ) -> ThreePhaseSeparatorResult:
     """Flash a stream into vapour, oil and aqueous outlets.
 
@@ -1394,9 +1988,15 @@ def three_phase_separator(
     each moves a share of the *current* from-phase's moles, component by component, in
     ``run``'s own order, so a later pair reads what an earlier one left.
 
+    ``internal_diameter`` and ``separator_length`` are both or neither and add the two
+    retention times: the class's mechanical-design NLL/NIL (``nll_fraction``, ``nil_fraction``,
+    defaults ``0.5`` and ``0.2``) turn the vessel into the oil and water volumes, over each
+    phase's own flow. ``water_level``/``oil_level`` are the class's stored, zero-clamped level
+    state and do not move the retention times.
+
     Raises:
-        InvalidInputError: where the pressure drop takes the outlet below zero or a fraction
-            is outside ``[0, 1]``.
+        InvalidInputError: where the pressure drop takes the outlet below zero, a fraction
+            is outside ``[0, 1]``, or half a vessel is stated.
 
     See :func:`azoth.process.reference.three_phase_separator`.
     """
@@ -1414,6 +2014,102 @@ def three_phase_separator(
         aqueous_in_gas=aqueous_in_gas,
         aqueous_in_oil=aqueous_in_oil,
         heat_input=heat_input,
+        internal_diameter=internal_diameter,
+        separator_length=separator_length,
+        nll_fraction=nll_fraction,
+        nil_fraction=nil_fraction,
+        water_level=water_level,
+        oil_level=oil_level,
+        gas_outlet_flow_fraction=gas_outlet_flow_fraction,
+        oil_outlet_flow_fraction=oil_outlet_flow_fraction,
+        water_outlet_flow_fraction=water_outlet_flow_fraction,
+    )
+
+
+def hem_release(
+    components: list[str],
+    upstream_z: list[float],
+    upstream_t: Q,
+    upstream_p: Q,
+    diameter: Q,
+    discharge_coefficient: float,
+    back_pressure: Q,
+) -> HemReleaseResult:
+    """The release rate of a homogeneous-equilibrium short-opening orifice.
+
+    The upstream stagnation state is expanded isentropically to a 49-pressure grid, and the
+    maximum of ``rho sqrt(2 (h0 - h))`` over that grid is the throat. The answer is **four
+    stations** - the stagnation state, the throat, the aliased exit and the receiving-pressure
+    state - with the rate, the choked flag and, when the flow is choked, the throat's
+    equilibrium sound speed.
+
+    A failure is the class's own result and not an exception: ``status`` is ``invalid`` or
+    ``unsupported``, the rate and stations are absent, and one diagnostic says why. **No NaN
+    crosses the boundary.**
+
+    Raises:
+        InvalidInputError: for a non-positive state or opening, a discharge coefficient
+            outside ``(0, 1]``, or a composition that is not one entry per component and sums
+            to one.
+
+    See :func:`azoth.process.reference.hem_release`.
+    """
+    return resolve(_HEM_RELEASE)(  # type: ignore[no-any-return]
+        components=components,
+        upstream_z=upstream_z,
+        upstream_t=upstream_t,
+        upstream_p=upstream_p,
+        diameter=diameter,
+        discharge_coefficient=discharge_coefficient,
+        back_pressure=back_pressure,
+    )
+
+
+def leak_blowdown(
+    components: list[str],
+    initial_z: list[float],
+    initial_t: Q,
+    initial_p: Q,
+    duration: Q,
+    vessel_volume: Q | None = None,
+    hole_diameter: Q | None = None,
+    discharge_coefficient: float | None = None,
+    back_pressure: Q | None = None,
+    time_step: Q | None = None,
+    scenario_name: str | None = None,
+) -> LeakBlowdownResult:
+    """Blow a vessel down through a circular opening.
+
+    The legacy ``LeakModel.calculateSourceTerm`` path: the inventory is the flashed
+    corrected density times ``vessel_volume``; each step records the simplified orifice
+    rate, the capped jet velocity, the unclamped momentum and the droplet SMD, then depletes
+    the mass and updates the pressure and temperature isentropically. The modern
+    ``calculateReleaseFlow`` path is :func:`hem_release`.
+
+    **The class's silent fallbacks are refused** - an ideal-gas density, ``gamma = 1.3``,
+    methane's molar mass, ``rho = 1``, a NaN rate as zero - so a state needing one is an
+    ``invalid`` result with the value in its diagnostic. Only visited rows are published;
+    ``number_of_points`` and ``recorded_points`` carry the class's zero-filled tail.
+
+    Raises:
+        InvalidInputError: for a non-positive state, volume, opening, duration or step, a
+            discharge coefficient outside ``(0, 1]``, a composition that is not one entry per
+            component and sums to one, or a declared point count over the port's cap.
+
+    See :func:`azoth.process.reference.leak_blowdown`.
+    """
+    return resolve(_LEAK_BLOWDOWN)(  # type: ignore[no-any-return]
+        components=components,
+        initial_z=initial_z,
+        initial_t=initial_t,
+        initial_p=initial_p,
+        duration=duration,
+        vessel_volume=vessel_volume,
+        hole_diameter=hole_diameter,
+        discharge_coefficient=discharge_coefficient,
+        back_pressure=back_pressure,
+        time_step=time_step,
+        scenario_name=scenario_name,
     )
 
 
@@ -1462,6 +2158,22 @@ def separator(
     pressure_drop: Q,
     gas_in_liquid: float,
     heat_input: Q | None = None,
+    internal_diameter: Q | None = None,
+    design_gas_load_factor: Q | None = None,
+    orientation: str | None = None,
+    design_liquid_level_fraction: float | None = None,
+    separator_length: Q | None = None,
+    liquid_level_fraction: float | None = None,
+    safety_factor: float | None = None,
+    mechanical_design: bool | None = None,
+    auto_size: bool | None = None,
+    fg: float | None = None,
+    volume_safety_factor: float | None = None,
+    retention_time: Q | None = None,
+    max_operation_pressure: Q | None = None,
+    allowable_stress: Q | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: Q | None = None,
 ) -> SeparatorResult:
     """Flash a stream into vapour and liquid outlets.
 
@@ -1471,9 +2183,22 @@ def separator(
     pressure drop is not a throttling and the outlets do not carry the inlet's enthalpy; a
     ``heat_input`` is the one thing that moves it.
 
+    ``internal_diameter`` and ``design_gas_load_factor`` are the vessel's size and design
+    basis, **both or neither**, and add the five capacity getters: utilisation, the maximum
+    allowable and superficial velocities, the actual Souders-Brown load factor, and the
+    overload flag. ``orientation`` and ``design_liquid_level_fraction`` shape the gas area and
+    default to the class's ``horizontal`` and ``0.8``. ``separator_length`` and
+    ``liquid_level_fraction`` are the class's ``5.0`` m and ``0.5`` when absent, and add the
+    operating gas area fraction and the phase-indexed load factors; ``safety_factor`` adds
+    ``sizeFromFlow``'s required diameter. ``mechanical_design`` runs
+    ``SeparatorMechanicalDesign.calcDesign`` and publishes the vessel; ``fg``,
+    ``volume_safety_factor``, ``retention_time``, ``max_operation_pressure``,
+    ``allowable_stress``, ``joint_efficiency`` and ``corrosion_allowance`` are its design basis,
+    at the class's default standards' values when absent.
+
     Raises:
-        InvalidInputError: where the pressure drop takes the outlet below zero or the
-            entrainment fraction is outside ``[0, 1]``.
+        InvalidInputError: where the pressure drop takes the outlet below zero, the
+            entrainment fraction is outside ``[0, 1]``, or the vessel is half stated.
 
     See :func:`azoth.process.reference.separator`.
     """
@@ -1486,6 +2211,243 @@ def separator(
         pressure_drop=pressure_drop,
         gas_in_liquid=gas_in_liquid,
         heat_input=heat_input,
+        internal_diameter=internal_diameter,
+        design_gas_load_factor=design_gas_load_factor,
+        orientation=orientation,
+        design_liquid_level_fraction=design_liquid_level_fraction,
+        separator_length=separator_length,
+        liquid_level_fraction=liquid_level_fraction,
+        safety_factor=safety_factor,
+        mechanical_design=mechanical_design,
+        auto_size=auto_size,
+        fg=fg,
+        volume_safety_factor=volume_safety_factor,
+        retention_time=retention_time,
+        max_operation_pressure=max_operation_pressure,
+        allowable_stress=allowable_stress,
+        joint_efficiency=joint_efficiency,
+        corrosion_allowance=corrosion_allowance,
+    )
+
+
+def separator_capacity_assessment(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    pressure_drop: Q,
+    gas_in_liquid: float,
+    internal_diameter: Q,
+    design_gas_load_factor: Q,
+    orientation: str,
+    design_liquid_level_fraction: float,
+    design_basis_provenance: str,
+    heat_input: Q | None = None,
+    mechanical_design_max_gas_flow: Q | None = None,
+) -> SeparatorCapacityAssessmentResult:
+    """Assess a separator's gas capacity, fail-closed.
+
+    The pinned ``SeparatorCapacityAssessment.from``: a detached snapshot of the vessel, the
+    flashed state, the two limits and the utilisation. **A blank provenance, an unknown
+    orientation, non-positive geometry or K, no gas phase, a level outside ``[0, 1)`` and
+    non-finite evidence answer ``"unassessed"``** - statuses, not exceptions - and the numeric
+    evidence is absent there. ``mechanical_design_max_gas_flow`` is the class's
+    ``maxDesignGassVolumeFlow / 3600``; a positive limit at or below the Souders-Brown flow
+    governs.
+
+    **The run comes first**, as it does in the class: a feed that cannot flash is an error,
+    and the statuses are about the vessel's evidence rather than the feed. The checks then run
+    in the class's order, so a state failing two carries the earlier sentence.
+
+    Raises:
+        InvalidInputError: where the feed cannot flash or a stated mechanical limit is not
+            finite.
+        OutOfRangeError: for a non-finite quantity at the units boundary.
+
+    See :func:`azoth.process.reference.separator_capacity_assessment`.
+    """
+    return resolve(_SEPARATOR_CAPACITY_ASSESSMENT)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        pressure_drop=pressure_drop,
+        gas_in_liquid=gas_in_liquid,
+        internal_diameter=internal_diameter,
+        design_gas_load_factor=design_gas_load_factor,
+        orientation=orientation,
+        design_liquid_level_fraction=design_liquid_level_fraction,
+        design_basis_provenance=design_basis_provenance,
+        heat_input=heat_input,
+        mechanical_design_max_gas_flow=mechanical_design_max_gas_flow,
+    )
+
+
+def separator_performance(
+    gas_density: Q,
+    oil_density: Q,
+    water_density: Q,
+    gas_viscosity: Q,
+    oil_viscosity: Q,
+    water_viscosity: Q,
+    gas_velocity: Q,
+    vessel_diameter: Q,
+    vessel_length: Q,
+    orientation: str,
+    liquid_level_fraction: float,
+    mist_position: float | None = None,
+    weir_position: float | None = None,
+    gas_liquid_distribution: str | None = None,
+    gas_liquid_characteristic_diameter: Q | None = None,
+    gas_liquid_spread: float | None = None,
+    gas_bubble_distribution: str | None = None,
+    gas_bubble_characteristic_diameter: Q | None = None,
+    gas_bubble_spread: float | None = None,
+    oil_in_water_distribution: str | None = None,
+    oil_in_water_characteristic_diameter: Q | None = None,
+    oil_in_water_spread: float | None = None,
+    water_in_oil_distribution: str | None = None,
+    water_in_oil_characteristic_diameter: Q | None = None,
+    water_in_oil_spread: float | None = None,
+    mist_eliminator: str | None = None,
+    mist_eliminator_cut_diameter: Q | None = None,
+    mist_eliminator_sharpness: float | None = None,
+    mist_eliminator_max_efficiency: float | None = None,
+    mist_eliminator_points: list[dict[str, Q]] | None = None,
+    oil_water_coalescer: str | None = None,
+    oil_water_coalescer_cut_diameter: Q | None = None,
+    oil_water_coalescer_max_efficiency: float | None = None,
+    oil_water_coalescer_points: list[dict[str, Q]] | None = None,
+    include_gravity_section: bool | None = None,
+    liquid_in_gas_calibration_factor: float | None = None,
+    gas_carry_under_calibration_factor: float | None = None,
+    liquid_liquid_calibration_factor: float | None = None,
+    enhanced: bool | None = None,
+    inlet_pipe_diameter: Q | None = None,
+    surface_tension: Q | None = None,
+    oil_water_interfacial_tension: Q | None = None,
+    oil_volume_fraction: float | None = None,
+    apply_turbulence_correction: bool | None = None,
+    inlet_device: str | None = None,
+    override_bulk_efficiency: float | None = None,
+    override_dsd_multiplier: float | None = None,
+    design_k_factor: Q | None = None,
+    liquid_liquid_residence_time: Q | None = None,
+) -> SeparatorPerformanceResult:
+    """Compute a separator's droplet-based entrainment and efficiencies.
+
+    ``SeparatorPerformanceCalculator``'s standard path: the gas-liquid gravity stage, a mist
+    eliminator when one is named, the gas bubble carry-under, and the two liquid-liquid stages,
+    each integrated over a droplet size distribution and a grade efficiency curve. **The
+    fractions are the separator ids' own entrainment inputs**, so the calculator composes with
+    a vessel rather than being a flag on it.
+
+    **The three-phase gas entrainment is the whole ``1 - overall`` on both liquid phases**, and
+    the gas carry-under is one fraction written to both; the liquid-liquid stage uses the
+    class's fixed 300 s. Those are the class's answers and are reproduced.
+
+    Args:
+        gas_density: the gas phase's mass density; zero is absent.
+        oil_density: the oil phase's mass density; zero is absent.
+        water_density: the water phase's mass density; zero is absent.
+        gas_viscosity: the gas phase's dynamic viscosity.
+        oil_viscosity: the oil phase's dynamic viscosity.
+        water_viscosity: the water phase's dynamic viscosity.
+        gas_velocity: the superficial gas velocity in the gas section.
+        vessel_diameter: the vessel's internal diameter.
+        vessel_length: the vessel's tangent-to-tangent length.
+        orientation: ``horizontal`` or ``vertical``.
+        liquid_level_fraction: the liquid's share of the cross-section or height.
+        mist_position: the mist eliminator's position as a fraction of the length; absent is
+            ``0.90``.
+        weir_position: the weir's position as a fraction of the length; absent is ``0.60``.
+        gas_liquid_distribution: the entrained liquid's distribution, ``rosin_rammler`` or
+            ``log_normal``; absent leaves the gas-liquid branch unrun.
+        gas_liquid_characteristic_diameter: its ``d_63.2`` or ``d_50``.
+        gas_liquid_spread: its spread.
+        gas_bubble_distribution: the entrained gas's distribution.
+        gas_bubble_characteristic_diameter: its characteristic diameter.
+        gas_bubble_spread: its spread.
+        oil_in_water_distribution: the dispersed oil's distribution in water.
+        oil_in_water_characteristic_diameter: its characteristic diameter.
+        oil_in_water_spread: its spread.
+        water_in_oil_distribution: the dispersed water's distribution in oil.
+        water_in_oil_characteristic_diameter: its characteristic diameter.
+        water_in_oil_spread: its spread.
+        mist_eliminator: ``wire_mesh``, ``vane_pack``, ``axial_cyclone``, ``plate_pack`` or
+            ``custom``; absent is no eliminator.
+        mist_eliminator_cut_diameter: its ``d_50``; absent takes the type's default.
+        mist_eliminator_sharpness: its sigmoid sharpness; absent takes the type's default.
+        mist_eliminator_max_efficiency: its ``eta_max``; absent takes the type's default.
+        mist_eliminator_points: a custom curve's lookup table.
+        oil_water_coalescer: ``plate_pack`` or ``custom``; absent is no coalescer.
+        oil_water_coalescer_cut_diameter: the plate pack's ``d_50``.
+        oil_water_coalescer_max_efficiency: the plate pack's maximum efficiency.
+        oil_water_coalescer_points: a custom coalescer's lookup table.
+        include_gravity_section: whether the gravity stage is included; absent is true.
+        liquid_in_gas_calibration_factor: the multiplier on the two gas entrainments.
+        gas_carry_under_calibration_factor: the multiplier on the two carry-unders.
+        liquid_liquid_calibration_factor: the multiplier on the two liquid-liquid fractions.
+
+    Raises:
+        InvalidInputError: for a value outside its declared range, an undeclared name, a
+            distribution whose fields are not stated together, a curve missing what its type
+            requires, or a lookup table on a type that does not read one.
+
+    See :func:`azoth.process.reference.separator_performance`.
+    """
+    return resolve(_SEPARATOR_PERFORMANCE)(  # type: ignore[no-any-return]
+        gas_density=gas_density,
+        oil_density=oil_density,
+        water_density=water_density,
+        gas_viscosity=gas_viscosity,
+        oil_viscosity=oil_viscosity,
+        water_viscosity=water_viscosity,
+        gas_velocity=gas_velocity,
+        vessel_diameter=vessel_diameter,
+        vessel_length=vessel_length,
+        orientation=orientation,
+        liquid_level_fraction=liquid_level_fraction,
+        mist_position=mist_position,
+        weir_position=weir_position,
+        gas_liquid_distribution=gas_liquid_distribution,
+        gas_liquid_characteristic_diameter=gas_liquid_characteristic_diameter,
+        gas_liquid_spread=gas_liquid_spread,
+        gas_bubble_distribution=gas_bubble_distribution,
+        gas_bubble_characteristic_diameter=gas_bubble_characteristic_diameter,
+        gas_bubble_spread=gas_bubble_spread,
+        oil_in_water_distribution=oil_in_water_distribution,
+        oil_in_water_characteristic_diameter=oil_in_water_characteristic_diameter,
+        oil_in_water_spread=oil_in_water_spread,
+        water_in_oil_distribution=water_in_oil_distribution,
+        water_in_oil_characteristic_diameter=water_in_oil_characteristic_diameter,
+        water_in_oil_spread=water_in_oil_spread,
+        mist_eliminator=mist_eliminator,
+        mist_eliminator_cut_diameter=mist_eliminator_cut_diameter,
+        mist_eliminator_sharpness=mist_eliminator_sharpness,
+        mist_eliminator_max_efficiency=mist_eliminator_max_efficiency,
+        mist_eliminator_points=mist_eliminator_points,
+        oil_water_coalescer=oil_water_coalescer,
+        oil_water_coalescer_cut_diameter=oil_water_coalescer_cut_diameter,
+        oil_water_coalescer_max_efficiency=oil_water_coalescer_max_efficiency,
+        oil_water_coalescer_points=oil_water_coalescer_points,
+        include_gravity_section=include_gravity_section,
+        liquid_in_gas_calibration_factor=liquid_in_gas_calibration_factor,
+        gas_carry_under_calibration_factor=gas_carry_under_calibration_factor,
+        liquid_liquid_calibration_factor=liquid_liquid_calibration_factor,
+        enhanced=enhanced,
+        inlet_pipe_diameter=inlet_pipe_diameter,
+        surface_tension=surface_tension,
+        oil_water_interfacial_tension=oil_water_interfacial_tension,
+        oil_volume_fraction=oil_volume_fraction,
+        apply_turbulence_correction=apply_turbulence_correction,
+        inlet_device=inlet_device,
+        override_bulk_efficiency=override_bulk_efficiency,
+        override_dsd_multiplier=override_dsd_multiplier,
+        design_k_factor=design_k_factor,
+        liquid_liquid_residence_time=liquid_liquid_residence_time,
     )
 
 
@@ -1550,6 +2512,15 @@ def throttling_valve(
     inlet_p: Q,
     inlet_t: Q,
     outlet_pressure: Q,
+    valve_opening: float | None = None,
+    kv: float | None = None,
+    fouling_fraction: float | None = None,
+    valve_characterization: str | None = None,
+    xt: float | None = None,
+    allow_choked: bool | None = None,
+    is_calc_pressure: bool | None = None,
+    is_isothermal: bool | None = None,
+    sizing_standard: str | None = None,
 ) -> ThrottlingValveResult:
     """Drop a stream to a lower pressure without heat or work.
 
@@ -1570,6 +2541,15 @@ def throttling_valve(
         inlet_p=inlet_p,
         inlet_t=inlet_t,
         outlet_pressure=outlet_pressure,
+        valve_opening=valve_opening,
+        kv=kv,
+        fouling_fraction=fouling_fraction,
+        valve_characterization=valve_characterization,
+        xt=xt,
+        allow_choked=allow_choked,
+        is_calc_pressure=is_calc_pressure,
+        is_isothermal=is_isothermal,
+        sizing_standard=sizing_standard,
     )
 
 
@@ -1588,6 +2568,51 @@ def heat_exchanger(
     flow_arrangement: str = "counterflow",
     hot_outlet_temperature: Q | None = None,
     cold_outlet_temperature: Q | None = None,
+    use_delta_t: bool | None = None,
+    delta_t: Q | None = None,
+    guess_out_temperature: Q | None = None,
+    mechanical_design: bool | None = None,
+    mechanical_type: str | None = None,
+    mechanical_selection: str | None = None,
+    use_rating_pressure_drop: bool | None = None,
+    rating_area: Q | None = None,
+    rating_tube_side: str | None = None,
+    rating_tube_outside_diameter: Q | None = None,
+    rating_tube_inside_diameter: Q | None = None,
+    rating_tube_length: Q | None = None,
+    rating_tube_count: float | None = None,
+    rating_tube_passes: float | None = None,
+    rating_tube_pitch: Q | None = None,
+    rating_triangular_pitch: bool | None = None,
+    rating_shell_inside_diameter: Q | None = None,
+    rating_baffle_spacing: Q | None = None,
+    rating_baffle_count: float | None = None,
+    rating_baffle_cut: float | None = None,
+    rating_tube_wall_conductivity: Q | None = None,
+    rating_fouling_tube: float | None = None,
+    rating_fouling_shell: float | None = None,
+    rating_tube_fouling_layer_thickness: Q | None = None,
+    rating_tube_fouling_layer_conductivity: Q | None = None,
+    rating_shell_side_method: str | None = None,
+    rating_shell_viscosity_wall: Q | None = None,
+    rating_has_sealing: bool | None = None,
+    rating_sealing_pairs: float | None = None,
+    rating_tube_to_baffle_clearance: Q | None = None,
+    rating_shell_to_baffle_clearance: Q | None = None,
+    rating_bypass_area: Q | None = None,
+    time_step: Q | None = None,
+    dynamic_model_enabled: bool | None = None,
+    transient_tube_side: str | None = None,
+    wall_mass: Q | None = None,
+    wall_cp: Q | None = None,
+    wall_temperature: Q | None = None,
+    shell_holdup_volume: Q | None = None,
+    tube_holdup_volume: Q | None = None,
+    shell_side_htc: Q | None = None,
+    tube_side_htc: Q | None = None,
+    heat_transfer_area: Q | None = None,
+    shell_fluid_temperature: Q | None = None,
+    tube_fluid_temperature: Q | None = None,
 ) -> HeatExchangerResult:
     """Exchange heat between two streams.
 
@@ -1599,7 +2624,9 @@ def heat_exchanger(
 
     The default mode is the **effectiveness-NTU rating** its NeqSim class runs: ``ua`` and
     ``flow_arrangement`` size the exchanger and the duty is what comes out. Pinning one
-    outlet temperature is the other mode, and it energy-balances the opposite side.
+    outlet temperature is the other mode, and it energy-balances the opposite side. A stated
+    ``time_step`` is one ``runTransient`` step; the wall and holdup temperatures are carried
+    back in as inputs.
 
     Raises:
         InvalidInputError: where neither or both outlet temperatures are given, where the
@@ -1623,6 +2650,51 @@ def heat_exchanger(
         flow_arrangement=flow_arrangement,
         hot_outlet_temperature=hot_outlet_temperature,
         cold_outlet_temperature=cold_outlet_temperature,
+        use_delta_t=use_delta_t,
+        delta_t=delta_t,
+        guess_out_temperature=guess_out_temperature,
+        mechanical_design=mechanical_design,
+        mechanical_type=mechanical_type,
+        mechanical_selection=mechanical_selection,
+        use_rating_pressure_drop=use_rating_pressure_drop,
+        rating_area=rating_area,
+        rating_tube_side=rating_tube_side,
+        rating_tube_outside_diameter=rating_tube_outside_diameter,
+        rating_tube_inside_diameter=rating_tube_inside_diameter,
+        rating_tube_length=rating_tube_length,
+        rating_tube_count=rating_tube_count,
+        rating_tube_passes=rating_tube_passes,
+        rating_tube_pitch=rating_tube_pitch,
+        rating_triangular_pitch=rating_triangular_pitch,
+        rating_shell_inside_diameter=rating_shell_inside_diameter,
+        rating_baffle_spacing=rating_baffle_spacing,
+        rating_baffle_count=rating_baffle_count,
+        rating_baffle_cut=rating_baffle_cut,
+        rating_tube_wall_conductivity=rating_tube_wall_conductivity,
+        rating_fouling_tube=rating_fouling_tube,
+        rating_fouling_shell=rating_fouling_shell,
+        rating_tube_fouling_layer_thickness=rating_tube_fouling_layer_thickness,
+        rating_tube_fouling_layer_conductivity=rating_tube_fouling_layer_conductivity,
+        rating_shell_side_method=rating_shell_side_method,
+        rating_shell_viscosity_wall=rating_shell_viscosity_wall,
+        rating_has_sealing=rating_has_sealing,
+        rating_sealing_pairs=rating_sealing_pairs,
+        rating_tube_to_baffle_clearance=rating_tube_to_baffle_clearance,
+        rating_shell_to_baffle_clearance=rating_shell_to_baffle_clearance,
+        rating_bypass_area=rating_bypass_area,
+        time_step=time_step,
+        dynamic_model_enabled=dynamic_model_enabled,
+        transient_tube_side=transient_tube_side,
+        wall_mass=wall_mass,
+        wall_cp=wall_cp,
+        wall_temperature=wall_temperature,
+        shell_holdup_volume=shell_holdup_volume,
+        tube_holdup_volume=tube_holdup_volume,
+        shell_side_htc=shell_side_htc,
+        tube_side_htc=tube_side_htc,
+        heat_transfer_area=heat_transfer_area,
+        shell_fluid_temperature=shell_fluid_temperature,
+        tube_fluid_temperature=tube_fluid_temperature,
     )
 
 
@@ -1637,6 +2709,25 @@ def gibbs_reactor(
     max_iterations: float,
     convergence_tolerance: float,
     min_iterations: float,
+    reactor_type: str | None = None,
+    catalyst_bulk_density: float | None = None,
+    catalyst_particle_diameter: float | None = None,
+    bed_void_fraction: float | None = None,
+    ghsv: float | None = None,
+    lhsv: float | None = None,
+    number_of_beds: int | None = None,
+    max_operation_pressure: float | None = None,
+    max_operation_temperature: float | None = None,
+    joint_efficiency: float | None = None,
+    corrosion_allowance: float | None = None,
+    armijo_line_search: bool | None = None,
+    armijo_c1: float | None = None,
+    armijo_rho: float | None = None,
+    armijo_max_backtracks: int | None = None,
+    adaptive_step_size: bool | None = None,
+    regularization: bool | None = None,
+    regularization_threshold: float | None = None,
+    regularization_tau: float | None = None,
 ) -> GibbsReactorResult:
     """Bring a feed to its Gibbs equilibrium at its own temperature and pressure.
 
@@ -1652,6 +2743,11 @@ def gibbs_reactor(
     rows stop there rather than on the tolerance. A run that reaches ``max_iterations`` still
     succeeds, with ``converged`` false.
 
+    **The vessel is ``ReactorMechanicalDesign``, and it is read from the feed.** The eleven
+    mechanical inputs default to the class's own field initialisers, so omitting them gives the
+    class's design rather than no design; ``ghsv`` and ``lhsv`` are reciprocal hours and cross
+    unconverted, the unit vocabulary having no reciprocal-time unit.
+
     See :func:`azoth.process.reference.gibbs_reactor`.
     """
     return resolve(_GIBBS_REACTOR)(  # type: ignore[no-any-return]
@@ -1665,4 +2761,23 @@ def gibbs_reactor(
         max_iterations=max_iterations,
         convergence_tolerance=convergence_tolerance,
         min_iterations=min_iterations,
+        reactor_type=reactor_type,
+        catalyst_bulk_density=catalyst_bulk_density,
+        catalyst_particle_diameter=catalyst_particle_diameter,
+        bed_void_fraction=bed_void_fraction,
+        ghsv=ghsv,
+        lhsv=lhsv,
+        number_of_beds=number_of_beds,
+        max_operation_pressure=max_operation_pressure,
+        max_operation_temperature=max_operation_temperature,
+        joint_efficiency=joint_efficiency,
+        corrosion_allowance=corrosion_allowance,
+        armijo_line_search=armijo_line_search,
+        armijo_c1=armijo_c1,
+        armijo_rho=armijo_rho,
+        armijo_max_backtracks=armijo_max_backtracks,
+        adaptive_step_size=adaptive_step_size,
+        regularization=regularization,
+        regularization_threshold=regularization_threshold,
+        regularization_tau=regularization_tau,
     )

@@ -4,6 +4,8 @@
 
 `eos.liquid_viscosity_pure`
 
+Pure-liquid viscosity from the LIQVISC correlation, with its pressure correction. Use it for pump and line pressure-drop screening when no measured viscosity is available.
+
 ## Equation
 
 $$
@@ -24,12 +26,24 @@ The LIQVISC model's form, times NeqSim's Lucas pressure correction: model 1 is `
 
 DOI: [10.1002/cite.330530107](https://doi.org/10.1002/cite.330530107)
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **NeqSim's two classes carry this ladder and disagree in one branch**: the common-phase one leaves model 2 **empty** (the component comes out at `0` cP), the liquid one implements it as `exp(l1 + l2/T)`. `form` selects which, because a phase gets whichever class its viscosity model extends.
+
+- **both are on the rate-based column's path**: an oil phase's `PFCTViscosityMethodHeavyOil` inherits the common-phase class, so its n-butane comes out at zero, where an aqueous phase's "polynom" model is the liquid class.
+
+- the result is in Pa*s, where NeqSim's own value is in cP; the `1e-3` is the port's conversion and not part of the correlation.
+
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
-| `form` | common_phase / liquid | Which of NeqSim's two ladders: `common_phase`, whose model 2 branch is empty, or `liquid`, which implements it. See the assumptions. |
-| `model` | dimensionless | The component's LIQVISC model index: 1, 2, 3 or 4. Zero - NeqSim's `LIQVISC5` absent or unset - answers the `0.7` cP sentinel. |
+| `form` | common_phase / liquid | Which LIQVISC ladder to use: `common_phase` or `liquid`. |
+| `model` | dimensionless | The component's LIQVISC model index: 1, 2, 3 or 4. Zero answers the 0.7 cP sentinel. |
 | `l1` | dimensionless | The component's `LIQVISC1`, whose unit depends on the model. |
 | `l2` | dimensionless | `LIQVISC2`. |
 | `l3` | dimensionless | `LIQVISC3`, read by model 3 only. |
@@ -57,7 +71,7 @@ DOI: [10.1002/cite.330530107](https://doi.org/10.1002/cite.330530107)
 | `Pc > 0` | raises | `P/Pc` is the reduced pressure. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
@@ -65,14 +79,7 @@ satisfy for the result to mean what it says.
 
 - **this is not the phase's viscosity.** It is one component's, at the phase's `(T, P)` and by the component's own LIQVISC parameters - the `eta_B` the liquid diffusivity correlations take, where the phase's own viscosity is PFCT's and a different number.
 
-- **NeqSim's two classes carry this ladder and disagree in one branch**: the common-phase one leaves model 2 **empty** (the component comes out at `0` cP), the liquid one implements it as `exp(l1 + l2/T)`. `form` selects which, because a phase gets whichever class its viscosity model extends.
-
-- **both are on the rate-based column's path**: an oil phase's `PFCTViscosityMethodHeavyOil` inherits the common-phase class, so its n-butane comes out at zero, where an aqueous phase's "polynom" model is the liquid class.
-
-- above the component's critical temperature the answer is `0.5` cP whatever the model, and a component with no model index at all answers `0.7` - NeqSim's two sentinels.
-
-- the result is in Pa*s, where NeqSim's own value is in cP; the `1e-3` is the port's conversion and not part of the correlation.
-
+- Above the component's critical temperature the answer is 0.5 cP whatever the model, and a component with no model index answers 0.7 cP.
 
 
 

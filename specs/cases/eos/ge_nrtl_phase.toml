@@ -46,7 +46,7 @@ gamma_inf = [1.0, 0.01292126340509809]
 [[cases]]
 id = "methanol_co2_at_298_15_k_10_bar"
 tolerance = 1e-09
-source = "NeqSim master `PhaseGENRTL`, as the aqueous case: validation/neqsim/GeHenryProbe.java and captures/ge_henry_probe.tsv. **The no-water arm.** With no water component there is no IAPWS reference and no pair, so `H` is the databank's CO2 row (`51.654509287851646` bar) and `gamma^inf` is the full composition cloned with CO2 at `x = 1e-10` and the rest renormalised."
+source = "NeqSim master `PhaseGENRTL`, as the aqueous case: validation/neqsim/GeHenryProbe.java and captures/ge_henry_probe.tsv. **The no-water arm.** With no water component there is no IAPWS reference and no pair, so `H` is the databank's CO2 row - `28.95` bar after upstream PR #4045 re-sourced `COMP.csv` - and `gamma^inf` is the full composition cloned with CO2 at `x = 1e-10` and the rest renormalised."
 [cases.inputs]
 components = ["methanol", "CO2"]
 T = 298.15
@@ -55,14 +55,14 @@ x = [0.98, 0.02]
 [cases.expected]
 gamma = [1.0549706965727317, 9.265615100322021]
 ln_gamma = [0.05351299078183234, 2.2263102472068073]
-ln_phi = [-4.024520470177667, -7.865632584786245]
+ln_phi = [-4.024520470177667, -8.444639877223903]
 p_sat = [16940.747558344778, 0.0]
-henry = [0.0, 5165450.928785165]
+henry = [0.0, 2895000.000000065]
 gamma_inf = [1.0, 124733.5617579047]
 [[cases]]
 id = "water_methane_at_298_15_k_1_bar"
 tolerance = 1e-09
-source = "NeqSim master `PhaseGENRTL`, as the aqueous case: validation/neqsim/GeHenryProbe.java and captures/ge_henry_probe.tsv. Methane's databank row is the `900` sentinel, which would cap to `1e12`; in a water-bearing phase the IAPWS table shadows it and answers `39479.65646000571` bar instead. The same state's `GeNrtlPhi` driver is unavailable because methane is a solute."
+source = "NeqSim master `PhaseGENRTL`, as the aqueous case: validation/neqsim/GeHenryProbe.java and captures/ge_henry_probe.tsv. Methane's databank row is now fitted (`723.75` bar); in a water-bearing phase the IAPWS table shadows it and answers `39479.65646000571` bar instead. The same state's `GeNrtlPhi` driver is unavailable because methane is a solute."
 [cases.inputs]
 components = ["water", "methane"]
 T = 298.15

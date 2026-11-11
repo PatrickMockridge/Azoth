@@ -4,6 +4,8 @@
 
 `eos.tyn_calus_diffusivity`
 
+Liquid binary diffusivity from the Tyn-Calus correlation. Use it for liquid-phase mass-transfer screening when molar volumes and viscosity are known.
+
 ## Equation
 
 $$
@@ -23,6 +25,14 @@ D = 8.93e-8 * VB**0.267 * T / (eta*VA**0.433)   [cm**2/s],  with VA and VB in cm
 Diffusion coefficients in dilute binary liquid mixtures. J. Chem. Eng. Data 20(1), 106-109
 
 DOI: [10.1021/je60064a006](https://doi.org/10.1021/je60064a006)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- `eta` is the *solvent* viscosity at `T`, in the same unit the correlation expects (cP); a caller converts a Pa*s viscosity by multiplying by 1000.
+
 
 ## Inputs
 
@@ -48,7 +58,7 @@ DOI: [10.1021/je60064a006](https://doi.org/10.1021/je60064a006)
 | `T > 0` | raises | An absolute temperature; zero and below are not states. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
@@ -56,9 +66,7 @@ satisfy for the result to mean what it says.
 
 - `VA` and `VB` are the solute and solvent liquid molar volumes at the normal boiling point; the caller gets them as `M/rho_normal`, or the Tyn-Calus estimate `0.285*Vc**1.048` when the density is unknown.
 
-- `eta` is the *solvent* viscosity at `T`, in the same unit the correlation expects (cP); a caller converts a Pa*s viscosity by multiplying by 1000.
-
-- the molar volumes and viscosity are clamped to NeqSim's `[20, 600]` cm**3/mol and `[0.01, 500]` cP; the correlation is not applied outside them.
+- the molar volumes and viscosity are clamped to `[20, 600]` cm**3/mol and `[0.01, 500]` cP; the correlation is not applied outside them.
 
 - the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.
 

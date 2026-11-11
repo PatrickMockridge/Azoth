@@ -188,6 +188,23 @@ def ejector(
         diffuser_velocity=(
             None if states.diffuser_velocity is None else from_si(states.diffuser_velocity, "m/s")
         ),
+        motive_nozzle_throat_area=from_si(states.motive_nozzle_throat_area, "m**2"),
+        motive_nozzle_diameter=from_si(states.motive_nozzle_diameter, "m"),
+        suction_inlet_area=from_si(states.suction_inlet_area, "m**2"),
+        suction_inlet_diameter=from_si(states.suction_inlet_diameter, "m"),
+        mixing_chamber_area=from_si(states.mixing_chamber_area, "m**2"),
+        mixing_chamber_diameter=from_si(states.mixing_chamber_diameter, "m"),
+        diffuser_outlet_area=from_si(states.diffuser_outlet_area, "m**2"),
+        diffuser_outlet_diameter=from_si(states.diffuser_outlet_diameter, "m"),
+        motive_nozzle_effective_length=from_si(states.motive_nozzle_effective_length, "m"),
+        suction_inlet_length=from_si(states.suction_inlet_length, "m"),
+        mixing_chamber_length=from_si(states.mixing_chamber_length, "m"),
+        diffuser_outlet_length=from_si(states.diffuser_outlet_length, "m"),
+        body_volume=from_si(states.body_volume, "m**3"),
+        connected_piping_volume=from_si(states.connected_piping_volume, "m**3"),
+        total_volume=from_si(states.total_volume, "m**3"),
+        suction_connection_length=from_si(states.suction_connection_length, "m"),
+        discharge_connection_length=from_si(states.discharge_connection_length, "m"),
         warnings=tuple(warnings),
     )
 
@@ -217,6 +234,25 @@ class EjectorStates:
     mixing_velocity: float | None
     #: The diffuser's design velocity, m/s, or ``None``.
     diffuser_velocity: float | None
+    #: The mechanical design container, in SI. **Zero throughout when nothing flowed**,
+    #: which is ``resetDesign``'s own state rather than an absence.
+    motive_nozzle_throat_area: float
+    motive_nozzle_diameter: float
+    suction_inlet_area: float
+    suction_inlet_diameter: float
+    mixing_chamber_area: float
+    mixing_chamber_diameter: float
+    diffuser_outlet_area: float
+    diffuser_outlet_diameter: float
+    motive_nozzle_effective_length: float
+    suction_inlet_length: float
+    mixing_chamber_length: float
+    diffuser_outlet_length: float
+    body_volume: float
+    connected_piping_volume: float
+    total_volume: float
+    suction_connection_length: float
+    discharge_connection_length: float
 
 
 def _route(
@@ -274,6 +310,24 @@ def _route(
             suction_nozzle_velocity=None,
             mixing_velocity=None,
             diffuser_velocity=None,
+            # `resetDesign`: every mechanical-design field is zero, not absent.
+            motive_nozzle_throat_area=0.0,
+            motive_nozzle_diameter=0.0,
+            suction_inlet_area=0.0,
+            suction_inlet_diameter=0.0,
+            mixing_chamber_area=0.0,
+            mixing_chamber_diameter=0.0,
+            diffuser_outlet_area=0.0,
+            diffuser_outlet_diameter=0.0,
+            motive_nozzle_effective_length=0.0,
+            suction_inlet_length=0.0,
+            mixing_chamber_length=0.0,
+            diffuser_outlet_length=0.0,
+            body_volume=0.0,
+            connected_piping_volume=0.0,
+            total_volume=0.0,
+            suction_connection_length=0.0,
+            discharge_connection_length=0.0,
         )
 
     mixing_bar = _estimate_mixing_pressure(suction_bar, discharge_bar, motive_mass, suction_mass)
@@ -297,6 +351,12 @@ def _route(
     motive_actual_mass_h = motive_mass_h - efficiencies["motive_nozzle_efficiency"] * (
         motive_mass_h - motive_isentropic_h / motive_molar_mass
     )
+    # The motive's own state at the mixing pressure is the class's *area* calculation - the
+    # density the throat area is built on - and no other quantity reads it.
+    motive_at_mixing_t = _flash_at_enthalpy(
+        motive, motive_gas, mixing_p, motive_actual_mass_h * motive_molar_mass, motive_z
+    )
+    motive_density = max(_corrected_density(motive, motive_at_mixing_t, mixing_p, motive_z), 1.0e-9)
     nozzle_velocity = (2.0 * max(motive_mass_h - motive_actual_mass_h, 0.0)) ** 0.5
 
     # The suction nozzle, the same route with its own efficiency.
@@ -337,7 +397,10 @@ def _route(
     )
     joined, joined_gas = _fluid(joined_components)
     joined_molar_mass = _molar_mass(joined, joined_z)
-    _flash_at_enthalpy(joined, joined_gas, mixing_p, mixed_static_h * joined_molar_mass, joined_z)
+    mixing_t = _flash_at_enthalpy(
+        joined, joined_gas, mixing_p, mixed_static_h * joined_molar_mass, joined_z
+    )
+    mixing_density = max(_corrected_density(joined, mixing_t, mixing_p, joined_z), 1.0e-9)
 
     recovered = efficiencies["diffuser_efficiency"] * 0.5 * mixing_velocity**2
     before_diffuser = mixed_static_h + recovered
@@ -358,6 +421,37 @@ def _route(
     final_state_h, _ = enthalpy_at(
         joined, joined_gas, temperature.to("K").magnitude, discharge_pressure, joined_z
     )
+
+    # `updateDesign`'s container: four areas, their diameters, the fixed length multiples and
+    # the two pressure-ratio connection estimates.
+    motive_area = motive_mass / (motive_density * max(nozzle_velocity, 1.0e-6))
+    suction_area = suction_mass / (drawn_density * max(design_suction_velocity, 1.0e-6))
+    mixing_area = total_mass / (mixing_density * max(mixing_velocity, 1.0e-6))
+    diffuser_area = total_mass / (diffuser_density * max(design_diffuser_velocity, 1.0e-6))
+    motive_diameter = _area_to_diameter(motive_area)
+    suction_diameter = _area_to_diameter(suction_area)
+    mixing_diameter = _area_to_diameter(mixing_area)
+    diffuser_diameter = _area_to_diameter(diffuser_area)
+    motive_length = _estimated_length(motive_diameter, NOZZLE_LENGTH_FACTOR)
+    suction_length = _estimated_length(suction_diameter, SUCTION_LENGTH_FACTOR)
+    mixing_length = _estimated_length(mixing_diameter, MIXING_LENGTH_FACTOR)
+    diffuser_length = _estimated_length(diffuser_diameter, DIFFUSER_LENGTH_FACTOR)
+    suction_connection_length = _estimate_suction_connection_length(
+        suction_diameter, suction_bar, discharge_bar
+    )
+    discharge_connection_length = _estimate_discharge_connection_length(
+        diffuser_diameter, mixing_bar, discharge_bar
+    )
+    body_volume = (
+        _cylinder_volume(motive_area, motive_length)
+        + _cylinder_volume(suction_area, suction_length)
+        + _cylinder_volume(mixing_area, mixing_length)
+        + _cylinder_volume(diffuser_area, diffuser_length)
+    )
+    connected_piping_volume = _cylinder_volume(
+        suction_area, suction_connection_length
+    ) + _cylinder_volume(diffuser_area, discharge_connection_length)
+
     return EjectorStates(
         n=joined_n,
         z=tuple(joined_z),
@@ -371,6 +465,23 @@ def _route(
         suction_nozzle_velocity=design_suction_velocity,
         mixing_velocity=mixing_velocity,
         diffuser_velocity=design_diffuser_velocity,
+        motive_nozzle_throat_area=motive_area,
+        motive_nozzle_diameter=motive_diameter,
+        suction_inlet_area=suction_area,
+        suction_inlet_diameter=suction_diameter,
+        mixing_chamber_area=mixing_area,
+        mixing_chamber_diameter=mixing_diameter,
+        diffuser_outlet_area=diffuser_area,
+        diffuser_outlet_diameter=diffuser_diameter,
+        motive_nozzle_effective_length=motive_length,
+        suction_inlet_length=suction_length,
+        mixing_chamber_length=mixing_length,
+        diffuser_outlet_length=diffuser_length,
+        body_volume=body_volume,
+        connected_piping_volume=connected_piping_volume,
+        total_volume=body_volume + connected_piping_volume,
+        suction_connection_length=suction_connection_length,
+        discharge_connection_length=discharge_connection_length,
     )
 
 
@@ -437,6 +548,7 @@ def _corrected_density(mixture: Any, temperature: Q, p_si: float, z: list[float]
     ``getDensity("kg/m3")`` reports - the class's own estimates are built from it.
     """
     from azoth.core.result import Phase as _Phase
+    from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
     from azoth.eos.reference.pt_flash import pt_flash
 
     t_si = temperature.to("K").magnitude
@@ -447,7 +559,13 @@ def _corrected_density(mixture: Any, temperature: Q, p_si: float, z: list[float]
         raise InvalidInputError(
             "stream", f"a two-phase state at {t_si} K has no one density for the estimates"
         )
-    root = flash.z_vapour if flash.phase is _Phase.ALL_VAPOUR else flash.z_liquid
+    # **The root is taken at the stream's own composition, not the flash's trial phases.**
+    # A negative flash reports a vapour fraction outside `[0, 1]` and a pair of hypothetical
+    # phase compositions whose roots are not the feed's - and this is what
+    # `Stream::single_phase_root` fixes on the Rust side.
+    reduced = reduced_parameters(mixture, t_si, p_si)
+    kij = mixture.effective_kij(reduced.t_kelvin)
+    root = phase_state(reduced, kij, list(z), liquid=flash.phase is not _Phase.ALL_VAPOUR).z
     volume = pr_molar_volume(root, from_si(t_si, "K"), from_si(p_si, "Pa")).v
     molar_mass = _molar_mass(mixture, z)
     corrected = volume.to("m**3/mol").magnitude - mixture.volume_shift(z)
@@ -538,6 +656,66 @@ def _log10(value: float) -> float:
 def _clamp(value: float, low: float, max_: float) -> float:
     """``Math.max(min, Math.min(value, max))``, in the argument order the class uses."""
     return max(low, min(value, max_))
+
+
+#: The class's four fixed length multiples of a stage's own diameter.
+NOZZLE_LENGTH_FACTOR = 3.0
+SUCTION_LENGTH_FACTOR = 2.5
+MIXING_LENGTH_FACTOR = 4.0
+DIFFUSER_LENGTH_FACTOR = 6.0
+
+
+def _area_to_diameter(area: float) -> float:
+    """``diameterFromArea``: a circle's diameter, zero for a stage that got no area."""
+    from math import pi, sqrt
+
+    if area <= 0.0:
+        return 0.0
+    return sqrt(4.0 * area / pi)
+
+
+def _estimated_length(diameter: float, factor: float) -> float:
+    """``estimateLength``: the fixed multiple, zeroed on the same guard."""
+    if diameter <= 0.0 or factor <= 0.0:
+        return 0.0
+    return factor * diameter
+
+
+def _cylinder_volume(area: float, length: float) -> float:
+    """``cylinderVolume``: the stage's swept volume, zeroed on the same guard."""
+    if area <= 0.0 or length <= 0.0:
+        return 0.0
+    return area * length
+
+
+def _estimate_suction_connection_length(
+    diameter: float, suction_pressure: float, discharge_pressure: float
+) -> float:
+    """``estimateSuctionConnectionLength``, in bara - the pressure enters as a ratio."""
+    if diameter <= 0.0:
+        return 0.0
+    ratio = (
+        discharge_pressure / suction_pressure
+        if discharge_pressure > 0.0 and suction_pressure > 0.0
+        else 1.0
+    )
+    factor = 3.0 + 1.5 * _clamp(ratio - 1.0, 0.0, 3.0)
+    return factor * diameter
+
+
+def _estimate_discharge_connection_length(
+    diameter: float, mixing_pressure: float, discharge_pressure: float
+) -> float:
+    """``estimateDischargeConnectionLength``, in bara."""
+    if diameter <= 0.0:
+        return 0.0
+    ratio = (
+        discharge_pressure / mixing_pressure
+        if discharge_pressure > 0.0 and mixing_pressure > 0.0
+        else 1.0
+    )
+    factor = 5.0 + 2.0 * _clamp(ratio - 1.0, 0.0, 3.0)
+    return factor * diameter
 
 
 def _spec() -> dict[str, object]:

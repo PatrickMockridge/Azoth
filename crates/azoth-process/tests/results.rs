@@ -28,12 +28,27 @@ fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
+fn run_flowsheet(text: &str) -> SessionReport {
+    let flowsheet: Flowsheet = toml::from_str(text).expect("it parses");
+    let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
+    let session = Session::run(
+        flowsheet,
+        &palette,
+        &BTreeMap::new(),
+        ExecutionOrder::Insertion,
+    )
+    .expect("the flowsheet runs");
+    session_report(&session).expect("it writes")
+}
+
 /// **What each dispatched entry publishes**, as the model's own `FIELDS`.
 ///
 /// `None` is a real answer and not a gap: a mixer's result *is* its mixed stream and a separator's
 /// *are* its two, so a run that published them here would be the same numbers under a second key.
-/// `python/src/azoth/process/layers.py`'s `NO_INTERIOR` table names five of the same entries that
-/// way - that their kernel forms nothing their records do not carry.
+/// `python/src/azoth/process/layers.py`'s `NO_INTERIOR` table names the models that way - that
+/// their kernel forms nothing their records do not carry - and six of them are entries that
+/// publish no record here. **`process.separator` left that table when its capacity surface
+/// arrived**: utilisation and the three velocities are numbers neither outlet record carries.
 fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
     vec![
         (
@@ -50,7 +65,7 @@ fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
         // **The mixing pressure and the four velocities cross here**, none of them an input and
         // none on the discharge state: `Option`s for the one case where no fluid flowed.
         ("unit_ops.ejector", Some(models::EjectorResult::FIELDS)),
-        ("unit_ops.expander", None),
+        ("unit_ops.expander", Some(models::ExpanderResult::FIELDS)),
         ("unit_ops.filter", Some(models::FilterResult::FIELDS)),
         ("unit_ops.flare", Some(models::FlareResult::FIELDS)),
         ("unit_ops.gas_scrubber", None),
@@ -67,6 +82,10 @@ fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
         ),
         ("unit_ops.heater", Some(models::HeaterResult::FIELDS)),
         ("unit_ops.manifold", None),
+        // The map machine's executor arm runs the specified-pressure mode with no chart, so it
+        // publishes its two outlets and nothing else; the speed and the powers are the model's
+        // record, not the wire's.
+        ("unit_ops.map_turbo_expander_compressor", None),
         ("unit_ops.mixer", None),
         ("unit_ops.pipe", Some(models::PipeResult::FIELDS)),
         (
@@ -90,7 +109,9 @@ fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
             "unit_ops.shortcut_distillation_column",
             Some(models::ShortcutDistillationColumnResult::FIELDS),
         ),
-        ("unit_ops.splitter", None),
+        // **The capacity map's six optional fields cross here**, none of them on an outlet
+        // stream; the two summaries and the products are the model's own record as well.
+        ("unit_ops.splitter", Some(models::SplitterResult::FIELDS)),
         (
             "unit_ops.stirred_tank_reactor",
             Some(models::StirredTankReactorResult::FIELDS),
@@ -102,6 +123,9 @@ fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
         ("unit_ops.tank", None),
         ("unit_ops.three_phase_separator", None),
         ("unit_ops.throttling_valve", None),
+        // The machine's executor arm publishes its two outlets and nothing else, like its
+        // neighbours' - the speed and the powers are the model's record, not the wire's.
+        ("unit_ops.turbo_expander_compressor", None),
     ]
 }
 
@@ -172,6 +196,15 @@ fn the_shipped_demo_publishes_the_duty_no_stream_carries() {
     found.sort_unstable();
     assert_eq!(found, declared);
 
+    // The demo states no outlet-temperature limits, so the map is empty and its two
+    // per-constraint fields are `null`.
+    assert!(heater["max_outlet_temperature_utilization"].is_null());
+    assert!(heater["min_outlet_temperature_utilization"].is_null());
+    assert!(heater["bottleneck_constraint"].is_null());
+    assert_eq!(heater["max_utilization"].as_f64(), Some(0.0));
+    assert_eq!(heater["capacity_exceeded"].as_bool(), Some(false));
+    assert_eq!(heater["hard_limit_exceeded"].as_bool(), Some(false));
+
     // A mixer's whole answer is its stream, so it publishes nothing rather than a restatement.
     assert!(
         !report.results.contains_key("mix1"),
@@ -191,6 +224,317 @@ fn the_shipped_demo_publishes_the_duty_no_stream_carries() {
         "the mass flow crosses in the vocabulary's own unit"
     );
     assert!(vapour.molar_mass.is_some());
+}
+
+/// **The heater's bounded outlet temperatures cross the wire**, and the hard flag is the
+/// minimum's: the class reads `maxValue` for the maximum, which its setter never sets.
+#[test]
+fn the_heater_publishes_its_outlet_temperature_constraints() {
+    const BOUNDED: &str = r#"
+id = "flowsheets.heater_capacity"
+name = "One heater with outlet-temperature limits"
+
+products = ["out"]
+
+[[inputs]]
+name = "feed_1"
+components = ["methane", "n-butane"]
+n = 1.0
+z = [0.9, 0.1]
+P = 3.0e6
+T = 320.0
+
+[[instances]]
+id = "h1"
+unit = "unit_ops.heater"
+[instances.parameters]
+outlet_temperature = 380.0
+max_outlet_temperature = 400.0
+min_outlet_temperature = 300.0
+
+[[connections]]
+from = "feed_1"
+to = "h1.inlet"
+
+[[connections]]
+from = "h1.outlet"
+to = "out"
+"#;
+    let report = run_flowsheet(BOUNDED);
+    let heater = &report.results["h1"];
+    assert_eq!(
+        heater["max_outlet_temperature_utilization"].as_f64(),
+        Some(0.95)
+    );
+    assert!(
+        (heater["min_outlet_temperature_utilization"]
+            .as_f64()
+            .expect("a utilization")
+            - 300.0 / 380.0)
+            .abs()
+            < 1e-12
+    );
+    assert_eq!(heater["max_utilization"].as_f64(), Some(0.95));
+    assert_eq!(heater["capacity_exceeded"].as_bool(), Some(false));
+    assert_eq!(heater["hard_limit_exceeded"].as_bool(), Some(false));
+    assert_eq!(heater["bottleneck_constraint"], "maxOutletTemperature");
+
+    // The minimum above the outlet: exceeded, and this is the constraint that trips the
+    // class's hard flag.
+    let hard = BOUNDED.replace(
+        "min_outlet_temperature = 300.0",
+        "min_outlet_temperature = 400.0",
+    );
+    let report = run_flowsheet(&hard);
+    let heater = &report.results["h1"];
+    assert_eq!(heater["capacity_exceeded"].as_bool(), Some(true));
+    assert_eq!(heater["hard_limit_exceeded"].as_bool(), Some(true));
+    assert_eq!(heater["bottleneck_constraint"], "minOutletTemperature");
+}
+
+/// **The expander's recovered-power constraint crosses the wire**, with the two thresholds
+/// the class keeps apart: the rating for the utilization and 1.1 x it for the hard flag.
+#[test]
+fn the_expander_publishes_its_recovered_power_constraint() {
+    const BOUNDED: &str = r#"
+id = "flowsheets.expander_capacity"
+name = "One expander with a recovered-power rating"
+
+products = ["out"]
+
+[[inputs]]
+name = "feed_1"
+components = ["methane", "n-butane"]
+n = 1.0
+z = [0.9, 0.1]
+P = 6.0e6
+T = 320.0
+
+[[instances]]
+id = "e1"
+unit = "unit_ops.expander"
+[instances.parameters]
+outlet_pressure = 3.0e6
+isentropic_efficiency = 0.75
+rated_recovered_power = 2000.0
+
+[[connections]]
+from = "feed_1"
+to = "e1.inlet"
+
+[[connections]]
+from = "e1.outlet"
+to = "out"
+"#;
+    let report = run_flowsheet(BOUNDED);
+    let expander = &report.results["e1"];
+    let utilization = expander["recovered_power_utilization"]
+        .as_f64()
+        .expect("a utilization");
+    assert!(
+        (utilization - 0.5527686742449389).abs() < 1e-5,
+        "the utilization is {utilization}"
+    );
+    assert_eq!(expander["max_utilization"].as_f64(), Some(utilization));
+    assert_eq!(expander["capacity_exceeded"].as_bool(), Some(false));
+    assert_eq!(expander["hard_limit_exceeded"].as_bool(), Some(false));
+    assert_eq!(expander["bottleneck_constraint"], "recoveredPower");
+
+    // Without the rating the map is empty, and the two per-constraint fields are `null`.
+    let empty = BOUNDED.replace("rated_recovered_power = 2000.0\n", "");
+    let report = run_flowsheet(&empty);
+    let expander = &report.results["e1"];
+    assert!(expander["recovered_power_utilization"].is_null());
+    assert!(expander["bottleneck_constraint"].is_null());
+    assert_eq!(expander["max_utilization"].as_f64(), Some(0.0));
+    assert_eq!(expander["capacity_exceeded"].as_bool(), Some(false));
+    assert_eq!(expander["hard_limit_exceeded"].as_bool(), Some(false));
+}
+
+/// **The splitter's capacity map crosses the wire, and its absence is a `null`.**
+///
+/// The map's six per-constraint fields are `Option`s because the class's constraints are lazy:
+/// a fresh `Splitter` has none. One flowsheet sizes the header and enables analysis, so the
+/// velocity crosses; the other leaves the four inputs out, so the six are `null` and the two
+/// summaries are the class's empty-map answers. The keys are `FIELDS` exactly, as for the
+/// heater.
+#[test]
+fn the_splitter_publishes_its_capacity_map() {
+    const SIZED: &str = r#"
+id = "flowsheets.splitter_capacity"
+name = "One splitter with a sized header"
+
+products = ["light", "heavy"]
+
+[[inputs]]
+name = "feed_1"
+components = ["n-butane", "n-pentane"]
+n = 1.0
+z = [0.6, 0.4]
+P = 1.0e6
+T = 300.0
+
+[[instances]]
+id = "split1"
+unit = "unit_ops.splitter"
+[instances.parameters]
+split_factors = [0.3, 0.7]
+header_diameter = 0.02
+capacity_analysis_enabled = true
+
+[[connections]]
+from = "feed_1"
+to = "split1.feed"
+
+[[connections]]
+from = "split1.products[0]"
+to = "light"
+
+[[connections]]
+from = "split1.products[1]"
+to = "heavy"
+"#;
+    let report = run_flowsheet(SIZED);
+    let split = &report.results["split1"];
+
+    let mut found: Vec<&str> = split
+        .as_object()
+        .expect("an object")
+        .keys()
+        .map(String::as_str)
+        .collect();
+    let mut declared: Vec<&str> = models::SplitterResult::FIELDS.to_vec();
+    found.sort_unstable();
+    declared.sort_unstable();
+    assert_eq!(found, declared);
+
+    assert_eq!(split["pressure_drop_value"]["unit"], "Pa");
+    assert_eq!(
+        split["pressure_drop_value"]["magnitude_si"].as_f64(),
+        Some(0.0)
+    );
+    assert_eq!(split["velocity_value"]["unit"], "m/s");
+    assert_eq!(
+        split["velocity_design"]["magnitude_si"].as_f64(),
+        Some(30.0)
+    );
+    let velocity = split["velocity_value"]["magnitude_si"]
+        .as_f64()
+        .expect("a magnitude");
+    assert!(
+        (velocity - 0.34597673984807986).abs() < 1e-12,
+        "the velocity is {velocity}"
+    );
+    assert_eq!(split["capacity_exceeded"].as_bool(), Some(false));
+    assert_eq!(split["bottleneck_constraint"], "velocity");
+    let products: Vec<f64> = split["products_n"]
+        .as_array()
+        .expect("a vector")
+        .iter()
+        .map(|n| n.as_f64().expect("a flow"))
+        .collect();
+    assert_eq!(products.len(), 2);
+    assert!((products[0] - 0.3).abs() < 1e-12 && (products[1] - 0.7).abs() < 1e-12);
+
+    // The same flowsheet with the four capacity inputs left out: the class's fresh Splitter.
+    let empty = SIZED.replace(
+        "header_diameter = 0.02\ncapacity_analysis_enabled = true\n",
+        "",
+    );
+    let report = run_flowsheet(&empty);
+    let split = &report.results["split1"];
+    for field in [
+        "pressure_drop_value",
+        "pressure_drop_design",
+        "pressure_drop_utilization",
+        "velocity_value",
+        "velocity_design",
+        "velocity_utilization",
+        "bottleneck_constraint",
+        "design_header_diameter",
+        "design_branch_diameter",
+        "design_header_length",
+        "design_wall_thickness",
+        "manifold_volume",
+        "design_total_pressure_drop",
+        "header_weight",
+        "branch_weight",
+        "total_weight",
+    ] {
+        assert!(split[field].is_null(), "`{field}` is {:?}", split[field]);
+    }
+    assert_eq!(split["max_utilization"].as_f64(), Some(0.0));
+    assert_eq!(split["capacity_exceeded"].as_bool(), Some(false));
+}
+
+/// **The mechanical design crosses the wire, and the capacity map reads the header it sized.**
+///
+/// `calcDesign` is the caller's explicit call, so `mechanical_design` is the flowsheet's flag.
+/// The design's nine fields are the record's, not the stream's, and the velocity beside them is
+/// read against the NPS-rounded header rather than a stated one.
+#[test]
+fn the_splitter_publishes_its_mechanical_design() {
+    const DESIGNED: &str = r#"
+id = "flowsheets.splitter_design"
+name = "One splitter with a sized header"
+
+products = ["light", "heavy"]
+
+[[inputs]]
+name = "feed_1"
+components = ["n-butane", "n-pentane"]
+n = 1.0
+z = [0.6, 0.4]
+P = 1.0e6
+T = 300.0
+
+[[instances]]
+id = "split1"
+unit = "unit_ops.splitter"
+[instances.parameters]
+split_factors = [0.3, 0.7]
+mechanical_design = true
+capacity_analysis_enabled = true
+
+[[connections]]
+from = "feed_1"
+to = "split1.feed"
+
+[[connections]]
+from = "split1.products[0]"
+to = "light"
+
+[[connections]]
+from = "split1.products[1]"
+to = "heavy"
+"#;
+    let report = run_flowsheet(DESIGNED);
+    let split = &report.results["split1"];
+
+    assert_eq!(split["design_header_diameter"]["unit"], "m");
+    assert_eq!(
+        split["design_header_diameter"]["magnitude_si"].as_f64(),
+        Some(0.0127)
+    );
+    assert_eq!(
+        split["design_wall_thickness"]["magnitude_si"].as_f64(),
+        Some(0.003)
+    );
+    assert_eq!(
+        split["design_header_length"]["magnitude_si"].as_f64(),
+        Some(1.5)
+    );
+    assert_eq!(split["header_weight"]["unit"], "kg");
+    assert_eq!(split["design_total_pressure_drop"]["unit"], "Pa");
+    assert_eq!(split["manifold_volume"]["unit"], "m**3");
+    let velocity = split["velocity_value"]["magnitude_si"]
+        .as_f64()
+        .expect("a magnitude");
+    assert!(
+        (velocity - 0.8580239773996624).abs() < 1e-6,
+        "the velocity is {velocity}"
+    );
+    assert_eq!(split["bottleneck_constraint"], "velocity");
 }
 
 /// **A result is the last pass's, and it agrees with the stream the same pass published.**

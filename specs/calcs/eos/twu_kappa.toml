@@ -1,5 +1,6 @@
 id = "eos.twu_kappa"
 name = "Twu attraction-parameter coefficient"
+summary = "Twu attraction-parameter coefficient from the acentric factor. Use it when assembling a cubic EOS with the Twu kappa form."
 equation = "kappa = 0.48 + 1.574*omega - 0.175*omega**2"
 latex = '''\kappa = 0.48 + 1.574\,\omega - 0.175\,\omega^{2}'''
 assumptions = ["the acentric factor supplied is correct for the component intended. NOT CHECKED.\n", "the coefficient is Twu's, which differs from Soave's only in the last constant: 0.175 against 0.176.\n", "the range of acentric factors over which the correlation was fitted is NOT established, and no bound asserts one.\n"]

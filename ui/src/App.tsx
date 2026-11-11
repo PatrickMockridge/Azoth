@@ -16,24 +16,33 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 
 import blankDocument from "../../specs/flowsheets/blank.toml?raw";
-import demoDocument from "../../specs/flowsheets/demo.toml?raw";
+import demoDocument from "../../specs/flowsheets/examples/two_feed_mixer.toml?raw";
 import { BoundaryPanel } from "./components/BoundaryPanel";
+import { CalculationsApp } from "./components/calculations/CalculationsApp";
+import type { Workspace } from "./components/calculations/WorkspaceSwitch";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
 import { Dock } from "./components/dock/Dock";
 import { Flowsheet } from "./components/Flowsheet";
+import { NodeOverview } from "./components/NodeOverview";
+import { Help } from "./components/Help";
 import { Navigation } from "./components/Navigation";
 import { Palette } from "./components/Palette";
 import { PropertyView } from "./components/property/PropertyView";
+import { ReportView } from "./components/report/ReportView";
 import { RibbonGroup } from "./components/RibbonGroup";
+import { StarterHints } from "./components/StarterHints";
 import { StatusBar } from "./components/StatusBar";
 import { TitleStrip } from "./components/TitleStrip";
+import { Welcome } from "./components/Welcome";
 import { Workbook } from "./components/workbook/Workbook";
+import { EXAMPLES } from "./examples";
 import { saveDocument } from "./save";
-import { selectedEdge, selectedNode, targetNodeId } from "./state/selection";
+import { selectedEdge, selectedNode } from "./state/selection";
 import { applyTheme, readTheme, type Theme } from "./state/theme";
 import { readUnitSet, rememberUnitSet, unitsOf } from "./state/units";
+import { readWelcome, rememberWelcome } from "./state/welcome";
 import { door } from "./wire/door";
-import type { Door, Opened, Session } from "./wire/session";
+import type { Door, Opened, Session, SheetDoor } from "./wire/session";
 import type { Catalogue, Command, Envelope, ExecutionOrder } from "./wire/types";
 
 /**
@@ -45,14 +54,32 @@ import type { Catalogue, Command, Envelope, ExecutionOrder } from "./wire/types"
 const HOSTED =
   "azoth serve holds one document for the life of its process — restart it with --flowsheet F to serve another";
 
+/** One document the editor has stood at, for undo and redo. */
+interface Snapshot {
+  document: string;
+  selected: string | null;
+}
+
+/** The file stem for a case: its name, or its id when the name has nothing usable. */
+function fileStem(name: string, id: string): string {
+  const stem = name.trim().replace(/[^A-Za-z0-9._-]+/g, "_");
+  return stem === "" ? id : stem;
+}
+
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [catalogue, setCatalogue] = useState<Catalogue | null>(null);
   const [envelope, setEnvelope] = useState<Envelope | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [overview, setOverview] = useState<string | null>(null);
   const [fault, setFault] = useState<string | null>(null);
   const [openable, setOpenable] = useState(false);
   const [theme, setTheme] = useState<Theme>(readTheme);
+  /** Which of the two documents is in front; both stay mounted. */
+  const [workspace, setWorkspace] = useState<Workspace>("flowsheet");
+  /** The calculation book is loaded on first visit and then kept, so switching back keeps it. */
+  const [calculationsSeen, setCalculationsSeen] = useState(false);
+  const [sheetDoor, setSheetDoor] = useState<SheetDoor | null>(null);
 
   /**
    * The unit set a reader wants values in, which is remembered like the theme and for the same
@@ -67,8 +94,57 @@ export function App() {
    * **Messages is the tab it opens on**, because a document that does not check is the state a
    * person most needs told about and the dock is where the telling happens.
    */
-  const [docked, setDocked] = useState<"workbook" | "messages">("messages");
+  const [docked, setDocked] = useState<"workbook" | "messages" | "help">("workbook");
+  const dockTouched = useRef(false);
   const [dockSize, setDockSize] = useState(200);
+
+  /**
+   * The first-run card, remembered like the theme and the unit set.
+   *
+   * **Shown over the demo, not instead of it.** A newcomer can press Solve without reading
+   * anything, and the card is one click from gone.
+   */
+  const [welcome, setWelcome] = useState(readWelcome);
+
+  /** The document text as it was last opened or saved, so "unsaved" is a fact and not a guess. */
+  const [savedDocument, setSavedDocument] = useState<string | null>(null);
+
+  /**
+   * **Undo is a history of documents, not a stack of inverse commands.** Every envelope carries
+   * `flowsheet.document`, so a snapshot is the save format; a restore opens it through the same
+   * door an example does. The strings are not a second live document and nothing derives from
+   * them except the undo itself.
+   */
+  const [history, setHistory] = useState<Snapshot[]>([]);
+  const [future, setFuture] = useState<Snapshot[]>([]);
+  const lastDocument = useRef<string | null>(null);
+  const restoring = useRef(false);
+
+  /** The printable report, a view over the last run and not a second call. */
+  const [reporting, setReporting] = useState(false);
+  const canReport =
+    envelope !== null &&
+    envelope.ok &&
+    envelope.run_error === null &&
+    !envelope.dirty &&
+    envelope.session !== null;
+
+  /**
+   * **A refused document is not run.** The button used to attempt the physics and return the
+   * executor's own sentence beside the checker's list; the Messages panel is where a fix starts.
+   */
+  const canSolve = session !== null && envelope !== null && envelope.ok;
+  const canUndo = openable && history.length > 0;
+  const canRedo = openable && future.length > 0;
+
+  // **A finding opens the dock that says what it is.** A newcomer's first edit can leave the
+  // document incomplete; opening on Workbook hides the sentences that explain why. Once the
+  // reader has chosen a tab, their choice wins.
+  useEffect(() => {
+    if (!dockTouched.current && envelope !== null && envelope.diagnostics.length > 0) {
+      setDocked("messages");
+    }
+  }, [envelope]);
 
   const middleware = useRef<Door | null>(null);
 
@@ -108,6 +184,12 @@ export function App() {
         }
         setSession(opened.session);
         setEnvelope(opened.envelope);
+        setSavedDocument(opened.envelope.flowsheet.document);
+        // A newly opened case has no edits behind it.
+        setHistory([]);
+        setFuture([]);
+        lastDocument.current = opened.envelope.flowsheet.document;
+        restoring.current = false;
         setSelected(null);
         setFault(null);
       },
@@ -120,6 +202,108 @@ export function App() {
       },
     );
   }, []);
+
+  /** Record the document an edit is about to leave, so Undo has somewhere to return. */
+  useEffect(() => {
+    if (envelope === null) {
+      return;
+    }
+    const document = envelope.flowsheet.document;
+    if (lastDocument.current === null) {
+      lastDocument.current = document;
+      return;
+    }
+    if (document === lastDocument.current) {
+      return;
+    }
+    if (restoring.current) {
+      restoring.current = false;
+      lastDocument.current = document;
+      return;
+    }
+    const previous = lastDocument.current;
+    lastDocument.current = document;
+    setHistory((entries) => [...entries.slice(-49), { document: previous, selected: null }]);
+    setFuture([]);
+  }, [envelope]);
+
+  /** Restore a snapshot through the door, without resetting the history it came from. */
+  const restore = useCallback((snapshot: Snapshot) => {
+    const loaded = middleware.current;
+    if (loaded === null || loaded.kind !== "openable") {
+      return;
+    }
+    restoring.current = true;
+    void loaded.open(snapshot.document).then(
+      (opened) => {
+        setSession(opened.session);
+        setEnvelope(opened.envelope);
+        setSelected(snapshot.selected);
+        setFault(null);
+      },
+      (error: unknown) => {
+        restoring.current = false;
+        setFault(String(error));
+      },
+    );
+  }, []);
+
+  const undo = useCallback(() => {
+    if (history.length === 0 || envelope === null) {
+      return;
+    }
+    const previous = history[history.length - 1];
+    if (previous === undefined) {
+      return;
+    }
+    setFuture((entries) => [
+      { document: envelope.flowsheet.document, selected },
+      ...entries.slice(0, 49),
+    ]);
+    setHistory(history.slice(0, -1));
+    restore(previous);
+  }, [history, envelope, selected, restore]);
+
+  const redo = useCallback(() => {
+    if (future.length === 0 || envelope === null) {
+      return;
+    }
+    const next = future[0];
+    if (next === undefined) {
+      return;
+    }
+    setHistory((entries) => [
+      ...entries.slice(-49),
+      { document: envelope.flowsheet.document, selected },
+    ]);
+    setFuture(future.slice(1));
+    restore(next);
+  }, [future, envelope, selected, restore]);
+
+  // **The keyboard path is the conventional one**, and it stays out of a text field so the
+  // browser's own undo is not stolen from a draft.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "z") {
+        return;
+      }
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        target.closest("input, textarea, select, [contenteditable='true']") !== null
+      ) {
+        return;
+      }
+      event.preventDefault();
+      if (event.shiftKey) {
+        redo();
+      } else {
+        undo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo]);
 
   /**
    * The library's units and sets, resolved against the catalogue and the remembered choice.
@@ -140,6 +324,17 @@ export function App() {
     applyTheme(theme);
   }, [theme]);
 
+  /**
+   * The document has edits that were never saved.
+   *
+   * **Not the same fact as `dirty`,** which says the values are older than the document. A case
+   * can be run and still unsaved, and both have to be said separately.
+   */
+  const unsaved =
+    envelope !== null &&
+    savedDocument !== null &&
+    envelope.flowsheet.document !== savedDocument;
+
   /** Hand a document to the library: the Demo button, New, or a file. */
   const open = useCallback(
     (text: string) => {
@@ -147,10 +342,53 @@ export function App() {
       if (loaded === null || loaded.kind !== "openable") {
         return;
       }
+      if (
+        unsaved &&
+        !window.confirm("This case has unsaved changes. Open another and lose them?")
+      ) {
+        return;
+      }
       land(loaded.open(text));
     },
-    [land],
+    [land, unsaved],
   );
+
+  /** Move between the flowsheet and the calculation book, loading the book on first visit. */
+  const chooseWorkspace = useCallback((next: Workspace) => {
+    setWorkspace(next);
+    if (next === "calculations") {
+      setCalculationsSeen(true);
+    }
+  }, []);
+
+  /** The card has been dealt with: gone for this visit, and not shown again here. */
+  const dismissWelcome = useCallback(() => {
+    setWelcome(false);
+    rememberWelcome();
+  }, []);
+
+  const openDemo = useCallback(() => {
+    open(demoDocument);
+    dismissWelcome();
+  }, [open, dismissWelcome]);
+
+  const openBlank = useCallback(() => {
+    open(blankDocument);
+    dismissWelcome();
+  }, [open, dismissWelcome]);
+
+  const openExample = useCallback(
+    (document: string) => {
+      open(document);
+      dismissWelcome();
+    },
+    [open, dismissWelcome],
+  );
+
+  const showHelp = useCallback(() => {
+    setDocked("help");
+    dismissWelcome();
+  }, [dismissWelcome]);
 
   useEffect(() => {
     let live = true;
@@ -159,9 +397,10 @@ export function App() {
         if (!live) {
           return;
         }
-        middleware.current = loaded;
-        setOpenable(loaded.kind === "openable");
-        void loaded.catalogue(true).then(
+        middleware.current = loaded.flowsheet;
+        setSheetDoor(loaded.sheets);
+        setOpenable(loaded.flowsheet.kind === "openable");
+        void loaded.flowsheet.catalogue(true).then(
           (palette) => {
             if (live) {
               setCatalogue(palette);
@@ -176,7 +415,11 @@ export function App() {
         // **The door says how to open on it.** A served one already holds a document and has no
         // call that would replace it, so asking it to open the demo would be a call it does not
         // have — the kind of thing that reads as a bug in the editor rather than in the request.
-        land(loaded.kind === "openable" ? loaded.open(demoDocument) : loaded.attach());
+        land(
+          loaded.flowsheet.kind === "openable"
+            ? loaded.flowsheet.open(demoDocument)
+            : loaded.flowsheet.attach(),
+        );
       })
       .catch((error: unknown) => {
         if (live) {
@@ -204,6 +447,28 @@ export function App() {
     }
   }, [session, answer]);
 
+  /** Run, and let the first-run card get out of the way; it told the reader to press this. */
+  const run = useCallback(() => {
+    dismissWelcome();
+    solve();
+  }, [dismissWelcome, solve]);
+
+  /**
+   * Add a palette entry, select it and dismiss the card.
+   *
+   * **A new node has to be visibly the thing that just happened.** It used to arrive unselected,
+   * often under the welcome card, so a click on the palette could look like nothing.
+   */
+  const addUnit = useCallback(
+    (unit: string) => {
+      const id = nextId(unit, envelope);
+      setSelected(`instance:${id}`);
+      dismissWelcome();
+      send({ command: "add_instance", id, unit, parameters: {} });
+    },
+    [envelope, dismissWelcome, send],
+  );
+
   const setOrder = useCallback(
     (order: ExecutionOrder) => {
       if (session !== null) {
@@ -223,21 +488,55 @@ export function App() {
     if (envelope === null) {
       return;
     }
-    void saveDocument(`${envelope.flowsheet.id}.toml`, envelope.flowsheet.document).catch(
+    const document = envelope.flowsheet.document;
+    const stem = fileStem(envelope.flowsheet.name, envelope.flowsheet.id);
+    void saveDocument(`${stem}.toml`, document).then(
+      () => setSavedDocument(document),
       (error: unknown) => setFault(String(error)),
     );
   }, [envelope]);
 
+  /** Set the case's own name, which the report and the saved file take. */
+  const setCaseName = useCallback(
+    (name: string) => {
+      if (name.trim() !== "") {
+        send({ command: "set_name", name: name.trim() });
+      }
+    },
+    [send],
+  );
+
+  useEffect(() => {
+    if (!unsaved) {
+      return;
+    }
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [unsaved]);
+
   const node = envelope === null ? null : selectedNode(envelope, selected);
   const edge = envelope === null ? null : selectedEdge(envelope, selected);
+  const overviewNode = envelope === null ? null : selectedNode(envelope, overview);
 
   return (
-    <div className="app">
+    <>
+    <div
+      className={`app${workspace === "calculations" ? " off" : ""}`}
+      hidden={workspace === "calculations"}
+    >
       <TitleStrip
         envelope={envelope}
         session={session !== null}
         theme={theme}
         units={units}
+        unsaved={unsaved}
+        workspace={workspace}
+        onWorkspace={chooseWorkspace}
+        onName={setCaseName}
         onOrder={setOrder}
         onTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
         onUnits={chooseUnits}
@@ -248,17 +547,49 @@ export function App() {
           <button
             type="button"
             className="primary"
-            onClick={solve}
-            disabled={session === null}
-            title="run the physics; a check happens on every edit and a run is when you ask"
+            onClick={run}
+            disabled={!canSolve}
+            title={
+              canSolve
+                ? "run the physics; a check happens on every edit and a run is when you ask"
+                : "fix the messages first; a refused document cannot run"
+            }
           >
             Solve
+          </button>
+          <button
+            type="button"
+            onClick={undo}
+            disabled={!canUndo}
+            title={openable ? "undo the last edit" : "undo is not available on a served document"}
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            onClick={redo}
+            disabled={!canRedo}
+            title={openable ? "redo the last undone edit" : "redo is not available on a served document"}
+          >
+            Redo
+          </button>
+          <button
+            type="button"
+            onClick={() => setReporting(true)}
+            disabled={!canReport}
+            title={
+              canReport
+                ? "print or save the case: the drawing, the streams, the results and their source"
+                : "solve the document first; a stale case is not a report"
+            }
+          >
+            Report
           </button>
         </RibbonGroup>
         <RibbonGroup label="Case">
           <button
             type="button"
-            onClick={() => open(blankDocument)}
+            onClick={openBlank}
             disabled={!openable}
             title={openable ? "a document with nothing in it" : HOSTED}
           >
@@ -283,12 +614,32 @@ export function App() {
           </label>
           <button
             type="button"
-            onClick={() => open(demoDocument)}
+            onClick={openDemo}
             disabled={!openable}
             title={openable ? "the shipped demo flowsheet" : HOSTED}
           >
             Demo
           </button>
+          <select
+            className="examples"
+            value=""
+            disabled={!openable}
+            title={openable ? "a worked case to open" : HOSTED}
+            aria-label="Load a worked example"
+            onChange={(event) => {
+              const chosen = EXAMPLES.find((example) => example.file === event.target.value);
+              if (chosen !== undefined) {
+                openExample(chosen.document);
+              }
+            }}
+          >
+            <option value="">Examples…</option>
+            {EXAMPLES.map((example) => (
+              <option key={example.file} value={example.file}>
+                {example.title}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             onClick={save}
@@ -313,25 +664,28 @@ export function App() {
               onSelect={setSelected}
             />
           )}
+          {/* **The first step is the first panel.** A blank case starts with a feed, and the
+              Boundary used to sit below the whole palette, off the bottom of the column. */}
+          {envelope === null ? null : (
+            <BoundaryPanel
+              catalogue={catalogue}
+              envelope={envelope}
+              units={units}
+              onCommand={send}
+              onSelect={setSelected}
+            />
+          )}
           <Palette
             forms={catalogue?.unit_ops ?? []}
-            onAdd={(unit) =>
-              send({
-                command: "add_instance",
-                id: nextId(unit, envelope),
-                unit,
-                parameters: {},
-              })
-            }
+            onAdd={addUnit}
           />
-          {envelope === null ? null : (
-            <BoundaryPanel envelope={envelope} units={units} onCommand={send} />
-          )}
         </aside>
 
         <div className="canvas">
           {envelope === null ? (
-            <p className="note">{fault ?? "loading the middleware…"}</p>
+            <p className="note">{fault ?? "loading the engine…"}</p>
+          ) : envelope.flowsheet.graph.nodes.length === 0 ? (
+            <StarterHints />
           ) : (
             <Flowsheet
               catalogue={catalogue}
@@ -340,8 +694,22 @@ export function App() {
               units={units}
               onSelect={setSelected}
               onCommand={send}
+              onOverview={setOverview}
             />
           )}
+          {/* **Over the drawing, not instead of it.** The demo is already loaded behind the
+              card, so the first action can be Solve whether or not the card is read. A served
+              door holds one document and cannot open another, so it offers no card. */}
+          {welcome && openable && envelope !== null ? (
+            <Welcome
+              examples={EXAMPLES}
+              onDemo={openDemo}
+              onBlank={openBlank}
+              onExample={openExample}
+              onHelp={showHelp}
+              onDismiss={dismissWelcome}
+            />
+          ) : null}
         </div>
 
         <aside className="side right">
@@ -368,15 +736,22 @@ export function App() {
           {
             id: "messages",
             label: "Messages",
-            count: envelope?.diagnostics.length ?? 0,
+            count: (envelope?.diagnostics.length ?? 0) + (envelope?.run_error === null || envelope?.run_error === undefined ? 0 : 1),
           },
+          { id: "help", label: "Help" },
         ]}
         active={docked}
-        onTab={(id) => setDocked(id === "workbook" ? "workbook" : "messages")}
+        onTab={(id) => {
+          dockTouched.current = true;
+          setDocked(id === "workbook" ? "workbook" : id === "help" ? "help" : "messages");
+        }}
         size={dockSize}
         onSize={setDockSize}
       >
-        {envelope === null ? (
+        <div role="tabpanel" id={`sheet-${docked}`}>
+        {docked === "help" ? (
+          <Help />
+        ) : envelope === null ? (
           <p className="note">no document</p>
         ) : docked === "workbook" ? (
           <Workbook
@@ -387,15 +762,54 @@ export function App() {
           />
         ) : (
           <DiagnosticsPanel
-            diagnostics={envelope.diagnostics}
+            envelope={envelope}
             runError={envelope.run_error}
-            onSelect={(target) => setSelected(targetNodeId(target, envelope))}
+            onSelect={setSelected}
           />
         )}
+        </div>
       </Dock>
 
-      <StatusBar envelope={envelope} />
+      <StatusBar envelope={envelope} units={units} />
+
+      {overviewNode !== null && envelope !== null ? (
+        <NodeOverview
+          envelope={envelope}
+          catalogue={catalogue}
+          units={units}
+          node={overviewNode}
+          onClose={() => setOverview(null)}
+          onEdit={() => {
+            setSelected(overviewNode.id);
+            setOverview(null);
+          }}
+        />
+      ) : null}
+
+      {reporting && envelope !== null ? (
+        <ReportView
+          envelope={envelope}
+          catalogue={catalogue}
+          units={units}
+          onClose={() => setReporting(false)}
+        />
+      ) : null}
     </div>
+    {calculationsSeen ? (
+      <CalculationsApp
+        door={sheetDoor}
+        catalogue={catalogue}
+        units={units}
+        theme={theme}
+        version={envelope?.provenance.version ?? "—"}
+        workspace={workspace}
+        hidden={workspace !== "calculations"}
+        onWorkspace={chooseWorkspace}
+        onTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+        onUnits={chooseUnits}
+      />
+    ) : null}
+    </>
   );
 }
 

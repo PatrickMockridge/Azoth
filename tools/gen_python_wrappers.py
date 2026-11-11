@@ -476,6 +476,11 @@ def _struct_fields() -> dict[str, tuple[tuple[str, str], ...]]:
     """
     found: dict[str, tuple[tuple[str, str], ...]] = {}
     for path in sorted(CRATES.glob("*/src/**/*.rs")):
+        if path.parent.parent.name == "azoth-python":
+            # The binding crate's `records_gen` carries the *transport* shape of every row -
+            # dimensioned fields as bare `f64`. The kernel row is the one being built here, and
+            # it is declared in its own crate, so that copy must not win the name.
+            continue
         text = rust_index._blank_comments(path.read_text(encoding="utf-8"))
         for match in _PUB_STRUCT.finditer(text):
             name = match.group(1)
@@ -532,10 +537,18 @@ def record_rows_argument(
     for field, kernel_type in fields:
         optional = kernel_type.startswith("Option<")
         inner = kernel_type[len("Option<") : -1] if optional else kernel_type
-        if inner in ("f64", "String"):
+        field_spec = declared.get(field) or {}
+        # A flag and a name cross as themselves, like a magnitude: only a dimensioned field
+        # needs a constructor, and a `bool` has no unit to read one from.
+        if inner in ("f64", "String", "bool") and not field_spec.get("interval"):
             arms.append(f"{field}: row.{field}")
             continue
-        ctor = base_ctor((declared.get(field) or {}).get("unit"))
+        if field_spec.get("interval"):
+            # A temperature difference is carried as `f64` in the binding row and as the
+            # interval quantity in the kernel row.
+            ctor = INTERVAL_CONSTRUCTORS["TemperatureInterval"]
+        else:
+            ctor = base_ctor(field_spec.get("unit"))
         if ctor is None:
             raise Refusal(
                 f"{row}'s field {field}: {kernel_type} has no constructor for its declared unit"
@@ -651,7 +664,15 @@ class Refusal(Exception):
     """This file cannot derive the wrapper, so it stays hand-written."""
 
 
-def convert(kind: str, unit: str | None, name: str, aliases: set[str]) -> tuple[str, str]:
+#: The constructor a kernel type takes when the spec declares the input an *interval* rather
+#: than an absolute value. A `K` input constructs `ThermodynamicTemperature`; a difference is
+#: `TemperatureInterval`, and the vocabulary has one unit id for both.
+INTERVAL_CONSTRUCTORS = {"TemperatureInterval": "kelvin_intervals"}
+
+
+def convert(
+    kind: str, unit: str | None, name: str, aliases: set[str], declaration: dict
+) -> tuple[str, str]:
     """`(declared type, argument)` for one kernel parameter, or a refusal.
 
     The kernel's own type decides the conversion: a `uom` alias goes through the vocabulary's
@@ -670,9 +691,18 @@ def convert(kind: str, unit: str | None, name: str, aliases: set[str]) -> tuple[
     if kind.startswith("Option<") and kind.endswith(">"):
         inner = kind[len("Option<") : -1]
         if inner in aliases:
+            if declaration.get("interval"):
+                ctor = INTERVAL_CONSTRUCTORS.get(inner)
+                if ctor is None:
+                    raise Refusal(f"Option<{inner}> has no interval constructor")
+                return "Option<f64>", f"{name}.map({ctor})"
             ctor = base_ctor(unit)
             if ctor is None:
                 raise Refusal(f"Option<{inner}> has no constructor for unit {unit!r}")
+            if rust_index.uom_quantity(str(unit)) != inner:
+                raise Refusal(
+                    f"unit {unit!r} constructs {rust_index.uom_quantity(str(unit))}, not {inner}"
+                )
             return "Option<f64>", f"{name}.map({ctor})"
         raise Refusal(f"Option<{inner}> is neither a uom alias nor a passthrough")
     if kind.startswith("&[") and kind.endswith("]"):
@@ -684,6 +714,11 @@ def convert(kind: str, unit: str | None, name: str, aliases: set[str]) -> tuple[
             raise Refusal(f"&[{inner}] has no constructor for unit {unit!r}")
         return "Vec<f64>", f"&{name}.iter().map(|v| {ctor}(*v)).collect::<Vec<_>>()"
     if kind in aliases:
+        if declaration.get("interval"):
+            ctor = INTERVAL_CONSTRUCTORS.get(kind)
+            if ctor is None:
+                raise Refusal(f"{kind} has no interval constructor")
+            return "f64", f"{ctor}({name})"
         ctor = base_ctor(unit)
         if ctor is None:
             raise Refusal(f"{kind} has no base constructor for unit {unit!r}")
@@ -831,7 +866,9 @@ def body(
         try:
             # The *declared* name is what the emitted function binds, so the argument expression
             # reads that; the kernel's own name only decided the kind and the conversion.
-            _declared, argument = convert(kind, inputs[public].get("unit"), public, aliases)
+            _declared, argument = convert(
+                kind, inputs[public].get("unit"), public, aliases, inputs[public]
+            )
         except Refusal as refusal:
             raise Refusal(str(refusal)) from None
         plan.append((public, kind, argument if not is_enum else public, is_enum))
@@ -900,7 +937,7 @@ def body(
             # the call builds field by field.
             declared = f"Vec<crate::records_gen::{record_slices[name][0]}>"
         else:
-            declared, _ = convert(kind, decl.get("unit"), name, aliases)
+            declared, _ = convert(kind, decl.get("unit"), name, aliases, decl)
         if (
             decl.get("optional")
             and not declared.startswith("Option<")
@@ -1029,7 +1066,11 @@ def ctors(text: str) -> list[str]:
 
 def _all_ctors() -> set[str]:
     table = rust_index._table()
-    return {str(u["rust_ctor"]) for u in table["units"] if u.get("rust_ctor")}
+    # The interval constructors are named by [`INTERVAL_CONSTRUCTORS`] rather than the table,
+    # because the vocabulary has one unit id for both an absolute temperature and a difference.
+    return {str(u["rust_ctor"]) for u in table["units"] if u.get("rust_ctor")} | set(
+        INTERVAL_CONSTRUCTORS.values()
+    )
 
 
 _ALL_CTORS = _all_ctors()

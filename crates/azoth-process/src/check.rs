@@ -22,7 +22,7 @@ use azoth_core::unit_vocab_gen::dimension_exponents;
 use azoth_core::units::UNIT_NAMES;
 
 use crate::channel::{ChannelType, Direction, FieldType, Multiplicity, Shape};
-use crate::flowsheet::{Connection, Flowsheet, Instance, Recycle, split_endpoint};
+use crate::flowsheet::{Connection, Flowsheet, Instance, Recycle, split_endpoint, stream_path};
 use crate::unit_op::UnitOpSpec;
 
 /// What a `validate` run found wrong.
@@ -125,16 +125,44 @@ pub enum Diagnostic {
         instance: String,
         port: String,
         count: usize,
+        /// Whether the port consumes (`true`) or produces (`false`), which decides the sentence.
+        incoming: bool,
     },
     UnderfedPort {
         instance: String,
         port: String,
         count: usize,
+        /// Whether the port consumes (`true`) or produces (`false`), which decides the sentence.
+        incoming: bool,
+    },
+    /// A `many` port has fewer connected streams than its declaration says describe the unit.
+    ///
+    /// **A warning, not a refusal**: a mixer with one feed is a no-op, not an unrunnable document,
+    /// and a case under construction passes through that state.
+    SparsePort {
+        instance: String,
+        port: String,
+        count: usize,
+        minimum: usize,
+        /// Whether the port consumes (`true`) or produces (`false`), which decides the sentence.
+        incoming: bool,
+    },
+    /// Two connections name the same slot of a `many` port, so two lines share one point.
+    DuplicateEndpointSlot {
+        endpoint: String,
     },
     UnusedFeed {
         name: String,
     },
     UnusedProduct {
+        name: String,
+    },
+    /// A feed is consumed by more than one connection, which is a hidden split.
+    OverusedFeed {
+        name: String,
+    },
+    /// A product is produced by more than one connection, which is a hidden merge.
+    OverusedProduct {
         name: String,
     },
     /// An input's declared record does not describe a stream.
@@ -336,8 +364,8 @@ pub enum Target {
     Node { role: NodeRole, id: String },
     /// One port of an instance, at a position where the port has more than one.
     ///
-    /// A `many` *inlet* takes several edges on one handle, so `index` is `None` there; a `many`
-    /// *outlet* returns a stream per position, so the index is what names the handle.
+    /// A `many` port has one point per line on either side: a feed's slot and a splitter
+    /// product's slot both name a position, so the index is what names the handle.
     Handle {
         role: NodeRole,
         node: String,
@@ -370,7 +398,9 @@ impl Diagnostic {
     #[must_use]
     pub fn severity(&self) -> Severity {
         match self {
-            Self::UnusedFeed { .. } | Self::UnusedProduct { .. } => Severity::Warning,
+            Self::UnusedFeed { .. } | Self::UnusedProduct { .. } | Self::SparsePort { .. } => {
+                Severity::Warning
+            }
             _ => Severity::Error,
         }
     }
@@ -404,8 +434,12 @@ impl Diagnostic {
             Self::TypeMismatch { .. } => "type_mismatch",
             Self::OverfedPort { .. } => "overfed_port",
             Self::UnderfedPort { .. } => "underfed_port",
+            Self::SparsePort { .. } => "sparse_port",
+            Self::DuplicateEndpointSlot { .. } => "duplicate_endpoint_slot",
             Self::UnusedFeed { .. } => "unused_feed",
             Self::UnusedProduct { .. } => "unused_product",
+            Self::OverusedFeed { .. } => "overused_feed",
+            Self::OverusedProduct { .. } => "overused_product",
             Self::InputRecord { .. } => "input_record",
             Self::EndpointIndex { .. } => "endpoint_index",
             Self::ParameterKind { .. } => "parameter_kind",
@@ -497,13 +531,27 @@ impl Diagnostic {
             | Self::ProducerNotOutlet { instance, port }
             | Self::ConsumerNotInlet { instance, port }
             | Self::OverfedPort { instance, port, .. }
-            | Self::UnderfedPort { instance, port, .. } => handle(instance, port),
+            | Self::UnderfedPort { instance, port, .. }
+            | Self::SparsePort { instance, port, .. } => handle(instance, port),
+            Self::DuplicateEndpointSlot { endpoint } => match split_endpoint(endpoint) {
+                Some((instance, port, index)) => Target::Handle {
+                    role: NodeRole::Instance,
+                    node: instance.to_string(),
+                    port: port.to_string(),
+                    index,
+                },
+                None => Target::Endpoint {
+                    endpoint: endpoint.clone(),
+                },
+            },
             Self::TypeMismatch { from, to, .. } => Target::Edge {
                 from: from.clone(),
                 to: to.clone(),
             },
-            Self::UnusedFeed { name } => node(NodeRole::Input, name),
-            Self::UnusedProduct { name } => node(NodeRole::Product, name),
+            Self::UnusedFeed { name } | Self::OverusedFeed { name } => node(NodeRole::Input, name),
+            Self::UnusedProduct { name } | Self::OverusedProduct { name } => {
+                node(NodeRole::Product, name)
+            }
             Self::InputRecord { name, .. } => node(NodeRole::Input, name),
             // An index is a position on a port, so where the endpoint names a port the target is
             // that port at that position; a bare name has no port to point at.
@@ -579,12 +627,16 @@ impl Diagnostic {
             | Self::ProducerNotOutlet { instance, port }
             | Self::ConsumerNotInlet { instance, port }
             | Self::OverfedPort { instance, port, .. }
-            | Self::UnderfedPort { instance, port, .. } => {
+            | Self::UnderfedPort { instance, port, .. }
+            | Self::SparsePort { instance, port, .. } => {
                 at("instances", format!("{instance}.ports.{port}"))
             }
             Self::TypeMismatch { from, to, .. } => at("connections", format!("{from} -> {to}")),
-            Self::UnusedFeed { name } => at("inputs", name.clone()),
-            Self::UnusedProduct { name } => at("products", name.clone()),
+            Self::DuplicateEndpointSlot { endpoint } => at("connections", endpoint.clone()),
+            Self::UnusedFeed { name } | Self::OverusedFeed { name } => at("inputs", name.clone()),
+            Self::UnusedProduct { name } | Self::OverusedProduct { name } => {
+                at("products", name.clone())
+            }
             Self::InputRecord { name, .. } => at("inputs", name.clone()),
             Self::EndpointIndex { endpoint, .. } => at("connections", endpoint.clone()),
             Self::Acceleration { stream, .. } => at("recycles", stream.clone()),
@@ -651,15 +703,62 @@ impl Diagnostic {
                 format!("`{port}` consumes, and is not an inlet")
             }
             Self::TypeMismatch { mismatch, .. } => mismatch.message(),
-            Self::OverfedPort { port, count, .. } => {
-                format!("`{port}` takes one stream and {count} are connected")
+            Self::OverfedPort {
+                instance,
+                port,
+                count,
+                incoming,
+            } => {
+                if *incoming {
+                    format!(
+                        "the inlet `{port}` of `{instance}` takes one stream and {count} are connected"
+                    )
+                } else {
+                    format!(
+                        "the outlet `{port}` of `{instance}` produces one stream and {count} are connected"
+                    )
+                }
             }
-            Self::UnderfedPort { port, count, .. } => {
-                format!("`{port}` takes at least one stream and {count} are connected")
+            Self::UnderfedPort {
+                instance,
+                port,
+                count: _,
+                incoming,
+            } => {
+                if *incoming {
+                    format!("the inlet `{port}` of `{instance}` is not connected")
+                } else {
+                    format!("the outlet `{port}` of `{instance}` is not connected to anything")
+                }
             }
+            Self::SparsePort {
+                instance,
+                port,
+                count,
+                minimum,
+                incoming,
+            } => {
+                let side = if *incoming { "inlet" } else { "outlet" };
+                let no_op = if *incoming {
+                    " A mixer with one feed is a no-op; add a feed or remove the mixer."
+                } else {
+                    ""
+                };
+                format!(
+                    "the {side} `{port}` of `{instance}` has {count} connected stream(s) and \
+                     needs at least {minimum}.{no_op}"
+                )
+            }
+            Self::DuplicateEndpointSlot { endpoint } => format!(
+                "`{endpoint}` is named by more than one connection; each line needs its own point"
+            ),
             Self::UnusedFeed { name } => format!("feed `{name}` is declared and never consumed"),
             Self::UnusedProduct { name } => {
                 format!("product `{name}` is declared and never produced")
+            }
+            Self::OverusedFeed { name } => format!("feed `{name}` is consumed more than once"),
+            Self::OverusedProduct { name } => {
+                format!("product `{name}` is produced more than once")
             }
             Self::InputRecord { detail, .. } => detail.clone(),
             Self::EndpointIndex { detail, .. } => detail.clone(),
@@ -905,7 +1004,20 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
     let mut feed_uses: HashMap<&str, usize> = HashMap::new();
     let mut product_uses: HashMap<&str, usize> = HashMap::new();
 
+    let mut slots: HashSet<String> = HashSet::new();
     for (from, to) in edges {
+        // **One point, one line.** An explicit slot claimed twice is two lines sharing a
+        // connection point; the projection draws what the document says, so the checker is where
+        // a hand-edited document is refused. Unindexed endpoints are assigned slots by the
+        // projection and are not a claim about a particular point.
+        for endpoint in [from, to] {
+            if let Some((instance, port, Some(index))) = split_endpoint(endpoint) {
+                let path = stream_path(instance, port, Some(index));
+                if !slots.insert(path.clone()) {
+                    diags.push(Diagnostic::DuplicateEndpointSlot { endpoint: path });
+                }
+            }
+        }
         let producer = resolve_producer(from);
         let consumer = resolve_consumer(to);
 
@@ -955,8 +1067,9 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
                 port,
                 index,
             } => {
-                // A consumer endpoint is one port name however many connections reach it, so an
-                // index here is not a position - the resolver drops it, and this reports it.
+                // A consumer endpoint may name a slot on a `many` inlet; `check_index` accepts
+                // that and refuses an index on a `one` inlet. The port's count is by name either
+                // way, so several lines feed one port while each has its own point.
                 check_index(&mut diags, &instances, &specs, instance, port, index);
                 check_port(
                     &mut diags,
@@ -1017,37 +1130,58 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
                 Multiplicity::One => count == 1,
                 Multiplicity::Many => count >= 1,
             };
+            let incoming = port.direction == Direction::In;
             if !ok {
                 diags.push(if count == 0 {
                     Diagnostic::UnderfedPort {
                         instance: instance.id.clone(),
                         port: port.name.clone(),
                         count,
+                        incoming,
                     }
                 } else {
                     Diagnostic::OverfedPort {
                         instance: instance.id.clone(),
                         port: port.name.clone(),
                         count,
+                        incoming,
                     }
+                });
+            } else if port.multiplicity == Multiplicity::Many && count < port.min_streams {
+                diags.push(Diagnostic::SparsePort {
+                    instance: instance.id.clone(),
+                    port: port.name.clone(),
+                    count,
+                    minimum: port.min_streams,
+                    incoming,
                 });
             }
         }
     }
 
-    // Boundary streams: each feed and product is used exactly once.
+    // Boundary streams: each feed and product is used exactly once. Zero is a warning - a case
+    // mid-edit has unconnected boundaries - while a second use is a hidden split or merge and is
+    // an error: one point carries one line.
     for feed in flowsheet.input_names() {
-        if feed_uses.get(feed).copied().unwrap_or(0) != 1 {
-            diags.push(Diagnostic::UnusedFeed {
+        match feed_uses.get(feed).copied().unwrap_or(0) {
+            1 => {}
+            0 => diags.push(Diagnostic::UnusedFeed {
                 name: feed.to_string(),
-            });
+            }),
+            _ => diags.push(Diagnostic::OverusedFeed {
+                name: feed.to_string(),
+            }),
         }
     }
     for product in &flowsheet.products {
-        if product_uses.get(product.as_str()).copied().unwrap_or(0) != 1 {
-            diags.push(Diagnostic::UnusedProduct {
+        match product_uses.get(product.as_str()).copied().unwrap_or(0) {
+            1 => {}
+            0 => diags.push(Diagnostic::UnusedProduct {
                 name: product.clone(),
-            });
+            }),
+            _ => diags.push(Diagnostic::OverusedProduct {
+                name: product.clone(),
+            }),
         }
     }
 
@@ -1092,7 +1226,8 @@ enum Endpoint<'a> {
     Port {
         instance: &'a str,
         port: &'a str,
-        /// The stream of a `many` outlet, where the endpoint named one.
+        /// The stream of a `many` port, where the endpoint named one. Either side can name a
+        /// position; a `one` port has none.
         index: Option<usize>,
     },
 }
@@ -1110,10 +1245,9 @@ fn resolve_producer(s: &str) -> Endpoint<'_> {
 
 fn resolve_consumer(s: &str) -> Endpoint<'_> {
     match split_endpoint(s) {
-        // **The index is carried rather than dropped, because it is not a position on this side.**
-        // A `many` *inlet* takes several connections to the same port name, so an index written
-        // here is a mistake - and one this resolver cannot silently discard, or `check_index`
-        // would never see it. The rest of the pass reads the port name either way.
+        // The index on a consumer endpoint names a slot of a `many` inlet. It is carried so
+        // `check_index` can accept it there and refuse it on a `one` port; the rest of the pass
+        // reads the port name either way.
         Some((instance, port, index)) => Endpoint::Port {
             instance,
             port,
@@ -1125,11 +1259,9 @@ fn resolve_consumer(s: &str) -> Endpoint<'_> {
 
 /// Check that an endpoint's index, where it wrote one, is a position the port has.
 ///
-/// **Three ways to be wrong, one mistake**: an index on a `one` outlet says "the second of one
-/// stream", an index on an inlet says it about a port that takes several connections to one name,
-/// and an index on a port the entry does not declare duplicates `UnknownPort`. All three are
-/// refused rather than dropped, because a dropped index binds the *wrong* stream silently - which
-/// is the failure the `many` outlet existed to avoid.
+/// **A position belongs to a `many` port, and a `one` port has none.** An index on a `many` inlet
+/// or outlet is accepted; an index on a `one` port, or on a port the entry does not declare, is
+/// refused rather than dropped, because a dropped index binds the *wrong* stream silently.
 fn check_index(
     diags: &mut Vec<Diagnostic>,
     instances: &HashMap<&str, &Instance>,
@@ -1149,9 +1281,8 @@ fn check_index(
     {
         // `UnknownPort` and `UnknownInstance` are already reported by `check_port`.
         None => return,
-        Some(p) if p.direction == Direction::In => {
-            "an inlet is one port name however many streams reach it, so it has no positions - \
-             connect it once per stream instead"
+        Some(p) if p.direction == Direction::In && p.multiplicity != Multiplicity::Many => {
+            "the inlet declares one stream, so it has no second point"
         }
         Some(p) if p.multiplicity != Multiplicity::Many => {
             "the port declares one stream, so it has no second"
@@ -1255,15 +1386,21 @@ impl Mismatch {
     #[must_use]
     pub fn message(&self) -> String {
         match self {
-            Self::DifferentFields { producer, consumer } => {
-                format!("field sets differ: {producer:?} vs {consumer:?}")
+            Self::DifferentFields { producer, consumer } => format!(
+                "the producer carries the fields {}; the consumer carries {}",
+                producer.join(", "),
+                consumer.join(", ")
+            ),
+            Self::MissingField { field } => {
+                format!("the consumer does not carry the producer's field `{field}`")
             }
-            Self::MissingField { field } => format!("field {field:?} present on only one side"),
             Self::DifferentField {
                 field,
                 producer,
                 consumer,
-            } => format!("field {field:?} differs: {producer} vs {consumer}"),
+            } => format!(
+                "the field `{field}` differs: the producer has {producer}; the consumer has {consumer}"
+            ),
         }
     }
 }
@@ -1455,6 +1592,7 @@ mod tests {
             name: name.to_string(),
             direction,
             multiplicity,
+            min_streams: 1,
             fields: stream(),
         }
     }
@@ -1808,7 +1946,8 @@ mod tests {
             Diagnostic::OverfedPort {
                 instance: "p1".into(),
                 port: "feed".into(),
-                count: 2
+                count: 2,
+                incoming: true,
             }
         ));
     }
@@ -2025,8 +2164,176 @@ mod tests {
         );
         assert_eq!(
             red.to_string(),
-            "instances/m1.ports.feed: `feed` takes at least one stream and 0 are connected"
+            "instances/m1.ports.feed: the inlet `feed` of `m1` is not connected"
         );
+    }
+
+    /// A mixer whose feed declares the two streams it takes to be a mixer.
+    fn mixer_min_two(id: &str) -> UnitOpSpec {
+        let mut spec = mixer(id);
+        spec.ports[0].min_streams = 2;
+        spec
+    }
+
+    #[test]
+    fn a_one_feed_mixer_is_a_warning_not_a_refusal() {
+        let palette = vec![mixer_min_two("unit_ops.mixer")];
+        let flowsheet = Flowsheet {
+            id: "f".into(),
+            name: "f".into(),
+            inputs: vec![named_input("a")],
+            products: vec!["out".into()],
+            instances: vec![Instance {
+                id: "m1".into(),
+                unit: "unit_ops.mixer".into(),
+                parameters: BTreeMap::new(),
+            }],
+            connections: vec![
+                Connection {
+                    from: "a".into(),
+                    to: "m1.feed[0]".into(),
+                },
+                Connection {
+                    from: "m1.product".into(),
+                    to: "out".into(),
+                },
+            ],
+            recycles: vec![],
+            layout: None,
+        };
+        let diags = validate(&flowsheet, &palette);
+        let sparse = diags
+            .iter()
+            .find(|diag| matches!(diag, Diagnostic::SparsePort { .. }))
+            .expect("the one-feed mixer is reported");
+        assert_eq!(sparse.severity(), Severity::Warning);
+        assert!(sparse.message().contains("needs at least 2"), "{sparse}");
+        assert!(
+            !diags
+                .iter()
+                .any(|diag| matches!(diag, Diagnostic::UnderfedPort { .. })),
+            "one feed is connected, so the port is not underfed: {diags:?}"
+        );
+    }
+
+    #[test]
+    fn two_lines_cannot_share_one_inlet_point() {
+        let palette = vec![mixer_min_two("unit_ops.mixer")];
+        let flowsheet = Flowsheet {
+            id: "f".into(),
+            name: "f".into(),
+            inputs: vec![named_input("a"), named_input("b")],
+            products: vec!["out".into()],
+            instances: vec![Instance {
+                id: "m1".into(),
+                unit: "unit_ops.mixer".into(),
+                parameters: BTreeMap::new(),
+            }],
+            connections: vec![
+                Connection {
+                    from: "a".into(),
+                    to: "m1.feed[0]".into(),
+                },
+                Connection {
+                    from: "b".into(),
+                    to: "m1.feed[0]".into(),
+                },
+                Connection {
+                    from: "m1.product".into(),
+                    to: "out".into(),
+                },
+            ],
+            recycles: vec![],
+            layout: None,
+        };
+        let diags = validate(&flowsheet, &palette);
+        let duplicate = diags
+            .iter()
+            .find(|diag| matches!(diag, Diagnostic::DuplicateEndpointSlot { .. }))
+            .expect("the shared point is reported");
+        assert_eq!(duplicate.severity(), Severity::Error);
+    }
+
+    #[test]
+    fn indexed_inlets_are_two_distinct_points() {
+        let palette = vec![mixer_min_two("unit_ops.mixer")];
+        let flowsheet = Flowsheet {
+            id: "f".into(),
+            name: "f".into(),
+            inputs: vec![named_input("a"), named_input("b")],
+            products: vec!["out".into()],
+            instances: vec![Instance {
+                id: "m1".into(),
+                unit: "unit_ops.mixer".into(),
+                parameters: BTreeMap::new(),
+            }],
+            connections: vec![
+                Connection {
+                    from: "a".into(),
+                    to: "m1.feed[0]".into(),
+                },
+                Connection {
+                    from: "b".into(),
+                    to: "m1.feed[1]".into(),
+                },
+                Connection {
+                    from: "m1.product".into(),
+                    to: "out".into(),
+                },
+            ],
+            recycles: vec![],
+            layout: None,
+        };
+        assert_clean(&flowsheet, &palette);
+    }
+
+    #[test]
+    fn a_feed_used_twice_is_a_hidden_split_and_an_error() {
+        let palette = vec![two_port("unit_ops.pump")];
+        let flowsheet = Flowsheet {
+            id: "f".into(),
+            name: "f".into(),
+            inputs: vec![named_input("a")],
+            products: vec!["out1".into(), "out2".into()],
+            instances: vec![
+                Instance {
+                    id: "p1".into(),
+                    unit: "unit_ops.pump".into(),
+                    parameters: BTreeMap::new(),
+                },
+                Instance {
+                    id: "p2".into(),
+                    unit: "unit_ops.pump".into(),
+                    parameters: BTreeMap::new(),
+                },
+            ],
+            connections: vec![
+                Connection {
+                    from: "a".into(),
+                    to: "p1.feed".into(),
+                },
+                Connection {
+                    from: "a".into(),
+                    to: "p2.feed".into(),
+                },
+                Connection {
+                    from: "p1.discharge".into(),
+                    to: "out1".into(),
+                },
+                Connection {
+                    from: "p2.discharge".into(),
+                    to: "out2".into(),
+                },
+            ],
+            recycles: vec![],
+            layout: None,
+        };
+        let diags = validate(&flowsheet, &palette);
+        let overused = diags
+            .iter()
+            .find(|diag| matches!(diag, Diagnostic::OverusedFeed { .. }))
+            .expect("the hidden split is reported");
+        assert_eq!(overused.severity(), Severity::Error);
     }
 
     #[test]
@@ -2213,8 +2520,8 @@ mod tests {
             "{diags:?}"
         );
 
-        // An inlet is one name however many connections reach it, so it has no positions. The
-        // resolver drops the index, so the port check still passes and this is the only report.
+        // A `one` inlet has no second point; only a `many` inlet does. The splitter's feed is
+        // one, so the index is refused rather than dropped.
         flowsheet.instances[0].unit = "unit_ops.splitter".into();
         flowsheet.connections[0].to = "p1.feed[0]".into();
         flowsheet.connections[1].from = "p1.products".into();
@@ -2223,7 +2530,7 @@ mod tests {
             diags.iter().any(|d| matches!(
                 d,
                 Diagnostic::EndpointIndex { endpoint, detail }
-                    if endpoint == "p1.feed[0]" && detail.contains("no positions")
+                    if endpoint == "p1.feed[0]" && detail.contains("declares one stream")
             )),
             "{diags:?}"
         );
@@ -2428,6 +2735,31 @@ mod tests {
                 description: "the fraction to each outlet".to_string(),
             },
         );
+        for (name, unit, description) in [
+            ("mechanical_design", None, "the design flag"),
+            ("design_velocity", Some("m/s"), "the sizing velocity"),
+            ("max_operation_pressure", Some("Pa"), "the wall pressure"),
+            ("tensile_strength", Some("Pa"), "the wall tensile strength"),
+            (
+                "joint_efficiency",
+                Some("dimensionless"),
+                "the wall joint efficiency",
+            ),
+            (
+                "corrosion_allowance",
+                Some("mm"),
+                "the wall corrosion allowance",
+            ),
+        ] {
+            splitter_spec.parameters.insert(
+                name.to_string(),
+                crate::unit_op::Param {
+                    required: false,
+                    unit: unit.map(str::to_string),
+                    description: description.to_string(),
+                },
+            );
+        }
         let mut mixer_spec = mixer("unit_ops.mixer");
         mixer_spec.parameters.insert(
             "outlet_pressure".to_string(),
@@ -2498,14 +2830,48 @@ mod tests {
                 },
             );
             let mut splitter_spec = splitter("unit_ops.splitter");
-            splitter_spec.parameters.insert(
-                "split_factors".to_string(),
-                crate::unit_op::Param {
-                    required: false,
-                    unit: Some("dimensionless".to_string()),
-                    description: "the fraction to each outlet".to_string(),
-                },
-            );
+            for (name, unit, description) in [
+                (
+                    "split_factors",
+                    Some("dimensionless"),
+                    "the fraction to each outlet",
+                ),
+                (
+                    "design_pressure_drop",
+                    Some("Pa"),
+                    "the pressure-drop design",
+                ),
+                ("max_design_velocity", Some("m/s"), "the velocity design"),
+                ("header_diameter", Some("m"), "the header diameter"),
+                (
+                    "capacity_analysis_enabled",
+                    None,
+                    "the capacity-analysis flag",
+                ),
+                ("mechanical_design", None, "the design flag"),
+                ("design_velocity", Some("m/s"), "the sizing velocity"),
+                ("max_operation_pressure", Some("Pa"), "the wall pressure"),
+                ("tensile_strength", Some("Pa"), "the wall tensile strength"),
+                (
+                    "joint_efficiency",
+                    Some("dimensionless"),
+                    "the wall joint efficiency",
+                ),
+                (
+                    "corrosion_allowance",
+                    Some("mm"),
+                    "the wall corrosion allowance",
+                ),
+            ] {
+                splitter_spec.parameters.insert(
+                    name.to_string(),
+                    crate::unit_op::Param {
+                        required: false,
+                        unit: unit.map(str::to_string),
+                        description: description.to_string(),
+                    },
+                );
+            }
             vec![mixer_spec, splitter_spec]
         };
         let looped = looped_flowsheet();

@@ -2,20 +2,20 @@
 
 # Hydraulics
 
-Every calculation in this section is generated from its specification. Each page shows the equation, where it came from, the range in which it is validated, its assumptions, a worked example, and the tests that exercise it.
+Every calculation in this section is generated from its specification. Each page states what the calculation is for, the equation and where it came from, the range in which it is validated, the conditions it does not check, a worked example, and the tests that exercise it.
 
-| Calculation | Equation | Source |
+| Calculation | What it is for | Source |
 |---|---|---|
-| [`hydraulics.choked_flow_area`](./choked_flow_area.md) | $A = \frac{\dot m}{\sqrt{k\,\rho_0 P_0}\,\left(\frac{2}{k+1}\right)^{\frac{k+1}{2(k-1)}}}$ | the isentropic critical-flow relation from gas dynamics; API 520 / ISO 4126 for relief valve sizing, which this calc does NOT implement |
-| [`hydraulics.control_valve_cv`](./control_valve_cv.md) | $Q = C_v \sqrt{\frac{\Delta P}{SG}}$ | the liquid sizing equation for control valves; IEC 60534 for the coefficient tables, which this calc does not implement |
-| [`hydraulics.crane_k_factors`](./crane_k_factors.md) | $K = f_t \sum_{i} n_{L/D,i}$ | Crane TP-410 |
-| [`hydraulics.darcy_weisbach`](./darcy_weisbach.md) | $\Delta P = f\,\frac{L}{D}\,\frac{\rho v^{2}}{2}$ | Crane TP-410 |
-| [`hydraulics.friction_factor_colebrook`](./friction_factor_colebrook.md) | $\frac{1}{\sqrt{f}} = -2\,\log_{10}\!\left(\frac{\varepsilon/D}{3.7} + \frac{2.51}{Re\,\sqrt{f}}\right)$ | Colebrook, C. F. (1939) |
-| [`hydraulics.friction_factor_haaland`](./friction_factor_haaland.md) | $f = \left[-1.8\,\log_{10}\!\left[\left(\frac{\varepsilon/D}{3.7}\right)^{1.11} + \frac{6.9}{Re}\right]\right]^{-2}$ | Haaland, S. E. (1983) |
-| [`hydraulics.friction_factor_swamee_jain`](./friction_factor_swamee_jain.md) | $f = \frac{0.25}{\left[\log_{10}\!\left(\frac{\varepsilon/D}{3.7} + \frac{5.74}{Re^{0.9}}\right)\right]^{2}}$ | Swamee, P. K.; Jain, A. K. (1976) |
-| [`hydraulics.orifice_flow`](./orifice_flow.md) | $Q = C_d \frac{\pi d^{2}}{4} \sqrt{\frac{2\,\Delta P}{\rho}}$ | the orifice equation; ISO 5167 for the discharge coefficient, which this calc does not implement |
-| [`hydraulics.packing_hydraulics`](./packing_hydraulics.md) | $\frac{a_w}{a} = 1 - \exp\!\left[-1.45\left(\frac{\sigma_c}{\sigma}\right)^{0.75} Re_L^{0.1} Fr_L^{-0.05} We_L^{0.2}\right]$ | NeqSim master `PackingHydraulicsCalculator` |
-| [`hydraulics.packing_sizing`](./packing_sizing.md) | $d = \operatorname{round}_{\mathrm{std}}\!\left(\sqrt{\frac{4\,m_v}{\pi\,\rho_v\,u_{\mathrm{flood}}\,f}}\right)$ | NeqSim master `PackingHydraulicsCalculator` |
-| [`hydraulics.pump_power`](./pump_power.md) | $P = \frac{\rho\,g\,Q\,H}{\eta}$ | standard pump hydraulics; the hydraulic-power relation in any fluids text |
-| [`hydraulics.reynolds_number`](./reynolds_number.md) | $Re = \frac{\rho v D}{\mu}$ | Crane TP-410 |
-| [`hydraulics.tray_hydraulics`](./tray_hydraulics.md) | $u_{\mathrm{flood}} = K(S,\mathrm{FLV})\left(\frac{\sigma}{\sigma_0}\right)^{0.2} f_t \sqrt{\frac{\rho_\ell-\rho_v}{\rho_v}}, \qquad K(S,\mathrm{FLV}) = \frac{k(S)\,e^{-1.463\,\mathrm{FLV}^{0.842}}}{e^{-1.463\,(0.1)^{0.842}}}$ | NeqSim master `TrayHydraulicsCalculator` |
+| [`hydraulics.choked_flow_area`](./choked_flow_area.md) | Sizes the minimum flow area for choked gas flow through a restriction from mass flow, upstream density, pressure and heat-capacity ratio. Use it for relief and vent-path screening. | the isentropic critical-flow relation from gas dynamics; API 520 / ISO 4126 for relief valve sizing, which this calc does NOT implement |
+| [`hydraulics.control_valve_cv`](./control_valve_cv.md) | Liquid flow through a control valve from its flow coefficient, pressure drop and specific gravity. Use it to size a valve trim or check an existing valve at a duty. | the liquid sizing equation for control valves; IEC 60534 for the coefficient tables, which this calc does not implement |
+| [`hydraulics.crane_k_factors`](./crane_k_factors.md) | Total fitting resistance coefficient from a list of fittings and their equivalent lengths. Use it to add valve and fitting losses to a line pressure-drop calculation. | Crane TP-410 |
+| [`hydraulics.darcy_weisbach`](./darcy_weisbach.md) | Pressure drop for steady flow in a circular pipe from the Darcy-Weisbach relation. Use it for line sizing and pump-head checks once a friction factor is known. | Crane TP-410 |
+| [`hydraulics.friction_factor_colebrook`](./friction_factor_colebrook.md) | Solves the Colebrook-White equation for the Darcy friction factor at a Reynolds number and relative roughness. Use it where the implicit turbulent-flow factor is required. | Colebrook, C. F. (1939) |
+| [`hydraulics.friction_factor_haaland`](./friction_factor_haaland.md) | Explicit Haaland approximation to the Colebrook-White friction factor. Use it for fast turbulent-flow pressure-drop estimates. | Haaland, S. E. (1983) |
+| [`hydraulics.friction_factor_swamee_jain`](./friction_factor_swamee_jain.md) | Explicit Swamee-Jain approximation to the Colebrook-White friction factor. Use it for turbulent-flow pressure-drop estimates where an explicit form is preferred. | Swamee, P. K.; Jain, A. K. (1976) |
+| [`hydraulics.orifice_flow`](./orifice_flow.md) | Flow through an orifice from the pressure difference across it, the hole diameter, discharge coefficient and density. Use it for restriction and meter sizing. | the orifice equation; ISO 5167 for the discharge coefficient, which this calc does not implement |
+| [`hydraulics.packing_hydraulics`](./packing_hydraulics.md) | A packed bed's flooding velocity, operating load, pressure drop and film coefficients from its packing, flows and properties. Use it to rate a packed column or check its hydraulic margin. | NeqSim master `PackingHydraulicsCalculator` |
+| [`hydraulics.packing_sizing`](./packing_sizing.md) | The column diameter a packed bed needs to stay below a chosen fraction of flooding. Use it for packed-column diameter sizing from vapour and liquid loads. | NeqSim master `PackingHydraulicsCalculator` |
+| [`hydraulics.pump_power`](./pump_power.md) | Shaft power a pump needs from flow, head and efficiency at its operating point. Use it to size a driver or check a pump duty before a hydraulic study. | standard pump hydraulics; the hydraulic-power relation in any fluids text |
+| [`hydraulics.reynolds_number`](./reynolds_number.md) | Reynolds number for pipe flow from density, velocity, diameter and viscosity. Use it to choose the flow regime and the right friction-factor correlation. | Crane TP-410 |
+| [`hydraulics.tray_hydraulics`](./tray_hydraulics.md) | A tray's flooding, weeping, entrainment, pressure drop and efficiency from its geometry and loads. Use it to screen tray hydraulic limits before a detailed column rating. | NeqSim master `TrayHydraulicsCalculator` |

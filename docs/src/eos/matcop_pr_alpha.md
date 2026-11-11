@@ -4,6 +4,8 @@
 
 `eos.matcop_pr_alpha`
 
+Mathias-Copeman alpha function with a Peng-Robinson supercritical fallback. Use it when a cubic EOS needs this form above and below the critical temperature.
+
 ## Equation
 
 $$
@@ -23,6 +25,14 @@ alpha = (1 + mc1*(1 - sqrt(Tr)) + mc2*(1 - sqrt(Tr))**2 + mc3*(1 - sqrt(Tr))**3)
 `alpha(temperature)`, ported verbatim
 
 DOI: [10.1016/0378-3812(83)80084-3](https://doi.org/10.1016/0378-3812(83)80084-3)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- above the critical temperature (``Tr > 1``), or when the first coefficient is below 1e-20, the alpha falls back to the standard Peng-Robinson form, which needs the acentric factor for ``m``.
+
 
 ## Inputs
 
@@ -49,15 +59,13 @@ DOI: [10.1016/0378-3812(83)80084-3](https://doi.org/10.1016/0378-3812(83)80084-3
 | `Tr > 0` | raises | the formula takes a square root of `Tr`; zero and below are not states |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
 - the three Mathias-Copeman coefficients are the caller's fitted parameters, not derived.
-
-- above the critical temperature (``Tr > 1``), or when the first coefficient is below 1e-20, the alpha falls back to the standard Peng-Robinson form, which needs the acentric factor for ``m``.
 
 
 

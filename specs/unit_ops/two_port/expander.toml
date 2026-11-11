@@ -10,6 +10,9 @@ description = "the pressure the expander lets the stream down to"
 required = true
 unit = "dimensionless"
 description = "the expander's isentropic efficiency, between 0 and 1"
+[parameters.rated_recovered_power]
+unit = "W"
+description = "`setRatedRecoveredPower`, the recovered-power rating; a positive value initializes the `recoveredPower` constraint, and a non-positive one creates none"
 [[ports]]
 name = "inlet"
 direction = "in"

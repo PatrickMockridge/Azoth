@@ -11,9 +11,9 @@
  * JSON `POST` is not a "simple" request and the answer is unreadable without the CORS header.
  */
 
-import { moduleDoor } from "./client";
-import { HttpDoor } from "./http";
-import type { Door } from "./session";
+import { moduleDoors } from "./client";
+import { HttpDoor, HttpSheetDoor } from "./http";
+import type { Doors } from "./session";
 
 /**
  * The served base a query string names, or `null` for the module.
@@ -30,8 +30,10 @@ export function serveUrl(search: string): string | null {
   return base === "" ? null : base;
 }
 
-/** The door this page was loaded for. */
-export async function door(search: string): Promise<Door> {
+/** Both doors this page was loaded for: the flowsheet and the calculation book. */
+export async function door(search: string): Promise<Doors> {
   const base = serveUrl(search);
-  return base === null ? moduleDoor() : new HttpDoor(base);
+  return base === null
+    ? moduleDoors()
+    : { flowsheet: new HttpDoor(base), sheets: new HttpSheetDoor(base) };
 }

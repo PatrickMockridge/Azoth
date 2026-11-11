@@ -11,11 +11,14 @@ assumptions = [
     "**the six fractions are declared, and their order is part of the answer.** Each moves a share of the *current* from-phase's moles, so `gas_in_oil` after `gas_in_aqueous` moves a share of what is left - the order `run` applies them in is the order here.",
     "**an absent phase is a zero-flow outlet.** NeqSim answers with a `1e-20 kg/hr` clone of the whole system, whose composition need not sum to one and whose enthalpy is that clone's own; both rows of the capture that have one are declared rather than pinned.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `ThreePhaseSeparator` also carries water and oil levels, three outlet valve fractions, a droplet-performance calculator and a `runTransient`. **None is here**: every one of them reads a transient or mechanical state the steady `run` does not.",
+    "**levels are setter state; retention is a mechanical-design read.** The level setters clamp at zero and store, and the retention methods read `getNLL()`/`getNIL()` (defaults `0.5`/`0.2` of the diameter) and `0.82 * separatorLength`, so a stated level does not move them.",
+    "**a retention time is the phase's volume over its flow.** The oil's volume is the segment between NIL and NLL times the effective length, the water's the segment below NIL; a phase that is absent, or a flow of zero, is `Infinity` in the class and **absent here**.",
+    "**the three outlet valve fractions are stored state, not a split.** The class clamps them and the steady `run` never reads them; `getMassBalance` is a zero-by-construction residual (the capture reads `-2.06e-12` kg/hr), so it is not a field.",
+    "**`calcInterfaceSettlingTime` is ported on the initialised state.** The class reads the aqueous density before `initPhysicalProperties`, so a fresh run answers `Infinity`; with the phase initialised, the capture's `0.1239` min is what the port reproduces.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/ThreePhaseSeparator.java` is the port source, through its `run`.",
-    "`validation/neqsim/captures/process_three_phase_separator.tsv` - six rows: no drop, a 2 bar drop, a 1000 W heat input, the two entrainment directions, and a dry feed whose aqueous outlet is the empty clone.",
+    "`validation/neqsim/captures/process_three_phase_separator.tsv` - ten rows: no drop, a 2 bar drop, a 1000 W heat input, the two entrainment directions and a dry feed; then a stated vessel, a stated pair of levels, a negative pair, and the dry feed in the same vessel.",
 ]
 [source]
 standard = "NeqSim process/equipment/separator/ThreePhaseSeparator.java"
@@ -59,10 +62,46 @@ description = "the fraction of the aqueous phase's moles carried into the vapour
 [inputs.aqueous_in_oil]
 unit = "dimensionless"
 description = "the fraction of the aqueous phase's moles carried into the oil.\n"
+[inputs.gas_outlet_flow_fraction]
+unit = "dimensionless"
+optional = true
+description = "the gas outlet valve's flow fraction, clamped to `[0, 1]`. **Absent is the class's `1.0`.** The steady split never reads it; it is stored state, and the mass balance reports the outlets the split produced.\n"
+[inputs.oil_outlet_flow_fraction]
+unit = "dimensionless"
+optional = true
+description = "the oil outlet valve's flow fraction, clamped to `[0, 1]`. **Absent is `1.0`.** Stored and unread by the steady split, as above.\n"
+[inputs.water_outlet_flow_fraction]
+unit = "dimensionless"
+optional = true
+description = "the water outlet valve's flow fraction, clamped to `[0, 1]`. **Absent is `1.0`.** Stored and unread by the steady split, as above.\n"
 [inputs.heat_input]
 unit = "W"
 optional = true
 description = "heat added to the feed before the flash. When omitted the flash is at the feed's temperature; when given it is at the enthalpy the duty implies, and the temperature that carries it is solved for.\n"
+[inputs.internal_diameter]
+unit = "m"
+optional = true
+description = "the vessel's internal diameter, which the retention geometry divides. **Stated with `separator_length` or not at all**; absent means the two retention outputs are absent.\n"
+[inputs.separator_length]
+unit = "m"
+optional = true
+description = "the tan-tan length, which `getEffectiveLengthLiquid` is `0.82` of. Stated with the diameter or not at all.\n"
+[inputs.nll_fraction]
+unit = "dimensionless"
+optional = true
+description = "the normal liquid level as a fraction of the internal diameter; absent is the mechanical design's `0.5`. Refused without the diameter and length.\n"
+[inputs.nil_fraction]
+unit = "dimensionless"
+optional = true
+description = "the normal oil-water interface as a fraction of the internal diameter; absent is `0.2`. Refused without the vessel.\n"
+[inputs.water_level]
+unit = "m"
+optional = true
+description = "the water level the class's setter stores, clamped at zero. **It does not move the retention times**, which read NLL and NIL.\n"
+[inputs.oil_level]
+unit = "m"
+optional = true
+description = "the oil level the class's setter stores, clamped at zero; `oil_thickness` is this less `water_level`.\n"
 [outputs]
 [outputs.vapour_n]
 unit = "mol/s"
@@ -115,6 +154,34 @@ description = "the aqueous outlet's temperature, the same as the vapour's.\n"
 [outputs.heavy_liquid_h]
 unit = "J/mol"
 description = "the aqueous outlet's molar enthalpy at the state its composition settles on, which on a dry feed is the state of a stream that carries nothing.\n"
+[outputs.water_level]
+unit = "m"
+optional = true
+description = "the stored water level, clamped at zero. Present when either level is stated; an unstated one is the class's `0.0` default.\n"
+[outputs.oil_level]
+unit = "m"
+optional = true
+description = "the stored oil level, clamped at zero. Present as `water_level` is.\n"
+[outputs.oil_thickness]
+unit = "m"
+optional = true
+description = "`getOilThickness`: `oil_level - water_level` floored at zero. Present as the levels are.\n"
+[outputs.oil_retention_time]
+unit = "s"
+optional = true
+description = "`calcOilRetentionTime`, converted from the class's minutes: the oil segment `NIL`-to-`NLL` times the effective length over the oil phase's flow. **Absent when the vessel is not stated or the feed has no oil.**\n"
+[outputs.water_retention_time]
+unit = "s"
+optional = true
+description = "`calcWaterRetentionTime`: the segment below `NIL` times the effective length over the aqueous flow. Absent as the oil's is.\n"
+[outputs.interface_settling_time]
+unit = "s"
+optional = true
+description = "`calcInterfaceSettlingTime`, converted from the class's minutes: a 150 µm water droplet through the oil layer, `9.81 d^2 (rho_w - rho_o)/(18 mu_o)`, over the layer. Absent with no vessel or no non-positive velocity.\n"
+[outputs.settling_time_sufficient]
+type = "boolean"
+optional = true
+description = "whether `interface_settling_time` reaches the class's one-minute limit. **Not `isWithinAllLimits`**: that ANDs the base class's velocity and retention checks, which this id does not carry.\n"
 [[valid_range]]
 quantity = "pressure_drop"
 min = 0
@@ -175,6 +242,34 @@ min = 0
 min_inclusive = false
 severity = "error"
 rationale = "an absolute temperature, and the feed's is the one it resolves"
+[[valid_range]]
+quantity = "internal_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a diameter is a positive length, and the segment areas are zero at zero\n"
+[[valid_range]]
+quantity = "separator_length"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a length is a positive length, and the effective liquid length is a fraction of it\n"
+[[valid_range]]
+quantity = "nll_fraction"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a level fraction of the internal diameter\n"
+[[valid_range]]
+quantity = "nil_fraction"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a level fraction of the internal diameter\n"
 [implementations]
 python = "azoth.process.three_phase_separator"
 rust = "azoth_process::three_phase_separator"

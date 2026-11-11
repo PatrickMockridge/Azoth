@@ -10,14 +10,28 @@ assumptions = [
     "**the entrainment acts only where both phases exist.** `addPhaseFractionToPhase` returns unchanged unless the from-phase and to-phase are both present, so a single-phase feed is untouched whatever the fraction says.",
     "**`efficiency` is not a parameter here.** `Separator` carries the field and a setter, and `run` never reads it - the class says so at `Separator.java:575`. The palette entry used to declare it, which is a parameter nothing could honour.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `Separator` also carries a mechanical design, a capacity check, a droplet-performance calculator and a `runTransient`, **none of it here**. `oil_in_gas` and `water_in_gas` are absent: no oil or aqueous phase exists here, and they are the only fields that re-run the *vapour*.",
+    "**the capacity surface is a second fold on the same flash, and it is optional.** The diameter and design `K` are **both or neither**; `orientation` and the liquid level are refused without them, and the five outputs are absent.",
+    "**its two density rules are not one.** The sizing family reads the liquid's own density, `1000.0` where none exists, with **no floor**. `getGasLoadFactor()` applies `MIN_LIQUID_GAS_DENSITY_DIFFERENCE = 10.0`: under it, `1000.0` is substituted.",
+    "**the gas area is the design area**: full cross-section vertical, `(1 - design_liquid_level_fraction)` horizontal. **Horizontal and `0.8` are the class's defaults when the vessel states neither** - a foot-gun: a vertical scrubber on them derates five-fold. `GasScrubber`'s defaults are not adopted.",
+    "**no gas phase answers `0.0` utilisation and `false` overload, and the three velocity metrics are absent.** The class's velocity and load-factor getters still read phase 0, which is then the liquid; a metric formed from it is not a gas metric, so the port omits it rather than publishing one.",
+    "**the metric is read at the outlet state and on the entrained liquid.** `Q`, `rho_g` and `rho_l` are the system after `run` - `feed_p - pressure_drop`, the flash's temperature - and the liquid density is the one that absorbed `gas_in_liquid`.",
+    "**one liquid.** `getGasLoadFactor()` reads phase 1 and the sizing family prefers `oil` then `aqueous`; with one condensed phase the branch is that phase, and `process.three_phase_separator` owns the other.",
+    "**the phase-number load factor reads the holdup, not the design level.** `getGasLoadFactor(int)` divides its term by `1 - liquidVolume/separatorVolume` horizontal; the no-argument form uses `1 - design_liquid_level_fraction`. On the capture's `0.8`/`0.5` state they differ by `sqrt(2)`.",
+    "**`sizeFromFlow` is a closed form and sizes one diameter**: the gas flow times the safety factor over the design `K` velocity, the oil-then-aqueous liquid density, and the orientation's design gas area. A system with no gas returns unsized.",
+    "**the derating getter reads a stale interphase clone**: it reports `0.0` N/m where the live Parachor answers `0.0089`, so every two-phase state answers `0.5`. The capture prints both factors; the port publishes no derated factor, because a stale clone's value is not a state function.",
+    "**the mechanical design's basis is the class's default standards, declared as inputs**: `K = 0.11`, `Fg = 0.8`, safety `1.0`, retention `60` s, stress `425` MPa, joint efficiency `1.0`, pressure `100` bara and corrosion allowance `0`.",
+    "**the design's volume flows are the cubic's, not mass over the physical-properties density.** `Phase.getVolume()` is the untranslated EOS volume while the density carries the Peneloux shift; the capture's PR row is `0.11035858` m3 against `0.110877` from the translated density.",
+    "**the retention and surge times divide a m3/s flow as though it were m3/hr.** The capture's `394 159` s is the class's arithmetic; the port reproduces it rather than correcting it.",
+    "**the class's own test is SRK and this port's separator is PR**, so the capture carries both rows. The arithmetic is cubic-agnostic; the densities and the viscosity are what move.",
+    "NeqSim's `Separator` also carries `autoSize` and `runTransient`, **none of it here**; `SeparatorCapacityAssessment` and the droplet calculator are separate ids. `oil_in_gas`/`water_in_gas` are absent.",
 ]
 references = [
-    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/Separator.java` is the port source, through its `run`.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/Separator.java` is the port source, through its `run` and its steady capacity getters.",
+    "`validation/neqsim/captures/process_separator_capacity.tsv` - fifteen rows: nine PR states that sweep the capacity surface, four SRK states re-casing `SeparatorTest`, and a `GasScrubber` at minimum setup that prints the defaults this id does not adopt.",
 ]
 [source]
 standard = "NeqSim process/equipment/separator/Separator.java"
-edition = "`run`: the pressure less `pressureDrop`, a `TPflash` at the feed's temperature or a `PHflash` at the `heatInput` enthalpy, the entrainment calls, each outlet from its flash phase unless the class re-runs it. **`oilInGas` and `waterInGas` are absent**: no oil or aqueous phase exists here."
+edition = "`run`: the pressure less `pressureDrop`, a `TPflash` at the feed's temperature or a `PHflash` at the `heatInput` enthalpy, the entrainment calls, each outlet from its flash phase unless re-run; the five capacity getters; `getGasLoadFactor(int)`; and `sizeFromFlow(safety)`."
 [inputs]
 [inputs.components]
 type = "components"
@@ -46,6 +60,71 @@ description = "the fraction of the vapour's moles carried into the liquid outlet
 unit = "W"
 optional = true
 description = "heat added to the feed before the flash. When omitted the flash is at the feed's temperature; when given it is at the enthalpy the duty implies and both outlets are at the temperature that solves for.\n"
+[inputs.internal_diameter]
+unit = "m"
+optional = true
+description = "the vessel's internal diameter, which the gas area is `pi d**2 / 4` over. **Stated with `design_gas_load_factor` or not at all**: half a vessel has nothing to check. Absent means the five capacity outputs are absent.\n"
+[inputs.design_gas_load_factor]
+unit = "m/s"
+optional = true
+description = "the Souders-Brown `K` the vessel is designed to, m/s. **Stated with `internal_diameter` or not at all.** It is the design basis, not the gas's actual load factor - see `gas_load_factor`.\n"
+[inputs.orientation]
+type = "enum"
+values = ["horizontal", "vertical"]
+optional = true
+description = "the vessel's orientation, which picks the gas area. **Absent is the class's `horizontal`**; refused without the diameter and load factor.\n"
+[inputs.design_liquid_level_fraction]
+unit = "dimensionless"
+optional = true
+description = "the fraction of the cross-section the liquid occupies at design, which derates a horizontal vessel's gas area to `(1 - f)`. **Absent is the class's `0.8`**; vertical ignores it; refused without the diameter and load factor.\n"
+[inputs.separator_length]
+unit = "m"
+optional = true
+description = "the vessel's tangent-to-tangent length, which the horizontal liquid volume and the vertical liquid height both divide. **Absent is the class's `5.0` m**; refused without the diameter and load factor.\n"
+[inputs.liquid_level_fraction]
+unit = "dimensionless"
+optional = true
+description = "the operating liquid level, as the fraction of the maximum liquid height the class's `setLiquidLevel` takes - the diameter on a horizontal vessel and the length on a vertical one. **Absent is the class's `0.5`**; refused without the diameter and load factor.\n"
+[inputs.safety_factor]
+unit = "dimensionless"
+optional = true
+description = "the factor `sizeFromFlow` multiplies the gas volumetric flow by before it solves for the diameter. **Absent leaves `required_diameter` absent**; present requires the diameter and load factor.\n"
+[inputs.mechanical_design]
+type = "boolean"
+optional = true
+description = "run `SeparatorMechanicalDesign.calcDesign` and publish its vessel. **Absent is false**; present requires `design_gas_load_factor`, and the group below is refused without it. The design sizes its own diameter, so `internal_diameter` is not needed.\n"
+[inputs.auto_size]
+type = "boolean"
+optional = true
+description = "run `Separator.autoSize(safety_factor)` and publish its vessel. **Absent is false.** Defaults are the shipped database's `K = 0.107`, `Fg = 0.5` and the hard-set `120` s; `safety_factor` is the volume factor (absent `1.2`). Refuses a stated diameter and `mechanical_design`.\n"
+[inputs.fg]
+unit = "dimensionless"
+optional = true
+description = "`SeparatorDesignStandard.getFg`, the horizontal liquid fraction. **Absent is the class default's `0.8`.** Refused without `mechanical_design`.\n"
+[inputs.volume_safety_factor]
+unit = "dimensionless"
+optional = true
+description = "`getVolumetricDesignFactor`, the factor the gas and liquid flows are multiplied by. **Absent is `1.0`.**\n"
+[inputs.retention_time]
+unit = "s"
+optional = true
+description = "`getLiquidRetentionTime(\"API12J\", ...)`, which the tangent-to-tangent length is sized from. **Absent is `60` s.**\n"
+[inputs.max_operation_pressure]
+unit = "Pa"
+optional = true
+description = "`getMaxOperationPressure`, the pressure the ASME wall-thickness formula divides by. **Absent is `100` bara.**\n"
+[inputs.allowable_stress]
+unit = "Pa"
+optional = true
+description = "the material plate standard's allowable stress. **Absent is `425` MPa.**\n"
+[inputs.joint_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the plate joint-efficiency factor. **Absent is `1.0`.**\n"
+[inputs.corrosion_allowance]
+unit = "mm"
+optional = true
+description = "the corrosion allowance the wall thickness adds. **Absent is `0`.**\n"
 [outputs]
 [outputs.vapour_n]
 unit = "mol/s"
@@ -81,6 +160,160 @@ description = "the liquid outlet's temperature, the same as the vapour's - one f
 [outputs.liquid_h]
 unit = "J/mol"
 description = "the liquid outlet's molar enthalpy at its own state.\n"
+[outputs.capacity_utilization]
+unit = "dimensionless"
+optional = true
+description = "`getCapacityUtilization`: the gas's volumetric flow over what the gas area admits at the design velocity, `Q / (V_max A)`. **Present only when the vessel is stated**, and `0.0` when no gas phase exists.\n"
+[outputs.max_allowable_gas_velocity]
+unit = "m/s"
+optional = true
+description = "`getMaxAllowableGasVelocity`: `K sqrt((rho_l - rho_g)/rho_g)` with the liquid's own density, or `1000.0` where no liquid exists - **the sizing rule's, with no `10.0` floor**. Present only when the vessel is stated and a gas phase exists.\n"
+[outputs.gas_superficial_velocity]
+unit = "m/s"
+optional = true
+description = "`getGasSuperficialVelocity`: `Q/A` over the design gas area, so a horizontal vessel's is the area-derated one. Present as above.\n"
+[outputs.gas_load_factor]
+unit = "m/s"
+optional = true
+description = "`getGasLoadFactor()`: the gas's *actual* Souders-Brown `K`, `u sqrt(rho_g/(rho_l - rho_g))`, with the `10.0` near-dry floor on `rho_l`. **Not `design_gas_load_factor`.** Present as above.\n"
+[outputs.is_overloaded]
+type = "boolean"
+optional = true
+description = "`isOverloaded`: `capacity_utilization > 1.0`, exactly. **Present only when the vessel is stated**; `false` with no gas.\n"
+[outputs.gas_area_fraction]
+unit = "dimensionless"
+optional = true
+description = "`1 - liquidVolume / separatorVolume` on a horizontal vessel and `1.0` on a vertical one: **the actual holdup**, which `getGasLoadFactor(int)` divides its term by, and not the design level fraction the superficial velocity uses. Present only when the vessel is stated.\n"
+[outputs.rated_gas_load_factor_by_phase]
+type = "vector"
+unit = "m/s"
+length = "one per liquid phase"
+optional = true
+description = "`getGasLoadFactor(int)` for each liquid phase, in phase order: the superficial velocity over `sqrt((1/gas_area_fraction) (rho_i - rho_g)/rho_g)`, with the `10.0` near-dry floor. Absent with no gas, and with no liquid phase.\n"
+[outputs.required_diameter]
+unit = "m"
+optional = true
+description = "`sizeFromFlow(safety_factor)`'s answer: the gas flow times the factor over the maximum velocity and the orientation's design gas area, under the circle's area. Absent when no safety factor or no gas.\n"
+[outputs.design_inner_diameter]
+unit = "m"
+optional = true
+description = "`calcDesign`'s sized internal diameter, from the gas flow, the design `K` and the orientation's gas area. Absent unless `mechanical_design`.\n"
+[outputs.design_tantan_length]
+unit = "m"
+optional = true
+description = "the tangent-to-tangent length, from the liquid volume and the retention time, with the class's `5 d` substitution outside an L/D of 3 to 6.\n"
+[outputs.design_outer_diameter]
+unit = "m"
+optional = true
+description = "the inside diameter plus twice the wall thickness.\n"
+[outputs.design_wall_thickness]
+unit = "m"
+optional = true
+description = "the ASME wall thickness at the stated pressure, allowable stress, joint efficiency and corrosion allowance.\n"
+[outputs.max_design_gas_volume_flow]
+unit = "m**3/h"
+optional = true
+description = "`getMaxDesignGassVolumeFlow`: the design velocity over the sized gas area, in m3/hr.\n"
+[outputs.vessel_shell_weight]
+unit = "kg"
+optional = true
+description = "`0.032 * wall_mm * diameter_mm * length`, the class's empty-shell estimate.\n"
+[outputs.piping_weight]
+unit = "kg"
+optional = true
+description = "the class's piping allowance, `0.4` of the shell weight.\n"
+[outputs.structural_weight]
+unit = "kg"
+optional = true
+description = "the class's structural allowance, `0.1` of the shell weight.\n"
+[outputs.electrical_weight]
+unit = "kg"
+optional = true
+description = "the class's electrical allowance, `0.08` of the shell weight.\n"
+[outputs.internals_weight]
+unit = "kg"
+optional = true
+description = "the internals' weight. `0.0` here: the class leaves it at zero without internals sections, and this port builds none.\n"
+[outputs.total_weight]
+unit = "kg"
+optional = true
+description = "the shell plus the class's piping, structural and electrical allowances (`40%`, `10%` and `8%`).\n"
+[outputs.module_width]
+unit = "m"
+optional = true
+description = "`2 d`.\n"
+[outputs.module_length]
+unit = "m"
+optional = true
+description = "`1.5 * tantan_length`.\n"
+[outputs.module_height]
+unit = "m"
+optional = true
+description = "`2 d + 1`.\n"
+[outputs.vessel_volume]
+unit = "m**3"
+optional = true
+description = "the cylinder's internal volume, `pi (d/2)^2 L`.\n"
+[outputs.hhll]
+unit = "m"
+optional = true
+description = "the high-high liquid level, `0.80 d` by the class's default fraction.\n"
+[outputs.hll]
+unit = "m"
+optional = true
+description = "the high liquid level, `0.70 d`.\n"
+[outputs.nll]
+unit = "m"
+optional = true
+description = "the normal liquid level, `0.50 d`.\n"
+[outputs.lll]
+unit = "m"
+optional = true
+description = "the low liquid level, `0.30 d`.\n"
+[outputs.llll]
+unit = "m"
+optional = true
+description = "the low-low liquid level, `0.15 d`.\n"
+[outputs.weir_height]
+unit = "m"
+optional = true
+description = "the weir height, `0.25 d`.\n"
+[outputs.nil]
+unit = "m"
+optional = true
+description = "the normal oil/water interface level, `0.20 d`.\n"
+[outputs.effective_length_liquid]
+unit = "m"
+optional = true
+description = "the effective liquid separation length, `0.82 L` when the class leaves it unset.\n"
+[outputs.effective_length_gas]
+unit = "m"
+optional = true
+description = "the effective gas separation length, `0.64 L`.\n"
+[outputs.inlet_nozzle_id]
+unit = "m"
+optional = true
+description = "the inlet nozzle's inside diameter: API 12J's `8000 Pa` momentum limit on the two-phase flow, rounded up in `50` mm steps with a `50` mm floor.\n"
+[outputs.gas_outlet_nozzle_id]
+unit = "m"
+optional = true
+description = "the gas outlet nozzle's inside diameter at a `20` m/s limit, rounded up in `50` mm steps.\n"
+[outputs.oil_outlet_nozzle_id]
+unit = "m"
+optional = true
+description = "the oil outlet nozzle's inside diameter at a `1.5` m/s limit, rounded up in `25` mm steps with a `50` mm floor.\n"
+[outputs.surge_volume]
+unit = "m**3"
+optional = true
+description = "the vessel's volume between NLL and HLL over the effective liquid length.\n"
+[outputs.surge_time]
+unit = "s"
+optional = true
+description = "the surge volume over the liquid volumetric flow, **with the class's unit slip**: the flow is m3/s and is divided as though m3/hr.\n"
+[outputs.liquid_retention_time]
+unit = "s"
+optional = true
+description = "the volume at NLL over the same flow, again as though m3/hr - the capture's `394 159` s is that arithmetic rather than a physical residence time.\n"
 [[valid_range]]
 quantity = "pressure_drop"
 min = 0
@@ -95,6 +328,92 @@ max = 1
 max_inclusive = true
 severity = "error"
 rationale = "an entrainment fraction is a fraction\n"
+[[valid_range]]
+quantity = "internal_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a diameter is a positive length, and the gas area is a zero area at zero - NeqSim's getCapacityUtilization answers NaN there, which this refuses at the input instead\n"
+[[valid_range]]
+quantity = "design_gas_load_factor"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a Souders-Brown load factor is a positive velocity; zero is a vessel that admits no gas at all\n"
+[[valid_range]]
+quantity = "design_liquid_level_fraction"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = false
+severity = "error"
+rationale = "a fraction of the cross-section; at one it leaves no gas area, which is a division by zero rather than a vessel\n"
+[[valid_range]]
+quantity = "separator_length"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a tangent-to-tangent length is a positive length, and the horizontal liquid volume is zero at zero\n"
+[[valid_range]]
+quantity = "liquid_level_fraction"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = false
+severity = "error"
+rationale = "the class's setLiquidLevel takes a fraction of the maximum liquid height; at one the vessel is all liquid and has no gas area\n"
+[[valid_range]]
+quantity = "safety_factor"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "sizeFromFlow multiplies the gas flow by it, and zero is a vessel that sizes to nothing\n"
+[[valid_range]]
+quantity = "fg"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = false
+severity = "error"
+rationale = "a horizontal liquid fraction; at one there is no gas area\n"
+[[valid_range]]
+quantity = "volume_safety_factor"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a flow multiplier; zero sizes nothing\n"
+[[valid_range]]
+quantity = "retention_time"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the length divides by it through the volume, and a zero retains nothing\n"
+[[valid_range]]
+quantity = "max_operation_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a pressure the wall thickness divides by\n"
+[[valid_range]]
+quantity = "allowable_stress"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the ASME denominator subtracts the pressure from twice it\n"
+[[valid_range]]
+quantity = "joint_efficiency"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a weld joint efficiency is at most one\n"
+[[valid_range]]
+quantity = "corrosion_allowance"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "an allowance adds metal; a negative one removes it\n"
 [implementations]
 python = "azoth.process.separator"
 rust = "azoth_process::separator"

@@ -4,6 +4,8 @@
 
 `eos.matcop_alpha`
 
+Three-parameter Mathias-Copeman alpha function for a cubic equation of state. Use it when a cubic EOS needs this attraction-temperature form.
+
 ## Equation
 
 $$
@@ -48,7 +50,7 @@ DOI: [10.1016/0378-3812(83)80084-3](https://doi.org/10.1016/0378-3812(83)80084-3
 | `Tr > 0` | raises | the formula takes a square root of `Tr`; zero and below are not states |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

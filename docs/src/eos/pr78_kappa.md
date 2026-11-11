@@ -4,6 +4,8 @@
 
 `eos.pr78_kappa`
 
+Peng-Robinson (1978) attraction-parameter coefficient from the acentric factor. Use it when assembling a Peng-Robinson EOS with the 1978 kappa form.
+
 ## Equation
 
 $$
@@ -45,7 +47,7 @@ The Characterization of the Heptanes and Heavier Fractions for the GPA Peng-Robi
 | `kappa > 0` | warns `OUT_OF_VALID_RANGE` | The light branch passes through zero at omega = -0.23338349942403008, below which kappa is negative. The heavy branch is positive for every omega above 0.49. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

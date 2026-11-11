@@ -1,8 +1,10 @@
 id = "eos.siddiqi_lucas_diffusivity"
 name = "Liquid binary diffusivity from the Siddiqi-Lucas correlation"
+summary = "Liquid binary diffusivity from the Siddiqi-Lucas correlation. Use it for liquid-phase mass-transfer screening with an aqueous or organic solvent."
 equation = "aqueous: D = 2.98e-7 * eta**-1.026 * VA**-0.5473 * T;  organic: D = 9.89e-8 * eta**-0.907 * VA**-0.45 * VB**0.265 * T,  with VA and VB in cm**3/mol, eta in cP and T in K; eta is floored at 0.01 cP, and D*1e-4 recovers m**2/s."
 latex = '''D_{AB}^0 = 2.98\times10^{-7}\,\frac{\eta_B^{-1.026}\,T}{V_A^{0.5473}}\quad(\text{aqueous}),\qquad 9.89\times10^{-8}\,\frac{\eta_B^{-0.907}\,V_B^{0.265}\,T}{V_A^{0.45}}\quad(\text{organic})'''
-assumptions = ["`form` selects the solvent correlation: `aqueous` for water-rich solvents, `organic` otherwise; NeqSim auto-detects water content when the form is not set, which a scalar calc cannot, so the caller chooses.\n", "`VA` and `VB` are the solute and solvent liquid molar volumes; the caller gets them as `M/rho_normal`, or `Vc` directly (Siddiqi-Lucas's fallback, unlike the other methods' Tyn-Calus estimate).\n", "`eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.\n", "the viscosity is floored at NeqSim's 0.01 cP; the correlation is not applied below it.\n", "the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.\n"]
+assumptions = ["The form selects the solvent correlation: `aqueous` for water-rich solvents, `organic` otherwise. The caller chooses; this calculation does not detect water content.", "the viscosity is floored at 0.01 cP; the correlation is not applied below it.\n", "the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.\n"]
+notes = ["`VA` and `VB` are the solute and solvent liquid molar volumes; the caller gets them as `M/rho_normal`, or `Vc` directly (Siddiqi-Lucas's fallback, unlike the other methods' Tyn-Calus estimate).\n", "`eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.\n"]
 references = ["Siddiqi, M. A.; Lucas, K. (1986). \\\"Correlations for prediction of diffusion in liquids.\\\" Can. J. Chem. Eng. 64(5), 839-843. DOI 10.1002/cjce.5450640519."]
 [source]
 standard = "Siddiqi, M. A.; Lucas, K. (1986)"

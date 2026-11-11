@@ -91,6 +91,9 @@ fn every_command() -> Vec<Command> {
             x: 1234.0,
             y: 56.0,
         },
+        Command::SetName {
+            name: "North field test".into(),
+        },
     ]
 }
 
@@ -127,7 +130,7 @@ fn a_command_carrying_an_unknown_field_is_refused() {
 #[test]
 fn every_command_round_trips_through_json() {
     let commands = every_command();
-    assert_eq!(commands.len(), 15, "the enum and this list have drifted");
+    assert_eq!(commands.len(), 16, "the enum and this list have drifted");
     for command in commands {
         let text = serde_json::to_string(&command).expect("a command writes");
         let read: Command = serde_json::from_str(&text).expect("and reads back");

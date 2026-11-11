@@ -35,12 +35,18 @@
 //!   zero), and its update is skipped - which is how `testComponentNotInDatabaseMolesUnchanged`
 //!   gets its name.
 //!
-//! **Two branches are refused rather than ported**, because the default path never takes them
-//! and a branch nothing reaches is a claim nobody can check: the Armijo backtracking line
-//! search and the Tikhonov regularisation, both `false` by default. `applyRegularization` is
-//! *called* every iteration while `iteration <= 5` even with the flag off - it computes a
-//! 2-norm condition number and stores it in a diagnostic history - and that is refused too,
-//! since it consumes no state and modifies the Jacobian only when the flag is set.
+//! **The step controls and the regularisation are ported, and the capture measures what each
+//! does.** All three flags are `false` by default and none is reached by a row of
+//! `process_gibbs_reactor.tsv`; `validation/neqsim/captures/process_gibbs_algorithms.tsv` drives
+//! them from the class's own algorithm test. The Armijo arm accepts its maximum on that test's
+//! state and only the undamped row backtracks; the adaptive limit answers `1.0, 1.0, 0.0193,
+//! ...`; and the augmentation fires on the regularized methane row, whose first condition number
+//! is `2.9e12` against the class's `1e10` threshold.
+//!
+//! **The condition number is recorded on every pass after the first.** The class's disjunction
+//! is `useRegularization || !conditionNumberHistory.isEmpty() || iteration <= 5`, so the history
+//! is the first five passes and then the rest of the run - `getConditionNumberHistory()` is a
+//! diagnostic of the whole trajectory, not a sample of it.
 //!
 //! **This iteration is ill-conditioned, and that bounds how closely a port can match it.** Two
 //! things compound, both the class's own: the `MIN_MOLES = 1e-6` floor puts an `RT/n` entry of
@@ -56,7 +62,7 @@ use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result};
 use azoth_eos::mixture::{Mixture, RootSide};
 use azoth_eos::molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
-use azoth_reactions::linalg::solve_lu;
+use azoth_reactions::linalg::{condition_number_2, solve_least_squares, solve_lu};
 
 use crate::reactor::gibbs_database::{GibbsDatabase, GibbsSpecies, R_KJ};
 
@@ -72,6 +78,16 @@ const ELEMENT_ZERO_THRESHOLD: f64 = 1e-6;
 /// The floor `performIterationUpdate` puts under a composition after the damped step.
 const MIN_COMPOSITION: f64 = 1e-15;
 
+/// `MAX_STEP_LIMIT`, `Math.log(5.0)`: the largest fractional mole change one adaptive step
+/// allows a significant component.
+const MAX_STEP_LIMIT: f64 = 1.609_437_912_434_100_4;
+/// `calculateAdaptiveAlpha`'s floor under the step it returns.
+const MIN_ADAPTIVE_ALPHA: f64 = 1e-4;
+/// `armijoLineSearch`'s floor when every backtrack fails.
+const MIN_ARMIJO_ALPHA: f64 = 1e-6;
+/// `evaluateTotalGibbsEnergy`'s `1e-30` floor under a mole number.
+const GIBBS_ZERO_MOLES: f64 = 1e-30;
+
 /// The class's controls, as `GibbsReactor`'s own fields default them.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GibbsSettings {
@@ -85,6 +101,22 @@ pub struct GibbsSettings {
     pub tolerance: f64,
     /// `minIterations`, the floor below which the tolerance is not consulted.
     pub min_iterations: u32,
+    /// `useArmijoLineSearch`, the backtracking line search on the total Gibbs energy.
+    pub armijo_line_search: bool,
+    /// `armijoC1`, the sufficient-decrease constant.
+    pub armijo_c1: f64,
+    /// `armijoRho`, the backtracking contraction.
+    pub armijo_rho: f64,
+    /// `armijoMaxBacktracks`.
+    pub armijo_max_backtracks: u32,
+    /// `useAdaptiveStepSize`, the NASA CEA-style step limiter.
+    pub adaptive_step_size: bool,
+    /// `useRegularization`, the Tikhonov diagonal augmentation.
+    pub regularization: bool,
+    /// `regularizationThreshold`, the condition number above which it fires.
+    pub regularization_threshold: f64,
+    /// `regularizationTau`, the diagonal addition before scaling.
+    pub regularization_tau: f64,
 }
 
 impl Default for GibbsSettings {
@@ -95,6 +127,14 @@ impl Default for GibbsSettings {
             max_iterations: 5000,
             tolerance: 1e-3,
             min_iterations: 100,
+            armijo_line_search: false,
+            armijo_c1: 1e-4,
+            armijo_rho: 0.5,
+            armijo_max_backtracks: 20,
+            adaptive_step_size: false,
+            regularization: false,
+            regularization_threshold: 1e10,
+            regularization_tau: 1e-6,
         }
     }
 }
@@ -133,6 +173,9 @@ pub struct GibbsState {
     /// this port against one of the class's - `getJacobianMatrix()` is public there, and a
     /// trajectory that separates says nothing about which of the two maps moved.
     pub jacobian: Vec<Vec<f64>>,
+    /// `getConditionNumberHistory()`, one 2-norm condition number per pass it was recorded on:
+    /// the first five always, and every pass when regularization is on.
+    pub condition_number_history: Vec<f64>,
 }
 
 /// Minimise the Gibbs energy of a fluid at a temperature and pressure.
@@ -244,6 +287,7 @@ pub fn solve(
     let mut lambdas = [0.0f64; 7];
     let mut temperature_value = temperature.value;
     let mut gibbs_history = Vec::new();
+    let mut condition_history: Vec<f64> = Vec::new();
     let mut objective: Vec<Option<f64>> = vec![None; n];
     let mut converged = false;
     let mut iterations = 0u32;
@@ -271,7 +315,7 @@ pub fn solve(
         let total: f64 = moles.iter().sum();
         let (ln_phi, d_ln_phi_dn) =
             phase_derivatives(mixture, &moles, temperature_value, pressure_bara)?;
-        let jacobian = jacobian(
+        let mut jacobian = jacobian(
             mixture,
             database,
             &species,
@@ -283,7 +327,6 @@ pub fn solve(
             &ln_phi,
             &d_ln_phi_dn,
         );
-        last_jacobian.clone_from(&jacobian);
         let vector = objective_vector(
             &objective,
             &variables,
@@ -293,30 +336,39 @@ pub fn solve(
             &species,
         );
         let negated: Vec<f64> = vector.iter().map(|v| -v).collect();
+        // **The class's `solveNewtonSystem` catches the LU failure and retries through
+        // `SimpleMatrix.pseudoInverse`**, and `solve_least_squares` is that inverse's own
+        // construction - its doc says so, and it is the same one-sided Jacobi decomposition.
+        // The reachable state is a feed with fewer species than active elements:
+        // `steam_methane_hot` carries methane and water alone, so two species meet three
+        // balance rows, and the capture's row converges there.
         let mut delta = match solve_lu(&jacobian, &negated) {
-            Ok(delta) => delta,
-            // **The class's fallback here is a pseudo-inverse and this port does not carry it.**
-            // `solveNewtonSystem` catches the LU failure and retries through
-            // `SimpleMatrix.pseudoInverse`, and the reachable case is a feed with fewer species
-            // than elements - `steam_methane_hot` carries methane and water alone, so two
-            // species meet three active balance rows and the system is over-determined. That
-            // row is in the capture and converges there, so the fallback is load-bearing rather
-            // than defensive; a port without it refuses the row rather than answering it
-            // differently. `azoth-reactions`' `linalg` has `row_space_basis` and
-            // `project_onto_null_space`, which is where a pseudo-inverse would be built.
-            Err(error) => {
-                return Err(AzothError::invalid_input(
-                    "jacobian",
-                    format!(
-                        "the Newton system is singular at iteration {iteration} ({error}), and \
-                         the class's fallback for that is `SimpleMatrix.pseudoInverse`, which \
-                         this port does not carry - a feed with fewer species than active \
-                         elements reaches it, and `steam_methane_hot` in the capture is one"
-                    ),
-                ));
-            }
+            Ok(delta) if delta.iter().all(|value| value.is_finite()) => delta,
+            _ => solve_least_squares(&jacobian, &negated)?,
         };
 
+        // **`applyRegularization`, called every pass while `iteration <= 5`** even with the
+        // flag off, because the class records the condition number there; and every pass when
+        // it is on. When the augmentation fires the condition drops, and the class then
+        // re-solves the Newton system against the mutated Jacobian - its own condition at
+        // `:3016-3025`, reproduced as written.
+        // **`|| !condition_history.is_empty()` is the class's own disjunction**: once the first
+        // number is recorded, every later pass records one too, so the history is the first
+        // five passes followed by the rest of the run.
+        if settings.regularization || !condition_history.is_empty() || iteration <= 5 {
+            let number = apply_regularization(settings, &mut jacobian, variables.len())?;
+            condition_history.push(number);
+            if settings.regularization && number < settings.regularization_threshold {
+                delta = match solve_lu(&jacobian, &negated) {
+                    Ok(delta) if delta.iter().all(|value| value.is_finite()) => delta,
+                    _ => solve_least_squares(&jacobian, &negated)?,
+                };
+            }
+        }
+
+        // The state carries the matrix `getJacobianMatrix()` would answer with, which is the
+        // *regularized* one when the augmentation fired - the class mutates its field in place.
+        last_jacobian.clone_from(&jacobian);
         // The class's `columnScaleFactors` are the identity, so `unscaleNewtonStep` is one.
         let delta_norm = delta.iter().map(|v| v * v).sum::<f64>().sqrt();
 
@@ -363,8 +415,38 @@ pub fn solve(
             break;
         }
 
+        // **The step size: adaptive first, then Armijo, then the fixed damping.** The class's
+        // own order, with the adaptive branch replacing the damping rather than bounding it.
+        let mut alpha = settings.damping;
+        if settings.adaptive_step_size {
+            alpha = adaptive_alpha(&moles, &variables, &delta);
+        }
+        if settings.armijo_line_search {
+            let current_g = total_gibbs_energy(
+                mixture,
+                &species,
+                &moles,
+                temperature_value,
+                pressure_bara,
+                &cp,
+            )?;
+            alpha = armijo_alpha(
+                mixture,
+                &species,
+                &cp,
+                &moles,
+                temperature_value,
+                pressure_bara,
+                &objective,
+                &variables,
+                &delta,
+                alpha,
+                current_g,
+                settings,
+            )?;
+        }
+
         // `performIterationUpdate`: the compositions take `alpha`, the multipliers take all.
-        let alpha = settings.damping;
         for (slot, &i) in variables.iter().enumerate() {
             moles[i] = (moles[i] + delta[slot] * alpha).max(MIN_COMPOSITION);
         }
@@ -395,7 +477,150 @@ pub fn solve(
         variables,
         active_elements,
         jacobian: last_jacobian,
+        condition_number_history: condition_history,
     })
+}
+
+/// `applyRegularization`: the 2-norm condition number, and the diagonal augmentation.
+///
+/// **The augmentation fires only above the threshold**, and `tau` is raised to
+/// `maxDiag * 1e-8` when that is larger than the configured value. The first
+/// `variables` diagonal entries are the composition block; the element rows are untouched.
+fn apply_regularization(
+    settings: &GibbsSettings,
+    jacobian: &mut [Vec<f64>],
+    variables: usize,
+) -> Result<f64> {
+    let mut number = condition_number_2(jacobian)?;
+    if settings.regularization && number > settings.regularization_threshold {
+        let max_diag = (0..variables)
+            .map(|i| jacobian[i][i].abs())
+            .fold(0.0_f64, f64::max);
+        let mut tau = settings.regularization_tau;
+        if max_diag > 0.0 {
+            tau = tau.max(max_diag * 1e-8);
+        }
+        for (i, row) in jacobian.iter_mut().enumerate().take(variables) {
+            row[i] += tau;
+        }
+        number = condition_number_2(jacobian)?;
+    }
+    Ok(number)
+}
+
+/// `evaluateTotalGibbsEnergy`: the total Gibbs energy **with the fugacity coefficients**, kJ/mol.
+///
+/// **A second Gibbs energy in this file, and not the history's.** The history pushes
+/// `calculateMixtureGibbsEnergy` - the formation sum alone - while Armijo compares this one,
+/// which adds `RT ln phi`, `RT ln y` and `RT ln P`. The class keeps both and they are not
+/// interchangeable.
+fn total_gibbs_energy(
+    mixture: &Mixture,
+    species: &[Option<&GibbsSpecies>],
+    moles: &[f64],
+    temperature: f64,
+    pressure_bara: f64,
+    cp: &[[f64; 4]],
+) -> Result<f64> {
+    let rt = R_KJ * temperature;
+    let total: f64 = moles.iter().sum();
+    let (ln_phi, _) = phase_derivatives(mixture, moles, temperature, pressure_bara)?;
+    let ln_p = pressure_bara.ln();
+    let mut total_g = 0.0;
+    for (i, entry) in species.iter().enumerate() {
+        let Some(species) = entry else {
+            continue;
+        };
+        let ni = moles[i];
+        if ni < GIBBS_ZERO_MOLES {
+            continue;
+        }
+        let y = ni / total;
+        total_g += ni
+            * (species.gibbs_energy(temperature, cp[i]) + rt * ln_phi[i] + rt * y.ln() + rt * ln_p);
+    }
+    Ok(total_g)
+}
+
+/// The Armijo slope: `sum_i F_i * delta_i` over the composition variables.
+///
+/// **The class sums only the composition entries**, not the multiplier rows, and reads `F` from
+/// the objective map at the current point.
+fn directional_derivative(objective: &[Option<f64>], variables: &[usize], delta: &[f64]) -> f64 {
+    variables
+        .iter()
+        .enumerate()
+        .map(|(slot, &i)| objective[i].unwrap_or(0.0) * delta[slot])
+        .sum()
+}
+
+/// `calculateAdaptiveAlpha`: the NASA CEA-style step limit, from a requested `1.0`.
+///
+/// **The requested step is `1.0` and not `dampingComposition`**, which is what the class passes
+/// at its call site; the fixed damping is what this replaces.
+fn adaptive_alpha(moles: &[f64], variables: &[usize], delta: &[f64]) -> f64 {
+    let mut alpha = 1.0_f64;
+    let total: f64 = moles.iter().sum();
+    let significance = total * 1e-3;
+    for (slot, &i) in variables.iter().enumerate() {
+        let current = moles[i];
+        if current < significance {
+            continue;
+        }
+        let abs_delta = delta[slot].abs();
+        if abs_delta < 1e-30 {
+            continue;
+        }
+        alpha = alpha.min(MAX_STEP_LIMIT * current / abs_delta);
+    }
+    for (slot, &i) in variables.iter().enumerate() {
+        let current = moles[i];
+        let step = delta[slot];
+        if step < 0.0 && current > MIN_COMPOSITION {
+            alpha = alpha.min(0.9 * current / (-step));
+        }
+    }
+    alpha.max(MIN_ADAPTIVE_ALPHA)
+}
+
+/// `armijoLineSearch`: the backtracking step that satisfies `G(trial) <= G + c1*alpha*slope`.
+///
+/// **The trial needs the fugacity coefficients at the trial composition** - the class calls
+/// `updateSystemWithNewCompositions(); system.init(3)` before `evaluateTotalGibbsEnergy` - so
+/// each backtrack is one `phase_derivatives` call. The class's save/restore is a copy here: the
+/// trial is its own vector and `moles` is untouched.
+#[allow(clippy::too_many_arguments)] // the class's own argument list, less its state
+fn armijo_alpha(
+    mixture: &Mixture,
+    species: &[Option<&GibbsSpecies>],
+    cp: &[[f64; 4]],
+    moles: &[f64],
+    temperature: f64,
+    pressure_bara: f64,
+    objective: &[Option<f64>],
+    variables: &[usize],
+    delta: &[f64],
+    alpha_max: f64,
+    current_g: f64,
+    settings: &GibbsSettings,
+) -> Result<f64> {
+    let slope = directional_derivative(objective, variables, delta);
+    if slope >= 0.0 {
+        return Ok(alpha_max);
+    }
+    let mut alpha = alpha_max;
+    for _ in 0..settings.armijo_max_backtracks {
+        let mut trial = moles.to_vec();
+        for (slot, &i) in variables.iter().enumerate() {
+            trial[i] = (moles[i] + alpha * delta[slot]).max(MIN_COMPOSITION);
+        }
+        let trial_g = total_gibbs_energy(mixture, species, &trial, temperature, pressure_bara, cp)?;
+        if trial_g <= current_g + settings.armijo_c1 * alpha * slope {
+            return Ok(alpha);
+        }
+        alpha *= settings.armijo_rho;
+    }
+    Ok(alpha.max(MIN_ARMIJO_ALPHA))
 }
 
 /// `calculateObjectiveFunctionValues`' own loop, skipping a component with no species.

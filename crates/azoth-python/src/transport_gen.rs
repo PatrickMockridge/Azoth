@@ -14,8 +14,14 @@
 //! on any difference.
 
 use crate::record_outputs_gen::{
-    PyActivityCoefficientRow, PyFlowlineScaleSegment, PyKComponent, PyMineralEquilibriumRow,
-    PySubFraction, PyWaterMixingResult,
+    PyActivityCoefficientRow, PyAppliedStandardRow, PyBrineMixingPointRow,
+    PyCharacterizationComponent, PyChemicalWarningRow, PyDepositionSegmentRow,
+    PyEquilibriumSoundSpeedSample, PyFlowlineScaleSegment, PyHeatExchangerMechanicalType,
+    PyHeaterInstrument, PyHeaterMechanicalType, PyHemReleaseDiagnostic, PyHemReleaseStation,
+    PyHydrateRiskPoint, PyIncrementalZoneRow, PyKComponent, PyLeakBlowdownDiagnostic,
+    PyLeakBlowdownPoint, PyMineralEquilibriumRow, PyNaceIssueRow, PyRemediationOptionRow,
+    PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow, PyScenarioIndexRow,
+    PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult, PyZoneRatingRow,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -138,6 +144,70 @@ impl From<&azoth_characterization::results::CharacterisePlusFractionResult>
         }
     }
 }
+/// Result of `characterization.characterize_to_common_slate`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CharacterizeToCommonSlateResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCharacterizeToCommonSlateResult {
+    /// Every fluid's components in order - its own base components, then the shared cuts named by their slate position. A cut invalid in any fluid is dropped from every fluid, so a name can be absent from one fluid's run.
+    #[pyo3(get)]
+    pub components: Vec<PyCharacterizationComponent>,
+    /// Which fluid each row belongs to. The row is the component's, and the fluid is a fact about the answer rather than the component, so it travels beside the row.
+    #[pyo3(get)]
+    pub fluid_index: Vec<f64>,
+    /// Each fluid's total mole amount after re-characterization. A fluid keeps its own moles and takes the slate's molar mass, so its mass can move from the input's.
+    #[pyo3(get)]
+    pub fluid_moles: Vec<PyQty>,
+    /// How many shared cuts the answer has: the requested count, or the largest pseudo-component count among the fluids when none was requested.
+    #[pyo3(get)]
+    pub resolved_pseudo_components: u32,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCharacterizeToCommonSlateResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CharacterizeToCommonSlateResult(components={:?}, fluid_index={:?}, fluid_moles={:?}, resolved_pseudo_components={:?}, {} warning(s))",
+            self.components,
+            self.fluid_index,
+            self.fluid_moles,
+            self.resolved_pseudo_components,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::CharacterizeToCommonSlateResult>
+    for PyCharacterizeToCommonSlateResult
+{
+    fn from(r: &azoth_characterization::results::CharacterizeToCommonSlateResult) -> Self {
+        Self {
+            components: r
+                .components
+                .iter()
+                .map(PyCharacterizationComponent::from)
+                .collect(),
+            fluid_index: r.fluid_index.clone(),
+            fluid_moles: r
+                .fluid_moles
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "mol".to_string(),
+                })
+                .collect(),
+            resolved_pseudo_components: r.resolved_pseudo_components,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.characterize_to_reference`, transported.
 #[pyclass(
     frozen,
@@ -208,6 +278,56 @@ impl From<&azoth_characterization::results::CharacterizeToReferenceResult>
                     unit: "kg/m**3".to_string(),
                 })
                 .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `characterization.combine_reservoir_fluids`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CombineReservoirFluidsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCombineReservoirFluidsResult {
+    /// The blended fluid's components: its merged base components first, in the fluids' order, then the combined pseudo-components in ascending cut order, named `PC1_PC`, `PC2_PC` and so on.
+    #[pyo3(get)]
+    pub components: Vec<PyCharacterizationComponent>,
+    /// The blended fluid's total mole amount: the merged base components' and the surviving cuts', which is the fluids' own total wherever every amount was positive.
+    #[pyo3(get)]
+    pub total_moles: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCombineReservoirFluidsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CombineReservoirFluidsResult(components={:?}, total_moles={:?}, {} warning(s))",
+            self.components,
+            self.total_moles,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::CombineReservoirFluidsResult>
+    for PyCombineReservoirFluidsResult
+{
+    fn from(r: &azoth_characterization::results::CombineReservoirFluidsResult) -> Self {
+        Self {
+            components: r
+                .components
+                .iter()
+                .map(PyCharacterizationComponent::from)
+                .collect(),
+            total_moles: PyQty {
+                magnitude_si: r.total_moles,
+                unit: "mol".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }
@@ -781,6 +901,176 @@ impl From<&azoth_characterization::results::TbpDensityResult> for PyTbpDensityRe
         }
     }
 }
+/// Result of `characterization.tbp_fraction_component`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TbpFractionComponentResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTbpFractionComponentResult {
+    /// Critical temperature, from the TBP model's correlation.
+    #[pyo3(get)]
+    pub critical_temperature: PyQty,
+    /// Critical pressure. The correlation is written in bar and this states pascals.
+    #[pyo3(get)]
+    pub critical_pressure: PyQty,
+    /// Normal boiling point, from the model's two-branch correlation.
+    #[pyo3(get)]
+    pub boiling_temperature: PyQty,
+    /// The acentric factor the component carries: the root `AttractiveTermSrk.setm` solves from the fitted `m`, not the model's Edmister value.
+    #[pyo3(get)]
+    pub acentric_factor: f64,
+    /// The fitted coefficient of the Soave alpha function, `0.7431 + 0.0048122 M + 0.0096707 SG - 3.7184e-6 M**2` in g/mol and g/cm3.
+    #[pyo3(get)]
+    pub attraction_exponent: f64,
+    /// Critical volume, `(0.2918 - 0.0928 w_model) R Tc/Pc`, from the **model's** acentric factor. The class's own unit is cm3/mol and this is the same volume in SI.
+    #[pyo3(get)]
+    pub critical_volume: PyQty,
+    /// The Peneloux Rackett compressibility, from the reference SRK phase's liquid root at 15 C and one atmosphere.
+    #[pyo3(get)]
+    pub racket_z: f64,
+    /// The same compressibility on the CPA basis, which the class sets to the same number.
+    #[pyo3(get)]
+    pub racket_z_cpa: f64,
+    /// The parachor, `59.3 + 2.34 M` in g/mol, in NeqSim's mixed `(mN/m)**(1/4) * cm**3/mol`.
+    #[pyo3(get)]
+    pub parachor: f64,
+    /// Critical viscosity, `7.94830 sqrt(M) Pc^(2/3) / Tc^(1/6) 1e-7` with `M` in g/mol and `Pc` in bar.
+    #[pyo3(get)]
+    pub critical_viscosity: PyQty,
+    /// The triple-point temperature, `374.5 + 0.02617 M - 20172/M` in g/mol.
+    #[pyo3(get)]
+    pub triple_point_temperature: PyQty,
+    /// The heat of fusion, `0.1426/0.238845 M Ttrip` in g/mol.
+    #[pyo3(get)]
+    pub heat_of_fusion: PyQty,
+    /// The ideal-gas enthalpy of formation, `-1462600 M - 47566` with `M` in kg/mol.
+    #[pyo3(get)]
+    pub ideal_gas_enthalpy_of_formation: PyQty,
+    /// The constant term of the ideal-gas heat capacity.
+    #[pyo3(get)]
+    pub cp_a: PyQty,
+    /// The coefficient of `T`.
+    #[pyo3(get)]
+    pub cp_b: PyQty,
+    /// The coefficient of `T**2`.
+    #[pyo3(get)]
+    pub cp_c: PyQty,
+    /// The coefficient of `T**3`, as `getCpD()` states it: the stored zero plus `1e-10`.
+    #[pyo3(get)]
+    pub cp_d: PyQty,
+    /// The Lennard-Jones collision diameter, Tee-Gotoh-Stewart's correlation on the critical constants.
+    #[pyo3(get)]
+    pub lennard_jones_diameter: PyQty,
+    /// The Lennard-Jones energy over Boltzmann's constant, in kelvin.
+    #[pyo3(get)]
+    pub lennard_jones_energy: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTbpFractionComponentResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TbpFractionComponentResult(critical_temperature={:?}, critical_pressure={:?}, boiling_temperature={:?}, acentric_factor={:?}, attraction_exponent={:?}, critical_volume={:?}, racket_z={:?}, racket_z_cpa={:?}, parachor={:?}, critical_viscosity={:?}, triple_point_temperature={:?}, heat_of_fusion={:?}, ideal_gas_enthalpy_of_formation={:?}, cp_a={:?}, cp_b={:?}, cp_c={:?}, cp_d={:?}, lennard_jones_diameter={:?}, lennard_jones_energy={:?}, {} warning(s))",
+            self.critical_temperature,
+            self.critical_pressure,
+            self.boiling_temperature,
+            self.acentric_factor,
+            self.attraction_exponent,
+            self.critical_volume,
+            self.racket_z,
+            self.racket_z_cpa,
+            self.parachor,
+            self.critical_viscosity,
+            self.triple_point_temperature,
+            self.heat_of_fusion,
+            self.ideal_gas_enthalpy_of_formation,
+            self.cp_a,
+            self.cp_b,
+            self.cp_c,
+            self.cp_d,
+            self.lennard_jones_diameter,
+            self.lennard_jones_energy,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::TbpFractionComponentResult>
+    for PyTbpFractionComponentResult
+{
+    fn from(r: &azoth_characterization::results::TbpFractionComponentResult) -> Self {
+        Self {
+            critical_temperature: PyQty {
+                magnitude_si: r.critical_temperature.value,
+                unit: "K".to_string(),
+            },
+            critical_pressure: PyQty {
+                magnitude_si: r.critical_pressure.value,
+                unit: "Pa".to_string(),
+            },
+            boiling_temperature: PyQty {
+                magnitude_si: r.boiling_temperature.value,
+                unit: "K".to_string(),
+            },
+            acentric_factor: r.acentric_factor,
+            attraction_exponent: r.attraction_exponent,
+            critical_volume: PyQty {
+                magnitude_si: r.critical_volume.value,
+                unit: "m**3/mol".to_string(),
+            },
+            racket_z: r.racket_z,
+            racket_z_cpa: r.racket_z_cpa,
+            parachor: r.parachor,
+            critical_viscosity: PyQty {
+                magnitude_si: r.critical_viscosity.value,
+                unit: "Pa*s".to_string(),
+            },
+            triple_point_temperature: PyQty {
+                magnitude_si: r.triple_point_temperature.value,
+                unit: "K".to_string(),
+            },
+            heat_of_fusion: PyQty {
+                magnitude_si: r.heat_of_fusion.value,
+                unit: "J/mol".to_string(),
+            },
+            ideal_gas_enthalpy_of_formation: PyQty {
+                magnitude_si: r.ideal_gas_enthalpy_of_formation.value,
+                unit: "J/mol".to_string(),
+            },
+            cp_a: PyQty {
+                magnitude_si: r.cp_a,
+                unit: "J/(mol*K)".to_string(),
+            },
+            cp_b: PyQty {
+                magnitude_si: r.cp_b,
+                unit: "J/(mol*K**2)".to_string(),
+            },
+            cp_c: PyQty {
+                magnitude_si: r.cp_c,
+                unit: "J/(mol*K**3)".to_string(),
+            },
+            cp_d: PyQty {
+                magnitude_si: r.cp_d,
+                unit: "J/(mol*K**4)".to_string(),
+            },
+            lennard_jones_diameter: PyQty {
+                magnitude_si: r.lennard_jones_diameter.value,
+                unit: "angstrom".to_string(),
+            },
+            lennard_jones_energy: PyQty {
+                magnitude_si: r.lennard_jones_energy.value,
+                unit: "K".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.tbp_grouping`, transported.
 #[pyclass(
     frozen,
@@ -813,6 +1103,46 @@ impl From<&azoth_characterization::results::TbpGroupingResult> for PyTbpGrouping
     fn from(r: &azoth_characterization::results::TbpGroupingResult) -> Self {
         Self {
             group_fraction: r.group_fraction.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `characterization.transfer_binary_interaction_parameters`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TransferBinaryInteractionParametersResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTransferBinaryInteractionParametersResult {
+    /// The target's matrix after the transfer: its own values, with the reference's nonzero pairs written over them in both triangles.
+    #[pyo3(get)]
+    pub target_kij: Vec<Vec<f64>>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTransferBinaryInteractionParametersResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TransferBinaryInteractionParametersResult(target_kij={:?}, {} warning(s))",
+            self.target_kij,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::TransferBinaryInteractionParametersResult>
+    for PyTransferBinaryInteractionParametersResult
+{
+    fn from(
+        r: &azoth_characterization::results::TransferBinaryInteractionParametersResult,
+    ) -> Self {
+        Self {
+            target_kij: r.target_kij.clone(),
             warnings: transport(&r.warnings),
         }
     }
@@ -1193,6 +1523,179 @@ impl From<&azoth_eos::results::BariteCelestiteSolidSolutionResult>
             x_srso4: r.x_srso4,
             total_saturation_index: r.total_saturation_index,
             supersaturated: r.supersaturated,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.beggs_brill_segment`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "BeggsBrillSegmentResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyBeggsBrillSegmentResult {
+    /// The Beggs-and-Brill regime the segment's velocities put it in.
+    #[pyo3(get)]
+    pub regime: String,
+    /// the liquid holdup after the inclination correction and the physical bound.
+    #[pyo3(get)]
+    pub liquid_holdup: f64,
+    /// the gas superficial velocity.
+    #[pyo3(get)]
+    pub superficial_gas_velocity: PyQty,
+    /// the liquid superficial velocity.
+    #[pyo3(get)]
+    pub superficial_liquid_velocity: PyQty,
+    /// their sum.
+    #[pyo3(get)]
+    pub superficial_mixture_velocity: PyQty,
+    /// the volume-weighted no-slip mixture density.
+    #[pyo3(get)]
+    pub no_slip_density: PyQty,
+    /// the volume-weighted no-slip mixture viscosity.
+    #[pyo3(get)]
+    pub no_slip_viscosity: PyQty,
+    /// The no-slip Reynolds number.
+    #[pyo3(get)]
+    pub reynolds: f64,
+    /// the single-phase Darcy friction factor.
+    #[pyo3(get)]
+    pub friction_factor: f64,
+    /// `f exp(S)`, the Beggs-Brill two-phase multiplier applied.
+    #[pyo3(get)]
+    pub two_phase_friction_factor: f64,
+    /// the elevation term over the segment.
+    #[pyo3(get)]
+    pub hydrostatic_drop: PyQty,
+    /// the friction term over the segment.
+    #[pyo3(get)]
+    pub friction_drop: PyQty,
+    /// their sum; negative on a downhill segment whose gravity term exceeds friction.
+    #[pyo3(get)]
+    pub total_drop: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyBeggsBrillSegmentResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "BeggsBrillSegmentResult(regime={:?}, liquid_holdup={:?}, superficial_gas_velocity={:?}, superficial_liquid_velocity={:?}, superficial_mixture_velocity={:?}, no_slip_density={:?}, no_slip_viscosity={:?}, reynolds={:?}, friction_factor={:?}, two_phase_friction_factor={:?}, hydrostatic_drop={:?}, friction_drop={:?}, total_drop={:?}, {} warning(s))",
+            self.regime,
+            self.liquid_holdup,
+            self.superficial_gas_velocity,
+            self.superficial_liquid_velocity,
+            self.superficial_mixture_velocity,
+            self.no_slip_density,
+            self.no_slip_viscosity,
+            self.reynolds,
+            self.friction_factor,
+            self.two_phase_friction_factor,
+            self.hydrostatic_drop,
+            self.friction_drop,
+            self.total_drop,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::BeggsBrillSegmentResult> for PyBeggsBrillSegmentResult {
+    fn from(r: &azoth_eos::results::BeggsBrillSegmentResult) -> Self {
+        Self {
+            regime: r.regime.as_str().to_string(),
+            liquid_holdup: r.liquid_holdup,
+            superficial_gas_velocity: PyQty {
+                magnitude_si: r.superficial_gas_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            superficial_liquid_velocity: PyQty {
+                magnitude_si: r.superficial_liquid_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            superficial_mixture_velocity: PyQty {
+                magnitude_si: r.superficial_mixture_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            no_slip_density: PyQty {
+                magnitude_si: r.no_slip_density.value,
+                unit: "kg/m**3".to_string(),
+            },
+            no_slip_viscosity: PyQty {
+                magnitude_si: r.no_slip_viscosity.value,
+                unit: "Pa*s".to_string(),
+            },
+            reynolds: r.reynolds,
+            friction_factor: r.friction_factor,
+            two_phase_friction_factor: r.two_phase_friction_factor,
+            hydrostatic_drop: PyQty {
+                magnitude_si: r.hydrostatic_drop.value,
+                unit: "Pa".to_string(),
+            },
+            friction_drop: PyQty {
+                magnitude_si: r.friction_drop.value,
+                unit: "Pa".to_string(),
+            },
+            total_drop: PyQty {
+                magnitude_si: r.total_drop.value,
+                unit: "Pa".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.brine_mixing_scale_evaluator`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "BrineMixingScaleEvaluatorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyBrineMixingScaleEvaluatorResult {
+    /// One row per mixing fraction, from all brine A to all brine B.
+    #[pyo3(get)]
+    pub points: Vec<PyBrineMixingPointRow>,
+    /// the fraction of brine A where the worst index occurs.
+    #[pyo3(get)]
+    pub worst_fraction_a: f64,
+    /// the mineral that produced it.
+    #[pyo3(get)]
+    pub worst_mineral: String,
+    /// the worst index itself.
+    #[pyo3(get)]
+    pub worst_saturation_index: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyBrineMixingScaleEvaluatorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "BrineMixingScaleEvaluatorResult(points={:?}, worst_fraction_a={:?}, worst_mineral={:?}, worst_saturation_index={:?}, {} warning(s))",
+            self.points,
+            self.worst_fraction_a,
+            self.worst_mineral,
+            self.worst_saturation_index,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::BrineMixingScaleEvaluatorResult>
+    for PyBrineMixingScaleEvaluatorResult
+{
+    fn from(r: &azoth_eos::results::BrineMixingScaleEvaluatorResult) -> Self {
+        Self {
+            points: r.points.iter().map(PyBrineMixingPointRow::from).collect(),
+            worst_fraction_a: r.worst_fraction_a,
+            worst_mineral: r.worst_mineral.clone(),
+            worst_saturation_index: r.worst_saturation_index,
             warnings: transport(&r.warnings),
         }
     }
@@ -1703,6 +2206,93 @@ impl From<&azoth_eos::results::ChungViscosityResult> for PyChungViscosityResult 
         }
     }
 }
+/// Result of `eos.closed_loop_deposition_solver`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ClosedLoopDepositionSolverResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyClosedLoopDepositionSolverResult {
+    /// the number of iterations the loop ran, including the one that converged.
+    #[pyo3(get)]
+    pub iterations_taken: u32,
+    /// whether the loop met the diameter tolerance or detected a blocked line.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// the diameter after deposition; zero when the line is blocked.
+    #[pyo3(get)]
+    pub final_effective_diameter: PyQty,
+    /// the effective diameter each iteration ran at, oldest first.
+    #[pyo3(get)]
+    pub diameter_history: Vec<PyQty>,
+    /// the worst segment's thickness after each iteration's accumulator pass.
+    #[pyo3(get)]
+    pub max_thickness_history: Vec<PyQty>,
+    /// the mean mixture superficial velocity of each iteration's profile.
+    #[pyo3(get)]
+    pub velocity_history: Vec<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyClosedLoopDepositionSolverResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ClosedLoopDepositionSolverResult(iterations_taken={:?}, converged={:?}, final_effective_diameter={:?}, diameter_history={:?}, max_thickness_history={:?}, velocity_history={:?}, {} warning(s))",
+            self.iterations_taken,
+            self.converged,
+            self.final_effective_diameter,
+            self.diameter_history,
+            self.max_thickness_history,
+            self.velocity_history,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ClosedLoopDepositionSolverResult>
+    for PyClosedLoopDepositionSolverResult
+{
+    fn from(r: &azoth_eos::results::ClosedLoopDepositionSolverResult) -> Self {
+        Self {
+            iterations_taken: r.iterations_taken,
+            converged: r.converged,
+            final_effective_diameter: PyQty {
+                magnitude_si: r.final_effective_diameter.value,
+                unit: "m".to_string(),
+            },
+            diameter_history: r
+                .diameter_history
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "m".to_string(),
+                })
+                .collect(),
+            max_thickness_history: r
+                .max_thickness_history
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "m".to_string(),
+                })
+                .collect(),
+            velocity_history: r
+                .velocity_history
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "m/s".to_string(),
+                })
+                .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.co2_brine_phase_equilibrium`, transported.
 #[pyclass(
     frozen,
@@ -2009,6 +2599,145 @@ impl From<&azoth_eos::results::CriticalPointResult> for PyCriticalPointResult {
             z_c: r.z_c,
             iterations: r.iterations,
             residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.de_waard_milliams_corrosion`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "DeWaardMilliamsCorrosionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyDeWaardMilliamsCorrosionResult {
+    /// the uncorrected de Waard-Milliams 1991 rate.
+    #[pyo3(get)]
+    pub baseline_rate: PyQty,
+    /// the de Waard-Lotz pH factor, at most one where the film protects.
+    #[pyo3(get)]
+    pub ph_correction_factor: f64,
+    /// the protective-scale factor above 80 C and pH 5.
+    #[pyo3(get)]
+    pub scale_correction_factor: f64,
+    /// the glycol factor on the aqueous phase's water activity.
+    #[pyo3(get)]
+    pub glycol_correction_factor: f64,
+    /// the mass-transfer factor above 1 m/s, capped at five.
+    #[pyo3(get)]
+    pub flow_correction_factor: f64,
+    /// one minus the clamped inhibitor efficiency.
+    #[pyo3(get)]
+    pub inhibitor_factor: f64,
+    /// the CO2 rate with every factor and the sulfur contribution.
+    #[pyo3(get)]
+    pub corrected_rate: PyQty,
+    /// the elemental-sulfur contribution.
+    #[pyo3(get)]
+    pub sulfur_rate: PyQty,
+    /// the H2S/FeS contribution, capped at 100 mm/yr.
+    #[pyo3(get)]
+    pub fes_rate: PyQty,
+    /// the corrected rate less the sulfur contribution.
+    #[pyo3(get)]
+    pub co2_corrected_rate: PyQty,
+    /// the corrected rate plus the FeS contribution.
+    #[pyo3(get)]
+    pub total_corrosion_rate: PyQty,
+    /// the FeCO3 saturation index, above one where scale forms.
+    #[pyo3(get)]
+    pub feco3_saturation_index: f64,
+    /// whether the FeCO3 index exceeds one.
+    #[pyo3(get)]
+    pub feco3_scale_forming: bool,
+    /// NACE MR0175 sour service: H2S above 0.003 bar.
+    #[pyo3(get)]
+    pub is_sour_service: bool,
+    /// the NORSOK M-001 severity band.
+    #[pyo3(get)]
+    pub corrosion_severity: String,
+    /// the FeS morphology and protectiveness the temperature band predicts.
+    #[pyo3(get)]
+    pub fes_morphology: String,
+    /// the corrected rate times the design life.
+    #[pyo3(get)]
+    pub corrosion_allowance: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyDeWaardMilliamsCorrosionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "DeWaardMilliamsCorrosionResult(baseline_rate={:?}, ph_correction_factor={:?}, scale_correction_factor={:?}, glycol_correction_factor={:?}, flow_correction_factor={:?}, inhibitor_factor={:?}, corrected_rate={:?}, sulfur_rate={:?}, fes_rate={:?}, co2_corrected_rate={:?}, total_corrosion_rate={:?}, feco3_saturation_index={:?}, feco3_scale_forming={:?}, is_sour_service={:?}, corrosion_severity={:?}, fes_morphology={:?}, corrosion_allowance={:?}, {} warning(s))",
+            self.baseline_rate,
+            self.ph_correction_factor,
+            self.scale_correction_factor,
+            self.glycol_correction_factor,
+            self.flow_correction_factor,
+            self.inhibitor_factor,
+            self.corrected_rate,
+            self.sulfur_rate,
+            self.fes_rate,
+            self.co2_corrected_rate,
+            self.total_corrosion_rate,
+            self.feco3_saturation_index,
+            self.feco3_scale_forming,
+            self.is_sour_service,
+            self.corrosion_severity,
+            self.fes_morphology,
+            self.corrosion_allowance,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::DeWaardMilliamsCorrosionResult>
+    for PyDeWaardMilliamsCorrosionResult
+{
+    fn from(r: &azoth_eos::results::DeWaardMilliamsCorrosionResult) -> Self {
+        Self {
+            baseline_rate: PyQty {
+                magnitude_si: r.baseline_rate.value,
+                unit: "m/s".to_string(),
+            },
+            ph_correction_factor: r.ph_correction_factor,
+            scale_correction_factor: r.scale_correction_factor,
+            glycol_correction_factor: r.glycol_correction_factor,
+            flow_correction_factor: r.flow_correction_factor,
+            inhibitor_factor: r.inhibitor_factor,
+            corrected_rate: PyQty {
+                magnitude_si: r.corrected_rate.value,
+                unit: "m/s".to_string(),
+            },
+            sulfur_rate: PyQty {
+                magnitude_si: r.sulfur_rate.value,
+                unit: "m/s".to_string(),
+            },
+            fes_rate: PyQty {
+                magnitude_si: r.fes_rate.value,
+                unit: "m/s".to_string(),
+            },
+            co2_corrected_rate: PyQty {
+                magnitude_si: r.co2_corrected_rate.value,
+                unit: "m/s".to_string(),
+            },
+            total_corrosion_rate: PyQty {
+                magnitude_si: r.total_corrosion_rate.value,
+                unit: "m/s".to_string(),
+            },
+            feco3_saturation_index: r.feco3_saturation_index,
+            feco3_scale_forming: r.feco3_scale_forming,
+            is_sour_service: r.is_sour_service,
+            corrosion_severity: r.corrosion_severity.as_str().to_string(),
+            fes_morphology: r.fes_morphology.as_str().to_string(),
+            corrosion_allowance: PyQty {
+                magnitude_si: r.corrosion_allowance.value,
+                unit: "m".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }
@@ -2321,6 +3050,156 @@ impl From<&azoth_eos::results::ElectrolyteCpaStatoilPhaseResult>
         }
     }
 }
+/// Result of `eos.electrolyte_scale_calculator`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ElectrolyteScaleCalculatorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyElectrolyteScaleCalculatorResult {
+    /// `0.5 sum(m_i z_i^2)` over the eleven ions.
+    #[pyo3(get)]
+    pub ionic_strength: PyQty,
+    /// the temperature-adjusted Debye-Huckel A, floored at 0.5.
+    #[pyo3(get)]
+    pub debye_hueckel_a: f64,
+    /// the Davies coefficient for a divalent ion.
+    #[pyo3(get)]
+    pub divalent_activity_coefficient: f64,
+    /// the Davies coefficient for a monovalent ion.
+    #[pyo3(get)]
+    pub monovalent_activity_coefficient: f64,
+    /// calcite's activity-corrected saturation index.
+    #[pyo3(get)]
+    pub si_caco3: f64,
+    /// barite's activity-corrected saturation index.
+    #[pyo3(get)]
+    pub si_baso4: f64,
+    /// gypsum's activity-corrected saturation index.
+    #[pyo3(get)]
+    pub si_caso4: f64,
+    /// celestite's activity-corrected saturation index.
+    #[pyo3(get)]
+    pub si_srso4: f64,
+    /// brucite's activity-corrected saturation index, from the hydroxide activity squared.
+    #[pyo3(get)]
+    pub si_brucite: f64,
+    /// `10^(pH - pKw)` at the state's temperature.
+    #[pyo3(get)]
+    pub hydroxide_activity: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyElectrolyteScaleCalculatorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ElectrolyteScaleCalculatorResult(ionic_strength={:?}, debye_hueckel_a={:?}, divalent_activity_coefficient={:?}, monovalent_activity_coefficient={:?}, si_caco3={:?}, si_baso4={:?}, si_caso4={:?}, si_srso4={:?}, si_brucite={:?}, hydroxide_activity={:?}, {} warning(s))",
+            self.ionic_strength,
+            self.debye_hueckel_a,
+            self.divalent_activity_coefficient,
+            self.monovalent_activity_coefficient,
+            self.si_caco3,
+            self.si_baso4,
+            self.si_caso4,
+            self.si_srso4,
+            self.si_brucite,
+            self.hydroxide_activity,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ElectrolyteScaleCalculatorResult>
+    for PyElectrolyteScaleCalculatorResult
+{
+    fn from(r: &azoth_eos::results::ElectrolyteScaleCalculatorResult) -> Self {
+        Self {
+            ionic_strength: PyQty {
+                magnitude_si: r.ionic_strength.value,
+                unit: "mol/kg".to_string(),
+            },
+            debye_hueckel_a: r.debye_hueckel_a,
+            divalent_activity_coefficient: r.divalent_activity_coefficient,
+            monovalent_activity_coefficient: r.monovalent_activity_coefficient,
+            si_caco3: r.si_caco3,
+            si_baso4: r.si_baso4,
+            si_caso4: r.si_caso4,
+            si_srso4: r.si_srso4,
+            si_brucite: r.si_brucite,
+            hydroxide_activity: r.hydroxide_activity,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.emulsion_viscosity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "EmulsionViscosityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyEmulsionViscosityResult {
+    /// the effective emulsion viscosity.
+    #[pyo3(get)]
+    pub effective_viscosity: PyQty,
+    /// the model's relative viscosity before the tightness and demulsifier corrections.
+    #[pyo3(get)]
+    pub relative_viscosity: f64,
+    /// the effective viscosity over the continuous phase's.
+    #[pyo3(get)]
+    pub viscosity_ratio: f64,
+    /// the water cut at which the phases invert.
+    #[pyo3(get)]
+    pub inversion_water_cut: f64,
+    /// which phase is continuous at the stated water cut.
+    #[pyo3(get)]
+    pub emulsion_type: String,
+    /// whether the water cut is at or above the inversion point.
+    #[pyo3(get)]
+    pub is_inverted: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyEmulsionViscosityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "EmulsionViscosityResult(effective_viscosity={:?}, relative_viscosity={:?}, viscosity_ratio={:?}, inversion_water_cut={:?}, emulsion_type={:?}, is_inverted={:?}, {} warning(s))",
+            self.effective_viscosity,
+            self.relative_viscosity,
+            self.viscosity_ratio,
+            self.inversion_water_cut,
+            self.emulsion_type,
+            self.is_inverted,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::EmulsionViscosityResult> for PyEmulsionViscosityResult {
+    fn from(r: &azoth_eos::results::EmulsionViscosityResult) -> Self {
+        Self {
+            effective_viscosity: PyQty {
+                magnitude_si: r.effective_viscosity.value,
+                unit: "Pa*s".to_string(),
+            },
+            relative_viscosity: r.relative_viscosity,
+            viscosity_ratio: r.viscosity_ratio,
+            inversion_water_cut: r.inversion_water_cut,
+            emulsion_type: r.emulsion_type.as_str().to_string(),
+            is_inverted: r.is_inverted,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.eos_cg_phase`, transported.
 #[pyclass(
     frozen,
@@ -2401,6 +3280,183 @@ impl From<&azoth_eos::results::EosCgPhaseResult> for PyEosCgPhaseResult {
                 magnitude_si: r.g.value,
                 unit: "J/mol".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.equilibrium_sound_speed`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "EquilibriumSoundSpeedResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyEquilibriumSoundSpeedResult {
+    /// the homogeneous-equilibrium acoustic speed, or null when no step converged.
+    #[pyo3(get)]
+    pub sound_speed: Option<PyQty>,
+    /// `converged`, `flash_failed`, `unsupported_state` or `derivative_not_converged`.
+    #[pyo3(get)]
+    pub status: String,
+    /// the class's detail for that status.
+    #[pyo3(get)]
+    pub message: String,
+    /// the final pressure increment, Pa; NaN when no stencil was evaluated.
+    #[pyo3(get)]
+    pub pressure_step: PyQty,
+    /// the successive-derivative difference at the accepted step; absent until two stencils agree in shape.
+    #[pyo3(get)]
+    pub relative_step_error: Option<f64>,
+    /// the target specific entropy the calculation held fixed.
+    #[pyo3(get)]
+    pub specific_entropy: PyQty,
+    /// `central`, `forward`, `backward` or `unavailable`.
+    #[pyo3(get)]
+    pub stencil: String,
+    /// whether any sampled stencil changed the phase assemblage.
+    #[pyo3(get)]
+    pub phase_boundary_encountered: bool,
+    /// TP or quality evaluations, including rejected trials.
+    #[pyo3(get)]
+    pub flash_evaluations: u32,
+    /// the accepted stencil's states, centre first.
+    #[pyo3(get)]
+    pub samples: Vec<PyEquilibriumSoundSpeedSample>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyEquilibriumSoundSpeedResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "EquilibriumSoundSpeedResult(sound_speed={:?}, status={:?}, message={:?}, pressure_step={:?}, relative_step_error={:?}, specific_entropy={:?}, stencil={:?}, phase_boundary_encountered={:?}, flash_evaluations={:?}, samples={:?}, {} warning(s))",
+            self.sound_speed,
+            self.status,
+            self.message,
+            self.pressure_step,
+            self.relative_step_error,
+            self.specific_entropy,
+            self.stencil,
+            self.phase_boundary_encountered,
+            self.flash_evaluations,
+            self.samples,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::EquilibriumSoundSpeedResult> for PyEquilibriumSoundSpeedResult {
+    fn from(r: &azoth_eos::results::EquilibriumSoundSpeedResult) -> Self {
+        Self {
+            sound_speed: r.sound_speed.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m/s".to_string(),
+            }),
+            status: r.status.clone(),
+            message: r.message.clone(),
+            pressure_step: PyQty {
+                magnitude_si: r.pressure_step,
+                unit: "Pa".to_string(),
+            },
+            relative_step_error: r.relative_step_error,
+            specific_entropy: PyQty {
+                magnitude_si: r.specific_entropy,
+                unit: "J/(kg*K)".to_string(),
+            },
+            stencil: r.stencil.clone(),
+            phase_boundary_encountered: r.phase_boundary_encountered,
+            flash_evaluations: r.flash_evaluations,
+            samples: r
+                .samples
+                .iter()
+                .map(PyEquilibriumSoundSpeedSample::from)
+                .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.erosion_prediction`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ErosionPredictionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyErosionPredictionResult {
+    /// the API RP 14E erosional velocity at the mixture density.
+    #[pyo3(get)]
+    pub erosional_velocity: PyQty,
+    /// the actual velocity over the erosional one.
+    #[pyo3(get)]
+    pub velocity_ratio: f64,
+    /// the DNV RP O501 wall-loss rate, or the straight-pipe empirical rate.
+    #[pyo3(get)]
+    pub erosion_rate: PyQty,
+    /// the rate over the design life.
+    #[pyo3(get)]
+    pub cumulative_erosion: PyQty,
+    /// the wall less the cumulative erosion and the corrosion allowance.
+    #[pyo3(get)]
+    pub remaining_wall_thickness: PyQty,
+    /// whether the velocity ratio is at most one.
+    #[pyo3(get)]
+    pub within_api_limits: bool,
+    /// whether the remaining wall is positive.
+    #[pyo3(get)]
+    pub within_erosion_limits: bool,
+    /// the rate-and-ratio risk band.
+    #[pyo3(get)]
+    pub risk_level: String,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyErosionPredictionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ErosionPredictionResult(erosional_velocity={:?}, velocity_ratio={:?}, erosion_rate={:?}, cumulative_erosion={:?}, remaining_wall_thickness={:?}, within_api_limits={:?}, within_erosion_limits={:?}, risk_level={:?}, {} warning(s))",
+            self.erosional_velocity,
+            self.velocity_ratio,
+            self.erosion_rate,
+            self.cumulative_erosion,
+            self.remaining_wall_thickness,
+            self.within_api_limits,
+            self.within_erosion_limits,
+            self.risk_level,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ErosionPredictionResult> for PyErosionPredictionResult {
+    fn from(r: &azoth_eos::results::ErosionPredictionResult) -> Self {
+        Self {
+            erosional_velocity: PyQty {
+                magnitude_si: r.erosional_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            velocity_ratio: r.velocity_ratio,
+            erosion_rate: PyQty {
+                magnitude_si: r.erosion_rate.value,
+                unit: "m/s".to_string(),
+            },
+            cumulative_erosion: PyQty {
+                magnitude_si: r.cumulative_erosion.value,
+                unit: "m".to_string(),
+            },
+            remaining_wall_thickness: PyQty {
+                magnitude_si: r.remaining_wall_thickness.value,
+                unit: "m".to_string(),
+            },
+            within_api_limits: r.within_api_limits,
+            within_erosion_limits: r.within_erosion_limits,
+            risk_level: r.risk_level.as_str().to_string(),
             warnings: transport(&r.warnings),
         }
     }
@@ -4156,6 +5212,75 @@ impl From<&azoth_eos::results::HydrateInhibitorWtResult> for PyHydrateInhibitorW
         }
     }
 }
+/// Result of `eos.hydrate_risk_map`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HydrateRiskMapResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHydrateRiskMapResult {
+    /// One row per profile point, in the order the points were given.
+    #[pyo3(get)]
+    pub points: Vec<PyHydrateRiskPoint>,
+    /// the worst band, with unknown outranking everything but a confirmed critical.
+    #[pyo3(get)]
+    pub overall_risk: String,
+    /// the smallest subcooling over the evaluated points, absent when none was.
+    #[pyo3(get)]
+    pub minimum_subcooling: Option<PyQty>,
+    /// the number of points inside the hydrate region.
+    #[pyo3(get)]
+    pub critical_point_count: u32,
+    /// the number of points whose hydrate temperature could not be computed.
+    #[pyo3(get)]
+    pub unknown_point_count: u32,
+    /// the number of profile points.
+    #[pyo3(get)]
+    pub total_points: u32,
+    /// whether every point produced a hydrate temperature.
+    #[pyo3(get)]
+    pub all_points_evaluated: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHydrateRiskMapResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HydrateRiskMapResult(points={:?}, overall_risk={:?}, minimum_subcooling={:?}, critical_point_count={:?}, unknown_point_count={:?}, total_points={:?}, all_points_evaluated={:?}, {} warning(s))",
+            self.points,
+            self.overall_risk,
+            self.minimum_subcooling,
+            self.critical_point_count,
+            self.unknown_point_count,
+            self.total_points,
+            self.all_points_evaluated,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::HydrateRiskMapResult> for PyHydrateRiskMapResult {
+    fn from(r: &azoth_eos::results::HydrateRiskMapResult) -> Self {
+        Self {
+            points: r.points.iter().map(PyHydrateRiskPoint::from).collect(),
+            overall_risk: r.overall_risk.as_str().to_string(),
+            minimum_subcooling: r.minimum_subcooling.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            critical_point_count: r.critical_point_count,
+            unknown_point_count: r.unknown_point_count,
+            total_points: r.total_points,
+            all_points_evaluated: r.all_points_evaluated,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.hydrogen_phase`, transported.
 #[pyclass(
     frozen,
@@ -5681,6 +6806,320 @@ impl From<&azoth_eos::results::PhaseTransportResult> for PyPhaseTransportResult 
         }
     }
 }
+/// Result of `eos.pipe_beggs_and_brills`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PipeBeggsAndBrillsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPipeBeggsAndBrillsResult {
+    /// the pressure at the inlet and each segment's outlet.
+    #[pyo3(get)]
+    pub pressure_profile: Vec<PyQty>,
+    /// each segment's drop; the inlet entry is zero.
+    #[pyo3(get)]
+    pub pressure_drop_profile: Vec<PyQty>,
+    /// one value, the isothermal temperature, as the class's own profile list has.
+    #[pyo3(get)]
+    pub temperature_profile: Vec<PyQty>,
+    /// the holdup at each segment, one entry per segment.
+    #[pyo3(get)]
+    pub liquid_holdup_profile: Vec<f64>,
+    /// the mixture superficial velocity at each segment.
+    #[pyo3(get)]
+    pub mixture_superficial_velocity_profile: Vec<PyQty>,
+    /// each segment's flow regime.
+    #[pyo3(get)]
+    pub flow_regime_profile: Vec<String>,
+    /// the pressure after the last segment.
+    #[pyo3(get)]
+    pub outlet_pressure: PyQty,
+    /// the inlet pressure minus the outlet's.
+    #[pyo3(get)]
+    pub total_pressure_drop: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPipeBeggsAndBrillsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PipeBeggsAndBrillsResult(pressure_profile={:?}, pressure_drop_profile={:?}, temperature_profile={:?}, liquid_holdup_profile={:?}, mixture_superficial_velocity_profile={:?}, flow_regime_profile={:?}, outlet_pressure={:?}, total_pressure_drop={:?}, {} warning(s))",
+            self.pressure_profile,
+            self.pressure_drop_profile,
+            self.temperature_profile,
+            self.liquid_holdup_profile,
+            self.mixture_superficial_velocity_profile,
+            self.flow_regime_profile,
+            self.outlet_pressure,
+            self.total_pressure_drop,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::PipeBeggsAndBrillsResult> for PyPipeBeggsAndBrillsResult {
+    fn from(r: &azoth_eos::results::PipeBeggsAndBrillsResult) -> Self {
+        Self {
+            pressure_profile: r
+                .pressure_profile
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "Pa".to_string(),
+                })
+                .collect(),
+            pressure_drop_profile: r
+                .pressure_drop_profile
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "Pa".to_string(),
+                })
+                .collect(),
+            temperature_profile: r
+                .temperature_profile
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "K".to_string(),
+                })
+                .collect(),
+            liquid_holdup_profile: r.liquid_holdup_profile.clone(),
+            mixture_superficial_velocity_profile: r
+                .mixture_superficial_velocity_profile
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "m/s".to_string(),
+                })
+                .collect(),
+            flow_regime_profile: r.flow_regime_profile.clone(),
+            outlet_pressure: PyQty {
+                magnitude_si: r.outlet_pressure.value,
+                unit: "Pa".to_string(),
+            },
+            total_pressure_drop: PyQty {
+                magnitude_si: r.total_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.pipeline_cooldown`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PipelineCooldownResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPipelineCooldownResult {
+    /// the time at each march step, the first at zero.
+    #[pyo3(get)]
+    pub time: Vec<PyQty>,
+    /// the lumped fluid-and-steel temperature at each step.
+    #[pyo3(get)]
+    pub fluid_temperature: Vec<PyQty>,
+    /// the thermal mass over the per-length conductance.
+    #[pyo3(get)]
+    pub time_constant: PyQty,
+    /// the layer-resistance U value, which the class's getter always recomputes.
+    #[pyo3(get)]
+    pub calculated_u_value: PyQty,
+    /// the U value the march ran with: the supplied one, or the layer value.
+    #[pyo3(get)]
+    pub effective_u_value: PyQty,
+    /// the interpolated crossing of the target temperature, absent when not reached.
+    #[pyo3(get)]
+    pub time_to_reach_target: Option<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPipelineCooldownResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PipelineCooldownResult(time={:?}, fluid_temperature={:?}, time_constant={:?}, calculated_u_value={:?}, effective_u_value={:?}, time_to_reach_target={:?}, {} warning(s))",
+            self.time,
+            self.fluid_temperature,
+            self.time_constant,
+            self.calculated_u_value,
+            self.effective_u_value,
+            self.time_to_reach_target,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::PipelineCooldownResult> for PyPipelineCooldownResult {
+    fn from(r: &azoth_eos::results::PipelineCooldownResult) -> Self {
+        Self {
+            time: r
+                .time
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "s".to_string(),
+                })
+                .collect(),
+            fluid_temperature: r
+                .fluid_temperature
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "K".to_string(),
+                })
+                .collect(),
+            time_constant: PyQty {
+                magnitude_si: r.time_constant.value,
+                unit: "s".to_string(),
+            },
+            calculated_u_value: PyQty {
+                magnitude_si: r.calculated_u_value.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            effective_u_value: PyQty {
+                magnitude_si: r.effective_u_value.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            time_to_reach_target: r.time_to_reach_target.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.pitzer_hydrate_formation_pressure`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PitzerHydrateFormationPressureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPitzerHydrateFormationPressureResult {
+    /// the pressure at which the hydrate's water fugacity equals the aqueous phase's.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// the structure the coefficient comparison chose, or the one the caller pinned.
+    #[pyo3(get)]
+    pub structure: String,
+    /// `f_aq^water / pSat_water(T)` at the answer.
+    #[pyo3(get)]
+    pub water_activity: f64,
+    /// flash evaluations taken, the scan's and the bisection's together.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// `ln(f_hydrate^water / f_aq^water)` at the answer.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPitzerHydrateFormationPressureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PitzerHydrateFormationPressureResult(pressure={:?}, structure={:?}, water_activity={:?}, iterations={:?}, residual={:?}, {} warning(s))",
+            self.pressure,
+            self.structure,
+            self.water_activity,
+            self.iterations,
+            self.residual,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::PitzerHydrateFormationPressureResult>
+    for PyPitzerHydrateFormationPressureResult
+{
+    fn from(r: &azoth_eos::results::PitzerHydrateFormationPressureResult) -> Self {
+        Self {
+            pressure: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            structure: r.structure.as_str().to_string(),
+            water_activity: r.water_activity,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.pitzer_hydrate_formation_temperature`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PitzerHydrateFormationTemperatureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPitzerHydrateFormationTemperatureResult {
+    /// the temperature at which the hydrate's water fugacity equals the aqueous phase's.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// the structure the coefficient comparison chose, or the one the caller pinned.
+    #[pyo3(get)]
+    pub structure: String,
+    /// `f_aq^water / pSat_water(T)` at the answer.
+    #[pyo3(get)]
+    pub water_activity: f64,
+    /// flash evaluations taken, the scan's and the bisection's together.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// `ln(f_hydrate^water / f_aq^water)` at the answer.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPitzerHydrateFormationTemperatureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PitzerHydrateFormationTemperatureResult(temperature={:?}, structure={:?}, water_activity={:?}, iterations={:?}, residual={:?}, {} warning(s))",
+            self.temperature,
+            self.structure,
+            self.water_activity,
+            self.iterations,
+            self.residual,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::PitzerHydrateFormationTemperatureResult>
+    for PyPitzerHydrateFormationTemperatureResult
+{
+    fn from(r: &azoth_eos::results::PitzerHydrateFormationTemperatureResult) -> Self {
+        Self {
+            temperature: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            structure: r.structure.as_str().to_string(),
+            water_activity: r.water_activity,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.pitzer_phase`, transported.
 #[pyclass(
     frozen,
@@ -6414,6 +7853,100 @@ impl From<&azoth_eos::results::PrZFactorResult> for PyPrZFactorResult {
             iterations: r.iterations,
             converged: r.converged,
             residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.production_chemical_scale_scenario`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ProductionChemicalScaleScenarioResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyProductionChemicalScaleScenarioResult {
+    /// the pH after the dose, or the untreated pH when nothing changes the carbonate balance.
+    #[pyo3(get)]
+    pub treated_ph: f64,
+    /// the bicarbonate at the treated pH.
+    #[pyo3(get)]
+    pub treated_bicarbonate: PyQty,
+    /// the summed acid/base equivalents, positive for a base.
+    #[pyo3(get)]
+    pub base_dose_equivalents: PyQty,
+    /// the summed H2S capacity of the dosed scavengers.
+    #[pyo3(get)]
+    pub scavenger_capacity: PyQty,
+    /// the dissolved H2S the capacity leaves.
+    #[pyo3(get)]
+    pub residual_dissolved_h2s: PyQty,
+    /// The untreated indices, in the equilibrium's mineral order.
+    #[pyo3(get)]
+    pub baseline_si: Vec<PyScenarioIndexRow>,
+    /// The treated indices, in the same order.
+    #[pyo3(get)]
+    pub treated_si: Vec<PyScenarioIndexRow>,
+    /// The treated minus baseline index, over the baseline's minerals.
+    #[pyo3(get)]
+    pub si_change: Vec<PyScenarioChangeRow>,
+    /// The class's warning map, in insertion order.
+    #[pyo3(get)]
+    pub model_warnings: Vec<PyChemicalWarningRow>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyProductionChemicalScaleScenarioResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ProductionChemicalScaleScenarioResult(treated_ph={:?}, treated_bicarbonate={:?}, base_dose_equivalents={:?}, scavenger_capacity={:?}, residual_dissolved_h2s={:?}, baseline_si={:?}, treated_si={:?}, si_change={:?}, model_warnings={:?}, {} warning(s))",
+            self.treated_ph,
+            self.treated_bicarbonate,
+            self.base_dose_equivalents,
+            self.scavenger_capacity,
+            self.residual_dissolved_h2s,
+            self.baseline_si,
+            self.treated_si,
+            self.si_change,
+            self.model_warnings,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ProductionChemicalScaleScenarioResult>
+    for PyProductionChemicalScaleScenarioResult
+{
+    fn from(r: &azoth_eos::results::ProductionChemicalScaleScenarioResult) -> Self {
+        Self {
+            treated_ph: r.treated_ph,
+            treated_bicarbonate: PyQty {
+                magnitude_si: r.treated_bicarbonate.value,
+                unit: "kg/m**3".to_string(),
+            },
+            base_dose_equivalents: PyQty {
+                magnitude_si: r.base_dose_equivalents.value,
+                unit: "mol/m**3".to_string(),
+            },
+            scavenger_capacity: PyQty {
+                magnitude_si: r.scavenger_capacity.value,
+                unit: "kg/m**3".to_string(),
+            },
+            residual_dissolved_h2s: PyQty {
+                magnitude_si: r.residual_dissolved_h2s.value,
+                unit: "kg/m**3".to_string(),
+            },
+            baseline_si: r.baseline_si.iter().map(PyScenarioIndexRow::from).collect(),
+            treated_si: r.treated_si.iter().map(PyScenarioIndexRow::from).collect(),
+            si_change: r.si_change.iter().map(PyScenarioChangeRow::from).collect(),
+            model_warnings: r
+                .model_warnings
+                .iter()
+                .map(PyChemicalWarningRow::from)
+                .collect(),
             warnings: transport(&r.warnings),
         }
     }
@@ -7557,6 +9090,283 @@ impl From<&azoth_eos::results::SaturateWithWaterResult> for PySaturateWithWaterR
         }
     }
 }
+/// Result of `eos.scale_control_assessor`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleControlAssessorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleControlAssessorResult {
+    /// The uninhibited indices, one row per scale in the class's order.
+    #[pyo3(get)]
+    pub thermodynamic_si: Vec<PyScaleControlRow>,
+    /// The inhibited risk index, one row per scale in the same order.
+    #[pyo3(get)]
+    pub kinetic_risk_index: Vec<PyScaleControlRiskRow>,
+    /// the largest defined risk index; absent where none is.
+    #[pyo3(get)]
+    pub worst_kinetic_risk_index: Option<f64>,
+    /// whether the worst index is below the class's 0.5 threshold.
+    #[pyo3(get)]
+    pub kinetically_controlled: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyScaleControlAssessorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleControlAssessorResult(thermodynamic_si={:?}, kinetic_risk_index={:?}, worst_kinetic_risk_index={:?}, kinetically_controlled={:?}, {} warning(s))",
+            self.thermodynamic_si,
+            self.kinetic_risk_index,
+            self.worst_kinetic_risk_index,
+            self.kinetically_controlled,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleControlAssessorResult> for PyScaleControlAssessorResult {
+    fn from(r: &azoth_eos::results::ScaleControlAssessorResult) -> Self {
+        Self {
+            thermodynamic_si: r
+                .thermodynamic_si
+                .iter()
+                .map(PyScaleControlRow::from)
+                .collect(),
+            kinetic_risk_index: r
+                .kinetic_risk_index
+                .iter()
+                .map(PyScaleControlRiskRow::from)
+                .collect(),
+            worst_kinetic_risk_index: r.worst_kinetic_risk_index,
+            kinetically_controlled: r.kinetically_controlled,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.scale_deposition_accumulator`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleDepositionAccumulatorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleDepositionAccumulatorResult {
+    /// One row per evaluated segment, in the profile's order.
+    #[pyo3(get)]
+    pub segments: Vec<PyDepositionSegmentRow>,
+    /// the mass summed over the segments.
+    #[pyo3(get)]
+    pub total_deposition_mass: PyQty,
+    /// the thickest segment, which sets the blockage time.
+    #[pyo3(get)]
+    pub max_thickness: PyQty,
+    /// the time until the worst segment occludes half the pipe cross-section.
+    #[pyo3(get)]
+    pub time_to_blockage: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyScaleDepositionAccumulatorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleDepositionAccumulatorResult(segments={:?}, total_deposition_mass={:?}, max_thickness={:?}, time_to_blockage={:?}, {} warning(s))",
+            self.segments,
+            self.total_deposition_mass,
+            self.max_thickness,
+            self.time_to_blockage,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleDepositionAccumulatorResult>
+    for PyScaleDepositionAccumulatorResult
+{
+    fn from(r: &azoth_eos::results::ScaleDepositionAccumulatorResult) -> Self {
+        Self {
+            segments: r
+                .segments
+                .iter()
+                .map(PyDepositionSegmentRow::from)
+                .collect(),
+            total_deposition_mass: PyQty {
+                magnitude_si: r.total_deposition_mass.value,
+                unit: "kg".to_string(),
+            },
+            max_thickness: PyQty {
+                magnitude_si: r.max_thickness.value,
+                unit: "m".to_string(),
+            },
+            time_to_blockage: PyQty {
+                magnitude_si: r.time_to_blockage.value,
+                unit: "s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.scale_inhibitor_performance`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleInhibitorPerformanceResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleInhibitorPerformanceResult {
+    /// the MIC the correlation returns.
+    #[pyo3(get)]
+    pub minimum_inhibitor_concentration: PyQty,
+    /// 1.5 times the MIC.
+    #[pyo3(get)]
+    pub recommended_dose: PyQty,
+    /// the efficiency at the supplied dose, 0..1; zero when no dose is stated.
+    #[pyo3(get)]
+    pub efficiency: f64,
+    /// whether the supplied dose meets the MIC.
+    #[pyo3(get)]
+    pub adequate: bool,
+    /// phosphonate above 175 C.
+    #[pyo3(get)]
+    pub thermal_degradation_risk: bool,
+    /// phosphonate with more than 2000 mg/L calcium.
+    #[pyo3(get)]
+    pub calcium_phosphonate_precipitation_risk: bool,
+    /// a saturation ratio above 100.
+    #[pyo3(get)]
+    pub extreme_supersaturation_risk: bool,
+    /// phosphate ester below 40 C.
+    #[pyo3(get)]
+    pub low_temperature_solubility_risk: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyScaleInhibitorPerformanceResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleInhibitorPerformanceResult(minimum_inhibitor_concentration={:?}, recommended_dose={:?}, efficiency={:?}, adequate={:?}, thermal_degradation_risk={:?}, calcium_phosphonate_precipitation_risk={:?}, extreme_supersaturation_risk={:?}, low_temperature_solubility_risk={:?}, {} warning(s))",
+            self.minimum_inhibitor_concentration,
+            self.recommended_dose,
+            self.efficiency,
+            self.adequate,
+            self.thermal_degradation_risk,
+            self.calcium_phosphonate_precipitation_risk,
+            self.extreme_supersaturation_risk,
+            self.low_temperature_solubility_risk,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleInhibitorPerformanceResult>
+    for PyScaleInhibitorPerformanceResult
+{
+    fn from(r: &azoth_eos::results::ScaleInhibitorPerformanceResult) -> Self {
+        Self {
+            minimum_inhibitor_concentration: PyQty {
+                magnitude_si: r.minimum_inhibitor_concentration.value,
+                unit: "kg/m**3".to_string(),
+            },
+            recommended_dose: PyQty {
+                magnitude_si: r.recommended_dose.value,
+                unit: "kg/m**3".to_string(),
+            },
+            efficiency: r.efficiency,
+            adequate: r.adequate,
+            thermal_degradation_risk: r.thermal_degradation_risk,
+            calcium_phosphonate_precipitation_risk: r.calcium_phosphonate_precipitation_risk,
+            extreme_supersaturation_risk: r.extreme_supersaturation_risk,
+            low_temperature_solubility_risk: r.low_temperature_solubility_risk,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.scale_kinetics`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleKineticsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleKineticsResult {
+    /// `S = 10^SI`.
+    #[pyo3(get)]
+    pub supersaturation_ratio: f64,
+    /// the nucleation induction time; infinite at or below saturation.
+    #[pyo3(get)]
+    pub induction_time: PyQty,
+    /// the surface-reaction growth rate.
+    #[pyo3(get)]
+    pub surface_limited_growth: PyQty,
+    /// the mass-transport growth rate; zero when no transport data are given.
+    #[pyo3(get)]
+    pub transport_limited_growth: PyQty,
+    /// the rate-controlling growth rate.
+    #[pyo3(get)]
+    pub effective_growth_rate: PyQty,
+    /// `REACTION`, `TRANSPORT` or `NONE`.
+    #[pyo3(get)]
+    pub limiting_regime: String,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyScaleKineticsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleKineticsResult(supersaturation_ratio={:?}, induction_time={:?}, surface_limited_growth={:?}, transport_limited_growth={:?}, effective_growth_rate={:?}, limiting_regime={:?}, {} warning(s))",
+            self.supersaturation_ratio,
+            self.induction_time,
+            self.surface_limited_growth,
+            self.transport_limited_growth,
+            self.effective_growth_rate,
+            self.limiting_regime,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleKineticsResult> for PyScaleKineticsResult {
+    fn from(r: &azoth_eos::results::ScaleKineticsResult) -> Self {
+        Self {
+            supersaturation_ratio: r.supersaturation_ratio,
+            induction_time: PyQty {
+                magnitude_si: r.induction_time.value,
+                unit: "s".to_string(),
+            },
+            surface_limited_growth: PyQty {
+                magnitude_si: r.surface_limited_growth.value,
+                unit: "m/s".to_string(),
+            },
+            transport_limited_growth: PyQty {
+                magnitude_si: r.transport_limited_growth.value,
+                unit: "m/s".to_string(),
+            },
+            effective_growth_rate: PyQty {
+                magnitude_si: r.effective_growth_rate.value,
+                unit: "m/s".to_string(),
+            },
+            limiting_regime: r.limiting_regime.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.scale_mass`, transported.
 #[pyclass(
     frozen,
@@ -7638,7 +9448,7 @@ pub struct PyScalePredictionResult {
     /// the Davies coefficient for a monovalent ion.
     #[pyo3(get)]
     pub monovalent_activity_coefficient: f64,
-    /// the pH the calculation used: the input, or the class's estimate.
+    /// The pH the calculation used: the input, or the estimated value.
     #[pyo3(get)]
     pub ph_used: f64,
     /// free calcium after ion pairing.
@@ -7653,7 +9463,7 @@ pub struct PyScalePredictionResult {
     /// free bicarbonate after ion pairing.
     #[pyo3(get)]
     pub free_bicarbonate: PyQty,
-    /// total barium, which the class does not ion-pair.
+    /// Total barium, not ion-paired.
     #[pyo3(get)]
     pub total_barium: PyQty,
     /// total strontium.
@@ -7662,7 +9472,7 @@ pub struct PyScalePredictionResult {
     /// total iron.
     #[pyo3(get)]
     pub total_iron: PyQty,
-    /// total sodium, divided by the class's getter constant `22989.77`.
+    /// Total sodium concentration.
     #[pyo3(get)]
     pub total_sodium: PyQty,
     /// calcite's solubility product, in `(mol/L)^2`.
@@ -7821,6 +9631,47 @@ impl From<&azoth_eos::results::ScalePredictionResult> for PyScalePredictionResul
             si_feco3: r.si_feco3,
             has_scaling_risk: r.has_scaling_risk,
             scale_risk_count: r.scale_risk_count,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.scale_remediation_advisor`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleRemediationAdvisorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleRemediationAdvisorResult {
+    /// the knowledge-base key the lookup used.
+    #[pyo3(get)]
+    pub canonical_key: String,
+    /// The candidate remedies, ordered by descending effectiveness.
+    #[pyo3(get)]
+    pub options: Vec<PyRemediationOptionRow>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyScaleRemediationAdvisorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleRemediationAdvisorResult(canonical_key={:?}, options={:?}, {} warning(s))",
+            self.canonical_key,
+            self.options,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleRemediationAdvisorResult> for PyScaleRemediationAdvisorResult {
+    fn from(r: &azoth_eos::results::ScaleRemediationAdvisorResult) -> Self {
+        Self {
+            canonical_key: r.canonical_key.clone(),
+            options: r.options.iter().map(PyRemediationOptionRow::from).collect(),
             warnings: transport(&r.warnings),
         }
     }
@@ -8055,6 +9906,58 @@ impl From<&azoth_eos::results::SoreideWhitsonPhaseResult> for PySoreideWhitsonPh
         Self {
             z_factor: r.z_factor,
             ln_phi: r.ln_phi.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.sound_speed`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SoundSpeedResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySoundSpeedResult {
+    /// the speed of sound in the phase the flash puts first - the gas where two phases - at the flashed state, m/s.
+    #[pyo3(get)]
+    pub sound_speed: PyQty,
+    /// `SystemThermo.getSoundSpeed()`: the beta-weighted mean of the phase speeds. Equal to `sound_speed` on a flashed single phase; a weighted mean, not a mixture speed, on two.
+    #[pyo3(get)]
+    pub system_sound_speed: PyQty,
+    /// what the flash found at the state, which says whether the two speeds above differ.
+    #[pyo3(get)]
+    pub phase: String,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySoundSpeedResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SoundSpeedResult(sound_speed={:?}, system_sound_speed={:?}, phase={:?}, {} warning(s))",
+            self.sound_speed,
+            self.system_sound_speed,
+            self.phase,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::SoundSpeedResult> for PySoundSpeedResult {
+    fn from(r: &azoth_eos::results::SoundSpeedResult) -> Self {
+        Self {
+            sound_speed: PyQty {
+                magnitude_si: r.sound_speed.value,
+                unit: "m/s".to_string(),
+            },
+            system_sound_speed: PyQty {
+                magnitude_si: r.system_sound_speed.value,
+                unit: "m/s".to_string(),
+            },
+            phase: r.phase.as_str().to_string(),
             warnings: transport(&r.warnings),
         }
     }
@@ -8405,6 +10308,206 @@ impl From<&azoth_eos::results::StabilityTestResult> for PyStabilityTestResult {
         }
     }
 }
+/// Result of `eos.stream_scale_analyzer`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "StreamScaleAnalyzerResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyStreamScaleAnalyzerResult {
+    /// One row per registered mineral, in the equilibrium's order.
+    #[pyo3(get)]
+    pub minerals: Vec<PyStreamScaleMineralRow>,
+    /// the total precipitated mass per cubic metre.
+    #[pyo3(get)]
+    pub total_scale_mass: PyQty,
+    /// the total mass rate.
+    #[pyo3(get)]
+    pub total_scale_rate: PyQty,
+    /// the mineral precipitating the greatest mass, or `none`.
+    #[pyo3(get)]
+    pub dominant_scale: String,
+    /// whether the total precipitated mass is positive.
+    #[pyo3(get)]
+    pub has_scaling: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyStreamScaleAnalyzerResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "StreamScaleAnalyzerResult(minerals={:?}, total_scale_mass={:?}, total_scale_rate={:?}, dominant_scale={:?}, has_scaling={:?}, {} warning(s))",
+            self.minerals,
+            self.total_scale_mass,
+            self.total_scale_rate,
+            self.dominant_scale,
+            self.has_scaling,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::StreamScaleAnalyzerResult> for PyStreamScaleAnalyzerResult {
+    fn from(r: &azoth_eos::results::StreamScaleAnalyzerResult) -> Self {
+        Self {
+            minerals: r
+                .minerals
+                .iter()
+                .map(PyStreamScaleMineralRow::from)
+                .collect(),
+            total_scale_mass: PyQty {
+                magnitude_si: r.total_scale_mass.value,
+                unit: "kg/m**3".to_string(),
+            },
+            total_scale_rate: PyQty {
+                magnitude_si: r.total_scale_rate.value,
+                unit: "kg/s".to_string(),
+            },
+            dominant_scale: r.dominant_scale.clone(),
+            has_scaling: r.has_scaling,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.surf_cooldown`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SurfCooldownResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySurfCooldownResult {
+    /// the screening verdict.
+    #[pyo3(get)]
+    pub verdict: String,
+    /// whether the fluid carries a water component above the class's floor.
+    #[pyo3(get)]
+    pub water_present: bool,
+    /// the water's mole fraction.
+    #[pyo3(get)]
+    pub water_mole_fraction: f64,
+    /// the time to reach the hydrate temperature plus the margin, absent where the class returns positive infinity.
+    #[pyo3(get)]
+    pub no_touch_time: Option<PyQty>,
+    /// the initial temperature the cooldown ran from.
+    #[pyo3(get)]
+    pub initial_fluid_temperature: PyQty,
+    /// the hydrate equilibrium temperature at the operating pressure, absent where the solve failed.
+    #[pyo3(get)]
+    pub hydrate_equilibrium_temperature: Option<PyQty>,
+    /// the margin added above the hydrate temperature, an echo of the input.
+    #[pyo3(get)]
+    pub hydrate_margin: PyQty,
+    /// the ambient temperature, an echo of the input.
+    #[pyo3(get)]
+    pub seabed_temperature: PyQty,
+    /// the U value the cooldown ran with.
+    #[pyo3(get)]
+    pub overall_u_value: PyQty,
+    /// the thermal mass over the per-length conductance.
+    #[pyo3(get)]
+    pub time_constant: PyQty,
+    /// the density the cooldown used.
+    #[pyo3(get)]
+    pub fluid_density: PyQty,
+    /// the specific heat the cooldown used.
+    #[pyo3(get)]
+    pub fluid_specific_heat: PyQty,
+    /// the pipe's internal diameter, an echo of the input.
+    #[pyo3(get)]
+    pub internal_diameter: PyQty,
+    /// the insulation thickness, an echo of the input.
+    #[pyo3(get)]
+    pub insulation_thickness: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySurfCooldownResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SurfCooldownResult(verdict={:?}, water_present={:?}, water_mole_fraction={:?}, no_touch_time={:?}, initial_fluid_temperature={:?}, hydrate_equilibrium_temperature={:?}, hydrate_margin={:?}, seabed_temperature={:?}, overall_u_value={:?}, time_constant={:?}, fluid_density={:?}, fluid_specific_heat={:?}, internal_diameter={:?}, insulation_thickness={:?}, {} warning(s))",
+            self.verdict,
+            self.water_present,
+            self.water_mole_fraction,
+            self.no_touch_time,
+            self.initial_fluid_temperature,
+            self.hydrate_equilibrium_temperature,
+            self.hydrate_margin,
+            self.seabed_temperature,
+            self.overall_u_value,
+            self.time_constant,
+            self.fluid_density,
+            self.fluid_specific_heat,
+            self.internal_diameter,
+            self.insulation_thickness,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::SurfCooldownResult> for PySurfCooldownResult {
+    fn from(r: &azoth_eos::results::SurfCooldownResult) -> Self {
+        Self {
+            verdict: r.verdict.as_str().to_string(),
+            water_present: r.water_present,
+            water_mole_fraction: r.water_mole_fraction,
+            no_touch_time: r.no_touch_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            initial_fluid_temperature: PyQty {
+                magnitude_si: r.initial_fluid_temperature.value,
+                unit: "K".to_string(),
+            },
+            hydrate_equilibrium_temperature: r.hydrate_equilibrium_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            hydrate_margin: PyQty {
+                magnitude_si: r.hydrate_margin.value,
+                unit: "K".to_string(),
+            },
+            seabed_temperature: PyQty {
+                magnitude_si: r.seabed_temperature.value,
+                unit: "K".to_string(),
+            },
+            overall_u_value: PyQty {
+                magnitude_si: r.overall_u_value.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            time_constant: PyQty {
+                magnitude_si: r.time_constant.value,
+                unit: "s".to_string(),
+            },
+            fluid_density: PyQty {
+                magnitude_si: r.fluid_density.value,
+                unit: "kg/m**3".to_string(),
+            },
+            fluid_specific_heat: PyQty {
+                magnitude_si: r.fluid_specific_heat.value,
+                unit: "J/(kg*K)".to_string(),
+            },
+            internal_diameter: PyQty {
+                magnitude_si: r.internal_diameter.value,
+                unit: "m".to_string(),
+            },
+            insulation_thickness: PyQty {
+                magnitude_si: r.insulation_thickness.value,
+                unit: "m".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.tbp_fraction_properties`, transported.
 #[pyclass(
     frozen,
@@ -8417,7 +10520,7 @@ pub struct PyTbpFractionPropertiesResult {
     /// Critical temperature.
     #[pyo3(get)]
     pub tc: PyQty,
-    /// Critical pressure. NeqSim's correlation is written in bar and this reports pascals.
+    /// Critical pressure, in pascals.
     #[pyo3(get)]
     pub pc: PyQty,
     /// Normal boiling point. Two correlations meet at `mw = 540` g/mol and the switch is pinned by a test.
@@ -8426,7 +10529,7 @@ pub struct PyTbpFractionPropertiesResult {
     /// Pitzer's acentric factor, from Edmister's three-parameter form rather than from a vapour-pressure fit.
     #[pyo3(get)]
     pub acentric_factor: f64,
-    /// The `m` of the cubic's alpha function, which for a pseudo-component **replaces** the acentric-factor correlation `eos.srk_kappa` makes. NeqSim's `addTBPfraction` sets it on the component's attractive term.
+    /// The `m` of the cubic's alpha function. For a pseudo-component it replaces the acentric-factor correlation.
     #[pyo3(get)]
     pub attraction_exponent: f64,
     /// Caveats, deduplicated.
@@ -9695,6 +11798,89 @@ impl From<&azoth_eos::results::UniquacActivityCoefficientsResult>
         Self {
             ln_gamma: r.ln_gamma.clone(),
             gamma: r.gamma.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `eos.valve_scale_drift`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ValveScaleDriftResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyValveScaleDriftResult {
+    /// the accumulated radial deposit thickness.
+    #[pyo3(get)]
+    pub deposit_thickness: PyQty,
+    /// the time the state is at.
+    #[pyo3(get)]
+    pub elapsed_time: PyQty,
+    /// the open flow area as a fraction of the clean area, 0..1.
+    #[pyo3(get)]
+    pub open_area_fraction: f64,
+    /// the loss of effective flow coefficient, capped at 0.999999.
+    #[pyo3(get)]
+    pub fouling_fraction: f64,
+    /// the clean Kv times the open-area fraction.
+    #[pyo3(get)]
+    pub effective_kv: f64,
+    /// the time for the port to close; infinite with zero growth or no port.
+    #[pyo3(get)]
+    pub time_to_plug: PyQty,
+    /// the opening needed to hold the same flow, capped at 100.
+    #[pyo3(get)]
+    pub opening_percent: f64,
+    /// the time for the opening to reach 100 percent; infinite when it never pins.
+    #[pyo3(get)]
+    pub time_to_pin: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyValveScaleDriftResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ValveScaleDriftResult(deposit_thickness={:?}, elapsed_time={:?}, open_area_fraction={:?}, fouling_fraction={:?}, effective_kv={:?}, time_to_plug={:?}, opening_percent={:?}, time_to_pin={:?}, {} warning(s))",
+            self.deposit_thickness,
+            self.elapsed_time,
+            self.open_area_fraction,
+            self.fouling_fraction,
+            self.effective_kv,
+            self.time_to_plug,
+            self.opening_percent,
+            self.time_to_pin,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ValveScaleDriftResult> for PyValveScaleDriftResult {
+    fn from(r: &azoth_eos::results::ValveScaleDriftResult) -> Self {
+        Self {
+            deposit_thickness: PyQty {
+                magnitude_si: r.deposit_thickness.value,
+                unit: "m".to_string(),
+            },
+            elapsed_time: PyQty {
+                magnitude_si: r.elapsed_time.value,
+                unit: "s".to_string(),
+            },
+            open_area_fraction: r.open_area_fraction,
+            fouling_fraction: r.fouling_fraction,
+            effective_kv: r.effective_kv,
+            time_to_plug: PyQty {
+                magnitude_si: r.time_to_plug.value,
+                unit: "s".to_string(),
+            },
+            opening_percent: r.opening_percent,
+            time_to_pin: PyQty {
+                magnitude_si: r.time_to_pin.value,
+                unit: "s".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }
@@ -11165,7 +13351,7 @@ impl From<&azoth_hydraulics::results::PackingHydraulicsResult> for PyPackingHydr
 )]
 #[derive(Debug, Clone, PartialEq)]
 pub struct PyPackingSizingResult {
-    /// the packing the name resolved to, which is `Pall-Ring-50` where nothing matched - so a misspelt packing is visible rather than silent.
+    /// the packing the name resolved to; a misspelt packing is refused rather than defaulted.
     #[pyo3(get)]
     pub packing_name: String,
     /// the resolved packing factor in 1/m, the only geometry this calculation reads. Reported as `dimensionless` because the vocabulary has no `1/m`; `hydraulics.packing_hydraulics` declares the same field the same way.
@@ -11815,6 +14001,91 @@ impl From<&azoth_process::models::absorption_column::AbsorptionColumnResult>
         }
     }
 }
+/// Result of `process.anti_surge_recycle`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "AntiSurgeRecycleResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyAntiSurgeRecycleResult {
+    /// whether a recycle was opened: the natural inlet volume flow below the control line.
+    #[pyo3(get)]
+    pub recycle_active: bool,
+    /// whether a pass met `|control - inlet| < tolerance * control`. **True on the inactive branch**, which performs no pass.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// passes through the loop: five on the captured low-flow rows, zero when inactive.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// the converged recycle mass, in the class's own unit. **An exhausted cap reports the last update**, which the machine was not run at.
+    #[pyo3(get)]
+    pub recycle_mass_flow: PyQty,
+    /// the machine inlet's actual volumetric flow at the final state, as `getFlowRate("m3/hr")` reports it.
+    #[pyo3(get)]
+    pub inlet_volume_flow: PyQty,
+    /// `getSurgeFlowRate()` at the final machine state: the surge curve's flow at the running head.
+    #[pyo3(get)]
+    pub surge_flow: PyQty,
+    /// the control line, `surge_flow * (1 + surge_control_margin)`, recomputed at each pass's surge flow.
+    #[pyo3(get)]
+    pub control_flow: PyQty,
+    /// `getDistanceToSurge()` at the final machine state: the inlet flow over the surge flow less one.
+    #[pyo3(get)]
+    pub distance_to_surge: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyAntiSurgeRecycleResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "AntiSurgeRecycleResult(recycle_active={:?}, converged={:?}, iterations={:?}, recycle_mass_flow={:?}, inlet_volume_flow={:?}, surge_flow={:?}, control_flow={:?}, distance_to_surge={:?}, {} warning(s))",
+            self.recycle_active,
+            self.converged,
+            self.iterations,
+            self.recycle_mass_flow,
+            self.inlet_volume_flow,
+            self.surge_flow,
+            self.control_flow,
+            self.distance_to_surge,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::anti_surge_recycle::AntiSurgeRecycleResult>
+    for PyAntiSurgeRecycleResult
+{
+    fn from(r: &azoth_process::models::anti_surge_recycle::AntiSurgeRecycleResult) -> Self {
+        Self {
+            recycle_active: r.recycle_active,
+            converged: r.converged,
+            iterations: r.iterations,
+            recycle_mass_flow: PyQty {
+                magnitude_si: r.recycle_mass_flow.value,
+                unit: "kg/h".to_string(),
+            },
+            inlet_volume_flow: PyQty {
+                magnitude_si: r.inlet_volume_flow.value,
+                unit: "m**3/h".to_string(),
+            },
+            surge_flow: PyQty {
+                magnitude_si: r.surge_flow.value,
+                unit: "m**3/h".to_string(),
+            },
+            control_flow: PyQty {
+                magnitude_si: r.control_flow.value,
+                unit: "m**3/h".to_string(),
+            },
+            distance_to_surge: r.distance_to_surge,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.component_splitter`, transported.
 #[pyclass(
     frozen,
@@ -11946,6 +14217,72 @@ pub struct PyCompressorResult {
     /// the outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency. Reported because the shaft work the machine does is this difference times the flow.
     #[pyo3(get)]
     pub outlet_h: PyQty,
+    /// the chart head the branch used, in metres (`getPolytropicHead("meter")`); zero in the isentropic branch.
+    #[pyo3(get)]
+    pub polytropic_head: PyQty,
+    /// the chart polytropic efficiency the branch used, after the `[1e-6, 1]` clamp; the stated polytropic efficiency in that branch, zero in the isentropic one.
+    #[pyo3(get)]
+    pub polytropic_efficiency: f64,
+    /// `getPolytropicExponent` from the polytropic branch, `n = k / (1 - (k-1)/k (1 - eta))`; absent outside it.
+    #[pyo3(get)]
+    pub polytropic_exponent: Option<f64>,
+    /// the deposit inventory's summed mass. Present when `deposit` is stated.
+    #[pyo3(get)]
+    pub total_deposit_mass: Option<PyQty>,
+    /// `sum(mass / density)` over the mechanisms.
+    #[pyo3(get)]
+    pub deposit_volume: Option<PyQty>,
+    /// `volume / wetted_area`, or zero where the area is absent.
+    #[pyo3(get)]
+    pub film_thickness: Option<PyQty>,
+    /// `min(film / passage_half_height, 0.95)`, or zero where the half-height is absent.
+    #[pyo3(get)]
+    pub area_blockage_fraction: Option<f64>,
+    /// `max(1 - 1.6 b, 0.02)`, the deposit's polytropic-efficiency multiplier.
+    #[pyo3(get)]
+    pub efficiency_multiplier: Option<f64>,
+    /// `max((1 - b)^2, 0.05)`, the deposit's polytropic-head multiplier.
+    #[pyo3(get)]
+    pub head_multiplier: Option<f64>,
+    /// `getDegradationFactor`: the efficiency multiplier the run recorded.
+    #[pyo3(get)]
+    pub degradation_factor: Option<f64>,
+    /// `getFoulingFactor`: `1 - head_multiplier`.
+    #[pyo3(get)]
+    pub fouling_factor: Option<f64>,
+    /// the shaft power: the enthalpy rise times the molar flow, positive for a compressor. Reported in both branches.
+    #[pyo3(get)]
+    pub power: PyQty,
+    /// the speed the chart was read at, rpm: the stated one, or the one the speed-solve mode reached - pegged at a bound where `limit_speed` asked for it. `3000` in the isentropic branch, where the field is never read.
+    #[pyo3(get)]
+    pub shaft_speed: f64,
+    /// `getSurgeFlowRate()`: the surge curve's flow at the post-run fluid head, m3/hr. Null without a surge curve.
+    #[pyo3(get)]
+    pub surge_flow_rate: Option<PyQty>,
+    /// `getSurgeFlowRateMargin()`: the inlet flow less the surge flow, m3/hr.
+    #[pyo3(get)]
+    pub surge_flow_rate_margin: Option<PyQty>,
+    /// `getSurgeFlowRateStd()`: the surge flow at 1.01325 bara and 288.15 K over the inlet's volume-corrected `Z`.
+    #[pyo3(get)]
+    pub surge_flow_rate_std: Option<PyQty>,
+    /// `getDistanceToSurge()`: the inlet flow over the surge flow, less one. **Negative is inside the surge line.**
+    #[pyo3(get)]
+    pub distance_to_surge: Option<f64>,
+    /// `getControlLineFlow()`: the surge flow times `1 + surge_control_margin`, m3/hr.
+    #[pyo3(get)]
+    pub control_line_flow: Option<PyQty>,
+    /// `getDistanceToControlLine()`: the inlet flow over the control-line flow, less one.
+    #[pyo3(get)]
+    pub distance_to_control_line: Option<f64>,
+    /// `getRequiredRecycleFractionToControlLine()`: the fraction of the control-line flow the inlet is short by, zero when it is above it.
+    #[pyo3(get)]
+    pub required_recycle_fraction: Option<f64>,
+    /// `getAntiSurgeRecyclePower(getCurrentSurgeFraction())`: the chart power times the run-time recycle fraction, so zero unless the block fired.
+    #[pyo3(get)]
+    pub anti_surge_recycle_power: Option<PyQty>,
+    /// `AntiSurge.getCurrentSurgeFraction()`: the run-time recycle the block settled on, zero when it fired and found no surge. **Null unless `anti_surge_active`.**
+    #[pyo3(get)]
+    pub recycle_fraction: Option<f64>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -11955,12 +14292,34 @@ pub struct PyCompressorResult {
 impl PyCompressorResult {
     fn __repr__(&self) -> String {
         format!(
-            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, {} warning(s))",
+            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, polytropic_head={:?}, polytropic_efficiency={:?}, polytropic_exponent={:?}, total_deposit_mass={:?}, deposit_volume={:?}, film_thickness={:?}, area_blockage_fraction={:?}, efficiency_multiplier={:?}, head_multiplier={:?}, degradation_factor={:?}, fouling_factor={:?}, power={:?}, shaft_speed={:?}, surge_flow_rate={:?}, surge_flow_rate_margin={:?}, surge_flow_rate_std={:?}, distance_to_surge={:?}, control_line_flow={:?}, distance_to_control_line={:?}, required_recycle_fraction={:?}, anti_surge_recycle_power={:?}, recycle_fraction={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
+            self.polytropic_head,
+            self.polytropic_efficiency,
+            self.polytropic_exponent,
+            self.total_deposit_mass,
+            self.deposit_volume,
+            self.film_thickness,
+            self.area_blockage_fraction,
+            self.efficiency_multiplier,
+            self.head_multiplier,
+            self.degradation_factor,
+            self.fouling_factor,
+            self.power,
+            self.shaft_speed,
+            self.surge_flow_rate,
+            self.surge_flow_rate_margin,
+            self.surge_flow_rate_std,
+            self.distance_to_surge,
+            self.control_line_flow,
+            self.distance_to_control_line,
+            self.required_recycle_fraction,
+            self.anti_surge_recycle_power,
+            self.recycle_fraction,
             self.warnings.len()
         )
     }
@@ -11986,6 +14345,58 @@ impl From<&azoth_process::models::compressor::CompressorResult> for PyCompressor
                 magnitude_si: r.outlet_h.value,
                 unit: "J/mol".to_string(),
             },
+            polytropic_head: PyQty {
+                magnitude_si: r.polytropic_head.value,
+                unit: "m".to_string(),
+            },
+            polytropic_efficiency: r.polytropic_efficiency,
+            polytropic_exponent: r.polytropic_exponent,
+            total_deposit_mass: r.total_deposit_mass.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            deposit_volume: r.deposit_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
+            }),
+            film_thickness: r.film_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            area_blockage_fraction: r.area_blockage_fraction,
+            efficiency_multiplier: r.efficiency_multiplier,
+            head_multiplier: r.head_multiplier,
+            degradation_factor: r.degradation_factor,
+            fouling_factor: r.fouling_factor,
+            power: PyQty {
+                magnitude_si: r.power.value,
+                unit: "W".to_string(),
+            },
+            shaft_speed: r.shaft_speed,
+            surge_flow_rate: r.surge_flow_rate.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3/h".to_string(),
+            }),
+            surge_flow_rate_margin: r.surge_flow_rate_margin.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3/h".to_string(),
+            }),
+            surge_flow_rate_std: r.surge_flow_rate_std.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3/h".to_string(),
+            }),
+            distance_to_surge: r.distance_to_surge,
+            control_line_flow: r.control_line_flow.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3/h".to_string(),
+            }),
+            distance_to_control_line: r.distance_to_control_line,
+            required_recycle_fraction: r.required_recycle_fraction,
+            anti_surge_recycle_power: r.anti_surge_recycle_power.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "W".to_string(),
+            }),
+            recycle_fraction: r.recycle_fraction,
             warnings: transport(&r.warnings),
         }
     }
@@ -12017,6 +14428,12 @@ pub struct PyCoolerResult {
     /// the duty the cooler moved, as `inlet_n * (outlet_h - inlet_h)`. Negative when heat was removed, which is the usual case for this entry.
     #[pyo3(get)]
     pub outlet_duty: PyQty,
+    /// the post-step valve opening, in percent. Present only on the dynamic branch.
+    #[pyo3(get)]
+    pub cooling_valve_opening: Option<f64>,
+    /// the equilibrium the thermal lag moved toward. Present only on the dynamic branch, as evidence.
+    #[pyo3(get)]
+    pub equilibrium_outlet_temperature: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -12026,13 +14443,15 @@ pub struct PyCoolerResult {
 impl PyCoolerResult {
     fn __repr__(&self) -> String {
         format!(
-            "CoolerResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, {} warning(s))",
+            "CoolerResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, cooling_valve_opening={:?}, equilibrium_outlet_temperature={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
             self.outlet_duty,
+            self.cooling_valve_opening,
+            self.equilibrium_outlet_temperature,
             self.warnings.len()
         )
     }
@@ -12062,6 +14481,11 @@ impl From<&azoth_process::models::cooler::CoolerResult> for PyCoolerResult {
                 magnitude_si: r.outlet_duty.value,
                 unit: "W".to_string(),
             },
+            cooling_valve_opening: r.cooling_valve_opening,
+            equilibrium_outlet_temperature: r.equilibrium_outlet_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }
@@ -12144,6 +14568,12 @@ pub struct PyDistillationColumnResult {
     /// `|H_feed + duties - H_products| / |H_feed|`, the enthalpy closure. As the mass residual, not the class's norm.
     #[pyo3(get)]
     pub energy_residual: f64,
+    /// the top specification's residual on the published products (upstream PR #4127): `L/D - target` for a ratio, actual less stated duty for a duty, in SI where dimensioned (mol/s, W). Zero with no specification; unavailable, not zero, on a dry terminal.
+    #[pyo3(get)]
+    pub top_specification_residual: f64,
+    /// the bottom specification's residual, `V/B - target` for a ratio; as the top's.
+    #[pyo3(get)]
+    pub bottom_specification_residual: f64,
     /// `getFsFactor`: the gas outlet's superficial velocity over the **total** `pi*D^2/4` times the square root of its system density, in `Pa**0.5` - dimensionless because no vocabulary unit expresses it. **Not the tray calculator's own `Fs`**.
     #[pyo3(get)]
     pub fs_factor: f64,
@@ -12231,7 +14661,7 @@ pub struct PyDistillationColumnResult {
 impl PyDistillationColumnResult {
     fn __repr__(&self) -> String {
         format!(
-            "DistillationColumnResult(tray_temperature={:?}, tray_pressure={:?}, tray_gas_n={:?}, tray_liquid_n={:?}, distillate_n={:?}, distillate_z={:?}, distillate_p={:?}, distillate_t={:?}, distillate_h={:?}, bottoms_n={:?}, bottoms_z={:?}, bottoms_p={:?}, bottoms_t={:?}, bottoms_h={:?}, gas_side_draw_n={:?}, liquid_side_draw_n={:?}, pumparound_n={:?}, condenser_duty={:?}, reboiler_duty={:?}, iterations={:?}, temperature_residual={:?}, mass_residual={:?}, energy_residual={:?}, fs_factor={:?}, fs_factor_utilization={:?}, fs_factor_within_design_limit={:?}, minimum_diameter_for_fs_limit={:?}, required_diameter={:?}, controlling_tray_index={:?}, internals_design_ok={:?}, max_percent_flood={:?}, min_percent_flood={:?}, average_tray_efficiency={:?}, total_pressure_drop={:?}, total_pressure_drop_mbar={:?}, tray_percent_flood={:?}, tray_pressure_drop={:?}, tray_efficiency={:?}, vessel_diameter={:?}, vessel_height={:?}, vessel_wall_thickness={:?}, actual_trays={:?}, flooding_factor={:?}, weir_loading={:?}, tray_pressure_drop_mbar={:?}, total_pressure_drop_bar={:?}, reboiler_duty_kw={:?}, condenser_duty_kw={:?}, material_grade={:?}, {} warning(s))",
+            "DistillationColumnResult(tray_temperature={:?}, tray_pressure={:?}, tray_gas_n={:?}, tray_liquid_n={:?}, distillate_n={:?}, distillate_z={:?}, distillate_p={:?}, distillate_t={:?}, distillate_h={:?}, bottoms_n={:?}, bottoms_z={:?}, bottoms_p={:?}, bottoms_t={:?}, bottoms_h={:?}, gas_side_draw_n={:?}, liquid_side_draw_n={:?}, pumparound_n={:?}, condenser_duty={:?}, reboiler_duty={:?}, iterations={:?}, temperature_residual={:?}, mass_residual={:?}, energy_residual={:?}, top_specification_residual={:?}, bottom_specification_residual={:?}, fs_factor={:?}, fs_factor_utilization={:?}, fs_factor_within_design_limit={:?}, minimum_diameter_for_fs_limit={:?}, required_diameter={:?}, controlling_tray_index={:?}, internals_design_ok={:?}, max_percent_flood={:?}, min_percent_flood={:?}, average_tray_efficiency={:?}, total_pressure_drop={:?}, total_pressure_drop_mbar={:?}, tray_percent_flood={:?}, tray_pressure_drop={:?}, tray_efficiency={:?}, vessel_diameter={:?}, vessel_height={:?}, vessel_wall_thickness={:?}, actual_trays={:?}, flooding_factor={:?}, weir_loading={:?}, tray_pressure_drop_mbar={:?}, total_pressure_drop_bar={:?}, reboiler_duty_kw={:?}, condenser_duty_kw={:?}, material_grade={:?}, {} warning(s))",
             self.tray_temperature,
             self.tray_pressure,
             self.tray_gas_n,
@@ -12255,6 +14685,8 @@ impl PyDistillationColumnResult {
             self.temperature_residual,
             self.mass_residual,
             self.energy_residual,
+            self.top_specification_residual,
+            self.bottom_specification_residual,
             self.fs_factor,
             self.fs_factor_utilization,
             self.fs_factor_within_design_limit,
@@ -12393,6 +14825,8 @@ impl From<&azoth_process::models::distillation_column::DistillationColumnResult>
             temperature_residual: r.temperature_residual,
             mass_residual: r.mass_residual,
             energy_residual: r.energy_residual,
+            top_specification_residual: r.top_specification_residual,
+            bottom_specification_residual: r.bottom_specification_residual,
             fs_factor: r.fs_factor,
             fs_factor_utilization: r.fs_factor_utilization,
             fs_factor_within_design_limit: r.fs_factor_within_design_limit,
@@ -12496,6 +14930,57 @@ pub struct PyEjectorResult {
     /// the diffuser's design velocity: the class's own estimate, which takes one more `v^2/2` off before the discharge flash.
     #[pyo3(get)]
     pub diffuser_velocity: Option<PyQty>,
+    /// `getMotiveNozzleThroatArea`: the motive mass flow over its density at the mixing pressure and its exit velocity.
+    #[pyo3(get)]
+    pub motive_nozzle_throat_area: PyQty,
+    /// `getMotiveNozzleDiameter`: `sqrt(4A/pi)` of the throat area.
+    #[pyo3(get)]
+    pub motive_nozzle_diameter: PyQty,
+    /// `getSuctionInletArea`: the suction mass flow over its density at the mixing pressure and its design velocity.
+    #[pyo3(get)]
+    pub suction_inlet_area: PyQty,
+    /// `getSuctionInletDiameter`: `sqrt(4A/pi)` of the suction inlet's area.
+    #[pyo3(get)]
+    pub suction_inlet_diameter: PyQty,
+    /// `getMixingChamberArea`: the total mass flow over the mixture's density at the mixing pressure and the mixing velocity. **The area ratio the class reports beside it is this over the throat area.**
+    #[pyo3(get)]
+    pub mixing_chamber_area: PyQty,
+    /// `getMixingChamberDiameter`: `sqrt(4A/pi)` of the mixing chamber's area.
+    #[pyo3(get)]
+    pub mixing_chamber_diameter: PyQty,
+    /// `getDiffuserOutletArea`: the total mass flow over the discharge density and the diffuser's design velocity.
+    #[pyo3(get)]
+    pub diffuser_outlet_area: PyQty,
+    /// `getDiffuserOutletDiameter`: `sqrt(4A/pi)` of the diffuser outlet's area.
+    #[pyo3(get)]
+    pub diffuser_outlet_diameter: PyQty,
+    /// `getMotiveNozzleEffectiveLength`: three times the throat diameter.
+    #[pyo3(get)]
+    pub motive_nozzle_effective_length: PyQty,
+    /// `getSuctionInletLength`: two and a half times the suction inlet's diameter.
+    #[pyo3(get)]
+    pub suction_inlet_length: PyQty,
+    /// `getMixingChamberLength`: four times the mixing chamber's diameter.
+    #[pyo3(get)]
+    pub mixing_chamber_length: PyQty,
+    /// `getDiffuserOutletLength`: six times the diffuser outlet's diameter.
+    #[pyo3(get)]
+    pub diffuser_outlet_length: PyQty,
+    /// `getBodyVolume`: the four stages' cylinder volumes, area times length, summed.
+    #[pyo3(get)]
+    pub body_volume: PyQty,
+    /// `getConnectedPipingVolume`: the suction connection's and the discharge connection's cylinder volumes.
+    #[pyo3(get)]
+    pub connected_piping_volume: PyQty,
+    /// `getTotalVolume`: the body and the connected piping summed.
+    #[pyo3(get)]
+    pub total_volume: PyQty,
+    /// `getSuctionConnectionLength`: `3 + 1.5*clamp(discharge/suction - 1, 0, 3)` times the suction inlet's diameter, in bara - `setSuctionConnectionLength` is not a declared input.
+    #[pyo3(get)]
+    pub suction_connection_length: PyQty,
+    /// `getDischargeConnectionLength`: `5 + 2*clamp(discharge/mixing - 1, 0, 3)` times the diffuser outlet's diameter, in bara.
+    #[pyo3(get)]
+    pub discharge_connection_length: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -12505,7 +14990,7 @@ pub struct PyEjectorResult {
 impl PyEjectorResult {
     fn __repr__(&self) -> String {
         format!(
-            "EjectorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, mixing_pressure={:?}, motive_nozzle_velocity={:?}, suction_nozzle_velocity={:?}, mixing_velocity={:?}, diffuser_velocity={:?}, {} warning(s))",
+            "EjectorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, mixing_pressure={:?}, motive_nozzle_velocity={:?}, suction_nozzle_velocity={:?}, mixing_velocity={:?}, diffuser_velocity={:?}, motive_nozzle_throat_area={:?}, motive_nozzle_diameter={:?}, suction_inlet_area={:?}, suction_inlet_diameter={:?}, mixing_chamber_area={:?}, mixing_chamber_diameter={:?}, diffuser_outlet_area={:?}, diffuser_outlet_diameter={:?}, motive_nozzle_effective_length={:?}, suction_inlet_length={:?}, mixing_chamber_length={:?}, diffuser_outlet_length={:?}, body_volume={:?}, connected_piping_volume={:?}, total_volume={:?}, suction_connection_length={:?}, discharge_connection_length={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -12516,6 +15001,23 @@ impl PyEjectorResult {
             self.suction_nozzle_velocity,
             self.mixing_velocity,
             self.diffuser_velocity,
+            self.motive_nozzle_throat_area,
+            self.motive_nozzle_diameter,
+            self.suction_inlet_area,
+            self.suction_inlet_diameter,
+            self.mixing_chamber_area,
+            self.mixing_chamber_diameter,
+            self.diffuser_outlet_area,
+            self.diffuser_outlet_diameter,
+            self.motive_nozzle_effective_length,
+            self.suction_inlet_length,
+            self.mixing_chamber_length,
+            self.diffuser_outlet_length,
+            self.body_volume,
+            self.connected_piping_volume,
+            self.total_volume,
+            self.suction_connection_length,
+            self.discharge_connection_length,
             self.warnings.len()
         )
     }
@@ -12561,6 +15063,74 @@ impl From<&azoth_process::models::ejector::EjectorResult> for PyEjectorResult {
                 magnitude_si: v.value,
                 unit: "m/s".to_string(),
             }),
+            motive_nozzle_throat_area: PyQty {
+                magnitude_si: r.motive_nozzle_throat_area.value,
+                unit: "m**2".to_string(),
+            },
+            motive_nozzle_diameter: PyQty {
+                magnitude_si: r.motive_nozzle_diameter.value,
+                unit: "m".to_string(),
+            },
+            suction_inlet_area: PyQty {
+                magnitude_si: r.suction_inlet_area.value,
+                unit: "m**2".to_string(),
+            },
+            suction_inlet_diameter: PyQty {
+                magnitude_si: r.suction_inlet_diameter.value,
+                unit: "m".to_string(),
+            },
+            mixing_chamber_area: PyQty {
+                magnitude_si: r.mixing_chamber_area.value,
+                unit: "m**2".to_string(),
+            },
+            mixing_chamber_diameter: PyQty {
+                magnitude_si: r.mixing_chamber_diameter.value,
+                unit: "m".to_string(),
+            },
+            diffuser_outlet_area: PyQty {
+                magnitude_si: r.diffuser_outlet_area.value,
+                unit: "m**2".to_string(),
+            },
+            diffuser_outlet_diameter: PyQty {
+                magnitude_si: r.diffuser_outlet_diameter.value,
+                unit: "m".to_string(),
+            },
+            motive_nozzle_effective_length: PyQty {
+                magnitude_si: r.motive_nozzle_effective_length.value,
+                unit: "m".to_string(),
+            },
+            suction_inlet_length: PyQty {
+                magnitude_si: r.suction_inlet_length.value,
+                unit: "m".to_string(),
+            },
+            mixing_chamber_length: PyQty {
+                magnitude_si: r.mixing_chamber_length.value,
+                unit: "m".to_string(),
+            },
+            diffuser_outlet_length: PyQty {
+                magnitude_si: r.diffuser_outlet_length.value,
+                unit: "m".to_string(),
+            },
+            body_volume: PyQty {
+                magnitude_si: r.body_volume.value,
+                unit: "m**3".to_string(),
+            },
+            connected_piping_volume: PyQty {
+                magnitude_si: r.connected_piping_volume.value,
+                unit: "m**3".to_string(),
+            },
+            total_volume: PyQty {
+                magnitude_si: r.total_volume.value,
+                unit: "m**3".to_string(),
+            },
+            suction_connection_length: PyQty {
+                magnitude_si: r.suction_connection_length.value,
+                unit: "m".to_string(),
+            },
+            discharge_connection_length: PyQty {
+                magnitude_si: r.discharge_connection_length.value,
+                unit: "m".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }
@@ -12589,6 +15159,27 @@ pub struct PyExpanderResult {
     /// the outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency. Reported because the shaft work the machine does is this difference times the flow.
     #[pyo3(get)]
     pub outlet_h: PyQty,
+    /// the recovered shaft power: the enthalpy change times the molar flow, **negative** for an expansion, as `getPower()` is.
+    #[pyo3(get)]
+    pub power: PyQty,
+    /// the `recoveredPower` constraint's `min(|power| / rating, 9.99)`. Present only when the rating is positive.
+    #[pyo3(get)]
+    pub recovered_power_utilization: Option<f64>,
+    /// the enabled constraints' largest utilization; 0.0 without a rating, because the parent's chart constraints are disabled.
+    #[pyo3(get)]
+    pub max_utilization: f64,
+    /// `isCapacityExceeded`: the utilization above 1.0, so `|power|` above the rating.
+    #[pyo3(get)]
+    pub capacity_exceeded: bool,
+    /// `isHardLimitExceeded`: `|power|` above `1.1 x` the rating, the constraint's `maxValue` - narrower than the utilization's own 1.0.
+    #[pyo3(get)]
+    pub hard_limit_exceeded: bool,
+    /// `getBottleneckConstraint`'s name: `recoveredPower` when its utilization is above zero, and absent otherwise.
+    #[pyo3(get)]
+    pub bottleneck_constraint: Option<String>,
+    /// the efficiency the mode produced: `dH/(h_isentropic - h_in)` for a stated power (above one or negative allowed), or the solved one. Absent in the ordinary branch and where the isentropic step is zero.
+    #[pyo3(get)]
+    pub reported_isentropic_efficiency: Option<f64>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -12598,12 +15189,19 @@ pub struct PyExpanderResult {
 impl PyExpanderResult {
     fn __repr__(&self) -> String {
         format!(
-            "ExpanderResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, {} warning(s))",
+            "ExpanderResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, power={:?}, recovered_power_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, reported_isentropic_efficiency={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
+            self.power,
+            self.recovered_power_utilization,
+            self.max_utilization,
+            self.capacity_exceeded,
+            self.hard_limit_exceeded,
+            self.bottleneck_constraint,
+            self.reported_isentropic_efficiency,
             self.warnings.len()
         )
     }
@@ -12629,6 +15227,16 @@ impl From<&azoth_process::models::expander::ExpanderResult> for PyExpanderResult
                 magnitude_si: r.outlet_h.value,
                 unit: "J/mol".to_string(),
             },
+            power: PyQty {
+                magnitude_si: r.power.value,
+                unit: "W".to_string(),
+            },
+            recovered_power_utilization: r.recovered_power_utilization,
+            max_utilization: r.max_utilization,
+            capacity_exceeded: r.capacity_exceeded,
+            hard_limit_exceeded: r.hard_limit_exceeded,
+            bottleneck_constraint: r.bottleneck_constraint.clone(),
+            reported_isentropic_efficiency: r.reported_isentropic_efficiency,
             warnings: transport(&r.warnings),
         }
     }
@@ -12657,9 +15265,102 @@ pub struct PyFilterResult {
     /// the outlet molar enthalpy, which is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so an isothermal drop moves it.
     #[pyo3(get)]
     pub outlet_h: PyQty,
+    /// the clean drop the selected model computed, before the clamp. This is `Filter.getCalculatedCleanDeltaP()` after `run`.
+    #[pyo3(get)]
+    pub clean_drop: PyQty,
     /// the drop actually applied: `pressure_drop` unless it exceeded what the inlet pressure allows, in which case the clamp's value. This is `Filter.getDeltaP()` after `run`, and it is an output because it can differ from the input.
     #[pyo3(get)]
     pub applied_drop: PyQty,
+    /// the nominal removal efficiency: the beta curve's value at `particle_size`, else the stated scalar.
+    #[pyo3(get)]
+    pub nominal_removal_efficiency: f64,
+    /// the outlet particle concentration as a mass fraction: `inlet (1 - eta)`, or zero when the capture is off.
+    #[pyo3(get)]
+    pub outlet_particle_concentration: f64,
+    /// the captured particle mass rate: the inlet mass flow times the inlet concentration times the efficiency, or zero when the capture is off.
+    #[pyo3(get)]
+    pub captured_rate: PyQty,
+    /// the clean drop plus `pressure_drop_increase_at_capacity * loading_fraction`, before bypass and before the inlet-pressure clamp. This is `getUnrestrictedDeltaP()`.
+    #[pyo3(get)]
+    pub unrestricted_drop: PyQty,
+    /// the fraction of the flow bypassing the element: `1 - sqrt(cracking/unrestricted)` when the bypass is open above its cracking drop, else zero.
+    #[pyo3(get)]
+    pub bypass_fraction: f64,
+    /// `solids_loading / loading_capacity`, or zero when the capacity is not finite or not positive.
+    #[pyo3(get)]
+    pub loading_fraction: f64,
+    /// zero at or below `breakthrough_start_fraction`, else `(fraction - start)/(1 - start)` capped at one.
+    #[pyo3(get)]
+    pub breakthrough_fraction: f64,
+    /// the nominal efficiency retained by breakthrough and bypass: `nominal (1 - breakthrough) (1 - bypass)`, clamped to `[0, 1]`. The capture outputs use this.
+    #[pyo3(get)]
+    pub current_removal_efficiency: f64,
+    /// the carried solids loading this run read.
+    #[pyo3(get)]
+    pub solids_loading: PyQty,
+    /// `unrestricted_drop / terminal_pressure_drop`. Bypass does not lower it, because the check reads the unrestricted drop.
+    #[pyo3(get)]
+    pub differential_pressure_utilization: f64,
+    /// true when `differential_pressure_utilization >= 1` or `loading_fraction >= 1`. The class's `isReplacementRequired`.
+    #[pyo3(get)]
+    pub replacement_required: bool,
+    /// the holdup volume over the inlet's volumetric flow. Zero without a holdup; **absent where the flow is zero and the holdup positive**, the class's positive infinity.
+    #[pyo3(get)]
+    pub holdup_residence_time: Option<PyQty>,
+    /// the design pressure: the larger of `operating * design_pressure_margin` and `operating + minimum_design_pressure_margin`.
+    #[pyo3(get)]
+    pub design_pressure: Option<PyQty>,
+    /// the inlet temperature plus `design_temperature_margin`.
+    #[pyo3(get)]
+    pub design_temperature: Option<PyQty>,
+    /// the element count the design requires, at least `number_of_elements`. A granular type reports 1.
+    #[pyo3(get)]
+    pub required_elements: Option<f64>,
+    /// the vessel's inside diameter, from the element bundle or the granular cross-section, floored at 0.5 m.
+    #[pyo3(get)]
+    pub vessel_inner_diameter: Option<PyQty>,
+    /// the inside diameter plus twice the shell thickness.
+    #[pyo3(get)]
+    pub vessel_outer_diameter: Option<PyQty>,
+    /// the tangent-to-tangent length: the active length plus the diameter, then clamped to the L/D window.
+    #[pyo3(get)]
+    pub vessel_length: Option<PyQty>,
+    /// the shell thickness from the class's ASME-shaped screening formula, floored at 6 mm.
+    #[pyo3(get)]
+    pub shell_thickness: Option<PyQty>,
+    /// the 2:1 ellipsoidal head's thickness, floored at the shell's.
+    #[pyo3(get)]
+    pub head_thickness: Option<PyQty>,
+    /// the element area the design used: the stated override or the type's default.
+    #[pyo3(get)]
+    pub effective_element_area: Option<PyQty>,
+    /// the flow over the effective element area, or over the granular vessel's cross-section.
+    #[pyo3(get)]
+    pub calculated_face_velocity: Option<PyQty>,
+    /// the hydraulic nozzle diameter the nozzle velocity requires.
+    #[pyo3(get)]
+    pub required_nozzle_diameter: Option<PyQty>,
+    /// the next nominal nozzle diameter at or above the required one, from the class's 15 to 1200 mm table.
+    #[pyo3(get)]
+    pub selected_nozzle_diameter: Option<PyQty>,
+    /// the flow over the selected nozzle's area.
+    #[pyo3(get)]
+    pub calculated_nozzle_velocity: Option<PyQty>,
+    /// the shell and head metal at 7850 kg/m3.
+    #[pyo3(get)]
+    pub empty_vessel_weight: Option<PyQty>,
+    /// the empty vessel, 30% of it for accessories, and the elements or granular media.
+    #[pyo3(get)]
+    pub total_equipped_weight: Option<PyQty>,
+    /// the unrestricted drop over `element_collapse_pressure`.
+    #[pyo3(get)]
+    pub collapse_pressure_utilization: Option<f64>,
+    /// true when both the terminal and the collapse utilizations are below one.
+    #[pyo3(get)]
+    pub differential_pressure_design_acceptable: Option<bool>,
+    /// the vessel cross-section a granular design writes to the filter's hydraulic area; absent for a cartridge type.
+    #[pyo3(get)]
+    pub design_media_area: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -12669,13 +15370,44 @@ pub struct PyFilterResult {
 impl PyFilterResult {
     fn __repr__(&self) -> String {
         format!(
-            "FilterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, applied_drop={:?}, {} warning(s))",
+            "FilterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, clean_drop={:?}, applied_drop={:?}, nominal_removal_efficiency={:?}, outlet_particle_concentration={:?}, captured_rate={:?}, unrestricted_drop={:?}, bypass_fraction={:?}, loading_fraction={:?}, breakthrough_fraction={:?}, current_removal_efficiency={:?}, solids_loading={:?}, differential_pressure_utilization={:?}, replacement_required={:?}, holdup_residence_time={:?}, design_pressure={:?}, design_temperature={:?}, required_elements={:?}, vessel_inner_diameter={:?}, vessel_outer_diameter={:?}, vessel_length={:?}, shell_thickness={:?}, head_thickness={:?}, effective_element_area={:?}, calculated_face_velocity={:?}, required_nozzle_diameter={:?}, selected_nozzle_diameter={:?}, calculated_nozzle_velocity={:?}, empty_vessel_weight={:?}, total_equipped_weight={:?}, collapse_pressure_utilization={:?}, differential_pressure_design_acceptable={:?}, design_media_area={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
+            self.clean_drop,
             self.applied_drop,
+            self.nominal_removal_efficiency,
+            self.outlet_particle_concentration,
+            self.captured_rate,
+            self.unrestricted_drop,
+            self.bypass_fraction,
+            self.loading_fraction,
+            self.breakthrough_fraction,
+            self.current_removal_efficiency,
+            self.solids_loading,
+            self.differential_pressure_utilization,
+            self.replacement_required,
+            self.holdup_residence_time,
+            self.design_pressure,
+            self.design_temperature,
+            self.required_elements,
+            self.vessel_inner_diameter,
+            self.vessel_outer_diameter,
+            self.vessel_length,
+            self.shell_thickness,
+            self.head_thickness,
+            self.effective_element_area,
+            self.calculated_face_velocity,
+            self.required_nozzle_diameter,
+            self.selected_nozzle_diameter,
+            self.calculated_nozzle_velocity,
+            self.empty_vessel_weight,
+            self.total_equipped_weight,
+            self.collapse_pressure_utilization,
+            self.differential_pressure_design_acceptable,
+            self.design_media_area,
             self.warnings.len()
         )
     }
@@ -12701,10 +15433,101 @@ impl From<&azoth_process::models::filter::FilterResult> for PyFilterResult {
                 magnitude_si: r.outlet_h.value,
                 unit: "J/mol".to_string(),
             },
+            clean_drop: PyQty {
+                magnitude_si: r.clean_drop.value,
+                unit: "Pa".to_string(),
+            },
             applied_drop: PyQty {
                 magnitude_si: r.applied_drop.value,
                 unit: "Pa".to_string(),
             },
+            nominal_removal_efficiency: r.nominal_removal_efficiency,
+            outlet_particle_concentration: r.outlet_particle_concentration,
+            captured_rate: PyQty {
+                magnitude_si: r.captured_rate.value,
+                unit: "kg/h".to_string(),
+            },
+            unrestricted_drop: PyQty {
+                magnitude_si: r.unrestricted_drop.value,
+                unit: "Pa".to_string(),
+            },
+            bypass_fraction: r.bypass_fraction,
+            loading_fraction: r.loading_fraction,
+            breakthrough_fraction: r.breakthrough_fraction,
+            current_removal_efficiency: r.current_removal_efficiency,
+            solids_loading: PyQty {
+                magnitude_si: r.solids_loading.value,
+                unit: "kg".to_string(),
+            },
+            differential_pressure_utilization: r.differential_pressure_utilization,
+            replacement_required: r.replacement_required,
+            holdup_residence_time: r.holdup_residence_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            design_pressure: r.design_pressure.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            design_temperature: r.design_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            required_elements: r.required_elements,
+            vessel_inner_diameter: r.vessel_inner_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            vessel_outer_diameter: r.vessel_outer_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            vessel_length: r.vessel_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            shell_thickness: r.shell_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            head_thickness: r.head_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            effective_element_area: r.effective_element_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
+            }),
+            calculated_face_velocity: r.calculated_face_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            required_nozzle_diameter: r.required_nozzle_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            selected_nozzle_diameter: r.selected_nozzle_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            calculated_nozzle_velocity: r.calculated_nozzle_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            empty_vessel_weight: r.empty_vessel_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            total_equipped_weight: r.total_equipped_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            collapse_pressure_utilization: r.collapse_pressure_utilization,
+            differential_pressure_design_acceptable: r.differential_pressure_design_acceptable,
+            design_media_area: r.design_media_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }
@@ -12739,6 +15562,33 @@ pub struct PyFlareResult {
     /// the carbon dioxide the combustion forms: the gas's carbon atoms per second times `44.01e-3` kg/mol.
     #[pyo3(get)]
     pub co2_emission: PyQty,
+    /// `estimateRadiationHeatFlux` at `ground_distance`: the radiant fraction of the duty over the sphere through the point source. Present only with `ground_distance`.
+    #[pyo3(get)]
+    pub radiation_flux: Option<PyQty>,
+    /// `radiationDistanceForFlux`: the horizontal distance at which the flux falls to `radiation_flux_threshold`, zero where the contour is inside the flame-height sphere. Present only with the threshold.
+    #[pyo3(get)]
+    pub radiation_distance: Option<PyQty>,
+    /// `getDispersionSurrogate().getExitVelocityMs()`: the inlet's mass flow over the tip area and the inlet's density, floored at zero.
+    #[pyo3(get)]
+    pub exit_velocity: PyQty,
+    /// the surrogate's `momentumFlux`, `rho v^2`, floored at the density the class floors.
+    #[pyo3(get)]
+    pub momentum_flux: PyQty,
+    /// the surrogate's `standardVolumeSm3PerSec`: the inlet's own `Sm3/sec`, scaled by the mass rate over the reference mass rate.
+    #[pyo3(get)]
+    pub standard_volume_rate: PyQty,
+    /// `evaluateCapacity().getHeatUtilization()`: the duty over `design_heat_duty_capacity`. Absent when the design is not finite and positive.
+    #[pyo3(get)]
+    pub heat_utilization: Option<f64>,
+    /// the operating mass flow over `design_mass_flow_capacity`. Absent as the heat's is.
+    #[pyo3(get)]
+    pub mass_utilization: Option<f64>,
+    /// the operating molar flow over `design_molar_flow_capacity`. Absent as the heat's is.
+    #[pyo3(get)]
+    pub molar_utilization: Option<f64>,
+    /// `isOverloaded`: any present utilisation above `1 + 1e-6`. Absent until at least one utilisation exists.
+    #[pyo3(get)]
+    pub overloaded: Option<bool>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -12748,7 +15598,7 @@ pub struct PyFlareResult {
 impl PyFlareResult {
     fn __repr__(&self) -> String {
         format!(
-            "FlareResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, heat_duty={:?}, co2_emission={:?}, {} warning(s))",
+            "FlareResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, heat_duty={:?}, co2_emission={:?}, radiation_flux={:?}, radiation_distance={:?}, exit_velocity={:?}, momentum_flux={:?}, standard_volume_rate={:?}, heat_utilization={:?}, mass_utilization={:?}, molar_utilization={:?}, overloaded={:?}, {} warning(s))",
             self.product_n,
             self.product_z,
             self.product_p,
@@ -12756,6 +15606,15 @@ impl PyFlareResult {
             self.product_h,
             self.heat_duty,
             self.co2_emission,
+            self.radiation_flux,
+            self.radiation_distance,
+            self.exit_velocity,
+            self.momentum_flux,
+            self.standard_volume_rate,
+            self.heat_utilization,
+            self.mass_utilization,
+            self.molar_utilization,
+            self.overloaded,
             self.warnings.len()
         )
     }
@@ -12789,6 +15648,30 @@ impl From<&azoth_process::models::flare::FlareResult> for PyFlareResult {
                 magnitude_si: r.co2_emission.value,
                 unit: "kg/s".to_string(),
             },
+            radiation_flux: r.radiation_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/m**2".to_string(),
+            }),
+            radiation_distance: r.radiation_distance.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            exit_velocity: PyQty {
+                magnitude_si: r.exit_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            momentum_flux: PyQty {
+                magnitude_si: r.momentum_flux.value,
+                unit: "Pa".to_string(),
+            },
+            standard_volume_rate: PyQty {
+                magnitude_si: r.standard_volume_rate.value,
+                unit: "m**3/s".to_string(),
+            },
+            heat_utilization: r.heat_utilization,
+            mass_utilization: r.mass_utilization,
+            molar_utilization: r.molar_utilization,
+            overloaded: r.overloaded,
             warnings: transport(&r.warnings),
         }
     }
@@ -12835,6 +15718,117 @@ pub struct PyGasScrubberResult {
     /// `getCapacityUtilization`: the vapour's volumetric flow over what the cross-section admits at the design load factor, `Q / (K sqrt((rho_l - rho_g)/rho_g) A)`. Present only when both mechanical inputs are supplied.
     #[pyo3(get)]
     pub capacity_utilization: Option<f64>,
+    /// `sizeFromFlow(safety_factor)`'s diameter. Absent when no safety factor or no gas.
+    #[pyo3(get)]
+    pub required_diameter: Option<PyQty>,
+    /// whether a positive mesh-pad area was configured. Present with the design.
+    #[pyo3(get)]
+    pub has_mesh_pad: Option<bool>,
+    /// the configured mesh-pad face area, `0` when none.
+    #[pyo3(get)]
+    pub mesh_pad_area: Option<PyQty>,
+    /// the mesh pad's thickness, `100` by default.
+    #[pyo3(get)]
+    pub mesh_pad_thickness: Option<PyQty>,
+    /// the mesh pad's elevation, `0` by default.
+    #[pyo3(get)]
+    pub mesh_pad_elevation: Option<PyQty>,
+    /// whether inlet cyclones are configured; the class's default is none.
+    #[pyo3(get)]
+    pub has_inlet_cyclones: Option<bool>,
+    /// whether demisting cyclones are configured; the class's default is none.
+    #[pyo3(get)]
+    pub has_demisting_cyclones: Option<bool>,
+    /// `calcDesign`'s sized internal diameter, from the gas flow, the design `K` and the orientation's gas area. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub design_inner_diameter: Option<PyQty>,
+    /// the tangent-to-tangent length, always `5 d` for this class.
+    #[pyo3(get)]
+    pub design_tantan_length: Option<PyQty>,
+    /// the inside diameter plus twice the wall thickness.
+    #[pyo3(get)]
+    pub design_outer_diameter: Option<PyQty>,
+    /// the ASME wall thickness at the stated pressure, allowable stress, joint efficiency and corrosion allowance.
+    #[pyo3(get)]
+    pub design_wall_thickness: Option<PyQty>,
+    /// the design velocity over the sized gas area, in m3/hr.
+    #[pyo3(get)]
+    pub max_design_gas_volume_flow: Option<PyQty>,
+    /// the class's empty-shell estimate, `0.032 wall_mm d_mm L`.
+    #[pyo3(get)]
+    pub vessel_shell_weight: Option<PyQty>,
+    /// the class's piping allowance, `0.4` of the shell weight.
+    #[pyo3(get)]
+    pub piping_weight: Option<PyQty>,
+    /// the class's structural allowance, `0.1` of the shell weight.
+    #[pyo3(get)]
+    pub structural_weight: Option<PyQty>,
+    /// the class's electrical allowance, `0.08` of the shell weight.
+    #[pyo3(get)]
+    pub electrical_weight: Option<PyQty>,
+    /// the internals' weight. `0.0` here: the class leaves it at zero without internals sections, and this port builds none.
+    #[pyo3(get)]
+    pub internals_weight: Option<PyQty>,
+    /// the shell plus the class's piping, structural and electrical allowances.
+    #[pyo3(get)]
+    pub total_weight: Option<PyQty>,
+    /// `2 d`.
+    #[pyo3(get)]
+    pub module_width: Option<PyQty>,
+    /// `1.5 L` - the class writes `2.5 d` first and overwrites it with this.
+    #[pyo3(get)]
+    pub module_length: Option<PyQty>,
+    /// `2 d`, with no separator's `+ 1`.
+    #[pyo3(get)]
+    pub module_height: Option<PyQty>,
+    /// the cylinder's internal volume, `pi (d/2)^2 L`.
+    #[pyo3(get)]
+    pub vessel_volume: Option<PyQty>,
+    /// the high-high liquid level, `0.80 d`.
+    #[pyo3(get)]
+    pub hhll: Option<PyQty>,
+    /// the high liquid level, `0.70 d`.
+    #[pyo3(get)]
+    pub hll: Option<PyQty>,
+    /// the normal liquid level, `0.50 d`.
+    #[pyo3(get)]
+    pub nll: Option<PyQty>,
+    /// the low liquid level, `0.30 d`.
+    #[pyo3(get)]
+    pub lll: Option<PyQty>,
+    /// the low-low liquid level, `0.15 d`.
+    #[pyo3(get)]
+    pub llll: Option<PyQty>,
+    /// the weir height, `0.25 d`.
+    #[pyo3(get)]
+    pub weir_height: Option<PyQty>,
+    /// the normal interface level, `0.20 d`.
+    #[pyo3(get)]
+    pub nil: Option<PyQty>,
+    /// the effective liquid separation length, `0.82 L`.
+    #[pyo3(get)]
+    pub effective_length_liquid: Option<PyQty>,
+    /// the effective gas separation length, `0.64 L`.
+    #[pyo3(get)]
+    pub effective_length_gas: Option<PyQty>,
+    /// the inlet nozzle's inside diameter at API 12J's `8000 Pa` momentum limit, rounded up in `50` mm steps with a `50` mm floor.
+    #[pyo3(get)]
+    pub inlet_nozzle_id: Option<PyQty>,
+    /// the gas outlet nozzle's inside diameter at `20` m/s, rounded up in `50` mm steps.
+    #[pyo3(get)]
+    pub gas_outlet_nozzle_id: Option<PyQty>,
+    /// the oil outlet nozzle's inside diameter at `1.5` m/s, rounded up in `25` mm steps with a `50` mm floor.
+    #[pyo3(get)]
+    pub oil_outlet_nozzle_id: Option<PyQty>,
+    /// the volume between NLL and HLL over the effective liquid length.
+    #[pyo3(get)]
+    pub surge_volume: Option<PyQty>,
+    /// the surge volume over the liquid flow, with the class's unit slip: m3/s divided as though m3/hr.
+    #[pyo3(get)]
+    pub surge_time: Option<PyQty>,
+    /// the volume at NLL over the same flow, again as though m3/hr.
+    #[pyo3(get)]
+    pub liquid_retention_time: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -12844,7 +15838,7 @@ pub struct PyGasScrubberResult {
 impl PyGasScrubberResult {
     fn __repr__(&self) -> String {
         format!(
-            "GasScrubberResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, {} warning(s))",
+            "GasScrubberResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, required_diameter={:?}, has_mesh_pad={:?}, mesh_pad_area={:?}, mesh_pad_thickness={:?}, mesh_pad_elevation={:?}, has_inlet_cyclones={:?}, has_demisting_cyclones={:?}, design_inner_diameter={:?}, design_tantan_length={:?}, design_outer_diameter={:?}, design_wall_thickness={:?}, max_design_gas_volume_flow={:?}, vessel_shell_weight={:?}, piping_weight={:?}, structural_weight={:?}, electrical_weight={:?}, internals_weight={:?}, total_weight={:?}, module_width={:?}, module_length={:?}, module_height={:?}, vessel_volume={:?}, hhll={:?}, hll={:?}, nll={:?}, lll={:?}, llll={:?}, weir_height={:?}, nil={:?}, effective_length_liquid={:?}, effective_length_gas={:?}, inlet_nozzle_id={:?}, gas_outlet_nozzle_id={:?}, oil_outlet_nozzle_id={:?}, surge_volume={:?}, surge_time={:?}, liquid_retention_time={:?}, {} warning(s))",
             self.vapour_n,
             self.vapour_z,
             self.vapour_p,
@@ -12856,6 +15850,43 @@ impl PyGasScrubberResult {
             self.liquid_t,
             self.liquid_h,
             self.capacity_utilization,
+            self.required_diameter,
+            self.has_mesh_pad,
+            self.mesh_pad_area,
+            self.mesh_pad_thickness,
+            self.mesh_pad_elevation,
+            self.has_inlet_cyclones,
+            self.has_demisting_cyclones,
+            self.design_inner_diameter,
+            self.design_tantan_length,
+            self.design_outer_diameter,
+            self.design_wall_thickness,
+            self.max_design_gas_volume_flow,
+            self.vessel_shell_weight,
+            self.piping_weight,
+            self.structural_weight,
+            self.electrical_weight,
+            self.internals_weight,
+            self.total_weight,
+            self.module_width,
+            self.module_length,
+            self.module_height,
+            self.vessel_volume,
+            self.hhll,
+            self.hll,
+            self.nll,
+            self.lll,
+            self.llll,
+            self.weir_height,
+            self.nil,
+            self.effective_length_liquid,
+            self.effective_length_gas,
+            self.inlet_nozzle_id,
+            self.gas_outlet_nozzle_id,
+            self.oil_outlet_nozzle_id,
+            self.surge_volume,
+            self.surge_time,
+            self.liquid_retention_time,
             self.warnings.len()
         )
     }
@@ -12899,6 +15930,145 @@ impl From<&azoth_process::models::gas_scrubber::GasScrubberResult> for PyGasScru
                 unit: "J/mol".to_string(),
             },
             capacity_utilization: r.capacity_utilization,
+            required_diameter: r.required_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            has_mesh_pad: r.has_mesh_pad,
+            mesh_pad_area: r.mesh_pad_area.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**2".to_string(),
+            }),
+            mesh_pad_thickness: r.mesh_pad_thickness.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "mm".to_string(),
+            }),
+            mesh_pad_elevation: r.mesh_pad_elevation.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            has_inlet_cyclones: r.has_inlet_cyclones,
+            has_demisting_cyclones: r.has_demisting_cyclones,
+            design_inner_diameter: r.design_inner_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_tantan_length: r.design_tantan_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_outer_diameter: r.design_outer_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_wall_thickness: r.design_wall_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            max_design_gas_volume_flow: r.max_design_gas_volume_flow.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3/h".to_string(),
+            }),
+            vessel_shell_weight: r.vessel_shell_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            piping_weight: r.piping_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            structural_weight: r.structural_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            electrical_weight: r.electrical_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            internals_weight: r.internals_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            total_weight: r.total_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            module_width: r.module_width.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            module_length: r.module_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            module_height: r.module_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            vessel_volume: r.vessel_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
+            }),
+            hhll: r.hhll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            hll: r.hll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            nll: r.nll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            lll: r.lll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            llll: r.llll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            weir_height: r.weir_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            nil: r.nil.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            effective_length_liquid: r.effective_length_liquid.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            effective_length_gas: r.effective_length_gas.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            inlet_nozzle_id: r.inlet_nozzle_id.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            gas_outlet_nozzle_id: r.gas_outlet_nozzle_id.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            oil_outlet_nozzle_id: r.oil_outlet_nozzle_id.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            surge_volume: r.surge_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
+            }),
+            surge_time: r.surge_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            liquid_retention_time: r.liquid_retention_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }
@@ -12945,6 +16115,48 @@ pub struct PyGibbsReactorResult {
     /// the total Gibbs energy at the top of each iteration, before the update. **This is what makes the solve checkable**: a fixed point has no formula, so the path is the answer.
     #[pyo3(get)]
     pub gibbs_energy_history: Vec<PyQty>,
+    /// `getVesselDiameter()`: `(4 V / (pi * 4))^(1/3)` off `V = catalystVolume / 0.70`, floored at `0.5` m.
+    #[pyo3(get)]
+    pub vessel_diameter: PyQty,
+    /// `getVesselLength()`: `4.0 * D`. The class's `2.0`/`8.0` L/D clamps are unreachable, because the ratio is `4.0` by construction.
+    #[pyo3(get)]
+    pub vessel_length: PyQty,
+    /// `getShellThickness()`, the ASME VIII Div 1 shell at the target diameter, floored at `6.0` mm. SI, shown in mm.
+    #[pyo3(get)]
+    pub shell_thickness: PyQty,
+    /// `getHeadThickness()`, the 2:1 ellipsoidal form floored at the shell - **which it always is**: its denominator is the larger of the two at every positive design pressure, so this equals `shell_thickness` on every state.
+    #[pyo3(get)]
+    pub head_thickness: PyQty,
+    /// `getDesignPressureBara()`: the operating pressure times `1.10`.
+    #[pyo3(get)]
+    pub design_pressure: PyQty,
+    /// `getDesignTemperatureC()` plus `273.15`: the operating temperature plus `25` C. SI, shown in K.
+    #[pyo3(get)]
+    pub design_temperature: PyQty,
+    /// `getCatalystVolume()`: `flow_m3hr / max(GHSV, 1)` - or `max(LHSV, 0.01)` for `cstr` - floored at `0.01` m3.
+    #[pyo3(get)]
+    pub catalyst_volume: PyQty,
+    /// `getCatalystMass()`: the volume times the bulk density.
+    #[pyo3(get)]
+    pub catalyst_mass: PyQty,
+    /// `getBedPressureDrop()`: the Ergun drop over `bedLength = catalystVolume / (pi D^2 / 4)`, with the class's hard-coded `1.5e-5` Pa s viscosity.
+    #[pyo3(get)]
+    pub bed_pressure_drop: PyQty,
+    /// `getEmptyVesselWeight()`: the shell plus both heads at the shell thickness.
+    #[pyo3(get)]
+    pub empty_vessel_weight: PyQty,
+    /// `getTotalEquippedWeight()`: the empty vessel, the catalyst, two `12` mm plates per bed, and nozzles at `10%` of the shell and heads.
+    #[pyo3(get)]
+    pub total_equipped_weight: PyQty,
+    /// `getReactorType()`, in the class's own spelling (`FIXED_BED`, `CSTR`, ...), which is what the capture prints.
+    #[pyo3(get)]
+    pub reactor_type: String,
+    /// `getNumberOfBeds()`.
+    #[pyo3(get)]
+    pub number_of_beds: usize,
+    /// `getConditionNumberHistory()`: the Jacobian's 2-norm condition number, recorded at `:3009-3026` before the update. **A diagnostic, not an answer** - it is what says the iteration is ill-conditioned rather than only saying so in prose.
+    #[pyo3(get)]
+    pub condition_number_history: Vec<f64>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -12954,7 +16166,7 @@ pub struct PyGibbsReactorResult {
 impl PyGibbsReactorResult {
     fn __repr__(&self) -> String {
         format!(
-            "GibbsReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, converged={:?}, iterations={:?}, final_error={:?}, lagrange_multipliers={:?}, element_balance_difference={:?}, gibbs_energy_history={:?}, {} warning(s))",
+            "GibbsReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, converged={:?}, iterations={:?}, final_error={:?}, lagrange_multipliers={:?}, element_balance_difference={:?}, gibbs_energy_history={:?}, vessel_diameter={:?}, vessel_length={:?}, shell_thickness={:?}, head_thickness={:?}, design_pressure={:?}, design_temperature={:?}, catalyst_volume={:?}, catalyst_mass={:?}, bed_pressure_drop={:?}, empty_vessel_weight={:?}, total_equipped_weight={:?}, reactor_type={:?}, number_of_beds={:?}, condition_number_history={:?}, {} warning(s))",
             self.product_n,
             self.product_z,
             self.product_p,
@@ -12966,6 +16178,20 @@ impl PyGibbsReactorResult {
             self.lagrange_multipliers,
             self.element_balance_difference,
             self.gibbs_energy_history,
+            self.vessel_diameter,
+            self.vessel_length,
+            self.shell_thickness,
+            self.head_thickness,
+            self.design_pressure,
+            self.design_temperature,
+            self.catalyst_volume,
+            self.catalyst_mass,
+            self.bed_pressure_drop,
+            self.empty_vessel_weight,
+            self.total_equipped_weight,
+            self.reactor_type,
+            self.number_of_beds,
+            self.condition_number_history,
             self.warnings.len()
         )
     }
@@ -13018,6 +16244,53 @@ impl From<&azoth_process::models::gibbs_reactor::GibbsReactorResult> for PyGibbs
                     unit: "W".to_string(),
                 })
                 .collect(),
+            vessel_diameter: PyQty {
+                magnitude_si: r.vessel_diameter.value,
+                unit: "m".to_string(),
+            },
+            vessel_length: PyQty {
+                magnitude_si: r.vessel_length.value,
+                unit: "m".to_string(),
+            },
+            shell_thickness: PyQty {
+                magnitude_si: r.shell_thickness.value,
+                unit: "mm".to_string(),
+            },
+            head_thickness: PyQty {
+                magnitude_si: r.head_thickness.value,
+                unit: "mm".to_string(),
+            },
+            design_pressure: PyQty {
+                magnitude_si: r.design_pressure.value,
+                unit: "bar".to_string(),
+            },
+            design_temperature: PyQty {
+                magnitude_si: r.design_temperature.value,
+                unit: "K".to_string(),
+            },
+            catalyst_volume: PyQty {
+                magnitude_si: r.catalyst_volume.value,
+                unit: "m**3".to_string(),
+            },
+            catalyst_mass: PyQty {
+                magnitude_si: r.catalyst_mass.value,
+                unit: "kg".to_string(),
+            },
+            bed_pressure_drop: PyQty {
+                magnitude_si: r.bed_pressure_drop.value,
+                unit: "bar".to_string(),
+            },
+            empty_vessel_weight: PyQty {
+                magnitude_si: r.empty_vessel_weight.value,
+                unit: "kg".to_string(),
+            },
+            total_equipped_weight: PyQty {
+                magnitude_si: r.total_equipped_weight.value,
+                unit: "kg".to_string(),
+            },
+            reactor_type: r.reactor_type.clone(),
+            number_of_beds: r.number_of_beds,
+            condition_number_history: r.condition_number_history.clone(),
             warnings: transport(&r.warnings),
         }
     }
@@ -13079,6 +16352,90 @@ pub struct PyHeatExchangerResult {
     /// `C_min / C_max`, which is the shape of the effectiveness relation, or null where one outlet was pinned.
     #[pyo3(get)]
     pub capacity_ratio: Option<f64>,
+    /// `runDeltaT`'s computed overall conductance, `dH / (T_out,set - T_in,set)`. Present only in that mode; the rating's `ua` is an input and is unread here.
+    #[pyo3(get)]
+    pub ua_value: Option<PyQty>,
+    /// which side `runDeltaT` set, `hot` or `cold`; present only in that mode.
+    #[pyo3(get)]
+    pub delta_t_side: Option<String>,
+    /// the post-step metal-wall temperature. Present on the dynamic branch, echoed from the stated state on a steady fallback, and absent when the class's field is NaN.
+    #[pyo3(get)]
+    pub wall_temperature: Option<PyQty>,
+    /// the post-step shell-side CSTR temperature; present only with a positive `shell_holdup_volume` (or echoed on a fallback), absent where the class's field stays NaN.
+    #[pyo3(get)]
+    pub shell_fluid_temperature: Option<PyQty>,
+    /// the post-step tube-side CSTR temperature, on the same terms.
+    #[pyo3(get)]
+    pub tube_fluid_temperature: Option<PyQty>,
+    /// the selected configuration's spelling; present only with `mechanical_design`.
+    #[pyo3(get)]
+    pub mechanical_selected_type: Option<String>,
+    /// the selected configuration's required area.
+    #[pyo3(get)]
+    pub mechanical_selected_area: Option<PyQty>,
+    /// the log-mean temperature difference the four stream temperatures give, the sides ordered by their mean.
+    #[pyo3(get)]
+    pub log_mean_temperature_difference: Option<PyQty>,
+    /// the smallest of the two temperature differences, floored at zero.
+    #[pyo3(get)]
+    pub mechanical_approach_temperature: Option<PyQty>,
+    /// the coefficient the estimate used: the class's 500. This branch never reads the exchanger's `UAvalue` for it.
+    #[pyo3(get)]
+    pub used_overall_heat_transfer_coefficient: Option<PyQty>,
+    /// `getUAvalue()` - the stated `ua`, the class's 500 when a pinned run states none, or `ua_value` in delta-T mode - after the class's fallbacks.
+    #[pyo3(get)]
+    pub calculated_ua: Option<PyQty>,
+    /// the correlated overall coefficient the rating calculated. Present only with `use_rating_pressure_drop`.
+    #[pyo3(get)]
+    pub rating_u: Option<PyQty>,
+    /// `rating_u * rating_area`, the conductance the effectiveness-NTU rating used. Present only in the rating mode.
+    #[pyo3(get)]
+    pub rating_ua: Option<PyQty>,
+    /// the outside area the rating used; present only in the rating mode.
+    #[pyo3(get)]
+    pub rating_area: Option<PyQty>,
+    /// the tube side's correlated pressure drop, which the outlet pressure is reduced by.
+    #[pyo3(get)]
+    pub tube_side_pressure_drop: Option<PyQty>,
+    /// the shell side's correlated pressure drop.
+    #[pyo3(get)]
+    pub shell_side_pressure_drop: Option<PyQty>,
+    /// the tube-side film coefficient.
+    #[pyo3(get)]
+    pub tube_side_heat_transfer_coefficient: Option<PyQty>,
+    /// the shell-side film coefficient after the Bell-Delaware factors, or the Kern value.
+    #[pyo3(get)]
+    pub shell_side_heat_transfer_coefficient: Option<PyQty>,
+    /// the tube-side Reynolds number.
+    #[pyo3(get)]
+    pub tube_side_reynolds: Option<f64>,
+    /// the shell-side Reynolds number.
+    #[pyo3(get)]
+    pub shell_side_reynolds: Option<f64>,
+    /// the tube-side velocity.
+    #[pyo3(get)]
+    pub tube_side_velocity: Option<PyQty>,
+    /// the shell-side crossflow velocity.
+    #[pyo3(get)]
+    pub shell_side_velocity: Option<PyQty>,
+    /// the baffle-cut correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jc: Option<f64>,
+    /// the baffle-leakage correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jl: Option<f64>,
+    /// the bundle-bypass correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jb: Option<f64>,
+    /// the unequal-spacing correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub js: Option<f64>,
+    /// the adverse-temperature-gradient correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jr: Option<f64>,
+    /// the five candidates in the class's enum order; empty when the design did not run.
+    #[pyo3(get)]
+    pub mechanical_types: Vec<PyHeatExchangerMechanicalType>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -13088,7 +16445,7 @@ pub struct PyHeatExchangerResult {
 impl PyHeatExchangerResult {
     fn __repr__(&self) -> String {
         format!(
-            "HeatExchangerResult(hot_out_n={:?}, hot_out_z={:?}, hot_out_p={:?}, hot_out_t={:?}, hot_out_h={:?}, cold_out_n={:?}, cold_out_z={:?}, cold_out_p={:?}, cold_out_t={:?}, cold_out_h={:?}, duty={:?}, ntu={:?}, effectiveness={:?}, c_min={:?}, c_max={:?}, capacity_ratio={:?}, {} warning(s))",
+            "HeatExchangerResult(hot_out_n={:?}, hot_out_z={:?}, hot_out_p={:?}, hot_out_t={:?}, hot_out_h={:?}, cold_out_n={:?}, cold_out_z={:?}, cold_out_p={:?}, cold_out_t={:?}, cold_out_h={:?}, duty={:?}, ntu={:?}, effectiveness={:?}, c_min={:?}, c_max={:?}, capacity_ratio={:?}, ua_value={:?}, delta_t_side={:?}, wall_temperature={:?}, shell_fluid_temperature={:?}, tube_fluid_temperature={:?}, mechanical_selected_type={:?}, mechanical_selected_area={:?}, log_mean_temperature_difference={:?}, mechanical_approach_temperature={:?}, used_overall_heat_transfer_coefficient={:?}, calculated_ua={:?}, rating_u={:?}, rating_ua={:?}, rating_area={:?}, tube_side_pressure_drop={:?}, shell_side_pressure_drop={:?}, tube_side_heat_transfer_coefficient={:?}, shell_side_heat_transfer_coefficient={:?}, tube_side_reynolds={:?}, shell_side_reynolds={:?}, tube_side_velocity={:?}, shell_side_velocity={:?}, jc={:?}, jl={:?}, jb={:?}, js={:?}, jr={:?}, mechanical_types={:?}, {} warning(s))",
             self.hot_out_n,
             self.hot_out_z,
             self.hot_out_p,
@@ -13105,6 +16462,34 @@ impl PyHeatExchangerResult {
             self.c_min,
             self.c_max,
             self.capacity_ratio,
+            self.ua_value,
+            self.delta_t_side,
+            self.wall_temperature,
+            self.shell_fluid_temperature,
+            self.tube_fluid_temperature,
+            self.mechanical_selected_type,
+            self.mechanical_selected_area,
+            self.log_mean_temperature_difference,
+            self.mechanical_approach_temperature,
+            self.used_overall_heat_transfer_coefficient,
+            self.calculated_ua,
+            self.rating_u,
+            self.rating_ua,
+            self.rating_area,
+            self.tube_side_pressure_drop,
+            self.shell_side_pressure_drop,
+            self.tube_side_heat_transfer_coefficient,
+            self.shell_side_heat_transfer_coefficient,
+            self.tube_side_reynolds,
+            self.shell_side_reynolds,
+            self.tube_side_velocity,
+            self.shell_side_velocity,
+            self.jc,
+            self.jl,
+            self.jb,
+            self.js,
+            self.jr,
+            self.mechanical_types,
             self.warnings.len()
         )
     }
@@ -13162,6 +16547,98 @@ impl From<&azoth_process::models::heat_exchanger::HeatExchangerResult> for PyHea
                 unit: "W/K".to_string(),
             }),
             capacity_ratio: r.capacity_ratio,
+            ua_value: r.ua_value.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "W/K".to_string(),
+            }),
+            delta_t_side: r.delta_t_side.clone(),
+            wall_temperature: r.wall_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            shell_fluid_temperature: r.shell_fluid_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            tube_fluid_temperature: r.tube_fluid_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            mechanical_selected_type: r.mechanical_selected_type.clone(),
+            mechanical_selected_area: r.mechanical_selected_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
+            }),
+            log_mean_temperature_difference: r.log_mean_temperature_difference.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            mechanical_approach_temperature: r.mechanical_approach_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            used_overall_heat_transfer_coefficient: r.used_overall_heat_transfer_coefficient.map(
+                |v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "W/(m**2*K)".to_string(),
+                },
+            ),
+            calculated_ua: r.calculated_ua.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/K".to_string(),
+            }),
+            rating_u: r.rating_u.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/(m**2*K)".to_string(),
+            }),
+            rating_ua: r.rating_ua.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/K".to_string(),
+            }),
+            rating_area: r.rating_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
+            }),
+            tube_side_pressure_drop: r.tube_side_pressure_drop.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            shell_side_pressure_drop: r.shell_side_pressure_drop.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            tube_side_heat_transfer_coefficient: r.tube_side_heat_transfer_coefficient.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "W/(m**2*K)".to_string(),
+                }
+            }),
+            shell_side_heat_transfer_coefficient: r.shell_side_heat_transfer_coefficient.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "W/(m**2*K)".to_string(),
+                }
+            }),
+            tube_side_reynolds: r.tube_side_reynolds,
+            shell_side_reynolds: r.shell_side_reynolds,
+            tube_side_velocity: r.tube_side_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            shell_side_velocity: r.shell_side_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            jc: r.jc,
+            jl: r.jl,
+            jb: r.jb,
+            js: r.js,
+            jr: r.jr,
+            mechanical_types: r
+                .mechanical_types
+                .iter()
+                .map(PyHeatExchangerMechanicalType::from)
+                .collect(),
             warnings: transport(&r.warnings),
         }
     }
@@ -13193,6 +16670,213 @@ pub struct PyHeaterResult {
     /// the duty the heater moved, as `inlet_n * (outlet_h - inlet_h)`. This is `Heater.run`'s own recomputation after the flash, so it is the state's number and not the caller's when a temperature was specified.
     #[pyo3(get)]
     pub outlet_duty: PyQty,
+    /// the `maxOutletTemperature` constraint's `min(outlet_t / limit, 9.99)`. Present only when the maximum limit is set; 0 for a non-positive limit.
+    #[pyo3(get)]
+    pub max_outlet_temperature_utilization: Option<f64>,
+    /// the `minOutletTemperature` constraint's inverse `min(limit / outlet_t, 9.99)`, and 9.99 when the outlet temperature is not positive. Present only when the minimum is positive.
+    #[pyo3(get)]
+    pub min_outlet_temperature_utilization: Option<f64>,
+    /// `getMaxUtilization`: the larger present utilization, and 0.0 on an empty map.
+    #[pyo3(get)]
+    pub max_utilization: f64,
+    /// `isCapacityExceeded`: any constraint's utilization above 1.0.
+    #[pyo3(get)]
+    pub capacity_exceeded: bool,
+    /// `isHardLimitExceeded`: true only when the outlet temperature is below a positive minimum, because the maximum reads the `maxValue` its setter never sets.
+    #[pyo3(get)]
+    pub hard_limit_exceeded: bool,
+    /// `getBottleneckConstraint`'s name: `maxOutletTemperature` or `minOutletTemperature`, whichever has the larger utilization. Absent on an empty or all-zero map.
+    #[pyo3(get)]
+    pub bottleneck_constraint: Option<String>,
+    /// the instruments in the design's list.
+    #[pyo3(get)]
+    pub instrument_count: Option<f64>,
+    /// the rows whose I/O type is `AI`.
+    #[pyo3(get)]
+    pub analog_input_count: Option<f64>,
+    /// the rows whose I/O type is `AO`.
+    #[pyo3(get)]
+    pub analog_output_count: Option<f64>,
+    /// the rows whose I/O type is `DI`.
+    #[pyo3(get)]
+    pub digital_input_count: Option<f64>,
+    /// the rows whose I/O type is `DO`.
+    #[pyo3(get)]
+    pub digital_output_count: Option<f64>,
+    /// the four counts' sum, which is the instrument count for this list.
+    #[pyo3(get)]
+    pub total_io_count: Option<f64>,
+    /// the rows marked safety-related: the overtemperature trips.
+    #[pyo3(get)]
+    pub safety_instrument_count: Option<f64>,
+    /// the design's instrument list, in the class's insertion order; empty when the design did not run.
+    #[pyo3(get)]
+    pub instruments: Vec<PyHeaterInstrument>,
+    /// the shaft power the type implies: the duty for an electric heater, the fan power for an air cooler, zero for shell-and-tube.
+    #[pyo3(get)]
+    pub shaft_power: Option<PyQty>,
+    /// the shaft power over the motor's efficiency, or the auxiliary load for shell-and-tube.
+    #[pyo3(get)]
+    pub electrical_input_power: Option<PyQty>,
+    /// the apparent power in VA: the electrical input over the power factor.
+    #[pyo3(get)]
+    pub apparent_power: Option<f64>,
+    /// the reactive power in VAR: the apparent power times `sin(acos(power factor))`.
+    #[pyo3(get)]
+    pub reactive_power: Option<f64>,
+    /// the motor's full-load power factor, or the class's `0.85` on the shell-and-tube auxiliary branch.
+    #[pyo3(get)]
+    pub power_factor: Option<f64>,
+    /// the selected supply voltage in volts: `400`, `690` or `6600` for an electric heater, `400` or `690` for a cooler.
+    #[pyo3(get)]
+    pub rated_voltage: Option<f64>,
+    /// the stated supply frequency in Hz. **The motor is sized before this is copied to it**, so the speed always uses the motor's 50 Hz default.
+    #[pyo3(get)]
+    pub frequency_hz: Option<f64>,
+    /// the full-load current in amperes, from the input, voltage, power factor and phase count.
+    #[pyo3(get)]
+    pub full_load_current: Option<f64>,
+    /// the full-load current times the motor's locked-rotor multiplier.
+    #[pyo3(get)]
+    pub starting_current: Option<f64>,
+    /// the electrical input less the shaft power.
+    #[pyo3(get)]
+    pub total_electrical_losses: Option<PyQty>,
+    /// the next standard IEC motor size above the shaft power times the margin; zero for shell-and-tube.
+    #[pyo3(get)]
+    pub motor_rated_power: Option<PyQty>,
+    /// the motor's full-load efficiency as a fraction, from the IEC class and pole tables; 0.95 when no motor is sized.
+    #[pyo3(get)]
+    pub motor_efficiency: Option<f64>,
+    /// the motor's full-load power factor; 0.86 when no motor is sized.
+    #[pyo3(get)]
+    pub motor_power_factor: Option<f64>,
+    /// the motor's rated speed in rpm: `120 f / poles` less the power-based slip; zero when no motor is sized.
+    #[pyo3(get)]
+    pub motor_rated_speed: Option<f64>,
+    /// the locked-rotor current multiplier by motor size; 7.0 when no motor is sized.
+    #[pyo3(get)]
+    pub motor_locked_rotor_multiplier: Option<f64>,
+    /// the instrumentation load, plus the cooling-water pump load for shell-and-tube.
+    #[pyo3(get)]
+    pub total_auxiliary_power: Option<PyQty>,
+    /// the electrical input plus the auxiliary load.
+    #[pyo3(get)]
+    pub total_connected_power: Option<PyQty>,
+    /// the power cable's route length the design used.
+    #[pyo3(get)]
+    pub cable_length: Option<PyQty>,
+    /// the selected cable cross-section in mm2, from the class's 19 standard sizes.
+    #[pyo3(get)]
+    pub cable_cross_section: Option<f64>,
+    /// the derated ampacity in amperes: the base tray rating times the 40 C ambient and tray grouping factors.
+    #[pyo3(get)]
+    pub cable_ampacity: Option<f64>,
+    /// the three-phase voltage drop in percent at the class's 0.85 power factor.
+    #[pyo3(get)]
+    pub cable_voltage_drop: Option<f64>,
+    /// the cable's 1-second short-circuit withstand in kA.
+    #[pyo3(get)]
+    pub cable_short_circuit_withstand: Option<f64>,
+    /// the starter type: `DOL`, `Star-Delta` or `Soft Starter`, by the motor power.
+    #[pyo3(get)]
+    pub switchgear_starter: Option<String>,
+    /// `MCC` at 1000 V and below, `MV Switchgear` above it.
+    #[pyo3(get)]
+    pub switchgear_type: Option<String>,
+    /// the next standard circuit-breaker rating above 1.25 times the full-load current, in amperes.
+    #[pyo3(get)]
+    pub switchgear_circuit_breaker: Option<f64>,
+    /// the next standard fuse rating above 1.6 times the full-load current, in amperes.
+    #[pyo3(get)]
+    pub switchgear_fuse: Option<f64>,
+    /// the switchgear's rated current, the circuit-breaker rating.
+    #[pyo3(get)]
+    pub switchgear_rated_current: Option<f64>,
+    /// the short-circuit rating in kA: 40 above 6000 V, 31.5 above 1000 V, else 25.
+    #[pyo3(get)]
+    pub switchgear_short_circuit: Option<f64>,
+    /// the switchgear's estimated weight.
+    #[pyo3(get)]
+    pub switchgear_weight: Option<PyQty>,
+    /// the VFD's rated power, the motor's own rating. Absent when no VFD is sized.
+    #[pyo3(get)]
+    pub vfd_rated_power: Option<PyQty>,
+    /// 1.10 times the motor's rated current, in amperes. The motor's rated current is computed at its own 400 V default, before the design's tap is copied to it.
+    #[pyo3(get)]
+    pub vfd_rated_current: Option<f64>,
+    /// the VFD's input voltage in volts, copied from the motor's rated voltage.
+    #[pyo3(get)]
+    pub vfd_input_voltage: Option<f64>,
+    /// `2-level`, `3-level` or `Multi-level`, by the motor's power and voltage.
+    #[pyo3(get)]
+    pub vfd_topology: Option<String>,
+    /// `6-pulse`, `12-pulse` or `AFE`, with the topology.
+    #[pyo3(get)]
+    pub vfd_pulse_configuration: Option<String>,
+    /// the VFD's efficiency as a fraction: 96.5% with an active rectifier, else 97.5% for a 2-level drive and 97% for a 3-level one.
+    #[pyo3(get)]
+    pub vfd_efficiency: Option<f64>,
+    /// the drive's input power factor: 0.98 with an active rectifier, else 0.95.
+    #[pyo3(get)]
+    pub vfd_input_power_factor: Option<f64>,
+    /// the input current's total harmonic distortion in percent: 3 with an active rectifier at medium voltage, 5 at low voltage, 10 for a 3-level drive and 35 otherwise.
+    #[pyo3(get)]
+    pub vfd_thd_current: Option<f64>,
+    /// whether the drive has an active front-end rectifier.
+    #[pyo3(get)]
+    pub vfd_has_active_rectifier: Option<bool>,
+    /// whether a 6-pulse drive above 100 kW needs an input filter.
+    #[pyo3(get)]
+    pub vfd_requires_input_filter: Option<bool>,
+    /// the drive's loss at its rated power, `rated power x (1 - efficiency)`.
+    #[pyo3(get)]
+    pub vfd_heat_dissipation: Option<PyQty>,
+    /// `Water` above 500 kW or above 3300 V, else `Air`.
+    #[pyo3(get)]
+    pub vfd_cooling_method: Option<String>,
+    /// the drive's estimated weight, by the voltage band.
+    #[pyo3(get)]
+    pub vfd_weight: Option<PyQty>,
+    /// `IP42` above 1000 V, `IP54` for a water-cooled low-voltage drive, else `IP21`.
+    #[pyo3(get)]
+    pub vfd_enclosure_rating: Option<String>,
+    /// whether a utility supply temperature is stated.
+    #[pyo3(get)]
+    pub has_supply_temperature: Option<bool>,
+    /// whether a utility return temperature is stated.
+    #[pyo3(get)]
+    pub has_return_temperature: Option<bool>,
+    /// whether a minimum approach temperature is stated.
+    #[pyo3(get)]
+    pub has_approach_temperature: Option<bool>,
+    /// whether a heat-capacity rate is stated **and positive**.
+    #[pyo3(get)]
+    pub has_heat_capacity_rate: Option<bool>,
+    /// whether an overall heat-transfer coefficient is stated **and positive**.
+    #[pyo3(get)]
+    pub has_overall_heat_transfer_coefficient: Option<bool>,
+    /// the selected configuration's spelling.
+    #[pyo3(get)]
+    pub mechanical_selected_type: Option<String>,
+    /// the selected configuration's required area.
+    #[pyo3(get)]
+    pub mechanical_selected_area: Option<PyQty>,
+    /// the log-mean temperature difference the utility and process temperatures give.
+    #[pyo3(get)]
+    pub log_mean_temperature_difference: Option<PyQty>,
+    /// the smallest of the two temperature differences, floored at zero.
+    #[pyo3(get)]
+    pub mechanical_approach_temperature: Option<PyQty>,
+    /// the coefficient the estimate used: the utility specification's when stated and positive, else the class's 500.
+    #[pyo3(get)]
+    pub used_overall_heat_transfer_coefficient: Option<PyQty>,
+    /// `duty / log_mean_temperature_difference`, after the class's fallbacks.
+    #[pyo3(get)]
+    pub calculated_ua: Option<PyQty>,
+    /// the five candidates in the class's enum order; empty when the design did not run.
+    #[pyo3(get)]
+    pub mechanical_types: Vec<PyHeaterMechanicalType>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -13202,13 +16886,82 @@ pub struct PyHeaterResult {
 impl PyHeaterResult {
     fn __repr__(&self) -> String {
         format!(
-            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, {} warning(s))",
+            "HeaterResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, outlet_duty={:?}, max_outlet_temperature_utilization={:?}, min_outlet_temperature_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, instrument_count={:?}, analog_input_count={:?}, analog_output_count={:?}, digital_input_count={:?}, digital_output_count={:?}, total_io_count={:?}, safety_instrument_count={:?}, instruments={:?}, shaft_power={:?}, electrical_input_power={:?}, apparent_power={:?}, reactive_power={:?}, power_factor={:?}, rated_voltage={:?}, frequency_hz={:?}, full_load_current={:?}, starting_current={:?}, total_electrical_losses={:?}, motor_rated_power={:?}, motor_efficiency={:?}, motor_power_factor={:?}, motor_rated_speed={:?}, motor_locked_rotor_multiplier={:?}, total_auxiliary_power={:?}, total_connected_power={:?}, cable_length={:?}, cable_cross_section={:?}, cable_ampacity={:?}, cable_voltage_drop={:?}, cable_short_circuit_withstand={:?}, switchgear_starter={:?}, switchgear_type={:?}, switchgear_circuit_breaker={:?}, switchgear_fuse={:?}, switchgear_rated_current={:?}, switchgear_short_circuit={:?}, switchgear_weight={:?}, vfd_rated_power={:?}, vfd_rated_current={:?}, vfd_input_voltage={:?}, vfd_topology={:?}, vfd_pulse_configuration={:?}, vfd_efficiency={:?}, vfd_input_power_factor={:?}, vfd_thd_current={:?}, vfd_has_active_rectifier={:?}, vfd_requires_input_filter={:?}, vfd_heat_dissipation={:?}, vfd_cooling_method={:?}, vfd_weight={:?}, vfd_enclosure_rating={:?}, has_supply_temperature={:?}, has_return_temperature={:?}, has_approach_temperature={:?}, has_heat_capacity_rate={:?}, has_overall_heat_transfer_coefficient={:?}, mechanical_selected_type={:?}, mechanical_selected_area={:?}, log_mean_temperature_difference={:?}, mechanical_approach_temperature={:?}, used_overall_heat_transfer_coefficient={:?}, calculated_ua={:?}, mechanical_types={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
             self.outlet_duty,
+            self.max_outlet_temperature_utilization,
+            self.min_outlet_temperature_utilization,
+            self.max_utilization,
+            self.capacity_exceeded,
+            self.hard_limit_exceeded,
+            self.bottleneck_constraint,
+            self.instrument_count,
+            self.analog_input_count,
+            self.analog_output_count,
+            self.digital_input_count,
+            self.digital_output_count,
+            self.total_io_count,
+            self.safety_instrument_count,
+            self.instruments,
+            self.shaft_power,
+            self.electrical_input_power,
+            self.apparent_power,
+            self.reactive_power,
+            self.power_factor,
+            self.rated_voltage,
+            self.frequency_hz,
+            self.full_load_current,
+            self.starting_current,
+            self.total_electrical_losses,
+            self.motor_rated_power,
+            self.motor_efficiency,
+            self.motor_power_factor,
+            self.motor_rated_speed,
+            self.motor_locked_rotor_multiplier,
+            self.total_auxiliary_power,
+            self.total_connected_power,
+            self.cable_length,
+            self.cable_cross_section,
+            self.cable_ampacity,
+            self.cable_voltage_drop,
+            self.cable_short_circuit_withstand,
+            self.switchgear_starter,
+            self.switchgear_type,
+            self.switchgear_circuit_breaker,
+            self.switchgear_fuse,
+            self.switchgear_rated_current,
+            self.switchgear_short_circuit,
+            self.switchgear_weight,
+            self.vfd_rated_power,
+            self.vfd_rated_current,
+            self.vfd_input_voltage,
+            self.vfd_topology,
+            self.vfd_pulse_configuration,
+            self.vfd_efficiency,
+            self.vfd_input_power_factor,
+            self.vfd_thd_current,
+            self.vfd_has_active_rectifier,
+            self.vfd_requires_input_filter,
+            self.vfd_heat_dissipation,
+            self.vfd_cooling_method,
+            self.vfd_weight,
+            self.vfd_enclosure_rating,
+            self.has_supply_temperature,
+            self.has_return_temperature,
+            self.has_approach_temperature,
+            self.has_heat_capacity_rate,
+            self.has_overall_heat_transfer_coefficient,
+            self.mechanical_selected_type,
+            self.mechanical_selected_area,
+            self.log_mean_temperature_difference,
+            self.mechanical_approach_temperature,
+            self.used_overall_heat_transfer_coefficient,
+            self.calculated_ua,
+            self.mechanical_types,
             self.warnings.len()
         )
     }
@@ -13238,6 +16991,317 @@ impl From<&azoth_process::models::heater::HeaterResult> for PyHeaterResult {
                 magnitude_si: r.outlet_duty.value,
                 unit: "W".to_string(),
             },
+            max_outlet_temperature_utilization: r.max_outlet_temperature_utilization,
+            min_outlet_temperature_utilization: r.min_outlet_temperature_utilization,
+            max_utilization: r.max_utilization,
+            capacity_exceeded: r.capacity_exceeded,
+            hard_limit_exceeded: r.hard_limit_exceeded,
+            bottleneck_constraint: r.bottleneck_constraint.clone(),
+            instrument_count: r.instrument_count,
+            analog_input_count: r.analog_input_count,
+            analog_output_count: r.analog_output_count,
+            digital_input_count: r.digital_input_count,
+            digital_output_count: r.digital_output_count,
+            total_io_count: r.total_io_count,
+            safety_instrument_count: r.safety_instrument_count,
+            instruments: r.instruments.iter().map(PyHeaterInstrument::from).collect(),
+            shaft_power: r.shaft_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            electrical_input_power: r.electrical_input_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            apparent_power: r.apparent_power,
+            reactive_power: r.reactive_power,
+            power_factor: r.power_factor,
+            rated_voltage: r.rated_voltage,
+            frequency_hz: r.frequency_hz,
+            full_load_current: r.full_load_current,
+            starting_current: r.starting_current,
+            total_electrical_losses: r.total_electrical_losses.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            motor_rated_power: r.motor_rated_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            motor_efficiency: r.motor_efficiency,
+            motor_power_factor: r.motor_power_factor,
+            motor_rated_speed: r.motor_rated_speed,
+            motor_locked_rotor_multiplier: r.motor_locked_rotor_multiplier,
+            total_auxiliary_power: r.total_auxiliary_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            total_connected_power: r.total_connected_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            cable_length: r.cable_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            cable_cross_section: r.cable_cross_section,
+            cable_ampacity: r.cable_ampacity,
+            cable_voltage_drop: r.cable_voltage_drop,
+            cable_short_circuit_withstand: r.cable_short_circuit_withstand,
+            switchgear_starter: r.switchgear_starter.clone(),
+            switchgear_type: r.switchgear_type.clone(),
+            switchgear_circuit_breaker: r.switchgear_circuit_breaker,
+            switchgear_fuse: r.switchgear_fuse,
+            switchgear_rated_current: r.switchgear_rated_current,
+            switchgear_short_circuit: r.switchgear_short_circuit,
+            switchgear_weight: r.switchgear_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            vfd_rated_power: r.vfd_rated_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            vfd_rated_current: r.vfd_rated_current,
+            vfd_input_voltage: r.vfd_input_voltage,
+            vfd_topology: r.vfd_topology.clone(),
+            vfd_pulse_configuration: r.vfd_pulse_configuration.clone(),
+            vfd_efficiency: r.vfd_efficiency,
+            vfd_input_power_factor: r.vfd_input_power_factor,
+            vfd_thd_current: r.vfd_thd_current,
+            vfd_has_active_rectifier: r.vfd_has_active_rectifier,
+            vfd_requires_input_filter: r.vfd_requires_input_filter,
+            vfd_heat_dissipation: r.vfd_heat_dissipation.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            vfd_cooling_method: r.vfd_cooling_method.clone(),
+            vfd_weight: r.vfd_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            vfd_enclosure_rating: r.vfd_enclosure_rating.clone(),
+            has_supply_temperature: r.has_supply_temperature,
+            has_return_temperature: r.has_return_temperature,
+            has_approach_temperature: r.has_approach_temperature,
+            has_heat_capacity_rate: r.has_heat_capacity_rate,
+            has_overall_heat_transfer_coefficient: r.has_overall_heat_transfer_coefficient,
+            mechanical_selected_type: r.mechanical_selected_type.clone(),
+            mechanical_selected_area: r.mechanical_selected_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
+            }),
+            log_mean_temperature_difference: r.log_mean_temperature_difference.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            mechanical_approach_temperature: r.mechanical_approach_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            used_overall_heat_transfer_coefficient: r.used_overall_heat_transfer_coefficient.map(
+                |v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "W/(m**2*K)".to_string(),
+                },
+            ),
+            calculated_ua: r.calculated_ua.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/K".to_string(),
+            }),
+            mechanical_types: r
+                .mechanical_types
+                .iter()
+                .map(PyHeaterMechanicalType::from)
+                .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `process.hem_release`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HemReleaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHemReleaseResult {
+    /// `valid`, `valid_with_warnings`, `invalid` or `unsupported`.
+    #[pyo3(get)]
+    pub status: String,
+    /// the release rate, or absent when the result is not usable. A valid no-forward-flow result states `0.0`.
+    #[pyo3(get)]
+    pub mass_flow_rate: Option<PyQty>,
+    /// whether the accepted flow is choked; false on failure and on no forward flow.
+    #[pyo3(get)]
+    pub choked: bool,
+    /// the throat's equilibrium sound speed, when the flow is choked and the calculation converged; absent otherwise.
+    #[pyo3(get)]
+    pub throat_sound_speed: Option<PyQty>,
+    /// the upstream overall mole fractions, which every station shares.
+    #[pyo3(get)]
+    pub component_mole_fractions: Vec<f64>,
+    /// the upstream overall mass fractions, `z_i M_i / sum(z M)`.
+    #[pyo3(get)]
+    pub component_mass_fractions: Vec<f64>,
+    /// the resolved stations, upstream first: the stagnation state, the throat, the aliased exit and the receiving-pressure state. Empty on failure, and the ambient row is absent on no forward flow.
+    #[pyo3(get)]
+    pub stations: Vec<PyHemReleaseStation>,
+    /// the model's assumption and warning records, in the order it forms them.
+    #[pyo3(get)]
+    pub diagnostics: Vec<PyHemReleaseDiagnostic>,
+    /// the codes alone, so a case can hold the contract without asserting prose.
+    #[pyo3(get)]
+    pub diagnostic_codes: Vec<String>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHemReleaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HemReleaseResult(status={:?}, mass_flow_rate={:?}, choked={:?}, throat_sound_speed={:?}, component_mole_fractions={:?}, component_mass_fractions={:?}, stations={:?}, diagnostics={:?}, diagnostic_codes={:?}, {} warning(s))",
+            self.status,
+            self.mass_flow_rate,
+            self.choked,
+            self.throat_sound_speed,
+            self.component_mole_fractions,
+            self.component_mass_fractions,
+            self.stations,
+            self.diagnostics,
+            self.diagnostic_codes,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::hem_release::HemReleaseResult> for PyHemReleaseResult {
+    fn from(r: &azoth_process::models::hem_release::HemReleaseResult) -> Self {
+        Self {
+            status: r.status.clone(),
+            mass_flow_rate: r.mass_flow_rate.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg/s".to_string(),
+            }),
+            choked: r.choked,
+            throat_sound_speed: r.throat_sound_speed.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            component_mole_fractions: r.component_mole_fractions.clone(),
+            component_mass_fractions: r.component_mass_fractions.clone(),
+            stations: r.stations.iter().map(PyHemReleaseStation::from).collect(),
+            diagnostics: r
+                .diagnostics
+                .iter()
+                .map(PyHemReleaseDiagnostic::from)
+                .collect(),
+            diagnostic_codes: r.diagnostic_codes.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `process.leak_blowdown`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "LeakBlowdownResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyLeakBlowdownResult {
+    /// `valid`, `valid_with_warnings`, `invalid` or `unsupported`; `unsupported` is declared but unreachable.
+    #[pyo3(get)]
+    pub status: String,
+    /// the scenario label the caller stated, or the class's default.
+    #[pyo3(get)]
+    pub scenario_name: String,
+    /// the opening the calculation used.
+    #[pyo3(get)]
+    pub hole_diameter: PyQty,
+    /// the declared slots, `ceil(duration/time_step)+1`.
+    #[pyo3(get)]
+    pub number_of_points: u32,
+    /// the visited rows; the difference is the class's zero-filled tail.
+    #[pyo3(get)]
+    pub recorded_points: u32,
+    /// one row per visited step, in time order.
+    #[pyo3(get)]
+    pub points: Vec<PyLeakBlowdownPoint>,
+    /// the summed `mdot dt`, or absent on failure.
+    #[pyo3(get)]
+    pub total_mass_released: Option<PyQty>,
+    /// the largest recorded rate, or absent on failure.
+    #[pyo3(get)]
+    pub peak_mass_flow_rate: Option<PyQty>,
+    /// the class's `totalReleased/(0.5 peakRate)`, or absent on failure.
+    #[pyo3(get)]
+    pub time_to_empty: Option<PyQty>,
+    /// the model's assumption, floor and failure records, in order.
+    #[pyo3(get)]
+    pub diagnostics: Vec<PyLeakBlowdownDiagnostic>,
+    /// the codes alone.
+    #[pyo3(get)]
+    pub diagnostic_codes: Vec<String>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyLeakBlowdownResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "LeakBlowdownResult(status={:?}, scenario_name={:?}, hole_diameter={:?}, number_of_points={:?}, recorded_points={:?}, points={:?}, total_mass_released={:?}, peak_mass_flow_rate={:?}, time_to_empty={:?}, diagnostics={:?}, diagnostic_codes={:?}, {} warning(s))",
+            self.status,
+            self.scenario_name,
+            self.hole_diameter,
+            self.number_of_points,
+            self.recorded_points,
+            self.points,
+            self.total_mass_released,
+            self.peak_mass_flow_rate,
+            self.time_to_empty,
+            self.diagnostics,
+            self.diagnostic_codes,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::leak_blowdown::LeakBlowdownResult> for PyLeakBlowdownResult {
+    fn from(r: &azoth_process::models::leak_blowdown::LeakBlowdownResult) -> Self {
+        Self {
+            status: r.status.clone(),
+            scenario_name: r.scenario_name.clone(),
+            hole_diameter: PyQty {
+                magnitude_si: r.hole_diameter.value,
+                unit: "m".to_string(),
+            },
+            number_of_points: r.number_of_points,
+            recorded_points: r.recorded_points,
+            points: r.points.iter().map(PyLeakBlowdownPoint::from).collect(),
+            total_mass_released: r.total_mass_released.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            peak_mass_flow_rate: r.peak_mass_flow_rate.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg/s".to_string(),
+            }),
+            time_to_empty: r.time_to_empty.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            diagnostics: r
+                .diagnostics
+                .iter()
+                .map(PyLeakBlowdownDiagnostic::from)
+                .collect(),
+            diagnostic_codes: r.diagnostic_codes.clone(),
             warnings: transport(&r.warnings),
         }
     }
@@ -13326,6 +17390,154 @@ impl From<&azoth_process::models::manifold::ManifoldResult> for PyManifoldResult
         }
     }
 }
+/// Result of `process.map_turbo_expander_compressor`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "MapTurboExpanderResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyMapTurboExpanderResult {
+    /// the expander outlet's molar flow, which is its feed's.
+    #[pyo3(get)]
+    pub expander_outlet_n: PyQty,
+    /// the expander outlet's composition.
+    #[pyo3(get)]
+    pub expander_outlet_z: Vec<f64>,
+    /// the expander outlet's pressure.
+    #[pyo3(get)]
+    pub expander_outlet_p: PyQty,
+    /// the expander outlet's temperature.
+    #[pyo3(get)]
+    pub expander_outlet_t: PyQty,
+    /// the expander outlet's molar enthalpy.
+    #[pyo3(get)]
+    pub expander_outlet_h: PyQty,
+    /// the compressor outlet's molar flow, which is its feed's.
+    #[pyo3(get)]
+    pub compressor_outlet_n: PyQty,
+    /// the compressor outlet's composition.
+    #[pyo3(get)]
+    pub compressor_outlet_z: Vec<f64>,
+    /// the compressor outlet's pressure: the map's solved ratio or the stated one.
+    #[pyo3(get)]
+    pub compressor_outlet_p: PyQty,
+    /// the compressor outlet's temperature.
+    #[pyo3(get)]
+    pub compressor_outlet_t: PyQty,
+    /// the compressor outlet's molar enthalpy.
+    #[pyo3(get)]
+    pub compressor_outlet_h: PyQty,
+    /// the shaft speed: the bisected speed, or the specified-mode compressor's.
+    #[pyo3(get)]
+    pub shaft_speed: f64,
+    /// the expander's power less the mechanical and bearing losses, floored at zero.
+    #[pyo3(get)]
+    pub available_shaft_power: PyQty,
+    /// the compressor's absorbed power.
+    #[pyo3(get)]
+    pub consumed_compressor_power: PyQty,
+    /// `available_shaft_power - consumed_compressor_power`; zero when a balanced run is not speed-limited.
+    #[pyo3(get)]
+    pub power_balance_residual: PyQty,
+    /// whether the speed was pegged at a bound.
+    #[pyo3(get)]
+    pub speed_limited: bool,
+    /// which outcome the shaft reached: `balanced`, `under_power_surge` (pegged at the map's lowest speed) or `over_power_max_speed` (at its highest).
+    #[pyo3(get)]
+    pub operating_status: String,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyMapTurboExpanderResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "MapTurboExpanderResult(expander_outlet_n={:?}, expander_outlet_z={:?}, expander_outlet_p={:?}, expander_outlet_t={:?}, expander_outlet_h={:?}, compressor_outlet_n={:?}, compressor_outlet_z={:?}, compressor_outlet_p={:?}, compressor_outlet_t={:?}, compressor_outlet_h={:?}, shaft_speed={:?}, available_shaft_power={:?}, consumed_compressor_power={:?}, power_balance_residual={:?}, speed_limited={:?}, operating_status={:?}, {} warning(s))",
+            self.expander_outlet_n,
+            self.expander_outlet_z,
+            self.expander_outlet_p,
+            self.expander_outlet_t,
+            self.expander_outlet_h,
+            self.compressor_outlet_n,
+            self.compressor_outlet_z,
+            self.compressor_outlet_p,
+            self.compressor_outlet_t,
+            self.compressor_outlet_h,
+            self.shaft_speed,
+            self.available_shaft_power,
+            self.consumed_compressor_power,
+            self.power_balance_residual,
+            self.speed_limited,
+            self.operating_status,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::map_turbo_expander_compressor::MapTurboExpanderResult>
+    for PyMapTurboExpanderResult
+{
+    fn from(
+        r: &azoth_process::models::map_turbo_expander_compressor::MapTurboExpanderResult,
+    ) -> Self {
+        Self {
+            expander_outlet_n: PyQty {
+                magnitude_si: r.expander_outlet_n,
+                unit: "mol/s".to_string(),
+            },
+            expander_outlet_z: r.expander_outlet_z.clone(),
+            expander_outlet_p: PyQty {
+                magnitude_si: r.expander_outlet_p.value,
+                unit: "Pa".to_string(),
+            },
+            expander_outlet_t: PyQty {
+                magnitude_si: r.expander_outlet_t.value,
+                unit: "K".to_string(),
+            },
+            expander_outlet_h: PyQty {
+                magnitude_si: r.expander_outlet_h.value,
+                unit: "J/mol".to_string(),
+            },
+            compressor_outlet_n: PyQty {
+                magnitude_si: r.compressor_outlet_n,
+                unit: "mol/s".to_string(),
+            },
+            compressor_outlet_z: r.compressor_outlet_z.clone(),
+            compressor_outlet_p: PyQty {
+                magnitude_si: r.compressor_outlet_p.value,
+                unit: "Pa".to_string(),
+            },
+            compressor_outlet_t: PyQty {
+                magnitude_si: r.compressor_outlet_t.value,
+                unit: "K".to_string(),
+            },
+            compressor_outlet_h: PyQty {
+                magnitude_si: r.compressor_outlet_h.value,
+                unit: "J/mol".to_string(),
+            },
+            shaft_speed: r.shaft_speed,
+            available_shaft_power: PyQty {
+                magnitude_si: r.available_shaft_power.value,
+                unit: "W".to_string(),
+            },
+            consumed_compressor_power: PyQty {
+                magnitude_si: r.consumed_compressor_power.value,
+                unit: "W".to_string(),
+            },
+            power_balance_residual: PyQty {
+                magnitude_si: r.power_balance_residual.value,
+                unit: "W".to_string(),
+            },
+            speed_limited: r.speed_limited,
+            operating_status: r.operating_status.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.mixer`, transported.
 #[pyclass(
     frozen,
@@ -13347,6 +17559,12 @@ pub struct PyMixerResult {
     /// the outlet temperature, solved from the joined enthalpy at the outlet pressure.
     #[pyo3(get)]
     pub product_t: PyQty,
+    /// `getInletPressureSpread`: the active inlets' highest pressure less the lowest. Active is `FlowRate("kg/hr") > 1e-20`.
+    #[pyo3(get)]
+    pub inlet_pressure_spread: PyQty,
+    /// `isPressureMismatch`: the spread exceeds `0.5` bar and the caller did not specify `outlet_pressure`; the outlet then collapses to the lowest inlet.
+    #[pyo3(get)]
+    pub pressure_mismatch: bool,
     /// the outlet molar enthalpy, the flow-weighted average of the feeds'. Mixing adds no heat and no work, so this is the whole of the energy balance.
     #[pyo3(get)]
     pub product_h: PyQty,
@@ -13359,11 +17577,13 @@ pub struct PyMixerResult {
 impl PyMixerResult {
     fn __repr__(&self) -> String {
         format!(
-            "MixerResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, {} warning(s))",
+            "MixerResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, inlet_pressure_spread={:?}, pressure_mismatch={:?}, product_h={:?}, {} warning(s))",
             self.product_n,
             self.product_z,
             self.product_p,
             self.product_t,
+            self.inlet_pressure_spread,
+            self.pressure_mismatch,
             self.product_h,
             self.warnings.len()
         )
@@ -13386,6 +17606,11 @@ impl From<&azoth_process::models::mixer::MixerResult> for PyMixerResult {
                 magnitude_si: r.product_t.value,
                 unit: "K".to_string(),
             },
+            inlet_pressure_spread: PyQty {
+                magnitude_si: r.inlet_pressure_spread.value,
+                unit: "Pa".to_string(),
+            },
+            pressure_mismatch: r.pressure_mismatch,
             product_h: PyQty {
                 magnitude_si: r.product_h.value,
                 unit: "J/mol".to_string(),
@@ -13505,6 +17730,36 @@ pub struct PyPackedColumnResult {
     /// the column's internal diameter: the stated one, or the one `hydraulics.packing_sizing` answers where `column_diameter` is absent or at or below zero. **The capture's four solved rows all take the sizing branch**, so this is the sized value there and not an echo of the input.
     #[pyo3(get)]
     pub internal_diameter: PyQty,
+    /// `PackingHydraulicsCalculator.getKGa`: the volumetric gas-film coefficient.
+    #[pyo3(get)]
+    pub k_ga: PyQty,
+    /// `getKLa`: the volumetric liquid-film coefficient.
+    #[pyo3(get)]
+    pub k_la: PyQty,
+    /// `getWettedArea`: the packing's wetted area per unit volume.
+    #[pyo3(get)]
+    pub wetted_area: PyQty,
+    /// `getHtuG`: the gas-side height of a transfer unit.
+    #[pyo3(get)]
+    pub htu_g: PyQty,
+    /// `getHtuL`: the liquid-side height of a transfer unit.
+    #[pyo3(get)]
+    pub htu_l: PyQty,
+    /// `getHtuOg`: the overall height of a transfer unit.
+    #[pyo3(get)]
+    pub htu_og: PyQty,
+    /// `isWettingOk`: whether the liquid load reaches the packing's minimum wetting rate.
+    #[pyo3(get)]
+    pub wetting_ok: bool,
+    /// `getPressureDropPerMeter`: the bed's pressure gradient.
+    #[pyo3(get)]
+    pub pressure_drop_per_meter: PyQty,
+    /// the packing's resolved name, from the calculator.
+    #[pyo3(get)]
+    pub resolved_packing: String,
+    /// the packing's resolved factor, from the calculator.
+    #[pyo3(get)]
+    pub resolved_packing_factor: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -13514,7 +17769,7 @@ pub struct PyPackedColumnResult {
 impl PyPackedColumnResult {
     fn __repr__(&self) -> String {
         format!(
-            "PackedColumnResult(tray_temperature={:?}, tray_pressure={:?}, tray_gas_n={:?}, tray_liquid_n={:?}, distillate_n={:?}, distillate_z={:?}, distillate_p={:?}, distillate_t={:?}, distillate_h={:?}, bottoms_n={:?}, bottoms_z={:?}, bottoms_p={:?}, bottoms_t={:?}, bottoms_h={:?}, gas_side_draw_n={:?}, liquid_side_draw_n={:?}, pumparound_n={:?}, condenser_duty={:?}, reboiler_duty={:?}, iterations={:?}, temperature_residual={:?}, mass_residual={:?}, energy_residual={:?}, fs_factor={:?}, fs_factor_utilization={:?}, fs_factor_within_design_limit={:?}, minimum_diameter_for_fs_limit={:?}, hetp={:?}, theoretical_stages={:?}, percent_flood={:?}, flooding_velocity={:?}, packing_pressure_drop={:?}, hydraulics_ok={:?}, internal_diameter={:?}, {} warning(s))",
+            "PackedColumnResult(tray_temperature={:?}, tray_pressure={:?}, tray_gas_n={:?}, tray_liquid_n={:?}, distillate_n={:?}, distillate_z={:?}, distillate_p={:?}, distillate_t={:?}, distillate_h={:?}, bottoms_n={:?}, bottoms_z={:?}, bottoms_p={:?}, bottoms_t={:?}, bottoms_h={:?}, gas_side_draw_n={:?}, liquid_side_draw_n={:?}, pumparound_n={:?}, condenser_duty={:?}, reboiler_duty={:?}, iterations={:?}, temperature_residual={:?}, mass_residual={:?}, energy_residual={:?}, fs_factor={:?}, fs_factor_utilization={:?}, fs_factor_within_design_limit={:?}, minimum_diameter_for_fs_limit={:?}, hetp={:?}, theoretical_stages={:?}, percent_flood={:?}, flooding_velocity={:?}, packing_pressure_drop={:?}, hydraulics_ok={:?}, internal_diameter={:?}, k_ga={:?}, k_la={:?}, wetted_area={:?}, htu_g={:?}, htu_l={:?}, htu_og={:?}, wetting_ok={:?}, pressure_drop_per_meter={:?}, resolved_packing={:?}, resolved_packing_factor={:?}, {} warning(s))",
             self.tray_temperature,
             self.tray_pressure,
             self.tray_gas_n,
@@ -13549,6 +17804,16 @@ impl PyPackedColumnResult {
             self.packing_pressure_drop,
             self.hydraulics_ok,
             self.internal_diameter,
+            self.k_ga,
+            self.k_la,
+            self.wetted_area,
+            self.htu_g,
+            self.htu_l,
+            self.htu_og,
+            self.wetting_ok,
+            self.pressure_drop_per_meter,
+            self.resolved_packing,
+            self.resolved_packing_factor,
             self.warnings.len()
         )
     }
@@ -13685,6 +17950,40 @@ impl From<&azoth_process::models::packed_column::PackedColumnResult> for PyPacke
                 magnitude_si: r.internal_diameter.value,
                 unit: "m".to_string(),
             },
+            k_ga: PyQty {
+                magnitude_si: r.k_ga,
+                unit: "1/s".to_string(),
+            },
+            k_la: PyQty {
+                magnitude_si: r.k_la,
+                unit: "1/s".to_string(),
+            },
+            wetted_area: PyQty {
+                magnitude_si: r.wetted_area,
+                unit: "1/m".to_string(),
+            },
+            htu_g: PyQty {
+                magnitude_si: r.htu_g.value,
+                unit: "m".to_string(),
+            },
+            htu_l: PyQty {
+                magnitude_si: r.htu_l.value,
+                unit: "m".to_string(),
+            },
+            htu_og: PyQty {
+                magnitude_si: r.htu_og.value,
+                unit: "m".to_string(),
+            },
+            wetting_ok: r.wetting_ok,
+            pressure_drop_per_meter: PyQty {
+                magnitude_si: r.pressure_drop_per_meter.value,
+                unit: "Pa/m".to_string(),
+            },
+            resolved_packing: r.resolved_packing.clone(),
+            resolved_packing_factor: PyQty {
+                magnitude_si: r.resolved_packing_factor,
+                unit: "1/m".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }
@@ -13713,6 +18012,9 @@ pub struct PyPipeResult {
     /// the outlet molar enthalpy. Reported because it is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so a drop moves it.
     #[pyo3(get)]
     pub outlet_h: PyQty,
+    /// `length` plus the fittings' `sum(L/D) D`, which is `Pipeline.getEffectiveLength()`.
+    #[pyo3(get)]
+    pub effective_length: PyQty,
     /// `inlet_p - outlet_p`, which is `AdiabaticPipe.getPressureDrop()`. **Declared rather than left to a subtraction**: the drop is a small difference of two large numbers, so a case pinning only `outlet_p` compares it at the precision of the *pressure*.
     #[pyo3(get)]
     pub pressure_drop: PyQty,
@@ -13725,12 +18027,13 @@ pub struct PyPipeResult {
 impl PyPipeResult {
     fn __repr__(&self) -> String {
         format!(
-            "PipeResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, pressure_drop={:?}, {} warning(s))",
+            "PipeResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, effective_length={:?}, pressure_drop={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
+            self.effective_length,
             self.pressure_drop,
             self.warnings.len()
         )
@@ -13756,6 +18059,10 @@ impl From<&azoth_process::models::pipe::PipeResult> for PyPipeResult {
             outlet_h: PyQty {
                 magnitude_si: r.outlet_h.value,
                 unit: "J/mol".to_string(),
+            },
+            effective_length: PyQty {
+                magnitude_si: r.effective_length.value,
+                unit: "m".to_string(),
             },
             pressure_drop: PyQty {
                 magnitude_si: r.pressure_drop.value,
@@ -13813,6 +18120,15 @@ pub struct PyPlugFlowReactorResult {
     /// every station's conversion of the key component.
     #[pyo3(get)]
     pub conversion_profile: Vec<f64>,
+    /// every station's summed volumetric reaction rate - the class's `ReactionRate_mol_m3s` column. **The first output on the vocabulary's `MolarRateDensity` dimension**, added for it.
+    #[pyo3(get)]
+    pub reaction_rate_profile: Vec<PyQty>,
+    /// every station's molar flow of every component - the class's `F_<component>_mol_s` columns. A matrix rather than a vector per component, because the component set is the run's.
+    #[pyo3(get)]
+    pub molar_flow_profile: Vec<Vec<PyQty>>,
+    /// `getResidenceTime()`: the tube's volume over the feed's volumetric flow, which the kernel already computes and this id dropped.
+    #[pyo3(get)]
+    pub residence_time: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -13822,7 +18138,7 @@ pub struct PyPlugFlowReactorResult {
 impl PyPlugFlowReactorResult {
     fn __repr__(&self) -> String {
         format!(
-            "PlugFlowReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, conversion={:?}, pressure_drop={:?}, outlet_temperature={:?}, heat_duty={:?}, positions={:?}, temperature_profile={:?}, pressure_profile={:?}, conversion_profile={:?}, {} warning(s))",
+            "PlugFlowReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, conversion={:?}, pressure_drop={:?}, outlet_temperature={:?}, heat_duty={:?}, positions={:?}, temperature_profile={:?}, pressure_profile={:?}, conversion_profile={:?}, reaction_rate_profile={:?}, molar_flow_profile={:?}, residence_time={:?}, {} warning(s))",
             self.product_n,
             self.product_z,
             self.product_p,
@@ -13836,6 +18152,9 @@ impl PyPlugFlowReactorResult {
             self.temperature_profile,
             self.pressure_profile,
             self.conversion_profile,
+            self.reaction_rate_profile,
+            self.molar_flow_profile,
+            self.residence_time,
             self.warnings.len()
         )
     }
@@ -13901,6 +18220,30 @@ impl From<&azoth_process::models::plug_flow_reactor::PlugFlowReactorResult>
                 })
                 .collect(),
             conversion_profile: r.conversion_profile.clone(),
+            reaction_rate_profile: r
+                .reaction_rate_profile
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "mol/(m**3*s)".to_string(),
+                })
+                .collect(),
+            molar_flow_profile: r
+                .molar_flow_profile
+                .iter()
+                .map(|row| {
+                    row.iter()
+                        .map(|v| PyQty {
+                            magnitude_si: *v,
+                            unit: "mol/s".to_string(),
+                        })
+                        .collect()
+                })
+                .collect(),
+            residence_time: PyQty {
+                magnitude_si: r.residence_time.value,
+                unit: "s".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }
@@ -13920,15 +18263,33 @@ pub struct PyPumpResult {
     /// the outlet composition, which is the inlet's.
     #[pyo3(get)]
     pub outlet_z: Vec<f64>,
-    /// the outlet pressure, which is `outlet_pressure` rather than something the pump solves for.
+    /// the outlet pressure: `outlet_pressure` in the isentropic branch, or the inlet pressure plus the chart's corrected head times the inlet density and `g`.
     #[pyo3(get)]
     pub outlet_p: PyQty,
     /// the outlet temperature, solved from the shifted enthalpy at the outlet pressure.
     #[pyo3(get)]
     pub outlet_t: PyQty,
-    /// the outlet molar enthalpy: the inlet's plus `(H(P_out, s_in) - H(P_in)) / eta`. Reported because a machine's whole effect on the stream is this and the temperature it implies.
+    /// the outlet molar enthalpy: the inlet's plus the shaft work per mole. In the isentropic branch that work is the isentropic head over the efficiency; in the chart branch it is `Q dP/eta/n`.
     #[pyo3(get)]
     pub outlet_h: PyQty,
+    /// the head the pump used: the chart's corrected head after the density and viscosity corrections, or in the isentropic branch the work per mole over `M g`.
+    #[pyo3(get)]
+    pub head: PyQty,
+    /// the efficiency the pump used, as a fraction: the chart's corrected value, or the stated isentropic efficiency.
+    #[pyo3(get)]
+    pub efficiency: f64,
+    /// the required NPSH: the chart's curve at the operating flow where it has one, else the class's flow-band estimate. Reported in both branches.
+    #[pyo3(get)]
+    pub npsh_required: PyQty,
+    /// `(P_in - P_bubble)/(rho g)` at the inlet, which is `Pump.getNPSHAvailable`. `NaN` where the bubble point does not solve, which the class also returns.
+    #[pyo3(get)]
+    pub npsh_available: PyQty,
+    /// `NPSHa < margin * NPSHr`, with an unknown NPSH status counting as cavitating. False whenever `check_npsh` is not set.
+    #[pyo3(get)]
+    pub cavitating: bool,
+    /// the shaft power: the enthalpy rise across the machine times the molar flow, so it is the isentropic work in the isentropic branch and the chart's `Q dP/eta` in the chart branch.
+    #[pyo3(get)]
+    pub power: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -13938,12 +18299,18 @@ pub struct PyPumpResult {
 impl PyPumpResult {
     fn __repr__(&self) -> String {
         format!(
-            "PumpResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, {} warning(s))",
+            "PumpResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, head={:?}, efficiency={:?}, npsh_required={:?}, npsh_available={:?}, cavitating={:?}, power={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
+            self.head,
+            self.efficiency,
+            self.npsh_required,
+            self.npsh_available,
+            self.cavitating,
+            self.power,
             self.warnings.len()
         )
     }
@@ -13968,6 +18335,24 @@ impl From<&azoth_process::models::pump::PumpResult> for PyPumpResult {
             outlet_h: PyQty {
                 magnitude_si: r.outlet_h.value,
                 unit: "J/mol".to_string(),
+            },
+            head: PyQty {
+                magnitude_si: r.head.value,
+                unit: "m".to_string(),
+            },
+            efficiency: r.efficiency,
+            npsh_required: PyQty {
+                magnitude_si: r.npsh_required.value,
+                unit: "m".to_string(),
+            },
+            npsh_available: PyQty {
+                magnitude_si: r.npsh_available.value,
+                unit: "m".to_string(),
+            },
+            cavitating: r.cavitating,
+            power: PyQty {
+                magnitude_si: r.power.value,
+                unit: "W".to_string(),
             },
             warnings: transport(&r.warnings),
         }
@@ -14419,6 +18804,120 @@ pub struct PySeparatorResult {
     /// the liquid outlet's molar enthalpy at its own state.
     #[pyo3(get)]
     pub liquid_h: PyQty,
+    /// `getCapacityUtilization`: the gas's volumetric flow over what the gas area admits at the design velocity, `Q / (V_max A)`. **Present only when the vessel is stated**, and `0.0` when no gas phase exists.
+    #[pyo3(get)]
+    pub capacity_utilization: Option<f64>,
+    /// `getMaxAllowableGasVelocity`: `K sqrt((rho_l - rho_g)/rho_g)` with the liquid's own density, or `1000.0` where no liquid exists - **the sizing rule's, with no `10.0` floor**. Present only when the vessel is stated and a gas phase exists.
+    #[pyo3(get)]
+    pub max_allowable_gas_velocity: Option<PyQty>,
+    /// `getGasSuperficialVelocity`: `Q/A` over the design gas area, so a horizontal vessel's is the area-derated one. Present as above.
+    #[pyo3(get)]
+    pub gas_superficial_velocity: Option<PyQty>,
+    /// `getGasLoadFactor()`: the gas's *actual* Souders-Brown `K`, `u sqrt(rho_g/(rho_l - rho_g))`, with the `10.0` near-dry floor on `rho_l`. **Not `design_gas_load_factor`.** Present as above.
+    #[pyo3(get)]
+    pub gas_load_factor: Option<PyQty>,
+    /// `isOverloaded`: `capacity_utilization > 1.0`, exactly. **Present only when the vessel is stated**; `false` with no gas.
+    #[pyo3(get)]
+    pub is_overloaded: Option<bool>,
+    /// `1 - liquidVolume / separatorVolume` on a horizontal vessel and `1.0` on a vertical one: **the actual holdup**, which `getGasLoadFactor(int)` divides its term by, and not the design level fraction the superficial velocity uses. Present only when the vessel is stated.
+    #[pyo3(get)]
+    pub gas_area_fraction: Option<f64>,
+    /// `getGasLoadFactor(int)` for each liquid phase, in phase order: the superficial velocity over `sqrt((1/gas_area_fraction) (rho_i - rho_g)/rho_g)`, with the `10.0` near-dry floor. Absent with no gas, and with no liquid phase.
+    #[pyo3(get)]
+    pub rated_gas_load_factor_by_phase: Option<Vec<PyQty>>,
+    /// `sizeFromFlow(safety_factor)`'s answer: the gas flow times the factor over the maximum velocity and the orientation's design gas area, under the circle's area. Absent when no safety factor or no gas.
+    #[pyo3(get)]
+    pub required_diameter: Option<PyQty>,
+    /// `calcDesign`'s sized internal diameter, from the gas flow, the design `K` and the orientation's gas area. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub design_inner_diameter: Option<PyQty>,
+    /// the tangent-to-tangent length, from the liquid volume and the retention time, with the class's `5 d` substitution outside an L/D of 3 to 6.
+    #[pyo3(get)]
+    pub design_tantan_length: Option<PyQty>,
+    /// the inside diameter plus twice the wall thickness.
+    #[pyo3(get)]
+    pub design_outer_diameter: Option<PyQty>,
+    /// the ASME wall thickness at the stated pressure, allowable stress, joint efficiency and corrosion allowance.
+    #[pyo3(get)]
+    pub design_wall_thickness: Option<PyQty>,
+    /// `getMaxDesignGassVolumeFlow`: the design velocity over the sized gas area, in m3/hr.
+    #[pyo3(get)]
+    pub max_design_gas_volume_flow: Option<PyQty>,
+    /// `0.032 * wall_mm * diameter_mm * length`, the class's empty-shell estimate.
+    #[pyo3(get)]
+    pub vessel_shell_weight: Option<PyQty>,
+    /// the class's piping allowance, `0.4` of the shell weight.
+    #[pyo3(get)]
+    pub piping_weight: Option<PyQty>,
+    /// the class's structural allowance, `0.1` of the shell weight.
+    #[pyo3(get)]
+    pub structural_weight: Option<PyQty>,
+    /// the class's electrical allowance, `0.08` of the shell weight.
+    #[pyo3(get)]
+    pub electrical_weight: Option<PyQty>,
+    /// the internals' weight. `0.0` here: the class leaves it at zero without internals sections, and this port builds none.
+    #[pyo3(get)]
+    pub internals_weight: Option<PyQty>,
+    /// the shell plus the class's piping, structural and electrical allowances (`40%`, `10%` and `8%`).
+    #[pyo3(get)]
+    pub total_weight: Option<PyQty>,
+    /// `2 d`.
+    #[pyo3(get)]
+    pub module_width: Option<PyQty>,
+    /// `1.5 * tantan_length`.
+    #[pyo3(get)]
+    pub module_length: Option<PyQty>,
+    /// `2 d + 1`.
+    #[pyo3(get)]
+    pub module_height: Option<PyQty>,
+    /// the cylinder's internal volume, `pi (d/2)^2 L`.
+    #[pyo3(get)]
+    pub vessel_volume: Option<PyQty>,
+    /// the high-high liquid level, `0.80 d` by the class's default fraction.
+    #[pyo3(get)]
+    pub hhll: Option<PyQty>,
+    /// the high liquid level, `0.70 d`.
+    #[pyo3(get)]
+    pub hll: Option<PyQty>,
+    /// the normal liquid level, `0.50 d`.
+    #[pyo3(get)]
+    pub nll: Option<PyQty>,
+    /// the low liquid level, `0.30 d`.
+    #[pyo3(get)]
+    pub lll: Option<PyQty>,
+    /// the low-low liquid level, `0.15 d`.
+    #[pyo3(get)]
+    pub llll: Option<PyQty>,
+    /// the weir height, `0.25 d`.
+    #[pyo3(get)]
+    pub weir_height: Option<PyQty>,
+    /// the normal oil/water interface level, `0.20 d`.
+    #[pyo3(get)]
+    pub nil: Option<PyQty>,
+    /// the effective liquid separation length, `0.82 L` when the class leaves it unset.
+    #[pyo3(get)]
+    pub effective_length_liquid: Option<PyQty>,
+    /// the effective gas separation length, `0.64 L`.
+    #[pyo3(get)]
+    pub effective_length_gas: Option<PyQty>,
+    /// the inlet nozzle's inside diameter: API 12J's `8000 Pa` momentum limit on the two-phase flow, rounded up in `50` mm steps with a `50` mm floor.
+    #[pyo3(get)]
+    pub inlet_nozzle_id: Option<PyQty>,
+    /// the gas outlet nozzle's inside diameter at a `20` m/s limit, rounded up in `50` mm steps.
+    #[pyo3(get)]
+    pub gas_outlet_nozzle_id: Option<PyQty>,
+    /// the oil outlet nozzle's inside diameter at a `1.5` m/s limit, rounded up in `25` mm steps with a `50` mm floor.
+    #[pyo3(get)]
+    pub oil_outlet_nozzle_id: Option<PyQty>,
+    /// the vessel's volume between NLL and HLL over the effective liquid length.
+    #[pyo3(get)]
+    pub surge_volume: Option<PyQty>,
+    /// the surge volume over the liquid volumetric flow, **with the class's unit slip**: the flow is m3/s and is divided as though m3/hr.
+    #[pyo3(get)]
+    pub surge_time: Option<PyQty>,
+    /// the volume at NLL over the same flow, again as though m3/hr - the capture's `394 159` s is that arithmetic rather than a physical residence time.
+    #[pyo3(get)]
+    pub liquid_retention_time: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -14428,7 +18927,7 @@ pub struct PySeparatorResult {
 impl PySeparatorResult {
     fn __repr__(&self) -> String {
         format!(
-            "SeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, {} warning(s))",
+            "SeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, max_allowable_gas_velocity={:?}, gas_superficial_velocity={:?}, gas_load_factor={:?}, is_overloaded={:?}, gas_area_fraction={:?}, rated_gas_load_factor_by_phase={:?}, required_diameter={:?}, design_inner_diameter={:?}, design_tantan_length={:?}, design_outer_diameter={:?}, design_wall_thickness={:?}, max_design_gas_volume_flow={:?}, vessel_shell_weight={:?}, piping_weight={:?}, structural_weight={:?}, electrical_weight={:?}, internals_weight={:?}, total_weight={:?}, module_width={:?}, module_length={:?}, module_height={:?}, vessel_volume={:?}, hhll={:?}, hll={:?}, nll={:?}, lll={:?}, llll={:?}, weir_height={:?}, nil={:?}, effective_length_liquid={:?}, effective_length_gas={:?}, inlet_nozzle_id={:?}, gas_outlet_nozzle_id={:?}, oil_outlet_nozzle_id={:?}, surge_volume={:?}, surge_time={:?}, liquid_retention_time={:?}, {} warning(s))",
             self.vapour_n,
             self.vapour_z,
             self.vapour_p,
@@ -14439,6 +18938,44 @@ impl PySeparatorResult {
             self.liquid_p,
             self.liquid_t,
             self.liquid_h,
+            self.capacity_utilization,
+            self.max_allowable_gas_velocity,
+            self.gas_superficial_velocity,
+            self.gas_load_factor,
+            self.is_overloaded,
+            self.gas_area_fraction,
+            self.rated_gas_load_factor_by_phase,
+            self.required_diameter,
+            self.design_inner_diameter,
+            self.design_tantan_length,
+            self.design_outer_diameter,
+            self.design_wall_thickness,
+            self.max_design_gas_volume_flow,
+            self.vessel_shell_weight,
+            self.piping_weight,
+            self.structural_weight,
+            self.electrical_weight,
+            self.internals_weight,
+            self.total_weight,
+            self.module_width,
+            self.module_length,
+            self.module_height,
+            self.vessel_volume,
+            self.hhll,
+            self.hll,
+            self.nll,
+            self.lll,
+            self.llll,
+            self.weir_height,
+            self.nil,
+            self.effective_length_liquid,
+            self.effective_length_gas,
+            self.inlet_nozzle_id,
+            self.gas_outlet_nozzle_id,
+            self.oil_outlet_nozzle_id,
+            self.surge_volume,
+            self.surge_time,
+            self.liquid_retention_time,
             self.warnings.len()
         )
     }
@@ -14481,6 +19018,606 @@ impl From<&azoth_process::models::separator::SeparatorResult> for PySeparatorRes
                 magnitude_si: r.liquid_h.value,
                 unit: "J/mol".to_string(),
             },
+            capacity_utilization: r.capacity_utilization,
+            max_allowable_gas_velocity: r.max_allowable_gas_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            gas_superficial_velocity: r.gas_superficial_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            gas_load_factor: r.gas_load_factor.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            is_overloaded: r.is_overloaded,
+            gas_area_fraction: r.gas_area_fraction,
+            rated_gas_load_factor_by_phase: r.rated_gas_load_factor_by_phase.as_ref().map(
+                |values| {
+                    values
+                        .iter()
+                        .map(|v| PyQty {
+                            magnitude_si: *v,
+                            unit: "m/s".to_string(),
+                        })
+                        .collect()
+                },
+            ),
+            required_diameter: r.required_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_inner_diameter: r.design_inner_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_tantan_length: r.design_tantan_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_outer_diameter: r.design_outer_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_wall_thickness: r.design_wall_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            max_design_gas_volume_flow: r.max_design_gas_volume_flow.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3/h".to_string(),
+            }),
+            vessel_shell_weight: r.vessel_shell_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            piping_weight: r.piping_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            structural_weight: r.structural_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            electrical_weight: r.electrical_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            internals_weight: r.internals_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            total_weight: r.total_weight.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg".to_string(),
+            }),
+            module_width: r.module_width.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            module_length: r.module_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            module_height: r.module_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            vessel_volume: r.vessel_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
+            }),
+            hhll: r.hhll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            hll: r.hll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            nll: r.nll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            lll: r.lll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            llll: r.llll.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            weir_height: r.weir_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            nil: r.nil.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            effective_length_liquid: r.effective_length_liquid.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            effective_length_gas: r.effective_length_gas.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            inlet_nozzle_id: r.inlet_nozzle_id.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            gas_outlet_nozzle_id: r.gas_outlet_nozzle_id.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            oil_outlet_nozzle_id: r.oil_outlet_nozzle_id.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            surge_volume: r.surge_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
+            }),
+            surge_time: r.surge_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            liquid_retention_time: r.liquid_retention_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `process.separator_capacity_assessment`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SeparatorCapacityAssessmentResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySeparatorCapacityAssessmentResult {
+    /// `feasible`, `infeasible` or `unassessed` - the class's `FEASIBLE`/`INFEASIBLE`/`UNASSESSED` in the library's spelling.
+    #[pyo3(get)]
+    pub status: String,
+    /// the class's sentence for the status: one of seven fixed strings, not a composed message.
+    #[pyo3(get)]
+    pub diagnostic: String,
+    /// `equipment` when no mechanical limit was stated, `mechanicalDesign` when one was, and empty on `unassessed`.
+    #[pyo3(get)]
+    pub design_basis_source: String,
+    /// `soudersBrown` or `mechanicalDesignGasFlow`, and empty on `unassessed`.
+    #[pyo3(get)]
+    pub governing_capacity_basis: String,
+    /// the gas flow area: the full cross-section vertical, `(1 - design_liquid_level_fraction)` of it horizontal. **Absent on `unassessed`.**
+    #[pyo3(get)]
+    pub gas_area: Option<PyQty>,
+    /// the gas phase's mass density. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub gas_density: Option<PyQty>,
+    /// the liquid phase's mass density, or `1000.0` where the system carries no liquid. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub liquid_density: Option<PyQty>,
+    /// `getMaxAllowableGasVelocity`: `K sqrt((rho_l - rho_g)/rho_g)`, the sizing rule's, with no `10.0` floor. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub maximum_gas_velocity: Option<PyQty>,
+    /// the gas phase's actual volumetric flow. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub current_gas_flow: Option<PyQty>,
+    /// the stated mechanical limit in m3/s, or `0.0` when none was stated - the class's snapshot field. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub mechanical_design_maximum_gas_flow: Option<PyQty>,
+    /// `getMaxAllowableGasFlowRate`: the maximum velocity times the gas area. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub souders_brown_maximum_gas_flow: Option<PyQty>,
+    /// the governed limit: the mechanical limit where it binds, the Souders-Brown flow otherwise. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub maximum_gas_flow: Option<PyQty>,
+    /// the current gas flow over the governed limit; `<= 1` is `feasible`. Absent on `unassessed`.
+    #[pyo3(get)]
+    pub utilization: Option<f64>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySeparatorCapacityAssessmentResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SeparatorCapacityAssessmentResult(status={:?}, diagnostic={:?}, design_basis_source={:?}, governing_capacity_basis={:?}, gas_area={:?}, gas_density={:?}, liquid_density={:?}, maximum_gas_velocity={:?}, current_gas_flow={:?}, mechanical_design_maximum_gas_flow={:?}, souders_brown_maximum_gas_flow={:?}, maximum_gas_flow={:?}, utilization={:?}, {} warning(s))",
+            self.status,
+            self.diagnostic,
+            self.design_basis_source,
+            self.governing_capacity_basis,
+            self.gas_area,
+            self.gas_density,
+            self.liquid_density,
+            self.maximum_gas_velocity,
+            self.current_gas_flow,
+            self.mechanical_design_maximum_gas_flow,
+            self.souders_brown_maximum_gas_flow,
+            self.maximum_gas_flow,
+            self.utilization,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::separator_capacity_assessment::SeparatorCapacityAssessmentResult>
+    for PySeparatorCapacityAssessmentResult
+{
+    fn from(
+        r: &azoth_process::models::separator_capacity_assessment::SeparatorCapacityAssessmentResult,
+    ) -> Self {
+        Self {
+            status: r.status.clone(),
+            diagnostic: r.diagnostic.clone(),
+            design_basis_source: r.design_basis_source.clone(),
+            governing_capacity_basis: r.governing_capacity_basis.clone(),
+            gas_area: r.gas_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
+            }),
+            gas_density: r.gas_density.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg/m**3".to_string(),
+            }),
+            liquid_density: r.liquid_density.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg/m**3".to_string(),
+            }),
+            maximum_gas_velocity: r.maximum_gas_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            current_gas_flow: r.current_gas_flow.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3/s".to_string(),
+            }),
+            mechanical_design_maximum_gas_flow: r.mechanical_design_maximum_gas_flow.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "m**3/s".to_string(),
+                }
+            }),
+            souders_brown_maximum_gas_flow: r.souders_brown_maximum_gas_flow.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3/s".to_string(),
+            }),
+            maximum_gas_flow: r.maximum_gas_flow.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3/s".to_string(),
+            }),
+            utilization: r.utilization,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `process.separator_performance`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SeparatorPerformanceResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySeparatorPerformanceResult {
+    /// the oil fraction carried out with the gas: `1 - overall_gas_liquid_efficiency` when an oil phase and a gas-liquid distribution exist.
+    #[pyo3(get)]
+    pub oil_in_gas: f64,
+    /// the water fraction carried out with the gas. **In a three-phase state this is the whole entrainment too**, not a split of it.
+    #[pyo3(get)]
+    pub water_in_gas: f64,
+    /// the gas fraction carried under into the oil: `1 - ` the bubble gravity efficiency.
+    #[pyo3(get)]
+    pub gas_in_oil: f64,
+    /// the gas fraction carried under into the water, which is the same value as `gas_in_oil`.
+    #[pyo3(get)]
+    pub gas_in_water: f64,
+    /// the oil fraction left in the water after the 300 s gravity stage and the coalescer.
+    #[pyo3(get)]
+    pub oil_in_water: f64,
+    /// the water fraction left in the oil after the 300 s gravity stage and the coalescer.
+    #[pyo3(get)]
+    pub water_in_oil: f64,
+    /// the gravity stage's integrated capture efficiency; zero when the gravity section is excluded or no gas-liquid distribution is stated.
+    #[pyo3(get)]
+    pub gravity_section_efficiency: f64,
+    /// the mist eliminator's integrated capture efficiency; zero without one.
+    #[pyo3(get)]
+    pub mist_eliminator_efficiency: f64,
+    /// the stages in series, `1 - (1 - eta_gravity)(1 - eta_mist)` per size class, or whichever stage is present.
+    #[pyo3(get)]
+    pub overall_gas_liquid_efficiency: f64,
+    /// the oil-in-water gravity efficiency; zero unless the oil-in-water distribution is stated.
+    #[pyo3(get)]
+    pub liquid_liquid_gravity_efficiency: f64,
+    /// the gas section's critical droplet diameter; zero without a gas-liquid distribution.
+    #[pyo3(get)]
+    pub gravity_cut_diameter: PyQty,
+    /// the predicted inlet regime's enum spelling, e.g. `SLUG`; present only on the enhanced path.
+    #[pyo3(get)]
+    pub inlet_flow_regime: Option<String>,
+    /// the inlet device's bulk liquid-removal efficiency.
+    #[pyo3(get)]
+    pub inlet_device_bulk_efficiency: Option<f64>,
+    /// the device's pressure drop, `coefficient * 0.5 rho_mix v^2`.
+    #[pyo3(get)]
+    pub inlet_device_pressure_drop: Option<PyQty>,
+    /// the inlet nozzle's velocity, the two-phase flow over the pipe area.
+    #[pyo3(get)]
+    pub inlet_nozzle_velocity: Option<PyQty>,
+    /// the nozzle's momentum flux, `rho_mix v^2`.
+    #[pyo3(get)]
+    pub inlet_momentum_flux: Option<PyQty>,
+    /// the actual Souders-Brown `K` at the superficial gas velocity.
+    #[pyo3(get)]
+    pub k_factor: Option<PyQty>,
+    /// the actual `K` over its design value; above one is flooding.
+    #[pyo3(get)]
+    pub k_factor_utilization: Option<f64>,
+    /// whether `k_factor_utilization` exceeds one.
+    #[pyo3(get)]
+    pub mist_eliminator_flooded: Option<bool>,
+    /// the vessel's gas cross-section.
+    #[pyo3(get)]
+    pub gas_area: Option<PyQty>,
+    /// the vessel's liquid cross-section.
+    #[pyo3(get)]
+    pub liquid_area: Option<PyQty>,
+    /// the gas section's volume, `gas_area * length`.
+    #[pyo3(get)]
+    pub gas_volume: Option<PyQty>,
+    /// the liquid section's volume, `liquid_area * length`.
+    #[pyo3(get)]
+    pub liquid_volume: Option<PyQty>,
+    /// the vessel's internal volume, the two sections together.
+    #[pyo3(get)]
+    pub total_volume: Option<PyQty>,
+    /// the height a droplet falls through in the gas section.
+    #[pyo3(get)]
+    pub effective_gas_settling_height: Option<PyQty>,
+    /// the height a bubble rises through in the liquid.
+    #[pyo3(get)]
+    pub effective_liquid_settling_height: Option<PyQty>,
+    /// the gas's residence time in the gravity section.
+    #[pyo3(get)]
+    pub gas_residence_time: Option<PyQty>,
+    /// the liquid's residence time, the class's own m3/hr slip included.
+    #[pyo3(get)]
+    pub liquid_residence_time: Option<PyQty>,
+    /// the gravity section's length: inlet device to mist eliminator, or to the weir three-phase.
+    #[pyo3(get)]
+    pub gravity_section_length: Option<PyQty>,
+    /// the three-phase oil pad, `level * oil_frac`.
+    #[pyo3(get)]
+    pub oil_pad_thickness: Option<PyQty>,
+    /// the three-phase water layer, `level * water_frac`.
+    #[pyo3(get)]
+    pub water_layer_height: Option<PyQty>,
+    /// API 12J's gas-section verdict: cut at most `100` um and `K` within its limit.
+    #[pyo3(get)]
+    pub api_gas_liquid_compliant: Option<bool>,
+    /// API 12J's liquid-section verdict: residence at least `180` s two-phase, `300` s three-phase.
+    #[pyo3(get)]
+    pub api_liquid_compliant: Option<bool>,
+    /// both verdicts.
+    #[pyo3(get)]
+    pub api_fully_compliant: Option<bool>,
+    /// the class's own gas-section sentence, `COMPLIANT:` or `NON-COMPLIANT:` followed by the cut and `K` it read. Present only on the enhanced path.
+    #[pyo3(get)]
+    pub api_gas_liquid_comment: Option<String>,
+    /// the class's own liquid-section sentence, with the residence time it read. Present only on the enhanced path.
+    #[pyo3(get)]
+    pub api_liquid_comment: Option<String>,
+    /// the cut diameter the API check read; the capture prints it in micrometres.
+    #[pyo3(get)]
+    pub api_gravity_cut_diameter: Option<PyQty>,
+    /// the `K` over the API limit it read.
+    #[pyo3(get)]
+    pub api_k_factor_utilization: Option<f64>,
+    /// the API limit on `K`: `0.25` with a mist eliminator, otherwise `0.120` horizontal and `0.107` vertical.
+    #[pyo3(get)]
+    pub api_max_k_factor: Option<PyQty>,
+    /// the API minimum liquid residence time.
+    #[pyo3(get)]
+    pub api_min_liquid_residence_time: Option<PyQty>,
+    /// the downstream distribution's `d63.2` after the device's multiplier.
+    #[pyo3(get)]
+    pub post_inlet_device_characteristic_diameter: Option<PyQty>,
+    /// the downstream distribution's spread.
+    #[pyo3(get)]
+    pub post_inlet_device_spread: Option<f64>,
+    /// the downstream distribution's volume-median diameter, `inverseCDF(0.5)`.
+    #[pyo3(get)]
+    pub post_inlet_d50: Option<PyQty>,
+    /// the downstream distribution's Sauter mean diameter, the 50-class `sum(d^3)/sum(d^2)`.
+    #[pyo3(get)]
+    pub post_inlet_d32: Option<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySeparatorPerformanceResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SeparatorPerformanceResult(oil_in_gas={:?}, water_in_gas={:?}, gas_in_oil={:?}, gas_in_water={:?}, oil_in_water={:?}, water_in_oil={:?}, gravity_section_efficiency={:?}, mist_eliminator_efficiency={:?}, overall_gas_liquid_efficiency={:?}, liquid_liquid_gravity_efficiency={:?}, gravity_cut_diameter={:?}, inlet_flow_regime={:?}, inlet_device_bulk_efficiency={:?}, inlet_device_pressure_drop={:?}, inlet_nozzle_velocity={:?}, inlet_momentum_flux={:?}, k_factor={:?}, k_factor_utilization={:?}, mist_eliminator_flooded={:?}, gas_area={:?}, liquid_area={:?}, gas_volume={:?}, liquid_volume={:?}, total_volume={:?}, effective_gas_settling_height={:?}, effective_liquid_settling_height={:?}, gas_residence_time={:?}, liquid_residence_time={:?}, gravity_section_length={:?}, oil_pad_thickness={:?}, water_layer_height={:?}, api_gas_liquid_compliant={:?}, api_liquid_compliant={:?}, api_fully_compliant={:?}, api_gas_liquid_comment={:?}, api_liquid_comment={:?}, api_gravity_cut_diameter={:?}, api_k_factor_utilization={:?}, api_max_k_factor={:?}, api_min_liquid_residence_time={:?}, post_inlet_device_characteristic_diameter={:?}, post_inlet_device_spread={:?}, post_inlet_d50={:?}, post_inlet_d32={:?}, {} warning(s))",
+            self.oil_in_gas,
+            self.water_in_gas,
+            self.gas_in_oil,
+            self.gas_in_water,
+            self.oil_in_water,
+            self.water_in_oil,
+            self.gravity_section_efficiency,
+            self.mist_eliminator_efficiency,
+            self.overall_gas_liquid_efficiency,
+            self.liquid_liquid_gravity_efficiency,
+            self.gravity_cut_diameter,
+            self.inlet_flow_regime,
+            self.inlet_device_bulk_efficiency,
+            self.inlet_device_pressure_drop,
+            self.inlet_nozzle_velocity,
+            self.inlet_momentum_flux,
+            self.k_factor,
+            self.k_factor_utilization,
+            self.mist_eliminator_flooded,
+            self.gas_area,
+            self.liquid_area,
+            self.gas_volume,
+            self.liquid_volume,
+            self.total_volume,
+            self.effective_gas_settling_height,
+            self.effective_liquid_settling_height,
+            self.gas_residence_time,
+            self.liquid_residence_time,
+            self.gravity_section_length,
+            self.oil_pad_thickness,
+            self.water_layer_height,
+            self.api_gas_liquid_compliant,
+            self.api_liquid_compliant,
+            self.api_fully_compliant,
+            self.api_gas_liquid_comment,
+            self.api_liquid_comment,
+            self.api_gravity_cut_diameter,
+            self.api_k_factor_utilization,
+            self.api_max_k_factor,
+            self.api_min_liquid_residence_time,
+            self.post_inlet_device_characteristic_diameter,
+            self.post_inlet_device_spread,
+            self.post_inlet_d50,
+            self.post_inlet_d32,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::separator_performance::SeparatorPerformanceResult>
+    for PySeparatorPerformanceResult
+{
+    fn from(r: &azoth_process::models::separator_performance::SeparatorPerformanceResult) -> Self {
+        Self {
+            oil_in_gas: r.oil_in_gas,
+            water_in_gas: r.water_in_gas,
+            gas_in_oil: r.gas_in_oil,
+            gas_in_water: r.gas_in_water,
+            oil_in_water: r.oil_in_water,
+            water_in_oil: r.water_in_oil,
+            gravity_section_efficiency: r.gravity_section_efficiency,
+            mist_eliminator_efficiency: r.mist_eliminator_efficiency,
+            overall_gas_liquid_efficiency: r.overall_gas_liquid_efficiency,
+            liquid_liquid_gravity_efficiency: r.liquid_liquid_gravity_efficiency,
+            gravity_cut_diameter: PyQty {
+                magnitude_si: r.gravity_cut_diameter.value,
+                unit: "m".to_string(),
+            },
+            inlet_flow_regime: r.inlet_flow_regime.clone(),
+            inlet_device_bulk_efficiency: r.inlet_device_bulk_efficiency,
+            inlet_device_pressure_drop: r.inlet_device_pressure_drop.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "Pa".to_string(),
+            }),
+            inlet_nozzle_velocity: r.inlet_nozzle_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            inlet_momentum_flux: r.inlet_momentum_flux.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "Pa".to_string(),
+            }),
+            k_factor: r.k_factor.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            k_factor_utilization: r.k_factor_utilization,
+            mist_eliminator_flooded: r.mist_eliminator_flooded,
+            gas_area: r.gas_area.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**2".to_string(),
+            }),
+            liquid_area: r.liquid_area.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**2".to_string(),
+            }),
+            gas_volume: r.gas_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
+            }),
+            liquid_volume: r.liquid_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
+            }),
+            total_volume: r.total_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3".to_string(),
+            }),
+            effective_gas_settling_height: r.effective_gas_settling_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            effective_liquid_settling_height: r.effective_liquid_settling_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            gas_residence_time: r.gas_residence_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            liquid_residence_time: r.liquid_residence_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            gravity_section_length: r.gravity_section_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            oil_pad_thickness: r.oil_pad_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            water_layer_height: r.water_layer_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            api_gas_liquid_compliant: r.api_gas_liquid_compliant,
+            api_liquid_compliant: r.api_liquid_compliant,
+            api_fully_compliant: r.api_fully_compliant,
+            api_gas_liquid_comment: r.api_gas_liquid_comment.clone(),
+            api_liquid_comment: r.api_liquid_comment.clone(),
+            api_gravity_cut_diameter: r.api_gravity_cut_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            api_k_factor_utilization: r.api_k_factor_utilization,
+            api_max_k_factor: r.api_max_k_factor.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            api_min_liquid_residence_time: r.api_min_liquid_residence_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            post_inlet_device_characteristic_diameter: r
+                .post_inlet_device_characteristic_diameter
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "m".to_string(),
+                }),
+            post_inlet_device_spread: r.post_inlet_device_spread,
+            post_inlet_d50: r.post_inlet_d50.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            post_inlet_d32: r.post_inlet_d32.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }
@@ -14536,7 +19673,7 @@ pub struct PyShortcutDistillationColumnResult {
     /// the reflux ratio the correlation was evaluated at: `minimum_reflux_ratio * reflux_ratio_multiplier`.
     #[pyo3(get)]
     pub actual_reflux_ratio: f64,
-    /// the feed stage counted from the top: `round(N_rectifying) + 1`, where the rectifying count is `actual_stages / (1 + kirkbride_ratio)`.
+    /// the feed stage counted from the top: `round(N_rectifying) + 1`, where the rectifying count is `actual_stages kirkbride_ratio / (1 + kirkbride_ratio)`.
     #[pyo3(get)]
     pub feed_tray_number: i64,
     /// the condenser duty the class reports: `-V * 30000` J/mol with `V = D(R + 1)`. **An estimate, not an energy balance** - it does not depend on the fluid.
@@ -14664,6 +19801,60 @@ pub struct PySplitterResult {
     /// each outlet's molar enthalpy, which is the feed's. A splitter adds no heat and no work and does not flash, so this is the one field an oracle cannot be asked for - see the assumptions.
     #[pyo3(get)]
     pub products_h: Vec<PyQty>,
+    /// the `pressureDrop` constraint's current value: `0.0` by construction, the class's "ideal splitter". Present only when the constraint is in the map.
+    #[pyo3(get)]
+    pub pressure_drop_value: Option<PyQty>,
+    /// the `pressureDrop` constraint's design value: `design_pressure_drop`, or the class's 5000 Pa when the map was initialized by the enable flag. Present only with the constraint.
+    #[pyo3(get)]
+    pub pressure_drop_design: Option<PyQty>,
+    /// the `pressureDrop` constraint's `min(value/design, 9.99)`, which is 0 because its value is 0. Present only with the constraint.
+    #[pyo3(get)]
+    pub pressure_drop_utilization: Option<f64>,
+    /// the `velocity` constraint's current value: the inlet's system volume flow over the header area, or 0 when the diameter is unsized. Present only with the constraint.
+    #[pyo3(get)]
+    pub velocity_value: Option<PyQty>,
+    /// the `velocity` constraint's design value: `max_design_velocity`, or the class's 30 m/s when the map was initialized by the enable flag. Present only with the constraint.
+    #[pyo3(get)]
+    pub velocity_design: Option<PyQty>,
+    /// the `velocity` constraint's `min(value/design, 9.99)`. Present only with the constraint.
+    #[pyo3(get)]
+    pub velocity_utilization: Option<f64>,
+    /// `getMaxUtilization`: the largest utilization among the enabled constraints, and 0.0 on an empty map.
+    #[pyo3(get)]
+    pub max_utilization: f64,
+    /// `isCapacityExceeded`: any enabled constraint above 1.0. **It does not consult `capacity_analysis_enabled`**, and neither does the class.
+    #[pyo3(get)]
+    pub capacity_exceeded: bool,
+    /// `getBottleneckConstraint`'s name, the class's own map key: `pressureDrop` or `velocity`. Absent when no enabled constraint has a utilization above 0, which the strict `>` makes the empty-map and zero-velocity cases.
+    #[pyo3(get)]
+    pub bottleneck_constraint: Option<String>,
+    /// `calcDesign`'s NPS-rounded header diameter. Absent unless `mechanical_design`; zero when the feed flow is not positive.
+    #[pyo3(get)]
+    pub design_header_diameter: Option<PyQty>,
+    /// `calcDesign`'s NPS-rounded branch diameter, from the largest split factor's share of the flow. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub design_branch_diameter: Option<PyQty>,
+    /// `(number of outlets + 1)` times `max(2 * branch diameter, 0.5 m)`. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub design_header_length: Option<PyQty>,
+    /// the B31.3-style wall thickness the class holds in mm, crossed in metres; never below the class's 3 mm floor. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub design_wall_thickness: Option<PyQty>,
+    /// the header's internal volume, `pi (d/2)^2 * header length`. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub manifold_volume: Option<PyQty>,
+    /// `0.25 rho_system v^2` on the rounded header - the class's `0.5 * 0.5` with the system density. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub design_total_pressure_drop: Option<PyQty>,
+    /// the header's steel: `pi/4 (OD^2 - D^2) * length * 7850`. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub header_weight: Option<PyQty>,
+    /// the branch steel: the same wall and outside diameter over 0.5 m per outlet at 7850 kg/m3. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub branch_weight: Option<PyQty>,
+    /// the header and branch weights summed. Absent unless `mechanical_design`.
+    #[pyo3(get)]
+    pub total_weight: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -14673,12 +19864,30 @@ pub struct PySplitterResult {
 impl PySplitterResult {
     fn __repr__(&self) -> String {
         format!(
-            "SplitterResult(products_n={:?}, products_z={:?}, products_p={:?}, products_t={:?}, products_h={:?}, {} warning(s))",
+            "SplitterResult(products_n={:?}, products_z={:?}, products_p={:?}, products_t={:?}, products_h={:?}, pressure_drop_value={:?}, pressure_drop_design={:?}, pressure_drop_utilization={:?}, velocity_value={:?}, velocity_design={:?}, velocity_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, bottleneck_constraint={:?}, design_header_diameter={:?}, design_branch_diameter={:?}, design_header_length={:?}, design_wall_thickness={:?}, manifold_volume={:?}, design_total_pressure_drop={:?}, header_weight={:?}, branch_weight={:?}, total_weight={:?}, {} warning(s))",
             self.products_n,
             self.products_z,
             self.products_p,
             self.products_t,
             self.products_h,
+            self.pressure_drop_value,
+            self.pressure_drop_design,
+            self.pressure_drop_utilization,
+            self.velocity_value,
+            self.velocity_design,
+            self.velocity_utilization,
+            self.max_utilization,
+            self.capacity_exceeded,
+            self.bottleneck_constraint,
+            self.design_header_diameter,
+            self.design_branch_diameter,
+            self.design_header_length,
+            self.design_wall_thickness,
+            self.manifold_volume,
+            self.design_total_pressure_drop,
+            self.header_weight,
+            self.branch_weight,
+            self.total_weight,
             self.warnings.len()
         )
     }
@@ -14720,6 +19929,63 @@ impl From<&azoth_process::models::splitter::SplitterResult> for PySplitterResult
                     unit: "J/mol".to_string(),
                 })
                 .collect(),
+            pressure_drop_value: r.pressure_drop_value.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            pressure_drop_design: r.pressure_drop_design.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            pressure_drop_utilization: r.pressure_drop_utilization,
+            velocity_value: r.velocity_value.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            velocity_design: r.velocity_design.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            velocity_utilization: r.velocity_utilization,
+            max_utilization: r.max_utilization,
+            capacity_exceeded: r.capacity_exceeded,
+            bottleneck_constraint: r.bottleneck_constraint.clone(),
+            design_header_diameter: r.design_header_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_branch_diameter: r.design_branch_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_header_length: r.design_header_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_wall_thickness: r.design_wall_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            manifold_volume: r.manifold_volume.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3".to_string(),
+            }),
+            design_total_pressure_drop: r.design_total_pressure_drop.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            header_weight: r.header_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            branch_weight: r.branch_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            total_weight: r.total_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }
@@ -14751,6 +20017,9 @@ pub struct PyStirredTankReactorResult {
     /// the heat the vessel had to supply: the outlet's total enthalpy less the feed's when isothermal, and zero when adiabatic.
     #[pyo3(get)]
     pub heat_duty: PyQty,
+    /// `getAgitatorPower`: the specific power times the vessel volume - `1.0 * 10.0 = 10` at the defaults. **Not a duty `run` applies**; it is the number the class would write to an agitator energy port, which is declared out.
+    #[pyo3(get)]
+    pub agitator_power: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -14760,13 +20029,14 @@ pub struct PyStirredTankReactorResult {
 impl PyStirredTankReactorResult {
     fn __repr__(&self) -> String {
         format!(
-            "StirredTankReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, heat_duty={:?}, {} warning(s))",
+            "StirredTankReactorResult(product_n={:?}, product_z={:?}, product_p={:?}, product_t={:?}, product_h={:?}, heat_duty={:?}, agitator_power={:?}, {} warning(s))",
             self.product_n,
             self.product_z,
             self.product_p,
             self.product_t,
             self.product_h,
             self.heat_duty,
+            self.agitator_power,
             self.warnings.len()
         )
     }
@@ -14797,6 +20067,10 @@ impl From<&azoth_process::models::stirred_tank_reactor::StirredTankReactorResult
             heat_duty: PyQty {
                 magnitude_si: r.heat_duty.value,
                 unit: "W".to_string(),
+            },
+            agitator_power: PyQty {
+                magnitude_si: r.agitator_power.value,
+                unit: "kW".to_string(),
             },
             warnings: transport(&r.warnings),
         }
@@ -15261,6 +20535,27 @@ pub struct PyThreePhaseSeparatorResult {
     /// the aqueous outlet's molar enthalpy at the state its composition settles on, which on a dry feed is the state of a stream that carries nothing.
     #[pyo3(get)]
     pub heavy_liquid_h: PyQty,
+    /// the stored water level, clamped at zero. Present when either level is stated; an unstated one is the class's `0.0` default.
+    #[pyo3(get)]
+    pub water_level: Option<PyQty>,
+    /// the stored oil level, clamped at zero. Present as `water_level` is.
+    #[pyo3(get)]
+    pub oil_level: Option<PyQty>,
+    /// `getOilThickness`: `oil_level - water_level` floored at zero. Present as the levels are.
+    #[pyo3(get)]
+    pub oil_thickness: Option<PyQty>,
+    /// `calcOilRetentionTime`, converted from the class's minutes: the oil segment `NIL`-to-`NLL` times the effective length over the oil phase's flow. **Absent when the vessel is not stated or the feed has no oil.**
+    #[pyo3(get)]
+    pub oil_retention_time: Option<PyQty>,
+    /// `calcWaterRetentionTime`: the segment below `NIL` times the effective length over the aqueous flow. Absent as the oil's is.
+    #[pyo3(get)]
+    pub water_retention_time: Option<PyQty>,
+    /// `calcInterfaceSettlingTime`, converted from the class's minutes: a 150 µm water droplet through the oil layer, `9.81 d^2 (rho_w - rho_o)/(18 mu_o)`, over the layer. Absent with no vessel or no non-positive velocity.
+    #[pyo3(get)]
+    pub interface_settling_time: Option<PyQty>,
+    /// whether `interface_settling_time` reaches the class's one-minute limit. **Not `isWithinAllLimits`**: that ANDs the base class's velocity and retention checks, which this id does not carry.
+    #[pyo3(get)]
+    pub settling_time_sufficient: Option<bool>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -15270,7 +20565,7 @@ pub struct PyThreePhaseSeparatorResult {
 impl PyThreePhaseSeparatorResult {
     fn __repr__(&self) -> String {
         format!(
-            "ThreePhaseSeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, light_liquid_n={:?}, light_liquid_z={:?}, light_liquid_p={:?}, light_liquid_t={:?}, light_liquid_h={:?}, heavy_liquid_n={:?}, heavy_liquid_z={:?}, heavy_liquid_p={:?}, heavy_liquid_t={:?}, heavy_liquid_h={:?}, {} warning(s))",
+            "ThreePhaseSeparatorResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, light_liquid_n={:?}, light_liquid_z={:?}, light_liquid_p={:?}, light_liquid_t={:?}, light_liquid_h={:?}, heavy_liquid_n={:?}, heavy_liquid_z={:?}, heavy_liquid_p={:?}, heavy_liquid_t={:?}, heavy_liquid_h={:?}, water_level={:?}, oil_level={:?}, oil_thickness={:?}, oil_retention_time={:?}, water_retention_time={:?}, interface_settling_time={:?}, settling_time_sufficient={:?}, {} warning(s))",
             self.vapour_n,
             self.vapour_z,
             self.vapour_p,
@@ -15286,6 +20581,13 @@ impl PyThreePhaseSeparatorResult {
             self.heavy_liquid_p,
             self.heavy_liquid_t,
             self.heavy_liquid_h,
+            self.water_level,
+            self.oil_level,
+            self.oil_thickness,
+            self.oil_retention_time,
+            self.water_retention_time,
+            self.interface_settling_time,
+            self.settling_time_sufficient,
             self.warnings.len()
         )
     }
@@ -15347,6 +20649,31 @@ impl From<&azoth_process::models::three_phase_separator::ThreePhaseSeparatorResu
                 magnitude_si: r.heavy_liquid_h.value,
                 unit: "J/mol".to_string(),
             },
+            water_level: r.water_level.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            oil_level: r.oil_level.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            oil_thickness: r.oil_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            oil_retention_time: r.oil_retention_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            water_retention_time: r.water_retention_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            interface_settling_time: r.interface_settling_time.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "s".to_string(),
+            }),
+            settling_time_sufficient: r.settling_time_sufficient,
             warnings: transport(&r.warnings),
         }
     }
@@ -15375,6 +20702,24 @@ pub struct PyThrottlingValveResult {
     /// the outlet molar enthalpy, which is the inlet's: the drop is isenthalpic.
     #[pyo3(get)]
     pub outlet_h: PyQty,
+    /// `getKv()`: the rated `Kv` at 100% opening, stated or sized, in the class's `(m3/h)*sqrt(bar)`.
+    #[pyo3(get)]
+    pub kv: f64,
+    /// `getCv()`: `Kv * 1.156`.
+    #[pyo3(get)]
+    pub cv: f64,
+    /// `getCg()`: `Cv * 1360`.
+    #[pyo3(get)]
+    pub cg: f64,
+    /// `calcValveSize`'s `choked`: on a gas valve, `x >= Fgamma * xT`. Reported whether or not `allow_choked` caps it.
+    #[pyo3(get)]
+    pub choked: bool,
+    /// `isGasValve()`: a gas phase carrying more than half the volume. It selects the branch the whole sizing runs.
+    #[pyo3(get)]
+    pub gas_valve: bool,
+    /// `calculateMolarFlow()`: the mole flow the adjusted `Kv` and the drop give - the inverse of the sizing, and the class's own consistency check.
+    #[pyo3(get)]
+    pub calculated_molar_flow: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -15384,12 +20729,18 @@ pub struct PyThrottlingValveResult {
 impl PyThrottlingValveResult {
     fn __repr__(&self) -> String {
         format!(
-            "ThrottlingValveResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, {} warning(s))",
+            "ThrottlingValveResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, kv={:?}, cv={:?}, cg={:?}, choked={:?}, gas_valve={:?}, calculated_molar_flow={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
             self.outlet_t,
             self.outlet_h,
+            self.kv,
+            self.cv,
+            self.cg,
+            self.choked,
+            self.gas_valve,
+            self.calculated_molar_flow,
             self.warnings.len()
         )
     }
@@ -15417,6 +20768,181 @@ impl From<&azoth_process::models::throttling_valve::ThrottlingValveResult>
                 magnitude_si: r.outlet_h.value,
                 unit: "J/mol".to_string(),
             },
+            kv: r.kv,
+            cv: r.cv,
+            cg: r.cg,
+            choked: r.choked,
+            gas_valve: r.gas_valve,
+            calculated_molar_flow: PyQty {
+                magnitude_si: r.calculated_molar_flow,
+                unit: "mol/s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `process.turbo_expander_compressor`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TurboExpanderResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTurboExpanderResult {
+    /// the expander outlet's molar flow, which is its feed's.
+    #[pyo3(get)]
+    pub expander_outlet_n: PyQty,
+    /// the expander outlet's composition.
+    #[pyo3(get)]
+    pub expander_outlet_z: Vec<f64>,
+    /// the expander outlet's pressure, which is the stated `expander_out_pressure`.
+    #[pyo3(get)]
+    pub expander_outlet_p: PyQty,
+    /// the expander outlet's temperature, from the replay at the solved efficiency.
+    #[pyo3(get)]
+    pub expander_outlet_t: PyQty,
+    /// the expander outlet's molar enthalpy.
+    #[pyo3(get)]
+    pub expander_outlet_h: PyQty,
+    /// the compressor outlet's molar flow, which is its feed's.
+    #[pyo3(get)]
+    pub compressor_outlet_n: PyQty,
+    /// the compressor outlet's composition.
+    #[pyo3(get)]
+    pub compressor_outlet_z: Vec<f64>,
+    /// the compressor outlet's pressure, solved from the absorbed power and the polytropic efficiency.
+    #[pyo3(get)]
+    pub compressor_outlet_p: PyQty,
+    /// the compressor outlet's temperature.
+    #[pyo3(get)]
+    pub compressor_outlet_t: PyQty,
+    /// the compressor outlet's molar enthalpy.
+    #[pyo3(get)]
+    pub compressor_outlet_h: PyQty,
+    /// the solved shaft speed, rpm.
+    #[pyo3(get)]
+    pub speed: f64,
+    /// the expander's power: the mass flow times the isentropic drop times the solved efficiency.
+    #[pyo3(get)]
+    pub power_expander: PyQty,
+    /// the compressor's absorbed power, which does not include the bearing loss.
+    #[pyo3(get)]
+    pub power_compressor: PyQty,
+    /// the expander efficiency the balance used.
+    #[pyo3(get)]
+    pub expander_isentropic_efficiency: f64,
+    /// the design efficiency: the stated one, or the inverse's back-calculation.
+    #[pyo3(get)]
+    pub expander_design_isentropic_efficiency: f64,
+    /// the compressor's polytropic efficiency the balance used.
+    #[pyo3(get)]
+    pub compressor_polytropic_efficiency: f64,
+    /// the compressor's polytropic head the balance used.
+    #[pyo3(get)]
+    pub compressor_polytropic_head: PyQty,
+    /// the expander's `U/C/design_uc` at the solved speed.
+    #[pyo3(get)]
+    pub uc_ratio_expander: f64,
+    /// the compressor's Q/N ratio at the solved speed.
+    #[pyo3(get)]
+    pub qn_ratio_compressor: f64,
+    /// the IGV opening the machine reports - the held one, or the recomputed one.
+    #[pyo3(get)]
+    pub igv_opening: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTurboExpanderResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TurboExpanderResult(expander_outlet_n={:?}, expander_outlet_z={:?}, expander_outlet_p={:?}, expander_outlet_t={:?}, expander_outlet_h={:?}, compressor_outlet_n={:?}, compressor_outlet_z={:?}, compressor_outlet_p={:?}, compressor_outlet_t={:?}, compressor_outlet_h={:?}, speed={:?}, power_expander={:?}, power_compressor={:?}, expander_isentropic_efficiency={:?}, expander_design_isentropic_efficiency={:?}, compressor_polytropic_efficiency={:?}, compressor_polytropic_head={:?}, uc_ratio_expander={:?}, qn_ratio_compressor={:?}, igv_opening={:?}, {} warning(s))",
+            self.expander_outlet_n,
+            self.expander_outlet_z,
+            self.expander_outlet_p,
+            self.expander_outlet_t,
+            self.expander_outlet_h,
+            self.compressor_outlet_n,
+            self.compressor_outlet_z,
+            self.compressor_outlet_p,
+            self.compressor_outlet_t,
+            self.compressor_outlet_h,
+            self.speed,
+            self.power_expander,
+            self.power_compressor,
+            self.expander_isentropic_efficiency,
+            self.expander_design_isentropic_efficiency,
+            self.compressor_polytropic_efficiency,
+            self.compressor_polytropic_head,
+            self.uc_ratio_expander,
+            self.qn_ratio_compressor,
+            self.igv_opening,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::turbo_expander_compressor::TurboExpanderResult>
+    for PyTurboExpanderResult
+{
+    fn from(r: &azoth_process::models::turbo_expander_compressor::TurboExpanderResult) -> Self {
+        Self {
+            expander_outlet_n: PyQty {
+                magnitude_si: r.expander_outlet_n,
+                unit: "mol/s".to_string(),
+            },
+            expander_outlet_z: r.expander_outlet_z.clone(),
+            expander_outlet_p: PyQty {
+                magnitude_si: r.expander_outlet_p.value,
+                unit: "Pa".to_string(),
+            },
+            expander_outlet_t: PyQty {
+                magnitude_si: r.expander_outlet_t.value,
+                unit: "K".to_string(),
+            },
+            expander_outlet_h: PyQty {
+                magnitude_si: r.expander_outlet_h.value,
+                unit: "J/mol".to_string(),
+            },
+            compressor_outlet_n: PyQty {
+                magnitude_si: r.compressor_outlet_n,
+                unit: "mol/s".to_string(),
+            },
+            compressor_outlet_z: r.compressor_outlet_z.clone(),
+            compressor_outlet_p: PyQty {
+                magnitude_si: r.compressor_outlet_p.value,
+                unit: "Pa".to_string(),
+            },
+            compressor_outlet_t: PyQty {
+                magnitude_si: r.compressor_outlet_t.value,
+                unit: "K".to_string(),
+            },
+            compressor_outlet_h: PyQty {
+                magnitude_si: r.compressor_outlet_h.value,
+                unit: "J/mol".to_string(),
+            },
+            speed: r.speed,
+            power_expander: PyQty {
+                magnitude_si: r.power_expander.value,
+                unit: "W".to_string(),
+            },
+            power_compressor: PyQty {
+                magnitude_si: r.power_compressor.value,
+                unit: "W".to_string(),
+            },
+            expander_isentropic_efficiency: r.expander_isentropic_efficiency,
+            expander_design_isentropic_efficiency: r.expander_design_isentropic_efficiency,
+            compressor_polytropic_efficiency: r.compressor_polytropic_efficiency,
+            compressor_polytropic_head: PyQty {
+                magnitude_si: r.compressor_polytropic_head.value,
+                unit: "m".to_string(),
+            },
+            uc_ratio_expander: r.uc_ratio_expander,
+            qn_ratio_compressor: r.qn_ratio_compressor,
+            igv_opening: r.igv_opening,
             warnings: transport(&r.warnings),
         }
     }
@@ -16245,6 +21771,84 @@ impl From<&azoth_standards::results::Iso6976Result> for PyIso6976Result {
         }
     }
 }
+/// Result of `thermal.boiling_heat_transfer`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "BoilingHeatTransferResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyBoilingHeatTransferResult {
+    /// the Chen local coefficient at `vapor_quality`.
+    #[pyo3(get)]
+    pub chen_htc: PyQty,
+    /// the Gungor-Winterton local coefficient at `vapor_quality`.
+    #[pyo3(get)]
+    pub gungor_winterton_htc: PyQty,
+    /// the same coefficient with the horizontal stratified correction where it applies.
+    #[pyo3(get)]
+    pub gungor_winterton_corrected_htc: PyQty,
+    /// the Simpson's-rule average of the uncorrected coefficient over the range.
+    #[pyo3(get)]
+    pub average_htc: PyQty,
+    /// the Lockhart-Martinelli parameter at `vapor_quality`.
+    #[pyo3(get)]
+    pub martinelli_parameter: f64,
+    /// the Chen enhancement factor `F`.
+    #[pyo3(get)]
+    pub chen_enhancement_factor: f64,
+    /// the Chen suppression factor `S`.
+    #[pyo3(get)]
+    pub chen_suppression_factor: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyBoilingHeatTransferResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "BoilingHeatTransferResult(chen_htc={:?}, gungor_winterton_htc={:?}, gungor_winterton_corrected_htc={:?}, average_htc={:?}, martinelli_parameter={:?}, chen_enhancement_factor={:?}, chen_suppression_factor={:?}, {} warning(s))",
+            self.chen_htc,
+            self.gungor_winterton_htc,
+            self.gungor_winterton_corrected_htc,
+            self.average_htc,
+            self.martinelli_parameter,
+            self.chen_enhancement_factor,
+            self.chen_suppression_factor,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::BoilingHeatTransferResult> for PyBoilingHeatTransferResult {
+    fn from(r: &azoth_thermal::results::BoilingHeatTransferResult) -> Self {
+        Self {
+            chen_htc: PyQty {
+                magnitude_si: r.chen_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            gungor_winterton_htc: PyQty {
+                magnitude_si: r.gungor_winterton_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            gungor_winterton_corrected_htc: PyQty {
+                magnitude_si: r.gungor_winterton_corrected_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            average_htc: PyQty {
+                magnitude_si: r.average_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            martinelli_parameter: r.martinelli_parameter,
+            chen_enhancement_factor: r.chen_enhancement_factor,
+            chen_suppression_factor: r.chen_suppression_factor,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `thermal.conduction_plane_wall`, transported.
 #[pyclass(
     frozen,
@@ -16280,6 +21884,1472 @@ impl From<&azoth_thermal::results::ConductionPlaneWallResult> for PyConductionPl
                 magnitude_si: r.q.value,
                 unit: "W".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.fouling_model`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "FoulingModelResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFoulingModelResult {
+    /// the model's resistance at `time_hours`, in m**2*K/W: the fixed value, the Ebert-Panchal analytical approach, or the Kern-Seaton asymptote.
+    #[pyo3(get)]
+    pub fouling_resistance_at_time: f64,
+    /// the resistance after the Euler steps, in m**2*K/W; for Kern-Seaton it is the no-argument getter at the operating time.
+    #[pyo3(get)]
+    pub current_fouling_resistance: f64,
+    /// the model's asymptote in m**2*K/W: the fixed value, `Rf_max`, or the deposition over removal; `MAX_VALUE` when there is no removal.
+    #[pyo3(get)]
+    pub asymptotic_fouling_resistance: f64,
+    /// the wall temperature whose zero-resistance rate equals `threshold_rate`; zero outside the guards, `MAX_VALUE` when no wall exceeds the threshold.
+    #[pyo3(get)]
+    pub threshold_wall_temperature: PyQty,
+    /// The velocity at which the asymptote crosses the fixed resistance.
+    #[pyo3(get)]
+    pub threshold_velocity: PyQty,
+    /// the predicted time to `target_fouling_resistance`; `-1` when the target is at or beyond the asymptote, `0` for the fixed model.
+    #[pyo3(get)]
+    pub time_to_target: PyQty,
+    /// the time advanced by the Euler steps.
+    #[pyo3(get)]
+    pub operating_time: PyQty,
+    /// the Ebert-Panchal rate at the current resistance, in m**2*K/(W*h), which is zero when the wall temperature or Reynolds number is non-positive.
+    #[pyo3(get)]
+    pub fouling_rate: f64,
+    /// `rho*v*D/mu` of the stated conditions.
+    #[pyo3(get)]
+    pub reynolds_number: f64,
+    /// `f/8*rho*v**2`, using the Darcy friction factor.
+    #[pyo3(get)]
+    pub wall_shear_stress: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyFoulingModelResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FoulingModelResult(fouling_resistance_at_time={:?}, current_fouling_resistance={:?}, asymptotic_fouling_resistance={:?}, threshold_wall_temperature={:?}, threshold_velocity={:?}, time_to_target={:?}, operating_time={:?}, fouling_rate={:?}, reynolds_number={:?}, wall_shear_stress={:?}, {} warning(s))",
+            self.fouling_resistance_at_time,
+            self.current_fouling_resistance,
+            self.asymptotic_fouling_resistance,
+            self.threshold_wall_temperature,
+            self.threshold_velocity,
+            self.time_to_target,
+            self.operating_time,
+            self.fouling_rate,
+            self.reynolds_number,
+            self.wall_shear_stress,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::FoulingModelResult> for PyFoulingModelResult {
+    fn from(r: &azoth_thermal::results::FoulingModelResult) -> Self {
+        Self {
+            fouling_resistance_at_time: r.fouling_resistance_at_time,
+            current_fouling_resistance: r.current_fouling_resistance,
+            asymptotic_fouling_resistance: r.asymptotic_fouling_resistance,
+            threshold_wall_temperature: PyQty {
+                magnitude_si: r.threshold_wall_temperature.value,
+                unit: "K".to_string(),
+            },
+            threshold_velocity: PyQty {
+                magnitude_si: r.threshold_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            time_to_target: PyQty {
+                magnitude_si: r.time_to_target.value,
+                unit: "h".to_string(),
+            },
+            operating_time: PyQty {
+                magnitude_si: r.operating_time.value,
+                unit: "h".to_string(),
+            },
+            fouling_rate: r.fouling_rate,
+            reynolds_number: r.reynolds_number,
+            wall_shear_stress: PyQty {
+                magnitude_si: r.wall_shear_stress.value,
+                unit: "Pa".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.incremental_zone_analysis`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "IncrementalZoneAnalysisResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyIncrementalZoneAnalysisResult {
+    /// the number of zones rated.
+    #[pyo3(get)]
+    pub number_of_zones: f64,
+    /// the sum of the zone areas `duty/(U*LMTD)`.
+    #[pyo3(get)]
+    pub total_required_area: PyQty,
+    /// the sum of the zone duties.
+    #[pyo3(get)]
+    pub total_duty: PyQty,
+    /// `sum(U*A)/sum(A)`, or zero with no area.
+    #[pyo3(get)]
+    pub weighted_average_u: PyQty,
+    /// the sum of the zone tube-side drops.
+    #[pyo3(get)]
+    pub total_tube_side_pressure_drop: PyQty,
+    /// the sum of the zone shell-side drops.
+    #[pyo3(get)]
+    pub total_shell_side_pressure_drop: PyQty,
+    /// the smallest absolute hot-cold endpoint difference in any zone; `f64::MAX` with no zones.
+    #[pyo3(get)]
+    pub minimum_approach_temperature: PyQty,
+    /// one row per zone, in the input order.
+    #[pyo3(get)]
+    pub zones: Vec<PyIncrementalZoneRow>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyIncrementalZoneAnalysisResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "IncrementalZoneAnalysisResult(number_of_zones={:?}, total_required_area={:?}, total_duty={:?}, weighted_average_u={:?}, total_tube_side_pressure_drop={:?}, total_shell_side_pressure_drop={:?}, minimum_approach_temperature={:?}, zones={:?}, {} warning(s))",
+            self.number_of_zones,
+            self.total_required_area,
+            self.total_duty,
+            self.weighted_average_u,
+            self.total_tube_side_pressure_drop,
+            self.total_shell_side_pressure_drop,
+            self.minimum_approach_temperature,
+            self.zones,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::IncrementalZoneAnalysisResult>
+    for PyIncrementalZoneAnalysisResult
+{
+    fn from(r: &azoth_thermal::results::IncrementalZoneAnalysisResult) -> Self {
+        Self {
+            number_of_zones: r.number_of_zones,
+            total_required_area: PyQty {
+                magnitude_si: r.total_required_area.value,
+                unit: "m**2".to_string(),
+            },
+            total_duty: PyQty {
+                magnitude_si: r.total_duty.value,
+                unit: "W".to_string(),
+            },
+            weighted_average_u: PyQty {
+                magnitude_si: r.weighted_average_u.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            total_tube_side_pressure_drop: PyQty {
+                magnitude_si: r.total_tube_side_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            total_shell_side_pressure_drop: PyQty {
+                magnitude_si: r.total_shell_side_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            minimum_approach_temperature: PyQty {
+                magnitude_si: r.minimum_approach_temperature.value,
+                unit: "K".to_string(),
+            },
+            zones: r.zones.iter().map(PyIncrementalZoneRow::from).collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.lmtd_correction_factor`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "LmtdCorrectionFactorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyLmtdCorrectionFactorResult {
+    /// the capacity ratio `(Th_in - Th_out)/(Tc_out - Tc_in)`.
+    #[pyo3(get)]
+    pub r: f64,
+    /// the thermal effectiveness `(Tc_out - Tc_in)/(Th_in - Tc_in)`.
+    #[pyo3(get)]
+    pub p: f64,
+    /// the correction factor for the stated number of shell passes.
+    #[pyo3(get)]
+    pub ft: f64,
+    /// The correction factor for one shell pass.
+    #[pyo3(get)]
+    pub ft_1_shell_pass: f64,
+    /// The correction factor for two shell passes.
+    #[pyo3(get)]
+    pub ft_2_shell_passes: f64,
+    /// the first pass count from one to six whose correction factor reaches 0.75, or -1 when none does.
+    #[pyo3(get)]
+    pub required_shell_passes: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyLmtdCorrectionFactorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "LmtdCorrectionFactorResult(r={:?}, p={:?}, ft={:?}, ft_1_shell_pass={:?}, ft_2_shell_passes={:?}, required_shell_passes={:?}, {} warning(s))",
+            self.r,
+            self.p,
+            self.ft,
+            self.ft_1_shell_pass,
+            self.ft_2_shell_passes,
+            self.required_shell_passes,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::LmtdCorrectionFactorResult> for PyLmtdCorrectionFactorResult {
+    fn from(r: &azoth_thermal::results::LmtdCorrectionFactorResult) -> Self {
+        Self {
+            r: r.r,
+            p: r.p,
+            ft: r.ft,
+            ft_1_shell_pass: r.ft_1_shell_pass,
+            ft_2_shell_passes: r.ft_2_shell_passes,
+            required_shell_passes: r.required_shell_passes,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.shah_condensation`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ShahCondensationResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyShahCondensationResult {
+    /// the all-liquid Dittus-Boelter coefficient.
+    #[pyo3(get)]
+    pub liquid_only_htc: PyQty,
+    /// `G*D/mu_l`, the validity band's Reynolds number.
+    #[pyo3(get)]
+    pub liquid_only_reynolds: f64,
+    /// the Shah coefficient at `vapor_quality`.
+    #[pyo3(get)]
+    pub local_htc: PyQty,
+    /// the Simpson's-rule average over `quality_in` to `quality_out`.
+    #[pyo3(get)]
+    pub average_htc: PyQty,
+    /// the vertical-tube coefficient at `vapor_quality`.
+    #[pyo3(get)]
+    pub vertical_htc: PyQty,
+    /// whether the stated reduced pressure, liquid-only Reynolds number and mass flux are inside the correlation's validated bands.
+    #[pyo3(get)]
+    pub in_valid_range: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyShahCondensationResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ShahCondensationResult(liquid_only_htc={:?}, liquid_only_reynolds={:?}, local_htc={:?}, average_htc={:?}, vertical_htc={:?}, in_valid_range={:?}, {} warning(s))",
+            self.liquid_only_htc,
+            self.liquid_only_reynolds,
+            self.local_htc,
+            self.average_htc,
+            self.vertical_htc,
+            self.in_valid_range,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::ShahCondensationResult> for PyShahCondensationResult {
+    fn from(r: &azoth_thermal::results::ShahCondensationResult) -> Self {
+        Self {
+            liquid_only_htc: PyQty {
+                magnitude_si: r.liquid_only_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            liquid_only_reynolds: r.liquid_only_reynolds,
+            local_htc: PyQty {
+                magnitude_si: r.local_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            average_htc: PyQty {
+                magnitude_si: r.average_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            vertical_htc: PyQty {
+                magnitude_si: r.vertical_htc.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            in_valid_range: r.in_valid_range,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.shell_and_tube_design`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ShellAndTubeDesignResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyShellAndTubeDesignResult {
+    /// the designation, echoed.
+    #[pyo3(get)]
+    pub tema_designation: String,
+    /// The TEMA construction class.
+    #[pyo3(get)]
+    pub tema_class: String,
+    /// the bundle diameter plus the rear-head clearance, snapped to a standard shell size.
+    #[pyo3(get)]
+    pub shell_inside_diameter: PyQty,
+    /// the inside diameter plus twice the wall.
+    #[pyo3(get)]
+    pub shell_outside_diameter: PyQty,
+    /// The ASME circumferential-stress thickness, floored at the minimum and rounded to a plate thickness.
+    #[pyo3(get)]
+    pub shell_wall_thickness: PyQty,
+    /// the specification and grade, e.g. `ASME-II-A SA-516-70`.
+    #[pyo3(get)]
+    pub shell_material: String,
+    /// the grade, echoed.
+    #[pyo3(get)]
+    pub shell_material_grade: String,
+    /// the shell allowable stress after the temperature derating.
+    #[pyo3(get)]
+    pub shell_allowable_stress: PyQty,
+    /// the shell minimum yield strength from the table.
+    #[pyo3(get)]
+    pub shell_smys: PyQty,
+    /// the joint efficiency, echoed.
+    #[pyo3(get)]
+    pub shell_joint_efficiency: f64,
+    /// the area-derived tube count, rounded up to a multiple of the passes.
+    #[pyo3(get)]
+    pub tube_count: f64,
+    /// the standard tube outside diameter.
+    #[pyo3(get)]
+    pub tube_outer_diameter: PyQty,
+    /// The minimum tube wall thickness.
+    #[pyo3(get)]
+    pub tube_wall_thickness: PyQty,
+    /// the tube length, echoed.
+    #[pyo3(get)]
+    pub tube_length: PyQty,
+    /// the passes, echoed.
+    #[pyo3(get)]
+    pub tube_passes: f64,
+    /// `tube_outer_diameter * 1.25`.
+    #[pyo3(get)]
+    pub tube_pitch: PyQty,
+    /// The tube pitch pattern, e.g. `Triangular 30°`.
+    #[pyo3(get)]
+    pub tube_pitch_pattern: String,
+    /// the specification and grade of the tube material.
+    #[pyo3(get)]
+    pub tube_material: String,
+    /// the tube grade, echoed.
+    #[pyo3(get)]
+    pub tube_material_grade: String,
+    /// the tube allowable stress after the temperature derating.
+    #[pyo3(get)]
+    pub tube_allowable_stress: PyQty,
+    /// the tube material's conductivity from the table.
+    #[pyo3(get)]
+    pub tube_thermal_conductivity: PyQty,
+    /// The baffle type, e.g. `Single Segmental`.
+    #[pyo3(get)]
+    pub baffle_type: String,
+    /// `(tube_length - 2*spacing)/spacing` floored, at least one.
+    #[pyo3(get)]
+    pub baffle_count: f64,
+    /// 0.4 of the shell diameter, clamped by the TEMA minimum, the maximum and the unsupported span.
+    #[pyo3(get)]
+    pub baffle_spacing: PyQty,
+    /// The baffle cut, e.g. 0.25.
+    #[pyo3(get)]
+    pub baffle_cut: f64,
+    /// the required area, echoed.
+    #[pyo3(get)]
+    pub required_area: PyQty,
+    /// `tube_count * pi * d_o * L`.
+    #[pyo3(get)]
+    pub actual_area: PyQty,
+    /// `(actual - required)/required`.
+    #[pyo3(get)]
+    pub area_margin: f64,
+    /// The UHX-13 tubesheet thickness, floored at the minimum.
+    #[pyo3(get)]
+    pub tubesheet_thickness_uhx: PyQty,
+    /// the shell MAWP per UG-27.
+    #[pyo3(get)]
+    pub mawp_shell_side: PyQty,
+    /// the tube MAWP per UG-27.
+    #[pyo3(get)]
+    pub mawp_tube_side: PyQty,
+    /// `1.3 * MAWP * S(20 C)/S(design)`.
+    #[pyo3(get)]
+    pub hydro_test_pressure_shell: PyQty,
+    /// the same on the tube side.
+    #[pyo3(get)]
+    pub hydro_test_pressure_tube: PyQty,
+    /// The available reinforcement area per UG-37.
+    #[pyo3(get)]
+    pub nozzle_reinforcement_area: PyQty,
+    /// whether the available area meets the required one.
+    #[pyo3(get)]
+    pub nozzle_reinforcement_adequate: bool,
+    /// whether the H2S partial pressure exceeds the 0.003 bar threshold.
+    #[pyo3(get)]
+    pub sour_service_required: bool,
+    /// the stated partial pressure, echoed when the assessment runs.
+    #[pyo3(get)]
+    pub h2s_partial_pressure: Option<PyQty>,
+    /// Whether the shell material meets NACE.
+    #[pyo3(get)]
+    pub shell_nace_compliant: bool,
+    /// the tube material's compliance flag, likewise.
+    #[pyo3(get)]
+    pub tube_nace_compliant: bool,
+    /// The shell hardness in HV.
+    #[pyo3(get)]
+    pub shell_max_hardness: f64,
+    /// the tube hardness in HV, likewise.
+    #[pyo3(get)]
+    pub tube_max_hardness: f64,
+    /// The NACE assessment's issue strings.
+    #[pyo3(get)]
+    pub nace_issues: Vec<PyNaceIssueRow>,
+    /// The standards the design pipeline applied.
+    #[pyo3(get)]
+    pub applied_standards: Vec<PyAppliedStandardRow>,
+    /// the thermal block's tube-side coefficient.
+    #[pyo3(get)]
+    pub tube_side_heat_transfer_coefficient: Option<PyQty>,
+    /// the thermal block's shell-side coefficient.
+    #[pyo3(get)]
+    pub shell_side_heat_transfer_coefficient: Option<PyQty>,
+    /// the thermal block's overall coefficient.
+    #[pyo3(get)]
+    pub overall_heat_transfer_coefficient: Option<PyQty>,
+    /// the thermal block's tube-side drop.
+    #[pyo3(get)]
+    pub tube_side_pressure_drop: Option<PyQty>,
+    /// the thermal block's shell-side drop.
+    #[pyo3(get)]
+    pub shell_side_pressure_drop: Option<PyQty>,
+    /// the thermal block's tube-side velocity.
+    #[pyo3(get)]
+    pub tube_side_velocity: Option<PyQty>,
+    /// the thermal block's shell-side velocity.
+    #[pyo3(get)]
+    pub shell_side_velocity: Option<PyQty>,
+    /// the thermal block's tube-side Reynolds number.
+    #[pyo3(get)]
+    pub tube_side_reynolds: Option<f64>,
+    /// the thermal block's shell-side Reynolds number.
+    #[pyo3(get)]
+    pub shell_side_reynolds: Option<f64>,
+    /// the tube flow diameter the thermal block read.
+    #[pyo3(get)]
+    pub effective_tube_inside_diameter: Option<PyQty>,
+    /// the outside area the thermal block read.
+    #[pyo3(get)]
+    pub outside_heat_transfer_area: Option<PyQty>,
+    /// the deposit resistance on the outside area; zero without a deposit.
+    #[pyo3(get)]
+    pub tube_fouling_layer_resistance_outside: Option<f64>,
+    /// the Bell-Delaware baffle-cut factor.
+    #[pyo3(get)]
+    pub jc: Option<f64>,
+    /// the Bell-Delaware leakage factor.
+    #[pyo3(get)]
+    pub jl: Option<f64>,
+    /// the Bell-Delaware bypass factor.
+    #[pyo3(get)]
+    pub jb: Option<f64>,
+    /// the Bell-Delaware spacing factor, 1.0.
+    #[pyo3(get)]
+    pub js: Option<f64>,
+    /// the Bell-Delaware adverse-gradient factor.
+    #[pyo3(get)]
+    pub jr: Option<f64>,
+    /// whether the vibration screen passed.
+    #[pyo3(get)]
+    pub passed: Option<bool>,
+    /// the first natural frequency.
+    #[pyo3(get)]
+    pub natural_frequency: Option<PyQty>,
+    /// the Strouhal shedding frequency.
+    #[pyo3(get)]
+    pub vortex_shedding_frequency: Option<PyQty>,
+    /// `f_vs/f_n`.
+    #[pyo3(get)]
+    pub vortex_shedding_ratio: Option<f64>,
+    /// whether the shedding ratio is inside the 0.8-1.2 band.
+    #[pyo3(get)]
+    pub vortex_shedding_critical: Option<bool>,
+    /// Connors' critical crossflow velocity.
+    #[pyo3(get)]
+    pub critical_velocity: Option<PyQty>,
+    /// the crossflow velocity over the safety-factored critical one.
+    #[pyo3(get)]
+    pub velocity_ratio: Option<f64>,
+    /// whether the velocity ratio exceeds one.
+    #[pyo3(get)]
+    pub fluid_elastic_critical: Option<bool>,
+    /// the shell acoustic frequency.
+    #[pyo3(get)]
+    pub acoustic_frequency: Option<PyQty>,
+    /// `f_vs/f_ac`.
+    #[pyo3(get)]
+    pub acoustic_ratio: Option<f64>,
+    /// whether the acoustic ratio is inside the 0.8-1.2 band.
+    #[pyo3(get)]
+    pub acoustic_critical: Option<bool>,
+    /// the shell metal mass.
+    #[pyo3(get)]
+    pub shell_weight: PyQty,
+    /// the tube metal mass.
+    #[pyo3(get)]
+    pub tube_weight: PyQty,
+    /// the tubesheet mass, one sheet for a U-tube and two otherwise.
+    #[pyo3(get)]
+    pub tubesheet_weight: PyQty,
+    /// the two heads' mass as hemispheres.
+    #[pyo3(get)]
+    pub head_weight: PyQty,
+    /// the baffle mass at 6.35 mm.
+    #[pyo3(get)]
+    pub baffle_weight: PyQty,
+    /// the five component masses.
+    #[pyo3(get)]
+    pub total_dry_weight: PyQty,
+    /// the dry mass plus the shell and tube volumes of water.
+    #[pyo3(get)]
+    pub operating_weight: PyQty,
+    /// the material cost in USD, declared dimensionless because the vocabulary has no currency.
+    #[pyo3(get)]
+    pub material_cost: f64,
+    /// the fabrication cost in USD.
+    #[pyo3(get)]
+    pub fabrication_cost: f64,
+    /// material plus fabrication, in USD.
+    #[pyo3(get)]
+    pub total_cost: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyShellAndTubeDesignResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ShellAndTubeDesignResult(tema_designation={:?}, tema_class={:?}, shell_inside_diameter={:?}, shell_outside_diameter={:?}, shell_wall_thickness={:?}, shell_material={:?}, shell_material_grade={:?}, shell_allowable_stress={:?}, shell_smys={:?}, shell_joint_efficiency={:?}, tube_count={:?}, tube_outer_diameter={:?}, tube_wall_thickness={:?}, tube_length={:?}, tube_passes={:?}, tube_pitch={:?}, tube_pitch_pattern={:?}, tube_material={:?}, tube_material_grade={:?}, tube_allowable_stress={:?}, tube_thermal_conductivity={:?}, baffle_type={:?}, baffle_count={:?}, baffle_spacing={:?}, baffle_cut={:?}, required_area={:?}, actual_area={:?}, area_margin={:?}, tubesheet_thickness_uhx={:?}, mawp_shell_side={:?}, mawp_tube_side={:?}, hydro_test_pressure_shell={:?}, hydro_test_pressure_tube={:?}, nozzle_reinforcement_area={:?}, nozzle_reinforcement_adequate={:?}, sour_service_required={:?}, h2s_partial_pressure={:?}, shell_nace_compliant={:?}, tube_nace_compliant={:?}, shell_max_hardness={:?}, tube_max_hardness={:?}, nace_issues={:?}, applied_standards={:?}, tube_side_heat_transfer_coefficient={:?}, shell_side_heat_transfer_coefficient={:?}, overall_heat_transfer_coefficient={:?}, tube_side_pressure_drop={:?}, shell_side_pressure_drop={:?}, tube_side_velocity={:?}, shell_side_velocity={:?}, tube_side_reynolds={:?}, shell_side_reynolds={:?}, effective_tube_inside_diameter={:?}, outside_heat_transfer_area={:?}, tube_fouling_layer_resistance_outside={:?}, jc={:?}, jl={:?}, jb={:?}, js={:?}, jr={:?}, passed={:?}, natural_frequency={:?}, vortex_shedding_frequency={:?}, vortex_shedding_ratio={:?}, vortex_shedding_critical={:?}, critical_velocity={:?}, velocity_ratio={:?}, fluid_elastic_critical={:?}, acoustic_frequency={:?}, acoustic_ratio={:?}, acoustic_critical={:?}, shell_weight={:?}, tube_weight={:?}, tubesheet_weight={:?}, head_weight={:?}, baffle_weight={:?}, total_dry_weight={:?}, operating_weight={:?}, material_cost={:?}, fabrication_cost={:?}, total_cost={:?}, {} warning(s))",
+            self.tema_designation,
+            self.tema_class,
+            self.shell_inside_diameter,
+            self.shell_outside_diameter,
+            self.shell_wall_thickness,
+            self.shell_material,
+            self.shell_material_grade,
+            self.shell_allowable_stress,
+            self.shell_smys,
+            self.shell_joint_efficiency,
+            self.tube_count,
+            self.tube_outer_diameter,
+            self.tube_wall_thickness,
+            self.tube_length,
+            self.tube_passes,
+            self.tube_pitch,
+            self.tube_pitch_pattern,
+            self.tube_material,
+            self.tube_material_grade,
+            self.tube_allowable_stress,
+            self.tube_thermal_conductivity,
+            self.baffle_type,
+            self.baffle_count,
+            self.baffle_spacing,
+            self.baffle_cut,
+            self.required_area,
+            self.actual_area,
+            self.area_margin,
+            self.tubesheet_thickness_uhx,
+            self.mawp_shell_side,
+            self.mawp_tube_side,
+            self.hydro_test_pressure_shell,
+            self.hydro_test_pressure_tube,
+            self.nozzle_reinforcement_area,
+            self.nozzle_reinforcement_adequate,
+            self.sour_service_required,
+            self.h2s_partial_pressure,
+            self.shell_nace_compliant,
+            self.tube_nace_compliant,
+            self.shell_max_hardness,
+            self.tube_max_hardness,
+            self.nace_issues,
+            self.applied_standards,
+            self.tube_side_heat_transfer_coefficient,
+            self.shell_side_heat_transfer_coefficient,
+            self.overall_heat_transfer_coefficient,
+            self.tube_side_pressure_drop,
+            self.shell_side_pressure_drop,
+            self.tube_side_velocity,
+            self.shell_side_velocity,
+            self.tube_side_reynolds,
+            self.shell_side_reynolds,
+            self.effective_tube_inside_diameter,
+            self.outside_heat_transfer_area,
+            self.tube_fouling_layer_resistance_outside,
+            self.jc,
+            self.jl,
+            self.jb,
+            self.js,
+            self.jr,
+            self.passed,
+            self.natural_frequency,
+            self.vortex_shedding_frequency,
+            self.vortex_shedding_ratio,
+            self.vortex_shedding_critical,
+            self.critical_velocity,
+            self.velocity_ratio,
+            self.fluid_elastic_critical,
+            self.acoustic_frequency,
+            self.acoustic_ratio,
+            self.acoustic_critical,
+            self.shell_weight,
+            self.tube_weight,
+            self.tubesheet_weight,
+            self.head_weight,
+            self.baffle_weight,
+            self.total_dry_weight,
+            self.operating_weight,
+            self.material_cost,
+            self.fabrication_cost,
+            self.total_cost,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::ShellAndTubeDesignResult> for PyShellAndTubeDesignResult {
+    fn from(r: &azoth_thermal::results::ShellAndTubeDesignResult) -> Self {
+        Self {
+            tema_designation: r.tema_designation.clone(),
+            tema_class: r.tema_class.clone(),
+            shell_inside_diameter: PyQty {
+                magnitude_si: r.shell_inside_diameter.value,
+                unit: "mm".to_string(),
+            },
+            shell_outside_diameter: PyQty {
+                magnitude_si: r.shell_outside_diameter.value,
+                unit: "mm".to_string(),
+            },
+            shell_wall_thickness: PyQty {
+                magnitude_si: r.shell_wall_thickness.value,
+                unit: "mm".to_string(),
+            },
+            shell_material: r.shell_material.clone(),
+            shell_material_grade: r.shell_material_grade.clone(),
+            shell_allowable_stress: PyQty {
+                magnitude_si: r.shell_allowable_stress.value,
+                unit: "MPa".to_string(),
+            },
+            shell_smys: PyQty {
+                magnitude_si: r.shell_smys.value,
+                unit: "MPa".to_string(),
+            },
+            shell_joint_efficiency: r.shell_joint_efficiency,
+            tube_count: r.tube_count,
+            tube_outer_diameter: PyQty {
+                magnitude_si: r.tube_outer_diameter.value,
+                unit: "mm".to_string(),
+            },
+            tube_wall_thickness: PyQty {
+                magnitude_si: r.tube_wall_thickness.value,
+                unit: "mm".to_string(),
+            },
+            tube_length: PyQty {
+                magnitude_si: r.tube_length.value,
+                unit: "mm".to_string(),
+            },
+            tube_passes: r.tube_passes,
+            tube_pitch: PyQty {
+                magnitude_si: r.tube_pitch.value,
+                unit: "mm".to_string(),
+            },
+            tube_pitch_pattern: r.tube_pitch_pattern.clone(),
+            tube_material: r.tube_material.clone(),
+            tube_material_grade: r.tube_material_grade.clone(),
+            tube_allowable_stress: PyQty {
+                magnitude_si: r.tube_allowable_stress.value,
+                unit: "MPa".to_string(),
+            },
+            tube_thermal_conductivity: PyQty {
+                magnitude_si: r.tube_thermal_conductivity.value,
+                unit: "W/(m*K)".to_string(),
+            },
+            baffle_type: r.baffle_type.clone(),
+            baffle_count: r.baffle_count,
+            baffle_spacing: PyQty {
+                magnitude_si: r.baffle_spacing.value,
+                unit: "mm".to_string(),
+            },
+            baffle_cut: r.baffle_cut,
+            required_area: PyQty {
+                magnitude_si: r.required_area.value,
+                unit: "m**2".to_string(),
+            },
+            actual_area: PyQty {
+                magnitude_si: r.actual_area.value,
+                unit: "m**2".to_string(),
+            },
+            area_margin: r.area_margin,
+            tubesheet_thickness_uhx: PyQty {
+                magnitude_si: r.tubesheet_thickness_uhx.value,
+                unit: "mm".to_string(),
+            },
+            mawp_shell_side: PyQty {
+                magnitude_si: r.mawp_shell_side.value,
+                unit: "bar".to_string(),
+            },
+            mawp_tube_side: PyQty {
+                magnitude_si: r.mawp_tube_side.value,
+                unit: "bar".to_string(),
+            },
+            hydro_test_pressure_shell: PyQty {
+                magnitude_si: r.hydro_test_pressure_shell.value,
+                unit: "bar".to_string(),
+            },
+            hydro_test_pressure_tube: PyQty {
+                magnitude_si: r.hydro_test_pressure_tube.value,
+                unit: "bar".to_string(),
+            },
+            nozzle_reinforcement_area: PyQty {
+                magnitude_si: r.nozzle_reinforcement_area.value,
+                unit: "m**2".to_string(),
+            },
+            nozzle_reinforcement_adequate: r.nozzle_reinforcement_adequate,
+            sour_service_required: r.sour_service_required,
+            h2s_partial_pressure: r.h2s_partial_pressure.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "bar".to_string(),
+            }),
+            shell_nace_compliant: r.shell_nace_compliant,
+            tube_nace_compliant: r.tube_nace_compliant,
+            shell_max_hardness: r.shell_max_hardness,
+            tube_max_hardness: r.tube_max_hardness,
+            nace_issues: r.nace_issues.iter().map(PyNaceIssueRow::from).collect(),
+            applied_standards: r
+                .applied_standards
+                .iter()
+                .map(PyAppliedStandardRow::from)
+                .collect(),
+            tube_side_heat_transfer_coefficient: r.tube_side_heat_transfer_coefficient.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "W/(m**2*K)".to_string(),
+                }
+            }),
+            shell_side_heat_transfer_coefficient: r.shell_side_heat_transfer_coefficient.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "W/(m**2*K)".to_string(),
+                }
+            }),
+            overall_heat_transfer_coefficient: r.overall_heat_transfer_coefficient.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/(m**2*K)".to_string(),
+            }),
+            tube_side_pressure_drop: r.tube_side_pressure_drop.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            shell_side_pressure_drop: r.shell_side_pressure_drop.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            tube_side_velocity: r.tube_side_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            shell_side_velocity: r.shell_side_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            tube_side_reynolds: r.tube_side_reynolds,
+            shell_side_reynolds: r.shell_side_reynolds,
+            effective_tube_inside_diameter: r.effective_tube_inside_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            outside_heat_transfer_area: r.outside_heat_transfer_area.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**2".to_string(),
+            }),
+            tube_fouling_layer_resistance_outside: r.tube_fouling_layer_resistance_outside,
+            jc: r.jc,
+            jl: r.jl,
+            jb: r.jb,
+            js: r.js,
+            jr: r.jr,
+            passed: r.passed,
+            natural_frequency: r.natural_frequency.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "1/s".to_string(),
+            }),
+            vortex_shedding_frequency: r.vortex_shedding_frequency.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "1/s".to_string(),
+            }),
+            vortex_shedding_ratio: r.vortex_shedding_ratio,
+            vortex_shedding_critical: r.vortex_shedding_critical,
+            critical_velocity: r.critical_velocity.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            velocity_ratio: r.velocity_ratio,
+            fluid_elastic_critical: r.fluid_elastic_critical,
+            acoustic_frequency: r.acoustic_frequency.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "1/s".to_string(),
+            }),
+            acoustic_ratio: r.acoustic_ratio,
+            acoustic_critical: r.acoustic_critical,
+            shell_weight: PyQty {
+                magnitude_si: r.shell_weight,
+                unit: "kg".to_string(),
+            },
+            tube_weight: PyQty {
+                magnitude_si: r.tube_weight,
+                unit: "kg".to_string(),
+            },
+            tubesheet_weight: PyQty {
+                magnitude_si: r.tubesheet_weight,
+                unit: "kg".to_string(),
+            },
+            head_weight: PyQty {
+                magnitude_si: r.head_weight,
+                unit: "kg".to_string(),
+            },
+            baffle_weight: PyQty {
+                magnitude_si: r.baffle_weight,
+                unit: "kg".to_string(),
+            },
+            total_dry_weight: PyQty {
+                magnitude_si: r.total_dry_weight,
+                unit: "kg".to_string(),
+            },
+            operating_weight: PyQty {
+                magnitude_si: r.operating_weight,
+                unit: "kg".to_string(),
+            },
+            material_cost: r.material_cost,
+            fabrication_cost: r.fabrication_cost,
+            total_cost: r.total_cost,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.shell_and_tube_rating`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ShellAndTubeRatingResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyShellAndTubeRatingResult {
+    /// the tube-side film coefficient.
+    #[pyo3(get)]
+    pub tube_side_heat_transfer_coefficient: PyQty,
+    /// the shell-side film coefficient after the Bell-Delaware factors, or the Kern value.
+    #[pyo3(get)]
+    pub shell_side_heat_transfer_coefficient: PyQty,
+    /// the overall coefficient on the outside area, from the five resistances.
+    #[pyo3(get)]
+    pub overall_heat_transfer_coefficient: PyQty,
+    /// the tube-side pressure drop over all passes, friction plus return losses.
+    #[pyo3(get)]
+    pub tube_side_pressure_drop: PyQty,
+    /// the shell-side pressure drop: Kern's, or Bell-Delaware's crossflow, window and end-zone terms.
+    #[pyo3(get)]
+    pub shell_side_pressure_drop: PyQty,
+    /// the tube-side velocity in one pass.
+    #[pyo3(get)]
+    pub tube_side_velocity: PyQty,
+    /// the shell-side crossflow velocity.
+    #[pyo3(get)]
+    pub shell_side_velocity: PyQty,
+    /// the tube-side Reynolds number on the effective flow diameter.
+    #[pyo3(get)]
+    pub tube_side_reynolds: f64,
+    /// the shell-side Reynolds number; Kern uses the equivalent diameter, Bell-Delaware the tube outside diameter.
+    #[pyo3(get)]
+    pub shell_side_reynolds: f64,
+    /// `tube_inside_diameter - 2*deposit_thickness`, the flow diameter.
+    #[pyo3(get)]
+    pub effective_tube_inside_diameter: PyQty,
+    /// `pi * tube_outside_diameter * tube_length * tube_count`.
+    #[pyo3(get)]
+    pub outside_heat_transfer_area: PyQty,
+    /// the deposit's cylindrical resistance in m**2*K/W on the outside area; zero without a layer.
+    #[pyo3(get)]
+    pub tube_fouling_layer_resistance_outside: f64,
+    /// the baffle-cut correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jc: f64,
+    /// the baffle-leakage correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jl: f64,
+    /// the bundle-bypass correction factor; 1.0 on the Kern path.
+    #[pyo3(get)]
+    pub jb: f64,
+    /// The unequal-spacing correction factor; 1.0 on the Kern path and 1.0 here.
+    #[pyo3(get)]
+    pub js: f64,
+    /// the adverse-temperature-gradient correction factor; 1.0 above Re 100.
+    #[pyo3(get)]
+    pub jr: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyShellAndTubeRatingResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ShellAndTubeRatingResult(tube_side_heat_transfer_coefficient={:?}, shell_side_heat_transfer_coefficient={:?}, overall_heat_transfer_coefficient={:?}, tube_side_pressure_drop={:?}, shell_side_pressure_drop={:?}, tube_side_velocity={:?}, shell_side_velocity={:?}, tube_side_reynolds={:?}, shell_side_reynolds={:?}, effective_tube_inside_diameter={:?}, outside_heat_transfer_area={:?}, tube_fouling_layer_resistance_outside={:?}, jc={:?}, jl={:?}, jb={:?}, js={:?}, jr={:?}, {} warning(s))",
+            self.tube_side_heat_transfer_coefficient,
+            self.shell_side_heat_transfer_coefficient,
+            self.overall_heat_transfer_coefficient,
+            self.tube_side_pressure_drop,
+            self.shell_side_pressure_drop,
+            self.tube_side_velocity,
+            self.shell_side_velocity,
+            self.tube_side_reynolds,
+            self.shell_side_reynolds,
+            self.effective_tube_inside_diameter,
+            self.outside_heat_transfer_area,
+            self.tube_fouling_layer_resistance_outside,
+            self.jc,
+            self.jl,
+            self.jb,
+            self.js,
+            self.jr,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::ShellAndTubeRatingResult> for PyShellAndTubeRatingResult {
+    fn from(r: &azoth_thermal::results::ShellAndTubeRatingResult) -> Self {
+        Self {
+            tube_side_heat_transfer_coefficient: PyQty {
+                magnitude_si: r.tube_side_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            shell_side_heat_transfer_coefficient: PyQty {
+                magnitude_si: r.shell_side_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            overall_heat_transfer_coefficient: PyQty {
+                magnitude_si: r.overall_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            tube_side_pressure_drop: PyQty {
+                magnitude_si: r.tube_side_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            shell_side_pressure_drop: PyQty {
+                magnitude_si: r.shell_side_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            tube_side_velocity: PyQty {
+                magnitude_si: r.tube_side_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            shell_side_velocity: PyQty {
+                magnitude_si: r.shell_side_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            tube_side_reynolds: r.tube_side_reynolds,
+            shell_side_reynolds: r.shell_side_reynolds,
+            effective_tube_inside_diameter: PyQty {
+                magnitude_si: r.effective_tube_inside_diameter.value,
+                unit: "m".to_string(),
+            },
+            outside_heat_transfer_area: PyQty {
+                magnitude_si: r.outside_heat_transfer_area.value,
+                unit: "m**2".to_string(),
+            },
+            tube_fouling_layer_resistance_outside: r.tube_fouling_layer_resistance_outside,
+            jc: r.jc,
+            jl: r.jl,
+            jb: r.jb,
+            js: r.js,
+            jr: r.jr,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.shell_and_tube_vibration`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ShellAndTubeVibrationResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyShellAndTubeVibrationResult {
+    /// the first natural frequency of the pinned span, Hz.
+    #[pyo3(get)]
+    pub natural_frequency: PyQty,
+    /// the Strouhal shedding frequency, Hz.
+    #[pyo3(get)]
+    pub vortex_shedding_frequency: PyQty,
+    /// `f_vs / f_n`; critical when strictly between 0.8 and 1.2.
+    #[pyo3(get)]
+    pub vortex_shedding_ratio: f64,
+    /// whether the shedding ratio is inside the 0.8-1.2 band.
+    #[pyo3(get)]
+    pub vortex_shedding_critical: bool,
+    /// Connors' critical crossflow velocity for fluid-elastic instability.
+    #[pyo3(get)]
+    pub critical_velocity: PyQty,
+    /// `V / (0.5 * V_crit)`; critical above one.
+    #[pyo3(get)]
+    pub velocity_ratio: f64,
+    /// whether the velocity ratio exceeds one.
+    #[pyo3(get)]
+    pub fluid_elastic_critical: bool,
+    /// the first acoustic resonance frequency of the shell cavity, Hz.
+    #[pyo3(get)]
+    pub acoustic_frequency: PyQty,
+    /// `f_vs / f_ac`; critical when strictly between 0.8 and 1.2.
+    #[pyo3(get)]
+    pub acoustic_ratio: f64,
+    /// whether the acoustic ratio is inside the 0.8-1.2 band.
+    #[pyo3(get)]
+    pub acoustic_critical: bool,
+    /// true only when none of the three mechanisms is critical.
+    #[pyo3(get)]
+    pub passed: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyShellAndTubeVibrationResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ShellAndTubeVibrationResult(natural_frequency={:?}, vortex_shedding_frequency={:?}, vortex_shedding_ratio={:?}, vortex_shedding_critical={:?}, critical_velocity={:?}, velocity_ratio={:?}, fluid_elastic_critical={:?}, acoustic_frequency={:?}, acoustic_ratio={:?}, acoustic_critical={:?}, passed={:?}, {} warning(s))",
+            self.natural_frequency,
+            self.vortex_shedding_frequency,
+            self.vortex_shedding_ratio,
+            self.vortex_shedding_critical,
+            self.critical_velocity,
+            self.velocity_ratio,
+            self.fluid_elastic_critical,
+            self.acoustic_frequency,
+            self.acoustic_ratio,
+            self.acoustic_critical,
+            self.passed,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::ShellAndTubeVibrationResult> for PyShellAndTubeVibrationResult {
+    fn from(r: &azoth_thermal::results::ShellAndTubeVibrationResult) -> Self {
+        Self {
+            natural_frequency: PyQty {
+                magnitude_si: r.natural_frequency.value,
+                unit: "1/s".to_string(),
+            },
+            vortex_shedding_frequency: PyQty {
+                magnitude_si: r.vortex_shedding_frequency.value,
+                unit: "1/s".to_string(),
+            },
+            vortex_shedding_ratio: r.vortex_shedding_ratio,
+            vortex_shedding_critical: r.vortex_shedding_critical,
+            critical_velocity: PyQty {
+                magnitude_si: r.critical_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            velocity_ratio: r.velocity_ratio,
+            fluid_elastic_critical: r.fluid_elastic_critical,
+            acoustic_frequency: PyQty {
+                magnitude_si: r.acoustic_frequency.value,
+                unit: "1/s".to_string(),
+            },
+            acoustic_ratio: r.acoustic_ratio,
+            acoustic_critical: r.acoustic_critical,
+            passed: r.passed,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.tema_standard`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TemaStandardResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTemaStandardResult {
+    /// the configuration's relative cost factor, one for the plainest head, shell and rear.
+    #[pyo3(get)]
+    pub configuration_cost_factor: f64,
+    /// the shell letter's pressure drop factor relative to an `E` shell.
+    #[pyo3(get)]
+    pub shell_pressure_drop_factor: f64,
+    /// whether the rear head allows the bundle to be removed.
+    #[pyo3(get)]
+    pub bundle_removable: bool,
+    /// Whether the rear head handles thermal expansion.
+    #[pyo3(get)]
+    pub good_thermal_expansion: bool,
+    /// The construction class's cost factor relative to class `B`.
+    #[pyo3(get)]
+    pub class_cost_factor: f64,
+    /// The minimum tube wall thickness for the class.
+    #[pyo3(get)]
+    pub min_tube_wall_thickness: PyQty,
+    /// The minimum corrosion allowance for the class.
+    #[pyo3(get)]
+    pub min_corrosion_allowance: PyQty,
+    /// the standard tube size's outside diameter.
+    #[pyo3(get)]
+    pub tube_outer_diameter: PyQty,
+    /// the same diameter in inches, which is how the size is named.
+    #[pyo3(get)]
+    pub tube_outer_diameter_inch: PyQty,
+    /// the layout angle in degrees: 30, 60, 90 or 45.
+    #[pyo3(get)]
+    pub layout_angle: f64,
+    /// the pattern's minimum pitch over tube diameter.
+    #[pyo3(get)]
+    pub min_pitch_ratio: f64,
+    /// the pattern's heat-transfer factor relative to square 90.
+    #[pyo3(get)]
+    pub pitch_heat_transfer_factor: f64,
+    /// the baffle type's heat-transfer factor relative to a single segmental.
+    #[pyo3(get)]
+    pub baffle_heat_transfer_factor: f64,
+    /// the baffle type's pressure-drop factor relative to a single segmental.
+    #[pyo3(get)]
+    pub baffle_pressure_drop_factor: f64,
+    /// `tube_outer_diameter * min_pitch_ratio`.
+    #[pyo3(get)]
+    pub min_tube_pitch: PyQty,
+    /// the truncated bundle-area estimate at the stated pitch and passes.
+    #[pyo3(get)]
+    pub estimated_tube_count: f64,
+    /// The maximum unsupported tube span for the diameter band and material.
+    #[pyo3(get)]
+    pub max_unsupported_span: PyQty,
+    /// The greater of one fifth of the shell diameter and the minimum baffle spacing.
+    #[pyo3(get)]
+    pub min_baffle_spacing: PyQty,
+    /// the shell inside diameter.
+    #[pyo3(get)]
+    pub max_baffle_spacing: PyQty,
+    /// The recommended TEMA designation.
+    #[pyo3(get)]
+    pub recommended_designation: String,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTemaStandardResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TemaStandardResult(configuration_cost_factor={:?}, shell_pressure_drop_factor={:?}, bundle_removable={:?}, good_thermal_expansion={:?}, class_cost_factor={:?}, min_tube_wall_thickness={:?}, min_corrosion_allowance={:?}, tube_outer_diameter={:?}, tube_outer_diameter_inch={:?}, layout_angle={:?}, min_pitch_ratio={:?}, pitch_heat_transfer_factor={:?}, baffle_heat_transfer_factor={:?}, baffle_pressure_drop_factor={:?}, min_tube_pitch={:?}, estimated_tube_count={:?}, max_unsupported_span={:?}, min_baffle_spacing={:?}, max_baffle_spacing={:?}, recommended_designation={:?}, {} warning(s))",
+            self.configuration_cost_factor,
+            self.shell_pressure_drop_factor,
+            self.bundle_removable,
+            self.good_thermal_expansion,
+            self.class_cost_factor,
+            self.min_tube_wall_thickness,
+            self.min_corrosion_allowance,
+            self.tube_outer_diameter,
+            self.tube_outer_diameter_inch,
+            self.layout_angle,
+            self.min_pitch_ratio,
+            self.pitch_heat_transfer_factor,
+            self.baffle_heat_transfer_factor,
+            self.baffle_pressure_drop_factor,
+            self.min_tube_pitch,
+            self.estimated_tube_count,
+            self.max_unsupported_span,
+            self.min_baffle_spacing,
+            self.max_baffle_spacing,
+            self.recommended_designation,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::TemaStandardResult> for PyTemaStandardResult {
+    fn from(r: &azoth_thermal::results::TemaStandardResult) -> Self {
+        Self {
+            configuration_cost_factor: r.configuration_cost_factor,
+            shell_pressure_drop_factor: r.shell_pressure_drop_factor,
+            bundle_removable: r.bundle_removable,
+            good_thermal_expansion: r.good_thermal_expansion,
+            class_cost_factor: r.class_cost_factor,
+            min_tube_wall_thickness: PyQty {
+                magnitude_si: r.min_tube_wall_thickness.value,
+                unit: "m".to_string(),
+            },
+            min_corrosion_allowance: PyQty {
+                magnitude_si: r.min_corrosion_allowance.value,
+                unit: "m".to_string(),
+            },
+            tube_outer_diameter: PyQty {
+                magnitude_si: r.tube_outer_diameter.value,
+                unit: "m".to_string(),
+            },
+            tube_outer_diameter_inch: PyQty {
+                magnitude_si: r.tube_outer_diameter_inch.value,
+                unit: "in".to_string(),
+            },
+            layout_angle: r.layout_angle,
+            min_pitch_ratio: r.min_pitch_ratio,
+            pitch_heat_transfer_factor: r.pitch_heat_transfer_factor,
+            baffle_heat_transfer_factor: r.baffle_heat_transfer_factor,
+            baffle_pressure_drop_factor: r.baffle_pressure_drop_factor,
+            min_tube_pitch: PyQty {
+                magnitude_si: r.min_tube_pitch.value,
+                unit: "m".to_string(),
+            },
+            estimated_tube_count: r.estimated_tube_count,
+            max_unsupported_span: PyQty {
+                magnitude_si: r.max_unsupported_span.value,
+                unit: "m".to_string(),
+            },
+            min_baffle_spacing: PyQty {
+                magnitude_si: r.min_baffle_spacing.value,
+                unit: "m".to_string(),
+            },
+            max_baffle_spacing: PyQty {
+                magnitude_si: r.max_baffle_spacing.value,
+                unit: "m".to_string(),
+            },
+            recommended_designation: r.recommended_designation.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.tube_insert_model`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TubeInsertModelResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTubeInsertModelResult {
+    /// `h_enhanced/h_plain` at the stated Reynolds and Prandtl numbers.
+    #[pyo3(get)]
+    pub heat_transfer_enhancement_ratio: f64,
+    /// `f_enhanced/f_plain` at the stated Reynolds number.
+    #[pyo3(get)]
+    pub pressure_drop_penalty_ratio: f64,
+    /// `h_ratio/f_ratio**(1/3)` at constant pumping power.
+    #[pyo3(get)]
+    pub performance_evaluation_criteria: f64,
+    /// `plain_heat_transfer_coefficient * heat_transfer_enhancement_ratio`.
+    #[pyo3(get)]
+    pub enhanced_heat_transfer_coefficient: PyQty,
+    /// `plain_pressure_drop * pressure_drop_penalty_ratio`.
+    #[pyo3(get)]
+    pub enhanced_pressure_drop: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTubeInsertModelResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TubeInsertModelResult(heat_transfer_enhancement_ratio={:?}, pressure_drop_penalty_ratio={:?}, performance_evaluation_criteria={:?}, enhanced_heat_transfer_coefficient={:?}, enhanced_pressure_drop={:?}, {} warning(s))",
+            self.heat_transfer_enhancement_ratio,
+            self.pressure_drop_penalty_ratio,
+            self.performance_evaluation_criteria,
+            self.enhanced_heat_transfer_coefficient,
+            self.enhanced_pressure_drop,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::TubeInsertModelResult> for PyTubeInsertModelResult {
+    fn from(r: &azoth_thermal::results::TubeInsertModelResult) -> Self {
+        Self {
+            heat_transfer_enhancement_ratio: r.heat_transfer_enhancement_ratio,
+            pressure_drop_penalty_ratio: r.pressure_drop_penalty_ratio,
+            performance_evaluation_criteria: r.performance_evaluation_criteria,
+            enhanced_heat_transfer_coefficient: PyQty {
+                magnitude_si: r.enhanced_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            enhanced_pressure_drop: PyQty {
+                magnitude_si: r.enhanced_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.two_phase_pressure_drop`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TwoPhasePressureDropResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTwoPhasePressureDropResult {
+    /// the Friedel frictional gradient at `vapor_quality`.
+    #[pyo3(get)]
+    pub friedel_gradient: PyQty,
+    /// the Friedel gradient times `tube_length` at `vapor_quality`.
+    #[pyo3(get)]
+    pub friedel_pressure_drop: PyQty,
+    /// the Simpson's-rule average of the Friedel gradient over `quality_in` to `quality_out`, times `tube_length`.
+    #[pyo3(get)]
+    pub friedel_average_pressure_drop: PyQty,
+    /// the Muller-Steinhagen-Heck frictional gradient at `vapor_quality`.
+    #[pyo3(get)]
+    pub muller_steinhagen_heck_gradient: PyQty,
+    /// the gravitational gradient of the homogeneous mixture at `vapor_quality`, positive for upflow.
+    #[pyo3(get)]
+    pub gravitational_gradient: PyQty,
+    /// the momentum-flux change over `quality_in` to `quality_out`, negative when the quality falls.
+    #[pyo3(get)]
+    pub acceleration_pressure_drop: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTwoPhasePressureDropResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TwoPhasePressureDropResult(friedel_gradient={:?}, friedel_pressure_drop={:?}, friedel_average_pressure_drop={:?}, muller_steinhagen_heck_gradient={:?}, gravitational_gradient={:?}, acceleration_pressure_drop={:?}, {} warning(s))",
+            self.friedel_gradient,
+            self.friedel_pressure_drop,
+            self.friedel_average_pressure_drop,
+            self.muller_steinhagen_heck_gradient,
+            self.gravitational_gradient,
+            self.acceleration_pressure_drop,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::TwoPhasePressureDropResult> for PyTwoPhasePressureDropResult {
+    fn from(r: &azoth_thermal::results::TwoPhasePressureDropResult) -> Self {
+        Self {
+            friedel_gradient: PyQty {
+                magnitude_si: r.friedel_gradient.value,
+                unit: "Pa/m".to_string(),
+            },
+            friedel_pressure_drop: PyQty {
+                magnitude_si: r.friedel_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            friedel_average_pressure_drop: PyQty {
+                magnitude_si: r.friedel_average_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            muller_steinhagen_heck_gradient: PyQty {
+                magnitude_si: r.muller_steinhagen_heck_gradient.value,
+                unit: "Pa/m".to_string(),
+            },
+            gravitational_gradient: PyQty {
+                magnitude_si: r.gravitational_gradient.value,
+                unit: "Pa/m".to_string(),
+            },
+            acceleration_pressure_drop: PyQty {
+                magnitude_si: r.acceleration_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `thermal.zone_rating`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ZoneRatingResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyZoneRatingResult {
+    /// the number of zones rated, which is the input list's length.
+    #[pyo3(get)]
+    pub zone_count: f64,
+    /// one row per zone, in the input order.
+    #[pyo3(get)]
+    pub zones: Vec<PyZoneRatingRow>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyZoneRatingResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ZoneRatingResult(zone_count={:?}, zones={:?}, {} warning(s))",
+            self.zone_count,
+            self.zones,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::ZoneRatingResult> for PyZoneRatingResult {
+    fn from(r: &azoth_thermal::results::ZoneRatingResult) -> Self {
+        Self {
+            zone_count: r.zone_count,
+            zones: r.zones.iter().map(PyZoneRatingRow::from).collect(),
             warnings: transport(&r.warnings),
         }
     }

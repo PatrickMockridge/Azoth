@@ -19,11 +19,18 @@ from azoth.core.result import (
     AbsorptionColumnResult,
     ActivityCoefficientRow,
     AmmoniaPhaseResult,
+    AntiSurgeRecycleResult,
     AntoineVaporPressureResult,
+    AppliedStandardRow,
     AqueousViscosityResult,
     ArgonSolidPhaseResult,
     AssayMassFractionsResult,
     BariteCelestiteSolidSolutionResult,
+    BeggsBrillRegime,
+    BeggsBrillSegmentResult,
+    BoilingHeatTransferResult,
+    BrineMixingPointRow,
+    BrineMixingScaleEvaluatorResult,
     BubblePressureResult,
     BubbleTemperatureResult,
     BwrsPhaseResult,
@@ -32,34 +39,51 @@ from azoth.core.result import (
     CdftSurfaceTensionResult,
     ChapmanEnskogDiffusivityResult,
     CharacterisePlusFractionResult,
+    CharacterizationComponent,
+    CharacterizeToCommonSlateResult,
     CharacterizeToReferenceResult,
     ChemicalEquilibriumResult,
+    ChemicalWarningRow,
     ChokedFlowAreaResult,
     ChungConductivityResult,
     ChungViscosityResult,
+    ClosedLoopDepositionSolverResult,
     Co2BrinePhaseEquilibriumResult,
     Co2PhaseResult,
     Co2WaterDiffusivityResult,
     ColebrookResult,
+    CombineReservoirFluidsResult,
     ComponentSplitterResult,
     CompressorResult,
     ConductionPlaneWallResult,
     ControlValveCvResult,
+    CooldownVerdict,
     CoolerResult,
+    CorrosionSeverity,
     CostaldMolarVolumeResult,
     CriticalPointResult,
     DarcyWeisbachResult,
     DelumpingResult,
+    DepositionSegmentRow,
     DesmukhMatherPhaseResult,
+    DeWaardMilliamsCorrosionResult,
     DewPressureResult,
     DewTemperatureResult,
     DistillationColumnResult,
     EffectiveDiffusionResult,
     EjectorResult,
     ElectrolyteCpaStatoilPhaseResult,
+    ElectrolyteScaleCalculatorResult,
+    EmulsionType,
+    EmulsionViscosityResult,
     EosCgPhaseResult,
     EquilibriumConstantResult,
+    EquilibriumSoundSpeedResult,
+    EquilibriumSoundSpeedSample,
+    ErosionPredictionResult,
+    ErosionRiskLevel,
     ExpanderResult,
+    FeSMorphology,
     FilippovConductivityResult,
     FilterResult,
     FirozabadiRamleyInterfaceTensionResult,
@@ -67,6 +91,7 @@ from azoth.core.result import (
     FlowlineScaleProfileResult,
     FlowlineScaleSegment,
     FlowRegime,
+    FoulingModelResult,
     FreezingPointResult,
     FrictionTheoryConductivityResult,
     FrictionTheoryViscosityResult,
@@ -87,10 +112,16 @@ from azoth.core.result import (
     GtSurfaceTensionSimpleResult,
     HaalandResult,
     HaydukMinhasDiffusivityResult,
+    HeaterInstrument,
+    HeaterMechanicalType,
     HeaterResult,
+    HeatExchangerMechanicalType,
     HeatExchangerResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
+    HemReleaseDiagnostic,
+    HemReleaseResult,
+    HemReleaseStation,
     HybridEosGeFlashResult,
     HydrateEquilibriumLineResult,
     HydrateFormationPressureResult,
@@ -98,10 +129,15 @@ from azoth.core.result import (
     HydrateFractionResult,
     HydrateInhibitorConcentrationResult,
     HydrateInhibitorWtResult,
+    HydrateRiskLevel,
+    HydrateRiskMapResult,
+    HydrateRiskPoint,
     HydrateStructure,
     IapwsHenryLawResult,
     IapwsSaturationPressureResult,
     IdealGasCpResult,
+    IncrementalZoneAnalysisResult,
+    IncrementalZoneRow,
     InterfacePropertiesResult,
     Iso6976Result,
     KComponent,
@@ -109,12 +145,17 @@ from azoth.core.result import (
     KFactorsResult,
     KineticRateLawResult,
     KineticsResult,
+    LeakBlowdownDiagnostic,
+    LeakBlowdownPoint,
+    LeakBlowdownResult,
     LgtSurfaceTensionResult,
     LiquidConductivityPolynomResult,
     LiquidHeatCapacityResult,
     LiquidViscosityPureResult,
+    LmtdCorrectionFactorResult,
     LumpingResult,
     ManifoldResult,
+    MapTurboExpanderResult,
     MasonSaxenaConductivityResult,
     Matcop5PrumrAlphaResult,
     MatcopAlphaResult,
@@ -127,6 +168,7 @@ from azoth.core.result import (
     MollerupAlphaResult,
     MultiflashStabilityTestResult,
     MultiMineralScaleEquilibriumResult,
+    NaceIssueRow,
     NitricSulfuricAcidVaporPressureResult,
     NrtlActivityCoefficientsResult,
     OilAssayDerivationResult,
@@ -141,7 +183,11 @@ from azoth.core.result import (
     PedersenPlusSplitResult,
     PhaseTransportResult,
     PhFlashResult,
+    PipeBeggsAndBrillsResult,
+    PipelineCooldownResult,
     PipeResult,
+    PitzerHydrateFormationPressureResult,
+    PitzerHydrateFormationTemperatureResult,
     PitzerPhaseResult,
     PitzerScaleActivityResult,
     PlugFlowReactorResult,
@@ -156,6 +202,7 @@ from azoth.core.result import (
     PrLeeKeslerAlphaResult,
     PrMassDensityResult,
     PrMolarVolumeResult,
+    ProductionChemicalScaleScenarioResult,
     PrPenelouxShiftResult,
     PrsvKappaResult,
     PrZFactorResult,
@@ -178,6 +225,7 @@ from azoth.core.result import (
     ReactivePhFlashResult,
     ReactiveTpFlashResult,
     ReferencePotentialsResult,
+    RemediationOptionRow,
     ReynoldsNumberResult,
     RkAlphaAbResult,
     RkDepartureResult,
@@ -185,17 +233,33 @@ from azoth.core.result import (
     SaftVrMiePhaseResult,
     SaltPrecipitationResult,
     SaturateWithWaterResult,
+    ScaleControlAssessorResult,
+    ScaleControlRiskRow,
+    ScaleControlRow,
+    ScaleDepositionAccumulatorResult,
+    ScaleInhibitorPerformanceResult,
+    ScaleKineticsResult,
     ScaleMassResult,
     ScalePredictionResult,
+    ScaleRemediationAdvisorResult,
     ScaleSaturationRatioResult,
+    ScenarioChangeRow,
+    ScenarioIndexRow,
     SchwartzentruberAlphaResult,
+    SeparatorCapacityAssessmentResult,
+    SeparatorPerformanceResult,
     SeparatorResult,
     SetHeavyTbpToPlusResult,
+    ShahCondensationResult,
+    ShellAndTubeDesignResult,
+    ShellAndTubeRatingResult,
+    ShellAndTubeVibrationResult,
     ShortcutDistillationColumnResult,
     SiddiqiLucasDiffusivityResult,
     SolidFugacityResult,
     SoreideWhitsonAlphaResult,
     SoreideWhitsonPhaseResult,
+    SoundSpeedResult,
     SplitterResult,
     SrkAlphaAbResult,
     SrkCpaPhaseResult,
@@ -205,16 +269,21 @@ from azoth.core.result import (
     SrkZFactorResult,
     StabilityTestResult,
     StirredTankReactorResult,
+    StreamScaleAnalyzerResult,
+    StreamScaleMineralRow,
     StrippingColumnResult,
     SubFraction,
+    SurfCooldownResult,
     SwameeJainResult,
     TankResult,
     TbpClosureResult,
     TbpCutBoundariesResult,
     TbpCutPropertiesResult,
     TbpDensityResult,
+    TbpFractionComponentResult,
     TbpFractionPropertiesResult,
     TbpGroupingResult,
+    TemaStandardResult,
     ThermalConductivityResult,
     ThFlashResult,
     ThreePhaseSeparatorResult,
@@ -223,11 +292,15 @@ from azoth.core.result import (
     TpMultiflashResult,
     TpMultiflashWaxResult,
     TpSolidFlashResult,
+    TransferBinaryInteractionParametersResult,
     TrayHydraulicsResult,
     TsFlashResult,
+    TubeInsertModelResult,
     TuFlashResult,
+    TurboExpanderResult,
     TvFlashResult,
     TvFractionFlashResult,
+    TwoPhasePressureDropResult,
     TwucoonAlphaResult,
     TwucoonParamAlphaResult,
     TwucoonStatoilAlphaResult,
@@ -239,6 +312,7 @@ from azoth.core.result import (
     UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
+    ValveScaleDriftResult,
     VanLaarAcidActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
     VhFlashResult,
@@ -257,6 +331,8 @@ from azoth.core.result import (
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
+    ZoneRatingResult,
+    ZoneRatingRow,
 )
 from azoth.core.result import (
     HenryStatus as _HenryStatus,
@@ -297,11 +373,15 @@ from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 __all__ = [
     "absorption_column",
     "ammonia_phase",
+    "anti_surge_recycle",
     "antoine_vapor_pressure",
     "aqueous_viscosity",
     "argon_solid_phase",
     "assay_mass_fractions",
     "barite_celestite_solid_solution",
+    "beggs_brill_segment",
+    "boiling_heat_transfer",
+    "brine_mixing_scale_evaluator",
     "bubble_pressure",
     "bubble_temperature",
     "bwrs_phase",
@@ -310,14 +390,17 @@ __all__ = [
     "cdft_surface_tension",
     "chapman_enskog_diffusivity",
     "characterise_plus_fraction",
+    "characterize_to_common_slate",
     "characterize_to_reference",
     "chemical_equilibrium",
     "choked_flow_area",
     "chung_conductivity",
     "chung_viscosity",
+    "closed_loop_deposition_solver",
     "co2_brine_phase_equilibrium",
     "co2_phase",
     "co2_water_diffusivity",
+    "combine_reservoir_fluids",
     "component_splitter",
     "compressor",
     "conduction_plane_wall",
@@ -327,6 +410,7 @@ __all__ = [
     "crane_k_factors",
     "critical_point",
     "darcy_weisbach",
+    "de_waard_milliams_corrosion",
     "delumping",
     "desmukh_mather_phase",
     "dew_pressure",
@@ -335,14 +419,19 @@ __all__ = [
     "effective_diffusion",
     "ejector",
     "electrolyte_cpa_statoil_phase",
+    "electrolyte_scale_calculator",
+    "emulsion_viscosity",
     "eos_cg_phase",
     "equilibrium_constant",
+    "equilibrium_sound_speed",
+    "erosion_prediction",
     "expander",
     "filippov_conductivity",
     "filter",
     "firozabadi_ramley_interface_tension",
     "flare",
     "flowline_scale_profile",
+    "fouling_model",
     "freezing_point",
     "friction_factor_colebrook",
     "friction_factor_haaland",
@@ -369,6 +458,7 @@ __all__ = [
     "heat_of_vaporization",
     "heater",
     "helium_phase",
+    "hem_release",
     "hybrid_eos_ge_flash",
     "hydrate_equilibrium_line",
     "hydrate_formation_pressure",
@@ -376,20 +466,25 @@ __all__ = [
     "hydrate_fraction",
     "hydrate_inhibitor_concentration",
     "hydrate_inhibitor_wt",
+    "hydrate_risk_map",
     "iapws_henry_law",
     "iapws_saturation_pressure",
     "ideal_gas_cp",
+    "incremental_zone_analysis",
     "interface_properties",
     "iso6976",
     "kent_eisenberg_phase",
     "kinetic_rate_law",
     "kinetics",
+    "leak_blowdown",
     "lgt_surface_tension",
     "liquid_conductivity_polynom",
     "liquid_heat_capacity",
     "liquid_viscosity_pure",
+    "lmtd_correction_factor",
     "lumping",
     "manifold",
+    "map_turbo_expander_compressor",
     "mason_saxena_conductivity",
     "matcop5_prumr_alpha",
     "matcop_alpha",
@@ -416,6 +511,10 @@ __all__ = [
     "ph_flash",
     "phase_transport",
     "pipe",
+    "pipe_beggs_and_brills",
+    "pipeline_cooldown",
+    "pitzer_hydrate_formation_pressure",
+    "pitzer_hydrate_formation_temperature",
     "pitzer_phase",
     "pitzer_scale_activity",
     "plug_flow_reactor",
@@ -432,6 +531,7 @@ __all__ = [
     "pr_molar_volume",
     "pr_peneloux_shift",
     "pr_z_factor",
+    "production_chemical_scale_scenario",
     "prsv_kappa",
     "ps_flash",
     "pt_flash",
@@ -458,17 +558,29 @@ __all__ = [
     "saft_vr_mie_phase",
     "salt_precipitation",
     "saturate_with_water",
+    "scale_control_assessor",
+    "scale_deposition_accumulator",
+    "scale_inhibitor_performance",
+    "scale_kinetics",
     "scale_mass",
     "scale_prediction",
+    "scale_remediation_advisor",
     "scale_saturation_ratio",
     "schwartzentruber_alpha",
     "separator",
+    "separator_capacity_assessment",
+    "separator_performance",
     "set_heavy_tbp_to_plus",
+    "shah_condensation",
+    "shell_and_tube_design",
+    "shell_and_tube_rating",
+    "shell_and_tube_vibration",
     "shortcut_distillation_column",
     "siddiqi_lucas_diffusivity",
     "solid_fugacity",
     "soreide_whitson_alpha",
     "soreide_whitson_phase",
+    "sound_speed",
     "splitter",
     "srk_alpha_ab",
     "srk_cpa_phase",
@@ -478,14 +590,18 @@ __all__ = [
     "srk_z_factor",
     "stability_test",
     "stirred_tank_reactor",
+    "stream_scale_analyzer",
     "stripping_column",
+    "surf_cooldown",
     "tank",
     "tbp_closure",
     "tbp_cut_boundaries",
     "tbp_cut_properties",
     "tbp_density",
+    "tbp_fraction_component",
     "tbp_fraction_properties",
     "tbp_grouping",
+    "tema_standard",
     "th_flash",
     "thermal_conductivity",
     "three_phase_separator",
@@ -494,11 +610,15 @@ __all__ = [
     "tp_multiflash",
     "tp_multiflash_wax",
     "tp_solid_flash",
+    "transfer_binary_interaction_parameters",
     "tray_hydraulics",
     "ts_flash",
     "tu_flash",
+    "tube_insert_model",
+    "turbo_expander_compressor",
     "tv_flash",
     "tv_fraction_flash",
+    "two_phase_pressure_drop",
     "twu_kappa",
     "twucoon_alpha",
     "twucoon_param_alpha",
@@ -510,6 +630,7 @@ __all__ = [
     "unifac_psrk_activity_coefficients",
     "unifac_umrpru_activity_coefficients",
     "uniquac_activity_coefficients",
+    "valve_scale_drift",
     "van_laar_acid_activity_coefficients",
     "vdw1f_mix_binary",
     "vh_flash",
@@ -527,6 +648,7 @@ __all__ = [
     "wilke_chang_diffusivity",
     "wilke_viscosity",
     "wilson_activity_coefficients",
+    "zone_rating",
 ]
 
 
@@ -565,6 +687,23 @@ def characterise_plus_fraction(molar_mass: Q, density: Q, mole_fraction: float, 
     )
 
 
+def characterize_to_common_slate(components: Sequence[Mapping[str, Any]], weights: Sequence[float] | None=None, target_pseudo_components: int | None=None) -> CharacterizeToCommonSlateResult:
+    """``characterization.characterize_to_common_slate``, computed in Rust."""
+    spec = _models_gen.model("characterization.characterize_to_common_slate")
+    result = _core.characterize_to_common_slate(
+        input_records_to_si(spec, "components", components),
+        None if weights is None else list(weights),
+        None if target_pseudo_components is None else _count("target_pseudo_components", target_pseudo_components),
+    )
+    return CharacterizeToCommonSlateResult(
+        components=tuple(CharacterizationComponent(name=c.name, pseudo_component=c.pseudo_component, moles=from_si(c.moles.magnitude_si, c.moles.unit), molar_mass=None if c.molar_mass is None else from_si(c.molar_mass.magnitude_si, c.molar_mass.unit), density=None if c.density is None else from_si(c.density.magnitude_si, c.density.unit), normal_boiling_point=None if c.normal_boiling_point is None else from_si(c.normal_boiling_point.magnitude_si, c.normal_boiling_point.unit), critical_temperature=None if c.critical_temperature is None else from_si(c.critical_temperature.magnitude_si, c.critical_temperature.unit), critical_pressure=None if c.critical_pressure is None else from_si(c.critical_pressure.magnitude_si, c.critical_pressure.unit), acentric_factor=c.acentric_factor, critical_volume=None if c.critical_volume is None else from_si(c.critical_volume.magnitude_si, c.critical_volume.unit), racket_z=c.racket_z, racket_z_cpa=c.racket_z_cpa, parachor=c.parachor, critical_viscosity=None if c.critical_viscosity is None else from_si(c.critical_viscosity.magnitude_si, c.critical_viscosity.unit), triple_point_temperature=None if c.triple_point_temperature is None else from_si(c.triple_point_temperature.magnitude_si, c.triple_point_temperature.unit), heat_of_fusion=None if c.heat_of_fusion is None else from_si(c.heat_of_fusion.magnitude_si, c.heat_of_fusion.unit), ideal_gas_enthalpy_of_formation=None if c.ideal_gas_enthalpy_of_formation is None else from_si(c.ideal_gas_enthalpy_of_formation.magnitude_si, c.ideal_gas_enthalpy_of_formation.unit), cp_a=None if c.cp_a is None else from_si(c.cp_a.magnitude_si, c.cp_a.unit), cp_b=None if c.cp_b is None else from_si(c.cp_b.magnitude_si, c.cp_b.unit), cp_c=None if c.cp_c is None else from_si(c.cp_c.magnitude_si, c.cp_c.unit), cp_d=None if c.cp_d is None else from_si(c.cp_d.magnitude_si, c.cp_d.unit), attractive_m=c.attractive_m) for c in result.components),
+        fluid_index=tuple(result.fluid_index),
+        fluid_moles=tuple(from_si(q.magnitude_si, q.unit) for q in result.fluid_moles),
+        resolved_pseudo_components=result.resolved_pseudo_components,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def characterize_to_reference(source: Sequence[Mapping[str, Any]], reference: Sequence[Mapping[str, Any]], inherit_reference_properties: bool | None=None, delump_before_recharacterization: bool | None=None, delump_resolution: int | None=None, shared_imaginary_boundaries: bool | None=None) -> CharacterizeToReferenceResult:
     """``characterization.characterize_to_reference``, computed in Rust."""
     spec = _models_gen.model("characterization.characterize_to_reference")
@@ -581,6 +720,20 @@ def characterize_to_reference(source: Sequence[Mapping[str, Any]], reference: Se
         group_moles=tuple(from_si(q.magnitude_si, q.unit) for q in result.group_moles),
         group_molar_mass=tuple(from_si(q.magnitude_si, q.unit) for q in result.group_molar_mass),
         group_density=tuple(from_si(q.magnitude_si, q.unit) for q in result.group_density),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def combine_reservoir_fluids(target_pseudo_components: int, components: Sequence[Mapping[str, Any]]) -> CombineReservoirFluidsResult:
+    """``characterization.combine_reservoir_fluids``, computed in Rust."""
+    spec = _models_gen.model("characterization.combine_reservoir_fluids")
+    result = _core.combine_reservoir_fluids(
+        _count("target_pseudo_components", target_pseudo_components),
+        input_records_to_si(spec, "components", components),
+    )
+    return CombineReservoirFluidsResult(
+        components=tuple(CharacterizationComponent(name=c.name, pseudo_component=c.pseudo_component, moles=from_si(c.moles.magnitude_si, c.moles.unit), molar_mass=None if c.molar_mass is None else from_si(c.molar_mass.magnitude_si, c.molar_mass.unit), density=None if c.density is None else from_si(c.density.magnitude_si, c.density.unit), normal_boiling_point=None if c.normal_boiling_point is None else from_si(c.normal_boiling_point.magnitude_si, c.normal_boiling_point.unit), critical_temperature=None if c.critical_temperature is None else from_si(c.critical_temperature.magnitude_si, c.critical_temperature.unit), critical_pressure=None if c.critical_pressure is None else from_si(c.critical_pressure.magnitude_si, c.critical_pressure.unit), acentric_factor=c.acentric_factor, critical_volume=None if c.critical_volume is None else from_si(c.critical_volume.magnitude_si, c.critical_volume.unit), racket_z=c.racket_z, racket_z_cpa=c.racket_z_cpa, parachor=c.parachor, critical_viscosity=None if c.critical_viscosity is None else from_si(c.critical_viscosity.magnitude_si, c.critical_viscosity.unit), triple_point_temperature=None if c.triple_point_temperature is None else from_si(c.triple_point_temperature.magnitude_si, c.triple_point_temperature.unit), heat_of_fusion=None if c.heat_of_fusion is None else from_si(c.heat_of_fusion.magnitude_si, c.heat_of_fusion.unit), ideal_gas_enthalpy_of_formation=None if c.ideal_gas_enthalpy_of_formation is None else from_si(c.ideal_gas_enthalpy_of_formation.magnitude_si, c.ideal_gas_enthalpy_of_formation.unit), cp_a=None if c.cp_a is None else from_si(c.cp_a.magnitude_si, c.cp_a.unit), cp_b=None if c.cp_b is None else from_si(c.cp_b.magnitude_si, c.cp_b.unit), cp_c=None if c.cp_c is None else from_si(c.cp_c.magnitude_si, c.cp_c.unit), cp_d=None if c.cp_d is None else from_si(c.cp_d.magnitude_si, c.cp_d.unit), attractive_m=c.attractive_m) for c in result.components),
+        total_moles=from_si(result.total_moles.magnitude_si, result.total_moles.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -749,6 +902,37 @@ def tbp_density(boiling_point: Q, molar_mass: Q, closure: str | None=None) -> Tb
     )
 
 
+def tbp_fraction_component(molar_mass: Q, density: Q) -> TbpFractionComponentResult:
+    """``characterization.tbp_fraction_component``, computed in Rust."""
+    spec = _models_gen.model("characterization.tbp_fraction_component")
+    result = _core.tbp_fraction_component(
+        input_to_si(spec, "molar_mass", molar_mass),
+        input_to_si(spec, "density", density),
+    )
+    return TbpFractionComponentResult(
+        critical_temperature=from_si(result.critical_temperature.magnitude_si, result.critical_temperature.unit),
+        critical_pressure=from_si(result.critical_pressure.magnitude_si, result.critical_pressure.unit),
+        boiling_temperature=from_si(result.boiling_temperature.magnitude_si, result.boiling_temperature.unit),
+        acentric_factor=result.acentric_factor,
+        attraction_exponent=result.attraction_exponent,
+        critical_volume=from_si(result.critical_volume.magnitude_si, result.critical_volume.unit),
+        racket_z=result.racket_z,
+        racket_z_cpa=result.racket_z_cpa,
+        parachor=result.parachor,
+        critical_viscosity=from_si(result.critical_viscosity.magnitude_si, result.critical_viscosity.unit),
+        triple_point_temperature=from_si(result.triple_point_temperature.magnitude_si, result.triple_point_temperature.unit),
+        heat_of_fusion=from_si(result.heat_of_fusion.magnitude_si, result.heat_of_fusion.unit),
+        ideal_gas_enthalpy_of_formation=from_si(result.ideal_gas_enthalpy_of_formation.magnitude_si, result.ideal_gas_enthalpy_of_formation.unit),
+        cp_a=from_si(result.cp_a.magnitude_si, result.cp_a.unit),
+        cp_b=from_si(result.cp_b.magnitude_si, result.cp_b.unit),
+        cp_c=from_si(result.cp_c.magnitude_si, result.cp_c.unit),
+        cp_d=from_si(result.cp_d.magnitude_si, result.cp_d.unit),
+        lennard_jones_diameter=from_si(result.lennard_jones_diameter.magnitude_si, result.lennard_jones_diameter.unit),
+        lennard_jones_energy=from_si(result.lennard_jones_energy.magnitude_si, result.lennard_jones_energy.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def tbp_grouping(boiling_point: list[Q], mole_fraction: list[float]) -> TbpGroupingResult:
     """``characterization.tbp_grouping``, computed in Rust."""
     spec = _models_gen.model("characterization.tbp_grouping")
@@ -758,6 +942,21 @@ def tbp_grouping(boiling_point: list[Q], mole_fraction: list[float]) -> TbpGroup
     )
     return TbpGroupingResult(
         group_fraction=tuple(result.group_fraction),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def transfer_binary_interaction_parameters(reference_components: Sequence[Mapping[str, Any]], target_components: Sequence[Mapping[str, Any]], reference_kij: Sequence[Sequence[float]], target_kij: Sequence[Sequence[float]]) -> TransferBinaryInteractionParametersResult:
+    """``characterization.transfer_binary_interaction_parameters``, computed in Rust."""
+    spec = _models_gen.model("characterization.transfer_binary_interaction_parameters")
+    result = _core.transfer_binary_interaction_parameters(
+        input_records_to_si(spec, "reference_components", reference_components),
+        input_records_to_si(spec, "target_components", target_components),
+        [list(row) for row in reference_kij],
+        [list(row) for row in target_kij],
+    )
+    return TransferBinaryInteractionParametersResult(
+        target_kij=tuple(tuple(row) for row in result.target_kij),
         warnings=_warnings(result.warnings),
     )
 
@@ -839,6 +1038,7 @@ def aqueous_viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> AqueousVi
         _molar_masses(mixture, 'a card-added component needs its own molar mass: the mixing rule weights by mass fraction'),
         [value for c in mixture.components for value in c.liqvisc],
         [c.liqvisc_model for c in mixture.components],
+        list(mixture.names) if mixture.names is not None else [],
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         list(z),
@@ -886,6 +1086,61 @@ def barite_celestite_solid_solution(margules: float, a_ba: float, a_sr: float, a
         x_srso4=result.x_srso4,
         total_saturation_index=result.total_saturation_index,
         supersaturated=result.supersaturated,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def beggs_brill_segment(gas_flow: Q, liquid_flow: Q, gas_density: Q, liquid_density: Q, gas_viscosity: Q, liquid_viscosity: Q, temperature: Q, pressure: Q, diameter: Q, length: Q, elevation: Q, roughness: Q) -> BeggsBrillSegmentResult:
+    """``eos.beggs_brill_segment``, computed in Rust."""
+    spec = _spec_for("eos.beggs_brill_segment")
+    result = _core.beggs_brill_segment(
+        input_to_si(spec, "gas_flow", gas_flow),
+        input_to_si(spec, "liquid_flow", liquid_flow),
+        input_to_si(spec, "gas_density", gas_density),
+        input_to_si(spec, "liquid_density", liquid_density),
+        input_to_si(spec, "gas_viscosity", gas_viscosity),
+        input_to_si(spec, "liquid_viscosity", liquid_viscosity),
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "pressure", pressure),
+        input_to_si(spec, "diameter", diameter),
+        input_to_si(spec, "length", length),
+        input_to_si(spec, "elevation", elevation),
+        input_to_si(spec, "roughness", roughness),
+    )
+    return BeggsBrillSegmentResult(
+        regime=BeggsBrillRegime(result.regime),
+        liquid_holdup=result.liquid_holdup,
+        superficial_gas_velocity=from_si(result.superficial_gas_velocity.magnitude_si, result.superficial_gas_velocity.unit),
+        superficial_liquid_velocity=from_si(result.superficial_liquid_velocity.magnitude_si, result.superficial_liquid_velocity.unit),
+        superficial_mixture_velocity=from_si(result.superficial_mixture_velocity.magnitude_si, result.superficial_mixture_velocity.unit),
+        no_slip_density=from_si(result.no_slip_density.magnitude_si, result.no_slip_density.unit),
+        no_slip_viscosity=from_si(result.no_slip_viscosity.magnitude_si, result.no_slip_viscosity.unit),
+        reynolds=result.reynolds,
+        friction_factor=result.friction_factor,
+        two_phase_friction_factor=result.two_phase_friction_factor,
+        hydrostatic_drop=from_si(result.hydrostatic_drop.magnitude_si, result.hydrostatic_drop.unit),
+        friction_drop=from_si(result.friction_drop.magnitude_si, result.friction_drop.unit),
+        total_drop=from_si(result.total_drop.magnitude_si, result.total_drop.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def brine_mixing_scale_evaluator(brine_a: list[dict[str, Q]], brine_b: list[dict[str, Q]], temperature: Q, pressure: Q, ph: float, steps: int) -> BrineMixingScaleEvaluatorResult:
+    """``eos.brine_mixing_scale_evaluator``, computed in Rust."""
+    spec = _models_gen.model("eos.brine_mixing_scale_evaluator")
+    result = _core.brine_mixing_scale_evaluator(
+        input_records_to_si(spec, "brine_a", brine_a),
+        input_records_to_si(spec, "brine_b", brine_b),
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "pressure", pressure),
+        ph,
+        _count("steps", steps),
+    )
+    return BrineMixingScaleEvaluatorResult(
+        points=tuple(BrineMixingPointRow(fraction_a=c.fraction_a, si_caco3=c.si_caco3, si_baso4=c.si_baso4, si_caso4=c.si_caso4, si_srso4=c.si_srso4) for c in result.points),
+        worst_fraction_a=result.worst_fraction_a,
+        worst_mineral=result.worst_mineral,
+        worst_saturation_index=result.worst_saturation_index,
         warnings=_warnings(result.warnings),
     )
 
@@ -1091,6 +1346,46 @@ def chung_viscosity(omega: float, Tc: Q, Vc: Q, M: Q, dipole: float, kappa: floa
     )
 
 
+def closed_loop_deposition_solver(components: list[str], inlet_n: float, inlet_z: list[float], inlet_p: Q, inlet_t: Q, length: Q, diameter: Q, elevation: Q, number_of_increments: int, roughness: Q, calcium: Q, bicarbonate: Q, sulphate: Q, barium: Q, sodium: Q, total_dissolved_solids: Q, ph: float, service_time: Q, scale_density: Q, base_rate: Q, inhibitor_efficiency: float, tolerance: Q, max_iterations: int, eos: str | None=None) -> ClosedLoopDepositionSolverResult:
+    """``eos.closed_loop_deposition_solver``, computed in Rust."""
+    spec = _models_gen.model("eos.closed_loop_deposition_solver")
+    result = _core.closed_loop_deposition_solver(
+        list(components),
+        _si(spec, "inlet_n", inlet_n),
+        list(inlet_z),
+        input_to_si(spec, "inlet_p", inlet_p),
+        input_to_si(spec, "inlet_t", inlet_t),
+        input_to_si(spec, "length", length),
+        input_to_si(spec, "diameter", diameter),
+        input_to_si(spec, "elevation", elevation),
+        _count("number_of_increments", number_of_increments),
+        input_to_si(spec, "roughness", roughness),
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        ph,
+        input_to_si(spec, "service_time", service_time),
+        input_to_si(spec, "scale_density", scale_density),
+        input_to_si(spec, "base_rate", base_rate),
+        inhibitor_efficiency,
+        input_to_si(spec, "tolerance", tolerance),
+        _count("max_iterations", max_iterations),
+        eos,
+    )
+    return ClosedLoopDepositionSolverResult(
+        iterations_taken=result.iterations_taken,
+        converged=result.converged,
+        final_effective_diameter=from_si(result.final_effective_diameter.magnitude_si, result.final_effective_diameter.unit),
+        diameter_history=tuple(from_si(q.magnitude_si, q.unit) for q in result.diameter_history),
+        max_thickness_history=tuple(from_si(q.magnitude_si, q.unit) for q in result.max_thickness_history),
+        velocity_history=tuple(from_si(q.magnitude_si, q.unit) for q in result.velocity_history),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def co2_brine_phase_equilibrium(components: list[str], T: Q, P: Q, moles: list[Q]) -> Co2BrinePhaseEquilibriumResult:
     """``eos.co2_brine_phase_equilibrium``, computed in Rust."""
     spec = _models_gen.model("eos.co2_brine_phase_equilibrium")
@@ -1183,6 +1478,42 @@ def critical_point(mixture: Mixture, z: list[float]) -> CriticalPointResult:
         z_c=result.z_c,
         iterations=result.iterations,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def de_waard_milliams_corrosion(temperature: Q, co2_partial_pressure: Q, ph: float, h2s_partial_pressure: Q, flow_velocity: Q, inhibitor_efficiency: float, glycol_fraction: float, sulfur_deposition_rate: Q, design_life: Q) -> DeWaardMilliamsCorrosionResult:
+    """``eos.de_waard_milliams_corrosion``, computed in Rust."""
+    spec = _spec_for("eos.de_waard_milliams_corrosion")
+    result = _core.de_waard_milliams_corrosion(
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "co2_partial_pressure", co2_partial_pressure),
+        ph,
+        input_to_si(spec, "h2s_partial_pressure", h2s_partial_pressure),
+        input_to_si(spec, "flow_velocity", flow_velocity),
+        inhibitor_efficiency,
+        glycol_fraction,
+        input_to_si(spec, "sulfur_deposition_rate", sulfur_deposition_rate),
+        input_to_si(spec, "design_life", design_life),
+    )
+    return DeWaardMilliamsCorrosionResult(
+        baseline_rate=from_si(result.baseline_rate.magnitude_si, result.baseline_rate.unit),
+        ph_correction_factor=result.ph_correction_factor,
+        scale_correction_factor=result.scale_correction_factor,
+        glycol_correction_factor=result.glycol_correction_factor,
+        flow_correction_factor=result.flow_correction_factor,
+        inhibitor_factor=result.inhibitor_factor,
+        corrected_rate=from_si(result.corrected_rate.magnitude_si, result.corrected_rate.unit),
+        sulfur_rate=from_si(result.sulfur_rate.magnitude_si, result.sulfur_rate.unit),
+        fes_rate=from_si(result.fes_rate.magnitude_si, result.fes_rate.unit),
+        co2_corrected_rate=from_si(result.co2_corrected_rate.magnitude_si, result.co2_corrected_rate.unit),
+        total_corrosion_rate=from_si(result.total_corrosion_rate.magnitude_si, result.total_corrosion_rate.unit),
+        feco3_saturation_index=result.feco3_saturation_index,
+        feco3_scale_forming=result.feco3_scale_forming,
+        is_sour_service=result.is_sour_service,
+        corrosion_severity=CorrosionSeverity(result.corrosion_severity),
+        fes_morphology=FeSMorphology(result.fes_morphology),
+        corrosion_allowance=from_si(result.corrosion_allowance.magnitude_si, result.corrosion_allowance.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -1295,6 +1626,66 @@ def electrolyte_cpa_statoil_phase(components: list[str], T: Q, P: Q, x: list[flo
     )
 
 
+def electrolyte_scale_calculator(calcium: Q, barium: Q, strontium: Q, magnesium: Q, sodium: Q, potassium: Q, iron: Q, chloride: Q, sulphate: Q, bicarbonate: Q, carbonate: Q, temperature: Q, pressure: Q, ph: float) -> ElectrolyteScaleCalculatorResult:
+    """``eos.electrolyte_scale_calculator``, computed in Rust."""
+    spec = _spec_for("eos.electrolyte_scale_calculator")
+    result = _core.electrolyte_scale_calculator(
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "strontium", strontium),
+        input_to_si(spec, "magnesium", magnesium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "potassium", potassium),
+        input_to_si(spec, "iron", iron),
+        input_to_si(spec, "chloride", chloride),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "carbonate", carbonate),
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "pressure", pressure),
+        ph,
+    )
+    return ElectrolyteScaleCalculatorResult(
+        ionic_strength=from_si(result.ionic_strength.magnitude_si, result.ionic_strength.unit),
+        debye_hueckel_a=result.debye_hueckel_a,
+        divalent_activity_coefficient=result.divalent_activity_coefficient,
+        monovalent_activity_coefficient=result.monovalent_activity_coefficient,
+        si_caco3=result.si_caco3,
+        si_baso4=result.si_baso4,
+        si_caso4=result.si_caso4,
+        si_srso4=result.si_srso4,
+        si_brucite=result.si_brucite,
+        hydroxide_activity=result.hydroxide_activity,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def emulsion_viscosity(oil_viscosity: Q, water_viscosity: Q, oil_density: Q, water_density: Q, water_cut: float, max_packing_fraction: float, model: str, tightness_factor: float, demulsifier_present: bool, demulsifier_efficiency: float) -> EmulsionViscosityResult:
+    """``eos.emulsion_viscosity``, computed in Rust."""
+    spec = _spec_for("eos.emulsion_viscosity")
+    result = _core.emulsion_viscosity(
+        input_to_si(spec, "oil_viscosity", oil_viscosity),
+        input_to_si(spec, "water_viscosity", water_viscosity),
+        input_to_si(spec, "oil_density", oil_density),
+        input_to_si(spec, "water_density", water_density),
+        water_cut,
+        max_packing_fraction,
+        model,
+        tightness_factor,
+        demulsifier_present,
+        demulsifier_efficiency,
+    )
+    return EmulsionViscosityResult(
+        effective_viscosity=from_si(result.effective_viscosity.magnitude_si, result.effective_viscosity.unit),
+        relative_viscosity=result.relative_viscosity,
+        viscosity_ratio=result.viscosity_ratio,
+        inversion_water_cut=result.inversion_water_cut,
+        emulsion_type=EmulsionType(result.emulsion_type),
+        is_inverted=result.is_inverted,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def eos_cg_phase(components: list[str], T: Q, P: Q, z: list[float]) -> EosCgPhaseResult:
     """``eos.eos_cg_phase``, computed in Rust."""
     spec = _models_gen.model("eos.eos_cg_phase")
@@ -1312,6 +1703,64 @@ def eos_cg_phase(components: list[str], T: Q, P: Q, z: list[float]) -> EosCgPhas
         cv=from_si(result.cv.magnitude_si, result.cv.unit),
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
         g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def equilibrium_sound_speed(components: list[str], T: Q, P: Q, z: list[float], relative_pressure_step: float | None=None, specific_entropy: Q | None=None) -> EquilibriumSoundSpeedResult:
+    """``eos.equilibrium_sound_speed``, computed in Rust."""
+    spec = _models_gen.model("eos.equilibrium_sound_speed")
+    result = _core.equilibrium_sound_speed(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        None if relative_pressure_step is None else relative_pressure_step,
+        None if specific_entropy is None else input_to_si(spec, "specific_entropy", specific_entropy),
+    )
+    return EquilibriumSoundSpeedResult(
+        sound_speed=None if result.sound_speed is None else from_si(result.sound_speed.magnitude_si, result.sound_speed.unit),
+        status=result.status,
+        message=result.message,
+        pressure_step=from_si(result.pressure_step.magnitude_si, result.pressure_step.unit),
+        relative_step_error=result.relative_step_error,
+        specific_entropy=from_si(result.specific_entropy.magnitude_si, result.specific_entropy.unit),
+        stencil=result.stencil,
+        phase_boundary_encountered=result.phase_boundary_encountered,
+        flash_evaluations=result.flash_evaluations,
+        samples=tuple(EquilibriumSoundSpeedSample(pressure=from_si(c.pressure.magnitude_si, c.pressure.unit), temperature=from_si(c.temperature.magnitude_si, c.temperature.unit), density=from_si(c.density.magnitude_si, c.density.unit), entropy_residual=from_si(c.entropy_residual.magnitude_si, c.entropy_residual.unit), phase=c.phase, vapour_fraction=c.vapour_fraction) for c in result.samples),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def erosion_prediction(mixture_density: Q, mixture_velocity: Q, pipe_diameter: Q, wall_thickness: Q, sand_rate: Q, sand_particle_diameter: Q, sand_particle_density: Q, mixture_viscosity: Q, geometry: str, bend_radius_ratio: float, pipe_material: str, api_c_factor: float, corrosion_allowance: Q, design_life: Q) -> ErosionPredictionResult:
+    """``eos.erosion_prediction``, computed in Rust."""
+    spec = _spec_for("eos.erosion_prediction")
+    result = _core.erosion_prediction(
+        input_to_si(spec, "mixture_density", mixture_density),
+        input_to_si(spec, "mixture_velocity", mixture_velocity),
+        input_to_si(spec, "pipe_diameter", pipe_diameter),
+        input_to_si(spec, "wall_thickness", wall_thickness),
+        input_to_si(spec, "sand_rate", sand_rate),
+        input_to_si(spec, "sand_particle_diameter", sand_particle_diameter),
+        input_to_si(spec, "sand_particle_density", sand_particle_density),
+        input_to_si(spec, "mixture_viscosity", mixture_viscosity),
+        geometry,
+        bend_radius_ratio,
+        pipe_material,
+        api_c_factor,
+        input_to_si(spec, "corrosion_allowance", corrosion_allowance),
+        input_to_si(spec, "design_life", design_life),
+    )
+    return ErosionPredictionResult(
+        erosional_velocity=from_si(result.erosional_velocity.magnitude_si, result.erosional_velocity.unit),
+        velocity_ratio=result.velocity_ratio,
+        erosion_rate=from_si(result.erosion_rate.magnitude_si, result.erosion_rate.unit),
+        cumulative_erosion=from_si(result.cumulative_erosion.magnitude_si, result.cumulative_erosion.unit),
+        remaining_wall_thickness=from_si(result.remaining_wall_thickness.magnitude_si, result.remaining_wall_thickness.unit),
+        within_api_limits=result.within_api_limits,
+        within_erosion_limits=result.within_erosion_limits,
+        risk_level=ErosionRiskLevel(result.risk_level),
         warnings=_warnings(result.warnings),
     )
 
@@ -1985,6 +2434,32 @@ def hydrate_inhibitor_wt(components: list[str], moles: list[Q], inhibitor: str, 
     )
 
 
+def hydrate_risk_map(components: list[str], z: list[float], distances: Sequence[Q], pressures: Sequence[Q], temperatures: Sequence[Q], eos: str | None=None, hydrate_model: str | None=None, high_risk_subcooling: Q | None=None, medium_risk_subcooling: Q | None=None) -> HydrateRiskMapResult:
+    """``eos.hydrate_risk_map``, computed in Rust."""
+    spec = _models_gen.model("eos.hydrate_risk_map")
+    result = _core.hydrate_risk_map(
+        list(components),
+        list(z),
+        [input_to_si(spec, "distances", v) for v in distances],
+        [input_to_si(spec, "pressures", v) for v in pressures],
+        [input_to_si(spec, "temperatures", v) for v in temperatures],
+        eos,
+        hydrate_model,
+        None if high_risk_subcooling is None else input_to_si(spec, "high_risk_subcooling", high_risk_subcooling),
+        None if medium_risk_subcooling is None else input_to_si(spec, "medium_risk_subcooling", medium_risk_subcooling),
+    )
+    return HydrateRiskMapResult(
+        points=tuple(HydrateRiskPoint(distance=from_si(c.distance.magnitude_si, c.distance.unit), pressure=from_si(c.pressure.magnitude_si, c.pressure.unit), actual_temperature=from_si(c.actual_temperature.magnitude_si, c.actual_temperature.unit), hydrate_temperature=None if c.hydrate_temperature is None else from_si(c.hydrate_temperature.magnitude_si, c.hydrate_temperature.unit), subcooling=None if c.subcooling is None else from_si(c.subcooling.magnitude_si, c.subcooling.unit), risk_level=c.risk_level) for c in result.points),
+        overall_risk=HydrateRiskLevel(result.overall_risk),
+        minimum_subcooling=None if result.minimum_subcooling is None else from_si(result.minimum_subcooling.magnitude_si, result.minimum_subcooling.unit),
+        critical_point_count=result.critical_point_count,
+        unknown_point_count=result.unknown_point_count,
+        total_points=result.total_points,
+        all_points_evaluated=result.all_points_evaluated,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def iapws_henry_law(gas: str, T: Q) -> IapwsHenryLawResult:
     """``eos.iapws_henry_law``, computed in Rust."""
     spec = _spec_for("eos.iapws_henry_law")
@@ -2527,6 +3002,114 @@ def phase_transport(components: Sequence[str], phase: str, T: Q, P: Q, z: Sequen
     )
 
 
+def pipe_beggs_and_brills(components: list[str], inlet_n: float, inlet_z: list[float], inlet_p: Q, inlet_t: Q, length: Q, diameter: Q, elevation: Q, number_of_increments: int, roughness: Q, eos: str | None=None) -> PipeBeggsAndBrillsResult:
+    """``eos.pipe_beggs_and_brills``, computed in Rust."""
+    spec = _models_gen.model("eos.pipe_beggs_and_brills")
+    result = _core.pipe_beggs_and_brills(
+        list(components),
+        _si(spec, "inlet_n", inlet_n),
+        list(inlet_z),
+        input_to_si(spec, "inlet_p", inlet_p),
+        input_to_si(spec, "inlet_t", inlet_t),
+        input_to_si(spec, "length", length),
+        input_to_si(spec, "diameter", diameter),
+        input_to_si(spec, "elevation", elevation),
+        _count("number_of_increments", number_of_increments),
+        input_to_si(spec, "roughness", roughness),
+        eos,
+    )
+    return PipeBeggsAndBrillsResult(
+        pressure_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.pressure_profile),
+        pressure_drop_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.pressure_drop_profile),
+        temperature_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.temperature_profile),
+        liquid_holdup_profile=tuple(result.liquid_holdup_profile),
+        mixture_superficial_velocity_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.mixture_superficial_velocity_profile),
+        flow_regime_profile=tuple(result.flow_regime_profile),
+        outlet_pressure=from_si(result.outlet_pressure.magnitude_si, result.outlet_pressure.unit),
+        total_pressure_drop=from_si(result.total_pressure_drop.magnitude_si, result.total_pressure_drop.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pipeline_cooldown(internal_diameter: Q, wall_thickness: Q, insulation_thickness: Q, coating_thickness: Q, steel_density: Q, steel_specific_heat: Q, insulation_conductivity: Q, fluid_density: Q, fluid_specific_heat: Q, initial_fluid_temperature: Q, ambient_temperature: Q, time_step: Q, total_time: Q, overall_u_value: Q | None=None, use_layer_calculation: bool | None=None, external_htc: Q | None=None, target_temperature: Q | None=None) -> PipelineCooldownResult:
+    """``eos.pipeline_cooldown``, computed in Rust."""
+    spec = _models_gen.model("eos.pipeline_cooldown")
+    result = _core.pipeline_cooldown(
+        input_to_si(spec, "internal_diameter", internal_diameter),
+        input_to_si(spec, "wall_thickness", wall_thickness),
+        input_to_si(spec, "insulation_thickness", insulation_thickness),
+        input_to_si(spec, "coating_thickness", coating_thickness),
+        input_to_si(spec, "steel_density", steel_density),
+        input_to_si(spec, "steel_specific_heat", steel_specific_heat),
+        input_to_si(spec, "insulation_conductivity", insulation_conductivity),
+        input_to_si(spec, "fluid_density", fluid_density),
+        input_to_si(spec, "fluid_specific_heat", fluid_specific_heat),
+        input_to_si(spec, "initial_fluid_temperature", initial_fluid_temperature),
+        input_to_si(spec, "ambient_temperature", ambient_temperature),
+        input_to_si(spec, "time_step", time_step),
+        input_to_si(spec, "total_time", total_time),
+        None if overall_u_value is None else input_to_si(spec, "overall_u_value", overall_u_value),
+        use_layer_calculation,
+        None if external_htc is None else input_to_si(spec, "external_htc", external_htc),
+        None if target_temperature is None else input_to_si(spec, "target_temperature", target_temperature),
+    )
+    return PipelineCooldownResult(
+        time=tuple(from_si(q.magnitude_si, q.unit) for q in result.time),
+        fluid_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.fluid_temperature),
+        time_constant=from_si(result.time_constant.magnitude_si, result.time_constant.unit),
+        calculated_u_value=from_si(result.calculated_u_value.magnitude_si, result.calculated_u_value.unit),
+        effective_u_value=from_si(result.effective_u_value.magnitude_si, result.effective_u_value.unit),
+        time_to_reach_target=None if result.time_to_reach_target is None else from_si(result.time_to_reach_target.magnitude_si, result.time_to_reach_target.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pitzer_hydrate_formation_pressure(components: list[str], cubic: str, moles: list[Q], T: Q, structure: str | None=None, minimum_pressure: Q | None=None, maximum_pressure: Q | None=None, pitzer_dataset: str | None=None) -> PitzerHydrateFormationPressureResult:
+    """``eos.pitzer_hydrate_formation_pressure``, computed in Rust."""
+    spec = _models_gen.model("eos.pitzer_hydrate_formation_pressure")
+    result = _core.pitzer_hydrate_formation_pressure(
+        list(components),
+        [input_to_si(spec, "moles", v) for v in moles],
+        input_to_si(spec, "T", T),
+        cubic,
+        structure,
+        pitzer_dataset,
+        None if minimum_pressure is None else input_to_si(spec, "minimum_pressure", minimum_pressure),
+        None if maximum_pressure is None else input_to_si(spec, "maximum_pressure", maximum_pressure),
+    )
+    return PitzerHydrateFormationPressureResult(
+        pressure=from_si(result.pressure.magnitude_si, result.pressure.unit),
+        structure=HydrateStructure(result.structure),
+        water_activity=result.water_activity,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pitzer_hydrate_formation_temperature(components: list[str], cubic: str, moles: list[Q], P: Q, structure: str | None=None, minimum_temperature: Q | None=None, maximum_temperature: Q | None=None, pitzer_dataset: str | None=None) -> PitzerHydrateFormationTemperatureResult:
+    """``eos.pitzer_hydrate_formation_temperature``, computed in Rust."""
+    spec = _models_gen.model("eos.pitzer_hydrate_formation_temperature")
+    result = _core.pitzer_hydrate_formation_temperature(
+        list(components),
+        [input_to_si(spec, "moles", v) for v in moles],
+        input_to_si(spec, "P", P),
+        cubic,
+        structure,
+        pitzer_dataset,
+        None if minimum_temperature is None else input_to_si(spec, "minimum_temperature", minimum_temperature),
+        None if maximum_temperature is None else input_to_si(spec, "maximum_temperature", maximum_temperature),
+    )
+    return PitzerHydrateFormationTemperatureResult(
+        temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
+        structure=HydrateStructure(result.structure),
+        water_activity=result.water_activity,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def pitzer_phase(components: Sequence[str], T: Q, P: Q, x: Sequence[float]) -> PitzerPhaseResult:
     """``eos.pitzer_phase``, computed in Rust."""
     spec = _models_gen.model("eos.pitzer_phase")
@@ -2758,6 +3341,41 @@ def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
         iterations=result.iterations,
         converged=result.converged,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def production_chemical_scale_scenario(calcium: Q, barium: Q, strontium: Q, iron: Q, magnesium: Q, sodium: Q, sulphate: Q, bicarbonate: Q, total_dissolved_solids: Q, ph: float, dissolved_h2s: Q, temperature: Q, pressure: Q, activity_model: str, chemicals: list[dict[str, object]], pitzer_ionic_strength_molal: float | None=None) -> ProductionChemicalScaleScenarioResult:
+    """``eos.production_chemical_scale_scenario``, computed in Rust."""
+    spec = _models_gen.model("eos.production_chemical_scale_scenario")
+    result = _core.production_chemical_scale_scenario(
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "strontium", strontium),
+        input_to_si(spec, "iron", iron),
+        input_to_si(spec, "magnesium", magnesium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        ph,
+        input_to_si(spec, "dissolved_h2s", dissolved_h2s),
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "pressure", pressure),
+        activity_model,
+        input_records_to_si(spec, "chemicals", chemicals),
+        None if pitzer_ionic_strength_molal is None else _si(spec, "pitzer_ionic_strength_molal", pitzer_ionic_strength_molal),
+    )
+    return ProductionChemicalScaleScenarioResult(
+        treated_ph=result.treated_ph,
+        treated_bicarbonate=from_si(result.treated_bicarbonate.magnitude_si, result.treated_bicarbonate.unit),
+        base_dose_equivalents=from_si(result.base_dose_equivalents.magnitude_si, result.base_dose_equivalents.unit),
+        scavenger_capacity=from_si(result.scavenger_capacity.magnitude_si, result.scavenger_capacity.unit),
+        residual_dissolved_h2s=from_si(result.residual_dissolved_h2s.magnitude_si, result.residual_dissolved_h2s.unit),
+        baseline_si=tuple(ScenarioIndexRow(mineral=c.mineral, saturation_index=c.saturation_index) for c in result.baseline_si),
+        treated_si=tuple(ScenarioIndexRow(mineral=c.mineral, saturation_index=c.saturation_index) for c in result.treated_si),
+        si_change=tuple(ScenarioChangeRow(mineral=c.mineral, change=c.change) for c in result.si_change),
+        model_warnings=tuple(ChemicalWarningRow(code=c.code, message=c.message) for c in result.model_warnings),
         warnings=_warnings(result.warnings),
     )
 
@@ -3152,6 +3770,112 @@ def saturate_with_water(components: list[str], moles: list[float], T: Q, P: Q, e
     )
 
 
+def scale_control_assessor(calcium: Q, barium: Q, strontium: Q, iron: Q, magnesium: Q, sodium: Q, bicarbonate: Q, sulphate: Q, total_dissolved_solids: Q, temperature: Q, pressure: Q, co2_partial_pressure: Q, ph: float, inhibitors: list[dict[str, object]]) -> ScaleControlAssessorResult:
+    """``eos.scale_control_assessor``, computed in Rust."""
+    spec = _models_gen.model("eos.scale_control_assessor")
+    result = _core.scale_control_assessor(
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "strontium", strontium),
+        input_to_si(spec, "iron", iron),
+        input_to_si(spec, "magnesium", magnesium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "pressure", pressure),
+        input_to_si(spec, "co2_partial_pressure", co2_partial_pressure),
+        ph,
+        input_records_to_si(spec, "inhibitors", inhibitors),
+    )
+    return ScaleControlAssessorResult(
+        thermodynamic_si=tuple(ScaleControlRow(scale=c.scale, saturation_index=c.saturation_index) for c in result.thermodynamic_si),
+        kinetic_risk_index=tuple(ScaleControlRiskRow(scale=c.scale, risk_index=c.risk_index) for c in result.kinetic_risk_index),
+        worst_kinetic_risk_index=result.worst_kinetic_risk_index,
+        kinetically_controlled=result.kinetically_controlled,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def scale_deposition_accumulator(calcium: Q, bicarbonate: Q, sulphate: Q, barium: Q, sodium: Q, total_dissolved_solids: Q, ph: float, diameter: Q, length: Q, segment_temperatures: list[Q], segment_pressures: list[Q], service_time: Q, scale_density: Q, base_rate: Q, inhibitor_efficiency: float) -> ScaleDepositionAccumulatorResult:
+    """``eos.scale_deposition_accumulator``, computed in Rust."""
+    spec = _models_gen.model("eos.scale_deposition_accumulator")
+    result = _core.scale_deposition_accumulator(
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        ph,
+        input_to_si(spec, "diameter", diameter),
+        input_to_si(spec, "length", length),
+        [input_to_si(spec, "segment_temperatures", v) for v in segment_temperatures],
+        [input_to_si(spec, "segment_pressures", v) for v in segment_pressures],
+        input_to_si(spec, "service_time", service_time),
+        input_to_si(spec, "scale_density", scale_density),
+        input_to_si(spec, "base_rate", base_rate),
+        inhibitor_efficiency,
+    )
+    return ScaleDepositionAccumulatorResult(
+        segments=tuple(DepositionSegmentRow(saturation_index=c.saturation_index, deposition_mass=from_si(c.deposition_mass.magnitude_si, c.deposition_mass.unit), thickness=from_si(c.thickness.magnitude_si, c.thickness.unit)) for c in result.segments),
+        total_deposition_mass=from_si(result.total_deposition_mass.magnitude_si, result.total_deposition_mass.unit),
+        max_thickness=from_si(result.max_thickness.magnitude_si, result.max_thickness.unit),
+        time_to_blockage=from_si(result.time_to_blockage.magnitude_si, result.time_to_blockage.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def scale_inhibitor_performance(scale_type: str, inhibitor_chemistry: str, temperature: Q, saturation_ratio: float, total_dissolved_solids: Q, calcium: Q, available_dose: Q) -> ScaleInhibitorPerformanceResult:
+    """``eos.scale_inhibitor_performance``, computed in Rust."""
+    spec = _spec_for("eos.scale_inhibitor_performance")
+    result = _core.scale_inhibitor_performance(
+        scale_type,
+        inhibitor_chemistry,
+        input_to_si(spec, "temperature", temperature),
+        saturation_ratio,
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "available_dose", available_dose),
+    )
+    return ScaleInhibitorPerformanceResult(
+        minimum_inhibitor_concentration=from_si(result.minimum_inhibitor_concentration.magnitude_si, result.minimum_inhibitor_concentration.unit),
+        recommended_dose=from_si(result.recommended_dose.magnitude_si, result.recommended_dose.unit),
+        efficiency=result.efficiency,
+        adequate=result.adequate,
+        thermal_degradation_risk=result.thermal_degradation_risk,
+        calcium_phosphonate_precipitation_risk=result.calcium_phosphonate_precipitation_risk,
+        extreme_supersaturation_risk=result.extreme_supersaturation_risk,
+        low_temperature_solubility_risk=result.low_temperature_solubility_risk,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def scale_kinetics(saturation_index: float, nucleation_constant: Q, nucleation_shape_factor: float, surface_rate_constant: Q, surface_reaction_order: float, mass_transfer_coefficient: Q, bulk_concentration: Q, equilibrium_concentration: Q) -> ScaleKineticsResult:
+    """``eos.scale_kinetics``, computed in Rust."""
+    spec = _spec_for("eos.scale_kinetics")
+    result = _core.scale_kinetics(
+        saturation_index,
+        input_to_si(spec, "nucleation_constant", nucleation_constant),
+        nucleation_shape_factor,
+        input_to_si(spec, "surface_rate_constant", surface_rate_constant),
+        surface_reaction_order,
+        input_to_si(spec, "mass_transfer_coefficient", mass_transfer_coefficient),
+        input_to_si(spec, "bulk_concentration", bulk_concentration),
+        input_to_si(spec, "equilibrium_concentration", equilibrium_concentration),
+    )
+    return ScaleKineticsResult(
+        supersaturation_ratio=result.supersaturation_ratio,
+        induction_time=from_si(result.induction_time.magnitude_si, result.induction_time.unit),
+        surface_limited_growth=from_si(result.surface_limited_growth.magnitude_si, result.surface_limited_growth.unit),
+        transport_limited_growth=from_si(result.transport_limited_growth.magnitude_si, result.transport_limited_growth.unit),
+        effective_growth_rate=from_si(result.effective_growth_rate.magnitude_si, result.effective_growth_rate.unit),
+        limiting_regime=result.limiting_regime,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def scale_mass(mineral: str, cation_concentration: Q, anion_concentration: Q, saturation_index: float) -> ScaleMassResult:
     """``eos.scale_mass``, computed in Rust."""
     spec = _spec_for("eos.scale_mass")
@@ -3221,6 +3945,18 @@ def scale_prediction(calcium: Q, barium: Q, strontium: Q, iron: Q, magnesium: Q,
         si_feco3=result.si_feco3,
         has_scaling_risk=result.has_scaling_risk,
         scale_risk_count=result.scale_risk_count,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def scale_remediation_advisor(deposit: str) -> ScaleRemediationAdvisorResult:
+    """``eos.scale_remediation_advisor``, computed in Rust."""
+    result = _core.scale_remediation_advisor(
+        deposit,
+    )
+    return ScaleRemediationAdvisorResult(
+        canonical_key=result.canonical_key,
+        options=tuple(RemediationOptionRow(scale_type=c.scale_type, category=c.category, dissolver=c.dissolver, concentration=c.concentration, method=c.method, effectiveness=c.effectiveness, min_temperature=from_si(c.min_temperature.magnitude_si, c.min_temperature.unit), max_temperature=from_si(c.max_temperature.magnitude_si, c.max_temperature.unit), cautions=c.cautions, standard=c.standard) for c in result.options),
         warnings=_warnings(result.warnings),
     )
 
@@ -3326,6 +4062,23 @@ def soreide_whitson_phase(components: list[str], T: Q, P: Q, x: list[float], sal
     return SoreideWhitsonPhaseResult(
         z_factor=result.z_factor,
         ln_phi=tuple(result.ln_phi),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def sound_speed(components: list[str], T: Q, P: Q, z: list[float]) -> SoundSpeedResult:
+    """``eos.sound_speed``, computed in Rust."""
+    spec = _models_gen.model("eos.sound_speed")
+    result = _core.sound_speed(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+    )
+    return SoundSpeedResult(
+        sound_speed=from_si(result.sound_speed.magnitude_si, result.sound_speed.unit),
+        system_sound_speed=from_si(result.system_sound_speed.magnitude_si, result.system_sound_speed.unit),
+        phase=_Phase(result.phase),
         warnings=_warnings(result.warnings),
     )
 
@@ -3448,6 +4201,85 @@ def stability_test(mixture: Mixture, T: Q, P: Q, z: list[float]) -> StabilityTes
         w=tuple(tuple(row) for row in result.w),
         iterations=tuple(result.iterations),
         min_t_over_tc=result.min_t_over_tc,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def stream_scale_analyzer(calcium: Q, barium: Q, strontium: Q, iron: Q, magnesium: Q, sodium: Q, bicarbonate: Q, sulphate: Q, total_dissolved_solids: Q, temperature: Q, pressure: Q, co2_partial_pressure: Q, ph: float, auto_ph: bool, second_order_pressure_correction: bool, activity_model: str, water_flow: Q, bdot_ion_size: float | None=None, bdot_b: float | None=None, pitzer_ionic_strength_molal: float | None=None) -> StreamScaleAnalyzerResult:
+    """``eos.stream_scale_analyzer``, computed in Rust."""
+    spec = _models_gen.model("eos.stream_scale_analyzer")
+    result = _core.stream_scale_analyzer(
+        input_to_si(spec, "calcium", calcium),
+        input_to_si(spec, "barium", barium),
+        input_to_si(spec, "strontium", strontium),
+        input_to_si(spec, "iron", iron),
+        input_to_si(spec, "magnesium", magnesium),
+        input_to_si(spec, "sodium", sodium),
+        input_to_si(spec, "bicarbonate", bicarbonate),
+        input_to_si(spec, "sulphate", sulphate),
+        input_to_si(spec, "total_dissolved_solids", total_dissolved_solids),
+        input_to_si(spec, "temperature", temperature),
+        input_to_si(spec, "pressure", pressure),
+        input_to_si(spec, "co2_partial_pressure", co2_partial_pressure),
+        ph,
+        auto_ph,
+        second_order_pressure_correction,
+        activity_model,
+        input_to_si(spec, "water_flow", water_flow),
+        None if bdot_ion_size is None else _si(spec, "bdot_ion_size", bdot_ion_size),
+        None if bdot_b is None else _si(spec, "bdot_b", bdot_b),
+        None if pitzer_ionic_strength_molal is None else _si(spec, "pitzer_ionic_strength_molal", pitzer_ionic_strength_molal),
+    )
+    return StreamScaleAnalyzerResult(
+        minerals=tuple(StreamScaleMineralRow(mineral=c.mineral, initial_si=c.initial_si, final_si=c.final_si, precipitated_mass=from_si(c.precipitated_mass.magnitude_si, c.precipitated_mass.unit), scale_rate=from_si(c.scale_rate.magnitude_si, c.scale_rate.unit)) for c in result.minerals),
+        total_scale_mass=from_si(result.total_scale_mass.magnitude_si, result.total_scale_mass.unit),
+        total_scale_rate=from_si(result.total_scale_rate.magnitude_si, result.total_scale_rate.unit),
+        dominant_scale=result.dominant_scale,
+        has_scaling=result.has_scaling,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def surf_cooldown(components: list[str], z: list[float], operating_pressure: Q, flash_temperature: Q, internal_diameter: Q, wall_thickness: Q, insulation_thickness: Q, coating_thickness: Q, insulation_conductivity: Q, seabed_temperature: Q, operating_temperature: Q | None=None, overall_u_value: Q | None=None, external_htc: Q | None=None, hydrate_margin: Q | None=None, required_no_touch_time: Q | None=None, total_time: Q | None=None, time_step: Q | None=None, require_water: bool | None=None, eos: str | None=None, hydrate_model: str | None=None) -> SurfCooldownResult:
+    """``eos.surf_cooldown``, computed in Rust."""
+    spec = _models_gen.model("eos.surf_cooldown")
+    result = _core.surf_cooldown(
+        list(components),
+        list(z),
+        input_to_si(spec, "operating_pressure", operating_pressure),
+        input_to_si(spec, "flash_temperature", flash_temperature),
+        input_to_si(spec, "internal_diameter", internal_diameter),
+        input_to_si(spec, "wall_thickness", wall_thickness),
+        input_to_si(spec, "insulation_thickness", insulation_thickness),
+        input_to_si(spec, "coating_thickness", coating_thickness),
+        input_to_si(spec, "insulation_conductivity", insulation_conductivity),
+        input_to_si(spec, "seabed_temperature", seabed_temperature),
+        None if operating_temperature is None else input_to_si(spec, "operating_temperature", operating_temperature),
+        None if overall_u_value is None else input_to_si(spec, "overall_u_value", overall_u_value),
+        None if external_htc is None else input_to_si(spec, "external_htc", external_htc),
+        None if hydrate_margin is None else input_to_si(spec, "hydrate_margin", hydrate_margin),
+        None if required_no_touch_time is None else input_to_si(spec, "required_no_touch_time", required_no_touch_time),
+        None if total_time is None else input_to_si(spec, "total_time", total_time),
+        None if time_step is None else input_to_si(spec, "time_step", time_step),
+        require_water,
+        eos,
+        hydrate_model,
+    )
+    return SurfCooldownResult(
+        verdict=CooldownVerdict(result.verdict),
+        water_present=result.water_present,
+        water_mole_fraction=result.water_mole_fraction,
+        no_touch_time=None if result.no_touch_time is None else from_si(result.no_touch_time.magnitude_si, result.no_touch_time.unit),
+        initial_fluid_temperature=from_si(result.initial_fluid_temperature.magnitude_si, result.initial_fluid_temperature.unit),
+        hydrate_equilibrium_temperature=None if result.hydrate_equilibrium_temperature is None else from_si(result.hydrate_equilibrium_temperature.magnitude_si, result.hydrate_equilibrium_temperature.unit),
+        hydrate_margin=from_si(result.hydrate_margin.magnitude_si, result.hydrate_margin.unit),
+        seabed_temperature=from_si(result.seabed_temperature.magnitude_si, result.seabed_temperature.unit),
+        overall_u_value=from_si(result.overall_u_value.magnitude_si, result.overall_u_value.unit),
+        time_constant=from_si(result.time_constant.magnitude_si, result.time_constant.unit),
+        fluid_density=from_si(result.fluid_density.magnitude_si, result.fluid_density.unit),
+        fluid_specific_heat=from_si(result.fluid_specific_heat.magnitude_si, result.fluid_specific_heat.unit),
+        internal_diameter=from_si(result.internal_diameter.magnitude_si, result.internal_diameter.unit),
+        insulation_thickness=from_si(result.insulation_thickness.magnitude_si, result.insulation_thickness.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -3953,6 +4785,29 @@ def uniquac_activity_coefficients(params: UniquacParameters, T: Q, x: Sequence[f
     return UniquacActivityCoefficientsResult(
         ln_gamma=tuple(result.ln_gamma),
         gamma=tuple(result.gamma),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def valve_scale_drift(port_diameter: Q, growth_rate: Q, elapsed_time: Q, clean_opening_percent: float, valve_kv: float) -> ValveScaleDriftResult:
+    """``eos.valve_scale_drift``, computed in Rust."""
+    spec = _models_gen.model("eos.valve_scale_drift")
+    result = _core.valve_scale_drift(
+        input_to_si(spec, "port_diameter", port_diameter),
+        input_to_si(spec, "growth_rate", growth_rate),
+        input_to_si(spec, "elapsed_time", elapsed_time),
+        clean_opening_percent,
+        valve_kv,
+    )
+    return ValveScaleDriftResult(
+        deposit_thickness=from_si(result.deposit_thickness.magnitude_si, result.deposit_thickness.unit),
+        elapsed_time=from_si(result.elapsed_time.magnitude_si, result.elapsed_time.unit),
+        open_area_fraction=result.open_area_fraction,
+        fouling_fraction=result.fouling_fraction,
+        effective_kv=result.effective_kv,
+        time_to_plug=from_si(result.time_to_plug.magnitude_si, result.time_to_plug.unit),
+        opening_percent=result.opening_percent,
+        time_to_pin=from_si(result.time_to_pin.magnitude_si, result.time_to_pin.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -4693,6 +5548,37 @@ def absorption_column(gas_components: list[str], gas_n: Q, gas_z: list[float], g
     )
 
 
+def anti_surge_recycle(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, curve: list[dict[str, Q]], surge_curve: list[dict[str, Q]], speed: float | None=None, surge_control_margin: float | None=None, recycle_cooler_temperature: Q | None=None, damping: float | None=None, tolerance: float | None=None, max_iterations: int | None=None) -> AntiSurgeRecycleResult:
+    """``process.anti_surge_recycle``, computed in Rust."""
+    spec = _models_gen.model("process.anti_surge_recycle")
+    result = _core.anti_surge_recycle(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        list(feed_z),
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        input_records_to_si(spec, "curve", curve),
+        input_records_to_si(spec, "surge_curve", surge_curve),
+        None if speed is None else speed,
+        None if surge_control_margin is None else surge_control_margin,
+        None if recycle_cooler_temperature is None else input_to_si(spec, "recycle_cooler_temperature", recycle_cooler_temperature),
+        None if damping is None else damping,
+        None if tolerance is None else tolerance,
+        None if max_iterations is None else _count("max_iterations", max_iterations),
+    )
+    return AntiSurgeRecycleResult(
+        recycle_active=result.recycle_active,
+        converged=result.converged,
+        iterations=result.iterations,
+        recycle_mass_flow=from_si(result.recycle_mass_flow.magnitude_si, result.recycle_mass_flow.unit),
+        inlet_volume_flow=from_si(result.inlet_volume_flow.magnitude_si, result.inlet_volume_flow.unit),
+        surge_flow=from_si(result.surge_flow.magnitude_si, result.surge_flow.unit),
+        control_flow=from_si(result.control_flow.magnitude_si, result.control_flow.unit),
+        distance_to_surge=result.distance_to_surge,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def component_splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, split_factors: list[float]) -> ComponentSplitterResult:
     """``process.component_splitter``, computed in Rust."""
     spec = _models_gen.model("process.component_splitter")
@@ -4719,7 +5605,7 @@ def component_splitter(components: list[str], feed_n: Q, feed_z: list[float], fe
     )
 
 
-def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, isentropic_efficiency: float) -> CompressorResult:
+def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, use_polytropic_calc: bool | None=None, polytropic_efficiency: float | None=None, polytropic_method: str | None=None, compression_ratio: float | None=None, max_outlet_pressure: Q | None=None, power: Q | None=None, deposit: list[dict[str, Q]] | None=None, wetted_area: Q | None=None, passage_half_height: Q | None=None, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, solve_speed: bool | None=None, min_speed: float | None=None, max_speed: float | None=None, limit_speed: bool | None=None, chart_type: str | None=None, chart_conditions: list[float] | None=None, impeller_diameter: Q | None=None, surge_curve: list[dict[str, Q]] | None=None, surge_control_margin: float | None=None, anti_surge_active: bool | None=None, surge_control_factor: float | None=None) -> CompressorResult:
     """``process.compressor``, computed in Rust."""
     spec = _models_gen.model("process.compressor")
     result = _core.compressor(
@@ -4728,8 +5614,30 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
         list(inlet_z),
         input_to_si(spec, "inlet_p", inlet_p),
         input_to_si(spec, "inlet_t", inlet_t),
-        input_to_si(spec, "outlet_pressure", outlet_pressure),
         isentropic_efficiency,
+        None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure),
+        use_polytropic_calc,
+        None if polytropic_efficiency is None else polytropic_efficiency,
+        polytropic_method,
+        None if compression_ratio is None else compression_ratio,
+        None if max_outlet_pressure is None else input_to_si(spec, "max_outlet_pressure", max_outlet_pressure),
+        None if power is None else input_to_si(spec, "power", power),
+        None if deposit is None else input_records_to_si(spec, "deposit", deposit),
+        None if wetted_area is None else input_to_si(spec, "wetted_area", wetted_area),
+        None if passage_half_height is None else input_to_si(spec, "passage_half_height", passage_half_height),
+        None if curve is None else input_records_to_si(spec, "curve", curve),
+        None if speed is None else speed,
+        solve_speed,
+        None if min_speed is None else min_speed,
+        None if max_speed is None else max_speed,
+        limit_speed,
+        chart_type,
+        None if chart_conditions is None else list(chart_conditions),
+        None if impeller_diameter is None else input_to_si(spec, "impeller_diameter", impeller_diameter),
+        None if surge_curve is None else input_records_to_si(spec, "surge_curve", surge_curve),
+        None if surge_control_margin is None else surge_control_margin,
+        anti_surge_active,
+        None if surge_control_factor is None else surge_control_factor,
     )
     return CompressorResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -4737,11 +5645,33 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        polytropic_head=from_si(result.polytropic_head.magnitude_si, result.polytropic_head.unit),
+        polytropic_efficiency=result.polytropic_efficiency,
+        polytropic_exponent=result.polytropic_exponent,
+        total_deposit_mass=None if result.total_deposit_mass is None else from_si(result.total_deposit_mass.magnitude_si, result.total_deposit_mass.unit),
+        deposit_volume=None if result.deposit_volume is None else from_si(result.deposit_volume.magnitude_si, result.deposit_volume.unit),
+        film_thickness=None if result.film_thickness is None else from_si(result.film_thickness.magnitude_si, result.film_thickness.unit),
+        area_blockage_fraction=result.area_blockage_fraction,
+        efficiency_multiplier=result.efficiency_multiplier,
+        head_multiplier=result.head_multiplier,
+        degradation_factor=result.degradation_factor,
+        fouling_factor=result.fouling_factor,
+        power=from_si(result.power.magnitude_si, result.power.unit),
+        shaft_speed=result.shaft_speed,
+        surge_flow_rate=None if result.surge_flow_rate is None else from_si(result.surge_flow_rate.magnitude_si, result.surge_flow_rate.unit),
+        surge_flow_rate_margin=None if result.surge_flow_rate_margin is None else from_si(result.surge_flow_rate_margin.magnitude_si, result.surge_flow_rate_margin.unit),
+        surge_flow_rate_std=None if result.surge_flow_rate_std is None else from_si(result.surge_flow_rate_std.magnitude_si, result.surge_flow_rate_std.unit),
+        distance_to_surge=result.distance_to_surge,
+        control_line_flow=None if result.control_line_flow is None else from_si(result.control_line_flow.magnitude_si, result.control_line_flow.unit),
+        distance_to_control_line=result.distance_to_control_line,
+        required_recycle_fraction=result.required_recycle_fraction,
+        anti_surge_recycle_power=None if result.anti_surge_recycle_power is None else from_si(result.anti_surge_recycle_power.magnitude_si, result.anti_surge_recycle_power.unit),
+        recycle_fraction=result.recycle_fraction,
         warnings=_warnings(result.warnings),
     )
 
 
-def cooler(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None) -> CoolerResult:
+def cooler(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None, time_step: Q | None=None, dynamic_temperature_control_enabled: bool | None=None, design_mass_flow: Q | None=None, design_inlet_temperature: Q | None=None, design_outlet_temperature: Q | None=None, cooling_medium_temperature: Q | None=None, design_valve_opening: float | None=None, actuator_time_constant: Q | None=None, thermal_time_constant: Q | None=None, cooling_valve_opening: float | None=None, requested_valve_opening: float | None=None, dynamic_outlet_temperature: Q | None=None) -> CoolerResult:
     """``process.cooler``, computed in Rust."""
     spec = _models_gen.model("process.cooler")
     result = _core.cooler(
@@ -4753,6 +5683,18 @@ def cooler(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         None if outlet_temperature is None else input_to_si(spec, "outlet_temperature", outlet_temperature),
         None if duty is None else input_to_si(spec, "duty", duty),
         None if pressure_drop is None else input_to_si(spec, "pressure_drop", pressure_drop),
+        None if time_step is None else input_to_si(spec, "time_step", time_step),
+        dynamic_temperature_control_enabled,
+        None if design_mass_flow is None else input_to_si(spec, "design_mass_flow", design_mass_flow),
+        None if design_inlet_temperature is None else input_to_si(spec, "design_inlet_temperature", design_inlet_temperature),
+        None if design_outlet_temperature is None else input_to_si(spec, "design_outlet_temperature", design_outlet_temperature),
+        None if cooling_medium_temperature is None else input_to_si(spec, "cooling_medium_temperature", cooling_medium_temperature),
+        None if design_valve_opening is None else design_valve_opening,
+        None if actuator_time_constant is None else input_to_si(spec, "actuator_time_constant", actuator_time_constant),
+        None if thermal_time_constant is None else input_to_si(spec, "thermal_time_constant", thermal_time_constant),
+        None if cooling_valve_opening is None else cooling_valve_opening,
+        None if requested_valve_opening is None else requested_valve_opening,
+        None if dynamic_outlet_temperature is None else input_to_si(spec, "dynamic_outlet_temperature", dynamic_outlet_temperature),
     )
     return CoolerResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -4761,6 +5703,8 @@ def cooler(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
         outlet_duty=from_si(result.outlet_duty.magnitude_si, result.outlet_duty.unit),
+        cooling_valve_opening=result.cooling_valve_opening,
+        equilibrium_outlet_temperature=None if result.equilibrium_outlet_temperature is None else from_si(result.equilibrium_outlet_temperature.magnitude_si, result.equilibrium_outlet_temperature.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -4853,6 +5797,8 @@ def distillation_column(components: list[str], feed_n: Q, feed_z: list[float], f
         temperature_residual=result.temperature_residual,
         mass_residual=result.mass_residual,
         energy_residual=result.energy_residual,
+        top_specification_residual=result.top_specification_residual,
+        bottom_specification_residual=result.bottom_specification_residual,
         fs_factor=result.fs_factor,
         fs_factor_utilization=result.fs_factor_utilization,
         fs_factor_within_design_limit=result.fs_factor_within_design_limit,
@@ -4914,11 +5860,28 @@ def ejector(motive_components: list[str], motive_n: Q, motive_z: list[float], mo
         suction_nozzle_velocity=None if result.suction_nozzle_velocity is None else from_si(result.suction_nozzle_velocity.magnitude_si, result.suction_nozzle_velocity.unit),
         mixing_velocity=None if result.mixing_velocity is None else from_si(result.mixing_velocity.magnitude_si, result.mixing_velocity.unit),
         diffuser_velocity=None if result.diffuser_velocity is None else from_si(result.diffuser_velocity.magnitude_si, result.diffuser_velocity.unit),
+        motive_nozzle_throat_area=from_si(result.motive_nozzle_throat_area.magnitude_si, result.motive_nozzle_throat_area.unit),
+        motive_nozzle_diameter=from_si(result.motive_nozzle_diameter.magnitude_si, result.motive_nozzle_diameter.unit),
+        suction_inlet_area=from_si(result.suction_inlet_area.magnitude_si, result.suction_inlet_area.unit),
+        suction_inlet_diameter=from_si(result.suction_inlet_diameter.magnitude_si, result.suction_inlet_diameter.unit),
+        mixing_chamber_area=from_si(result.mixing_chamber_area.magnitude_si, result.mixing_chamber_area.unit),
+        mixing_chamber_diameter=from_si(result.mixing_chamber_diameter.magnitude_si, result.mixing_chamber_diameter.unit),
+        diffuser_outlet_area=from_si(result.diffuser_outlet_area.magnitude_si, result.diffuser_outlet_area.unit),
+        diffuser_outlet_diameter=from_si(result.diffuser_outlet_diameter.magnitude_si, result.diffuser_outlet_diameter.unit),
+        motive_nozzle_effective_length=from_si(result.motive_nozzle_effective_length.magnitude_si, result.motive_nozzle_effective_length.unit),
+        suction_inlet_length=from_si(result.suction_inlet_length.magnitude_si, result.suction_inlet_length.unit),
+        mixing_chamber_length=from_si(result.mixing_chamber_length.magnitude_si, result.mixing_chamber_length.unit),
+        diffuser_outlet_length=from_si(result.diffuser_outlet_length.magnitude_si, result.diffuser_outlet_length.unit),
+        body_volume=from_si(result.body_volume.magnitude_si, result.body_volume.unit),
+        connected_piping_volume=from_si(result.connected_piping_volume.magnitude_si, result.connected_piping_volume.unit),
+        total_volume=from_si(result.total_volume.magnitude_si, result.total_volume.unit),
+        suction_connection_length=from_si(result.suction_connection_length.magnitude_si, result.suction_connection_length.unit),
+        discharge_connection_length=from_si(result.discharge_connection_length.magnitude_si, result.discharge_connection_length.unit),
         warnings=_warnings(result.warnings),
     )
 
 
-def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, isentropic_efficiency: float) -> ExpanderResult:
+def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, isentropic_efficiency: float, use_polytropic_calc: bool | None=None, polytropic_efficiency: float | None=None, number_of_steps: int | None=None, rated_recovered_power: Q | None=None, shaft_power: Q | None=None, outlet_temperature: Q | None=None) -> ExpanderResult:
     """``process.expander``, computed in Rust."""
     spec = _models_gen.model("process.expander")
     result = _core.expander(
@@ -4929,6 +5892,12 @@ def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q
         input_to_si(spec, "inlet_t", inlet_t),
         input_to_si(spec, "outlet_pressure", outlet_pressure),
         isentropic_efficiency,
+        use_polytropic_calc,
+        None if polytropic_efficiency is None else polytropic_efficiency,
+        None if rated_recovered_power is None else input_to_si(spec, "rated_recovered_power", rated_recovered_power),
+        None if number_of_steps is None else _count("number_of_steps", number_of_steps),
+        None if shaft_power is None else input_to_si(spec, "shaft_power", shaft_power),
+        None if outlet_temperature is None else input_to_si(spec, "outlet_temperature", outlet_temperature),
     )
     return ExpanderResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -4936,11 +5905,18 @@ def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        power=from_si(result.power.magnitude_si, result.power.unit),
+        recovered_power_utilization=result.recovered_power_utilization,
+        max_utilization=result.max_utilization,
+        capacity_exceeded=result.capacity_exceeded,
+        hard_limit_exceeded=result.hard_limit_exceeded,
+        bottleneck_constraint=result.bottleneck_constraint,
+        reported_isentropic_efficiency=result.reported_isentropic_efficiency,
         warnings=_warnings(result.warnings),
     )
 
 
-def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, pressure_drop: Q) -> FilterResult:
+def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, pressure_drop: Q, pressure_drop_model: str | None=None, reference_flow: Q | None=None, flow_exponent: float | None=None, pressure_drop_curve: list[dict[str, Q]] | None=None, media_area: Q | None=None, media_bed_depth: Q | None=None, media_particle_diameter: Q | None=None, media_void_fraction: float | None=None, viscosity: Q | None=None, performance_curve: list[dict[str, Q]] | None=None, particle_size: Q | None=None, nominal_removal_efficiency: float | None=None, inlet_particle_concentration: float | None=None, solids_loading: Q | None=None, loading_capacity: Q | None=None, pressure_drop_increase_at_capacity: Q | None=None, breakthrough_start_fraction: float | None=None, bypass_cracking_pressure: Q | None=None, terminal_pressure_drop: Q | None=None, time_step: Q | None=None, holdup_volume: Q | None=None, solids_loading_rate: Q | None=None, backwash_removal_rate: Q | None=None, regeneration_removal_rate: Q | None=None, backwash_active: bool | None=None, regeneration_active: bool | None=None, mechanical_design: bool | None=None, filter_type: str | None=None, number_of_elements: float | None=None, max_face_velocity: Q | None=None, element_area: Q | None=None, max_nozzle_velocity: Q | None=None, min_ld_ratio: float | None=None, max_ld_ratio: float | None=None, design_pressure_margin: float | None=None, minimum_design_pressure_margin: Q | None=None, design_temperature_margin: Q | None=None, allowable_stress: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None, element_collapse_pressure: Q | None=None, element_integrity_verified: bool | None=None) -> FilterResult:
     """``process.filter``, computed in Rust."""
     spec = _models_gen.model("process.filter")
     result = _core.filter(
@@ -4950,6 +5926,48 @@ def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         input_to_si(spec, "inlet_p", inlet_p),
         input_to_si(spec, "inlet_t", inlet_t),
         input_to_si(spec, "pressure_drop", pressure_drop),
+        pressure_drop_model,
+        None if reference_flow is None else input_to_si(spec, "reference_flow", reference_flow),
+        None if flow_exponent is None else flow_exponent,
+        None if pressure_drop_curve is None else input_records_to_si(spec, "pressure_drop_curve", pressure_drop_curve),
+        None if media_area is None else input_to_si(spec, "media_area", media_area),
+        None if media_bed_depth is None else input_to_si(spec, "media_bed_depth", media_bed_depth),
+        None if media_particle_diameter is None else input_to_si(spec, "media_particle_diameter", media_particle_diameter),
+        None if media_void_fraction is None else media_void_fraction,
+        None if viscosity is None else input_to_si(spec, "viscosity", viscosity),
+        None if performance_curve is None else input_records_to_si(spec, "performance_curve", performance_curve),
+        None if particle_size is None else input_to_si(spec, "particle_size", particle_size),
+        None if nominal_removal_efficiency is None else nominal_removal_efficiency,
+        None if inlet_particle_concentration is None else inlet_particle_concentration,
+        None if solids_loading is None else input_to_si(spec, "solids_loading", solids_loading),
+        None if loading_capacity is None else input_to_si(spec, "loading_capacity", loading_capacity),
+        None if pressure_drop_increase_at_capacity is None else input_to_si(spec, "pressure_drop_increase_at_capacity", pressure_drop_increase_at_capacity),
+        None if breakthrough_start_fraction is None else breakthrough_start_fraction,
+        None if bypass_cracking_pressure is None else input_to_si(spec, "bypass_cracking_pressure", bypass_cracking_pressure),
+        None if terminal_pressure_drop is None else input_to_si(spec, "terminal_pressure_drop", terminal_pressure_drop),
+        None if time_step is None else input_to_si(spec, "time_step", time_step),
+        None if holdup_volume is None else input_to_si(spec, "holdup_volume", holdup_volume),
+        None if solids_loading_rate is None else input_to_si(spec, "solids_loading_rate", solids_loading_rate),
+        None if backwash_removal_rate is None else input_to_si(spec, "backwash_removal_rate", backwash_removal_rate),
+        None if regeneration_removal_rate is None else input_to_si(spec, "regeneration_removal_rate", regeneration_removal_rate),
+        backwash_active,
+        regeneration_active,
+        mechanical_design,
+        filter_type,
+        None if number_of_elements is None else number_of_elements,
+        None if max_face_velocity is None else input_to_si(spec, "max_face_velocity", max_face_velocity),
+        None if element_area is None else input_to_si(spec, "element_area", element_area),
+        None if max_nozzle_velocity is None else input_to_si(spec, "max_nozzle_velocity", max_nozzle_velocity),
+        None if min_ld_ratio is None else min_ld_ratio,
+        None if max_ld_ratio is None else max_ld_ratio,
+        None if design_pressure_margin is None else design_pressure_margin,
+        None if minimum_design_pressure_margin is None else input_to_si(spec, "minimum_design_pressure_margin", minimum_design_pressure_margin),
+        None if design_temperature_margin is None else input_to_si(spec, "design_temperature_margin", design_temperature_margin),
+        None if allowable_stress is None else input_to_si(spec, "allowable_stress", allowable_stress),
+        None if joint_efficiency is None else joint_efficiency,
+        None if corrosion_allowance is None else input_to_si(spec, "corrosion_allowance", corrosion_allowance),
+        None if element_collapse_pressure is None else input_to_si(spec, "element_collapse_pressure", element_collapse_pressure),
+        element_integrity_verified,
     )
     return FilterResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -4957,12 +5975,43 @@ def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        clean_drop=from_si(result.clean_drop.magnitude_si, result.clean_drop.unit),
         applied_drop=from_si(result.applied_drop.magnitude_si, result.applied_drop.unit),
+        nominal_removal_efficiency=result.nominal_removal_efficiency,
+        outlet_particle_concentration=result.outlet_particle_concentration,
+        captured_rate=from_si(result.captured_rate.magnitude_si, result.captured_rate.unit),
+        unrestricted_drop=from_si(result.unrestricted_drop.magnitude_si, result.unrestricted_drop.unit),
+        bypass_fraction=result.bypass_fraction,
+        loading_fraction=result.loading_fraction,
+        breakthrough_fraction=result.breakthrough_fraction,
+        current_removal_efficiency=result.current_removal_efficiency,
+        solids_loading=from_si(result.solids_loading.magnitude_si, result.solids_loading.unit),
+        differential_pressure_utilization=result.differential_pressure_utilization,
+        replacement_required=result.replacement_required,
+        holdup_residence_time=None if result.holdup_residence_time is None else from_si(result.holdup_residence_time.magnitude_si, result.holdup_residence_time.unit),
+        design_pressure=None if result.design_pressure is None else from_si(result.design_pressure.magnitude_si, result.design_pressure.unit),
+        design_temperature=None if result.design_temperature is None else from_si(result.design_temperature.magnitude_si, result.design_temperature.unit),
+        required_elements=result.required_elements,
+        vessel_inner_diameter=None if result.vessel_inner_diameter is None else from_si(result.vessel_inner_diameter.magnitude_si, result.vessel_inner_diameter.unit),
+        vessel_outer_diameter=None if result.vessel_outer_diameter is None else from_si(result.vessel_outer_diameter.magnitude_si, result.vessel_outer_diameter.unit),
+        vessel_length=None if result.vessel_length is None else from_si(result.vessel_length.magnitude_si, result.vessel_length.unit),
+        shell_thickness=None if result.shell_thickness is None else from_si(result.shell_thickness.magnitude_si, result.shell_thickness.unit),
+        head_thickness=None if result.head_thickness is None else from_si(result.head_thickness.magnitude_si, result.head_thickness.unit),
+        effective_element_area=None if result.effective_element_area is None else from_si(result.effective_element_area.magnitude_si, result.effective_element_area.unit),
+        calculated_face_velocity=None if result.calculated_face_velocity is None else from_si(result.calculated_face_velocity.magnitude_si, result.calculated_face_velocity.unit),
+        required_nozzle_diameter=None if result.required_nozzle_diameter is None else from_si(result.required_nozzle_diameter.magnitude_si, result.required_nozzle_diameter.unit),
+        selected_nozzle_diameter=None if result.selected_nozzle_diameter is None else from_si(result.selected_nozzle_diameter.magnitude_si, result.selected_nozzle_diameter.unit),
+        calculated_nozzle_velocity=None if result.calculated_nozzle_velocity is None else from_si(result.calculated_nozzle_velocity.magnitude_si, result.calculated_nozzle_velocity.unit),
+        empty_vessel_weight=None if result.empty_vessel_weight is None else from_si(result.empty_vessel_weight.magnitude_si, result.empty_vessel_weight.unit),
+        total_equipped_weight=None if result.total_equipped_weight is None else from_si(result.total_equipped_weight.magnitude_si, result.total_equipped_weight.unit),
+        collapse_pressure_utilization=result.collapse_pressure_utilization,
+        differential_pressure_design_acceptable=result.differential_pressure_design_acceptable,
+        design_media_area=None if result.design_media_area is None else from_si(result.design_media_area.magnitude_si, result.design_media_area.unit),
         warnings=_warnings(result.warnings),
     )
 
 
-def flare(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q) -> FlareResult:
+def flare(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, flame_height: Q | None=None, radiant_fraction: float | None=None, tip_diameter: Q | None=None, ground_distance: Q | None=None, radiation_flux_threshold: Q | None=None, design_heat_duty_capacity: Q | None=None, design_mass_flow_capacity: Q | None=None, design_molar_flow_capacity: Q | None=None) -> FlareResult:
     """``process.flare``, computed in Rust."""
     spec = _models_gen.model("process.flare")
     result = _core.flare(
@@ -4971,6 +6020,14 @@ def flare(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, i
         list(inlet_z),
         input_to_si(spec, "inlet_p", inlet_p),
         input_to_si(spec, "inlet_t", inlet_t),
+        None if flame_height is None else input_to_si(spec, "flame_height", flame_height),
+        None if radiant_fraction is None else radiant_fraction,
+        None if tip_diameter is None else input_to_si(spec, "tip_diameter", tip_diameter),
+        None if ground_distance is None else input_to_si(spec, "ground_distance", ground_distance),
+        None if radiation_flux_threshold is None else input_to_si(spec, "radiation_flux_threshold", radiation_flux_threshold),
+        None if design_heat_duty_capacity is None else input_to_si(spec, "design_heat_duty_capacity", design_heat_duty_capacity),
+        None if design_mass_flow_capacity is None else input_to_si(spec, "design_mass_flow_capacity", design_mass_flow_capacity),
+        None if design_molar_flow_capacity is None else input_to_si(spec, "design_molar_flow_capacity", design_molar_flow_capacity),
     )
     return FlareResult(
         product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
@@ -4980,11 +6037,20 @@ def flare(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, i
         product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
         heat_duty=from_si(result.heat_duty.magnitude_si, result.heat_duty.unit),
         co2_emission=from_si(result.co2_emission.magnitude_si, result.co2_emission.unit),
+        radiation_flux=None if result.radiation_flux is None else from_si(result.radiation_flux.magnitude_si, result.radiation_flux.unit),
+        radiation_distance=None if result.radiation_distance is None else from_si(result.radiation_distance.magnitude_si, result.radiation_distance.unit),
+        exit_velocity=from_si(result.exit_velocity.magnitude_si, result.exit_velocity.unit),
+        momentum_flux=from_si(result.momentum_flux.magnitude_si, result.momentum_flux.unit),
+        standard_volume_rate=from_si(result.standard_volume_rate.magnitude_si, result.standard_volume_rate.unit),
+        heat_utilization=result.heat_utilization,
+        mass_utilization=result.mass_utilization,
+        molar_utilization=result.molar_utilization,
+        overloaded=result.overloaded,
         warnings=_warnings(result.warnings),
     )
 
 
-def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, heat_input: Q | None=None) -> GasScrubberResult:
+def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, heat_input: Q | None=None, mechanical_design: bool | None=None, orientation: str | None=None, volume_safety_factor: float | None=None, design_liquid_level_fraction: float | None=None, max_operation_pressure: Q | None=None, allowable_stress: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None, safety_factor: float | None=None, mesh_pad_area: float | None=None, mesh_pad_thickness: Q | None=None, mesh_pad_elevation: Q | None=None) -> GasScrubberResult:
     """``process.gas_scrubber``, computed in Rust."""
     spec = _models_gen.model("process.gas_scrubber")
     result = _core.gas_scrubber(
@@ -4997,7 +6063,19 @@ def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: 
         gas_in_liquid,
         None if internal_diameter is None else input_to_si(spec, "internal_diameter", internal_diameter),
         None if design_gas_load_factor is None else input_to_si(spec, "design_gas_load_factor", design_gas_load_factor),
+        None if safety_factor is None else safety_factor,
+        None if mesh_pad_area is None else _si(spec, "mesh_pad_area", mesh_pad_area),
+        None if mesh_pad_thickness is None else input_to_si(spec, "mesh_pad_thickness", mesh_pad_thickness),
+        None if mesh_pad_elevation is None else input_to_si(spec, "mesh_pad_elevation", mesh_pad_elevation),
         None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
+        mechanical_design,
+        orientation,
+        None if volume_safety_factor is None else volume_safety_factor,
+        None if design_liquid_level_fraction is None else design_liquid_level_fraction,
+        None if max_operation_pressure is None else input_to_si(spec, "max_operation_pressure", max_operation_pressure),
+        None if allowable_stress is None else input_to_si(spec, "allowable_stress", allowable_stress),
+        None if joint_efficiency is None else joint_efficiency,
+        None if corrosion_allowance is None else input_to_si(spec, "corrosion_allowance", corrosion_allowance),
     )
     return GasScrubberResult(
         vapour_n=from_si(result.vapour_n.magnitude_si, result.vapour_n.unit),
@@ -5011,11 +6089,48 @@ def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: 
         liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
         liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
         capacity_utilization=result.capacity_utilization,
+        required_diameter=None if result.required_diameter is None else from_si(result.required_diameter.magnitude_si, result.required_diameter.unit),
+        has_mesh_pad=result.has_mesh_pad,
+        mesh_pad_area=None if result.mesh_pad_area is None else from_si(result.mesh_pad_area.magnitude_si, result.mesh_pad_area.unit),
+        mesh_pad_thickness=None if result.mesh_pad_thickness is None else from_si(result.mesh_pad_thickness.magnitude_si, result.mesh_pad_thickness.unit),
+        mesh_pad_elevation=None if result.mesh_pad_elevation is None else from_si(result.mesh_pad_elevation.magnitude_si, result.mesh_pad_elevation.unit),
+        has_inlet_cyclones=result.has_inlet_cyclones,
+        has_demisting_cyclones=result.has_demisting_cyclones,
+        design_inner_diameter=None if result.design_inner_diameter is None else from_si(result.design_inner_diameter.magnitude_si, result.design_inner_diameter.unit),
+        design_tantan_length=None if result.design_tantan_length is None else from_si(result.design_tantan_length.magnitude_si, result.design_tantan_length.unit),
+        design_outer_diameter=None if result.design_outer_diameter is None else from_si(result.design_outer_diameter.magnitude_si, result.design_outer_diameter.unit),
+        design_wall_thickness=None if result.design_wall_thickness is None else from_si(result.design_wall_thickness.magnitude_si, result.design_wall_thickness.unit),
+        max_design_gas_volume_flow=None if result.max_design_gas_volume_flow is None else from_si(result.max_design_gas_volume_flow.magnitude_si, result.max_design_gas_volume_flow.unit),
+        vessel_shell_weight=None if result.vessel_shell_weight is None else from_si(result.vessel_shell_weight.magnitude_si, result.vessel_shell_weight.unit),
+        piping_weight=None if result.piping_weight is None else from_si(result.piping_weight.magnitude_si, result.piping_weight.unit),
+        structural_weight=None if result.structural_weight is None else from_si(result.structural_weight.magnitude_si, result.structural_weight.unit),
+        electrical_weight=None if result.electrical_weight is None else from_si(result.electrical_weight.magnitude_si, result.electrical_weight.unit),
+        internals_weight=None if result.internals_weight is None else from_si(result.internals_weight.magnitude_si, result.internals_weight.unit),
+        total_weight=None if result.total_weight is None else from_si(result.total_weight.magnitude_si, result.total_weight.unit),
+        module_width=None if result.module_width is None else from_si(result.module_width.magnitude_si, result.module_width.unit),
+        module_length=None if result.module_length is None else from_si(result.module_length.magnitude_si, result.module_length.unit),
+        module_height=None if result.module_height is None else from_si(result.module_height.magnitude_si, result.module_height.unit),
+        vessel_volume=None if result.vessel_volume is None else from_si(result.vessel_volume.magnitude_si, result.vessel_volume.unit),
+        hhll=None if result.hhll is None else from_si(result.hhll.magnitude_si, result.hhll.unit),
+        hll=None if result.hll is None else from_si(result.hll.magnitude_si, result.hll.unit),
+        nll=None if result.nll is None else from_si(result.nll.magnitude_si, result.nll.unit),
+        lll=None if result.lll is None else from_si(result.lll.magnitude_si, result.lll.unit),
+        llll=None if result.llll is None else from_si(result.llll.magnitude_si, result.llll.unit),
+        weir_height=None if result.weir_height is None else from_si(result.weir_height.magnitude_si, result.weir_height.unit),
+        nil=None if result.nil is None else from_si(result.nil.magnitude_si, result.nil.unit),
+        effective_length_liquid=None if result.effective_length_liquid is None else from_si(result.effective_length_liquid.magnitude_si, result.effective_length_liquid.unit),
+        effective_length_gas=None if result.effective_length_gas is None else from_si(result.effective_length_gas.magnitude_si, result.effective_length_gas.unit),
+        inlet_nozzle_id=None if result.inlet_nozzle_id is None else from_si(result.inlet_nozzle_id.magnitude_si, result.inlet_nozzle_id.unit),
+        gas_outlet_nozzle_id=None if result.gas_outlet_nozzle_id is None else from_si(result.gas_outlet_nozzle_id.magnitude_si, result.gas_outlet_nozzle_id.unit),
+        oil_outlet_nozzle_id=None if result.oil_outlet_nozzle_id is None else from_si(result.oil_outlet_nozzle_id.magnitude_si, result.oil_outlet_nozzle_id.unit),
+        surge_volume=None if result.surge_volume is None else from_si(result.surge_volume.magnitude_si, result.surge_volume.unit),
+        surge_time=None if result.surge_time is None else from_si(result.surge_time.magnitude_si, result.surge_time.unit),
+        liquid_retention_time=None if result.liquid_retention_time is None else from_si(result.liquid_retention_time.magnitude_si, result.liquid_retention_time.unit),
         warnings=_warnings(result.warnings),
     )
 
 
-def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, energy_mode: str, damping_composition: float, max_iterations: float, convergence_tolerance: float, min_iterations: float) -> GibbsReactorResult:
+def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, energy_mode: str, damping_composition: float, max_iterations: float, convergence_tolerance: float, min_iterations: float, reactor_type: str | None=None, catalyst_bulk_density: float | None=None, catalyst_particle_diameter: float | None=None, bed_void_fraction: float | None=None, ghsv: float | None=None, lhsv: float | None=None, number_of_beds: int | None=None, max_operation_pressure: float | None=None, max_operation_temperature: float | None=None, joint_efficiency: float | None=None, corrosion_allowance: float | None=None, armijo_line_search: bool | None=None, armijo_c1: float | None=None, armijo_rho: float | None=None, armijo_max_backtracks: int | None=None, adaptive_step_size: bool | None=None, regularization: bool | None=None, regularization_threshold: float | None=None, regularization_tau: float | None=None) -> GibbsReactorResult:
     """``process.gibbs_reactor``, computed in Rust."""
     spec = _models_gen.model("process.gibbs_reactor")
     result = _core.gibbs_reactor(
@@ -5029,6 +6144,25 @@ def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
         max_iterations,
         convergence_tolerance,
         min_iterations,
+        reactor_type,
+        None if catalyst_bulk_density is None else _si(spec, "catalyst_bulk_density", catalyst_bulk_density),
+        None if catalyst_particle_diameter is None else _si(spec, "catalyst_particle_diameter", catalyst_particle_diameter),
+        None if bed_void_fraction is None else bed_void_fraction,
+        None if ghsv is None else ghsv,
+        None if lhsv is None else lhsv,
+        None if number_of_beds is None else _count("number_of_beds", number_of_beds),
+        None if max_operation_pressure is None else _si(spec, "max_operation_pressure", max_operation_pressure),
+        None if max_operation_temperature is None else _si(spec, "max_operation_temperature", max_operation_temperature),
+        None if joint_efficiency is None else joint_efficiency,
+        None if corrosion_allowance is None else _si(spec, "corrosion_allowance", corrosion_allowance),
+        armijo_line_search,
+        None if armijo_c1 is None else armijo_c1,
+        None if armijo_rho is None else armijo_rho,
+        None if armijo_max_backtracks is None else _count("armijo_max_backtracks", armijo_max_backtracks),
+        adaptive_step_size,
+        regularization,
+        None if regularization_threshold is None else regularization_threshold,
+        None if regularization_tau is None else regularization_tau,
     )
     return GibbsReactorResult(
         product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
@@ -5042,11 +6176,25 @@ def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
         lagrange_multipliers=tuple(from_si(q.magnitude_si, q.unit) for q in result.lagrange_multipliers),
         element_balance_difference=tuple(from_si(q.magnitude_si, q.unit) for q in result.element_balance_difference),
         gibbs_energy_history=tuple(from_si(q.magnitude_si, q.unit) for q in result.gibbs_energy_history),
+        vessel_diameter=from_si(result.vessel_diameter.magnitude_si, result.vessel_diameter.unit),
+        vessel_length=from_si(result.vessel_length.magnitude_si, result.vessel_length.unit),
+        shell_thickness=from_si(result.shell_thickness.magnitude_si, result.shell_thickness.unit),
+        head_thickness=from_si(result.head_thickness.magnitude_si, result.head_thickness.unit),
+        design_pressure=from_si(result.design_pressure.magnitude_si, result.design_pressure.unit),
+        design_temperature=from_si(result.design_temperature.magnitude_si, result.design_temperature.unit),
+        catalyst_volume=from_si(result.catalyst_volume.magnitude_si, result.catalyst_volume.unit),
+        catalyst_mass=from_si(result.catalyst_mass.magnitude_si, result.catalyst_mass.unit),
+        bed_pressure_drop=from_si(result.bed_pressure_drop.magnitude_si, result.bed_pressure_drop.unit),
+        empty_vessel_weight=from_si(result.empty_vessel_weight.magnitude_si, result.empty_vessel_weight.unit),
+        total_equipped_weight=from_si(result.total_equipped_weight.magnitude_si, result.total_equipped_weight.unit),
+        reactor_type=result.reactor_type,
+        number_of_beds=result.number_of_beds,
+        condition_number_history=tuple(result.condition_number_history),
         warnings=_warnings(result.warnings),
     )
 
 
-def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float], hot_in_p: Q, hot_in_t: Q, cold_components: list[str], cold_in_n: Q, cold_in_z: list[float], cold_in_p: Q, cold_in_t: Q, ua: Q | None=None, flow_arrangement: str='counterflow', hot_outlet_temperature: Q | None=None, cold_outlet_temperature: Q | None=None) -> HeatExchangerResult:
+def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float], hot_in_p: Q, hot_in_t: Q, cold_components: list[str], cold_in_n: Q, cold_in_z: list[float], cold_in_p: Q, cold_in_t: Q, ua: Q | None=None, flow_arrangement: str='counterflow', hot_outlet_temperature: Q | None=None, cold_outlet_temperature: Q | None=None, use_delta_t: bool | None=None, delta_t: Q | None=None, guess_out_temperature: Q | None=None, mechanical_design: bool | None=None, mechanical_type: str | None=None, mechanical_selection: str | None=None, use_rating_pressure_drop: bool | None=None, rating_area: Q | None=None, rating_tube_side: str | None=None, rating_tube_outside_diameter: Q | None=None, rating_tube_inside_diameter: Q | None=None, rating_tube_length: Q | None=None, rating_tube_count: float | None=None, rating_tube_passes: float | None=None, rating_tube_pitch: Q | None=None, rating_triangular_pitch: bool | None=None, rating_shell_inside_diameter: Q | None=None, rating_baffle_spacing: Q | None=None, rating_baffle_count: float | None=None, rating_baffle_cut: float | None=None, rating_tube_wall_conductivity: Q | None=None, rating_fouling_tube: float | None=None, rating_fouling_shell: float | None=None, rating_tube_fouling_layer_thickness: Q | None=None, rating_tube_fouling_layer_conductivity: Q | None=None, rating_shell_side_method: str | None=None, rating_shell_viscosity_wall: Q | None=None, rating_has_sealing: bool | None=None, rating_sealing_pairs: float | None=None, rating_tube_to_baffle_clearance: Q | None=None, rating_shell_to_baffle_clearance: Q | None=None, rating_bypass_area: Q | None=None, time_step: Q | None=None, dynamic_model_enabled: bool | None=None, transient_tube_side: str | None=None, wall_mass: Q | None=None, wall_cp: Q | None=None, wall_temperature: Q | None=None, shell_holdup_volume: Q | None=None, tube_holdup_volume: Q | None=None, shell_side_htc: Q | None=None, tube_side_htc: Q | None=None, heat_transfer_area: Q | None=None, shell_fluid_temperature: Q | None=None, tube_fluid_temperature: Q | None=None) -> HeatExchangerResult:
     """``process.heat_exchanger``, computed in Rust."""
     spec = _models_gen.model("process.heat_exchanger")
     result = _core.heat_exchanger(
@@ -5064,6 +6212,51 @@ def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float]
         None if ua is None else input_to_si(spec, "ua", ua),
         None if hot_outlet_temperature is None else input_to_si(spec, "hot_outlet_temperature", hot_outlet_temperature),
         None if cold_outlet_temperature is None else input_to_si(spec, "cold_outlet_temperature", cold_outlet_temperature),
+        use_delta_t,
+        None if delta_t is None else input_to_si(spec, "delta_t", delta_t),
+        None if guess_out_temperature is None else input_to_si(spec, "guess_out_temperature", guess_out_temperature),
+        mechanical_design,
+        mechanical_type,
+        mechanical_selection,
+        use_rating_pressure_drop,
+        None if rating_area is None else input_to_si(spec, "rating_area", rating_area),
+        rating_tube_side,
+        None if rating_tube_outside_diameter is None else input_to_si(spec, "rating_tube_outside_diameter", rating_tube_outside_diameter),
+        None if rating_tube_inside_diameter is None else input_to_si(spec, "rating_tube_inside_diameter", rating_tube_inside_diameter),
+        None if rating_tube_length is None else input_to_si(spec, "rating_tube_length", rating_tube_length),
+        None if rating_tube_count is None else rating_tube_count,
+        None if rating_tube_passes is None else rating_tube_passes,
+        None if rating_tube_pitch is None else input_to_si(spec, "rating_tube_pitch", rating_tube_pitch),
+        rating_triangular_pitch,
+        None if rating_shell_inside_diameter is None else input_to_si(spec, "rating_shell_inside_diameter", rating_shell_inside_diameter),
+        None if rating_baffle_spacing is None else input_to_si(spec, "rating_baffle_spacing", rating_baffle_spacing),
+        None if rating_baffle_count is None else rating_baffle_count,
+        None if rating_baffle_cut is None else rating_baffle_cut,
+        None if rating_tube_wall_conductivity is None else input_to_si(spec, "rating_tube_wall_conductivity", rating_tube_wall_conductivity),
+        None if rating_fouling_tube is None else rating_fouling_tube,
+        None if rating_fouling_shell is None else rating_fouling_shell,
+        None if rating_tube_fouling_layer_thickness is None else input_to_si(spec, "rating_tube_fouling_layer_thickness", rating_tube_fouling_layer_thickness),
+        None if rating_tube_fouling_layer_conductivity is None else input_to_si(spec, "rating_tube_fouling_layer_conductivity", rating_tube_fouling_layer_conductivity),
+        rating_shell_side_method,
+        None if rating_shell_viscosity_wall is None else input_to_si(spec, "rating_shell_viscosity_wall", rating_shell_viscosity_wall),
+        rating_has_sealing,
+        None if rating_sealing_pairs is None else rating_sealing_pairs,
+        None if rating_tube_to_baffle_clearance is None else input_to_si(spec, "rating_tube_to_baffle_clearance", rating_tube_to_baffle_clearance),
+        None if rating_shell_to_baffle_clearance is None else input_to_si(spec, "rating_shell_to_baffle_clearance", rating_shell_to_baffle_clearance),
+        None if rating_bypass_area is None else input_to_si(spec, "rating_bypass_area", rating_bypass_area),
+        None if time_step is None else input_to_si(spec, "time_step", time_step),
+        dynamic_model_enabled,
+        transient_tube_side,
+        None if wall_mass is None else input_to_si(spec, "wall_mass", wall_mass),
+        None if wall_cp is None else input_to_si(spec, "wall_cp", wall_cp),
+        None if wall_temperature is None else input_to_si(spec, "wall_temperature", wall_temperature),
+        None if shell_holdup_volume is None else input_to_si(spec, "shell_holdup_volume", shell_holdup_volume),
+        None if tube_holdup_volume is None else input_to_si(spec, "tube_holdup_volume", tube_holdup_volume),
+        None if shell_side_htc is None else input_to_si(spec, "shell_side_htc", shell_side_htc),
+        None if tube_side_htc is None else input_to_si(spec, "tube_side_htc", tube_side_htc),
+        None if heat_transfer_area is None else input_to_si(spec, "heat_transfer_area", heat_transfer_area),
+        None if shell_fluid_temperature is None else input_to_si(spec, "shell_fluid_temperature", shell_fluid_temperature),
+        None if tube_fluid_temperature is None else input_to_si(spec, "tube_fluid_temperature", tube_fluid_temperature),
     )
     return HeatExchangerResult(
         hot_out_n=from_si(result.hot_out_n.magnitude_si, result.hot_out_n.unit),
@@ -5082,11 +6275,39 @@ def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float]
         c_min=None if result.c_min is None else from_si(result.c_min.magnitude_si, result.c_min.unit),
         c_max=None if result.c_max is None else from_si(result.c_max.magnitude_si, result.c_max.unit),
         capacity_ratio=result.capacity_ratio,
+        ua_value=None if result.ua_value is None else from_si(result.ua_value.magnitude_si, result.ua_value.unit),
+        delta_t_side=result.delta_t_side,
+        wall_temperature=None if result.wall_temperature is None else from_si(result.wall_temperature.magnitude_si, result.wall_temperature.unit),
+        shell_fluid_temperature=None if result.shell_fluid_temperature is None else from_si(result.shell_fluid_temperature.magnitude_si, result.shell_fluid_temperature.unit),
+        tube_fluid_temperature=None if result.tube_fluid_temperature is None else from_si(result.tube_fluid_temperature.magnitude_si, result.tube_fluid_temperature.unit),
+        mechanical_selected_type=result.mechanical_selected_type,
+        mechanical_selected_area=None if result.mechanical_selected_area is None else from_si(result.mechanical_selected_area.magnitude_si, result.mechanical_selected_area.unit),
+        log_mean_temperature_difference=None if result.log_mean_temperature_difference is None else from_si(result.log_mean_temperature_difference.magnitude_si, result.log_mean_temperature_difference.unit),
+        mechanical_approach_temperature=None if result.mechanical_approach_temperature is None else from_si(result.mechanical_approach_temperature.magnitude_si, result.mechanical_approach_temperature.unit),
+        used_overall_heat_transfer_coefficient=None if result.used_overall_heat_transfer_coefficient is None else from_si(result.used_overall_heat_transfer_coefficient.magnitude_si, result.used_overall_heat_transfer_coefficient.unit),
+        calculated_ua=None if result.calculated_ua is None else from_si(result.calculated_ua.magnitude_si, result.calculated_ua.unit),
+        rating_u=None if result.rating_u is None else from_si(result.rating_u.magnitude_si, result.rating_u.unit),
+        rating_ua=None if result.rating_ua is None else from_si(result.rating_ua.magnitude_si, result.rating_ua.unit),
+        rating_area=None if result.rating_area is None else from_si(result.rating_area.magnitude_si, result.rating_area.unit),
+        tube_side_pressure_drop=None if result.tube_side_pressure_drop is None else from_si(result.tube_side_pressure_drop.magnitude_si, result.tube_side_pressure_drop.unit),
+        shell_side_pressure_drop=None if result.shell_side_pressure_drop is None else from_si(result.shell_side_pressure_drop.magnitude_si, result.shell_side_pressure_drop.unit),
+        tube_side_heat_transfer_coefficient=None if result.tube_side_heat_transfer_coefficient is None else from_si(result.tube_side_heat_transfer_coefficient.magnitude_si, result.tube_side_heat_transfer_coefficient.unit),
+        shell_side_heat_transfer_coefficient=None if result.shell_side_heat_transfer_coefficient is None else from_si(result.shell_side_heat_transfer_coefficient.magnitude_si, result.shell_side_heat_transfer_coefficient.unit),
+        tube_side_reynolds=result.tube_side_reynolds,
+        shell_side_reynolds=result.shell_side_reynolds,
+        tube_side_velocity=None if result.tube_side_velocity is None else from_si(result.tube_side_velocity.magnitude_si, result.tube_side_velocity.unit),
+        shell_side_velocity=None if result.shell_side_velocity is None else from_si(result.shell_side_velocity.magnitude_si, result.shell_side_velocity.unit),
+        jc=result.jc,
+        jl=result.jl,
+        jb=result.jb,
+        js=result.js,
+        jr=result.jr,
+        mechanical_types=tuple(HeatExchangerMechanicalType(mechanical_type=c.mechanical_type, required_area=from_si(c.required_area.magnitude_si, c.required_area.unit), required_ua=from_si(c.required_ua.magnitude_si, c.required_ua.unit), overall_heat_transfer_coefficient=from_si(c.overall_heat_transfer_coefficient.magnitude_si, c.overall_heat_transfer_coefficient.unit), approach_temperature=from_si(c.approach_temperature.magnitude_si, c.approach_temperature.unit), estimated_length=from_si(c.estimated_length.magnitude_si, c.estimated_length.unit), inner_diameter=from_si(c.inner_diameter.magnitude_si, c.inner_diameter.unit), outer_diameter=from_si(c.outer_diameter.magnitude_si, c.outer_diameter.unit), wall_thickness=from_si(c.wall_thickness.magnitude_si, c.wall_thickness.unit), tube_count=c.tube_count, tube_passes=c.tube_passes, fin_surface_area=from_si(c.fin_surface_area.magnitude_si, c.fin_surface_area.unit), estimated_pressure_drop=c.estimated_pressure_drop, estimated_weight=from_si(c.estimated_weight.magnitude_si, c.estimated_weight.unit), module_length=from_si(c.module_length.magnitude_si, c.module_length.unit), module_width=from_si(c.module_width.magnitude_si, c.module_width.unit), module_height=from_si(c.module_height.magnitude_si, c.module_height.unit)) for c in result.mechanical_types),
         warnings=_warnings(result.warnings),
     )
 
 
-def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None) -> HeaterResult:
+def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None, max_outlet_temperature: Q | None=None, min_outlet_temperature: Q | None=None, instrument_design: bool | None=None, include_safety_instruments: bool | None=None, default_sil_level: float | None=None, heat_exchanger_type: str | None=None, electrical_design: bool | None=None, motor_sizing_margin: float | None=None, motor_poles: float | None=None, efficiency_class: str | None=None, frequency_hz: float | None=None, phases: float | None=None, number_of_fans: float | None=None, instrumentation_power: Q | None=None, cooling_water_pump_power: Q | None=None, cable_length: Q | None=None, use_vfd: bool | None=None, utility_specification: bool | None=None, utility_supply_temperature: Q | None=None, utility_return_temperature: Q | None=None, utility_approach_temperature: Q | None=None, utility_heat_capacity_rate: Q | None=None, utility_overall_heat_transfer_coefficient: Q | None=None, mechanical_design: bool | None=None, mechanical_type: str | None=None, mechanical_selection: str | None=None) -> HeaterResult:
     """``process.heater``, computed in Rust."""
     spec = _models_gen.model("process.heater")
     result = _core.heater(
@@ -5098,6 +6319,32 @@ def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         None if outlet_temperature is None else input_to_si(spec, "outlet_temperature", outlet_temperature),
         None if duty is None else input_to_si(spec, "duty", duty),
         None if pressure_drop is None else input_to_si(spec, "pressure_drop", pressure_drop),
+        None if max_outlet_temperature is None else input_to_si(spec, "max_outlet_temperature", max_outlet_temperature),
+        None if min_outlet_temperature is None else input_to_si(spec, "min_outlet_temperature", min_outlet_temperature),
+        instrument_design,
+        include_safety_instruments,
+        None if default_sil_level is None else default_sil_level,
+        heat_exchanger_type,
+        electrical_design,
+        None if motor_sizing_margin is None else motor_sizing_margin,
+        None if motor_poles is None else motor_poles,
+        efficiency_class,
+        None if frequency_hz is None else frequency_hz,
+        None if phases is None else phases,
+        None if number_of_fans is None else number_of_fans,
+        None if instrumentation_power is None else input_to_si(spec, "instrumentation_power", instrumentation_power),
+        None if cooling_water_pump_power is None else input_to_si(spec, "cooling_water_pump_power", cooling_water_pump_power),
+        None if cable_length is None else input_to_si(spec, "cable_length", cable_length),
+        use_vfd,
+        utility_specification,
+        None if utility_supply_temperature is None else input_to_si(spec, "utility_supply_temperature", utility_supply_temperature),
+        None if utility_return_temperature is None else input_to_si(spec, "utility_return_temperature", utility_return_temperature),
+        None if utility_approach_temperature is None else input_to_si(spec, "utility_approach_temperature", utility_approach_temperature),
+        None if utility_heat_capacity_rate is None else input_to_si(spec, "utility_heat_capacity_rate", utility_heat_capacity_rate),
+        None if utility_overall_heat_transfer_coefficient is None else input_to_si(spec, "utility_overall_heat_transfer_coefficient", utility_overall_heat_transfer_coefficient),
+        mechanical_design,
+        mechanical_type,
+        mechanical_selection,
     )
     return HeaterResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5106,6 +6353,133 @@ def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
         outlet_duty=from_si(result.outlet_duty.magnitude_si, result.outlet_duty.unit),
+        max_outlet_temperature_utilization=result.max_outlet_temperature_utilization,
+        min_outlet_temperature_utilization=result.min_outlet_temperature_utilization,
+        max_utilization=result.max_utilization,
+        capacity_exceeded=result.capacity_exceeded,
+        hard_limit_exceeded=result.hard_limit_exceeded,
+        bottleneck_constraint=result.bottleneck_constraint,
+        instrument_count=result.instrument_count,
+        analog_input_count=result.analog_input_count,
+        analog_output_count=result.analog_output_count,
+        digital_input_count=result.digital_input_count,
+        digital_output_count=result.digital_output_count,
+        total_io_count=result.total_io_count,
+        safety_instrument_count=result.safety_instrument_count,
+        instruments=tuple(HeaterInstrument(tag=c.tag, isa_symbol=c.isa_symbol, service=c.service, io_type=c.io_type, range_unit=c.range_unit, range_min=c.range_min, range_max=c.range_max, sil_rating=c.sil_rating, safety_related=c.safety_related) for c in result.instruments),
+        shaft_power=None if result.shaft_power is None else from_si(result.shaft_power.magnitude_si, result.shaft_power.unit),
+        electrical_input_power=None if result.electrical_input_power is None else from_si(result.electrical_input_power.magnitude_si, result.electrical_input_power.unit),
+        apparent_power=result.apparent_power,
+        reactive_power=result.reactive_power,
+        power_factor=result.power_factor,
+        rated_voltage=result.rated_voltage,
+        frequency_hz=result.frequency_hz,
+        full_load_current=result.full_load_current,
+        starting_current=result.starting_current,
+        total_electrical_losses=None if result.total_electrical_losses is None else from_si(result.total_electrical_losses.magnitude_si, result.total_electrical_losses.unit),
+        motor_rated_power=None if result.motor_rated_power is None else from_si(result.motor_rated_power.magnitude_si, result.motor_rated_power.unit),
+        motor_efficiency=result.motor_efficiency,
+        motor_power_factor=result.motor_power_factor,
+        motor_rated_speed=result.motor_rated_speed,
+        motor_locked_rotor_multiplier=result.motor_locked_rotor_multiplier,
+        total_auxiliary_power=None if result.total_auxiliary_power is None else from_si(result.total_auxiliary_power.magnitude_si, result.total_auxiliary_power.unit),
+        total_connected_power=None if result.total_connected_power is None else from_si(result.total_connected_power.magnitude_si, result.total_connected_power.unit),
+        cable_length=None if result.cable_length is None else from_si(result.cable_length.magnitude_si, result.cable_length.unit),
+        cable_cross_section=result.cable_cross_section,
+        cable_ampacity=result.cable_ampacity,
+        cable_voltage_drop=result.cable_voltage_drop,
+        cable_short_circuit_withstand=result.cable_short_circuit_withstand,
+        switchgear_starter=result.switchgear_starter,
+        switchgear_type=result.switchgear_type,
+        switchgear_circuit_breaker=result.switchgear_circuit_breaker,
+        switchgear_fuse=result.switchgear_fuse,
+        switchgear_rated_current=result.switchgear_rated_current,
+        switchgear_short_circuit=result.switchgear_short_circuit,
+        switchgear_weight=None if result.switchgear_weight is None else from_si(result.switchgear_weight.magnitude_si, result.switchgear_weight.unit),
+        vfd_rated_power=None if result.vfd_rated_power is None else from_si(result.vfd_rated_power.magnitude_si, result.vfd_rated_power.unit),
+        vfd_rated_current=result.vfd_rated_current,
+        vfd_input_voltage=result.vfd_input_voltage,
+        vfd_topology=result.vfd_topology,
+        vfd_pulse_configuration=result.vfd_pulse_configuration,
+        vfd_efficiency=result.vfd_efficiency,
+        vfd_input_power_factor=result.vfd_input_power_factor,
+        vfd_thd_current=result.vfd_thd_current,
+        vfd_has_active_rectifier=result.vfd_has_active_rectifier,
+        vfd_requires_input_filter=result.vfd_requires_input_filter,
+        vfd_heat_dissipation=None if result.vfd_heat_dissipation is None else from_si(result.vfd_heat_dissipation.magnitude_si, result.vfd_heat_dissipation.unit),
+        vfd_cooling_method=result.vfd_cooling_method,
+        vfd_weight=None if result.vfd_weight is None else from_si(result.vfd_weight.magnitude_si, result.vfd_weight.unit),
+        vfd_enclosure_rating=result.vfd_enclosure_rating,
+        has_supply_temperature=result.has_supply_temperature,
+        has_return_temperature=result.has_return_temperature,
+        has_approach_temperature=result.has_approach_temperature,
+        has_heat_capacity_rate=result.has_heat_capacity_rate,
+        has_overall_heat_transfer_coefficient=result.has_overall_heat_transfer_coefficient,
+        mechanical_selected_type=result.mechanical_selected_type,
+        mechanical_selected_area=None if result.mechanical_selected_area is None else from_si(result.mechanical_selected_area.magnitude_si, result.mechanical_selected_area.unit),
+        log_mean_temperature_difference=None if result.log_mean_temperature_difference is None else from_si(result.log_mean_temperature_difference.magnitude_si, result.log_mean_temperature_difference.unit),
+        mechanical_approach_temperature=None if result.mechanical_approach_temperature is None else from_si(result.mechanical_approach_temperature.magnitude_si, result.mechanical_approach_temperature.unit),
+        used_overall_heat_transfer_coefficient=None if result.used_overall_heat_transfer_coefficient is None else from_si(result.used_overall_heat_transfer_coefficient.magnitude_si, result.used_overall_heat_transfer_coefficient.unit),
+        calculated_ua=None if result.calculated_ua is None else from_si(result.calculated_ua.magnitude_si, result.calculated_ua.unit),
+        mechanical_types=tuple(HeaterMechanicalType(mechanical_type=c.mechanical_type, required_area=from_si(c.required_area.magnitude_si, c.required_area.unit), required_ua=from_si(c.required_ua.magnitude_si, c.required_ua.unit), overall_heat_transfer_coefficient=from_si(c.overall_heat_transfer_coefficient.magnitude_si, c.overall_heat_transfer_coefficient.unit), approach_temperature=from_si(c.approach_temperature.magnitude_si, c.approach_temperature.unit), estimated_length=from_si(c.estimated_length.magnitude_si, c.estimated_length.unit), inner_diameter=from_si(c.inner_diameter.magnitude_si, c.inner_diameter.unit), outer_diameter=from_si(c.outer_diameter.magnitude_si, c.outer_diameter.unit), wall_thickness=from_si(c.wall_thickness.magnitude_si, c.wall_thickness.unit), tube_count=c.tube_count, tube_passes=c.tube_passes, fin_surface_area=from_si(c.fin_surface_area.magnitude_si, c.fin_surface_area.unit), estimated_pressure_drop=c.estimated_pressure_drop, estimated_weight=from_si(c.estimated_weight.magnitude_si, c.estimated_weight.unit), module_length=from_si(c.module_length.magnitude_si, c.module_length.unit), module_width=from_si(c.module_width.magnitude_si, c.module_width.unit), module_height=from_si(c.module_height.magnitude_si, c.module_height.unit)) for c in result.mechanical_types),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def hem_release(components: list[str], upstream_z: list[float], upstream_t: Q, upstream_p: Q, diameter: Q, discharge_coefficient: float, back_pressure: Q) -> HemReleaseResult:
+    """``process.hem_release``, computed in Rust."""
+    spec = _models_gen.model("process.hem_release")
+    result = _core.hem_release(
+        list(components),
+        list(upstream_z),
+        input_to_si(spec, "upstream_t", upstream_t),
+        input_to_si(spec, "upstream_p", upstream_p),
+        input_to_si(spec, "diameter", diameter),
+        discharge_coefficient,
+        input_to_si(spec, "back_pressure", back_pressure),
+    )
+    return HemReleaseResult(
+        status=result.status,
+        mass_flow_rate=None if result.mass_flow_rate is None else from_si(result.mass_flow_rate.magnitude_si, result.mass_flow_rate.unit),
+        choked=result.choked,
+        throat_sound_speed=None if result.throat_sound_speed is None else from_si(result.throat_sound_speed.magnitude_si, result.throat_sound_speed.unit),
+        component_mole_fractions=tuple(result.component_mole_fractions),
+        component_mass_fractions=tuple(result.component_mass_fractions),
+        stations=tuple(HemReleaseStation(station=c.station, pressure=from_si(c.pressure.magnitude_si, c.pressure.unit), temperature=from_si(c.temperature.magnitude_si, c.temperature.unit), density=from_si(c.density.magnitude_si, c.density.unit), molar_enthalpy=from_si(c.molar_enthalpy.magnitude_si, c.molar_enthalpy.unit), molar_entropy=from_si(c.molar_entropy.magnitude_si, c.molar_entropy.unit), velocity=from_si(c.velocity.magnitude_si, c.velocity.unit), mass_flux=from_si(c.mass_flux.magnitude_si, c.mass_flux.unit), phase=c.phase, gas_mass_fraction=c.gas_mass_fraction) for c in result.stations),
+        diagnostics=tuple(HemReleaseDiagnostic(code=c.code, message=c.message) for c in result.diagnostics),
+        diagnostic_codes=tuple(result.diagnostic_codes),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def leak_blowdown(components: list[str], initial_z: list[float], initial_t: Q, initial_p: Q, duration: Q, vessel_volume: Q | None=None, hole_diameter: Q | None=None, discharge_coefficient: float | None=None, back_pressure: Q | None=None, time_step: Q | None=None, scenario_name: str | None=None) -> LeakBlowdownResult:
+    """``process.leak_blowdown``, computed in Rust."""
+    spec = _models_gen.model("process.leak_blowdown")
+    result = _core.leak_blowdown(
+        list(components),
+        list(initial_z),
+        input_to_si(spec, "initial_t", initial_t),
+        input_to_si(spec, "initial_p", initial_p),
+        input_to_si(spec, "duration", duration),
+        None if vessel_volume is None else input_to_si(spec, "vessel_volume", vessel_volume),
+        None if hole_diameter is None else input_to_si(spec, "hole_diameter", hole_diameter),
+        None if discharge_coefficient is None else discharge_coefficient,
+        None if back_pressure is None else input_to_si(spec, "back_pressure", back_pressure),
+        None if time_step is None else input_to_si(spec, "time_step", time_step),
+        scenario_name,
+    )
+    return LeakBlowdownResult(
+        status=result.status,
+        scenario_name=result.scenario_name,
+        hole_diameter=from_si(result.hole_diameter.magnitude_si, result.hole_diameter.unit),
+        number_of_points=result.number_of_points,
+        recorded_points=result.recorded_points,
+        points=tuple(LeakBlowdownPoint(time=from_si(c.time.magnitude_si, c.time.unit), mass_flow_rate=from_si(c.mass_flow_rate.magnitude_si, c.mass_flow_rate.unit), temperature=from_si(c.temperature.magnitude_si, c.temperature.unit), pressure=from_si(c.pressure.magnitude_si, c.pressure.unit), vapour_mole_fraction=c.vapour_mole_fraction, jet_velocity=from_si(c.jet_velocity.magnitude_si, c.jet_velocity.unit), jet_momentum=from_si(c.jet_momentum.magnitude_si, c.jet_momentum.unit), droplet_smd=from_si(c.droplet_smd.magnitude_si, c.droplet_smd.unit)) for c in result.points),
+        total_mass_released=None if result.total_mass_released is None else from_si(result.total_mass_released.magnitude_si, result.total_mass_released.unit),
+        peak_mass_flow_rate=None if result.peak_mass_flow_rate is None else from_si(result.peak_mass_flow_rate.magnitude_si, result.peak_mass_flow_rate.unit),
+        time_to_empty=None if result.time_to_empty is None else from_si(result.time_to_empty.magnitude_si, result.time_to_empty.unit),
+        diagnostics=tuple(LeakBlowdownDiagnostic(code=c.code, message=c.message) for c in result.diagnostics),
+        diagnostic_codes=tuple(result.diagnostic_codes),
         warnings=_warnings(result.warnings),
     )
 
@@ -5131,6 +6505,56 @@ def manifold(components: list[str], feed_n: list[Q], feed_z: list[list[float]], 
     )
 
 
+def map_turbo_expander_compressor(expander_components: list[str], compressor_components: list[str], expander_n: Q, expander_z: list[float], expander_p: Q, expander_t: Q, compressor_n: Q, compressor_z: list[float], compressor_p: Q, compressor_t: Q, expander_out_pressure: Q, expander_isentropic_efficiency: float, shaft_mode: str | None=None, mechanical_efficiency: float | None=None, bearing_loss: Q | None=None, compressor_outlet_pressure: Q | None=None, compressor_isentropic_efficiency: float | None=None, compressor_speed: float | None=None, min_shaft_speed: float | None=None, max_shaft_speed: float | None=None, curve: list[dict[str, Q]] | None=None, chart_type: str | None=None, chart_conditions: list[float] | None=None, impeller_diameter: Q | None=None) -> MapTurboExpanderResult:
+    """``process.map_turbo_expander_compressor``, computed in Rust."""
+    spec = _models_gen.model("process.map_turbo_expander_compressor")
+    result = _core.map_turbo_expander_compressor(
+        list(expander_components),
+        list(compressor_components),
+        input_to_si(spec, "expander_n", expander_n),
+        list(expander_z),
+        input_to_si(spec, "expander_p", expander_p),
+        input_to_si(spec, "expander_t", expander_t),
+        input_to_si(spec, "compressor_n", compressor_n),
+        list(compressor_z),
+        input_to_si(spec, "compressor_p", compressor_p),
+        input_to_si(spec, "compressor_t", compressor_t),
+        input_to_si(spec, "expander_out_pressure", expander_out_pressure),
+        expander_isentropic_efficiency,
+        shaft_mode,
+        None if mechanical_efficiency is None else mechanical_efficiency,
+        None if bearing_loss is None else input_to_si(spec, "bearing_loss", bearing_loss),
+        None if compressor_outlet_pressure is None else input_to_si(spec, "compressor_outlet_pressure", compressor_outlet_pressure),
+        None if compressor_isentropic_efficiency is None else compressor_isentropic_efficiency,
+        None if compressor_speed is None else compressor_speed,
+        None if min_shaft_speed is None else min_shaft_speed,
+        None if max_shaft_speed is None else max_shaft_speed,
+        None if curve is None else input_records_to_si(spec, "curve", curve),
+        chart_type,
+        None if chart_conditions is None else list(chart_conditions),
+        None if impeller_diameter is None else input_to_si(spec, "impeller_diameter", impeller_diameter),
+    )
+    return MapTurboExpanderResult(
+        expander_outlet_n=from_si(result.expander_outlet_n.magnitude_si, result.expander_outlet_n.unit),
+        expander_outlet_z=tuple(result.expander_outlet_z),
+        expander_outlet_p=from_si(result.expander_outlet_p.magnitude_si, result.expander_outlet_p.unit),
+        expander_outlet_t=from_si(result.expander_outlet_t.magnitude_si, result.expander_outlet_t.unit),
+        expander_outlet_h=from_si(result.expander_outlet_h.magnitude_si, result.expander_outlet_h.unit),
+        compressor_outlet_n=from_si(result.compressor_outlet_n.magnitude_si, result.compressor_outlet_n.unit),
+        compressor_outlet_z=tuple(result.compressor_outlet_z),
+        compressor_outlet_p=from_si(result.compressor_outlet_p.magnitude_si, result.compressor_outlet_p.unit),
+        compressor_outlet_t=from_si(result.compressor_outlet_t.magnitude_si, result.compressor_outlet_t.unit),
+        compressor_outlet_h=from_si(result.compressor_outlet_h.magnitude_si, result.compressor_outlet_h.unit),
+        shaft_speed=result.shaft_speed,
+        available_shaft_power=from_si(result.available_shaft_power.magnitude_si, result.available_shaft_power.unit),
+        consumed_compressor_power=from_si(result.consumed_compressor_power.magnitude_si, result.consumed_compressor_power.unit),
+        power_balance_residual=from_si(result.power_balance_residual.magnitude_si, result.power_balance_residual.unit),
+        speed_limited=result.speed_limited,
+        operating_status=result.operating_status,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def mixer(components: list[str], feed_n: list[Q], feed_z: list[list[float]], feed_p: list[Q], feed_t: list[Q], outlet_pressure: Q | None=None) -> MixerResult:
     """``process.mixer``, computed in Rust."""
     spec = _models_gen.model("process.mixer")
@@ -5147,6 +6571,8 @@ def mixer(components: list[str], feed_n: list[Q], feed_z: list[list[float]], fee
         product_z=tuple(result.product_z),
         product_p=from_si(result.product_p.magnitude_si, result.product_p.unit),
         product_t=from_si(result.product_t.magnitude_si, result.product_t.unit),
+        inlet_pressure_spread=from_si(result.inlet_pressure_spread.magnitude_si, result.inlet_pressure_spread.unit),
+        pressure_mismatch=result.pressure_mismatch,
         product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
         warnings=_warnings(result.warnings),
     )
@@ -5239,11 +6665,21 @@ def packed_column(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
         packing_pressure_drop=from_si(result.packing_pressure_drop.magnitude_si, result.packing_pressure_drop.unit),
         hydraulics_ok=result.hydraulics_ok,
         internal_diameter=from_si(result.internal_diameter.magnitude_si, result.internal_diameter.unit),
+        k_ga=from_si(result.k_ga.magnitude_si, result.k_ga.unit),
+        k_la=from_si(result.k_la.magnitude_si, result.k_la.unit),
+        wetted_area=from_si(result.wetted_area.magnitude_si, result.wetted_area.unit),
+        htu_g=from_si(result.htu_g.magnitude_si, result.htu_g.unit),
+        htu_l=from_si(result.htu_l.magnitude_si, result.htu_l.unit),
+        htu_og=from_si(result.htu_og.magnitude_si, result.htu_og.unit),
+        wetting_ok=result.wetting_ok,
+        pressure_drop_per_meter=from_si(result.pressure_drop_per_meter.magnitude_si, result.pressure_drop_per_meter.unit),
+        resolved_packing=result.resolved_packing,
+        resolved_packing_factor=from_si(result.resolved_packing_factor.magnitude_si, result.resolved_packing_factor.unit),
         warnings=_warnings(result.warnings),
     )
 
 
-def pipe(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, length: Q, diameter: Q, roughness: Q) -> PipeResult:
+def pipe(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, length: Q, diameter: Q, roughness: Q, fittings: list[dict[str, Q]] | None=None, outlet_pressure: Q | None=None, correlation: str | None=None, number_of_increments: int | None=None, elevation: Q | None=None) -> PipeResult:
     """``process.pipe``, computed in Rust."""
     spec = _models_gen.model("process.pipe")
     result = _core.pipe(
@@ -5255,6 +6691,11 @@ def pipe(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, in
         input_to_si(spec, "length", length),
         input_to_si(spec, "diameter", diameter),
         input_to_si(spec, "roughness", roughness),
+        None if fittings is None else input_records_to_si(spec, "fittings", fittings),
+        None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure),
+        correlation,
+        None if number_of_increments is None else _count("number_of_increments", number_of_increments),
+        None if elevation is None else input_to_si(spec, "elevation", elevation),
     )
     return PipeResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5262,6 +6703,7 @@ def pipe(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, in
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        effective_length=from_si(result.effective_length.magnitude_si, result.effective_length.unit),
         pressure_drop=from_si(result.pressure_drop.magnitude_si, result.pressure_drop.unit),
         warnings=_warnings(result.warnings),
     )
@@ -5315,11 +6757,14 @@ def plug_flow_reactor(components: list[str], feed_n: Q, feed_z: list[float], fee
         temperature_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.temperature_profile),
         pressure_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.pressure_profile),
         conversion_profile=tuple(result.conversion_profile),
+        reaction_rate_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.reaction_rate_profile),
+        molar_flow_profile=tuple(tuple(from_si(v.magnitude_si, v.unit) for v in row) for row in result.molar_flow_profile),
+        residence_time=from_si(result.residence_time.magnitude_si, result.residence_time.unit),
         warnings=_warnings(result.warnings),
     )
 
 
-def pump(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, isentropic_efficiency: float) -> PumpResult:
+def pump(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, reference_density: Q | None=None, viscosity: Q | None=None, use_viscosity_correction: bool | None=None, check_npsh: bool | None=None, npsh_margin: float | None=None) -> PumpResult:
     """``process.pump``, computed in Rust."""
     spec = _models_gen.model("process.pump")
     result = _core.pump(
@@ -5328,8 +6773,15 @@ def pump(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, in
         list(inlet_z),
         input_to_si(spec, "inlet_p", inlet_p),
         input_to_si(spec, "inlet_t", inlet_t),
-        input_to_si(spec, "outlet_pressure", outlet_pressure),
         isentropic_efficiency,
+        None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure),
+        None if curve is None else input_records_to_si(spec, "curve", curve),
+        None if speed is None else speed,
+        None if reference_density is None else input_to_si(spec, "reference_density", reference_density),
+        None if viscosity is None else input_to_si(spec, "viscosity", viscosity),
+        use_viscosity_correction,
+        check_npsh,
+        None if npsh_margin is None else npsh_margin,
     )
     return PumpResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5337,6 +6789,12 @@ def pump(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, in
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        head=from_si(result.head.magnitude_si, result.head.unit),
+        efficiency=result.efficiency,
+        npsh_required=from_si(result.npsh_required.magnitude_si, result.npsh_required.unit),
+        npsh_available=from_si(result.npsh_available.magnitude_si, result.npsh_available.unit),
+        cavitating=result.cavitating,
+        power=from_si(result.power.magnitude_si, result.power.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -5415,7 +6873,7 @@ def rate_based_packed_column(gas_components: list[str], gas_n: Q, gas_z: list[fl
     )
 
 
-def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, heat_input: Q | None=None) -> SeparatorResult:
+def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, heat_input: Q | None=None, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, orientation: str | None=None, design_liquid_level_fraction: float | None=None, separator_length: Q | None=None, liquid_level_fraction: float | None=None, safety_factor: float | None=None, mechanical_design: bool | None=None, auto_size: bool | None=None, fg: float | None=None, volume_safety_factor: float | None=None, retention_time: Q | None=None, max_operation_pressure: Q | None=None, allowable_stress: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None) -> SeparatorResult:
     """``process.separator``, computed in Rust."""
     spec = _models_gen.model("process.separator")
     result = _core.separator(
@@ -5427,6 +6885,22 @@ def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, 
         input_to_si(spec, "pressure_drop", pressure_drop),
         gas_in_liquid,
         None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
+        None if internal_diameter is None else input_to_si(spec, "internal_diameter", internal_diameter),
+        None if design_gas_load_factor is None else input_to_si(spec, "design_gas_load_factor", design_gas_load_factor),
+        orientation,
+        None if design_liquid_level_fraction is None else design_liquid_level_fraction,
+        None if separator_length is None else input_to_si(spec, "separator_length", separator_length),
+        None if liquid_level_fraction is None else liquid_level_fraction,
+        None if safety_factor is None else safety_factor,
+        mechanical_design,
+        auto_size,
+        None if fg is None else fg,
+        None if volume_safety_factor is None else volume_safety_factor,
+        None if retention_time is None else input_to_si(spec, "retention_time", retention_time),
+        None if max_operation_pressure is None else input_to_si(spec, "max_operation_pressure", max_operation_pressure),
+        None if allowable_stress is None else input_to_si(spec, "allowable_stress", allowable_stress),
+        None if joint_efficiency is None else joint_efficiency,
+        None if corrosion_allowance is None else input_to_si(spec, "corrosion_allowance", corrosion_allowance),
     )
     return SeparatorResult(
         vapour_n=from_si(result.vapour_n.magnitude_si, result.vapour_n.unit),
@@ -5439,6 +6913,184 @@ def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, 
         liquid_p=from_si(result.liquid_p.magnitude_si, result.liquid_p.unit),
         liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
         liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
+        capacity_utilization=result.capacity_utilization,
+        max_allowable_gas_velocity=None if result.max_allowable_gas_velocity is None else from_si(result.max_allowable_gas_velocity.magnitude_si, result.max_allowable_gas_velocity.unit),
+        gas_superficial_velocity=None if result.gas_superficial_velocity is None else from_si(result.gas_superficial_velocity.magnitude_si, result.gas_superficial_velocity.unit),
+        gas_load_factor=None if result.gas_load_factor is None else from_si(result.gas_load_factor.magnitude_si, result.gas_load_factor.unit),
+        is_overloaded=result.is_overloaded,
+        gas_area_fraction=result.gas_area_fraction,
+        rated_gas_load_factor_by_phase=None if result.rated_gas_load_factor_by_phase is None else tuple(from_si(q.magnitude_si, q.unit) for q in result.rated_gas_load_factor_by_phase),
+        required_diameter=None if result.required_diameter is None else from_si(result.required_diameter.magnitude_si, result.required_diameter.unit),
+        design_inner_diameter=None if result.design_inner_diameter is None else from_si(result.design_inner_diameter.magnitude_si, result.design_inner_diameter.unit),
+        design_tantan_length=None if result.design_tantan_length is None else from_si(result.design_tantan_length.magnitude_si, result.design_tantan_length.unit),
+        design_outer_diameter=None if result.design_outer_diameter is None else from_si(result.design_outer_diameter.magnitude_si, result.design_outer_diameter.unit),
+        design_wall_thickness=None if result.design_wall_thickness is None else from_si(result.design_wall_thickness.magnitude_si, result.design_wall_thickness.unit),
+        max_design_gas_volume_flow=None if result.max_design_gas_volume_flow is None else from_si(result.max_design_gas_volume_flow.magnitude_si, result.max_design_gas_volume_flow.unit),
+        vessel_shell_weight=None if result.vessel_shell_weight is None else from_si(result.vessel_shell_weight.magnitude_si, result.vessel_shell_weight.unit),
+        piping_weight=None if result.piping_weight is None else from_si(result.piping_weight.magnitude_si, result.piping_weight.unit),
+        structural_weight=None if result.structural_weight is None else from_si(result.structural_weight.magnitude_si, result.structural_weight.unit),
+        electrical_weight=None if result.electrical_weight is None else from_si(result.electrical_weight.magnitude_si, result.electrical_weight.unit),
+        internals_weight=None if result.internals_weight is None else from_si(result.internals_weight.magnitude_si, result.internals_weight.unit),
+        total_weight=None if result.total_weight is None else from_si(result.total_weight.magnitude_si, result.total_weight.unit),
+        module_width=None if result.module_width is None else from_si(result.module_width.magnitude_si, result.module_width.unit),
+        module_length=None if result.module_length is None else from_si(result.module_length.magnitude_si, result.module_length.unit),
+        module_height=None if result.module_height is None else from_si(result.module_height.magnitude_si, result.module_height.unit),
+        vessel_volume=None if result.vessel_volume is None else from_si(result.vessel_volume.magnitude_si, result.vessel_volume.unit),
+        hhll=None if result.hhll is None else from_si(result.hhll.magnitude_si, result.hhll.unit),
+        hll=None if result.hll is None else from_si(result.hll.magnitude_si, result.hll.unit),
+        nll=None if result.nll is None else from_si(result.nll.magnitude_si, result.nll.unit),
+        lll=None if result.lll is None else from_si(result.lll.magnitude_si, result.lll.unit),
+        llll=None if result.llll is None else from_si(result.llll.magnitude_si, result.llll.unit),
+        weir_height=None if result.weir_height is None else from_si(result.weir_height.magnitude_si, result.weir_height.unit),
+        nil=None if result.nil is None else from_si(result.nil.magnitude_si, result.nil.unit),
+        effective_length_liquid=None if result.effective_length_liquid is None else from_si(result.effective_length_liquid.magnitude_si, result.effective_length_liquid.unit),
+        effective_length_gas=None if result.effective_length_gas is None else from_si(result.effective_length_gas.magnitude_si, result.effective_length_gas.unit),
+        inlet_nozzle_id=None if result.inlet_nozzle_id is None else from_si(result.inlet_nozzle_id.magnitude_si, result.inlet_nozzle_id.unit),
+        gas_outlet_nozzle_id=None if result.gas_outlet_nozzle_id is None else from_si(result.gas_outlet_nozzle_id.magnitude_si, result.gas_outlet_nozzle_id.unit),
+        oil_outlet_nozzle_id=None if result.oil_outlet_nozzle_id is None else from_si(result.oil_outlet_nozzle_id.magnitude_si, result.oil_outlet_nozzle_id.unit),
+        surge_volume=None if result.surge_volume is None else from_si(result.surge_volume.magnitude_si, result.surge_volume.unit),
+        surge_time=None if result.surge_time is None else from_si(result.surge_time.magnitude_si, result.surge_time.unit),
+        liquid_retention_time=None if result.liquid_retention_time is None else from_si(result.liquid_retention_time.magnitude_si, result.liquid_retention_time.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def separator_capacity_assessment(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, internal_diameter: Q, design_gas_load_factor: Q, orientation: str, design_liquid_level_fraction: float, design_basis_provenance: str, heat_input: Q | None=None, mechanical_design_max_gas_flow: Q | None=None) -> SeparatorCapacityAssessmentResult:
+    """``process.separator_capacity_assessment``, computed in Rust."""
+    spec = _models_gen.model("process.separator_capacity_assessment")
+    result = _core.separator_capacity_assessment(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        list(feed_z),
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        input_to_si(spec, "pressure_drop", pressure_drop),
+        gas_in_liquid,
+        input_to_si(spec, "internal_diameter", internal_diameter),
+        input_to_si(spec, "design_gas_load_factor", design_gas_load_factor),
+        orientation,
+        design_liquid_level_fraction,
+        design_basis_provenance,
+        None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
+        None if mechanical_design_max_gas_flow is None else input_to_si(spec, "mechanical_design_max_gas_flow", mechanical_design_max_gas_flow),
+    )
+    return SeparatorCapacityAssessmentResult(
+        status=result.status,
+        diagnostic=result.diagnostic,
+        design_basis_source=result.design_basis_source,
+        governing_capacity_basis=result.governing_capacity_basis,
+        gas_area=None if result.gas_area is None else from_si(result.gas_area.magnitude_si, result.gas_area.unit),
+        gas_density=None if result.gas_density is None else from_si(result.gas_density.magnitude_si, result.gas_density.unit),
+        liquid_density=None if result.liquid_density is None else from_si(result.liquid_density.magnitude_si, result.liquid_density.unit),
+        maximum_gas_velocity=None if result.maximum_gas_velocity is None else from_si(result.maximum_gas_velocity.magnitude_si, result.maximum_gas_velocity.unit),
+        current_gas_flow=None if result.current_gas_flow is None else from_si(result.current_gas_flow.magnitude_si, result.current_gas_flow.unit),
+        mechanical_design_maximum_gas_flow=None if result.mechanical_design_maximum_gas_flow is None else from_si(result.mechanical_design_maximum_gas_flow.magnitude_si, result.mechanical_design_maximum_gas_flow.unit),
+        souders_brown_maximum_gas_flow=None if result.souders_brown_maximum_gas_flow is None else from_si(result.souders_brown_maximum_gas_flow.magnitude_si, result.souders_brown_maximum_gas_flow.unit),
+        maximum_gas_flow=None if result.maximum_gas_flow is None else from_si(result.maximum_gas_flow.magnitude_si, result.maximum_gas_flow.unit),
+        utilization=result.utilization,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def separator_performance(gas_density: Q, oil_density: Q, water_density: Q, gas_viscosity: Q, oil_viscosity: Q, water_viscosity: Q, gas_velocity: Q, vessel_diameter: Q, vessel_length: Q, orientation: str, liquid_level_fraction: float, mist_position: float | None=None, weir_position: float | None=None, gas_liquid_distribution: str | None=None, gas_liquid_characteristic_diameter: Q | None=None, gas_liquid_spread: float | None=None, gas_bubble_distribution: str | None=None, gas_bubble_characteristic_diameter: Q | None=None, gas_bubble_spread: float | None=None, oil_in_water_distribution: str | None=None, oil_in_water_characteristic_diameter: Q | None=None, oil_in_water_spread: float | None=None, water_in_oil_distribution: str | None=None, water_in_oil_characteristic_diameter: Q | None=None, water_in_oil_spread: float | None=None, mist_eliminator: str | None=None, mist_eliminator_cut_diameter: Q | None=None, mist_eliminator_sharpness: float | None=None, mist_eliminator_max_efficiency: float | None=None, mist_eliminator_points: list[dict[str, Q]] | None=None, oil_water_coalescer: str | None=None, oil_water_coalescer_cut_diameter: Q | None=None, oil_water_coalescer_max_efficiency: float | None=None, oil_water_coalescer_points: list[dict[str, Q]] | None=None, include_gravity_section: bool | None=None, liquid_in_gas_calibration_factor: float | None=None, gas_carry_under_calibration_factor: float | None=None, liquid_liquid_calibration_factor: float | None=None, enhanced: bool | None=None, inlet_pipe_diameter: Q | None=None, surface_tension: Q | None=None, oil_water_interfacial_tension: Q | None=None, oil_volume_fraction: float | None=None, apply_turbulence_correction: bool | None=None, inlet_device: str | None=None, override_bulk_efficiency: float | None=None, override_dsd_multiplier: float | None=None, design_k_factor: Q | None=None, liquid_liquid_residence_time: Q | None=None) -> SeparatorPerformanceResult:
+    """``process.separator_performance``, computed in Rust."""
+    spec = _models_gen.model("process.separator_performance")
+    result = _core.separator_performance(
+        input_to_si(spec, "gas_density", gas_density),
+        input_to_si(spec, "oil_density", oil_density),
+        input_to_si(spec, "water_density", water_density),
+        input_to_si(spec, "gas_viscosity", gas_viscosity),
+        input_to_si(spec, "oil_viscosity", oil_viscosity),
+        input_to_si(spec, "water_viscosity", water_viscosity),
+        input_to_si(spec, "gas_velocity", gas_velocity),
+        input_to_si(spec, "vessel_diameter", vessel_diameter),
+        input_to_si(spec, "vessel_length", vessel_length),
+        orientation,
+        liquid_level_fraction,
+        None if mist_position is None else mist_position,
+        None if weir_position is None else weir_position,
+        gas_liquid_distribution,
+        None if gas_liquid_characteristic_diameter is None else input_to_si(spec, "gas_liquid_characteristic_diameter", gas_liquid_characteristic_diameter),
+        None if gas_liquid_spread is None else gas_liquid_spread,
+        gas_bubble_distribution,
+        None if gas_bubble_characteristic_diameter is None else input_to_si(spec, "gas_bubble_characteristic_diameter", gas_bubble_characteristic_diameter),
+        None if gas_bubble_spread is None else gas_bubble_spread,
+        oil_in_water_distribution,
+        None if oil_in_water_characteristic_diameter is None else input_to_si(spec, "oil_in_water_characteristic_diameter", oil_in_water_characteristic_diameter),
+        None if oil_in_water_spread is None else oil_in_water_spread,
+        water_in_oil_distribution,
+        None if water_in_oil_characteristic_diameter is None else input_to_si(spec, "water_in_oil_characteristic_diameter", water_in_oil_characteristic_diameter),
+        None if water_in_oil_spread is None else water_in_oil_spread,
+        mist_eliminator,
+        None if mist_eliminator_cut_diameter is None else input_to_si(spec, "mist_eliminator_cut_diameter", mist_eliminator_cut_diameter),
+        None if mist_eliminator_sharpness is None else mist_eliminator_sharpness,
+        None if mist_eliminator_max_efficiency is None else mist_eliminator_max_efficiency,
+        None if mist_eliminator_points is None else input_records_to_si(spec, "mist_eliminator_points", mist_eliminator_points),
+        oil_water_coalescer,
+        None if oil_water_coalescer_cut_diameter is None else input_to_si(spec, "oil_water_coalescer_cut_diameter", oil_water_coalescer_cut_diameter),
+        None if oil_water_coalescer_max_efficiency is None else oil_water_coalescer_max_efficiency,
+        None if oil_water_coalescer_points is None else input_records_to_si(spec, "oil_water_coalescer_points", oil_water_coalescer_points),
+        include_gravity_section,
+        None if liquid_in_gas_calibration_factor is None else liquid_in_gas_calibration_factor,
+        None if gas_carry_under_calibration_factor is None else gas_carry_under_calibration_factor,
+        None if liquid_liquid_calibration_factor is None else liquid_liquid_calibration_factor,
+        enhanced,
+        None if inlet_pipe_diameter is None else input_to_si(spec, "inlet_pipe_diameter", inlet_pipe_diameter),
+        None if surface_tension is None else input_to_si(spec, "surface_tension", surface_tension),
+        None if oil_water_interfacial_tension is None else input_to_si(spec, "oil_water_interfacial_tension", oil_water_interfacial_tension),
+        None if oil_volume_fraction is None else oil_volume_fraction,
+        apply_turbulence_correction,
+        inlet_device,
+        None if override_bulk_efficiency is None else override_bulk_efficiency,
+        None if override_dsd_multiplier is None else override_dsd_multiplier,
+        None if design_k_factor is None else input_to_si(spec, "design_k_factor", design_k_factor),
+        None if liquid_liquid_residence_time is None else input_to_si(spec, "liquid_liquid_residence_time", liquid_liquid_residence_time),
+    )
+    return SeparatorPerformanceResult(
+        oil_in_gas=result.oil_in_gas,
+        water_in_gas=result.water_in_gas,
+        gas_in_oil=result.gas_in_oil,
+        gas_in_water=result.gas_in_water,
+        oil_in_water=result.oil_in_water,
+        water_in_oil=result.water_in_oil,
+        gravity_section_efficiency=result.gravity_section_efficiency,
+        mist_eliminator_efficiency=result.mist_eliminator_efficiency,
+        overall_gas_liquid_efficiency=result.overall_gas_liquid_efficiency,
+        liquid_liquid_gravity_efficiency=result.liquid_liquid_gravity_efficiency,
+        gravity_cut_diameter=from_si(result.gravity_cut_diameter.magnitude_si, result.gravity_cut_diameter.unit),
+        inlet_flow_regime=result.inlet_flow_regime,
+        inlet_device_bulk_efficiency=result.inlet_device_bulk_efficiency,
+        inlet_device_pressure_drop=None if result.inlet_device_pressure_drop is None else from_si(result.inlet_device_pressure_drop.magnitude_si, result.inlet_device_pressure_drop.unit),
+        inlet_nozzle_velocity=None if result.inlet_nozzle_velocity is None else from_si(result.inlet_nozzle_velocity.magnitude_si, result.inlet_nozzle_velocity.unit),
+        inlet_momentum_flux=None if result.inlet_momentum_flux is None else from_si(result.inlet_momentum_flux.magnitude_si, result.inlet_momentum_flux.unit),
+        k_factor=None if result.k_factor is None else from_si(result.k_factor.magnitude_si, result.k_factor.unit),
+        k_factor_utilization=result.k_factor_utilization,
+        mist_eliminator_flooded=result.mist_eliminator_flooded,
+        gas_area=None if result.gas_area is None else from_si(result.gas_area.magnitude_si, result.gas_area.unit),
+        liquid_area=None if result.liquid_area is None else from_si(result.liquid_area.magnitude_si, result.liquid_area.unit),
+        gas_volume=None if result.gas_volume is None else from_si(result.gas_volume.magnitude_si, result.gas_volume.unit),
+        liquid_volume=None if result.liquid_volume is None else from_si(result.liquid_volume.magnitude_si, result.liquid_volume.unit),
+        total_volume=None if result.total_volume is None else from_si(result.total_volume.magnitude_si, result.total_volume.unit),
+        effective_gas_settling_height=None if result.effective_gas_settling_height is None else from_si(result.effective_gas_settling_height.magnitude_si, result.effective_gas_settling_height.unit),
+        effective_liquid_settling_height=None if result.effective_liquid_settling_height is None else from_si(result.effective_liquid_settling_height.magnitude_si, result.effective_liquid_settling_height.unit),
+        gas_residence_time=None if result.gas_residence_time is None else from_si(result.gas_residence_time.magnitude_si, result.gas_residence_time.unit),
+        liquid_residence_time=None if result.liquid_residence_time is None else from_si(result.liquid_residence_time.magnitude_si, result.liquid_residence_time.unit),
+        gravity_section_length=None if result.gravity_section_length is None else from_si(result.gravity_section_length.magnitude_si, result.gravity_section_length.unit),
+        oil_pad_thickness=None if result.oil_pad_thickness is None else from_si(result.oil_pad_thickness.magnitude_si, result.oil_pad_thickness.unit),
+        water_layer_height=None if result.water_layer_height is None else from_si(result.water_layer_height.magnitude_si, result.water_layer_height.unit),
+        api_gas_liquid_compliant=result.api_gas_liquid_compliant,
+        api_liquid_compliant=result.api_liquid_compliant,
+        api_fully_compliant=result.api_fully_compliant,
+        api_gas_liquid_comment=result.api_gas_liquid_comment,
+        api_liquid_comment=result.api_liquid_comment,
+        api_gravity_cut_diameter=None if result.api_gravity_cut_diameter is None else from_si(result.api_gravity_cut_diameter.magnitude_si, result.api_gravity_cut_diameter.unit),
+        api_k_factor_utilization=result.api_k_factor_utilization,
+        api_max_k_factor=None if result.api_max_k_factor is None else from_si(result.api_max_k_factor.magnitude_si, result.api_max_k_factor.unit),
+        api_min_liquid_residence_time=None if result.api_min_liquid_residence_time is None else from_si(result.api_min_liquid_residence_time.magnitude_si, result.api_min_liquid_residence_time.unit),
+        post_inlet_device_characteristic_diameter=None if result.post_inlet_device_characteristic_diameter is None else from_si(result.post_inlet_device_characteristic_diameter.magnitude_si, result.post_inlet_device_characteristic_diameter.unit),
+        post_inlet_device_spread=result.post_inlet_device_spread,
+        post_inlet_d50=None if result.post_inlet_d50 is None else from_si(result.post_inlet_d50.magnitude_si, result.post_inlet_d50.unit),
+        post_inlet_d32=None if result.post_inlet_d32 is None else from_si(result.post_inlet_d32.magnitude_si, result.post_inlet_d32.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -5483,7 +7135,7 @@ def shortcut_distillation_column(components: list[str], feed_n: Q, feed_z: list[
     )
 
 
-def splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, split_factors: list[float]) -> SplitterResult:
+def splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, split_factors: list[float], design_pressure_drop: Q | None=None, max_design_velocity: Q | None=None, header_diameter: Q | None=None, capacity_analysis_enabled: bool | None=None, mechanical_design: bool | None=None, design_velocity: Q | None=None, max_operation_pressure: Q | None=None, tensile_strength: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None) -> SplitterResult:
     """``process.splitter``, computed in Rust."""
     spec = _models_gen.model("process.splitter")
     result = _core.splitter(
@@ -5493,6 +7145,16 @@ def splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, f
         input_to_si(spec, "feed_p", feed_p),
         input_to_si(spec, "feed_t", feed_t),
         list(split_factors),
+        None if design_pressure_drop is None else input_to_si(spec, "design_pressure_drop", design_pressure_drop),
+        None if max_design_velocity is None else input_to_si(spec, "max_design_velocity", max_design_velocity),
+        None if header_diameter is None else input_to_si(spec, "header_diameter", header_diameter),
+        capacity_analysis_enabled,
+        mechanical_design,
+        None if design_velocity is None else input_to_si(spec, "design_velocity", design_velocity),
+        None if max_operation_pressure is None else input_to_si(spec, "max_operation_pressure", max_operation_pressure),
+        None if tensile_strength is None else input_to_si(spec, "tensile_strength", tensile_strength),
+        None if joint_efficiency is None else joint_efficiency,
+        None if corrosion_allowance is None else input_to_si(spec, "corrosion_allowance", corrosion_allowance),
     )
     return SplitterResult(
         products_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_n),
@@ -5500,11 +7162,29 @@ def splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, f
         products_p=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_p),
         products_t=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_t),
         products_h=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_h),
+        pressure_drop_value=None if result.pressure_drop_value is None else from_si(result.pressure_drop_value.magnitude_si, result.pressure_drop_value.unit),
+        pressure_drop_design=None if result.pressure_drop_design is None else from_si(result.pressure_drop_design.magnitude_si, result.pressure_drop_design.unit),
+        pressure_drop_utilization=result.pressure_drop_utilization,
+        velocity_value=None if result.velocity_value is None else from_si(result.velocity_value.magnitude_si, result.velocity_value.unit),
+        velocity_design=None if result.velocity_design is None else from_si(result.velocity_design.magnitude_si, result.velocity_design.unit),
+        velocity_utilization=result.velocity_utilization,
+        max_utilization=result.max_utilization,
+        capacity_exceeded=result.capacity_exceeded,
+        bottleneck_constraint=result.bottleneck_constraint,
+        design_header_diameter=None if result.design_header_diameter is None else from_si(result.design_header_diameter.magnitude_si, result.design_header_diameter.unit),
+        design_branch_diameter=None if result.design_branch_diameter is None else from_si(result.design_branch_diameter.magnitude_si, result.design_branch_diameter.unit),
+        design_header_length=None if result.design_header_length is None else from_si(result.design_header_length.magnitude_si, result.design_header_length.unit),
+        design_wall_thickness=None if result.design_wall_thickness is None else from_si(result.design_wall_thickness.magnitude_si, result.design_wall_thickness.unit),
+        manifold_volume=None if result.manifold_volume is None else from_si(result.manifold_volume.magnitude_si, result.manifold_volume.unit),
+        design_total_pressure_drop=None if result.design_total_pressure_drop is None else from_si(result.design_total_pressure_drop.magnitude_si, result.design_total_pressure_drop.unit),
+        header_weight=None if result.header_weight is None else from_si(result.header_weight.magnitude_si, result.header_weight.unit),
+        branch_weight=None if result.branch_weight is None else from_si(result.branch_weight.magnitude_si, result.branch_weight.unit),
+        total_weight=None if result.total_weight is None else from_si(result.total_weight.magnitude_si, result.total_weight.unit),
         warnings=_warnings(result.warnings),
     )
 
 
-def stirred_tank_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, reaction: str, limiting_reactant: str, conversion: float, isothermal: bool, reactor_temperature: Q | None=None, reactor_pressure: Q | None=None, pressure_drop: Q | None=None) -> StirredTankReactorResult:
+def stirred_tank_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, reaction: str, limiting_reactant: str, conversion: float, isothermal: bool, reactor_temperature: Q | None=None, reactor_pressure: Q | None=None, pressure_drop: Q | None=None, vessel_volume: Q | None=None, residence_time: Q | None=None, agitator_power_per_volume: Q | None=None) -> StirredTankReactorResult:
     """``process.stirred_tank_reactor``, computed in Rust."""
     spec = _models_gen.model("process.stirred_tank_reactor")
     result = _core.stirred_tank_reactor(
@@ -5520,6 +7200,9 @@ def stirred_tank_reactor(components: list[str], feed_n: Q, feed_z: list[float], 
         None if reactor_temperature is None else input_to_si(spec, "reactor_temperature", reactor_temperature),
         None if reactor_pressure is None else input_to_si(spec, "reactor_pressure", reactor_pressure),
         None if pressure_drop is None else input_to_si(spec, "pressure_drop", pressure_drop),
+        None if vessel_volume is None else input_to_si(spec, "vessel_volume", vessel_volume),
+        None if residence_time is None else input_to_si(spec, "residence_time", residence_time),
+        None if agitator_power_per_volume is None else input_to_si(spec, "agitator_power_per_volume", agitator_power_per_volume),
     )
     return StirredTankReactorResult(
         product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
@@ -5528,6 +7211,7 @@ def stirred_tank_reactor(components: list[str], feed_n: Q, feed_z: list[float], 
         product_t=from_si(result.product_t.magnitude_si, result.product_t.unit),
         product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
         heat_duty=from_si(result.heat_duty.magnitude_si, result.heat_duty.unit),
+        agitator_power=from_si(result.agitator_power.magnitude_si, result.agitator_power.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -5650,7 +7334,7 @@ def tank(components: list[str], feed_n: list[Q], feed_z: list[list[float]], feed
     )
 
 
-def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_aqueous: float=0.0, gas_in_oil: float=0.0, oil_in_aqueous: float=0.0, oil_in_gas: float=0.0, aqueous_in_gas: float=0.0, aqueous_in_oil: float=0.0, heat_input: Q | None=None) -> ThreePhaseSeparatorResult:
+def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_aqueous: float=0.0, gas_in_oil: float=0.0, oil_in_aqueous: float=0.0, oil_in_gas: float=0.0, aqueous_in_gas: float=0.0, aqueous_in_oil: float=0.0, heat_input: Q | None=None, internal_diameter: Q | None=None, separator_length: Q | None=None, nll_fraction: float | None=None, nil_fraction: float | None=None, water_level: Q | None=None, oil_level: Q | None=None, gas_outlet_flow_fraction: float | None=None, oil_outlet_flow_fraction: float | None=None, water_outlet_flow_fraction: float | None=None) -> ThreePhaseSeparatorResult:
     """``process.three_phase_separator``, computed in Rust."""
     spec = _models_gen.model("process.three_phase_separator")
     result = _core.three_phase_separator(
@@ -5666,7 +7350,16 @@ def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float],
         oil_in_gas,
         aqueous_in_gas,
         aqueous_in_oil,
+        None if gas_outlet_flow_fraction is None else gas_outlet_flow_fraction,
+        None if oil_outlet_flow_fraction is None else oil_outlet_flow_fraction,
+        None if water_outlet_flow_fraction is None else water_outlet_flow_fraction,
         None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
+        None if internal_diameter is None else input_to_si(spec, "internal_diameter", internal_diameter),
+        None if separator_length is None else input_to_si(spec, "separator_length", separator_length),
+        None if nll_fraction is None else nll_fraction,
+        None if nil_fraction is None else nil_fraction,
+        None if water_level is None else input_to_si(spec, "water_level", water_level),
+        None if oil_level is None else input_to_si(spec, "oil_level", oil_level),
     )
     return ThreePhaseSeparatorResult(
         vapour_n=from_si(result.vapour_n.magnitude_si, result.vapour_n.unit),
@@ -5684,11 +7377,18 @@ def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float],
         heavy_liquid_p=from_si(result.heavy_liquid_p.magnitude_si, result.heavy_liquid_p.unit),
         heavy_liquid_t=from_si(result.heavy_liquid_t.magnitude_si, result.heavy_liquid_t.unit),
         heavy_liquid_h=from_si(result.heavy_liquid_h.magnitude_si, result.heavy_liquid_h.unit),
+        water_level=None if result.water_level is None else from_si(result.water_level.magnitude_si, result.water_level.unit),
+        oil_level=None if result.oil_level is None else from_si(result.oil_level.magnitude_si, result.oil_level.unit),
+        oil_thickness=None if result.oil_thickness is None else from_si(result.oil_thickness.magnitude_si, result.oil_thickness.unit),
+        oil_retention_time=None if result.oil_retention_time is None else from_si(result.oil_retention_time.magnitude_si, result.oil_retention_time.unit),
+        water_retention_time=None if result.water_retention_time is None else from_si(result.water_retention_time.magnitude_si, result.water_retention_time.unit),
+        interface_settling_time=None if result.interface_settling_time is None else from_si(result.interface_settling_time.magnitude_si, result.interface_settling_time.unit),
+        settling_time_sufficient=result.settling_time_sufficient,
         warnings=_warnings(result.warnings),
     )
 
 
-def throttling_valve(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q) -> ThrottlingValveResult:
+def throttling_valve(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, valve_opening: float | None=None, kv: float | None=None, fouling_fraction: float | None=None, valve_characterization: str | None=None, xt: float | None=None, allow_choked: bool | None=None, is_calc_pressure: bool | None=None, is_isothermal: bool | None=None, sizing_standard: str | None=None) -> ThrottlingValveResult:
     """``process.throttling_valve``, computed in Rust."""
     spec = _models_gen.model("process.throttling_valve")
     result = _core.throttling_valve(
@@ -5698,6 +7398,15 @@ def throttling_valve(components: list[str], inlet_n: Q, inlet_z: list[float], in
         input_to_si(spec, "inlet_p", inlet_p),
         input_to_si(spec, "inlet_t", inlet_t),
         input_to_si(spec, "outlet_pressure", outlet_pressure),
+        None if valve_opening is None else valve_opening,
+        None if kv is None else kv,
+        None if fouling_fraction is None else fouling_fraction,
+        valve_characterization,
+        None if xt is None else xt,
+        allow_choked,
+        is_calc_pressure,
+        is_isothermal,
+        sizing_standard,
     )
     return ThrottlingValveResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5705,6 +7414,71 @@ def throttling_valve(components: list[str], inlet_n: Q, inlet_z: list[float], in
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        kv=result.kv,
+        cv=result.cv,
+        cg=result.cg,
+        choked=result.choked,
+        gas_valve=result.gas_valve,
+        calculated_molar_flow=from_si(result.calculated_molar_flow.magnitude_si, result.calculated_molar_flow.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def turbo_expander_compressor(expander_components: list[str], compressor_components: list[str], expander_n: Q, expander_z: list[float], expander_p: Q, expander_t: Q, compressor_n: Q, compressor_z: list[float], compressor_p: Q, compressor_t: Q, expander_out_pressure: Q, impeller_diameter: Q, design_speed: float, design_uc: float, design_qn: float, igv_opening: float | None=None, igv_control_mode: bool | None=None, maximum_igv_area: Q | None=None, igv_area_increase_factor: float | None=None, bearing_loss: Q | None=None, expander_design_isentropic_efficiency: float | None=None, compressor_design_polytropic_efficiency: float | None=None, compressor_design_polytropic_head: Q | None=None, expander_out_temperature: Q | None=None, uc_curve: list[dict[str, float]] | None=None, qn_efficiency_curve: list[dict[str, float]] | None=None, qn_head_curve: list[dict[str, float]] | None=None, chart: list[dict[str, float]] | None=None, igv_penalty_curve: list[dict[str, float]] | None=None) -> TurboExpanderResult:
+    """``process.turbo_expander_compressor``, computed in Rust."""
+    spec = _models_gen.model("process.turbo_expander_compressor")
+    result = _core.turbo_expander_compressor(
+        list(expander_components),
+        list(compressor_components),
+        input_to_si(spec, "expander_n", expander_n),
+        list(expander_z),
+        input_to_si(spec, "expander_p", expander_p),
+        input_to_si(spec, "expander_t", expander_t),
+        input_to_si(spec, "compressor_n", compressor_n),
+        list(compressor_z),
+        input_to_si(spec, "compressor_p", compressor_p),
+        input_to_si(spec, "compressor_t", compressor_t),
+        input_to_si(spec, "expander_out_pressure", expander_out_pressure),
+        input_to_si(spec, "impeller_diameter", impeller_diameter),
+        design_speed,
+        design_uc,
+        design_qn,
+        None if igv_opening is None else igv_opening,
+        igv_control_mode,
+        None if maximum_igv_area is None else input_to_si(spec, "maximum_igv_area", maximum_igv_area),
+        None if igv_area_increase_factor is None else igv_area_increase_factor,
+        None if bearing_loss is None else input_to_si(spec, "bearing_loss", bearing_loss),
+        None if expander_design_isentropic_efficiency is None else expander_design_isentropic_efficiency,
+        None if compressor_design_polytropic_efficiency is None else compressor_design_polytropic_efficiency,
+        None if compressor_design_polytropic_head is None else input_to_si(spec, "compressor_design_polytropic_head", compressor_design_polytropic_head),
+        None if expander_out_temperature is None else input_to_si(spec, "expander_out_temperature", expander_out_temperature),
+        None if uc_curve is None else input_records_to_si(spec, "uc_curve", uc_curve),
+        None if qn_efficiency_curve is None else input_records_to_si(spec, "qn_efficiency_curve", qn_efficiency_curve),
+        None if qn_head_curve is None else input_records_to_si(spec, "qn_head_curve", qn_head_curve),
+        None if chart is None else input_records_to_si(spec, "chart", chart),
+        None if igv_penalty_curve is None else input_records_to_si(spec, "igv_penalty_curve", igv_penalty_curve),
+    )
+    return TurboExpanderResult(
+        expander_outlet_n=from_si(result.expander_outlet_n.magnitude_si, result.expander_outlet_n.unit),
+        expander_outlet_z=tuple(result.expander_outlet_z),
+        expander_outlet_p=from_si(result.expander_outlet_p.magnitude_si, result.expander_outlet_p.unit),
+        expander_outlet_t=from_si(result.expander_outlet_t.magnitude_si, result.expander_outlet_t.unit),
+        expander_outlet_h=from_si(result.expander_outlet_h.magnitude_si, result.expander_outlet_h.unit),
+        compressor_outlet_n=from_si(result.compressor_outlet_n.magnitude_si, result.compressor_outlet_n.unit),
+        compressor_outlet_z=tuple(result.compressor_outlet_z),
+        compressor_outlet_p=from_si(result.compressor_outlet_p.magnitude_si, result.compressor_outlet_p.unit),
+        compressor_outlet_t=from_si(result.compressor_outlet_t.magnitude_si, result.compressor_outlet_t.unit),
+        compressor_outlet_h=from_si(result.compressor_outlet_h.magnitude_si, result.compressor_outlet_h.unit),
+        speed=result.speed,
+        power_expander=from_si(result.power_expander.magnitude_si, result.power_expander.unit),
+        power_compressor=from_si(result.power_compressor.magnitude_si, result.power_compressor.unit),
+        expander_isentropic_efficiency=result.expander_isentropic_efficiency,
+        expander_design_isentropic_efficiency=result.expander_design_isentropic_efficiency,
+        compressor_polytropic_efficiency=result.compressor_polytropic_efficiency,
+        compressor_polytropic_head=from_si(result.compressor_polytropic_head.magnitude_si, result.compressor_polytropic_head.unit),
+        uc_ratio_expander=result.uc_ratio_expander,
+        qn_ratio_compressor=result.qn_ratio_compressor,
+        igv_opening=result.igv_opening,
         warnings=_warnings(result.warnings),
     )
 
@@ -5968,6 +7742,41 @@ def iso6976(components: list[str], z: list[float], volumetric_reference_temperat
     )
 
 
+def boiling_heat_transfer(mass_flux: Q, tube_inner_diameter: Q, liquid_density: Q, vapor_density: Q, liquid_viscosity: Q, vapor_viscosity: Q, liquid_cp: Q, liquid_conductivity: Q, surface_tension: Q, heat_of_vaporization: float, wall_superheat: Q, saturation_pressure_difference: Q, heat_flux: Q, vapor_quality: float, quality_in: float, quality_out: float, intervals: float | None=None, horizontal: bool | None=None) -> BoilingHeatTransferResult:
+    """``thermal.boiling_heat_transfer``, computed in Rust."""
+    spec = _spec_for("thermal.boiling_heat_transfer")
+    result = _core.boiling_heat_transfer(
+        input_to_si(spec, "mass_flux", mass_flux),
+        input_to_si(spec, "tube_inner_diameter", tube_inner_diameter),
+        input_to_si(spec, "liquid_density", liquid_density),
+        input_to_si(spec, "vapor_density", vapor_density),
+        input_to_si(spec, "liquid_viscosity", liquid_viscosity),
+        input_to_si(spec, "vapor_viscosity", vapor_viscosity),
+        input_to_si(spec, "liquid_cp", liquid_cp),
+        input_to_si(spec, "liquid_conductivity", liquid_conductivity),
+        input_to_si(spec, "surface_tension", surface_tension),
+        heat_of_vaporization,
+        input_to_si(spec, "wall_superheat", wall_superheat),
+        input_to_si(spec, "saturation_pressure_difference", saturation_pressure_difference),
+        input_to_si(spec, "heat_flux", heat_flux),
+        vapor_quality,
+        quality_in,
+        quality_out,
+        None if intervals is None else intervals,
+        horizontal,
+    )
+    return BoilingHeatTransferResult(
+        chen_htc=from_si(result.chen_htc.magnitude_si, result.chen_htc.unit),
+        gungor_winterton_htc=from_si(result.gungor_winterton_htc.magnitude_si, result.gungor_winterton_htc.unit),
+        gungor_winterton_corrected_htc=from_si(result.gungor_winterton_corrected_htc.magnitude_si, result.gungor_winterton_corrected_htc.unit),
+        average_htc=from_si(result.average_htc.magnitude_si, result.average_htc.unit),
+        martinelli_parameter=result.martinelli_parameter,
+        chen_enhancement_factor=result.chen_enhancement_factor,
+        chen_suppression_factor=result.chen_suppression_factor,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
     """``thermal.conduction_plane_wall``, computed in Rust."""
     spec = _spec_for("thermal.conduction_plane_wall")
@@ -5979,5 +7788,476 @@ def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
     )
     return ConductionPlaneWallResult(
         q=from_si(result.q.magnitude_si, result.q.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def fouling_model(model: str, velocity: Q, fluid_density: Q, fluid_viscosity: Q, wall_temperature: Q, tube_inner_diameter: Q, alpha: float, beta: float, activation_energy: Q, gamma: float, fixed_fouling_resistance: float, rf_max: float, time_constant: Q, time_hours: Q, target_fouling_resistance: float, threshold_rate: float, euler_steps: float | None=None, euler_step_hours: Q | None=None) -> FoulingModelResult:
+    """``thermal.fouling_model``, computed in Rust."""
+    spec = _spec_for("thermal.fouling_model")
+    result = _core.fouling_model(
+        model,
+        input_to_si(spec, "velocity", velocity),
+        input_to_si(spec, "fluid_density", fluid_density),
+        input_to_si(spec, "fluid_viscosity", fluid_viscosity),
+        input_to_si(spec, "wall_temperature", wall_temperature),
+        input_to_si(spec, "tube_inner_diameter", tube_inner_diameter),
+        alpha,
+        beta,
+        input_to_si(spec, "activation_energy", activation_energy),
+        gamma,
+        fixed_fouling_resistance,
+        rf_max,
+        input_to_si(spec, "time_constant", time_constant),
+        input_to_si(spec, "time_hours", time_hours),
+        target_fouling_resistance,
+        threshold_rate,
+        None if euler_steps is None else euler_steps,
+        None if euler_step_hours is None else input_to_si(spec, "euler_step_hours", euler_step_hours),
+    )
+    return FoulingModelResult(
+        fouling_resistance_at_time=result.fouling_resistance_at_time,
+        current_fouling_resistance=result.current_fouling_resistance,
+        asymptotic_fouling_resistance=result.asymptotic_fouling_resistance,
+        threshold_wall_temperature=from_si(result.threshold_wall_temperature.magnitude_si, result.threshold_wall_temperature.unit),
+        threshold_velocity=from_si(result.threshold_velocity.magnitude_si, result.threshold_velocity.unit),
+        time_to_target=from_si(result.time_to_target.magnitude_si, result.time_to_target.unit),
+        operating_time=from_si(result.operating_time.magnitude_si, result.operating_time.unit),
+        fouling_rate=result.fouling_rate,
+        reynolds_number=result.reynolds_number,
+        wall_shear_stress=from_si(result.wall_shear_stress.magnitude_si, result.wall_shear_stress.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def incremental_zone_analysis(tube_inside_diameter: Q, tube_outside_diameter: Q, tube_length: Q, tube_count: float, tube_passes: float, shell_inside_diameter: Q, baffle_spacing: Q, tube_pitch: Q, triangular_pitch: bool, tube_wall_conductivity: Q, fouling_tube: float, fouling_shell: float, zones: list[dict[str, Any]]) -> IncrementalZoneAnalysisResult:
+    """``thermal.incremental_zone_analysis``, computed in Rust."""
+    spec = _spec_for("thermal.incremental_zone_analysis")
+    result = _core.incremental_zone_analysis(
+        input_to_si(spec, "tube_inside_diameter", tube_inside_diameter),
+        input_to_si(spec, "tube_outside_diameter", tube_outside_diameter),
+        input_to_si(spec, "tube_length", tube_length),
+        tube_count,
+        tube_passes,
+        input_to_si(spec, "shell_inside_diameter", shell_inside_diameter),
+        input_to_si(spec, "baffle_spacing", baffle_spacing),
+        input_to_si(spec, "tube_pitch", tube_pitch),
+        triangular_pitch,
+        input_to_si(spec, "tube_wall_conductivity", tube_wall_conductivity),
+        fouling_tube,
+        fouling_shell,
+        input_records_to_si(spec, "zones", zones),
+    )
+    return IncrementalZoneAnalysisResult(
+        number_of_zones=result.number_of_zones,
+        total_required_area=from_si(result.total_required_area.magnitude_si, result.total_required_area.unit),
+        total_duty=from_si(result.total_duty.magnitude_si, result.total_duty.unit),
+        weighted_average_u=from_si(result.weighted_average_u.magnitude_si, result.weighted_average_u.unit),
+        total_tube_side_pressure_drop=from_si(result.total_tube_side_pressure_drop.magnitude_si, result.total_tube_side_pressure_drop.unit),
+        total_shell_side_pressure_drop=from_si(result.total_shell_side_pressure_drop.magnitude_si, result.total_shell_side_pressure_drop.unit),
+        minimum_approach_temperature=from_si(result.minimum_approach_temperature.magnitude_si, result.minimum_approach_temperature.unit),
+        zones=tuple(IncrementalZoneRow(zone_index=c.zone_index, zone_name=c.zone_name, tube_phase_regime=c.tube_phase_regime, shell_phase_regime=c.shell_phase_regime, tube_side_heat_transfer_coefficient=from_si(c.tube_side_heat_transfer_coefficient.magnitude_si, c.tube_side_heat_transfer_coefficient.unit), shell_side_heat_transfer_coefficient=from_si(c.shell_side_heat_transfer_coefficient.magnitude_si, c.shell_side_heat_transfer_coefficient.unit), overall_heat_transfer_coefficient=from_si(c.overall_heat_transfer_coefficient.magnitude_si, c.overall_heat_transfer_coefficient.unit), lmtd=from_si(c.lmtd.magnitude_si, c.lmtd.unit), duty=from_si(c.duty.magnitude_si, c.duty.unit), required_area=from_si(c.required_area.magnitude_si, c.required_area.unit), tube_side_pressure_drop=from_si(c.tube_side_pressure_drop.magnitude_si, c.tube_side_pressure_drop.unit), shell_side_pressure_drop=from_si(c.shell_side_pressure_drop.magnitude_si, c.shell_side_pressure_drop.unit), hot_inlet_temp=from_si(c.hot_inlet_temp.magnitude_si, c.hot_inlet_temp.unit), hot_outlet_temp=from_si(c.hot_outlet_temp.magnitude_si, c.hot_outlet_temp.unit), cold_inlet_temp=from_si(c.cold_inlet_temp.magnitude_si, c.cold_inlet_temp.unit), cold_outlet_temp=from_si(c.cold_outlet_temp.magnitude_si, c.cold_outlet_temp.unit)) for c in result.zones),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def lmtd_correction_factor(hot_inlet_temperature: Q, hot_outlet_temperature: Q, cold_inlet_temperature: Q, cold_outlet_temperature: Q, shell_passes: float | None=None) -> LmtdCorrectionFactorResult:
+    """``thermal.lmtd_correction_factor``, computed in Rust."""
+    spec = _spec_for("thermal.lmtd_correction_factor")
+    result = _core.lmtd_correction_factor(
+        input_to_si(spec, "hot_inlet_temperature", hot_inlet_temperature),
+        input_to_si(spec, "hot_outlet_temperature", hot_outlet_temperature),
+        input_to_si(spec, "cold_inlet_temperature", cold_inlet_temperature),
+        input_to_si(spec, "cold_outlet_temperature", cold_outlet_temperature),
+        None if shell_passes is None else shell_passes,
+    )
+    return LmtdCorrectionFactorResult(
+        r=result.r,
+        p=result.p,
+        ft=result.ft,
+        ft_1_shell_pass=result.ft_1_shell_pass,
+        ft_2_shell_passes=result.ft_2_shell_passes,
+        required_shell_passes=result.required_shell_passes,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def shah_condensation(mass_flux: Q, tube_inner_diameter: Q, liquid_density: Q, liquid_viscosity: Q, liquid_cp: Q, liquid_conductivity: Q, vapor_density: Q, reduced_pressure: float, vapor_quality: float, quality_in: float, quality_out: float, intervals: float | None=None) -> ShahCondensationResult:
+    """``thermal.shah_condensation``, computed in Rust."""
+    spec = _spec_for("thermal.shah_condensation")
+    result = _core.shah_condensation(
+        input_to_si(spec, "mass_flux", mass_flux),
+        input_to_si(spec, "tube_inner_diameter", tube_inner_diameter),
+        input_to_si(spec, "liquid_density", liquid_density),
+        input_to_si(spec, "liquid_viscosity", liquid_viscosity),
+        input_to_si(spec, "liquid_cp", liquid_cp),
+        input_to_si(spec, "liquid_conductivity", liquid_conductivity),
+        input_to_si(spec, "vapor_density", vapor_density),
+        reduced_pressure,
+        vapor_quality,
+        quality_in,
+        quality_out,
+        None if intervals is None else intervals,
+    )
+    return ShahCondensationResult(
+        liquid_only_htc=from_si(result.liquid_only_htc.magnitude_si, result.liquid_only_htc.unit),
+        liquid_only_reynolds=result.liquid_only_reynolds,
+        local_htc=from_si(result.local_htc.magnitude_si, result.local_htc.unit),
+        average_htc=from_si(result.average_htc.magnitude_si, result.average_htc.unit),
+        vertical_htc=from_si(result.vertical_htc.magnitude_si, result.vertical_htc.unit),
+        in_valid_range=result.in_valid_range,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def shell_and_tube_design(tema_designation: str, tema_class: str, required_area: Q, shell_side_pressure: Q, tube_side_pressure: Q, design_temperature: Q, shell_material_grade: str, tube_material_grade: str, tube_size: str, tube_length: Q, tube_passes: float, shell_joint_efficiency: float, nozzle_diameter: Q, nozzle_wall_thickness: Q, sour_service_assessment: bool, h2s_partial_pressure: Q | None=None, fouling_tube: float | None=None, fouling_shell: float | None=None, shell_side_method: str | None=None, tube_side_density: Q | None=None, tube_side_viscosity: Q | None=None, tube_side_cp: Q | None=None, tube_side_conductivity: Q | None=None, tube_side_mass_flow: Q | None=None, shell_side_density: Q | None=None, shell_side_viscosity: Q | None=None, shell_side_cp: Q | None=None, shell_side_conductivity: Q | None=None, shell_side_mass_flow: Q | None=None) -> ShellAndTubeDesignResult:
+    """``thermal.shell_and_tube_design``, computed in Rust."""
+    spec = _spec_for("thermal.shell_and_tube_design")
+    result = _core.shell_and_tube_design(
+        tema_designation,
+        tema_class,
+        input_to_si(spec, "required_area", required_area),
+        input_to_si(spec, "shell_side_pressure", shell_side_pressure),
+        input_to_si(spec, "tube_side_pressure", tube_side_pressure),
+        input_to_si(spec, "design_temperature", design_temperature),
+        shell_material_grade,
+        tube_material_grade,
+        tube_size,
+        input_to_si(spec, "tube_length", tube_length),
+        tube_passes,
+        shell_joint_efficiency,
+        input_to_si(spec, "nozzle_diameter", nozzle_diameter),
+        input_to_si(spec, "nozzle_wall_thickness", nozzle_wall_thickness),
+        sour_service_assessment,
+        None if h2s_partial_pressure is None else input_to_si(spec, "h2s_partial_pressure", h2s_partial_pressure),
+        None if fouling_tube is None else fouling_tube,
+        None if fouling_shell is None else fouling_shell,
+        shell_side_method,
+        None if tube_side_density is None else input_to_si(spec, "tube_side_density", tube_side_density),
+        None if tube_side_viscosity is None else input_to_si(spec, "tube_side_viscosity", tube_side_viscosity),
+        None if tube_side_cp is None else input_to_si(spec, "tube_side_cp", tube_side_cp),
+        None if tube_side_conductivity is None else input_to_si(spec, "tube_side_conductivity", tube_side_conductivity),
+        None if tube_side_mass_flow is None else input_to_si(spec, "tube_side_mass_flow", tube_side_mass_flow),
+        None if shell_side_density is None else input_to_si(spec, "shell_side_density", shell_side_density),
+        None if shell_side_viscosity is None else input_to_si(spec, "shell_side_viscosity", shell_side_viscosity),
+        None if shell_side_cp is None else input_to_si(spec, "shell_side_cp", shell_side_cp),
+        None if shell_side_conductivity is None else input_to_si(spec, "shell_side_conductivity", shell_side_conductivity),
+        None if shell_side_mass_flow is None else input_to_si(spec, "shell_side_mass_flow", shell_side_mass_flow),
+    )
+    return ShellAndTubeDesignResult(
+        tema_designation=result.tema_designation,
+        tema_class=result.tema_class,
+        shell_inside_diameter=from_si(result.shell_inside_diameter.magnitude_si, result.shell_inside_diameter.unit),
+        shell_outside_diameter=from_si(result.shell_outside_diameter.magnitude_si, result.shell_outside_diameter.unit),
+        shell_wall_thickness=from_si(result.shell_wall_thickness.magnitude_si, result.shell_wall_thickness.unit),
+        shell_material=result.shell_material,
+        shell_material_grade=result.shell_material_grade,
+        shell_allowable_stress=from_si(result.shell_allowable_stress.magnitude_si, result.shell_allowable_stress.unit),
+        shell_smys=from_si(result.shell_smys.magnitude_si, result.shell_smys.unit),
+        shell_joint_efficiency=result.shell_joint_efficiency,
+        tube_count=result.tube_count,
+        tube_outer_diameter=from_si(result.tube_outer_diameter.magnitude_si, result.tube_outer_diameter.unit),
+        tube_wall_thickness=from_si(result.tube_wall_thickness.magnitude_si, result.tube_wall_thickness.unit),
+        tube_length=from_si(result.tube_length.magnitude_si, result.tube_length.unit),
+        tube_passes=result.tube_passes,
+        tube_pitch=from_si(result.tube_pitch.magnitude_si, result.tube_pitch.unit),
+        tube_pitch_pattern=result.tube_pitch_pattern,
+        tube_material=result.tube_material,
+        tube_material_grade=result.tube_material_grade,
+        tube_allowable_stress=from_si(result.tube_allowable_stress.magnitude_si, result.tube_allowable_stress.unit),
+        tube_thermal_conductivity=from_si(result.tube_thermal_conductivity.magnitude_si, result.tube_thermal_conductivity.unit),
+        baffle_type=result.baffle_type,
+        baffle_count=result.baffle_count,
+        baffle_spacing=from_si(result.baffle_spacing.magnitude_si, result.baffle_spacing.unit),
+        baffle_cut=result.baffle_cut,
+        required_area=from_si(result.required_area.magnitude_si, result.required_area.unit),
+        actual_area=from_si(result.actual_area.magnitude_si, result.actual_area.unit),
+        area_margin=result.area_margin,
+        tubesheet_thickness_uhx=from_si(result.tubesheet_thickness_uhx.magnitude_si, result.tubesheet_thickness_uhx.unit),
+        mawp_shell_side=from_si(result.mawp_shell_side.magnitude_si, result.mawp_shell_side.unit),
+        mawp_tube_side=from_si(result.mawp_tube_side.magnitude_si, result.mawp_tube_side.unit),
+        hydro_test_pressure_shell=from_si(result.hydro_test_pressure_shell.magnitude_si, result.hydro_test_pressure_shell.unit),
+        hydro_test_pressure_tube=from_si(result.hydro_test_pressure_tube.magnitude_si, result.hydro_test_pressure_tube.unit),
+        nozzle_reinforcement_area=from_si(result.nozzle_reinforcement_area.magnitude_si, result.nozzle_reinforcement_area.unit),
+        nozzle_reinforcement_adequate=result.nozzle_reinforcement_adequate,
+        sour_service_required=result.sour_service_required,
+        h2s_partial_pressure=None if result.h2s_partial_pressure is None else from_si(result.h2s_partial_pressure.magnitude_si, result.h2s_partial_pressure.unit),
+        shell_nace_compliant=result.shell_nace_compliant,
+        tube_nace_compliant=result.tube_nace_compliant,
+        shell_max_hardness=result.shell_max_hardness,
+        tube_max_hardness=result.tube_max_hardness,
+        nace_issues=tuple(NaceIssueRow(message=c.message) for c in result.nace_issues),
+        applied_standards=tuple(AppliedStandardRow(name=c.name) for c in result.applied_standards),
+        tube_side_heat_transfer_coefficient=None if result.tube_side_heat_transfer_coefficient is None else from_si(result.tube_side_heat_transfer_coefficient.magnitude_si, result.tube_side_heat_transfer_coefficient.unit),
+        shell_side_heat_transfer_coefficient=None if result.shell_side_heat_transfer_coefficient is None else from_si(result.shell_side_heat_transfer_coefficient.magnitude_si, result.shell_side_heat_transfer_coefficient.unit),
+        overall_heat_transfer_coefficient=None if result.overall_heat_transfer_coefficient is None else from_si(result.overall_heat_transfer_coefficient.magnitude_si, result.overall_heat_transfer_coefficient.unit),
+        tube_side_pressure_drop=None if result.tube_side_pressure_drop is None else from_si(result.tube_side_pressure_drop.magnitude_si, result.tube_side_pressure_drop.unit),
+        shell_side_pressure_drop=None if result.shell_side_pressure_drop is None else from_si(result.shell_side_pressure_drop.magnitude_si, result.shell_side_pressure_drop.unit),
+        tube_side_velocity=None if result.tube_side_velocity is None else from_si(result.tube_side_velocity.magnitude_si, result.tube_side_velocity.unit),
+        shell_side_velocity=None if result.shell_side_velocity is None else from_si(result.shell_side_velocity.magnitude_si, result.shell_side_velocity.unit),
+        tube_side_reynolds=result.tube_side_reynolds,
+        shell_side_reynolds=result.shell_side_reynolds,
+        effective_tube_inside_diameter=None if result.effective_tube_inside_diameter is None else from_si(result.effective_tube_inside_diameter.magnitude_si, result.effective_tube_inside_diameter.unit),
+        outside_heat_transfer_area=None if result.outside_heat_transfer_area is None else from_si(result.outside_heat_transfer_area.magnitude_si, result.outside_heat_transfer_area.unit),
+        tube_fouling_layer_resistance_outside=result.tube_fouling_layer_resistance_outside,
+        jc=result.jc,
+        jl=result.jl,
+        jb=result.jb,
+        js=result.js,
+        jr=result.jr,
+        passed=result.passed,
+        natural_frequency=None if result.natural_frequency is None else from_si(result.natural_frequency.magnitude_si, result.natural_frequency.unit),
+        vortex_shedding_frequency=None if result.vortex_shedding_frequency is None else from_si(result.vortex_shedding_frequency.magnitude_si, result.vortex_shedding_frequency.unit),
+        vortex_shedding_ratio=result.vortex_shedding_ratio,
+        vortex_shedding_critical=result.vortex_shedding_critical,
+        critical_velocity=None if result.critical_velocity is None else from_si(result.critical_velocity.magnitude_si, result.critical_velocity.unit),
+        velocity_ratio=result.velocity_ratio,
+        fluid_elastic_critical=result.fluid_elastic_critical,
+        acoustic_frequency=None if result.acoustic_frequency is None else from_si(result.acoustic_frequency.magnitude_si, result.acoustic_frequency.unit),
+        acoustic_ratio=result.acoustic_ratio,
+        acoustic_critical=result.acoustic_critical,
+        shell_weight=from_si(result.shell_weight.magnitude_si, result.shell_weight.unit),
+        tube_weight=from_si(result.tube_weight.magnitude_si, result.tube_weight.unit),
+        tubesheet_weight=from_si(result.tubesheet_weight.magnitude_si, result.tubesheet_weight.unit),
+        head_weight=from_si(result.head_weight.magnitude_si, result.head_weight.unit),
+        baffle_weight=from_si(result.baffle_weight.magnitude_si, result.baffle_weight.unit),
+        total_dry_weight=from_si(result.total_dry_weight.magnitude_si, result.total_dry_weight.unit),
+        operating_weight=from_si(result.operating_weight.magnitude_si, result.operating_weight.unit),
+        material_cost=result.material_cost,
+        fabrication_cost=result.fabrication_cost,
+        total_cost=result.total_cost,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def shell_and_tube_rating(tube_outside_diameter: Q, tube_inside_diameter: Q, tube_length: Q, tube_count: float, tube_passes: float, tube_pitch: Q, triangular_pitch: bool, shell_inside_diameter: Q, baffle_spacing: Q, baffle_count: float, baffle_cut: float, tube_wall_conductivity: Q, tube_density: Q, tube_viscosity: Q, tube_cp: Q, tube_conductivity: Q, tube_mass_flow: Q, shell_density: Q, shell_viscosity: Q, shell_cp: Q, shell_conductivity: Q, shell_mass_flow: Q, fouling_tube: float, fouling_shell: float, shell_side_method: str, tube_fouling_layer_thickness: Q | None=None, tube_fouling_layer_conductivity: Q | None=None, shell_viscosity_wall: Q | None=None, has_sealing: bool | None=None, sealing_pairs: float | None=None, tube_to_baffle_clearance: Q | None=None, shell_to_baffle_clearance: Q | None=None, bypass_area: Q | None=None) -> ShellAndTubeRatingResult:
+    """``thermal.shell_and_tube_rating``, computed in Rust."""
+    spec = _spec_for("thermal.shell_and_tube_rating")
+    result = _core.shell_and_tube_rating(
+        input_to_si(spec, "tube_outside_diameter", tube_outside_diameter),
+        input_to_si(spec, "tube_inside_diameter", tube_inside_diameter),
+        input_to_si(spec, "tube_length", tube_length),
+        tube_count,
+        tube_passes,
+        input_to_si(spec, "tube_pitch", tube_pitch),
+        triangular_pitch,
+        input_to_si(spec, "shell_inside_diameter", shell_inside_diameter),
+        input_to_si(spec, "baffle_spacing", baffle_spacing),
+        baffle_count,
+        baffle_cut,
+        input_to_si(spec, "tube_wall_conductivity", tube_wall_conductivity),
+        input_to_si(spec, "tube_density", tube_density),
+        input_to_si(spec, "tube_viscosity", tube_viscosity),
+        input_to_si(spec, "tube_cp", tube_cp),
+        input_to_si(spec, "tube_conductivity", tube_conductivity),
+        input_to_si(spec, "tube_mass_flow", tube_mass_flow),
+        input_to_si(spec, "shell_density", shell_density),
+        input_to_si(spec, "shell_viscosity", shell_viscosity),
+        input_to_si(spec, "shell_cp", shell_cp),
+        input_to_si(spec, "shell_conductivity", shell_conductivity),
+        input_to_si(spec, "shell_mass_flow", shell_mass_flow),
+        fouling_tube,
+        fouling_shell,
+        shell_side_method,
+        None if tube_fouling_layer_thickness is None else input_to_si(spec, "tube_fouling_layer_thickness", tube_fouling_layer_thickness),
+        None if tube_fouling_layer_conductivity is None else input_to_si(spec, "tube_fouling_layer_conductivity", tube_fouling_layer_conductivity),
+        None if shell_viscosity_wall is None else input_to_si(spec, "shell_viscosity_wall", shell_viscosity_wall),
+        has_sealing,
+        None if sealing_pairs is None else sealing_pairs,
+        None if tube_to_baffle_clearance is None else input_to_si(spec, "tube_to_baffle_clearance", tube_to_baffle_clearance),
+        None if shell_to_baffle_clearance is None else input_to_si(spec, "shell_to_baffle_clearance", shell_to_baffle_clearance),
+        None if bypass_area is None else input_to_si(spec, "bypass_area", bypass_area),
+    )
+    return ShellAndTubeRatingResult(
+        tube_side_heat_transfer_coefficient=from_si(result.tube_side_heat_transfer_coefficient.magnitude_si, result.tube_side_heat_transfer_coefficient.unit),
+        shell_side_heat_transfer_coefficient=from_si(result.shell_side_heat_transfer_coefficient.magnitude_si, result.shell_side_heat_transfer_coefficient.unit),
+        overall_heat_transfer_coefficient=from_si(result.overall_heat_transfer_coefficient.magnitude_si, result.overall_heat_transfer_coefficient.unit),
+        tube_side_pressure_drop=from_si(result.tube_side_pressure_drop.magnitude_si, result.tube_side_pressure_drop.unit),
+        shell_side_pressure_drop=from_si(result.shell_side_pressure_drop.magnitude_si, result.shell_side_pressure_drop.unit),
+        tube_side_velocity=from_si(result.tube_side_velocity.magnitude_si, result.tube_side_velocity.unit),
+        shell_side_velocity=from_si(result.shell_side_velocity.magnitude_si, result.shell_side_velocity.unit),
+        tube_side_reynolds=result.tube_side_reynolds,
+        shell_side_reynolds=result.shell_side_reynolds,
+        effective_tube_inside_diameter=from_si(result.effective_tube_inside_diameter.magnitude_si, result.effective_tube_inside_diameter.unit),
+        outside_heat_transfer_area=from_si(result.outside_heat_transfer_area.magnitude_si, result.outside_heat_transfer_area.unit),
+        tube_fouling_layer_resistance_outside=result.tube_fouling_layer_resistance_outside,
+        jc=result.jc,
+        jl=result.jl,
+        jb=result.jb,
+        js=result.js,
+        jr=result.jr,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def shell_and_tube_vibration(tube_outside_diameter: Q, tube_inside_diameter: Q, unsupported_span: Q, tube_pitch: Q, tube_material_e: Q, tube_density: Q, crossflow_velocity: Q, shell_fluid_density: Q, tube_fluid_density: Q, shell_inside_diameter: Q, sonic_velocity: Q, damping_ratio: float, triangular_pitch: bool) -> ShellAndTubeVibrationResult:
+    """``thermal.shell_and_tube_vibration``, computed in Rust."""
+    spec = _spec_for("thermal.shell_and_tube_vibration")
+    result = _core.shell_and_tube_vibration(
+        input_to_si(spec, "tube_outside_diameter", tube_outside_diameter),
+        input_to_si(spec, "tube_inside_diameter", tube_inside_diameter),
+        input_to_si(spec, "unsupported_span", unsupported_span),
+        input_to_si(spec, "tube_pitch", tube_pitch),
+        input_to_si(spec, "tube_material_e", tube_material_e),
+        input_to_si(spec, "tube_density", tube_density),
+        input_to_si(spec, "crossflow_velocity", crossflow_velocity),
+        input_to_si(spec, "shell_fluid_density", shell_fluid_density),
+        input_to_si(spec, "tube_fluid_density", tube_fluid_density),
+        input_to_si(spec, "shell_inside_diameter", shell_inside_diameter),
+        input_to_si(spec, "sonic_velocity", sonic_velocity),
+        damping_ratio,
+        triangular_pitch,
+    )
+    return ShellAndTubeVibrationResult(
+        natural_frequency=from_si(result.natural_frequency.magnitude_si, result.natural_frequency.unit),
+        vortex_shedding_frequency=from_si(result.vortex_shedding_frequency.magnitude_si, result.vortex_shedding_frequency.unit),
+        vortex_shedding_ratio=result.vortex_shedding_ratio,
+        vortex_shedding_critical=result.vortex_shedding_critical,
+        critical_velocity=from_si(result.critical_velocity.magnitude_si, result.critical_velocity.unit),
+        velocity_ratio=result.velocity_ratio,
+        fluid_elastic_critical=result.fluid_elastic_critical,
+        acoustic_frequency=from_si(result.acoustic_frequency.magnitude_si, result.acoustic_frequency.unit),
+        acoustic_ratio=result.acoustic_ratio,
+        acoustic_critical=result.acoustic_critical,
+        passed=result.passed,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tema_standard(front_head: str, shell: str, rear_head: str, tema_class: str, tube_size: str, pitch_pattern: str, baffle_type: str, shell_inside_diameter: Q, tube_pitch: Q, tube_passes: float, needs_cleanable: bool, large_temperature_difference: bool, high_pressure: bool, hazardous: bool, tube_material: str | None=None) -> TemaStandardResult:
+    """``thermal.tema_standard``, computed in Rust."""
+    spec = _spec_for("thermal.tema_standard")
+    result = _core.tema_standard(
+        front_head,
+        shell,
+        rear_head,
+        tema_class,
+        tube_size,
+        pitch_pattern,
+        baffle_type,
+        input_to_si(spec, "shell_inside_diameter", shell_inside_diameter),
+        input_to_si(spec, "tube_pitch", tube_pitch),
+        tube_passes,
+        needs_cleanable,
+        large_temperature_difference,
+        high_pressure,
+        hazardous,
+        tube_material,
+    )
+    return TemaStandardResult(
+        configuration_cost_factor=result.configuration_cost_factor,
+        shell_pressure_drop_factor=result.shell_pressure_drop_factor,
+        bundle_removable=result.bundle_removable,
+        good_thermal_expansion=result.good_thermal_expansion,
+        class_cost_factor=result.class_cost_factor,
+        min_tube_wall_thickness=from_si(result.min_tube_wall_thickness.magnitude_si, result.min_tube_wall_thickness.unit),
+        min_corrosion_allowance=from_si(result.min_corrosion_allowance.magnitude_si, result.min_corrosion_allowance.unit),
+        tube_outer_diameter=from_si(result.tube_outer_diameter.magnitude_si, result.tube_outer_diameter.unit),
+        tube_outer_diameter_inch=from_si(result.tube_outer_diameter_inch.magnitude_si, result.tube_outer_diameter_inch.unit),
+        layout_angle=result.layout_angle,
+        min_pitch_ratio=result.min_pitch_ratio,
+        pitch_heat_transfer_factor=result.pitch_heat_transfer_factor,
+        baffle_heat_transfer_factor=result.baffle_heat_transfer_factor,
+        baffle_pressure_drop_factor=result.baffle_pressure_drop_factor,
+        min_tube_pitch=from_si(result.min_tube_pitch.magnitude_si, result.min_tube_pitch.unit),
+        estimated_tube_count=result.estimated_tube_count,
+        max_unsupported_span=from_si(result.max_unsupported_span.magnitude_si, result.max_unsupported_span.unit),
+        min_baffle_spacing=from_si(result.min_baffle_spacing.magnitude_si, result.min_baffle_spacing.unit),
+        max_baffle_spacing=from_si(result.max_baffle_spacing.magnitude_si, result.max_baffle_spacing.unit),
+        recommended_designation=result.recommended_designation,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tube_insert_model(insert: str, reynolds_number: float, prandtl_number: float, plain_heat_transfer_coefficient: Q, plain_pressure_drop: Q, twist_ratio: float | None=None, tape_thickness: Q | None=None, tape_width_fraction: float | None=None, wire_diameter: Q | None=None, wire_coil_pitch: Q | None=None, matrix_density: float | None=None, roughness_ratio: float | None=None, helix_angle: float | None=None) -> TubeInsertModelResult:
+    """``thermal.tube_insert_model``, computed in Rust."""
+    spec = _spec_for("thermal.tube_insert_model")
+    result = _core.tube_insert_model(
+        insert,
+        reynolds_number,
+        prandtl_number,
+        input_to_si(spec, "plain_heat_transfer_coefficient", plain_heat_transfer_coefficient),
+        input_to_si(spec, "plain_pressure_drop", plain_pressure_drop),
+        None if twist_ratio is None else twist_ratio,
+        None if tape_thickness is None else input_to_si(spec, "tape_thickness", tape_thickness),
+        None if tape_width_fraction is None else tape_width_fraction,
+        None if wire_diameter is None else input_to_si(spec, "wire_diameter", wire_diameter),
+        None if wire_coil_pitch is None else input_to_si(spec, "wire_coil_pitch", wire_coil_pitch),
+        None if matrix_density is None else matrix_density,
+        None if roughness_ratio is None else roughness_ratio,
+        None if helix_angle is None else helix_angle,
+    )
+    return TubeInsertModelResult(
+        heat_transfer_enhancement_ratio=result.heat_transfer_enhancement_ratio,
+        pressure_drop_penalty_ratio=result.pressure_drop_penalty_ratio,
+        performance_evaluation_criteria=result.performance_evaluation_criteria,
+        enhanced_heat_transfer_coefficient=from_si(result.enhanced_heat_transfer_coefficient.magnitude_si, result.enhanced_heat_transfer_coefficient.unit),
+        enhanced_pressure_drop=from_si(result.enhanced_pressure_drop.magnitude_si, result.enhanced_pressure_drop.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def two_phase_pressure_drop(mass_flux: Q, vapor_quality: float, tube_inner_diameter: Q, tube_length: Q, liquid_density: Q, vapor_density: Q, liquid_viscosity: Q, vapor_viscosity: Q, surface_tension: Q, quality_in: float, quality_out: float, intervals: float | None=None) -> TwoPhasePressureDropResult:
+    """``thermal.two_phase_pressure_drop``, computed in Rust."""
+    spec = _spec_for("thermal.two_phase_pressure_drop")
+    result = _core.two_phase_pressure_drop(
+        input_to_si(spec, "mass_flux", mass_flux),
+        vapor_quality,
+        input_to_si(spec, "tube_inner_diameter", tube_inner_diameter),
+        input_to_si(spec, "tube_length", tube_length),
+        input_to_si(spec, "liquid_density", liquid_density),
+        input_to_si(spec, "vapor_density", vapor_density),
+        input_to_si(spec, "liquid_viscosity", liquid_viscosity),
+        input_to_si(spec, "vapor_viscosity", vapor_viscosity),
+        input_to_si(spec, "surface_tension", surface_tension),
+        quality_in,
+        quality_out,
+        None if intervals is None else intervals,
+    )
+    return TwoPhasePressureDropResult(
+        friedel_gradient=from_si(result.friedel_gradient.magnitude_si, result.friedel_gradient.unit),
+        friedel_pressure_drop=from_si(result.friedel_pressure_drop.magnitude_si, result.friedel_pressure_drop.unit),
+        friedel_average_pressure_drop=from_si(result.friedel_average_pressure_drop.magnitude_si, result.friedel_average_pressure_drop.unit),
+        muller_steinhagen_heck_gradient=from_si(result.muller_steinhagen_heck_gradient.magnitude_si, result.muller_steinhagen_heck_gradient.unit),
+        gravitational_gradient=from_si(result.gravitational_gradient.magnitude_si, result.gravitational_gradient.unit),
+        acceleration_pressure_drop=from_si(result.acceleration_pressure_drop.magnitude_si, result.acceleration_pressure_drop.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def zone_rating(tube_outside_diameter: Q, tube_inside_diameter: Q, tube_length: Q, tube_count: float, tube_passes: float, tube_pitch: Q, triangular_pitch: bool, shell_inside_diameter: Q, baffle_spacing: Q, baffle_count: float, baffle_cut: float, tube_wall_conductivity: Q, tube_mass_flow: Q, shell_mass_flow: Q, fouling_tube: float, fouling_shell: float, shell_side_method: str, zones: list[dict[str, Any]], tube_fouling_layer_thickness: Q | None=None, tube_fouling_layer_conductivity: Q | None=None, shell_viscosity_wall: Q | None=None, has_sealing: bool | None=None, sealing_pairs: float | None=None, tube_to_baffle_clearance: Q | None=None, shell_to_baffle_clearance: Q | None=None, bypass_area: Q | None=None) -> ZoneRatingResult:
+    """``thermal.zone_rating``, computed in Rust."""
+    spec = _spec_for("thermal.zone_rating")
+    result = _core.zone_rating(
+        input_to_si(spec, "tube_outside_diameter", tube_outside_diameter),
+        input_to_si(spec, "tube_inside_diameter", tube_inside_diameter),
+        input_to_si(spec, "tube_length", tube_length),
+        tube_count,
+        tube_passes,
+        input_to_si(spec, "tube_pitch", tube_pitch),
+        triangular_pitch,
+        input_to_si(spec, "shell_inside_diameter", shell_inside_diameter),
+        input_to_si(spec, "baffle_spacing", baffle_spacing),
+        baffle_count,
+        baffle_cut,
+        input_to_si(spec, "tube_wall_conductivity", tube_wall_conductivity),
+        input_to_si(spec, "tube_mass_flow", tube_mass_flow),
+        input_to_si(spec, "shell_mass_flow", shell_mass_flow),
+        fouling_tube,
+        fouling_shell,
+        shell_side_method,
+        input_records_to_si(spec, "zones", zones),
+        None if tube_fouling_layer_thickness is None else input_to_si(spec, "tube_fouling_layer_thickness", tube_fouling_layer_thickness),
+        None if tube_fouling_layer_conductivity is None else input_to_si(spec, "tube_fouling_layer_conductivity", tube_fouling_layer_conductivity),
+        None if shell_viscosity_wall is None else input_to_si(spec, "shell_viscosity_wall", shell_viscosity_wall),
+        has_sealing,
+        None if sealing_pairs is None else sealing_pairs,
+        None if tube_to_baffle_clearance is None else input_to_si(spec, "tube_to_baffle_clearance", tube_to_baffle_clearance),
+        None if shell_to_baffle_clearance is None else input_to_si(spec, "shell_to_baffle_clearance", shell_to_baffle_clearance),
+        None if bypass_area is None else input_to_si(spec, "bypass_area", bypass_area),
+    )
+    return ZoneRatingResult(
+        zone_count=result.zone_count,
+        zones=tuple(ZoneRatingRow(zone_name=c.zone_name, duty_fraction=c.duty_fraction, tube_side_heat_transfer_coefficient=from_si(c.tube_side_heat_transfer_coefficient.magnitude_si, c.tube_side_heat_transfer_coefficient.unit), shell_side_heat_transfer_coefficient=from_si(c.shell_side_heat_transfer_coefficient.magnitude_si, c.shell_side_heat_transfer_coefficient.unit), overall_heat_transfer_coefficient=from_si(c.overall_heat_transfer_coefficient.magnitude_si, c.overall_heat_transfer_coefficient.unit), lmtd=from_si(c.lmtd.magnitude_si, c.lmtd.unit), required_area=from_si(c.required_area.magnitude_si, c.required_area.unit)) for c in result.zones),
         warnings=_warnings(result.warnings),
     )

@@ -9,8 +9,16 @@ assumptions = [
     "**a temperature and a `duty` together are refused**: `Heater`'s two setters clear each other's flags, so the class's answer to both is the order they were called in - a state these inputs cannot express.",
     "**`outlet_duty` is the state's number and not the caller's.** `run` overwrites its own `energyInput` with the enthalpy the flash reached, in every branch.",
     "**with neither specification the drop is isothermal**, because `run`'s else branch is `T_in + dT` with `dT` defaulting to zero and `dT` is not a palette parameter.",
-    "`Cooler`'s own 258 lines are a bounded dynamic temperature-control model - a utility-valve opening, an NTU scaled by it and first-order actuator and thermal time constants - and **none of it is ported**: it reaches the outlet only through `runTransient`.",
+    "`Cooler`'s own 258 lines are a bounded dynamic temperature-control model - a utility-valve opening, an NTU scaled by it and first-order actuator and thermal time constants - **and its configured branch is the one-step surface below**.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "**`runTransient`'s configured branch is one step here.** A stated `time_step` with `dynamic_temperature_control_enabled` is a call, including zero; otherwise the steady `run` is the fallback. The clock and the session loop are outside the id.\n",
+    "**the design point is `configureDynamicTemperatureControl`'s.** `design_ntu = -ln((T_out - T_medium)/(T_in - T_medium))` with `T_in > T_out > T_medium`; a positive design mass flow and opening are required, and the class's unconfigured zero defaults are not modelled.\n",
+    "**the controller is outside the id.** `requested_valve_opening` is the response it would have produced; absent is the step-initial opening, the class's no-controller path. The per-UUID step cache is session state; one call is one step.\n",
+    "**the valve is a first-order actuator.** `opening += dt/(tau_a + dt) * (requested - opening)`, with a zero constant moving it in one step; the requested and carried openings are clamped to `[0, 100]`.\n",
+    "**the NTU is scaled by opening and inverse mass flow, clamped to `[0, 20]`.** `ntu = design_ntu * opening/design_opening * design_mass/current_mass`; the mass flow floors at `1e-12` kg/h as the class does.\n",
+    "**the outlet is the class's second first-order lag.** `outlet = previous + dt/(tau_t + dt) * (equilibrium - previous)`, clamped to `[min(medium, inlet), inlet]`; an inlet at or below the medium is the equilibrium, so the model never heats.\n",
+    "**the carried state is the opening and the outlet.** `dynamic_outlet_temperature` absent or NaN seeds to the design outlet, the state the configuration sets; the result publishes the post-step opening and outlet. The outlet is the steady heater run at the computed temperature.\n",
+    "**a non-positive inlet flow is refused**, because the mass-flow scale divides by it; the heater arithmetic also refuses a duty on no flow.\n",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/Cooler.java`, which carries no steady-state `run` of its own, and `Heater.java`, whose `run` is what this reaches.",
@@ -18,7 +26,7 @@ references = [
 ]
 [source]
 standard = "NeqSim process/equipment/heatexchanger/Cooler.java"
-edition = "No `run` of its own: the port is `Heater.run` reached through `Cooler`, on the three setters this palette entry declares."
+edition = "No `run` of its own: the port is `Heater.run` reached through `Cooler`, on the three setters this palette entry declares, **and `runTransient`'s configured dynamic branch as one step**."
 [inputs]
 [inputs.components]
 type = "components"
@@ -49,6 +57,54 @@ description = "the heat removed, as a negative number, which sets the outlet ent
 unit = "Pa"
 optional = true
 description = "the pressure loss across the cooler, taken off the inlet pressure before the flash. When omitted the outlet is at the inlet's pressure.\n"
+[inputs.time_step]
+unit = "s"
+optional = true
+description = "one `runTransient(dt, id)` step. Absent is the steady `run`; a stated one is a call, including zero. The clock and the session loop are outside the id.\n"
+[inputs.dynamic_temperature_control_enabled]
+type = "boolean"
+optional = true
+description = "the class's `dynamicTemperatureControlEnabled`, set by `configureDynamicTemperatureControl`. Absent is false, so a stated `time_step` takes `Heater.runTransient`'s steady fallback.\n"
+[inputs.design_mass_flow]
+unit = "kg/h"
+optional = true
+description = "the design process mass flow the configuration takes. Required on the active branch, where it scales the design NTU against the current flow.\n"
+[inputs.design_inlet_temperature]
+unit = "K"
+optional = true
+description = "the design inlet temperature. Required on the active branch; the design point is `inlet > outlet > medium`.\n"
+[inputs.design_outlet_temperature]
+unit = "K"
+optional = true
+description = "the design outlet temperature, on the same terms.\n"
+[inputs.cooling_medium_temperature]
+unit = "K"
+optional = true
+description = "the cooling medium's supply temperature. Required on the active branch; an inlet at or below it receives no cooling.\n"
+[inputs.design_valve_opening]
+unit = "dimensionless"
+optional = true
+description = "the valve opening at the design point, in percent. Absent is the class's `50`; a value outside `(0, 100]` is refused.\n"
+[inputs.actuator_time_constant]
+unit = "s"
+optional = true
+description = "the utility-valve actuator's first-order constant. Absent is 10; zero moves the valve in one step.\n"
+[inputs.thermal_time_constant]
+unit = "s"
+optional = true
+description = "the process side's first-order constant. Absent is 20; zero moves the outlet in one step.\n"
+[inputs.cooling_valve_opening]
+unit = "dimensionless"
+optional = true
+description = "the carried valve opening, in percent. Absent is the design opening; the setter clamps to `[0, 100]`.\n"
+[inputs.requested_valve_opening]
+unit = "dimensionless"
+optional = true
+description = "the controller's response for this step, in percent. Absent is the step-initial opening, the class's no-controller path; the class clamps to `[0, 100]`.\n"
+[inputs.dynamic_outlet_temperature]
+unit = "K"
+optional = true
+description = "the carried outlet temperature. **Absent or NaN seeds to the design outlet, the state the configuration sets**; the result carries the post-step value for the next call.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -70,6 +126,14 @@ description = "the outlet molar enthalpy: the inlet's plus `duty / inlet_n`, or 
 [outputs.outlet_duty]
 unit = "W"
 description = "the duty the cooler moved, as `inlet_n * (outlet_h - inlet_h)`. Negative when heat was removed, which is the usual case for this entry.\n"
+[outputs.cooling_valve_opening]
+unit = "dimensionless"
+optional = true
+description = "the post-step valve opening, in percent. Present only on the dynamic branch.\n"
+[outputs.equilibrium_outlet_temperature]
+unit = "K"
+optional = true
+description = "the equilibrium the thermal lag moved toward. Present only on the dynamic branch, as evidence.\n"
 [[valid_range]]
 quantity = "outlet_temperature"
 min = 0
@@ -82,6 +146,78 @@ min = 0
 min_inclusive = false
 severity = "error"
 rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "time_step"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a forward-Euler interval; a negative one moves the valve and the outlet backwards.\n"
+[[valid_range]]
+quantity = "design_mass_flow"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the design point needs a positive mass flow and the class refuses one that is not.\n"
+[[valid_range]]
+quantity = "design_inlet_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature.\n"
+[[valid_range]]
+quantity = "design_outlet_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature.\n"
+[[valid_range]]
+quantity = "cooling_medium_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature.\n"
+[[valid_range]]
+quantity = "design_valve_opening"
+min = 0
+min_inclusive = false
+max = 100
+max_inclusive = true
+severity = "error"
+rationale = "the configuration refuses an opening outside (0, 100].\n"
+[[valid_range]]
+quantity = "actuator_time_constant"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "the setter refuses a negative time constant.\n"
+[[valid_range]]
+quantity = "thermal_time_constant"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "the setter refuses a negative time constant.\n"
+[[valid_range]]
+quantity = "cooling_valve_opening"
+min = 0
+min_inclusive = true
+max = 100
+max_inclusive = true
+severity = "warning"
+rationale = "the setter clamps the opening to [0, 100] rather than refusing it.\n"
+[[valid_range]]
+quantity = "requested_valve_opening"
+min = 0
+min_inclusive = true
+max = 100
+max_inclusive = true
+severity = "warning"
+rationale = "the class clamps the controller's requested opening to [0, 100].\n"
+[[valid_range]]
+quantity = "dynamic_outlet_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; a carried sub-zero state is not one the ODE moves.\n"
 [implementations]
 python = "azoth.process.cooler"
 rust = "azoth_process::cooler"

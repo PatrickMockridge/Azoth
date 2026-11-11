@@ -4,6 +4,8 @@
 
 `eos.solid_fugacity`
 
+Pure solid fugacity coefficient from fusion properties. Use it for wax and solid-formation screening.
+
 ## Equation
 
 $$
@@ -27,20 +29,33 @@ where `phi_liq` is the pure component's liquid root on the cubic the fluid runs,
 
 The tabulated route, which `ThermodynamicOperations.TPSolidflash` drives through `SolidFlash1`. The Helmholtz route, `PhaseSolidHelmholtzEos`, is `eos.parahydrogen_solid_phase`'s and is not this.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **this is NeqSim's `ComponentSolid.fugcoef2`**, the **tabulated** solid route: the heat of fusion, the triple point and the heat capacity come from a component's own columns rather than from a correlation. That is what tells it apart from `eos.parahydrogen_solid_phase`'s Helmholtz equation.
+- **the reference phase is a *liquid*** - `fugcoef2` initialises it `PhaseType.LIQUID` - and it is the host's own class, so `eos` is a real input and not a label. NeqSim's other entry, `fugcoef`, uses a *gas* reference at the component's solid vapour pressure instead, and is a different model.
+- **the heat-capacity difference is an input, because NeqSim computes it two ways**: from the table as `-(cp_solid(T_tp) - cp_liquid(T_tp))` for every component, and **hardcoded to `37.12` for the one named `water`**. Measured, the table gives water `38.0276196`, so reading it there is 2.4 % out.
+- the `dV_sl` term is the solid's molar volume over the liquid's, **negative for a solid that is denser**; a component whose tabulated solid density is zero falls back to the liquid's own, which is what makes the term vanish for water.
+- the volume term is referred to `P = 1` in NeqSim's **bar**-valued code, so in pascals the bracket is `(P/1e5 - 1)` - and its `R` is `8.3144621`, the one `Component` states as a literal.
+- **verified against NeqSim to 14 digits** on the capture's water at 273.15 K and 10 bara: this gives `0.0004079887721484625` against `0.000407988772148464`.
+- the coefficient is a ratio to `P x` and so dimensionless. A component that is not allowed to precipitate is excluded by its own reader, not here: this computes the coefficient of a solid the caller has already decided can form.
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
 | `heat_of_fusion` | J/mol | The component's heat of fusion, from the `HEATOFFUSION` column. |
 | `triple_point_temperature` | K | Its triple-point temperature, from `TRIPLEPOINTTEMPERATURE`. |
-| `delta_cp_sl` | J/(mol*K) | The solid-liquid heat-capacity difference **at the triple point**, which the caller states: NeqSim takes it from the table and overrides it to `37.12` for water. |
+| `delta_cp_sl` | J/(mol*K) | The solid-liquid heat-capacity difference at the triple point. |
 | `delta_solid_volume` | m**3/mol | The solid's molar volume less the liquid's, at the triple point. Zero where the table states no solid density. |
 | `tc` | K | The component's critical temperature, which the reference liquid is a one-component phase at. |
 | `pc` | Pa | Its critical pressure. |
 | `omega` | dimensionless | Its acentric factor, which sets the reference liquid's alpha through `eos.srk_kappa`. |
 | `T` | K | absolute temperature |
 | `P` | Pa | absolute pressure |
-| `eos` | pr / srk | *Optional.* the cubic the fluid runs, which is also the one the reference liquid is built from - NeqSim clones the host phase's class, so this is a real choice |
+| `eos` | pr / srk | *Optional.* The cubic equation of state the fluid runs, which is also the one the reference liquid is built from. |
 
 
 ## Outputs
@@ -60,19 +75,14 @@ The tabulated route, which `ThermodynamicOperations.TPSolidflash` drives through
 | `P > 0` | raises | an absolute pressure |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **this is NeqSim's `ComponentSolid.fugcoef2`**, the **tabulated** solid route: the heat of fusion, the triple point and the heat capacity come from a component's own columns rather than from a correlation. That is what tells it apart from `eos.parahydrogen_solid_phase`'s Helmholtz equation.
-- **the reference phase is a *liquid*** - `fugcoef2` initialises it `PhaseType.LIQUID` - and it is the host's own class, so `eos` is a real input and not a label. NeqSim's other entry, `fugcoef`, uses a *gas* reference at the component's solid vapour pressure instead, and is a different model.
-- **the heat-capacity difference is an input, because NeqSim computes it two ways**: from the table as `-(cp_solid(T_tp) - cp_liquid(T_tp))` for every component, and **hardcoded to `37.12` for the one named `water`**. Measured, the table gives water `38.0276196`, so reading it there is 2.4 % out.
-- the `dV_sl` term is the solid's molar volume over the liquid's, **negative for a solid that is denser**; a component whose tabulated solid density is zero falls back to the liquid's own, which is what makes the term vanish for water.
-- the volume term is referred to `P = 1` in NeqSim's **bar**-valued code, so in pascals the bracket is `(P/1e5 - 1)` - and its `R` is `8.3144621`, the one `Component` states as a literal.
-- **verified against NeqSim to 14 digits** on the capture's water at 273.15 K and 10 bara: this gives `0.0004079887721484625` against `0.000407988772148464`.
-- the coefficient is a ratio to `P x` and so dimensionless. A component that is not allowed to precipitate is excluded by its own reader, not here: this computes the coefficient of a solid the caller has already decided can form.
+- The solid is a pure component and the caller has already decided that it can form. The calculation returns the solid's fugacity coefficient; it does not test thermodynamic stability.
+
 
 
 

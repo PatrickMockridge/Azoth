@@ -42,28 +42,28 @@ NeqSim is Apache-2.0; the attribution is in [`NOTICE`](../NOTICE).
 ## `manifest.toml` is the record of what was taken
 
 Every resource file NeqSim ships is declared once, and every column of every one of
-them whose columns are enumerated — 34 files, 1,538 columns — is listed with what was
-done with it and a reason; the other four are vendored whole, three of them because
+them whose columns are enumerated — 35 files, 1,554 columns — is listed with what was
+done with it and a reason; the other five are vendored whole, three of them because
 they are not tabular at all. `tools/check_manifest.py` prints the tally:
 
 ```
-check_manifest: OK (39 vendored file(s), 1538 column(s), 1512 carried of which 1204 read, 0 not-vendored entr(ies))
+check_manifest: OK (40 vendored file(s), 1554 column(s), 1520 carried of which 1212 read, 0 not-vendored entr(ies))
   308  carried, nothing reads it yet
   1095  carried with no unit NeqSim states (neqsim-internal)
-  267  not-ported
-   19  not-a-value
+  266  not-ported
+   20  not-a-value
    10  empty-upstream
     1  superseded-by
     7  unreachable-upstream
    14  uncalled-upstream
-   13  unread-upstream
+   21  unread-upstream
 ```
 
 **The porting backlog is "carried, nothing reads it yet" — 308 columns — and it is
 the number that matters.** NeqSim is the target, not a reference: each carried column is a
 physical property whose model NeqSim implements and azoth has not ported, and the
-`not-ported` reason names the class that would close it — **267 columns carry it**, carried
-and dropped together, with a handful `unreachable-upstream`, fourteen `uncalled-upstream`, thirteen
+`not-ported` reason names the class that would close it — **266 columns carry it**, carried
+and dropped together, with a handful `unreachable-upstream`, fourteen `uncalled-upstream`, twenty-one
 `unread-upstream` and the rest `not-a-value` or `empty-upstream` — `PhaseHydrate`,
 `CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`, `ParachorSurfaceTension` and the rest.
 The check refuses a `not-ported` reason with no NeqSim name in it, so the list cannot drift
@@ -165,6 +165,12 @@ files stayed on the previous revision through the last refresh.
    non-zero on a stale literal. Run it before regenerating the captures: the committed
    capture *is* the previous pin, and that is what makes the check decidable with one jar.
 4. **Re-vendor and regenerate**, as the sections above describe, and re-capture.
+
+**A file may be vendored at its own commit.** Each `[[upstreams.files]]` carries `commit` and
+`retrieved` beside the upstream's, and `tools/gen_databank.py` cites them; the code pin stays
+where it is. That is how a post-pin data fix is reflected without dragging five hundred
+commits of code with it - and a capture taken against such a file states the ingredients it
+actually used, in `validation/neqsim/captures/README.md`.
 
 **The models with no probe are the residual gap.** `crates/*/tests/` holds reference-equation
 tests - ammonia, Vega, Span-Wagner, Leachman, argon and para-hydrogen solid - whose NeqSim

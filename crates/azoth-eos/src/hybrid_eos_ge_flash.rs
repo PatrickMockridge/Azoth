@@ -15,7 +15,7 @@ use azoth_core::{AzothError, ModelAlgorithm, Result};
 use crate::cubic::Cubic;
 use crate::databank::HYDROCARBON;
 use crate::mixture::{Mixture, ReducedParameters, RootSide};
-use crate::multiphase::{MultiphasePhase, PhaseKind, coefficients};
+use crate::multiphase::{MultiphasePhase, PhaseKind, coefficients_with_dataset};
 use crate::results::HybridEosGeFlashResult;
 
 /// The roles, in the solver's own phase order.
@@ -86,6 +86,28 @@ pub fn hybrid_eos_ge_flash(
     p: f64,
     moles: &[f64],
 ) -> Result<HybridEosGeFlashResult> {
+    hybrid_eos_ge_flash_with_dataset(
+        names,
+        cubic,
+        t,
+        p,
+        moles,
+        crate::pitzer_phase::PitzerDatasetSelection::Auto,
+    )
+}
+
+/// The same flash over a stated Pitzer dataset, which the Pitzer hydrate models need.
+///
+/// # Errors
+/// As [`hybrid_eos_ge_flash`].
+pub fn hybrid_eos_ge_flash_with_dataset(
+    names: &[&str],
+    cubic: Cubic,
+    t: f64,
+    p: f64,
+    moles: &[f64],
+    dataset: crate::pitzer_phase::PitzerDatasetSelection,
+) -> Result<HybridEosGeFlashResult> {
     // **The declared input's name.** An empty `moles` against five components is a length
     // disagreement, and the Python reference names `moles`; the ion-flag check below is an
     // internal one and reports a state the caller cannot see.
@@ -122,9 +144,70 @@ pub fn hybrid_eos_ge_flash(
             crate::databank::entry(name, None).map(|entry| entry.class == crate::databank::ION)
         })
         .collect::<Result<_>>()?;
-    let mut result = solve_fixed_topology(&mixture, &reduced, moles, &ion, algorithm)?;
+    let mut result =
+        solve_fixed_topology_with_dataset(&mixture, &reduced, moles, &ion, algorithm, dataset)?;
     result.warnings = warnings;
     Ok(result)
+}
+
+/// The roles the feed supports, in `[gas, oil, aqueous]` order.
+///
+/// NeqSim's `SystemEosGE.activateSupportedHybridPhaseRoles`: a role enters the solve only if a
+/// feed component gives it a candidate, which is what keeps a metastable EoS-liquid root made
+/// only of supercritical gas and water out of a gas-aqueous solve. The predicates are the
+/// class's own - a Wilson K for the gas, a hydrocarbon or dense CO2 with `Tc > T` for the oil,
+/// and a water, ion or polar solvent for the aqueous phase.
+fn supported_roles(mixture: &Mixture, z: &[f64], t: f64, p: f64, ion: &[bool]) -> Vec<usize> {
+    let names = mixture.names().unwrap_or_default();
+    let wilson = |index: usize| {
+        let component = &mixture.components()[index];
+        component.pc.value / p
+            * (5.373 * (1.0 + component.omega) * (1.0 - component.tc.value / t)).exp()
+    };
+    let dense_co2 = |index: usize| {
+        names
+            .get(index)
+            .is_some_and(|name| name.eq_ignore_ascii_case("CO2"))
+            && wilson(index) <= 1.0
+    };
+
+    let mut gas = false;
+    let mut oil = false;
+    let mut aqueous = false;
+    for index in 0..z.len() {
+        if z[index] <= 1.0e-12 {
+            continue;
+        }
+        let component = &mixture.components()[index];
+        if ion[index] || is_aqueous_feed_component(names.get(index).map_or("", String::as_str)) {
+            aqueous = true;
+            continue;
+        }
+        if component.tc.value > 0.0 && component.pc.value > 0.0 && p > 0.0 {
+            let k = wilson(index);
+            if k.is_finite() && k > 1.0 {
+                gas = true;
+            }
+        }
+        if component.tc.value > t && (component.class == HYDROCARBON || dense_co2(index)) {
+            oil = true;
+        }
+    }
+
+    let mut roles = Vec::new();
+    if gas {
+        roles.push(0);
+    }
+    if oil {
+        roles.push(1);
+    }
+    if aqueous {
+        roles.push(2);
+    }
+    if roles.is_empty() {
+        roles.push(0);
+    }
+    roles
 }
 
 /// The fixed-topology solve over a mixture that already carries its ions.
@@ -136,12 +219,13 @@ pub fn hybrid_eos_ge_flash(
 ///   iterate, or if the aqueous role cannot hold the ionic inventory.
 /// * [`AzothError::PropertyUnavailable`] if a phase model cannot answer at a trial
 ///   composition the iteration reaches.
-pub(crate) fn solve_fixed_topology(
+fn solve_fixed_topology_with_dataset(
     mixture: &Mixture,
     reduced: &ReducedParameters,
     feed: &[f64],
     ion: &[bool],
     algorithm: &ModelAlgorithm,
+    dataset: crate::pitzer_phase::PitzerDatasetSelection,
 ) -> Result<HybridEosGeFlashResult> {
     let n = feed.len();
     if ion.len() != n {
@@ -162,8 +246,23 @@ pub(crate) fn solve_fixed_topology(
     }
     let z: Vec<f64> = feed.iter().map(|value| value / total).collect();
 
-    let mut phases = seed_phases(mixture, &z, ion)?;
-    solve_fixed_topology_from(mixture, reduced, feed, ion, algorithm, &mut phases)
+    let seeded = seed_phases(mixture, &z, ion)?;
+    let roles = supported_roles(mixture, &z, reduced.t_kelvin, reduced.pressure, ion);
+    let mut phases: Vec<MultiphasePhase> =
+        roles.iter().map(|&index| seeded[index].clone()).collect();
+    let active_total: f64 = phases.iter().map(|phase| phase.fraction).sum();
+    for phase in &mut phases {
+        phase.fraction /= active_total;
+    }
+    solve_fixed_topology_from_with_dataset(
+        mixture,
+        reduced,
+        feed,
+        ion,
+        algorithm,
+        &mut phases,
+        dataset,
+    )
 }
 
 /// The fixed-topology Newton **from a split the caller already has**.
@@ -188,6 +287,31 @@ pub fn solve_fixed_topology_from(
     algorithm: &ModelAlgorithm,
     phases: &mut [MultiphasePhase],
 ) -> Result<HybridEosGeFlashResult> {
+    solve_fixed_topology_from_with_dataset(
+        mixture,
+        reduced,
+        feed,
+        ion,
+        algorithm,
+        phases,
+        crate::pitzer_phase::PitzerDatasetSelection::Auto,
+    )
+}
+
+/// The same solve over a stated Pitzer dataset.
+///
+/// # Errors
+/// As [`solve_fixed_topology_from`].
+#[allow(clippy::too_many_arguments)] // The caller's split and its controls.
+pub fn solve_fixed_topology_from_with_dataset(
+    mixture: &Mixture,
+    reduced: &ReducedParameters,
+    feed: &[f64],
+    ion: &[bool],
+    algorithm: &ModelAlgorithm,
+    phases: &mut [MultiphasePhase],
+    dataset: crate::pitzer_phase::PitzerDatasetSelection,
+) -> Result<HybridEosGeFlashResult> {
     let n = feed.len();
     let total: f64 = feed.iter().sum();
     if !total.is_finite() || total <= 0.0 {
@@ -197,7 +321,12 @@ pub fn solve_fixed_topology_from(
         ));
     }
     let z: Vec<f64> = feed.iter().map(|value| value / total).collect();
-    let aqueous = 2;
+    // **The aqueous role is wherever the active roles put it.** A feed that supports only a
+    // gas and a brine has two rows, so the class's fixed slot 2 is a position the port has to
+    // find rather than assume.
+    let aqueous = phases
+        .iter()
+        .position(|phase| matches!(phase.kind, PhaseKind::Ge));
 
     let mut iterations = 0;
     let mut residual = f64::NAN;
@@ -210,7 +339,7 @@ pub fn solve_fixed_topology_from(
     for outer in 0..MAXIMUM_HYBRID_ITERATIONS {
         for step in 1..=algorithm.max_iterations {
             iterations += 1;
-            let phi = coefficients(mixture, reduced, phases)?;
+            let phi = coefficients_with_dataset(mixture, reduced, phases, dataset)?;
             let inverted: Vec<Vec<f64>> = phi
                 .iter()
                 .enumerate()
@@ -218,7 +347,8 @@ pub fn solve_fixed_topology_from(
                     row.iter()
                         .enumerate()
                         .map(|(i, value)| {
-                            if (ion[i] && k != aqueous) || !value.is_finite() || *value <= 0.0 {
+                            if (ion[i] && Some(k) != aqueous) || !value.is_finite() || *value <= 0.0
+                            {
                                 // An ion is excluded from the EoS roles **exactly**, rather than
                                 // by a large finite penalty, and a coefficient the phase model
                                 // could not answer with is excluded the same way.
@@ -242,8 +372,8 @@ pub fn solve_fixed_topology_from(
                 }
             }
 
-            let mut gradient = vec![0.0; 3];
-            let mut hessian = vec![vec![0.0; 3]; 3];
+            let mut gradient = vec![0.0; phases.len()];
+            let mut hessian = vec![vec![0.0; phases.len()]; phases.len()];
             for (k, value) in gradient.iter_mut().enumerate() {
                 *value = 1.0;
                 for i in 0..n {
@@ -278,7 +408,7 @@ pub fn solve_fixed_topology_from(
             // `calcQ` captures the settled fraction *before* the proposal is written, and the
             // projection is stated against it: the band a trial may move in is a band around
             // where the iteration already was, not around where this step just put it.
-            let previous_aqueous = phases[aqueous].fraction;
+            let previous_aqueous = aqueous.map(|index| phases[index].fraction);
             let scale = if ion.iter().any(|flag| *flag) {
                 (f64::from(step) / (f64::from(step) + 3.0)).min(IONIC_BETA_STEP_SCALE)
             } else {
@@ -295,7 +425,9 @@ pub fn solve_fixed_topology_from(
             for phase in phases.iter_mut() {
                 phase.fraction /= total;
             }
-            enforce_aqueous_fraction_bounds(&mut *phases, ion, &z, aqueous, previous_aqueous)?;
+            if let (Some(index), Some(previous)) = (aqueous, previous_aqueous) {
+                enforce_aqueous_fraction_bounds(&mut *phases, ion, &z, index, previous)?;
+            }
 
             set_compositions(&mut *phases, &z, &e, &inverted, ion, aqueous)?;
 
@@ -316,7 +448,7 @@ pub fn solve_fixed_topology_from(
         .iter()
         .map(|phase| phase.composition.clone())
         .collect();
-    let ln_phi: Vec<Vec<f64>> = coefficients(mixture, reduced, phases)?
+    let ln_phi: Vec<Vec<f64>> = coefficients_with_dataset(mixture, reduced, phases, dataset)?
         .iter()
         .map(|row| row.iter().map(|value| value.ln()).collect())
         .collect();
@@ -494,11 +626,11 @@ fn enforce_aqueous_fraction_bounds(
 
     if current > stepped_maximum {
         let excess = current - stepped_maximum;
-        let others: f64 = (0..3)
+        let others: f64 = (0..phases.len())
             .filter(|&k| k != aqueous)
             .map(|k| phases[k].fraction)
             .sum();
-        for k in (0..3).filter(|&k| k != aqueous) {
+        for k in (0..phases.len()).filter(|&k| k != aqueous) {
             let share = if others > 0.0 {
                 phases[k].fraction / others
             } else {
@@ -511,7 +643,7 @@ fn enforce_aqueous_fraction_bounds(
     }
 
     let required = minimum - current;
-    let adjustable: f64 = (0..3)
+    let adjustable: f64 = (0..phases.len())
         .filter(|&k| k != aqueous)
         .map(|k| (phases[k].fraction - FRACTION_FLOOR).max(0.0))
         .sum();
@@ -524,7 +656,7 @@ fn enforce_aqueous_fraction_bounds(
     }
     let mut remaining = required;
     let mut last = None;
-    for k in (0..3).filter(|&k| k != aqueous) {
+    for k in (0..phases.len()).filter(|&k| k != aqueous) {
         let available = (phases[k].fraction - FRACTION_FLOOR).max(0.0);
         if available <= 0.0 {
             continue;
@@ -539,7 +671,7 @@ fn enforce_aqueous_fraction_bounds(
     {
         phases[k].fraction -= remaining;
     }
-    let others: f64 = (0..3)
+    let others: f64 = (0..phases.len())
         .filter(|&k| k != aqueous)
         .map(|k| phases[k].fraction)
         .sum();
@@ -564,7 +696,7 @@ fn set_compositions(
     e: &[f64],
     inverted: &[Vec<f64>],
     ion: &[bool],
-    aqueous: usize,
+    aqueous: Option<usize>,
 ) -> Result<()> {
     let n = z.len();
     let count = phases.len();
@@ -574,7 +706,7 @@ fn set_compositions(
         let mut neutral_sum = 0.0;
         for i in 0..n {
             let mut value = if ion[i] {
-                if k == aqueous {
+                if Some(k) == aqueous {
                     z[i] / fraction
                 } else {
                     ION_CONFINEMENT
@@ -592,7 +724,7 @@ fn set_compositions(
                 neutral_sum += value;
             }
         }
-        if k == aqueous {
+        if Some(k) == aqueous {
             if ion_sum.is_nan() || ion_sum >= 1.0 || neutral_sum.is_nan() || neutral_sum <= 0.0 {
                 return Err(AzothError::SolverNotConverged {
                     iterations: 0,

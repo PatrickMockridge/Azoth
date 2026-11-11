@@ -281,55 +281,7 @@ pub fn solve_least_squares(a: &[Vec<f64>], b: &[f64]) -> Result<Vec<f64>> {
         row[i] = 1.0;
     }
 
-    // One-sided Jacobi: rotate column pairs until every pair is orthogonal. The relative
-    // threshold is at the level of rounding, so a convergence failure can only leave
-    // pairs that are orthogonal to working precision.
-    for _sweep in 0..MAX_SWEEPS {
-        let mut rotated = false;
-        for p in 0..cols {
-            for q in (p + 1)..cols {
-                let mut alpha = 0.0;
-                let mut beta = 0.0;
-                let mut gamma = 0.0;
-                for row in &work {
-                    alpha += row[p] * row[p];
-                    beta += row[q] * row[q];
-                    gamma += row[p] * row[q];
-                }
-                let scale = (alpha * beta).sqrt();
-                if scale == 0.0 || gamma.abs() <= JACOBI_TOLERANCE * scale {
-                    continue;
-                }
-                let tau = (beta - alpha) / (2.0 * gamma);
-                let root = (1.0 + tau * tau).sqrt();
-                // The smaller root, written without the cancellation the quadratic's
-                // direct form would carry.
-                let t = if tau >= 0.0 {
-                    1.0 / (tau + root)
-                } else {
-                    -1.0 / (-tau + root)
-                };
-                let cosine = 1.0 / (1.0 + t * t).sqrt();
-                let sine = cosine * t;
-                for row in &mut work {
-                    let held = row[p];
-                    let turned = row[q];
-                    row[p] = cosine * held - sine * turned;
-                    row[q] = sine * held + cosine * turned;
-                }
-                for row in &mut right {
-                    let held = row[p];
-                    let turned = row[q];
-                    row[p] = cosine * held - sine * turned;
-                    row[q] = sine * held + cosine * turned;
-                }
-                rotated = true;
-            }
-        }
-        if !rotated {
-            break;
-        }
-    }
+    rotate_columns(&mut work, Some(&mut right));
 
     let singular: Vec<f64> = (0..cols)
         .map(|j| work.iter().map(|row| row[j] * row[j]).sum::<f64>().sqrt())
@@ -362,6 +314,111 @@ pub fn solve_least_squares(a: &[Vec<f64>], b: &[f64]) -> Result<Vec<f64>> {
         });
     }
     Ok(solution)
+}
+
+/// One-sided Jacobi's rotation sweep, over `work`'s columns.
+///
+/// **One implementation for the two callers.** `solve_least_squares` needs the right singular
+/// vectors and passes `right`; the condition number needs only the rotated columns and passes
+/// `None`. The rotations are the decomposition, so writing them twice would be a second
+/// decomposition with no test comparing them.
+fn rotate_columns(work: &mut [Vec<f64>], mut right: Option<&mut [Vec<f64>]>) {
+    let cols = work.first().map_or(0, Vec::len);
+    for _sweep in 0..MAX_SWEEPS {
+        let mut rotated = false;
+        for p in 0..cols {
+            for q in (p + 1)..cols {
+                let mut alpha = 0.0;
+                let mut beta = 0.0;
+                let mut gamma = 0.0;
+                for row in &*work {
+                    alpha += row[p] * row[p];
+                    beta += row[q] * row[q];
+                    gamma += row[p] * row[q];
+                }
+                let scale = (alpha * beta).sqrt();
+                if scale == 0.0 || gamma.abs() <= JACOBI_TOLERANCE * scale {
+                    continue;
+                }
+                let tau = (beta - alpha) / (2.0 * gamma);
+                let root = (1.0 + tau * tau).sqrt();
+                let t_value = if tau >= 0.0 {
+                    1.0 / (tau + root)
+                } else {
+                    -1.0 / (-tau + root)
+                };
+                let cosine = 1.0 / (1.0 + t_value * t_value).sqrt();
+                let sine = cosine * t_value;
+                for row in &mut *work {
+                    let held = row[p];
+                    let turned = row[q];
+                    row[p] = cosine * held - sine * turned;
+                    row[q] = sine * held + cosine * turned;
+                }
+                if let Some(right) = right.as_deref_mut() {
+                    for row in right {
+                        let held = row[p];
+                        let turned = row[q];
+                        row[p] = cosine * held - sine * turned;
+                        row[q] = sine * held + cosine * turned;
+                    }
+                }
+                rotated = true;
+            }
+        }
+        if !rotated {
+            break;
+        }
+    }
+}
+
+/// The 2-norm condition number `sigma_max / sigma_min`, or infinity when the smallest singular
+/// value is zero.
+///
+/// **`SimpleMatrix.conditionP2()`'s own quantity**, over the one-sided Jacobi decomposition
+/// `solve_least_squares` already forms. It is what `applyRegularization` tests against its
+/// threshold, and what the class records in `getConditionNumberHistory()`.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] if the matrix is empty, ragged or carries a non-finite entry.
+pub fn condition_number_2(a: &[Vec<f64>]) -> Result<f64> {
+    let rows = a.len();
+    if rows == 0 || a[0].is_empty() {
+        return Err(AzothError::InvalidInput {
+            field: "reaction_matrix".to_string(),
+            reason: "a condition number needs a matrix with rows and columns".to_string(),
+        });
+    }
+    let cols = a[0].len();
+    let mut work = Vec::with_capacity(rows);
+    for (i, row) in a.iter().enumerate() {
+        if row.len() != cols {
+            return Err(AzothError::InvalidInput {
+                field: "reaction_matrix".to_string(),
+                reason: format!("row {i} has {} entries against {cols}", row.len()),
+            });
+        }
+        if let Some(bad) = row.iter().position(|value| !value.is_finite()) {
+            return Err(AzothError::InvalidInput {
+                field: "reaction_matrix".to_string(),
+                reason: format!("entry [{i}][{bad}] is {}, not a finite number", row[bad]),
+            });
+        }
+        work.push(row.clone());
+    }
+    rotate_columns(&mut work, None);
+    let singular: Vec<f64> = (0..cols)
+        .map(|j| work.iter().map(|row| row[j] * row[j]).sum::<f64>().sqrt())
+        .collect();
+    let largest = singular.iter().copied().fold(0.0_f64, f64::max);
+    let smallest = singular.iter().copied().fold(f64::INFINITY, f64::min);
+    if largest == 0.0 {
+        return Ok(f64::NAN);
+    }
+    if smallest == 0.0 {
+        return Ok(f64::INFINITY);
+    }
+    Ok(largest / smallest)
 }
 
 /// The largest sweep count one-sided Jacobi is given. Each sweep rotates every pair, and

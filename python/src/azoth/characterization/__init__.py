@@ -11,12 +11,18 @@ own package split: what is here is not an equation of state and is not reached f
 * :func:`characterise_plus_fraction` - the whole chain, from a C7+ end to lumps
 * :func:`characterize_to_reference` - a fluid re-cut onto another's cut slate
 * :func:`tbp_cut_properties` - a cut's critical properties, by any of NeqSim's ten models
+* :func:`tbp_fraction_component` - the component `addTBPfraction` builds from a cut
 * :func:`tbp_closure` - a cut's molar mass, from its boiling point and gravity
 * :func:`tbp_density` - the same pair inverted for gravity, which only one closure supports
 * :func:`pedersen_plus_split` - a plus fraction divided into carbon-number cuts
 * :func:`whitson_gamma_split` - the same, on Whitson's three-parameter gamma
 * :func:`lumping` - a cut table grouped into equal-mass lumps
 * :func:`delumping` - the same table rebuilt as a finer grid, lumping's inverse
+* :func:`combine_reservoir_fluids` - several fluids blended onto one pseudo-component slate
+* :func:`characterize_to_common_slate` - several fluids re-characterized onto one shared slate
+* :func:`transfer_binary_interaction_parameters` - an interaction table moved between two slates
+* :func:`mixture_from_characterization` - the table rebuilt as a mixture a flash can take
+* :func:`oil_assay_to_mixture` - an assay's cuts derived, carded and built into a fluid
 * :func:`tbp_grouping` - a phase's components grouped by boiling point
 
 # Which implementation answers
@@ -36,7 +42,9 @@ from azoth.core.errors import InvalidInputError
 from azoth.core.result import (
     AssayMassFractionsResult,
     CharacterisePlusFractionResult,
+    CharacterizeToCommonSlateResult,
     CharacterizeToReferenceResult,
+    CombineReservoirFluidsResult,
     DelumpingResult,
     LumpingResult,
     OilAssayDerivationResult,
@@ -46,10 +54,15 @@ from azoth.core.result import (
     TbpCutBoundariesResult,
     TbpCutPropertiesResult,
     TbpDensityResult,
+    TbpFractionComponentResult,
     TbpGroupingResult,
+    TransferBinaryInteractionParametersResult,
     WhitsonGammaSplitResult,
 )
 from azoth.core.units import Q
+
+from .assembly import mixture_from_characterization as mixture_from_characterization
+from .assembly import oil_assay_to_mixture as oil_assay_to_mixture
 
 if TYPE_CHECKING:
     from azoth import keycard
@@ -134,6 +147,7 @@ __all__ = [
 ]
 
 _TBP_CUT_PROPERTIES = "characterization.tbp_cut_properties"
+_TBP_FRACTION_COMPONENT = "characterization.tbp_fraction_component"
 _TBP_CLOSURE = "characterization.tbp_closure"
 _TBP_DENSITY = "characterization.tbp_density"
 _TBP_GROUPING = "characterization.tbp_grouping"
@@ -147,6 +161,9 @@ _SET_HEAVY_TBP_TO_PLUS = "characterization.set_heavy_tbp_to_plus"
 _OIL_ASSAY_DERIVATION = "characterization.oil_assay_derivation"
 _TBP_CUT_BOUNDARIES = "characterization.tbp_cut_boundaries"
 _DELUMPING = "characterization.delumping"
+_COMBINE_RESERVOIR_FLUIDS = "characterization.combine_reservoir_fluids"
+_CHARACTERIZE_TO_COMMON_SLATE = "characterization.characterize_to_common_slate"
+_TRANSFER_BINARY_INTERACTION_PARAMETERS = "characterization.transfer_binary_interaction_parameters"
 
 
 def tbp_cut_boundaries(
@@ -238,6 +255,113 @@ def delumping(
     return resolve(_DELUMPING)(  # type: ignore[no-any-return]
         lumps=lumps,
         resolution=resolution,
+    )
+
+
+def combine_reservoir_fluids(
+    target_pseudo_components: int,
+    components: Sequence[Mapping[str, Any]],
+) -> CombineReservoirFluidsResult:
+    """Several reservoir fluids blended into one fluid with a common pseudo-component slate.
+
+    Each fluid's base components merge by name; its pseudo-components are pooled and the pooled
+    mass is cut into ``target_pseudo_components`` equal-mass groups, by the class's own quantile
+    rule - a boundary is the sorting key of the row whose running mass first reaches its target,
+    not an interpolation. Each fluid's own list is then distributed onto those groups and the
+    per-fluid groups blended.
+
+    ``components`` is a list of records, one per component of every fluid, keyed by the field
+    names the spec declares. A row states its fluid's index, whether it is a pseudo-component,
+    its name and its mole amount; a pseudo-component states its molar mass, density and the
+    properties the blend averages, and a base component states none of them - its constants are
+    the databank's at assembly.
+
+    The answer renames the combined pseudo-components ``PC1_PC``, ``PC2_PC`` and so on, over the
+    cuts that survive. A pool with no pseudo-component is the class's early return: the merged
+    base components and nothing else. Hand the answer to
+    :func:`mixture_from_characterization` for the fluid itself.
+
+    Raises:
+        OutOfRangeError: if ``target_pseudo_components`` is not a positive integer.
+        InvalidInputError: if a pseudo-component row states no molar mass or density, or a row's
+            fluid index is not a whole number from zero.
+
+    See :func:`azoth.characterization.reference.combine_reservoir_fluids`.
+    """
+    return resolve(_COMBINE_RESERVOIR_FLUIDS)(  # type: ignore[no-any-return]
+        target_pseudo_components=target_pseudo_components,
+        components=components,
+    )
+
+
+def characterize_to_common_slate(
+    components: Sequence[Mapping[str, Any]],
+    weights: Sequence[float] | None = None,
+    target_pseudo_components: int | None = None,
+) -> CharacterizeToCommonSlateResult:
+    """Several reservoir fluids re-characterized onto one shared pseudo-component slate.
+
+    Each fluid comes back separate, with its **own** mole amounts but an identical set of
+    pseudo-component properties - Pedersen's "common EoS" slate, so one equation of state spans
+    fluids that were cut differently. The cuts are placed on a weighted imaginary pool, and each
+    fluid's contribution to a cut is its weight times that cut's mole fraction of the fluid.
+
+    ``components`` is a list of records, one per component of every fluid, keyed by the field
+    names the spec declares - the same row :func:`combine_reservoir_fluids` takes. ``weights`` is
+    one non-negative weight per fluid, in first-appearance order; absent is equal weighting, and
+    at least one must be positive. ``target_pseudo_components`` is the slate's size; absent takes
+    the largest pseudo-component count among the fluids, and at least one.
+
+    **A fluid keeps its own moles and takes the slate's molar mass**, so its mass can move from
+    the input's; ``fluid_moles`` reports each fluid's total. A cut invalid in any fluid is dropped
+    from every fluid, and the names keep their slate positions, so the same name is the same cut
+    across the fluids.
+
+    Raises:
+        OutOfRangeError: if ``target_pseudo_components`` is not positive.
+        InvalidInputError: if ``weights`` is not one per fluid, is negative anywhere, has no
+            positive entry, if a pseudo-component row states no molar mass or density, or if a
+            row's fluid index is not a whole number from zero.
+
+    See :func:`azoth.characterization.reference.characterize_to_common_slate`.
+    """
+    return resolve(_CHARACTERIZE_TO_COMMON_SLATE)(  # type: ignore[no-any-return]
+        components=components,
+        weights=weights,
+        target_pseudo_components=target_pseudo_components,
+    )
+
+
+def transfer_binary_interaction_parameters(
+    reference_components: Sequence[Mapping[str, Any]],
+    target_components: Sequence[Mapping[str, Any]],
+    reference_kij: Sequence[Sequence[float]],
+    target_kij: Sequence[Sequence[float]],
+) -> TransferBinaryInteractionParametersResult:
+    """The reference fluid's nonzero interaction pairs, written onto the target's own matrix.
+
+    ``reference_components`` and ``target_components`` are lists of records, one per component
+    in each fluid's own order, each stating its ``name`` and whether it is a
+    ``pseudo_component``. The two matrices are one row and one column per component.
+
+    Base components are matched by name and pseudo-components **by position**, because their
+    names belong to their own fluids. A pair the reference states as zero is not transferred,
+    and every target value the reference does not overwrite survives - which is why the target's
+    own matrix is an input rather than a zero start.
+
+    Raises:
+        InvalidInputError: if either matrix is not `N x N` for its component list, or if a pair
+            the reference states names a base component the target does not carry. A reference
+            base component the target lacks entirely is skipped, which is the class's own
+            asymmetry.
+
+    See :func:`azoth.characterization.reference.transfer_binary_interaction_parameters`.
+    """
+    return resolve(_TRANSFER_BINARY_INTERACTION_PARAMETERS)(  # type: ignore[no-any-return]
+        reference_components=reference_components,
+        target_components=target_components,
+        reference_kij=reference_kij,
+        target_kij=target_kij,
     )
 
 
@@ -443,6 +567,34 @@ def tbp_cut_properties(
     """
     return resolve(_TBP_CUT_PROPERTIES)(  # type: ignore[no-any-return]
         model=model, molar_mass=molar_mass, density=density, boiling_point=boiling_point
+    )
+
+
+def tbp_fraction_component(
+    molar_mass: Q,
+    density: Q,
+) -> TbpFractionComponentResult:
+    """The component ``addTBPfraction`` builds from a cut, by NeqSim's default TBP model.
+
+    ``molar_mass`` is the cut's molar mass and ``density`` its normal liquid density at 15 C and
+    1 atm. The answer is the card a cubic reads: the critical constants, the fitted alpha
+    coefficient, the Peneloux Rackett compressibility, the critical volume and viscosity, the
+    parachor, the triple point and heat of fusion, the formation enthalpy, the ideal-gas
+    heat-capacity polynomial and the Lennard-Jones pair.
+
+    **The acentric factor is the one the fitted ``m`` implies**, which is not the model's own
+    Edmister value; the critical volume is built from the model's, as the class does. The Rackett
+    compressibility is not a correlation: it is the liquid root of a one-component SRK phase at
+    15 C and one atmosphere.
+
+    Raises:
+        OutOfRangeError: if ``molar_mass`` or ``density`` is not positive.
+
+    See :func:`azoth.characterization.reference.tbp_fraction_component`.
+    """
+    return resolve(_TBP_FRACTION_COMPONENT)(  # type: ignore[no-any-return]
+        molar_mass=molar_mass,
+        density=density,
     )
 
 

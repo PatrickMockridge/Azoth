@@ -200,6 +200,81 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # through `TestCase::matrix` and compares it row by row against the matrix the
         # operation built, so the specification is what constrains it either way.
         "a_matrix",
+        # `throttling_valve`'s two flags, which are booleans and have no slot in `TestCase`.
+        # `crates/azoth-process/src/valve.rs`'s tests assert them against the capture, and
+        # `test_cross_impl` compares them on both results.
+        "choked",
+        "gas_valve",
+        # `thermal.shell_and_tube_vibration`'s four flags, booleans with no slot in
+        # `TestCase`. `crates/azoth-thermal/tests/shell_and_tube_vibration.rs` asserts
+        # them against the capture, and `test_cross_impl` compares them on both results.
+        "vortex_shedding_critical",
+        "fluid_elastic_critical",
+        "acoustic_critical",
+        "passed",
+        # `thermal.shah_condensation`'s validated-range flag, a boolean with no slot in
+        # `TestCase`. `crates/azoth-thermal/tests/shah_condensation.rs` asserts it.
+        "in_valid_range",
+        # `thermal.tema_standard`'s two head predicates, booleans with no slot in
+        # `TestCase`. `crates/azoth-thermal/tests/tema_standard.rs` asserts them against
+        # the capture, and `test_cross_impl` compares them on both results.
+        "bundle_removable",
+        "nozzle_reinforcement_adequate",
+        "sour_service_required",
+        "shell_nace_compliant",
+        "tube_nace_compliant",
+        "good_thermal_expansion",
+        # `pump`'s cavitation flag, a boolean with no slot in `TestCase`.
+        # `crates/azoth-process/src/pump_chart.rs` and the model's own test assert it, and
+        # `test_cross_impl` compares it on both results.
+        "cavitating",
+        # `gas_scrubber`'s mesh-pad configuration flags, booleans with no slot in `TestCase`.
+        # `crates/azoth-process/tests/gas_scrubber.rs` asserts them against the capture, and
+        # `test_cross_impl` compares them on both results.
+        "has_mesh_pad",
+        "has_inlet_cyclones",
+        "has_demisting_cyclones",
+        # `mixer`'s pressure-mismatch flag, a boolean with no slot in `TestCase`.
+        # `crates/azoth-process/tests/mixer.rs` asserts it against the capture, and
+        # `test_cross_impl` compares it on both results.
+        "pressure_mismatch",
+        # `packed_column`'s wetting verdict, asserted in the model's own test beside
+        # `hydraulics_ok` and compared by `test_cross_impl`.
+        "wetting_ok",
+        # `splitter`'s capacity flag, a boolean with no slot in `TestCase`.
+        # `python/tests/test_splitter_capacity.py` reads the raw spec and asserts it, and
+        # `test_cross_impl` compares it on both results.
+        "capacity_exceeded",
+        # `heater`'s hard-limit flag, the same shape. `test_heater_capacity.py` reads the
+        # heater's raw spec for it, and `test_cross_impl` compares it on both results.
+        "hard_limit_exceeded",
+        # `filter`'s replacement flag: the terminal drop or the loading capacity has been
+        # reached. `tests/filter.rs` and `python/tests/models/test_filter.py` assert both
+        # branches, and `test_cross_impl` compares it on both results.
+        "replacement_required",
+        # `filter`'s design-acceptability flag: both differential-pressure utilizations
+        # below one. `tests/filter.rs` and `python/tests/models/test_filter.py` assert both
+        # branches, and `test_cross_impl` compares it on both results.
+        "differential_pressure_design_acceptable",
+        # `heater`'s five utility-specification predicates, booleans with no `TestCase` slot.
+        # `python/tests/models/test_heater.py` asserts them, and `test_cross_impl` compares
+        # them on both results.
+        "has_supply_temperature",
+        "has_return_temperature",
+        "has_approach_temperature",
+        "has_heat_capacity_rate",
+        "has_overall_heat_transfer_coefficient",
+        # `heater`'s two VFD flags, booleans with no `TestCase` slot.
+        # `crates/azoth-process/src/kernels/heater_electrical.rs` asserts both arms against
+        # the capture, `python/tests/models/test_heater.py` asserts them on both results, and
+        # `test_cross_impl` compares them.
+        "vfd_has_active_rectifier",
+        "vfd_requires_input_filter",
+        # `plug_flow_reactor`'s per-station molar flows, a matrix whose rows are stations and
+        # whose columns are the run's components. `crates/azoth-process/tests/plug_flow_reactor.rs`
+        # reads it against the capture's `F_<component>_mol_s` columns, and `test_cross_impl`
+        # compares the field on both results.
+        "molar_flow_profile",
         # `splitter`'s per-outlet compositions, which are a matrix because a `many` port
         # writes its `z` one row per outlet. The Python runner compares the values, as it
         # does for `a_matrix`; the two kernels are compared with each other by
@@ -213,6 +288,11 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # the field off both.
         "x",
         "ln_phi",
+        # `transfer_binary_interaction_parameters`'s answer, which is a matrix and so has no
+        # field in `TestCase`. `python/tests/test_transfer_binary_interaction_parameters.py`
+        # reads the expected block from this module's raw spec and compares the selected
+        # backend against it; `test_cross_impl` then holds the other kernel to the same values.
+        "target_kij",
         # `reactive_phase_equilibrium`'s boolean, which `TestCase` carries for an input but
         # not for an expectation: a flag on the *result* is read by the model's own test,
         # which asserts the case's value against the field.
@@ -221,6 +301,30 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # asserting rather than dropping, because the flag is `true` on two branches that
         # accept an answer without a converged solve.
         "converged",
+        # `scale_control_assessor`'s verdict, read by the model's own test: the boolean is
+        # `worst_kinetic_risk_index < 0.5`, and both the number and the verdict are pinned.
+        "kinetically_controlled",
+        # `stream_scale_analyzer`'s flag, read by the model's own test: it is the total
+        # precipitated mass being positive, and the total is pinned beside it.
+        "has_scaling",
+        # `de_waard_milliams_corrosion`'s two flags, read by the calc's own test: the FeCO3
+        # index crossing one, and NACE MR0175 sour service at 0.003 bar H2S.
+        "feco3_scale_forming",
+        "is_sour_service",
+        # `separator`'s overload flag, which is `capacity_utilization > 1.0` exactly and has
+        # no slot in `TestCase`. `python/tests/test_separator_capacity.py` reads the case's
+        # expected block from the raw spec and asserts the field, and `test_cross_impl`
+        # compares it on both results.
+        "is_overloaded",
+        # `anti_surge_recycle`'s recycle flag, a boolean with no slot in `TestCase`.
+        # `python/tests/models/test_model_cases.py` runs every case through the selected
+        # backend and compares the declared flag, and `test_cross_impl` compares it on both
+        # results.
+        "recycle_active",
+        # `flare`'s capacity flag, read the same way: `python/tests/models/test_model_cases.py`
+        # compares it on the design-capacities row, and `test_cross_impl` compares it on both
+        # results.
+        "overloaded",
     }
 )
 

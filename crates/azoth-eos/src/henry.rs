@@ -16,27 +16,19 @@
 //! model that chose it rather than to a rule here - and keeping them under one name is what
 //! stops a `use` choosing between `1e8` and `1e-15` by accident.
 //!
-//! # The data behind it is thin, and that is a finding
+//! # The data behind it is sourced, and its history is worth keeping
 //!
-//! Of the 348 compiled rows, 296 carry no correlation at all and the other 52 carry one
-//! of **four** distinct sets:
+//! Of the 348 compiled rows, 269 carry no correlation and the other 79 carry 75 distinct
+//! two-term sets, `exp(h0 + h1/T) * 1.802` bar. **Upstream PR #4045 replaced the four
+//! placeholder sets this module used to describe** - forty rows of `900`, the constant
+//! `2.92`, the `0.059565` quartet and the one CO2 set copied onto `co` and `cos` - with
+//! sourced coefficients. Methane is now `723.75 bar` at 298.15 K rather than `exp(900)`
+//! through the cap, and CO2 is `28.95 bar` where the copied set gave `51.65`. The cap
+//! remains the model's rule for an ion, and it still catches a value that would overflow.
 //!
-//! | rows | `h0`..`h3` | what it is |
-//! |---|---|---|
-//! | 40 | `900, 0, 0, 0` | `exp(900)` overflows to infinity, which the cap turns into `1e12` - a sentinel, not a constant |
-//! | 5 | `2.92, 0, 0, 0` | a substance-independent constant, `33.5 bar` at 298.15 K |
-//! | 4 | `0, 0, 0, 0.059565` | `9.3e7 bar` at 298.15 K, shared by `h2s`, `sf6`, `r12` and `r134a` |
-//! | 3 | `94.4914, -6789.04, -11.4519, -0.010454` | the CO2 set - shared by `co2`, `co` and `cos` |
-//!
-//! So the table fits **one** gas, and it gives that gas's correlation to carbon monoxide
-//! and carbonyl sulphide as well. The port reproduces what NeqSim computes - hydrogen
-//! sulphide's Henry constant really is `9.3e7 bar`, and the model that reads it should
-//! return that rather than a literature value this library invented - and the thinness is
-//! recorded here rather than smoothed over.
-//!
-//! **Filed upstream as [`equinor/neqsim#4044`](https://github.com/equinor/neqsim/issues/4044)**:
-//! the four sets and the `exp(900)` sentinel are the table's, and the issue says what each row
-//! count is rather than what this library does about it.
+//! **Filed upstream as [`equinor/neqsim#4044`](https://github.com/equinor/neqsim/issues/4044)**
+//! and closed by PR #4045: the four sets and the `exp(900)` sentinel were the table's, and
+//! the issue said what each row count was rather than what this library did about it.
 
 use azoth_core::{AzothError, Result};
 
@@ -83,7 +75,7 @@ impl Insoluble {
 /// The four coefficients of NeqSim's Henry correlation, dimensionless, in bar.
 ///
 /// `HenryCoef1`..`HenryCoef4` of `COMP.csv`, which `Component.java:2210` reads as
-/// `henryCoefParameter[0..3]`. **All four are zero on 296 of the 348 rows**, which is the
+/// `henryCoefParameter[0..3]`. **All four are zero on 269 of the 348 rows**, which is the
 /// table's marker for a substance it fits no correlation for - and a zero set evaluated as
 /// a polynomial gives `1.802 bar` for every one of them, so a caller must refuse rather
 /// than evaluate. [`coefficient`] is that refusal.
@@ -207,43 +199,38 @@ mod tests {
 
     /// NeqSim's own arithmetic, evaluated by hand at one state.
     ///
-    /// CO2's set - the only real correlation in the table - with the `* 0.01802 * 100`
-    /// kept as written rather than folded to `1.802`, so the test fails if either factor
-    /// is dropped. `H(298.15) = 51.6545 bar` is what NeqSim computes; the literature value
-    /// for CO2 in the mole-fraction convention is about 0.5 bar, and the difference is
-    /// NeqSim's, not this port's - the task is to reproduce it, and a divergence between
-    /// the two is a finding about NeqSim rather than a licence to substitute another
-    /// number.
+    /// CO2's sourced set, with the `* 0.01802 * 100` kept as written rather than folded to
+    /// `1.802`, so the test fails if either factor is dropped. `H(298.15) = 28.95 bar` is
+    /// what the table's coefficients give after upstream PR #4045 replaced the placeholder
+    /// correlations with sourced data.
     #[test]
     fn the_co2_correlation_is_neqsims_expression() {
         let co2 = databank::entry("co2", None).expect("co2");
         let value = coefficient(&co2, 298.15);
         assert!(
-            (value - 51.6545).abs() < 1.0e-3,
-            "H(298.15) = {value}, and NeqSim's expression gives 51.6545"
+            (value - 28.95).abs() < 1.0e-3,
+            "H(298.15) = {value}, and the sourced coefficients give 28.95"
         );
         // Monotone over the liquid-water range, which is what a Henry constant does.
         assert!(coefficient(&co2, 323.15) > value);
         assert!(coefficient(&co2, 273.15) < value);
     }
 
-    /// **The cap is load-bearing for most of the table, not an edge case.**
+    /// **The `exp(900)` sentinel is gone and the cap is not.**
     ///
-    /// Forty rows carry `900` as their constant. `exp(900)` overflows to infinity, and the
-    /// cap is what turns that into a finite insoluble coefficient - so a caller that
-    /// skipped the cap would propagate an infinity into a fugacity coefficient rather
-    /// than refusing. Methane is the case, and it is a substance every model here carries.
+    /// Upstream PR #4045 replaced the four placeholder sets - forty rows of `900`, the
+    /// constant `2.92`, the `0.059565` quartet and the one CO2 set copied onto `co`,
+    /// `cos` - with sourced two-term coefficients, so methane's row now evaluates to a
+    /// finite `723.75 bar` rather than overflowing to the cap. The cap remains the model's
+    /// rule for an ion, and it still catches a value that would overflow.
     #[test]
-    fn the_sentinel_rows_cap_rather_than_overflow() {
+    fn the_cap_survives_the_sourced_data() {
         let methane = databank::entry("methane", None).expect("methane");
         assert!(methane.henry.is_fitted(), "the row lists a correlation");
         assert!(
-            !coefficient(&methane, 298.15).is_finite(),
-            "and it overflows, which is how the sentinel works"
-        );
-        assert_eq!(
-            effective_coefficient(&methane, 298.15).expect("capped"),
-            Insoluble::HenryCoefficient.value()
+            (coefficient(&methane, 298.15) - 723.75).abs() < 1.0e-6,
+            "H(298.15) = {}",
+            coefficient(&methane, 298.15)
         );
 
         // An ion is capped whatever its row says, which is the clause that made the cap a
@@ -251,18 +238,19 @@ mod tests {
         let sodium = databank::entry("na+", None).expect("na+");
         assert_eq!(sodium.class, ION);
         assert!(is_capped(&sodium, 1.0), "an ion is insoluble by class");
+        assert!(is_capped_value(f64::INFINITY, false));
     }
 
     /// A substance the table fits nothing for is refused rather than evaluated.
     #[test]
     fn an_unfitted_substance_is_refused() {
-        let ethane = databank::entry("ethane", None).expect("ethane");
-        assert!(!ethane.henry.is_fitted());
-        let error = effective_coefficient(&ethane, 298.15).expect_err("no correlation");
-        assert!(error.to_string().contains("ethane"), "{error}");
+        let mdea = databank::entry("mdea", None).expect("mdea");
+        assert!(!mdea.henry.is_fitted());
+        let error = effective_coefficient(&mdea, 298.15).expect_err("no correlation");
+        assert!(error.to_string().contains("mdea"), "{error}");
         // And the zeros really would have given a number, which is why this is a refusal
         // rather than a default.
-        assert!((coefficient(&ethane, 298.15) - 1.802).abs() < 1.0e-12);
+        assert!((coefficient(&mdea, 298.15) - 1.802).abs() < 1.0e-12);
     }
 
     /// **The derivative is the correlation's, and the two agree by construction.**

@@ -1,8 +1,10 @@
 id = "eos.chapman_enskog_diffusivity"
 name = "Gas binary diffusivity from the Chapman-Enskog theory"
+summary = "Gas binary diffusivity from the Chapman-Enskog kinetic theory. Use it for gas mixing and mass-transfer estimates when no measured diffusivity is available."
 equation = "D = 0.00266 * T**1.5 / (P * sqrt(MAB) * sigmaAB**2 * OmegaD(T/epsAB))   [cm**2/s], with MAB in g/mol, sigmaAB in angstrom, epsAB in K, P in bar and T in K, and OmegaD the Neufeld collision integral; D*1e-4 recovers m**2/s."
 latex = '''D_{AB} = \frac{0.00266\,T^{1.5}}{P\,\sqrt{M_{AB}}\,\sigma_{AB}^{2}\,\Omega_D\!\left(\frac{T}{\varepsilon_{AB}}\right)},\qquad \Omega_D = \frac{A}{t^{B}} + \frac{C}{e^{Dt}} + \frac{E}{e^{Ft}} + \frac{G}{e^{Ht}}'''
-assumptions = ["**this is a gas phase's default diffusivity, not Fuller's.** `GasPhysicalProperties` assigns the base `Diffusivity` class to a gas, and the Fuller class is reached only by `setDiffusionCoefficientModel`. `RateBasedPackedColumn` selects nothing, so this is what its segment fluxes use.\n", "the pair parameters are inputs; `azoth_eos::databank::lennard_jones_pair` combines two components' values the way `GasPhysicalPropertyMethod` does: `sigma = (sigma_i + sigma_j)/2`, `eps = sqrt(eps_i eps_j)`, `MAB = 2/(1/M_i + 1/M_j)` in **g/mol**.\n", "the correlation is dimensionless in `eps` and `t = T/eps`, and NeqSim prints a `kg/mol` molar mass into it: this spec takes kg/mol and multiplies by 1000 for the g/mol the equation is written in.\n", "outside NeqSim's `Diffusivity.T_MIN`/`T_MAX` band the class *warns* rather than refusing (`enableTemperatureWarnings`); the port says the same in its own vocabulary.\n"]
+assumptions = ["outside the validated temperature band the calculation warns rather than refuses.\n"]
+notes = ["**this is a gas phase's default diffusivity, not Fuller's.** `GasPhysicalProperties` assigns the base `Diffusivity` class to a gas, and the Fuller class is reached only by `setDiffusionCoefficientModel`. `RateBasedPackedColumn` selects nothing, so this is what its segment fluxes use.\n", "the pair parameters are inputs; `azoth_eos::databank::lennard_jones_pair` combines two components' values the way `GasPhysicalPropertyMethod` does: `sigma = (sigma_i + sigma_j)/2`, `eps = sqrt(eps_i eps_j)`, `MAB = 2/(1/M_i + 1/M_j)` in **g/mol**.\n", "the correlation is dimensionless in `eps` and `t = T/eps`, and NeqSim prints a `kg/mol` molar mass into it: this spec takes kg/mol and multiplies by 1000 for the g/mol the equation is written in.\n"]
 references = ["Chapman, S.; Enskog, D. (1917). \\\"The kinetic theory of gases.\\\" Cambridge University Press. The first-approximation pair diffusivity of a dilute gas.", "Neufeld, P. D.; Janzen, A. R.; Aziz, R. A. (1972). \\\"Empirical equations to calculate 16 of the transport collision integrals for the Lennard-Jones (12-6) potential.\\\" J. Chem. Phys. 57(3), 1100-1102. DOI 10.1063/1.1678363. The collision integral's eight coefficients.", "Poling, B. E.; Prausnitz, J. M.; O'Connell, J. P. (2001). \\\"The Properties of Gases and Liquids\\\", 5th ed., McGraw-Hill. Table E-1 carries the textbook Lennard-Jones parameters; `Diffusivity.useDiffusionLJOverride` is the switch between them and the database values.", "`validation/neqsim/captures/phase_transport_probe.tsv` - the phase's own transport properties and the default binary matrix, four fluids, and per row the value the explicitly selected `Chapman-Enskog` model answers.\n"]
 [source]
 standard = "Chapman, S.; Enskog, D. (1917)"
@@ -17,10 +19,10 @@ unit = "kg/mol"
 description = "Molar mass of the second.\n"
 [inputs.sigma]
 unit = "m"
-description = "The **pair's** Lennard-Jones collision diameter, in metres - NeqSim's `binaryMolecularDiameter`, in angstrom times 1e-10. The combining rule is in `azoth_eos::databank::lennard_jones_pair`.\n"
+description = "The pair's Lennard-Jones collision diameter, in metres.\n"
 [inputs.eps]
 unit = "K"
-description = "The **pair's** Lennard-Jones energy parameter over Boltzmann's constant, in kelvin - NeqSim's `binaryEnergyParameter`.\n"
+description = "The pair's Lennard-Jones energy parameter over Boltzmann's constant, in kelvin.\n"
 [inputs.T]
 unit = "K"
 description = "Absolute temperature.\n"

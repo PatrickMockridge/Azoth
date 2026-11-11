@@ -1,10 +1,9 @@
 id = "hydraulics.crane_k_factors"
 name = "Fitting resistance coefficients by the equivalent-length method"
+summary = "Total fitting resistance coefficient from a list of fittings and their equivalent lengths. Use it to add valve and fitting losses to a line pressure-drop calculation."
 equation = "K = f_t * sum(n_ld for each fitting)"
 latex = '''K = f_t \sum_{i} n_{L/D,i}'''
-assumptions = ["fully turbulent flow in the fittings, which is what the tabulated coefficients describe", """\
-    valves are fully open; a throttled or partly open valve has a much higher coefficient \
-    and should be sized by its flow coefficient instead""", "fittings are separated by enough straight pipe that their losses do not interact", "the fitting and the pipe are the same nominal size", "single-phase, incompressible flow"]
+assumptions = ["fully turbulent flow in the fittings, which is what the tabulated coefficients describe", "valves are fully open; a throttled or partly open valve has a much higher coefficient and should be sized by its flow coefficient instead", "fittings are separated by enough straight pipe that their losses do not interact", "the fitting and the pipe are the same nominal size", "single-phase, incompressible flow"]
 references = ["Crane Technical Paper No. 410, \"Flow of Fluids Through Valves, Fittings and Pipe\" (2013).", "The coefficients in data/fittings/crane_k_factors.csv are estimated dummy values for software testing, with no source."]
 [source]
 standard = "Crane TP-410"

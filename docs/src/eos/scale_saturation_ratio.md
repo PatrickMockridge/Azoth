@@ -4,6 +4,8 @@
 
 `eos.scale_saturation_ratio`
 
+Saturation ratio of one scale-forming salt from its ion concentrations and solubility product. Use it to decide whether a brine is supersaturated.
+
 ## Equation
 
 $$
@@ -30,6 +32,19 @@ with Ksp's five coefficients and `Vdelta` from NeqSim's `compsalt` row for the s
 
 One row of its `compsalt` walk, which is the whole of what the operation computes per salt.
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **this is `CheckScalePotential`'s per-salt arithmetic, which is the whole of what the operation computes.** Its `run()` walks NeqSim's `compsalt` table and reports a ratio per salt whose two ions the phase has; this is one row of that, so porting the operation is looping over this.
+- **the salt is named, and three names override the correlation.** `NaCl` is `92.78 - 0.407 T + 0.000747 T**2`, `CaCO3` is Plummer & Busenberg (1982) and `FeCO3` Greenberg & Tomson (1992), both named below. **The row's coefficients are discarded for those three**, as NeqSim's `if` chain does.
+- **`FeS` is modified by the hydrogen-ion molality**, and only for it: without an `H3O+` component the salt is skipped entirely, and with one the Ksp is multiplied by `x(H3O+)/(x_water M_water)` before the pressure correction.
+- `Vdelta` is in **cm3/mol** and the pressure term's `R` is `83.1446`, which is that unit's gas constant - the term is dimensionless as written and a port that used `8.3144621` against a cm3/mol volume would be out by `1e4`.
+- the reference pressure is **1.01325 bar**, so the correction vanishes at one atmosphere and not at zero.
+- **the ratio is clamped at `exp(69)` and floored at zero**: NeqSim returns `0` where either molality is under `1e-30` or `ln SR` is under `-69`, and `exp(69)` above `+69`. Those are overflow guards rather than physical bounds, and a `0` reads as "too far below saturation to matter".
+- the salt row is read from `data/components/COMPSALT.csv`, which the P8 electrolyte models already read; the name is matched as the table spells it, so `CaSO4_A` and `CaSO4_G` are two rows and not one salt with a setting.
+
 ## Inputs
 
 | Name | Unit | Description |
@@ -43,7 +58,7 @@ One row of its `compsalt` walk, which is the whole of what the operation compute
 | `water_activity` | dimensionless | Water's activity, which the `waterstoc` term raises to its stoichiometric power. Read only where the row states a non-zero `waterstoc`, which is one row of the 22. |
 | `T` | K | absolute temperature |
 | `P` | Pa | absolute pressure |
-| `h3o_molality` | mol/kg | *Optional.* The hydrogen ion's molality, **read for `FeS` alone**: that salt's solubility product is multiplied by it, and NeqSim skips the salt where the phase has no `H3O+`, which a scalar calc cannot do. Required for `FeS` and ignored by every other salt. |
+| `h3o_molality` | mol/kg | *Optional.* The hydrogen ion's molality, read for `FeS` alone. Required for `FeS` and ignored by every other salt. |
 
 
 ## Outputs
@@ -63,22 +78,15 @@ One row of its `compsalt` walk, which is the whole of what the operation compute
 | `P > 0` | raises | an absolute pressure |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **this is `CheckScalePotential`'s per-salt arithmetic, which is the whole of what the operation computes.** Its `run()` walks NeqSim's `compsalt` table and reports a ratio per salt whose two ions the phase has; this is one row of that, so porting the operation is looping over this.
-- **the salt is named, and three names override the correlation.** `NaCl` is `92.78 - 0.407 T + 0.000747 T**2`, `CaCO3` is Plummer & Busenberg (1982) and `FeCO3` Greenberg & Tomson (1992), both named below. **The row's coefficients are discarded for those three**, as NeqSim's `if` chain does.
-- **`FeS` is modified by the hydrogen-ion molality**, and only for it: without an `H3O+` component the salt is skipped entirely, and with one the Ksp is multiplied by `x(H3O+)/(x_water M_water)` before the pressure correction.
-- `Vdelta` is in **cm3/mol** and the pressure term's `R` is `83.1446`, which is that unit's gas constant - the term is dimensionless as written and a port that used `8.3144621` against a cm3/mol volume would be out by `1e4`.
-- the reference pressure is **1.01325 bar**, so the correction vanishes at one atmosphere and not at zero.
-- **the ratio is clamped at `exp(69)` and floored at zero**: NeqSim returns `0` where either molality is under `1e-30` or `ln SR` is under `-69`, and `exp(69)` above `+69`. Those are overflow guards rather than physical bounds, and a `0` reads as "too far below saturation to matter".
-- `x1`, `x2` and `x_water` are the **aqueous phase's mole fractions**, taken as the phase has them. NeqSim reads the phase's components and nothing else, so a brine whose ions were *stated* needs no reactive speciation - which is what makes this port-able without the chemistry.
-- the activity coefficients are the **caller's**, and they are the phase model's own. A port that computed them here would be porting `getActivityCoefficient` as well, which is the electrolyte family's and not this one's.
-- `a_water` is read as the phase's water activity, which NeqSim takes as the water mole fraction and multiplies by its activity coefficient **only where the component says it has one** - so the caller states `waterstoc`'s term rather than this calc deciding it.
-- the salt row is read from `data/components/COMPSALT.csv`, which the P8 electrolyte models already read; the name is matched as the table spells it, so `CaSO4_A` and `CaSO4_G` are two rows and not one salt with a setting.
+- The ion concentrations are the aqueous phase's mole fractions. A brine whose ions are stated needs no reactive speciation.
+- The activity coefficients are the caller's, from the phase model; this calculation does not compute them.
+- The water activity is the caller's; it is not recomputed here.
 
 
 

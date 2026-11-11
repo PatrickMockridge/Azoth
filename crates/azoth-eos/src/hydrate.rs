@@ -347,6 +347,69 @@ pub fn stable_structure(
     })
 }
 
+/// The Pitzer component's water fugacity coefficient on one structure, `f_w^hydrate/P`.
+///
+/// `ComponentHydratePitzer` extends the PVTsim component and changes exactly one thing: its
+/// reference is the **pure-water Antoine vapour pressure**, not the reference fluid's water
+/// fugacity, so the solvent reference cancels against the Pitzer aqueous side's `a_w P0`.
+/// `p_sat_water` is in pascals, as every fugacity here is.
+pub(crate) fn pitzer_water_fugacity_coefficient(
+    guests: &[HydrateGuest],
+    ref_fugacities: &[f64],
+    t: f64,
+    p: f64,
+    structure: usize,
+    p_sat_water: f64,
+) -> Result<f64, AzothError> {
+    Ok(exponent(
+        guests,
+        ref_fugacities,
+        HydrateModel::Pvtsim,
+        t,
+        p,
+        structure,
+    )?
+    .exp()
+        * p_sat_water
+        / p)
+}
+
+/// The structure and coefficient `ComponentHydratePitzer.fugcoef` reports.
+///
+/// A requested structure is evaluated alone; `None` evaluates both and keeps the **lower**
+/// coefficient, which is the stable hydrate. The reference is the same number for both
+/// structures, so the comparison is of the exponents - kept as a coefficient comparison
+/// because that is what the class does.
+pub(crate) fn pitzer_structure(
+    guests: &[HydrateGuest],
+    ref_fugacities: &[f64],
+    t: f64,
+    p: f64,
+    p_sat_water: f64,
+    requested: Option<usize>,
+) -> Result<(usize, f64), AzothError> {
+    if let Some(structure) = requested {
+        return Ok((
+            structure,
+            pitzer_water_fugacity_coefficient(
+                guests,
+                ref_fugacities,
+                t,
+                p,
+                structure,
+                p_sat_water,
+            )?,
+        ));
+    }
+    let first = pitzer_water_fugacity_coefficient(guests, ref_fugacities, t, p, 0, p_sat_water)?;
+    let second = pitzer_water_fugacity_coefficient(guests, ref_fugacities, t, p, 1, p_sat_water)?;
+    Ok(if first <= second {
+        (0, first)
+    } else {
+        (1, second)
+    })
+}
+
 /// A gas the mixture's fluid carries, and whether the hydrate takes it into a cage.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HydrateGuest {
@@ -393,6 +456,25 @@ pub fn hydrate_mixture_of(
     crate::mixture::Mixture,
     crate::molar_enthalpy_entropy::IdealGasModel,
 )> {
+    let hydration = hydration_of(names, overlay, model)?;
+    let (mixture, ideal_gas) = crate::databank::mixture_of(names, cubic, overlay)?;
+    Ok((mixture.with_hydration(hydration), ideal_gas))
+}
+
+/// The guests' tables and water index a list of names resolves to, **without building a cubic**.
+///
+/// The hydrate side of a fluid needs no equation of state: the guests' fitted constants, the
+/// water index and the model are all the databank has. The Pitzer flash needs exactly this,
+/// because its inner flash is the hybrid EoS/GE one and a cubic over its ions is refused.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if a name is not in the databank, if there is no water, or
+///   if nothing in the mixture is a hydrate former.
+pub fn hydration_of(
+    names: &[&str],
+    overlay: Option<&crate::databank::Overlay>,
+    model: HydrateModel,
+) -> azoth_core::Result<Hydration> {
     let entries: Vec<Entry> = names
         .iter()
         .map(|name| crate::databank::entry(name, overlay))
@@ -428,15 +510,11 @@ pub fn hydrate_mixture_of(
         ));
     }
 
-    let (mixture, ideal_gas) = crate::databank::mixture_of(names, cubic, overlay)?;
-    Ok((
-        mixture.with_hydration(Hydration {
-            guests,
-            water_index,
-            model,
-        }),
-        ideal_gas,
-    ))
+    Ok(Hydration {
+        guests,
+        water_index,
+        model,
+    })
 }
 
 /// The cavities and the water molecules of one unit cell: structure I then II.

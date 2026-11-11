@@ -1,0 +1,182 @@
+model = "eos.scale_deposition_accumulator"
+
+# The capture's `scale_deposition` rows. mg/L to kg/m3 by 1e-3, bara to Pa by 1e5,
+# the class's year as 31557600 s, mm to m by 1e-3. The isothermal pipe's temperature list
+# is one value, so its one segment spans the whole length; the cooled pipe has eleven.
+
+[[cases]]
+id = "base"
+tolerance = 1.0e-09
+source = "The capture's `base` row on the isothermal pipe: one segment at 60 C and 100 bara, a CaCO3 index of 0.0139, 5.112 kg of deposit and a half-blockage in 4148 years.\n"
+[cases.inputs]
+calcium = 1.0
+bicarbonate = 0.5
+sulphate = 0.1
+barium = 0.01
+sodium = 20.0
+total_dissolved_solids = 50.0
+ph = 6.5
+diameter = 0.1
+length = 1000.0
+segment_temperatures = [333.15]
+segment_pressures = [1.0e7]
+service_time = 31557600.0
+scale_density = 2700.0
+base_rate = 1.5844043908606944e-8
+inhibitor_efficiency = 0.0
+[cases.expected]
+total_deposition_mass = 5.112073003689538
+max_thickness = 6.026753244324613e-6
+time_to_blockage = 130906305271.9047
+segments = [
+    { saturation_index = 0.013908764040233352, deposition_mass = 5.112073003689538, thickness = 6.026753244324613e-6 },
+]
+
+[[cases]]
+id = "inhibitor_half"
+tolerance = 1.0e-09
+source = "The capture's `inhibitor_0.5` row: half the deposition rate, so half the mass, thickness and blockage time doubling.\n"
+[cases.inputs]
+calcium = 1.0
+bicarbonate = 0.5
+sulphate = 0.1
+barium = 0.01
+sodium = 20.0
+total_dissolved_solids = 50.0
+ph = 6.5
+diameter = 0.1
+length = 1000.0
+segment_temperatures = [333.15]
+segment_pressures = [1.0e7]
+service_time = 31557600.0
+scale_density = 2700.0
+base_rate = 1.5844043908606944e-8
+inhibitor_efficiency = 0.5
+[cases.expected]
+total_deposition_mass = 2.556036501844769
+max_thickness = 3.0133766221623067e-6
+time_to_blockage = 261812610543.8094
+segments = [
+    { saturation_index = 0.013908764040233352, deposition_mass = 2.556036501844769, thickness = 3.0133766221623067e-6 },
+]
+
+[[cases]]
+id = "service_5yr"
+tolerance = 1.0e-09
+source = "The capture's `service_5yr` row: five times the service, five times the mass, and the same blockage time because the deposit grows linearly.\n"
+[cases.inputs]
+calcium = 1.0
+bicarbonate = 0.5
+sulphate = 0.1
+barium = 0.01
+sodium = 20.0
+total_dissolved_solids = 50.0
+ph = 6.5
+diameter = 0.1
+length = 1000.0
+segment_temperatures = [333.15]
+segment_pressures = [1.0e7]
+service_time = 157788000.0
+scale_density = 2700.0
+base_rate = 1.5844043908606944e-8
+inhibitor_efficiency = 0.0
+[cases.expected]
+total_deposition_mass = 25.56036501844769
+max_thickness = 3.0133766221623074e-5
+time_to_blockage = 130906305271.9047
+segments = [
+    { saturation_index = 0.013908764040233352, deposition_mass = 25.56036501844769, thickness = 3.0133766221623074e-5 },
+]
+
+[[cases]]
+id = "base_rate_doubled"
+tolerance = 1.0e-09
+source = "The capture's `base_rate_1.0` row: twice the base rate doubles the mass and halves the blockage time.\n"
+[cases.inputs]
+calcium = 1.0
+bicarbonate = 0.5
+sulphate = 0.1
+barium = 0.01
+sodium = 20.0
+total_dissolved_solids = 50.0
+ph = 6.5
+diameter = 0.1
+length = 1000.0
+segment_temperatures = [333.15]
+segment_pressures = [1.0e7]
+service_time = 31557600.0
+scale_density = 2700.0
+base_rate = 3.168808781402895e-8
+inhibitor_efficiency = 0.0
+[cases.expected]
+total_deposition_mass = 10.224146007379076
+max_thickness = 1.2053506488649227e-5
+time_to_blockage = 65453152635.95235
+segments = [
+    { saturation_index = 0.013908764040233352, deposition_mass = 10.224146007379076, thickness = 1.2053506488649227e-5 },
+]
+
+[[cases]]
+id = "cooled_profile"
+tolerance = 1.0e-09
+source = "The capture's `cooled` row: the eleven-segment cooled pipe. The first segment carries the deposit; the rest are cooled below saturation and report zero.\n"
+[cases.inputs]
+calcium = 1.0
+bicarbonate = 0.5
+sulphate = 0.1
+barium = 0.01
+sodium = 20.0
+total_dissolved_solids = 50.0
+ph = 6.5
+diameter = 0.1
+length = 1000.0
+segment_temperatures = [333.15, 295.7630284790509, 293.18764045683355, 293.1423035510404, 293.1341132975394, 293.14159951262286, 293.13339840650065, 293.14157924182285, 293.13336715453545, 293.1415677292142, 293.13334463084226]
+segment_pressures = [1.0e7, 9.99607033961295e6, 9.993125976391863e6, 9.990247608621769e6, 9.987368993896372e6, 9.984489159378359e6, 9.981607692955471e6, 9.978725003532436e6, 9.975840660188211e6, 9.972955090610036e6, 9.97006786273677e6]
+service_time = 31557600.0
+scale_density = 2700.0
+base_rate = 1.5844043908606944e-8
+inhibitor_efficiency = 0.0
+[cases.expected]
+total_deposition_mass = 0.4647339094263216
+max_thickness = 6.026753244324614e-6
+time_to_blockage = 130906305271.9047
+segments = [
+    { saturation_index = 0.013908764040233352, deposition_mass = 0.4647339094263216, thickness = 6.026753244324614e-6 },
+    { saturation_index = -0.3134979056496238, deposition_mass = 0.0, thickness = 0.0 },
+    { saturation_index = -0.3384900821623057, deposition_mass = 0.0, thickness = 0.0 },
+    { saturation_index = -0.33890580225081696, deposition_mass = 0.0, thickness = 0.0 },
+    { saturation_index = -0.33895637758087044, deposition_mass = 0.0, thickness = 0.0 },
+    { saturation_index = -0.33885280183028277, deposition_mass = 0.0, thickness = 0.0 },
+    { saturation_index = -0.33890345297006963, deposition_mass = 0.0, thickness = 0.0 },
+    { saturation_index = -0.3387930190702319, deposition_mass = 0.0, thickness = 0.0 },
+    { saturation_index = -0.33884374657876604, deposition_mass = 0.0, thickness = 0.0 },
+    { saturation_index = -0.33873309028626875, deposition_mass = 0.0, thickness = 0.0 },
+    { saturation_index = -0.33878389436663964, deposition_mass = 0.0, thickness = 0.0 },
+]
+
+[[cases]]
+id = "no_calcite"
+tolerance = 1.0e-09
+source = "The capture's `no_calcite` row: pH 4 leaves calcite undersaturated, so nothing deposits and the blockage time is infinite.\n"
+[cases.inputs]
+calcium = 0.01
+bicarbonate = 0.01
+sulphate = 0.1
+barium = 0.0
+sodium = 20.0
+total_dissolved_solids = 50.0
+ph = 4.0
+diameter = 0.1
+length = 1000.0
+segment_temperatures = [333.15]
+segment_pressures = [1.0e7]
+service_time = 31557600.0
+scale_density = 2700.0
+base_rate = 1.5844043908606944e-8
+inhibitor_efficiency = 0.0
+[cases.expected]
+total_deposition_mass = 0.0
+max_thickness = 0.0
+segments = [
+    { saturation_index = -5.547666164411428, deposition_mass = 0.0, thickness = 0.0 },
+]

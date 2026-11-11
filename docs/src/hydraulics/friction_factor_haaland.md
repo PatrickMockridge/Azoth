@@ -4,6 +4,8 @@
 
 `hydraulics.friction_factor_haaland`
 
+Explicit Haaland approximation to the Colebrook-White friction factor. Use it for fast turbulent-flow pressure-drop estimates.
+
 ## Equation
 
 $$
@@ -47,7 +49,7 @@ Journal of Fluids Engineering, 105(1), 89-90
 | `relative_roughness <= 0.05` | warns `OUT_OF_VALID_RANGE` | Above epsilon/D ~ 0.05 the Moody framework is no longer meaningful. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

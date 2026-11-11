@@ -210,19 +210,24 @@ pub fn shortcut_distillation_column(
     };
     let actual_stages = (y_gilliland + minimum_stages) / (1.0 - y_gilliland);
 
-    // Kirkbride, on the class's own argument - see the model spec's assumptions for how it
-    // differs from the correlation as usually quoted.
+    // Kirkbride on product mole fractions, as upstream PR #4108 corrects it. The key amounts
+    // the split gives are per feed mole, so they are normalised by the product fractions the
+    // balance states; the composition ratio is squared and `B/D` enters once.
     let z_lk_f = feed.z[lk];
     let z_hk_f = feed.z[hk];
     let b_over_d = bottoms_to_distillate(&feed.z, &fractions);
-    let x_hk_distillate = x_hk_d * z_hk_f;
-    let x_lk_bottoms = x_lk_b * z_lk_f;
+    let distillate_fraction = 1.0 / (1.0 + b_over_d);
+    let bottoms_fraction = b_over_d * distillate_fraction;
+    let x_hk_distillate = x_hk_d * z_hk_f / distillate_fraction;
+    let x_lk_bottoms = x_lk_b * z_lk_f / bottoms_fraction;
     let kirkbride_ratio = if x_lk_bottoms > 1.0e-15 && b_over_d > 1.0e-15 {
-        ((z_hk_f / z_lk_f) * (x_lk_bottoms / x_hk_distillate) * (b_over_d * b_over_d)).powf(0.206)
+        let composition_ratio = x_lk_bottoms / x_hk_distillate;
+        ((z_hk_f / z_lk_f) * composition_ratio * composition_ratio * b_over_d).powf(0.206)
     } else {
         0.0
     };
-    let feed_tray_number = (actual_stages / (1.0 + kirkbride_ratio)).round() as i64 + 1;
+    let n_rectifying = actual_stages * kirkbride_ratio / (1.0 + kirkbride_ratio);
+    let feed_tray_number = n_rectifying.round() as i64 + 1;
 
     // The duties, which are estimates: a hard-coded latent heat and one per cent of the
     // feed's own enthalpy, in W because the feed's flow is mol/s.

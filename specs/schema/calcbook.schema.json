@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "calcbook.schema.json",
+  "title": "Calculation book",
+  "description": "A saved collection of calculation sheets. Inputs are SI magnitudes for quantities; an absent optional input is an absent key. Results are not saved.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "sheets"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sheets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sheet"
+      }
+    }
+  },
+  "$defs": {
+    "sheet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "calculation"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "calculation": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["number", "boolean", "string"]
+          }
+        }
+      }
+    }
+  }
+}

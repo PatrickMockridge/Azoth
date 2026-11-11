@@ -4,6 +4,8 @@
 
 `hydraulics.tray_hydraulics`
 
+A tray's flooding, weeping, entrainment, pressure drop and efficiency from its geometry and loads. Use it to screen tray hydraulic limits before a detailed column rating.
+
 ## Equation
 
 $$
@@ -22,6 +24,19 @@ The Fair capacity factor `K` interpolated over tray spacing and corrected by `ex
 
 `calculateAreas` through `assessDesign`, the class's ten calculation methods, ported in its own order. **`sizeColumnDiameter` is a separate entry point of the class and is outside this calculation's inputs.**
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **the five correlations are the class's own, with its constants**: the Fair table and its `-1.463`/`0.842` correction, the `1.05`/`0.85` tray factors, Sinnott's `0.90 (25.4 - d_h)`, Fair's three `(a, b)` entrainment pairs, the three orifice coefficients and O'Connell's `51 - 32.5 log10(alpha mu)`.
+- **the tray type is read at four sites and its fallback differs at each**: the hole area is `holeAreaFraction` / `0.14` / `0.12`, the flooding factor `1.0` / `1.05` / `0.85`, the orifice coefficient `0.73` / `0.80` / `0.65`, and only the weeping check returns for `bubble-cap` alone.
+- **`activeAreaFraction` is derived and not an input**, so the class has no setter for it: `1 - 2 downcommerAreaFraction` is recomputed on every `calculate`, and the field's own `0.80` initialiser survives only until then.
+- **`turndownRatio` is written twice and the second write is the same number.** The weeping check's `actualHoleVelocity/uMinHole` and the turndown pass's `actualVaporVelocity/minimumVaporVelocity` are equal wherever both are defined, so a bubble-cap tray keeps the field's `0.0`.
+- **the design verdict is five conditions**: `weepingOk && entrainmentOk && downcommerBackupOk && percentFlood >= 50 && percentFlood <= 85`, so a well-behaved tray at 46 per cent of flood is not a design.
+- **`total_tray_pressure_drop_mbar` is the same number in another unit** - `totalTrayPressureDrop / 100`, since 1 mbar is 100 Pa - and is published because the class publishes it.
+
+
 ## Inputs
 
 | Name | Unit | Description |
@@ -30,11 +45,11 @@ The Fair capacity factor `K` interpolated over tray spacing and corrected by `ex
 | `column_diameter` | m | the column's internal diameter, which the four areas are computed from. |
 | `tray_spacing` | m | the tray spacing, which the Fair capacity factor and the downcomer backup's allowance read. |
 | `weir_height` | m | the weir height, which the liquid head and the weeping chart take in millimetres. |
-| `weir_length` | m | the weir length. **At or below zero means the class derives it** as `0.73 D`, and that derived value is what is reported and what every crest term reads. |
+| `weir_length` | m | The weir length. At or below zero derives it as `0.73 D`, and the derived value is what is reported and used. |
 | `downcommer_area_fraction` | dimensionless | the downcomer area as a fraction of the total, which fixes the active area as `1 - 2` of it. |
-| `hole_diameter` | mm | the hole diameter, which the weeping minimum and the residual head both read. **In millimetres**, which is the unit the class's two correlations are written in. |
+| `hole_diameter` | mm | The hole diameter, read by the weeping minimum and the residual head. |
 | `hole_area_fraction` | dimensionless | the hole area as a fraction of the active area, read for a `sieve` tray alone. |
-| `design_flood_fraction` | dimensionless | the design flooding fraction. **Stored and never read** by any of the twenty-four answers, which is the class's own state rather than this port's omission. |
+| `design_flood_fraction` | dimensionless | The design flooding fraction. Stored but not read by this calculation. |
 | `vapor_mass_flow` | kg/s | the vapour's mass flow. |
 | `liquid_mass_flow` | kg/s | the liquid's mass flow. |
 | `vapor_density` | kg/m**3 | the vapour's mass density, which divides the mass flow into a volumetric one and appears in the F-factor. |
@@ -93,18 +108,13 @@ The Fair capacity factor `K` interpolated over tray spacing and corrected by `ex
 | `relative_volatility > 0` | raises | O'Connell's efficiency takes its logarithm too |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **the five correlations are the class's own, with its constants**: the Fair table and its `-1.463`/`0.842` correction, the `1.05`/`0.85` tray factors, Sinnott's `0.90 (25.4 - d_h)`, Fair's three `(a, b)` entrainment pairs, the three orifice coefficients and O'Connell's `51 - 32.5 log10(alpha mu)`.
-- **the tray type is read at four sites and its fallback differs at each**: the hole area is `holeAreaFraction` / `0.14` / `0.12`, the flooding factor `1.0` / `1.05` / `0.85`, the orifice coefficient `0.73` / `0.80` / `0.65`, and only the weeping check returns for `bubble-cap` alone.
-- **`activeAreaFraction` is derived and not an input**, so the class has no setter for it: `1 - 2 downcommerAreaFraction` is recomputed on every `calculate`, and the field's own `0.80` initialiser survives only until then.
-- **`turndownRatio` is written twice and the second write is the same number.** The weeping check's `actualHoleVelocity/uMinHole` and the turndown pass's `actualVaporVelocity/minimumVaporVelocity` are equal wherever both are defined, so a bubble-cap tray keeps the field's `0.0`.
-- **the design verdict is five conditions**: `weepingOk && entrainmentOk && downcommerBackupOk && percentFlood >= 50 && percentFlood <= 85`, so a well-behaved tray at 46 per cent of flood is not a design.
-- **`total_tray_pressure_drop_mbar` is the same number in another unit** - `totalTrayPressureDrop / 100`, since 1 mbar is 100 Pa - and is published because the class publishes it.
+- The tray is a crossflow sieve, valve or bubble-cap tray with the declared geometry. The result is a hydraulic screen, not a tray-efficiency or column-rating calculation.
 
 
 

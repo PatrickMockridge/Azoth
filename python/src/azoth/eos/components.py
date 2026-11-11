@@ -611,6 +611,10 @@ class DatabankEntry:
     #: Read by the two surface-tension ids and by the rate-based packed column's segment
     #: model, which asks for the interface tension the packing's wetted area is built from.
     parachor: float
+    #: The parachor a **CPA component** reads: NeqSim's ``PARACHOR_CPA``.
+    #: ``Component.createComponent`` selects this column for ``ComponentSrkCPA`` and every
+    #: subclass of it (upstream PR #4004) and the ordinary ``PARACHOR`` for the rest.
+    parachor_cpa: float
     #: The solid's and the liquid's heat-capacity polynomials and the two density ones:
     #: NeqSim's ``CPsolid1``-``4``, ``CPliquid1``-``5``, ``SOLIDDENSITYCOEFS1``-``4`` and
     #: ``LIQUIDDENSITYCOEFS1``-``4``. The ``/1000`` the table's own coefficients carry is
@@ -644,7 +648,7 @@ class DatabankEntry:
     #: needs when a result turns out to depend on which file was in play.
     source: str = "databank"
 
-    def component(self, alpha: str | None = None) -> Component:
+    def component(self, alpha: str | None = None, parachor: float | None = None) -> Component:
         """This entry as the thing a calculation takes.
 
         ``alpha`` names the alpha correlation, so the entry can attach the fitted
@@ -687,7 +691,7 @@ class DatabankEntry:
             wax_former=self.wax_former,
             component_class=self.component_type,
             heat_of_fusion=self.heat_of_fusion,
-            parachor=self.parachor,
+            parachor=self.parachor if parachor is None else parachor,
             triple_point_temperature=self.triple_point_temperature,
             melting_point_temperature=self.melting_point_temperature,
             cp_solid=self.cp_solid,
@@ -834,6 +838,7 @@ def _table() -> dict[str, DatabankEntry]:
             wax_former=float(row["waxformer"]) == 1.0,
             heat_of_fusion=float(row["heatoffusion"]),
             parachor=float(row["parachor"]),
+            parachor_cpa=float(row["parachor_cpa"]),
             triple_point_temperature=float(row["triplepointtemperature"]),
             melting_point_temperature=float(row["meltingpointtemperature"]),
             cp_solid=tuple(float(row[f"cpsolid{k}"]) for k in range(1, 5)),  # type: ignore[arg-type]
@@ -1074,6 +1079,29 @@ def _kij() -> dict[tuple[str, str], tuple[float, float]]:
         pairs[pair] = columns
         pairs[(pair[1], pair[0])] = columns
     return pairs
+
+
+@cache
+def _viscosity_gij() -> dict[tuple[str, str], float]:
+    """The liquid viscosity's Grunberg-Nissan interaction, keyed by the ordered pair.
+
+    NeqSim's ``GIJVISC`` from ``INTER.csv``, symmetric, and zero where the pair has no row.
+    ``PhysicalPropertyMixingRule.initMixingRules`` loads it since upstream PR #4003; before
+    that its inner loop never ran and every phase reported a zero matrix. Water/TEG is
+    ``0.8``, the pair the class's own test names.
+    """
+    pairs: dict[tuple[str, str], float] = {}
+    for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
+        value = _absent_is_zero(row["gijvisc"])
+        a, b = row["component_a"], row["component_b"]
+        pairs[(a, b)] = value
+        pairs[(b, a)] = value
+    return pairs
+
+
+def viscosity_gij(first: str, second: str) -> float:
+    """The liquid-viscosity interaction for a pair, either order round, zero if absent."""
+    return _viscosity_gij().get((first.strip().lower(), second.strip().lower()), 0.0)
 
 
 @cache
@@ -1776,6 +1804,7 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             wax_former=wax_former if wax_former is not None else False,
             heat_of_fusion=_card_number(override, "heat_of_fusion", 0.0),
             parachor=_card_number(override, "parachor", 0.0),
+            parachor_cpa=_card_number(override, "parachor", 0.0),
             triple_point_temperature=_card_number(override, "triple_point_temperature", 0.0),
             # A card states no melting point either, for the same reason: a keycard names
             # the parameters a caller wants *changed*, and no caller has one to state.
@@ -1838,6 +1867,7 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
         liquid_density=card_values.get("normal_liquid_density", base.liquid_density),
         rackett_z=scalar("rackett_z", base.rackett_z),
         parachor=scalar("parachor", base.parachor),
+        parachor_cpa=scalar("parachor", base.parachor_cpa),
         heat_of_fusion=scalar("heat_of_fusion", base.heat_of_fusion),
         triple_point_temperature=scalar("triple_point_temperature", base.triple_point_temperature),
         melting_point_temperature=base.melting_point_temperature,
@@ -3529,7 +3559,13 @@ def _assemble(
 
     return (
         mixture(
-            tuple(e.component(alpha=_alpha_name(eos, alpha)) for e in entries),
+            tuple(
+                e.component(
+                    alpha=_alpha_name(eos, alpha),
+                    parachor=e.parachor_cpa if associating else None,
+                )
+                for e in entries
+            ),
             kij=_interaction_pairs(resolved, eos, associating=associating, card=card),
             # **The CPA rule is temperature-dependent**, exactly as in `from_names`
             # above: rule 10 adds `cpakijT_SRK * T` and a classical rule has no column.

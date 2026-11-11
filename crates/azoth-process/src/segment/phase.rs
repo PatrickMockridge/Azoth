@@ -10,8 +10,8 @@ use azoth_eos::hydrate_inhibitor_wt::{PhaseLabel, label};
 use azoth_eos::phase_transport::{PhaseKind, phase_transport};
 use azoth_eos::results::{PhaseTransportResult, PtFlashResult};
 use azoth_eos::{
-    Cubic, IdealGasModel, Mixture, Phase, databank, molar_enthalpy_entropy, pr_mass_density,
-    pr_molar_volume, pt_flash,
+    Cubic, IdealGasModel, Mixture, Phase, RootSide, databank, molar_enthalpy_entropy,
+    pr_mass_density, pr_molar_volume, pt_flash,
 };
 
 use crate::stream::Stream;
@@ -65,6 +65,37 @@ pub fn index_of(components: &[String], name: &str) -> Option<usize> {
 
 /// The phase the class picks out of `stream`'s system.
 pub fn phase_view(stream: &Stream, pick: Pick) -> Result<PhaseView> {
+    phase_view_of(stream, pick, false)
+}
+
+/// The one phase of a single-phase stream, refusing a two-phase one.
+///
+/// The shell-and-tube rating's correlations are single-phase: the class's
+/// `requireSinglePhaseRatingState` refuses a two-phase inlet, and a port that picked one
+/// phase of a two-phase stream would be answering a question the class does not.
+pub fn single_phase_view(stream: &Stream) -> Result<PhaseView> {
+    let (mixture, _) = stream.mixture()?;
+    let flash = pt_flash(&mixture, stream.t, stream.p, &stream.z)?;
+    if flash.phase == Phase::TwoPhase {
+        return Err(AzothError::invalid_input(
+            "stream",
+            "the thermal-hydraulic rating requires single-phase streams",
+        ));
+    }
+    phase_view_of(stream, Pick::Gas, false)
+}
+
+/// [`phase_view`] with a **single phase's root taken from the feed**.
+///
+/// The flash's negative-flash branch reports the *trial* composition's root for a single
+/// phase - the other side of the cubic - and the columns' capacity family reads the outlet
+/// state as `getPhase(0)` does, which is the feed's. The designer keeps [`phase_view`]'s root:
+/// that is the state its own capture was taken against. See `column/capacity.rs`.
+pub fn phase_view_from_feed(stream: &Stream, pick: Pick) -> Result<PhaseView> {
+    phase_view_of(stream, pick, true)
+}
+
+fn phase_view_of(stream: &Stream, pick: Pick, from_feed: bool) -> Result<PhaseView> {
     let (mixture, ideal_gas) = stream.mixture()?;
     let flash = pt_flash(&mixture, stream.t, stream.p, &stream.z)?;
 
@@ -73,7 +104,11 @@ pub fn phase_view(stream: &Stream, pick: Pick) -> Result<PhaseView> {
     // volume ratio past `1.75` is the gas, and of the two liquids the one whose hydrocarbons
     // outweigh its aqueous components is the oil. It is the same rule `three_phase_separator`
     // and `pipe` already read, and it is public in `azoth-eos` for exactly this reason.
-    let labelled = labelled_phases(stream, &mixture, &flash)?;
+    let labelled = if from_feed {
+        labelled_phases_at_from_feed(&mixture, stream.t, stream.p, &stream.z, &flash)?
+    } else {
+        labelled_phases(stream, &mixture, &flash)?
+    };
 
     let chosen = match pick {
         // `getGasPhase` asks for the gas phase and falls back to phase zero, which on a system
@@ -267,18 +302,53 @@ pub(crate) fn labelled_phases_at(
     z: &[f64],
     flash: &PtFlashResult,
 ) -> Result<Vec<(PhaseLabel, Vec<f64>, f64)>> {
+    labelled_phases_at_impl(mixture, t, p, z, flash, false)
+}
+
+/// [`labelled_phases_at`] with the single phase's **root** taken from the feed as well as its
+/// composition.
+///
+/// **The flash's root is a trial on a negative-flash answer, and it is the other side of the
+/// cubic.** A 95/5 methane/ethane gas at 50 bar reports `Z = 0.34` from the flash's trial and
+/// `0.93` from the feed, and NeqSim's `getPhase("gas")` is the feed's. The capacity surfaces of
+/// `process.separator` and `process.gas_scrubber` read this variant; the columns' capacity
+/// family keeps the flash's root, which is the state its own capture was taken against.
+pub(crate) fn labelled_phases_at_from_feed(
+    mixture: &Mixture,
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+    flash: &PtFlashResult,
+) -> Result<Vec<(PhaseLabel, Vec<f64>, f64)>> {
+    labelled_phases_at_impl(mixture, t, p, z, flash, true)
+}
+
+fn labelled_phases_at_impl(
+    mixture: &Mixture,
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+    flash: &PtFlashResult,
+    from_feed: bool,
+) -> Result<Vec<(PhaseLabel, Vec<f64>, f64)>> {
     let reduced = mixture.reduced_parameters(t, p)?;
+    let single = |side: RootSide| -> Result<f64> {
+        if from_feed {
+            Ok(mixture.phase_state(&reduced, z, side)?.z)
+        } else if side == RootSide::Vapour {
+            Ok(flash.z_vapour)
+        } else {
+            Ok(flash.z_liquid)
+        }
+    };
     Ok(match flash.phase {
         // **A single phase has the system's composition, and the flash's own `x` or `y` is not
         // it.** The flash answers a trial phase there - `column/tray.rs` records the
         // measurement - so the one phase *is* the system.
-        Phase::AllVapour => vec![(PhaseLabel::Gas, z.to_vec(), flash.z_vapour)],
+        Phase::AllVapour => vec![(PhaseLabel::Gas, z.to_vec(), single(RootSide::Vapour)?)],
         Phase::AllLiquid | Phase::Trivial => {
-            vec![(
-                label(mixture, &reduced, z, flash.z_liquid)?,
-                z.to_vec(),
-                flash.z_liquid,
-            )]
+            let root = single(RootSide::Liquid)?;
+            vec![(label(mixture, &reduced, z, root)?, z.to_vec(), root)]
         }
         Phase::TwoPhase => {
             if flash.vapour_fraction.is_none() {
@@ -306,9 +376,17 @@ pub(crate) fn labelled_phases_at(
 /// two-phase outlet neither is either phase's: the capture's over-cooled overhead row reads a
 /// system density of `15.34351809893286` beside a gas phase of `14.4273646532561`.
 fn system_per_mole(stream: &Stream) -> Result<(f64, f64)> {
+    system_per_mole_of(stream, false)
+}
+
+fn system_per_mole_of(stream: &Stream, from_feed: bool) -> Result<(f64, f64)> {
     let (mixture, _) = stream.mixture()?;
     let flash = pt_flash(&mixture, stream.t, stream.p, &stream.z)?;
-    let phases = labelled_phases(stream, &mixture, &flash)?;
+    let phases = if from_feed {
+        labelled_phases_at_from_feed(&mixture, stream.t, stream.p, &stream.z, &flash)?
+    } else {
+        labelled_phases(stream, &mixture, &flash)?
+    };
     let mut mass = 0.0;
     let mut volume = 0.0;
     for (kind, z, root) in &phases {
@@ -336,6 +414,18 @@ pub fn system_mass_density(stream: &Stream) -> Result<f64> {
     Ok(mass / volume)
 }
 
+/// [`system_mass_density`] with a single phase's root taken from the feed.
+///
+/// The columns' capacity family reads the outlet as `getPhase(0)`/`getDensity` do, and for a
+/// negative-flash single phase the flash's trial root is the wrong side of the cubic. The
+/// public function keeps the flash's root because pump, filter and the reactor mechanical
+/// design were measured against it; **the valve is not among them**, and reads this variant -
+/// see `column/capacity.rs` and `valve.rs`.
+pub fn system_mass_density_from_feed(stream: &Stream) -> Result<f64> {
+    let (mass, volume) = system_per_mole_of(stream, true)?;
+    Ok(mass / volume)
+}
+
 /// The whole stream's volumetric flow, m³/s - `SystemInterface.getFlowRate("m3/sec")`.
 ///
 /// **The identity the capacity capture holds**: `n*M/rho` equals NeqSim's own `m3/sec` on every
@@ -345,6 +435,12 @@ pub fn system_mass_density(stream: &Stream) -> Result<f64> {
 /// Whatever the flash, the label rule or a phase's own density raises.
 pub fn system_volumetric_flow(stream: &Stream) -> Result<f64> {
     let (_, volume) = system_per_mole(stream)?;
+    Ok(stream.n * volume)
+}
+
+/// [`system_volumetric_flow`] with a single phase's root taken from the feed.
+pub fn system_volumetric_flow_from_feed(stream: &Stream) -> Result<f64> {
+    let (_, volume) = system_per_mole_of(stream, true)?;
     Ok(stream.n * volume)
 }
 

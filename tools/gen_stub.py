@@ -417,6 +417,11 @@ EXCEPTIONS: tuple[tuple[str, str], ...] = (
 #: the stub says `list` - the shape a caller gets, not the shape the dataclass stores.
 SCALARS = {"float": "float", "int": "int", "bool": "bool", "str": "str", "Q": "Qty"}
 ENUMS = {
+    "BeggsBrillRegime",
+    "CorrosionSeverity",
+    "EmulsionType",
+    "ErosionRiskLevel",
+    "FeSMorphology",
     "Phase",
     "RootStructure",
     "StabilityVerdict",
@@ -424,6 +429,8 @@ ENUMS = {
     "MultiflashSeedPath",
     "FlowRegime",
     "HenryStatus",
+    "CooldownVerdict",
+    "HydrateRiskLevel",
     "HydrateStructure",
 }
 
@@ -509,14 +516,14 @@ def record_rows() -> dict[str, dict[str, Any]]:
     of the declaration would be a second place the row can change.
     """
     rows: dict[str, dict[str, Any]] = {}
-    for model in MODELS:
-        for input_name, declaration in model["inputs"].items():
+    for spec in [*CALCS, *MODELS]:
+        for input_name, declaration in spec["inputs"].items():
             if declaration.get("type") != "record_list":
                 continue
             row = declaration.get("row_type")
             if not row:
                 raise SystemExit(
-                    f"gen_stub: {model['id']}.{input_name} is a record_list and declares "
+                    f"gen_stub: {spec['id']}.{input_name} is a record_list and declares "
                     f"no `row_type`, so its mapping type has no name to be declared under"
                 )
             if row in rows and rows[row] != declaration["fields"]:
@@ -709,6 +716,10 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             if model["id"] in LIQUID_VISCOSITY_MODELS:
                 params.append(f"{prefix}liqvisc: list[float]")
                 params.append(f"{prefix}liqvisc_model: list[int]")
+                # **The names cross too**, because the Grunberg-Nissan interaction is a pair
+                # lookup in `INTER.csv`: a component vector alone gives the extension a
+                # mixture with no names and therefore no `G_ij` (upstream PR #4003).
+                params.append(f"{prefix}component_names: list[str]")
             if "params" in taken:
                 # A model that takes both a mixture and a parameter record - the
                 # gamma-phi flash, whose vapour is a cubic and whose liquid is an

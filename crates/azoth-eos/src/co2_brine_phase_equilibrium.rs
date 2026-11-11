@@ -45,6 +45,13 @@ const TOLERANCE: f64 = 1.0e-8;
 /// The composition change that ends the trial and the split, the class's `1e-12`.
 const CHANGE_TOLERANCE: f64 = 1.0e-12;
 
+/// How close two candidate roots' mixing Gibbs energies are treated as a tie, relative to the
+/// larger. **The 200 bara brine state is the state that needs it**: its two trials reach one
+/// fixed point, so the energies are equal to the last bit and a strict `<` lets each
+/// implementation's own arithmetic choose the label. `1e-9` is four orders above that noise
+/// and far below any physical gap, and a tie goes to the first trial - the gas root.
+const GIBBS_TIE: f64 = 1.0e-9;
+
 /// The class's cap on the normalised trial.
 const MAX_TRIAL_STEPS: usize = 100;
 
@@ -237,8 +244,12 @@ pub fn co2_brine_phase_equilibrium(
         };
         iterations += split_steps;
         let gibbs = mixing_gibbs(&[&rich, &aqueous], &[beta, 1.0 - beta]);
+        // A trial inside `GIBBS_TIE` of the incumbent is not better than it: the two roots are
+        // one fixed point, and the first trial - the gas one - keeps the label.
         let better = match &best {
-            Some((_, _, incumbent, ..)) => gibbs < *incumbent,
+            Some((_, _, incumbent, ..)) => {
+                gibbs < *incumbent - GIBBS_TIE * incumbent.abs().max(1.0)
+            }
             None => true,
         };
         if better {

@@ -330,6 +330,8 @@ fn a_pinned_column_stops_after_one_sweep_and_is_refused() {
 /// **The stripper's id, on the same state its case states**, which is what verifies the model
 /// layer while the extension cannot be rebuilt: `process.stripping_column` is the absorber's
 /// model under the class's own names, so this asserts the names *and* the numbers.
+/// **The declared parameters reach the calculation** (upstream #4096): the class's six
+/// inert setters, `setNumberOfStages` among them, are inputs here that the profile reads.
 #[test]
 fn the_stripping_column_id_reaches_the_absorber_model() {
     let setup = hydrocarbon_stripper();
@@ -692,4 +694,122 @@ fn the_absorber_row_publishes_the_post_init_density() {
     );
     assert_eq!(report.reboiler_duty_kw, 0.0, "no reboiler");
     assert_eq!(report.condenser_duty_kw, 0.0, "no condenser");
+}
+
+/// **`process_column_mechanical_design.tsv`'s `hydrocarbon_stripper_mechanical` row**, which is
+/// the stripper's own reading of a class it overrides none of.
+///
+/// **The tolerance is `5e-3` and not the absorber's `1e-5`.** The two libraries converge to
+/// different fixed points on this state - the case's own source measures `4.4e-3` on propane's
+/// stripped residual - so the flows tray 0 hands the design differ by a few parts in a thousand,
+/// and the design is a function of those flows. The absorber's row is held at `1e-5` because its
+/// own state agrees; this one cannot be.
+#[test]
+fn the_stripper_row_publishes_the_post_init_density() {
+    let out = distillation_column(&hydrocarbon_stripper()).expect("the stripper converges");
+    let components =
+        ["methane", "propane", "n-butane", "n-pentane", "n-heptane"].map(str::to_string);
+    let report = mechanical_design(
+        &out.trays,
+        &components,
+        &out.distillate,
+        &out.bottoms,
+        None,
+        None,
+        &mechanical_geometry(),
+    )
+    .expect("the mechanical design computes");
+
+    assert_eq!(report.actual_trays, 8, "the actual trays");
+    assert_eq!(report.material_grade, "SA-516-70", "the material grade");
+    relative(report.vessel_diameter.value, 0.5, 5e-3, "vessel_diameter");
+    relative(report.vessel_height.value, 8.8, 5e-3, "vessel_height");
+    relative(
+        report.vessel_wall_thickness_mm,
+        216.194_968_553_459_12,
+        5e-3,
+        "vessel_wall_thickness_mm",
+    );
+    // **Derived, not printed**: the capture's `flooding_factor` is the *first* design's, at the
+    // `0.0` liquid density that makes `uFlood` fall back to `kFactor`; the repaired value is
+    // `uFlood = 0.8216` at `631.6396155323132` kg/m3, over the `0.1767` m2 net area of the `0.5`
+    // m shell.
+    relative(
+        report.flooding_factor,
+        0.040_667_769_770_911_966,
+        5e-3,
+        "flooding_factor",
+    );
+    // **The repaired values**, as on the absorber's row: the capture's first design reads the
+    // liquid outlet as `0.0` kg/m3, `Infinity` and its own `5.0` mbar, and the `_after_init` keys
+    // are the second one.
+    relative(
+        report.weir_loading,
+        3.480_252_186_825_798,
+        5e-3,
+        "weir_loading",
+    );
+    relative(
+        report.tray_pressure_drop_mbar,
+        8.098_192_314_185_997,
+        5e-3,
+        "tray_pressure_drop_mbar",
+    );
+    relative(
+        report.total_pressure_drop_bar,
+        0.018_066_455_152_999_032,
+        5e-3,
+        "total_pressure_drop_bar",
+    );
+    assert_eq!(report.reboiler_duty_kw, 0.0, "no reboiler");
+    assert_eq!(report.condenser_duty_kw, 0.0, "no condenser");
+}
+
+/// **A single phase reached through the negative-flash branch reads the feed's root.**
+///
+/// The flash answers `all_vapour` there with the *trial* composition's root - the other side of
+/// the cubic - so `system_mass_density` gives 95.794 kg/m3 at this state. NeqSim's
+/// `getPhase("gas")` gives the feed's: `process_separator_capacity_assessment.tsv` records
+/// 36.692464746744186 at 95/5 methane/ethane, 303.15 K and 50 bar. The columns' capacity family
+/// reads the outlet as the class does, and `process.separator`'s capacity surface already does.
+#[test]
+fn the_column_capacity_reads_a_single_phase_at_the_feeds_root() {
+    use azoth_process::segment::phase::{
+        system_mass_density, system_mass_density_from_feed, system_volumetric_flow_from_feed,
+    };
+
+    let feed = Stream::from_pt(
+        vec!["methane".to_string(), "ethane".to_string()],
+        vec![0.95, 0.05],
+        1.0,
+        pascals(5_000_000.0),
+        kelvins(303.15),
+    )
+    .expect("the state flashes");
+
+    let trial = system_mass_density(&feed).expect("the trial density");
+    let feed_root = system_mass_density_from_feed(&feed).expect("the feed density");
+    relative(
+        trial,
+        95.794_329_077_197_06,
+        1.0e-9,
+        "the trial-root density",
+    );
+    relative(
+        feed_root,
+        36.692_462_460_087_76,
+        1.0e-9,
+        "the feed-root density",
+    );
+
+    // And the Fs family uses the feed's: `Q / A * sqrt(rho)` is written from those values.
+    let limits = fs_limits(&feed, meters(1.0), 2.5).expect("the Fs limits");
+    let flow = system_volumetric_flow_from_feed(&feed).expect("the feed flow");
+    let area = std::f64::consts::PI / 4.0;
+    relative(
+        limits.fs_factor,
+        flow / area * feed_root.sqrt(),
+        1.0e-12,
+        "fs_factor reads the feed root",
+    );
 }

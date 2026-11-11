@@ -4,6 +4,8 @@
 
 `hydraulics.reynolds_number`
 
+Reynolds number for pipe flow from density, velocity, diameter and viscosity. Use it to choose the flow regime and the right friction-factor correlation.
+
 ## Equation
 
 $$
@@ -51,7 +53,7 @@ Re = rho * v * D / mu
 | `re >= 2000 and re <= 4000 (violation lies inside this band)` | warns `TRANSITIONAL_FLOW` | Downstream friction-factor correlations are indeterminate in this band. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

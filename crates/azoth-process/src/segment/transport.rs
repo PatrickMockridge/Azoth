@@ -3,13 +3,13 @@
 //! Every property in it is either read from a phase or substituted for, and the substitutions
 //! are the class's own constants - see [`super::fallbacks`].
 
-use azoth_core::Result;
 use azoth_core::units::{
     MassRate, kilograms_per_cubic_meter, kilograms_per_second, meters, newtons_per_meter,
     pascal_seconds,
 };
+use azoth_core::{AzothError, Result};
 use azoth_eos::parachor_mixture_surface_tension::parachor_mixture_surface_tension;
-use azoth_hydraulics::packing::packing_or_default;
+use azoth_hydraulics::packing::packing;
 use azoth_hydraulics::packing_hydraulics::{PackingState, packing_hydraulics};
 
 use super::fallbacks::{
@@ -168,7 +168,16 @@ pub fn calculate_transport_snapshot(
     // **The height it is given is floored at `1e-9`, not passed as it stands** - which is what
     // makes the zero-height state reachable at all, since `setPackedHeight` refuses a bed of
     // no height and the class never asks it to.
-    let packing = packing_or_default(&settings.packing);
+    let Some(packing) = packing(&settings.packing) else {
+        return Err(AzothError::invalid_input(
+            "packing",
+            format!(
+                "`{}` is not a registered packing. NeqSim's calculator now requires a known \
+                 preset (upstream PR #4405) and no longer falls back to `Pall-Ring-50`",
+                settings.packing
+            ),
+        ));
+    };
     let hydraulics = packing_hydraulics(
         &packing.name,
         PackingState {

@@ -1,8 +1,10 @@
 id = "eos.rackett_molar_volume"
 name = "Saturated liquid molar volume from the Rackett equation"
+summary = "Saturated liquid molar volume from the Rackett equation. Use it for liquid density estimates when critical properties and an acentric factor are known."
 equation = "v = (R*Tc/Pc)*Z_RA**(1 + (1 - Tr)**(2/7)),  Z_RA = 0.29056 - 0.08775*omega"
 latex = '''V_s = \frac{R\,T_c}{P_c}\,Z_{\mathrm{RA}}^{\,1 + (1 - T_r)^{2/7}}, \qquad Z_{\mathrm{RA}} = 0.29056 - 0.08775\,\omega'''
-assumptions = ["the acentric factor, critical temperature and critical pressure are those of the component intended. NOT CHECKED - all three come from the caller.\n", "`Z_RA` is the Yamada-Gunn correlation `0.29056 - 0.08775*omega`; this library ships no databank Rackett Z, so the correlation is the whole value.\n", "`R` is the exact molar gas constant from the 2019 SI definition, the same value `eos.pr_molar_volume` uses.\n", "the volume is the *saturated liquid* molar volume; it is not corrected for compression above the vapour pressure.\n", "the correlation is a fit of limited range; for a mixture the Li (1971) mixing rules compose these pure volumes, which is a model this calc does not do.\n"]
+assumptions = ["the acentric factor, critical temperature and critical pressure are those of the component intended. NOT CHECKED - all three come from the caller.\n", "`Z_RA` is the Yamada-Gunn correlation `0.29056 - 0.08775*omega`; this library ships no databank Rackett Z, so the correlation is the whole value.\n", "the volume is the *saturated liquid* molar volume; it is not corrected for compression above the vapour pressure.\n", "the correlation is a fit of limited range; for a mixture the Li (1971) mixing rules compose these pure volumes, which is a model this calc does not do.\n"]
+notes = ["`R` is the exact molar gas constant from the 2019 SI definition, the same value `eos.pr_molar_volume` uses.\n"]
 references = ["Rackett, H. G. (1970). \\\"Equation of state for saturated liquids.\\\" J. Chem. Eng. Data 15(4), 514-517. DOI 10.1021/je60047a012.", "Spencer, C. F.; Danner, R. P. (1972). \\\"Improved equation for prediction of saturated liquid density.\\\" J. Chem. Eng. Data 17(2), 236-241. DOI 10.1021/je60053a012."]
 [source]
 standard = "Spencer, C. F.; Danner, R. P. (1972)"

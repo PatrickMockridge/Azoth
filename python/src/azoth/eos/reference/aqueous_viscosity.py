@@ -12,13 +12,13 @@ The Python twin of ``crates/azoth-eos/src/aqueous_viscosity.rs``, written to mir
 which ``eos.viscosity`` ports. So this is not "the liquid viscosity"; it is the one an
 aqueous phase reaches.
 
-# The mixing rule's interaction term is zero
+# The interaction term is the table's
 
-``PhysicalPropertyMixingRule.initMixingRules`` fills ``Gij`` with an inner loop that starts
-at ``k = l`` and breaks on ``k == l``, so its body never runs and every phase reports a zero
-matrix - the probe prints the whole matrix for a water/methanol mixture whose ``gijvisc``
-column is not empty. Grunberg-Nissan therefore reduces to ``exp(sum_i w_i ln mu_i)`` over
-**mass** fractions.
+``PhysicalPropertyMixingRule.initMixingRules`` reads ``GIJVISC`` from ``INTER.csv`` in either
+component order and leaves a pair with no row at zero (upstream PR #4003); before the fix its
+inner loop began at ``k = l`` and broke on it, so every phase reported a zero matrix.
+Grunberg-Nissan is ``exp(sum_i w_i ln mu_i + sum_i sum_{j != i} w_i w_j G_ij)`` over **mass**
+fractions, and water/TEG is the pair the class's own test names, ``0.8``.
 
 # An ion is refused
 
@@ -36,6 +36,7 @@ from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import AqueousViscosityResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
+from azoth.eos import components as _components
 from azoth.eos.mixture import Component, Mixture
 
 #: The viscosity a component takes above its critical temperature, in cP.
@@ -125,16 +126,28 @@ def aqueous_viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> AqueousVi
             "z", "a phase whose mass is zero has no mass fractions to weight by"
         )
 
+    fractions = [weight / total_mass for weight in weights]
     weighted = 0.0
     for index, component in enumerate(components):
-        weight = weights[index] / total_mass
+        weight = fractions[index]
         if weight <= 0.0:
             # A zero weight contributes nothing, and `ln(0)` would poison the sum.
             continue
         weighted += weight * math.log(_pure_viscosity(component, t, p))
 
+    # **The interaction term**, over the pairs the table carries. A mixture built from
+    # constants has no names, and the class's matrix would be zeros for it.
+    interaction = 0.0
+    if mixture.names is not None:
+        for i, first in enumerate(mixture.names):
+            for j, second in enumerate(mixture.names):
+                if i != j:
+                    interaction += (
+                        fractions[i] * fractions[j] * _components.viscosity_gij(first, second)
+                    )
+
     return AqueousViscosityResult(
-        viscosity=from_si(math.exp(weighted) * 1.0e-3, "Pa*s"),
+        viscosity=from_si(math.exp(weighted + interaction) * 1.0e-3, "Pa*s"),
         warnings=tuple(warnings),
     )
 

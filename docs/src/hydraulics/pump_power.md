@@ -4,6 +4,8 @@
 
 `hydraulics.pump_power`
 
+Shaft power a pump needs from flow, head and efficiency at its operating point. Use it to size a driver or check a pump duty before a hydraulic study.
+
 ## Equation
 
 $$
@@ -48,7 +50,7 @@ power = rho * g * q * H / eta
 | `eta <= 1` | raises | An efficiency above 1 would mean more hydraulic power out than shaft power in. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.

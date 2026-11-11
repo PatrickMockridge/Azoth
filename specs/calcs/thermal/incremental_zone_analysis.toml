@@ -1,0 +1,485 @@
+id = "thermal.incremental_zone_analysis"
+name = "A shell-and-tube exchanger's incremental zone analysis"
+summary = "A shell-and-tube exchanger rated in incremental zones along the tube, with the local tube-side regime and shell-side coefficient. Use it where the coefficient changes with quality or temperature."
+equation = "h_tube = Shah(q) | Gungor-Winterton(q) | Nu*k/d_i; h_shell = Kern; 1/U = 1/h_shell + R_f,s + d_o*ln(d_o/d_i)/(2*k_w) + (d_o/d_i)*R_f,t + (d_o/d_i)/h_tube; LMTD from the four zone temperatures; A = Q/(U*LMTD)"
+latex = '''\frac{1}{U} = \frac{1}{h_o} + R_{f,o} + \frac{d_o \ln(d_o/d_i)}{2 k_w} + \frac{d_o}{d_i} R_{f,i} + \frac{d_o}{d_i h_i}'''
+assumptions = ["The zones are the caller's. The calculation rates each zone with the declared geometry and does not subdivide or reorder them.\n"]
+notes = ["**`target_zone_count` is not an input**: the constructor clamps it to at least three and stores it, but `calculate()` reads the zone list's size; the probe pins identical results at 3, 20 and 100.\n", "**the tube side dispatches on the regime**: `CONDENSING` is Shah's liquid-only coefficient averaged over the quality range, `EVAPORATING` is Gungor-Winterton averaged, and every other regime - `TWO_PHASE` included - is the single-phase path.\n", "**the shell side is always Kern and ignores `shell_phase_regime`**, which is carried and read by nothing. The wall viscosity is the bulk viscosity.\n", "**the evaporating heat flux is `duty/(tube_count*pi*tube_id*tube_length/n_zones)`**, zero when the tube count or the bore is not positive.\n", "**the zone LMTD falls back to `max(|dt1|,|dt2|)` when either endpoint difference is not positive, and to their mean when the two differ by less than 0.01 K.**\n", "**the weighted average U is `sum(U*A)/sum(A)` and the minimum approach is the smaller absolute hot-cold endpoint difference in any zone**, `f64::MAX` with no zones.\n", "**the shell drop's baffle count is `max(1, round(tube_length/baffle_spacing/n_zones))`**; the tube length is divided equally between the zones, so the summed single-phase tube drop does not move with the zone count while the shell drop does.\n", "**a zero or non-positive flow is refused by the port.** The class answers it: a zero tube flow gives the laminar `32.08` W/(m**2 K) and U `24.59`, which is a coefficient, not an answer this port publishes.\n", "**omitted two-phase fields take the `IncrementalZone` defaults**: liquid 800 kg/m**3, 5e-4 Pa s, 2500 J/(kg K), 0.13 W/(m K); vapour 5 kg/m**3, 1e-5 Pa s; quality 0.9 to 0.7; reduced pressure 0.1; surface tension 0.01 N/m; latent heat 200 kJ/kg.\n"]
+references = [
+    "Shah, M.M. (1979). \"A general correlation for heat transfer during film condensation inside pipes.\" Int. J. Heat Mass Transfer 22(4), 547-556. The condensing coefficient.",
+    "Gungor, K.E.; Winterton, R.H.S. (1986). \"A general correlation for flow boiling in tubes and annuli.\" Int. J. Heat Mass Transfer 29(3), 351-358. The evaporating coefficient.",
+    "Friedel, L. (1979). \"Improved friction pressure drop correlations for horizontal and vertical two-phase pipe flow.\" European Two-Phase Flow Group Meeting. The two-phase pressure drop.",
+    "Kern, D.Q. (1950). Process Heat Transfer. McGraw-Hill. The shell-side coefficient and pressure drop.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/mechanicaldesign/heatexchanger/IncrementalZoneAnalysis.java` is the port source, with the correlations in `ShahCondensation`, `BoilingHeatTransfer`, `TwoPhasePressureDrop` and `BellDelawareMethod`.",
+    "`validation/neqsim/captures/incremental_zone_analysis_probe.tsv` - the class driven on one liquid zone, a liquid/vapour pair, the phase cycle, a `TWO_PHASE` tube regime, the LMTD branches, a single-point quality range, zero flow, no zones, the target counts and the baffle scaling.\n",
+]
+[source]
+standard = "NeqSim process/mechanicaldesign/heatexchanger/IncrementalZoneAnalysis.java"
+edition = "`calculate()` with `calcTubeSideHTC`, `calcShellSideHTC`, `calcSinglePhaseHTC`, `calcOverallU`, `calcZoneLMTD`, `calcTubeSideMassFlux`, both zone pressure drops and the totals; the correlations are `ShahCondensation`, `BoilingHeatTransfer`, `TwoPhasePressureDrop` and `BellDelawareMethod`'s."
+[inputs]
+[inputs.tube_inside_diameter]
+unit = "m"
+description = "The tube inside diameter. Defaults to 0.01483 m.\n"
+[inputs.tube_outside_diameter]
+unit = "m"
+description = "The tube outside diameter. Defaults to 0.01905 m.\n"
+[inputs.tube_length]
+unit = "m"
+description = "The tube length, divided equally between zones for the pressure drops. Defaults to 6.096 m.\n"
+[inputs.tube_count]
+unit = "dimensionless"
+description = "The tube count. A pass's flow area is `tube_count / tube_passes` tubes. Defaults to 100.\n"
+[inputs.tube_passes]
+unit = "dimensionless"
+description = "The tube passes. Defaults to 2.\n"
+[inputs.shell_inside_diameter]
+unit = "m"
+description = "The shell inside diameter. Defaults to 0.5 m.\n"
+[inputs.baffle_spacing]
+unit = "m"
+description = "The baffle spacing, which sets the shell-side drop's per-zone baffle count. Defaults to 0.2 m.\n"
+[inputs.tube_pitch]
+unit = "m"
+description = "The tube pitch. Defaults to 0.02381 m.\n"
+[inputs.triangular_pitch]
+type = "boolean"
+description = "The tube layout: `true` is triangular. Defaults to `true`.\n"
+[inputs.tube_wall_conductivity]
+unit = "W/(m*K)"
+description = "The tube-wall thermal conductivity. Defaults to 52 W/(m*K).\n"
+[inputs.fouling_tube]
+unit = "dimensionless"
+description = "The tube-side fouling resistance in m**2*K/W, declared dimensionless because no vocabulary unit expresses it. Defaults to 0.000176.\n"
+[inputs.fouling_shell]
+unit = "dimensionless"
+description = "The shell-side fouling resistance in m**2*K/W, likewise. Defaults to 0.000176.\n"
+[inputs.zones]
+type = "record_list"
+row_type = "IncrementalZoneInput"
+description = "The zones, in the caller's order; they are neither reordered nor subdivided.\n"
+[inputs.zones.fields]
+[inputs.zones.fields.zone_name]
+type = "string"
+description = "the zone's name, echoed.\n"
+[inputs.zones.fields.duty]
+unit = "W"
+description = "the zone's duty, which its area and the evaporating heat flux divide.\n"
+[inputs.zones.fields.hot_inlet_temp]
+unit = "K"
+description = "the zone's hot-side inlet temperature.\n"
+[inputs.zones.fields.hot_outlet_temp]
+unit = "K"
+description = "the zone's hot-side outlet temperature.\n"
+[inputs.zones.fields.cold_inlet_temp]
+unit = "K"
+description = "the zone's cold-side inlet temperature.\n"
+[inputs.zones.fields.cold_outlet_temp]
+unit = "K"
+description = "the zone's cold-side outlet temperature.\n"
+[inputs.zones.fields.tube_phase_regime]
+type = "enum"
+values = ["vapor", "liquid", "condensing", "evaporating", "two_phase"]
+description = "the tube-side regime, which selects the coefficient: condensing and evaporating are the two-phase correlations, everything else is single-phase.\n"
+[inputs.zones.fields.tube_density]
+unit = "kg/m**3"
+description = "the tube-side bulk density, read by the single-phase coefficient and drop. Default `800`.\n"
+[inputs.zones.fields.tube_viscosity]
+unit = "Pa*s"
+description = "the tube-side bulk viscosity. Default `5e-4` Pa*s.\n"
+[inputs.zones.fields.tube_cp]
+unit = "J/(kg*K)"
+description = "the tube-side specific heat capacity. Default `2500` J/(kg*K).\n"
+[inputs.zones.fields.tube_conductivity]
+unit = "W/(m*K)"
+description = "the tube-side thermal conductivity. Default `0.13` W/(m*K).\n"
+[inputs.zones.fields.tube_mass_flow]
+unit = "kg/s"
+description = "the tube-side mass flow, which the mass flux divides. Default `10` kg/s.\n"
+[inputs.zones.fields.shell_phase_regime]
+type = "enum"
+values = ["vapor", "liquid", "condensing", "evaporating", "two_phase"]
+description = "the shell-side regime; carried and read by nothing, because the shell side is always Kern.\n"
+[inputs.zones.fields.shell_density]
+unit = "kg/m**3"
+description = "the shell-side density. Default `1000` kg/m**3.\n"
+[inputs.zones.fields.shell_viscosity]
+unit = "Pa*s"
+description = "the shell-side viscosity. Default `8e-4` Pa*s.\n"
+[inputs.zones.fields.shell_cp]
+unit = "J/(kg*K)"
+description = "the shell-side specific heat capacity. Default `4180` J/(kg*K).\n"
+[inputs.zones.fields.shell_conductivity]
+unit = "W/(m*K)"
+description = "the shell-side thermal conductivity. Default `0.6` W/(m*K).\n"
+[inputs.zones.fields.shell_mass_flow]
+unit = "kg/s"
+description = "the shell-side mass flow. Default `20` kg/s.\n"
+[inputs.zones.fields.tube_liquid_density]
+unit = "kg/m**3"
+optional = true
+description = "the tube-side liquid density for Shah and Gungor-Winterton. Absent is `800` kg/m**3.\n"
+[inputs.zones.fields.tube_vapor_density]
+unit = "kg/m**3"
+optional = true
+description = "the tube-side vapour density for Friedel and Gungor-Winterton. Absent is `5` kg/m**3.\n"
+[inputs.zones.fields.tube_liquid_viscosity]
+unit = "Pa*s"
+optional = true
+description = "the tube-side liquid viscosity. Absent is `5e-4` Pa*s.\n"
+[inputs.zones.fields.tube_vapor_viscosity]
+unit = "Pa*s"
+optional = true
+description = "the tube-side vapour viscosity. Absent is `1e-5` Pa*s.\n"
+[inputs.zones.fields.tube_liquid_cp]
+unit = "J/(kg*K)"
+optional = true
+description = "the tube-side liquid specific heat capacity. Absent is `2500` J/(kg*K).\n"
+[inputs.zones.fields.tube_liquid_conductivity]
+unit = "W/(m*K)"
+optional = true
+description = "the tube-side liquid thermal conductivity. Absent is `0.13` W/(m*K).\n"
+[inputs.zones.fields.tube_quality_in]
+unit = "dimensionless"
+optional = true
+description = "the zone's inlet vapour quality. Absent is `0.9`.\n"
+[inputs.zones.fields.tube_quality_out]
+unit = "dimensionless"
+optional = true
+description = "the zone's outlet vapour quality. Absent is `0.7`.\n"
+[inputs.zones.fields.tube_reduced_pressure]
+unit = "dimensionless"
+optional = true
+description = "the reduced pressure `P/Pc` for the Shah correlation. Absent is `0.1`.\n"
+[inputs.zones.fields.tube_surface_tension]
+unit = "N/m"
+optional = true
+description = "the tube-side surface tension for Friedel. Absent is `0.01` N/m.\n"
+[inputs.zones.fields.tube_heat_of_vaporization]
+unit = "dimensionless"
+optional = true
+description = "the latent heat in J/kg, declared dimensionless because no vocabulary unit expresses it. Absent is `200000`.\n"
+[outputs]
+[outputs.number_of_zones]
+unit = "dimensionless"
+description = "the number of zones rated.\n"
+[outputs.total_required_area]
+unit = "m**2"
+description = "the sum of the zone areas `duty/(U*LMTD)`.\n"
+[outputs.total_duty]
+unit = "W"
+description = "the sum of the zone duties.\n"
+[outputs.weighted_average_u]
+unit = "W/(m**2*K)"
+description = "`sum(U*A)/sum(A)`, or zero with no area.\n"
+[outputs.total_tube_side_pressure_drop]
+unit = "Pa"
+description = "the sum of the zone tube-side drops.\n"
+[outputs.total_shell_side_pressure_drop]
+unit = "Pa"
+description = "the sum of the zone shell-side drops.\n"
+[outputs.minimum_approach_temperature]
+unit = "K"
+description = "the smallest absolute hot-cold endpoint difference in any zone; `f64::MAX` with no zones.\n"
+[outputs.zones]
+type = "record_list"
+description = "one row per zone, in the input order.\n"
+[outputs.zones.fields]
+[outputs.zones.fields.zone_index]
+unit = "dimensionless"
+description = "the one-based position in the caller's list.\n"
+[outputs.zones.fields.zone_name]
+type = "string"
+description = "the zone's name, echoed.\n"
+[outputs.zones.fields.tube_phase_regime]
+type = "string"
+description = "the tube regime's class spelling.\n"
+[outputs.zones.fields.shell_phase_regime]
+type = "string"
+description = "the shell regime's class spelling, carried and unread.\n"
+[outputs.zones.fields.tube_side_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+description = "the zone's tube-side coefficient.\n"
+[outputs.zones.fields.shell_side_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+description = "the zone's Kern shell-side coefficient.\n"
+[outputs.zones.fields.overall_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+description = "the zone's overall coefficient on the outside area.\n"
+[outputs.zones.fields.lmtd]
+unit = "K"
+description = "the zone's LMTD, from the class's three branches.\n"
+[outputs.zones.fields.duty]
+unit = "W"
+description = "the zone's duty, echoed.\n"
+[outputs.zones.fields.required_area]
+unit = "m**2"
+description = "`duty/(U*LMTD)`, zero when either denominator is not positive.\n"
+[outputs.zones.fields.tube_side_pressure_drop]
+unit = "Pa"
+description = "the zone's tube-side drop: Friedel for the two-phase regimes, Darcy friction otherwise.\n"
+[outputs.zones.fields.shell_side_pressure_drop]
+unit = "Pa"
+description = "the zone's Kern shell-side drop with the scaled baffle count.\n"
+[outputs.zones.fields.hot_inlet_temp]
+unit = "K"
+description = "the zone's hot-side inlet temperature, echoed.\n"
+[outputs.zones.fields.hot_outlet_temp]
+unit = "K"
+description = "the zone's hot-side outlet temperature, echoed.\n"
+[outputs.zones.fields.cold_inlet_temp]
+unit = "K"
+description = "the zone's cold-side inlet temperature, echoed.\n"
+[outputs.zones.fields.cold_outlet_temp]
+unit = "K"
+description = "the zone's cold-side outlet temperature, echoed.\n"
+[[valid_range]]
+quantity = "tube_inside_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the bore divides the mass flux and the coefficient."
+[[valid_range]]
+quantity = "tube_outside_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the outside diameter sets the resistance ratio and the shell geometry."
+[[valid_range]]
+quantity = "tube_length"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the length divides the per-zone drop."
+[[valid_range]]
+quantity = "tube_count"
+min = 1
+severity = "error"
+rationale = "a tube count is a positive whole number."
+[[valid_range]]
+quantity = "tube_passes"
+min = 1
+severity = "error"
+rationale = "the passes divide the tube count for the flow area."
+[[valid_range]]
+quantity = "shell_inside_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the shell diameter drives the crossflow area."
+[[valid_range]]
+quantity = "baffle_spacing"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the spacing divides the per-zone baffle count."
+[[valid_range]]
+quantity = "tube_pitch"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the pitch drives the shell geometry."
+[[valid_range]]
+quantity = "tube_wall_conductivity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the wall resistance is a logarithm over this conductivity."
+[[valid_range]]
+quantity = "fouling_tube"
+min = 0
+severity = "error"
+rationale = "a fouling resistance cannot be negative."
+[[valid_range]]
+quantity = "fouling_shell"
+min = 0
+severity = "error"
+rationale = "a fouling resistance cannot be negative."
+[worked_example]
+source = "the capture's `single_liquid_default` row at NeqSim f0c7436c: one liquid zone on the class's default geometry."
+derivation = "The tube-side mass flux is 10/(pi/4*0.01483**2*50) = 1157.4 kg/(m**2 s); Re is 34342.27 and the Gnielinski coefficient is 2353.2086219276475 W/(m**2 K), the same as the rating's default. The shell side is Kern with the liquid properties: h_shell = 5663.977997811559. With 1/U = 1/h_shell + 0.000176 + d_o ln(d_o/d_i)/(2*52) + (d_o/d_i)*0.000176 + (d_o/d_i)/h_tube the answer is 854.4225155154656, and 150000/(854.4225155154656*80) = 2.1944646424361007 m**2.\n"
+tolerance = 1e-9
+[worked_example.inputs]
+tube_inside_diameter = 0.01483
+tube_outside_diameter = 0.01905
+tube_length = 6.096
+tube_count = 100
+tube_passes = 2
+shell_inside_diameter = 0.5
+baffle_spacing = 0.2
+tube_pitch = 0.02381
+triangular_pitch = true
+tube_wall_conductivity = 52.0
+fouling_tube = 0.000176
+fouling_shell = 0.000176
+zones = [{ zone_name = "liquid", duty = 150000.0, hot_inlet_temp = 400.0, hot_outlet_temp = 380.0, cold_inlet_temp = 300.0, cold_outlet_temp = 320.0, tube_phase_regime = "liquid", tube_density = 800.0, tube_viscosity = 5e-4, tube_cp = 2500.0, tube_conductivity = 0.13, tube_mass_flow = 10.0, shell_phase_regime = "liquid", shell_density = 998.0, shell_viscosity = 0.001, shell_cp = 4180.0, shell_conductivity = 0.60, shell_mass_flow = 20.0 }]
+[worked_example.expected]
+number_of_zones = 1
+total_required_area = 2.1944646424361007
+total_duty = 150000.0
+weighted_average_u = 854.4225155154656
+total_tube_side_pressure_drop = 7796.3518705404385
+total_shell_side_pressure_drop = 28723.954482953133
+minimum_approach_temperature = 80.0
+zones = [{ zone_index = 1, zone_name = "liquid", tube_phase_regime = "LIQUID", shell_phase_regime = "LIQUID", tube_side_heat_transfer_coefficient = 2353.2086219276475, shell_side_heat_transfer_coefficient = 5663.977997811559, overall_heat_transfer_coefficient = 854.4225155154656, lmtd = 80.0, duty = 150000.0, required_area = 2.1944646424361007, tube_side_pressure_drop = 7796.3518705404385, shell_side_pressure_drop = 28723.954482953133, hot_inlet_temp = 400.0, hot_outlet_temp = 380.0, cold_inlet_temp = 300.0, cold_outlet_temp = 320.0 }]
+[implementations]
+python = "azoth.thermal.incremental_zone_analysis"
+rust = "azoth_thermal::incremental_zone_analysis"
+[[tests]]
+id = "the_single_liquid_zone_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "the_condensing_evaporating_vapour_cycle"
+type = "reference"
+status = "active"
+source = "The capture's `three_zones_cycle` row: Shah on a 1-to-0 quality range answers 7667.18 W/(m**2 K), Gungor-Winterton on 0-to-1 answers 12013.90, and the vapour zone is single-phase at 3397.73. The two two-phase Friedel drops are identical because the average quality, 0.5, is the same and the latent heat is not read.\n"
+tolerance = 1e-9
+[tests.inputs]
+tube_inside_diameter = 0.01483
+tube_outside_diameter = 0.01905
+tube_length = 6.096
+tube_count = 100
+tube_passes = 2
+shell_inside_diameter = 0.5
+baffle_spacing = 0.2
+tube_pitch = 0.02381
+triangular_pitch = true
+tube_wall_conductivity = 52.0
+fouling_tube = 0.000176
+fouling_shell = 0.000176
+zones = [
+  { zone_name = "condensing", duty = 200000.0, hot_inlet_temp = 400.0, hot_outlet_temp = 370.0, cold_inlet_temp = 300.0, cold_outlet_temp = 340.0, tube_phase_regime = "condensing", tube_density = 20.0, tube_viscosity = 1.2e-5, tube_cp = 2100.0, tube_conductivity = 0.05, tube_mass_flow = 10.0, tube_quality_in = 1.0, tube_quality_out = 0.0, tube_reduced_pressure = 0.3, tube_surface_tension = 0.01, shell_phase_regime = "liquid", shell_density = 998.0, shell_viscosity = 0.001, shell_cp = 4180.0, shell_conductivity = 0.60, shell_mass_flow = 20.0 },
+  { zone_name = "evaporating", duty = 250000.0, hot_inlet_temp = 370.0, hot_outlet_temp = 330.0, cold_inlet_temp = 300.0, cold_outlet_temp = 320.0, tube_phase_regime = "evaporating", tube_density = 20.0, tube_viscosity = 1.2e-5, tube_cp = 2100.0, tube_conductivity = 0.05, tube_mass_flow = 10.0, tube_quality_in = 0.0, tube_quality_out = 1.0, tube_reduced_pressure = 0.2, tube_surface_tension = 0.01, tube_heat_of_vaporization = 250000.0, shell_phase_regime = "liquid", shell_density = 998.0, shell_viscosity = 0.001, shell_cp = 4180.0, shell_conductivity = 0.60, shell_mass_flow = 20.0 },
+  { zone_name = "vapor", duty = 120000.0, hot_inlet_temp = 380.0, hot_outlet_temp = 360.0, cold_inlet_temp = 300.0, cold_outlet_temp = 315.0, tube_phase_regime = "vapor", tube_density = 5.0, tube_viscosity = 1e-5, tube_cp = 2100.0, tube_conductivity = 0.025, tube_mass_flow = 10.0, shell_phase_regime = "liquid", shell_density = 998.0, shell_viscosity = 0.001, shell_cp = 4180.0, shell_conductivity = 0.60, shell_mass_flow = 20.0 },
+]
+[tests.expected]
+number_of_zones = 3
+total_required_area = 9.038255527499562
+total_duty = 570000.0
+weighted_average_u = 1260.1280018176026
+total_tube_side_pressure_drop = 436015.496731375
+total_shell_side_pressure_drop = 30577.112836692046
+minimum_approach_temperature = 30.0
+zones = [
+  { zone_index = 1, zone_name = "condensing", tube_phase_regime = "CONDENSING", shell_phase_regime = "LIQUID", tube_side_heat_transfer_coefficient = 7667.176474980685, shell_side_heat_transfer_coefficient = 5663.977997811559, overall_heat_transfer_coefficient = 1262.5531791999872, lmtd = 64.8715919463088, duty = 200000.0, required_area = 2.441888110011104, tube_side_pressure_drop = 120487.74273072323, shell_side_pressure_drop = 10192.370945564015, hot_inlet_temp = 400.0, hot_outlet_temp = 370.0, cold_inlet_temp = 300.0, cold_outlet_temp = 340.0 },
+  { zone_index = 2, zone_name = "evaporating", tube_phase_regime = "EVAPORATING", shell_phase_regime = "LIQUID", tube_side_heat_transfer_coefficient = 12013.89906020952, shell_side_heat_transfer_coefficient = 5663.977997811559, overall_heat_transfer_coefficient = 1367.1874774982432, lmtd = 39.15230377942435, duty = 250000.0, required_area = 4.67040577987088, tube_side_pressure_drop = 120487.74273072323, shell_side_pressure_drop = 10192.370945564015, hot_inlet_temp = 370.0, hot_outlet_temp = 330.0, cold_inlet_temp = 300.0, cold_outlet_temp = 320.0 },
+  { zone_index = 3, zone_name = "vapor", tube_phase_regime = "VAPOR", shell_phase_regime = "LIQUID", tube_side_heat_transfer_coefficient = 3397.728059324884, shell_side_heat_transfer_coefficient = 5663.977997811559, overall_heat_transfer_coefficient = 997.436785159017, lmtd = 62.46665243251254, duty = 120000.0, required_area = 1.9259616376175779, tube_side_pressure_drop = 195040.01126992857, shell_side_pressure_drop = 10192.370945564015, hot_inlet_temp = 380.0, hot_outlet_temp = 360.0, cold_inlet_temp = 300.0, cold_outlet_temp = 315.0 },
+]
+[[tests]]
+id = "two_phase_falls_through_to_single_phase"
+type = "reference"
+status = "active"
+source = "The capture's `two_phase_falls_through` row: a `TWO_PHASE` tube regime with an `EVAPORATING` shell regime. The tube coefficient is the single-phase 2353.21 and the shell side is Kern at 5944.55, so neither regime string selects a correlation.\n"
+tolerance = 1e-9
+[tests.inputs]
+tube_inside_diameter = 0.01483
+tube_outside_diameter = 0.01905
+tube_length = 6.096
+tube_count = 100
+tube_passes = 2
+shell_inside_diameter = 0.5
+baffle_spacing = 0.2
+tube_pitch = 0.02381
+triangular_pitch = true
+tube_wall_conductivity = 52.0
+fouling_tube = 0.000176
+fouling_shell = 0.000176
+zones = [{ zone_name = "two_phase", duty = 180000.0, hot_inlet_temp = 400.0, hot_outlet_temp = 370.0, cold_inlet_temp = 300.0, cold_outlet_temp = 330.0, tube_phase_regime = "two_phase", tube_density = 800.0, tube_viscosity = 5e-4, tube_cp = 2500.0, tube_conductivity = 0.13, tube_mass_flow = 10.0, shell_phase_regime = "evaporating", shell_density = 1000.0, shell_viscosity = 8e-4, shell_cp = 4180.0, shell_conductivity = 0.6, shell_mass_flow = 20.0 }]
+[tests.expected]
+number_of_zones = 1
+total_required_area = 2.9881239326977265
+weighted_average_u = 860.5495050893168
+minimum_approach_temperature = 70.0
+zones = [{ zone_index = 1, zone_name = "two_phase", tube_phase_regime = "TWO_PHASE", shell_phase_regime = "EVAPORATING", tube_side_heat_transfer_coefficient = 2353.2086219276475, shell_side_heat_transfer_coefficient = 5944.546479939829, overall_heat_transfer_coefficient = 860.5495050893168, lmtd = 70.0, duty = 180000.0, required_area = 2.9881239326977265, tube_side_pressure_drop = 7796.3518705404385, shell_side_pressure_drop = 27677.135191175083 }]
+[[tests]]
+id = "the_lmtd_falls_back_on_a_cross_and_a_tie"
+type = "reference"
+status = "active"
+source = "The capture's `lmtd_branches` row: a crossing zone whose second difference is -10 K answers 10, a zone whose two differences are both 50 K answers the mean 50, and a normal zone answers ln 63.829. The first two are the class's fallbacks, not a physical LMTD.\n"
+tolerance = 1e-9
+[tests.inputs]
+tube_inside_diameter = 0.01483
+tube_outside_diameter = 0.01905
+tube_length = 6.096
+tube_count = 100
+tube_passes = 2
+shell_inside_diameter = 0.5
+baffle_spacing = 0.2
+tube_pitch = 0.02381
+triangular_pitch = true
+tube_wall_conductivity = 52.0
+fouling_tube = 0.000176
+fouling_shell = 0.000176
+zones = [
+  { zone_name = "temperature_cross", duty = 100000.0, hot_inlet_temp = 400.0, hot_outlet_temp = 340.0, cold_inlet_temp = 350.0, cold_outlet_temp = 390.0, tube_phase_regime = "liquid", tube_density = 800.0, tube_viscosity = 5e-4, tube_cp = 2500.0, tube_conductivity = 0.13, tube_mass_flow = 10.0, shell_phase_regime = "liquid", shell_density = 998.0, shell_viscosity = 0.001, shell_cp = 4180.0, shell_conductivity = 0.60, shell_mass_flow = 20.0 },
+  { zone_name = "near_equal", duty = 100000.0, hot_inlet_temp = 500.0, hot_outlet_temp = 450.0, cold_inlet_temp = 400.0, cold_outlet_temp = 450.0, tube_phase_regime = "liquid", tube_density = 800.0, tube_viscosity = 5e-4, tube_cp = 2500.0, tube_conductivity = 0.13, tube_mass_flow = 10.0, shell_phase_regime = "liquid", shell_density = 998.0, shell_viscosity = 0.001, shell_cp = 4180.0, shell_conductivity = 0.60, shell_mass_flow = 20.0 },
+  { zone_name = "log_mean", duty = 100000.0, hot_inlet_temp = 500.0, hot_outlet_temp = 450.0, cold_inlet_temp = 400.0, cold_outlet_temp = 420.0, tube_phase_regime = "liquid", tube_density = 800.0, tube_viscosity = 5e-4, tube_cp = 2500.0, tube_conductivity = 0.13, tube_mass_flow = 10.0, shell_phase_regime = "liquid", shell_density = 998.0, shell_viscosity = 0.001, shell_cp = 4180.0, shell_conductivity = 0.60, shell_mass_flow = 20.0 },
+]
+[tests.expected]
+number_of_zones = 3
+total_required_area = 15.878184993718001
+total_duty = 300000.0
+weighted_average_u = 854.4225155154655
+minimum_approach_temperature = 10.0
+zones = [
+  { zone_index = 1, zone_name = "temperature_cross", tube_phase_regime = "LIQUID", shell_phase_regime = "LIQUID", tube_side_heat_transfer_coefficient = 2353.2086219276475, shell_side_heat_transfer_coefficient = 5663.977997811559, overall_heat_transfer_coefficient = 854.4225155154656, lmtd = 10.0, duty = 100000.0, required_area = 11.70381142632587, tube_side_pressure_drop = 2598.7839568468125, shell_side_pressure_drop = 10192.370945564015 },
+  { zone_index = 2, zone_name = "near_equal", tube_phase_regime = "LIQUID", shell_phase_regime = "LIQUID", tube_side_heat_transfer_coefficient = 2353.2086219276475, shell_side_heat_transfer_coefficient = 5663.977997811559, overall_heat_transfer_coefficient = 854.4225155154656, lmtd = 50.0, duty = 100000.0, required_area = 2.340762285265174, tube_side_pressure_drop = 2598.7839568468125, shell_side_pressure_drop = 10192.370945564015 },
+  { zone_index = 3, zone_name = "log_mean", tube_phase_regime = "LIQUID", shell_phase_regime = "LIQUID", tube_side_heat_transfer_coefficient = 2353.2086219276475, shell_side_heat_transfer_coefficient = 5663.977997811559, overall_heat_transfer_coefficient = 854.4225155154656, lmtd = 63.82929435703329, duty = 100000.0, required_area = 1.8336112821269561, tube_side_pressure_drop = 2598.7839568468125, shell_side_pressure_drop = 10192.370945564015 },
+]
+[[tests]]
+id = "a_single_point_quality_range_answers_the_local_coefficient"
+type = "reference"
+status = "active"
+source = "The capture's `zero_quality_range` row: a condensing zone whose inlet and outlet quality are both 0.5. Shah answers the local coefficient at that point, 12318.17 W/(m**2 K), not an average over nothing and not zero.\n"
+tolerance = 1e-9
+[tests.inputs]
+tube_inside_diameter = 0.01483
+tube_outside_diameter = 0.01905
+tube_length = 6.096
+tube_count = 100
+tube_passes = 2
+shell_inside_diameter = 0.5
+baffle_spacing = 0.2
+tube_pitch = 0.02381
+triangular_pitch = true
+tube_wall_conductivity = 52.0
+fouling_tube = 0.000176
+fouling_shell = 0.000176
+zones = [{ zone_name = "single_point", duty = 120000.0, hot_inlet_temp = 400.0, hot_outlet_temp = 370.0, cold_inlet_temp = 300.0, cold_outlet_temp = 330.0, tube_phase_regime = "condensing", tube_density = 20.0, tube_viscosity = 1.2e-5, tube_cp = 2100.0, tube_conductivity = 0.05, tube_mass_flow = 10.0, tube_quality_in = 0.5, tube_quality_out = 0.5, shell_phase_regime = "liquid", shell_density = 998.0, shell_viscosity = 0.001, shell_cp = 4180.0, shell_conductivity = 0.60, shell_mass_flow = 20.0 }]
+[tests.expected]
+number_of_zones = 1
+total_required_area = 1.2493500499422663
+weighted_average_u = 1372.1420304621056
+minimum_approach_temperature = 70.0
+zones = [{ zone_index = 1, zone_name = "single_point", tube_phase_regime = "CONDENSING", shell_phase_regime = "LIQUID", tube_side_heat_transfer_coefficient = 12318.165117511255, shell_side_heat_transfer_coefficient = 5663.977997811559, overall_heat_transfer_coefficient = 1372.1420304621056, lmtd = 70.0, duty = 120000.0, required_area = 1.2493500499422663, tube_side_pressure_drop = 361463.2281921697, shell_side_pressure_drop = 28723.954482953133 }]
+[[tests]]
+id = "the_shell_drop_scales_with_the_zone_count"
+type = "reference"
+status = "active"
+source = "The capture's `baffle_scale` rows at two, four and ten identical condensing zones. The shell drop rises 29651, 33357 and 37063 Pa as the per-zone baffle count changes; the summed two-phase tube drop is the same, 361463.2281921697 Pa, because the zone length divides the same total.\n"
+tolerance = 1e-9
+[tests.inputs]
+tube_inside_diameter = 0.01483
+tube_outside_diameter = 0.01905
+tube_length = 6.096
+tube_count = 100
+tube_passes = 2
+shell_inside_diameter = 0.5
+baffle_spacing = 0.2
+tube_pitch = 0.02381
+triangular_pitch = true
+tube_wall_conductivity = 52.0
+fouling_tube = 0.000176
+fouling_shell = 0.000176
+zones = [
+  { zone_name = "condensing", duty = 200000.0, hot_inlet_temp = 400.0, hot_outlet_temp = 370.0, cold_inlet_temp = 300.0, cold_outlet_temp = 340.0, tube_phase_regime = "condensing", tube_density = 20.0, tube_viscosity = 1.2e-5, tube_cp = 2100.0, tube_conductivity = 0.05, tube_mass_flow = 10.0, tube_quality_in = 1.0, tube_quality_out = 0.0, tube_reduced_pressure = 0.3, tube_surface_tension = 0.01, shell_phase_regime = "liquid", shell_density = 998.0, shell_viscosity = 0.001, shell_cp = 4180.0, shell_conductivity = 0.60, shell_mass_flow = 20.0 },
+  { zone_name = "condensing", duty = 200000.0, hot_inlet_temp = 400.0, hot_outlet_temp = 370.0, cold_inlet_temp = 300.0, cold_outlet_temp = 340.0, tube_phase_regime = "condensing", tube_density = 20.0, tube_viscosity = 1.2e-5, tube_cp = 2100.0, tube_conductivity = 0.05, tube_mass_flow = 10.0, tube_quality_in = 1.0, tube_quality_out = 0.0, tube_reduced_pressure = 0.3, tube_surface_tension = 0.01, shell_phase_regime = "liquid", shell_density = 998.0, shell_viscosity = 0.001, shell_cp = 4180.0, shell_conductivity = 0.60, shell_mass_flow = 20.0 },
+]
+[tests.expected]
+number_of_zones = 2
+total_required_area = 4.883776220022208
+total_duty = 400000.0
+weighted_average_u = 1262.5531791999872
+total_tube_side_pressure_drop = 361463.2281921697
+total_shell_side_pressure_drop = 29650.533659822588
+minimum_approach_temperature = 60.0

@@ -4,6 +4,8 @@
 
 `eos.pr_alpha_ab`
 
+Peng-Robinson alpha function and reduced attraction parameters. Use it to evaluate the EOS attraction term at a reduced temperature and pressure.
+
 ## Equation
 
 $$
@@ -26,6 +28,14 @@ b_reduced = 0.077803333*Pr/Tr
 A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, 15(1), 59-64
 
 DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **`Omega_a` and `Omega_b` are NeqSim's, not the paper's**: 0.45724333333 and 0.077803333, from `ComponentPR`'s `a = .45724333333*R**2*Tc**2/Pc` and `b = .077803333*R*Tc/Pc`.
+
 
 ## Inputs
 
@@ -53,7 +63,7 @@ DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 | `Pr > 0` | raises | Pr = 0 drives both A and B to zero, and B is a divisor in the fugacity-coefficient expression that consumes this calc's output, so the ideal-gas limit would hand the next step a division by zero. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
@@ -67,8 +77,6 @@ satisfy for the result to mean what it says.
 - the range of reduced temperature over which the alpha function's fit holds is NOT established, and no bound asserts one.
 
 - A and B are the reduced parameters of the Peng-Robinson cubic and go with that cubic's mixing rules, not with another equation of state's.
-
-- **`Omega_a` and `Omega_b` are NeqSim's, not the paper's**: 0.45724333333 and 0.077803333, from `ComponentPR`'s `a = .45724333333*R**2*Tc**2/Pc` and `b = .077803333*R*Tc/Pc`.
 
 
 

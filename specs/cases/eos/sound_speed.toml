@@ -1,0 +1,66 @@
+model = "eos.sound_speed"
+[[cases]]
+id = "the_nine_component_gas"
+tolerance = 0.001
+source = "`process_sound_speed.tsv`'s `gas_nine_component` row: the compressor tranche's nine-component gas on PR at 24 C and 48 bara, flashed single phase. The phase and the system values agree because `beta = 1`; `390.72` m/s against the ideal-gas `sqrt(gamma R T/M)` of about `392`.\n"
+[cases.inputs]
+components = ["nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane", "i-pentane", "n-pentane"]
+T = 297.15
+P = 4800000.0
+z = [0.01208165393330526, 0.013435200224588424, 0.8820509735507028, 0.05271812147827308, 0.03291624055024163, 0.0008221540435942168, 0.004882792917443703, 0.0005614710541619043, 0.000531392247688945]
+[cases.expected]
+sound_speed = 390.7205902869134
+system_sound_speed = 390.7205902869134
+phase = "all_vapour"
+[[cases]]
+id = "the_nine_component_gas_cold"
+tolerance = 0.001
+source = "The same gas at the turbo-expander's expander inlet, 250.15 K and 60.95 bara, which is where its `Z` is `0.6989` and the speed `336.33` m/s.\n"
+[cases.inputs]
+components = ["nitrogen", "CO2", "methane", "ethane", "propane", "i-butane", "n-butane", "i-pentane", "n-pentane"]
+T = 250.15
+P = 6095000.0
+z = [0.01208165393330526, 0.013435200224588424, 0.8820509735507028, 0.05271812147827308, 0.03291624055024163, 0.0008221540435942168, 0.004882792917443703, 0.0005614710541619043, 0.000531392247688945]
+[cases.expected]
+sound_speed = 336.3275242593267
+system_sound_speed = 336.3275242593267
+phase = "all_vapour"
+[[cases]]
+id = "the_two_phase_state_weights_the_phases"
+tolerance = 0.01
+source = "`process_sound_speed.tsv`'s `two_phase_methane_butane` row: methane/n-butane 0.5/0.5 at 250 K and 30 bara splits, the gas at `373.64` m/s with `beta = 0.36254` and the liquid at `862.99`, and the system value is the class's beta-weighted mean, `685.58` - an arithmetic mean, not a physical mixture speed.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+T = 250.0
+P = 3000000.0
+z = [0.5, 0.5]
+[cases.expected]
+sound_speed = 373.6430578285567
+system_sound_speed = 685.5795111384601
+phase = "two_phase"
+[[cases]]
+id = "liquid_propane"
+tolerance = 0.001
+source = "`process_sound_speed.tsv`'s `liquid_propane` row: PR propane at 20 C and 100 bara is an oil phase whose root gives `706.78` m/s.\n"
+[cases.inputs]
+components = ["propane"]
+T = 293.15
+P = 10000000.0
+z = [1.0]
+[cases.expected]
+sound_speed = 706.7752466817828
+system_sound_speed = 706.7752466817828
+phase = "all_liquid"
+[[cases]]
+id = "the_ideal_gas_limit"
+tolerance = 0.001
+source = "`process_sound_speed.tsv`'s `gas_methane_low_pressure` row: methane at 27 C and 1 bara, `Z = 0.9978`, `449.53` m/s - and `sqrt(gamma R T/M) = 450.6`, which is the identity the low-pressure limit holds to.\n"
+[cases.inputs]
+components = ["methane"]
+T = 300.15
+P = 100000.0
+z = [1.0]
+[cases.expected]
+sound_speed = 449.53013355407364
+system_sound_speed = 449.53013355407364
+phase = "all_vapour"

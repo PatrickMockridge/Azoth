@@ -4,6 +4,8 @@
 
 `eos.twucoon_alpha`
 
+Twu-Coon alpha function for a cubic equation of state. Use it when the attraction term follows the Twu-Coon temperature form.
+
 ## Equation
 
 $$
@@ -23,6 +25,14 @@ alpha = Tr**a*exp(b*(1 - Tr**c)) + omega*(Tr**d*exp(e*(1 - Tr**f)) - Tr**a*exp(b
 `alpha(temperature)`, ported verbatim
 
 DOI: [10.1016/0378-3812(94)02601-V](https://doi.org/10.1016/0378-3812(94)02601-V)
+
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- the six constants are NeqSim's, fitted for heavy components; the acentric factor is the caller's.
+
 
 ## Inputs
 
@@ -46,13 +56,11 @@ DOI: [10.1016/0378-3812(94)02601-V](https://doi.org/10.1016/0378-3812(94)02601-V
 | `Tr > 0` | raises | the formula takes fractional powers of `Tr`; zero and below are not states |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
-
-- the six constants are NeqSim's, fitted for heavy components; the acentric factor is the caller's.
 
 - the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.
 

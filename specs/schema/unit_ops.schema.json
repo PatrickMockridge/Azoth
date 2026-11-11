@@ -80,6 +80,11 @@
             ],
             "description": "How many streams the port carries. `one` by default; `many` is a mixer's inlets or a splitter's outlets."
           },
+          "min_streams": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The minimum number of connected streams a `many` port needs. Default 1; a mixer's feed declares 2. A `one` port is exactly one stream and must not declare this."
+          },
           "fields": {
             "type": "object",
             "description": "The field record a stream on this port carries, by field name.",
@@ -106,7 +111,26 @@
               }
             }
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "min_streams"
+              ]
+            },
+            "then": {
+              "required": [
+                "multiplicity"
+              ],
+              "properties": {
+                "multiplicity": {
+                  "const": "many"
+                }
+              }
+            }
+          }
+        ]
       }
     },
     "unported": {

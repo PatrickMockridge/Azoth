@@ -272,6 +272,8 @@ export type Kind =
   | "string"
   | "components"
   | "matrix"
+  | "fitting_list"
+  | "record_list"
   | "unknown";
 
 export interface FormField {
@@ -339,8 +341,123 @@ export interface Tool {
   input_schema: Record<string, unknown>;
 }
 
+/** One input of a registered calculation: the same field a unit op's parameter is. */
+export interface CalcInput extends FormParameter {
+  /** The model's own default, where it declares one; the sheet shows it as the initial value. */
+  default: number | boolean | string | null;
+}
+
+/** One output, as a result table labels it. */
+export interface CalcOutput {
+  name: string;
+  kind: Kind;
+  unit: string | null;
+  dimension: string | null;
+  values: string[];
+  description: string;
+  optional: boolean;
+}
+
+/** How far the calculation is externally checked, and the hashes that say which code ran. */
+export interface CalcProvenance {
+  verification: string;
+  spec_sha256: string | null;
+  rust_sha256: string | null;
+  python_sha256: string | null;
+  tests_active: number;
+  tests_skipped: number;
+  validation_cases: number;
+}
+
+/** One registered calculation, as the picker and a sheet read it. */
+export interface CalcForm {
+  id: string;
+  name: string;
+  /** What the calculation is for, in the spec's own authored words. */
+  summary: string;
+  namespace: string;
+  available: boolean;
+  refusal: string | null;
+  equation: string | null;
+  assumptions: string[];
+  references: string[];
+  inputs: CalcInput[];
+  outputs: CalcOutput[];
+  /**
+   * The spec's worked example, in the units the spec declares.
+   *
+   * **Declared units and not SI**, because it is the spec's own text. The sheet converts it with
+   * the catalogue's unit factors when a reader asks to load it.
+   */
+  worked_example: Record<string, number | boolean | string>;
+  provenance: CalcProvenance;
+}
+
+/** One value a calculation produced: a quantity, or a native enum/flag/string/vector. */
+export type SheetValue = number | boolean | string | Quantity | number[];
+
+/** One warning the calculation attached to its answer. */
+export interface CalcWarning {
+  code: string;
+  message: string;
+  field: string | null;
+}
+
+/** The result of one sheet's last calculation. */
+export interface SheetResult {
+  outputs: Record<string, SheetValue>;
+  warnings: CalcWarning[];
+}
+
+/** Why a sheet cannot run, or why it could not: a structural fact, not a kernel refusal. */
+export interface SheetDiagnostic {
+  code: string;
+  message: string;
+  field: string | null;
+}
+
+/** One sheet in the book. */
+export interface Sheet {
+  id: string;
+  name: string;
+  calculation: string;
+  inputs: Record<string, number | boolean | string>;
+  /** Every required input is set and the calculation is available. */
+  ready: boolean;
+  missing: string[];
+  /** The result is older than the inputs, or there has never been one. */
+  stale: boolean;
+  result: SheetResult | null;
+  error: { message: string; field: string | null } | null;
+  diagnostics: SheetDiagnostic[];
+}
+
+/** The calculation book, as the middleware owns it. */
+export interface SheetBook {
+  id: string;
+  name: string;
+  /** The TOML a save writes; it rides every envelope, so a save is no call. */
+  document: string;
+  sheets: Sheet[];
+}
+
+/** One call's answer from the sheet workspace. */
+export interface SheetEnvelope {
+  ok: boolean;
+  dirty: boolean;
+  book: SheetBook;
+}
+
 export interface Catalogue {
   unit_ops: Form[];
+  /**
+   * The standalone calculations, as the sheet editor reads them.
+   *
+   * Present on the same catalogue as the palette because both are facts about the *library* and a
+   * front end has nowhere else to ask for either. A calculation whose inputs or outputs are tables
+   * is carried with `available: false` and a refusal rather than omitted.
+   */
+  calcs?: CalcForm[];
   /**
    * Every canonical unit, keyed by the string a quantity carries: what it measures, and what one
    * of it is worth in SI.

@@ -4,12 +4,18 @@
 //! [`crate::kernels::stirred_tank_reactor`]; what is here is the boundary a case and a
 //! cross-impl test address.
 
-use azoth_core::units::{MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole};
+use azoth_core::units::{
+    MolarEnergy, Power, Pressure, ThermodynamicTemperature, Time, Volume, VolumetricPowerDensity,
+    cubic_meters, hours, joules_per_mole, watts_per_cubic_meter,
+};
 use azoth_core::{Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::executor::json::{scalar, warnings as wire_warnings};
-use crate::kernels::stirred_tank_reactor::{ReactorSetup, stirred_tank_reactor as kernel};
+use crate::kernels::stirred_tank_reactor::{
+    DEFAULT_AGITATOR_POWER_PER_VOLUME_W_PER_M3, DEFAULT_RESIDENCE_TIME_H, DEFAULT_VESSEL_VOLUME_M3,
+    ReactorSetup, agitator_power, stirred_tank_reactor as kernel,
+};
 use crate::model_gen;
 use crate::stream::Stream;
 
@@ -32,6 +38,9 @@ pub struct StirredTankReactorResult {
     /// The heat the vessel had to supply, W - nonzero only when it is isothermal.
     #[serde(serialize_with = "scalar")]
     pub heat_duty: Power,
+    /// The agitator's power, kW: the stored specific power times the stored vessel volume.
+    #[serde(serialize_with = "scalar")]
+    pub agitator_power: Power,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -44,7 +53,12 @@ impl StirredTankReactorResult {
     /// runs the spec's checks through [`apply_checks`]; a flowsheet's equivalent is the
     /// *checker's*, which reports through the envelope's diagnostics rather than through a result.
     #[must_use]
-    pub fn of(product: &Stream, duty: Power, warnings: Vec<Warning>) -> Self {
+    pub fn of(
+        product: &Stream,
+        duty: Power,
+        agitator_power: Power,
+        warnings: Vec<Warning>,
+    ) -> Self {
         Self {
             product_n: product.n,
             product_z: product.z.clone(),
@@ -52,6 +66,7 @@ impl StirredTankReactorResult {
             product_t: product.t,
             product_h: joules_per_mole(product.h.value),
             heat_duty: duty,
+            agitator_power,
             warnings,
         }
     }
@@ -62,7 +77,7 @@ impl StirredTankReactorResult {
 /// # Errors
 /// [`azoth_core::AzothError::InvalidInput`] for a reaction or a component the data does not
 /// carry, a conversion outside `[0, 1]`, and whatever the flash refuses.
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eleven
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are fourteen
 pub fn stirred_tank_reactor(
     components: &[String],
     feed_n: f64,
@@ -76,6 +91,9 @@ pub fn stirred_tank_reactor(
     reactor_temperature: Option<ThermodynamicTemperature>,
     reactor_pressure: Option<Pressure>,
     pressure_drop: Pressure,
+    vessel_volume: Option<Volume>,
+    residence_time: Option<Time>,
+    agitator_power_per_volume: Option<VolumetricPowerDensity>,
 ) -> Result<StirredTankReactorResult> {
     let spec = &model_gen::STIRRED_TANK_REACTOR_SPEC;
     let mut warnings = Vec::new();
@@ -103,5 +121,18 @@ pub fn stirred_tank_reactor(
         },
     )?;
 
-    Ok(StirredTankReactorResult::of(&product, heat_duty, warnings))
+    // The class's three stored fields, at its own initialisers when absent. **`run` reads
+    // none of them**: the volume and the specific power are `toMap`'s echo and the agitator's
+    // product, and the residence time is carried for a transient this port does not have.
+    let vessel_volume = vessel_volume.unwrap_or_else(|| cubic_meters(DEFAULT_VESSEL_VOLUME_M3));
+    let _residence_time = residence_time.unwrap_or_else(|| hours(DEFAULT_RESIDENCE_TIME_H));
+    let per_volume = agitator_power_per_volume
+        .unwrap_or_else(|| watts_per_cubic_meter(DEFAULT_AGITATOR_POWER_PER_VOLUME_W_PER_M3));
+
+    Ok(StirredTankReactorResult::of(
+        &product,
+        heat_duty,
+        agitator_power(per_volume, vessel_volume),
+        warnings,
+    ))
 }

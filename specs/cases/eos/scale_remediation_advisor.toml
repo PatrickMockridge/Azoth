@@ -1,0 +1,66 @@
+model = "eos.scale_remediation_advisor"
+
+# The capture's `remediation` rows: the alias path to each canonical deposit, the case
+# preservation of an unmatched name, the UNKNOWN fallback and the effectiveness order.
+
+[[cases]]
+id = "calcite"
+tolerance = 1.0e-12
+source = "The capture's `remediation_calcite` rows: both CaCO3 remedies, the acid at HIGH before the chelant at MEDIUM.\n"
+[cases.inputs]
+deposit = "calcite"
+[cases.expected]
+canonical_key = "CaCO3"
+options = [
+    { scale_type = "CaCO3", category = "MINERAL_SCALE", dissolver = "Hydrochloric acid (HCl) with corrosion inhibitor and iron-control agent", concentration = "5-15 wt%", method = "Acid soak or circulation, then neutralise and flush", effectiveness = "HIGH", min_temperature = 293.15, max_temperature = 353.15, cautions = "Corrosive; CO2 evolution can pressurise; mandatory corrosion inhibitor and spent-acid neutralisation; verify metallurgy", standard = "NACE SP0296" },
+    { scale_type = "CaCO3", category = "MINERAL_SCALE", dissolver = "Chelant (EDTA/HEDTA) buffered near-neutral", concentration = "10-20 wt%", method = "Extended soak (slower, low corrosion)", effectiveness = "MEDIUM", min_temperature = 313.15, max_temperature = 363.15, cautions = "Slower than acid but far less corrosive; check chelant biodegradability and disposal", standard = "NACE TM0374" },
+]
+
+[[cases]]
+id = "barite"
+tolerance = 1.0e-12
+source = "The capture's `remediation_barite` row: barite is acid-insoluble, so its only remedy is a low-effectiveness high-pH chelant.\n"
+[cases.inputs]
+deposit = "barite"
+[cases.expected]
+canonical_key = "BaSO4"
+options = [
+    { scale_type = "BaSO4", category = "MINERAL_SCALE", dissolver = "High-pH chelant (DTPA/EDTA at pH~12) with synergist", concentration = "20-40 wt%", method = "Hot soak, long contact, multiple stages", effectiveness = "LOW", min_temperature = 333.15, max_temperature = 393.15, cautions = "Acid-insoluble; slow dissolution; milling/mechanical removal often required", standard = "NACE TM0374" },
+]
+
+[[cases]]
+id = "unmatched_name_keeps_its_spelling"
+tolerance = 1.0e-12
+source = "The capture's `remediation_mystery` row: an unmatched name is returned trimmed and unchanged, and the UNKNOWN guidance is the fallback.\n"
+[cases.inputs]
+deposit = "some-mystery-deposit"
+[cases.expected]
+canonical_key = "some-mystery-deposit"
+options = [
+    { scale_type = "UNKNOWN", category = "UNSPECIFIED", dissolver = "Sample and identify deposit (XRD/SEM-EDX) before selecting solvent", concentration = "n/a", method = "Deposit sampling and lab identification", effectiveness = "HIGH", min_temperature = 273.15, max_temperature = 473.15, cautions = "Do not select a dissolver blindly - acid dissolves carbonate/sulfide but not sulfate scale; identify first", standard = "NACE TM0374" },
+]
+
+[[cases]]
+id = "alias_is_case_insensitive"
+tolerance = 1.0e-12
+source = "The capture's `remediation_upper` row: `Barite` reaches the BaSO4 rows through the lower-case alias table.\n"
+[cases.inputs]
+deposit = "  Barite  "
+[cases.expected]
+canonical_key = "BaSO4"
+options = [
+    { scale_type = "BaSO4", category = "MINERAL_SCALE", dissolver = "High-pH chelant (DTPA/EDTA at pH~12) with synergist", concentration = "20-40 wt%", method = "Hot soak, long contact, multiple stages", effectiveness = "LOW", min_temperature = 333.15, max_temperature = 393.15, cautions = "Acid-insoluble; slow dissolution; milling/mechanical removal often required", standard = "NACE TM0374" },
+]
+
+[[cases]]
+id = "dithiazine_order"
+tolerance = 1.0e-12
+source = "The capture's `remediation_dithiazine` rows: the dissolver is MEDIUM and the xylene soak LOW, so the stable sort keeps the CSV order.\n"
+[cases.inputs]
+deposit = "dithiazine"
+[cases.expected]
+canonical_key = "Dithiazine"
+options = [
+    { scale_type = "Dithiazine", category = "SCAVENGER_SOLIDS", dissolver = "Proprietary dithiazine dissolver (glycolic-acid or oxidiser based) with surfactant", concentration = "10-30 wt%", method = "Hot circulation with surfactant", effectiveness = "MEDIUM", min_temperature = 313.15, max_temperature = 353.15, cautions = "Amorphous triazine-scavenger reaction product; RESTORE water pH control (7.5-9.5) and review scavenger dose to prevent recurrence", standard = "NACE TM0374" },
+    { scale_type = "Dithiazine", category = "SCAVENGER_SOLIDS", dissolver = "Aromatic solvent (xylene) plus hot water/surfactant", concentration = "neat solvent", method = "Solvent soak", effectiveness = "LOW", min_temperature = 313.15, max_temperature = 353.15, cautions = "Only partial; mechanical trim/bridle cleaning usually still needed", standard = "NACE TM0374" },
+]

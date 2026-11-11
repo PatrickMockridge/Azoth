@@ -1,5 +1,6 @@
 id = "eos.srk_kappa"
 name = "Soave-Redlich-Kwong attraction-parameter coefficient"
+summary = "Soave-Redlich-Kwong attraction-parameter coefficient from the acentric factor. Use it when assembling an SRK EOS."
 equation = "kappa = 0.48 + 1.574*omega - 0.176*omega**2"
 latex = '''\kappa = 0.48 + 1.574\,\omega - 0.176\,\omega^{2}'''
 assumptions = ["the acentric factor supplied is correct for the component intended. NOT CHECKED - this calc has no databank and no second source; omega comes from the caller and is taken at face value.\n", "omega is taken as the constant Pitzer acentric factor evaluated at Tr = 0.7.\n", "the coefficient applies to the Soave (1972) alpha function and to nothing else; a kappa from here is not comparable with one from Peng-Robinson's correlation.\n", "the range of acentric factors over which the correlation was fitted is NOT established, and no bound asserts one.\n", "this calc returns a coefficient, not an equation of state.\n"]

@@ -1,0 +1,579 @@
+id = "process.separator_performance"
+name = "Separator performance calculator"
+kind = "direct"
+assumptions = [
+    "**the class's standard path**: `calculate` -> `calculateStandard` -> `applyCalibrationFactors`. The enhanced chain (`calculateEnhanced`) is a second solver, declared as the `enhanced` input with its own group.",
+    "**the distributions are the class's closed forms**, its `erf` and Winitzki inverse included; the classes are 50 log-spaced bins between the 0.1% and 99.9% quantiles, and the integrated efficiency is their midpoint sum **without renormalising** (weights total 0.998).",
+    "**the grade curves are the class's**: gravity as `min(1, (d/d_cut)**2)`, an internals curve as the sigmoid `eta_max (1 - exp(-0.693 (d/d50)**n))`, and custom as linear interpolation; `sharpness` and `max_efficiency` are read only by the sigmoid types.",
+    "**settling is the class's Schiller-Naumann drag** with a Stokes seed, 50 under-relaxed passes at `1e-6` relative, and the cut diameter is the smallest droplet that settles the available height within the residence time.",
+    "**the gas section's available height** is `diameter (1 - level)` horizontal and `length (1 - level)` vertical, and the gas residence time is `length / velocity` for both.",
+    "**the three-phase gas entrainment is not split**: the whole `1 - overall` is written to both `oil_in_gas` and `water_in_gas`, which is what the code does despite its comment saying proportionally.",
+    "**gas carry-under writes the same fraction to oil and water**, and the liquid-liquid path uses the class's fixed 300 s residence time; `setLiquidLiquidResidenceTime` is read only by the enhanced path, so it is not an input.",
+    "**each distribution is stated whole or not at all**, and the class's constructor configures none: an absent gas-liquid distribution leaves the gas-liquid branch unrun and its fractions and cut diameter at zero.",
+    "**the three calibration factors are the class's setters**: absent is 1.0, and a negative is clamped to zero rather than refused.",
+    "**the API 12J compliance DTO is the enhanced path's own record**: on the standard path the class's `kFactor` is never set, so its K test always passes; the enhanced path publishes the three verdicts and the two sentences.",
+    "**a degenerate section** (`residence <= 0` or no density difference) makes the class's cut `Double.MAX_VALUE`; the declared bounds - positive geometry, positive gas velocity and a level below one - keep that branch unreachable.",
+    "**`useDetailedEntrainmentCalculation` is not a flag here**: these fractions are the separator ids' own inputs, so the composition is a flowsheet rather than a switch on the steady model.",
+    "**the inlet device's position is fixed at `0.05`**: `SeparatorGeometryCalculator` has setters for the mist eliminator and the weir but none for the inlet device, so only `mist_position` and `weir_position` cross.",
+    "**the design `K` is the shipped database's first record**: `0.107` wire mesh, `0.15` vane pack, `0.30` axial cyclone. The class's `0.12` vane-pack fallback is read only when `SeparatorInternals.csv` is missing.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/entrainment/SeparatorPerformanceCalculator.java` is the port source, through its standard path, with `DropletSizeDistribution.java`, `GradeEfficiencyCurve.java` and `DropletSettlingCalculator.java`.",
+    "`validation/neqsim/captures/process_separator_performance.tsv` - the class's own standard-path test states, plus a log-normal and a custom curve.",
+]
+[source]
+standard = "NeqSim process/equipment/separator/entrainment/SeparatorPerformanceCalculator.java"
+edition = "`calculate`'s standard path: the gas-liquid gravity and mist-eliminator stages, the gas-bubble carry-under, the liquid-liquid gravity and coalescer stages, and the three calibration multipliers."
+[inputs]
+[inputs.gas_density]
+unit = "kg/m**3"
+description = "the gas phase's mass density; zero is the class's absent phase.\n"
+[inputs.oil_density]
+unit = "kg/m**3"
+description = "the oil phase's mass density; zero is the class's absent phase.\n"
+[inputs.water_density]
+unit = "kg/m**3"
+description = "the water phase's mass density; zero is the class's absent phase. **A liquid is needed for the gas-liquid branch to run**: with both liquid densities zero every fraction is zero.\n"
+[inputs.gas_viscosity]
+unit = "Pa*s"
+description = "the gas phase's dynamic viscosity; zero is the class's absent phase.\n"
+[inputs.oil_viscosity]
+unit = "Pa*s"
+description = "the oil phase's dynamic viscosity.\n"
+[inputs.water_viscosity]
+unit = "Pa*s"
+description = "the water phase's dynamic viscosity.\n"
+[inputs.gas_velocity]
+unit = "m/s"
+description = "the superficial gas velocity in the gas section.\n"
+[inputs.vessel_diameter]
+unit = "m"
+description = "the vessel's internal diameter.\n"
+[inputs.vessel_length]
+unit = "m"
+description = "the vessel's tangent-to-tangent length.\n"
+[inputs.orientation]
+type = "enum"
+values = ["horizontal", "vertical"]
+description = "the vessel's orientation, which picks the available settling height.\n"
+[inputs.liquid_level_fraction]
+unit = "dimensionless"
+description = "the fraction of the cross-section the liquid occupies horizontal, or of the height vertical.\n"
+[inputs.mist_position]
+unit = "dimensionless"
+optional = true
+description = "the mist eliminator's position as a fraction of the length. Absent is the class's `0.90`.\n"
+[inputs.weir_position]
+unit = "dimensionless"
+optional = true
+description = "the weir's position as a fraction of the length. Absent is the class's `0.60`.\n"
+[inputs.gas_liquid_distribution]
+type = "enum"
+values = ["rosin_rammler", "log_normal"]
+optional = true
+description = "the entrained liquid's droplet size distribution; absent leaves the gas-liquid branch unrun.\n"
+[inputs.gas_liquid_characteristic_diameter]
+unit = "m"
+optional = true
+description = "the distribution's characteristic diameter: `d_63.2` for Rosin-Rammler and `d_50` for log-normal.\n"
+[inputs.gas_liquid_spread]
+unit = "dimensionless"
+optional = true
+description = "the Rosin-Rammler spread `q` or the log-normal geometric standard deviation.\n"
+[inputs.gas_bubble_distribution]
+type = "enum"
+values = ["rosin_rammler", "log_normal"]
+optional = true
+description = "the liquid's entrained gas-bubble distribution; absent leaves `gas_in_oil` and `gas_in_water` at zero.\n"
+[inputs.gas_bubble_characteristic_diameter]
+unit = "m"
+optional = true
+description = "the bubble distribution's characteristic diameter.\n"
+[inputs.gas_bubble_spread]
+unit = "dimensionless"
+optional = true
+description = "the bubble distribution's spread.\n"
+[inputs.oil_in_water_distribution]
+type = "enum"
+values = ["rosin_rammler", "log_normal"]
+optional = true
+description = "the dispersed oil's distribution in the water phase; absent leaves `oil_in_water` at zero.\n"
+[inputs.oil_in_water_characteristic_diameter]
+unit = "m"
+optional = true
+description = "the oil-in-water distribution's characteristic diameter.\n"
+[inputs.oil_in_water_spread]
+unit = "dimensionless"
+optional = true
+description = "the oil-in-water distribution's spread.\n"
+[inputs.water_in_oil_distribution]
+type = "enum"
+values = ["rosin_rammler", "log_normal"]
+optional = true
+description = "the dispersed water's distribution in the oil phase; absent leaves `water_in_oil` at zero.\n"
+[inputs.water_in_oil_characteristic_diameter]
+unit = "m"
+optional = true
+description = "the water-in-oil distribution's characteristic diameter.\n"
+[inputs.water_in_oil_spread]
+unit = "dimensionless"
+optional = true
+description = "the water-in-oil distribution's spread.\n"
+[inputs.mist_eliminator]
+type = "enum"
+values = ["none", "wire_mesh", "vane_pack", "axial_cyclone", "plate_pack", "custom"]
+optional = true
+description = "the gas outlet's internals; absent is `none`, and then no mist-eliminator stage runs.\n"
+[inputs.mist_eliminator_cut_diameter]
+unit = "m"
+optional = true
+description = "the curve's `d_50`. Absent takes the type's default: 5 um wire mesh, 12 um vane pack, 3 um axial cyclone. A plate pack has none and requires it; a custom curve ignores it.\n"
+[inputs.mist_eliminator_sharpness]
+unit = "dimensionless"
+optional = true
+description = "the sigmoid's `n`. Absent takes the type's default: 2.5 wire mesh, 2.0 vane pack, 4.0 axial cyclone, 2.0 plate pack; a custom curve ignores it.\n"
+[inputs.mist_eliminator_max_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the sigmoid's `eta_max`. Absent takes the type's default: 0.998 wire mesh, 0.995 vane pack, 0.998 axial cyclone. A plate pack requires it; a custom curve ignores it.\n"
+[inputs.mist_eliminator_points]
+type = "record_list"
+row_type = "EfficiencyPoint"
+optional = true
+description = "a custom curve's lookup table, ascending by diameter. Required for `custom` and refused for the other types.\n"
+[inputs.mist_eliminator_points.fields.diameter]
+unit = "m"
+description = "the point's droplet diameter.\n"
+[inputs.mist_eliminator_points.fields.efficiency]
+unit = "dimensionless"
+description = "the point's capture efficiency, which the class clamps to `[0, 1]`.\n"
+[inputs.oil_water_coalescer]
+type = "enum"
+values = ["none", "plate_pack", "custom"]
+optional = true
+description = "the liquid-liquid coalescer; absent is `none`.\n"
+[inputs.oil_water_coalescer_cut_diameter]
+unit = "m"
+optional = true
+description = "the plate pack's `d_50`, required for `plate_pack`; a custom curve ignores it.\n"
+[inputs.oil_water_coalescer_max_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the plate pack's maximum efficiency, required for `plate_pack`; a custom curve ignores it.\n"
+[inputs.oil_water_coalescer_points]
+type = "record_list"
+row_type = "EfficiencyPoint"
+optional = true
+description = "a custom coalescer curve's lookup table, ascending by diameter. Required for `custom` and refused for the other types.\n"
+[inputs.oil_water_coalescer_points.fields.diameter]
+unit = "m"
+description = "the point's droplet diameter.\n"
+[inputs.oil_water_coalescer_points.fields.efficiency]
+unit = "dimensionless"
+description = "the point's capture efficiency, which the class clamps to `[0, 1]`.\n"
+[inputs.include_gravity_section]
+type = "boolean"
+optional = true
+description = "whether the gravity stage is part of the gas-liquid efficiency; absent is the class's true.\n"
+[inputs.liquid_in_gas_calibration_factor]
+unit = "dimensionless"
+optional = true
+description = "the multiplier on `oil_in_gas` and `water_in_gas`; absent is 1.0, and a negative is clamped to zero.\n"
+[inputs.gas_carry_under_calibration_factor]
+unit = "dimensionless"
+optional = true
+description = "the multiplier on `gas_in_oil` and `gas_in_water`; absent is 1.0, and a negative is clamped to zero.\n"
+[inputs.liquid_liquid_calibration_factor]
+unit = "dimensionless"
+optional = true
+description = "the multiplier on `oil_in_water` and `water_in_oil`; absent is 1.0, and a negative is clamped to zero.\n"
+[inputs.enhanced]
+type = "boolean"
+optional = true
+description = "run `calculateEnhanced` instead of the standard path: the flow regime, inlet device, vessel geometry and API 12J chain. **Absent is false**; the group below is refused without it. **A liquid is required**: with both liquid densities zero the standard path answers zero fractions.\n"
+[inputs.inlet_pipe_diameter]
+unit = "m"
+optional = true
+description = "the inlet pipe's diameter, which the nozzle velocity and the regime map divide. **Absent is `0.2` m.**\n"
+[inputs.surface_tension]
+unit = "N/m"
+optional = true
+description = "the gas-liquid surface tension the regime and DSD correlations read. **Absent is `0.025` N/m.**\n"
+[inputs.oil_water_interfacial_tension]
+unit = "N/m"
+optional = true
+description = "the oil-water interfacial tension. **Absent is the class's `0.030` N/m**, and `calculateEnhanced` stores it without reading it; this input carries the value the class carries and says so.\n"
+[inputs.oil_volume_fraction]
+unit = "dimensionless"
+optional = true
+description = "the oil's share of the three-phase liquid flow, clamped to `[0.01, 0.99]` in the class. **Absent is `0.5`.**\n"
+[inputs.apply_turbulence_correction]
+type = "boolean"
+optional = true
+description = "whether the Csanady/Koenders turbulence correction moves the gravity cut diameter. **Absent is true.**\n"
+[inputs.inlet_device]
+type = "enum"
+values = ["none", "deflector_plate", "half_pipe", "inlet_vane", "inlet_cyclone", "schoepentoeter", "impingement_plate"]
+optional = true
+description = "the inlet device's type. **Absent is the class's `half_pipe`**; `none` passes the distribution unchanged and removes nothing.\n"
+[inputs.override_bulk_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the class's `setOverrideBulkEfficiency`: a positive value replaces the device type's bulk efficiency. **Absent or zero uses the type's own.**\n"
+[inputs.override_dsd_multiplier]
+unit = "dimensionless"
+optional = true
+description = "the class's `setOverrideDsdMultiplier`: a positive value replaces the device type's DSD multiplier. **Absent or zero uses the type's own.**\n"
+[inputs.design_k_factor]
+unit = "m/s"
+optional = true
+description = "the mist eliminator's design `K`, which the flooding and API checks divide by. **Absent takes the internals database's first record**: `0.107` wire mesh, `0.15` vane pack, `0.30` axial cyclone. Any other eliminator is refused by name.\n"
+[inputs.liquid_liquid_residence_time]
+unit = "s"
+optional = true
+description = "the liquid-liquid residence-time override. **Absent is the geometry's own**, and a non-positive geometry value falls back to `300` s.\n"
+[outputs]
+[outputs.oil_in_gas]
+unit = "dimensionless"
+description = "the oil fraction carried out with the gas: `1 - overall_gas_liquid_efficiency` when an oil phase and a gas-liquid distribution exist.\n"
+[outputs.water_in_gas]
+unit = "dimensionless"
+description = "the water fraction carried out with the gas. **In a three-phase state this is the whole entrainment too**, not a split of it.\n"
+[outputs.gas_in_oil]
+unit = "dimensionless"
+description = "the gas fraction carried under into the oil: `1 - ` the bubble gravity efficiency.\n"
+[outputs.gas_in_water]
+unit = "dimensionless"
+description = "the gas fraction carried under into the water, which is the same value as `gas_in_oil`.\n"
+[outputs.oil_in_water]
+unit = "dimensionless"
+description = "the oil fraction left in the water after the 300 s gravity stage and the coalescer.\n"
+[outputs.water_in_oil]
+unit = "dimensionless"
+description = "the water fraction left in the oil after the 300 s gravity stage and the coalescer.\n"
+[outputs.gravity_section_efficiency]
+unit = "dimensionless"
+description = "the gravity stage's integrated capture efficiency; zero when the gravity section is excluded or no gas-liquid distribution is stated.\n"
+[outputs.mist_eliminator_efficiency]
+unit = "dimensionless"
+description = "the mist eliminator's integrated capture efficiency; zero without one.\n"
+[outputs.overall_gas_liquid_efficiency]
+unit = "dimensionless"
+description = "the stages in series, `1 - (1 - eta_gravity)(1 - eta_mist)` per size class, or whichever stage is present.\n"
+[outputs.liquid_liquid_gravity_efficiency]
+unit = "dimensionless"
+description = "the oil-in-water gravity efficiency; zero unless the oil-in-water distribution is stated.\n"
+[outputs.gravity_cut_diameter]
+unit = "m"
+description = "the gas section's critical droplet diameter; zero without a gas-liquid distribution.\n"
+[outputs.inlet_flow_regime]
+type = "string"
+optional = true
+description = "the predicted inlet regime's enum spelling, e.g. `SLUG`; present only on the enhanced path.\n"
+[outputs.inlet_device_bulk_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the inlet device's bulk liquid-removal efficiency.\n"
+[outputs.inlet_device_pressure_drop]
+unit = "Pa"
+optional = true
+description = "the device's pressure drop, `coefficient * 0.5 rho_mix v^2`.\n"
+[outputs.inlet_nozzle_velocity]
+unit = "m/s"
+optional = true
+description = "the inlet nozzle's velocity, the two-phase flow over the pipe area.\n"
+[outputs.inlet_momentum_flux]
+unit = "Pa"
+optional = true
+description = "the nozzle's momentum flux, `rho_mix v^2`.\n"
+[outputs.k_factor]
+unit = "m/s"
+optional = true
+description = "the actual Souders-Brown `K` at the superficial gas velocity.\n"
+[outputs.k_factor_utilization]
+unit = "dimensionless"
+optional = true
+description = "the actual `K` over its design value; above one is flooding.\n"
+[outputs.mist_eliminator_flooded]
+type = "boolean"
+optional = true
+description = "whether `k_factor_utilization` exceeds one.\n"
+[outputs.gas_area]
+unit = "m**2"
+optional = true
+description = "the vessel's gas cross-section.\n"
+[outputs.liquid_area]
+unit = "m**2"
+optional = true
+description = "the vessel's liquid cross-section.\n"
+[outputs.gas_volume]
+unit = "m**3"
+optional = true
+description = "the gas section's volume, `gas_area * length`.\n"
+[outputs.liquid_volume]
+unit = "m**3"
+optional = true
+description = "the liquid section's volume, `liquid_area * length`.\n"
+[outputs.total_volume]
+unit = "m**3"
+optional = true
+description = "the vessel's internal volume, the two sections together.\n"
+[outputs.effective_gas_settling_height]
+unit = "m"
+optional = true
+description = "the height a droplet falls through in the gas section.\n"
+[outputs.effective_liquid_settling_height]
+unit = "m"
+optional = true
+description = "the height a bubble rises through in the liquid.\n"
+[outputs.gas_residence_time]
+unit = "s"
+optional = true
+description = "the gas's residence time in the gravity section.\n"
+[outputs.liquid_residence_time]
+unit = "s"
+optional = true
+description = "the liquid's residence time, the class's own m3/hr slip included.\n"
+[outputs.gravity_section_length]
+unit = "m"
+optional = true
+description = "the gravity section's length: inlet device to mist eliminator, or to the weir three-phase.\n"
+[outputs.oil_pad_thickness]
+unit = "m"
+optional = true
+description = "the three-phase oil pad, `level * oil_frac`.\n"
+[outputs.water_layer_height]
+unit = "m"
+optional = true
+description = "the three-phase water layer, `level * water_frac`.\n"
+[outputs.api_gas_liquid_compliant]
+type = "boolean"
+optional = true
+description = "API 12J's gas-section verdict: cut at most `100` um and `K` within its limit.\n"
+[outputs.api_liquid_compliant]
+type = "boolean"
+optional = true
+description = "API 12J's liquid-section verdict: residence at least `180` s two-phase, `300` s three-phase.\n"
+[outputs.api_fully_compliant]
+type = "boolean"
+optional = true
+description = "both verdicts.\n"
+[outputs.api_gas_liquid_comment]
+type = "string"
+optional = true
+description = "the class's own gas-section sentence, `COMPLIANT:` or `NON-COMPLIANT:` followed by the cut and `K` it read. Present only on the enhanced path.\n"
+[outputs.api_liquid_comment]
+type = "string"
+optional = true
+description = "the class's own liquid-section sentence, with the residence time it read. Present only on the enhanced path.\n"
+[outputs.api_gravity_cut_diameter]
+unit = "m"
+optional = true
+description = "the cut diameter the API check read; the capture prints it in micrometres.\n"
+[outputs.api_k_factor_utilization]
+unit = "dimensionless"
+optional = true
+description = "the `K` over the API limit it read.\n"
+[outputs.api_max_k_factor]
+unit = "m/s"
+optional = true
+description = "the API limit on `K`: `0.25` with a mist eliminator, otherwise `0.120` horizontal and `0.107` vertical.\n"
+[outputs.api_min_liquid_residence_time]
+unit = "s"
+optional = true
+description = "the API minimum liquid residence time.\n"
+[outputs.post_inlet_device_characteristic_diameter]
+unit = "m"
+optional = true
+description = "the downstream distribution's `d63.2` after the device's multiplier.\n"
+[outputs.post_inlet_device_spread]
+unit = "dimensionless"
+optional = true
+description = "the downstream distribution's spread.\n"
+[outputs.post_inlet_d50]
+unit = "m"
+optional = true
+description = "the downstream distribution's volume-median diameter, `inverseCDF(0.5)`.\n"
+[outputs.post_inlet_d32]
+unit = "m"
+optional = true
+description = "the downstream distribution's Sauter mean diameter, the 50-class `sum(d^3)/sum(d^2)`.\n"
+[[valid_range]]
+quantity = "inlet_pipe_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a pipe diameter; the nozzle velocity divides by its square\n"
+[[valid_range]]
+quantity = "surface_tension"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the regime and DSD correlations divide by it\n"
+[[valid_range]]
+quantity = "oil_volume_fraction"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = false
+severity = "error"
+rationale = "a share of the liquid flow; at one there is no water\n"
+[[valid_range]]
+quantity = "design_k_factor"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the flooding check divides by it\n"
+[[valid_range]]
+quantity = "liquid_liquid_residence_time"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a residence time; a non-positive one is the class's 300 s fallback, which is not a value a caller states\n"
+[[valid_range]]
+quantity = "gas_density"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a mass density is not negative"
+[[valid_range]]
+quantity = "oil_density"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a mass density is not negative"
+[[valid_range]]
+quantity = "water_density"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a mass density is not negative"
+[[valid_range]]
+quantity = "gas_viscosity"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a dynamic viscosity is not negative"
+[[valid_range]]
+quantity = "oil_viscosity"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a dynamic viscosity is not negative"
+[[valid_range]]
+quantity = "water_viscosity"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a dynamic viscosity is not negative"
+[[valid_range]]
+quantity = "gas_velocity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the gas residence time divides by the velocity"
+[[valid_range]]
+quantity = "vessel_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the settling height is a fraction of the diameter"
+[[valid_range]]
+quantity = "vessel_length"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the residence time is the length over the velocity"
+[[valid_range]]
+quantity = "liquid_level_fraction"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = false
+severity = "error"
+rationale = "at one the gas area and the settling height vanish"
+[[valid_range]]
+quantity = "gas_liquid_characteristic_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the distribution's diameter is a scale"
+[[valid_range]]
+quantity = "gas_liquid_spread"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the spread is a positive shape parameter"
+[[valid_range]]
+quantity = "gas_bubble_characteristic_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the distribution's diameter is a scale"
+[[valid_range]]
+quantity = "gas_bubble_spread"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the spread is a positive shape parameter"
+[[valid_range]]
+quantity = "oil_in_water_characteristic_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the distribution's diameter is a scale"
+[[valid_range]]
+quantity = "oil_in_water_spread"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the spread is a positive shape parameter"
+[[valid_range]]
+quantity = "water_in_oil_characteristic_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the distribution's diameter is a scale"
+[[valid_range]]
+quantity = "water_in_oil_spread"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the spread is a positive shape parameter"
+[[valid_range]]
+quantity = "mist_eliminator_cut_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a cut diameter is a scale"
+[[valid_range]]
+quantity = "mist_eliminator_sharpness"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the sigmoid's sharpness is a positive exponent"
+[[valid_range]]
+quantity = "mist_eliminator_max_efficiency"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "an efficiency is a fraction"
+[[valid_range]]
+quantity = "oil_water_coalescer_cut_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a cut diameter is a scale"
+[[valid_range]]
+quantity = "oil_water_coalescer_max_efficiency"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "an efficiency is a fraction"
+[implementations]
+python = "azoth.process.separator_performance"
+rust = "azoth_process::separator_performance"

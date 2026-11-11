@@ -8,10 +8,19 @@ import type { ReactNode } from "react";
  * ribbon tab is a control `getByRole` does not find. The five document commands stay in one
  * always-visible row, so a later tabbed ribbon can hold everything else without moving them.
  */
-export function RibbonGroup({ label, children }: { label: string; children: ReactNode }) {
+export function RibbonGroup({
+  label,
+  note,
+  children,
+}: {
+  label: string;
+  note?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div className="ribbon-group" role="group" aria-label={label}>
       <div className="ribbon-controls">{children}</div>
+      {note === undefined ? null : <div className="ribbon-note">{note}</div>}
       <div className="ribbon-label">{label}</div>
     </div>
   );

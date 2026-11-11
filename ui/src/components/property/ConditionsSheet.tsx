@@ -1,84 +1,118 @@
+import { useState } from "react";
+
 import type { EditorCommand } from "../../wire/commands";
-import { displayOf, type Units } from "../../state/units";
+import { displayUnitOf, inDisplayUnit, toDisplayUnit, type Units } from "../../state/units";
 import { formatQuantity } from "../../wire/field";
-import type { Envelope, GraphNode, StreamRecord } from "../../wire/types";
+import type { Catalogue, Envelope, GraphNode, StreamRecord } from "../../wire/types";
+import { FeedEditor } from "../feed/FeedEditor";
+import { draftFromInput } from "../../state/composition";
 
 /**
  * A boundary stream's conditions: the record a feed declares, or what a product reached.
  *
  * **`h` is the field a user does not write.** It is a state function of `T`, `P` and `z`, so the
- * kernel derives it and a written one is refused rather than ignored — which is why the feed's form
- * has four fields and the product's readout has five.
+ * kernel derives it and a written one is refused rather than ignored — which is why the feed's
+ * form has four fields and the product's readout has five.
  *
- * **A feed that is also a product is one object with one record.** A feed's conditions come from
- * the document (`node.data.input`) and are editable through `add_input`, which replaces the whole
- * record; a product's come from the run. Where both exist - a product that is also consumed - the
- * document's record is what is drawn, because that is the one a command can change.
+ * **A feed is edited through the same editor the boundary panel uses.** The numbers here are the
+ * document's, shown in the unit set in force; changing a composition means replacing the record,
+ * which is one `add_input`, so the Edit control opens that form rather than pretending a setter
+ * per field exists.
+ *
+ * **A typed condition commits on blur or Enter.** Writing `340` used to be three commands and
+ * two states the checker could see; it is now one.
  */
 export function ConditionsSheet({
+  catalogue,
   envelope,
   node,
   units,
   onCommand,
 }: {
+  catalogue: Catalogue | null;
   envelope: Envelope;
   node: GraphNode;
   /** The unit a reader wants the values in; a catalogue that has not loaded converts nothing. */
   units: Units;
   onCommand: (command: EditorCommand) => void;
 }) {
+  const [editing, setEditing] = useState(false);
   const record = node.data.input;
   const reached: StreamRecord | undefined = envelope.session?.streams[node.data.name];
+
+  if (editing && record !== undefined) {
+    return (
+      <div className="sheet" id="sheet-conditions" role="tabpanel" aria-labelledby="tab-conditions">
+        <FeedEditor
+          catalogue={catalogue}
+          units={units}
+          initial={draftFromInput(node.data.name, record, units)}
+          editing
+          onApply={(prepared) => {
+            onCommand({ command: "add_input", ...prepared });
+            setEditing(false);
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      </div>
+    );
+  }
+
+  const write = (field: "n" | "P" | "T", value: number) => {
+    if (record === undefined || !Number.isFinite(value)) {
+      return;
+    }
+    const unit = field === "n" ? "mol/s" : field === "P" ? "Pa" : "K";
+    const stored = toDisplayUnit(units, value, unit);
+    onCommand({
+      command: "add_input",
+      name: node.data.name,
+      components: record.components,
+      n: field === "n" ? stored : record.n,
+      z: record.z,
+      P: field === "P" ? stored : record.P,
+      T: field === "T" ? stored : record.T,
+    });
+  };
 
   return (
     <div className="sheet" id="sheet-conditions" role="tabpanel" aria-labelledby="tab-conditions">
       {record === undefined ? null : (
         <>
+          <div className="feed-head">
+            <span className="name">the feed</span>
+            <button
+              type="button"
+              className="button"
+              onClick={() => setEditing(true)}
+              title="change the fluid, its fractions or its conditions; connections survive"
+            >
+              Edit feed
+            </button>
+          </div>
           <div className="field">
             <div className="head">
               <span className="name">components</span>
             </div>
-            <input
-              value={record.components.join(", ")}
-              onChange={() => {
-                // A substance list is not a parameter: changing it means a different fluid, and
-                // the command model has `add_input` for the whole record rather than a setter per
-                // field. The field is drawn read-only so that is visible rather than surprising.
-              }}
-              readOnly
-            />
-            <div className="hint">the fluid — change it with `add_input`, which replaces the record</div>
+            <input value={record.components.join(", ")} readOnly />
+            <div className="hint">mole fractions: {record.z.join(", ")}</div>
           </div>
-          {(["n", "P", "T"] as const).map((field) => (
-            <div className="field" key={field}>
-              <div className="head">
-                <span className="name">{field}</span>
-                <span className="unit">{field === "n" ? "mol/s" : field === "P" ? "Pa" : "K"}</span>
-              </div>
-              <input
-                value={String(record[field])}
-                inputMode="decimal"
-                onChange={(event) =>
-                  onCommand({
-                    command: "add_input",
-                    name: node.data.name,
-                    components: record.components,
-                    n: field === "n" ? Number(event.target.value) : record.n,
-                    z: record.z,
-                    P: field === "P" ? Number(event.target.value) : record.P,
-                    T: field === "T" ? Number(event.target.value) : record.T,
-                  })
-                }
+          {(["n", "P", "T"] as const).map((field) => {
+            const unit = field === "n" ? "mol/s" : field === "P" ? "Pa" : "K";
+            return (
+              <DraftNumber
+                key={field}
+                label={field}
+                unit={displayUnitOf(units, unit) ?? unit}
+                value={inDisplayUnit(
+                  units,
+                  field === "n" ? record.n : field === "P" ? record.P : record.T,
+                  unit,
+                )}
+                onCommit={(value) => write(field, value)}
               />
-            </div>
-          ))}
-          <div className="field">
-            <div className="head">
-              <span className="name">z</span>
-            </div>
-            <input value={record.z.join(", ")} readOnly />
-            <div className="hint">mole fractions, one per substance</div>
-          </div>
+            );
+          })}
         </>
       )}
 
@@ -136,7 +170,51 @@ export function ConditionsSheet({
   );
 }
 
+/** One condition, edited as a draft and sent once when the typing stops. */
+function DraftNumber({
+  label,
+  unit,
+  value,
+  onCommit,
+}: {
+  label: string;
+  unit: string;
+  value: number;
+  onCommit: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const shown = draft ?? String(value);
+  const commit = () => {
+    if (draft !== null) {
+      onCommit(Number(draft));
+      setDraft(null);
+    }
+  };
+  return (
+    <div className="field">
+      <div className="head">
+        <span className="name">{label}</span>
+        <span className="unit">{unit}</span>
+      </div>
+      <input
+        value={shown}
+        aria-label={label}
+        inputMode="decimal"
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            commit();
+          } else if (event.key === "Escape") {
+            setDraft(null);
+          }
+        }}
+      />
+    </div>
+  );
+}
+
 /** The unit a cell is in, which is the set's and not the record's. */
 function shownUnit(units: Units, unit: string): string {
-  return displayOf(units, unit).unit;
+  return displayUnitOf(units, unit) ?? unit;
 }

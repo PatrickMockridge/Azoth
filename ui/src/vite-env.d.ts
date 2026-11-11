@@ -1,6 +1,16 @@
 /// <reference types="vite/client" />
 
 /**
+ * The commit the static deploy was built from.
+ *
+ * Injected by `.github/workflows/pages.yml` and absent in a development build, where the title
+ * strip shows the library version alone. It is a presentation fact and is not on the wire.
+ */
+interface ImportMetaEnv {
+  readonly VITE_AZOTH_BUILD?: string;
+}
+
+/**
  * The shipped flowsheets, inlined at build time.
  *
  * **Read from the repository rather than copied into `public/`.** A copy is a second document that

@@ -1,0 +1,419 @@
+model = "process.separator_capacity_assessment"
+[[cases]]
+id = "a_feasible_vessel"
+tolerance = 2e-04
+source = "The capture's first block: the capacity surface's two-phase state in a 1 m vertical vessel at a design `K` of `0.11`, with a stated provenance. The Souders-Brown flow governs (`0.4397141288` m3/s), the gas carries `9.3488818763e-4` m3/s and utilisation is `0.0021261272`, so the snapshot is `feasible`. **The mechanical maximum is `0.0`** - the class's field when no limit was set - and the source is `equipment`.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = "design basis A"
+[cases.expected]
+status = "feasible"
+diagnostic = "Gas capacity is within the evidenced design limit"
+design_basis_source = "equipment"
+governing_capacity_basis = "soudersBrown"
+gas_area = 0.7853981633974483
+gas_density = 20.157310986709366
+liquid_density = 542.322967123113
+maximum_gas_velocity = 0.559861417115024
+current_gas_flow = 9.34888187629334e-4
+mechanical_design_maximum_gas_flow = 0.0
+souders_brown_maximum_gas_flow = 0.4397141287592326
+maximum_gas_flow = 0.4397141287592326
+utilization = 0.0021261272415043003
+[[cases]]
+id = "an_undersized_vessel_is_infeasible"
+tolerance = 2e-04
+source = "The capture's second block: the same fluid at 50 mol/s through a 0.2 m vessel. The gas' `0.0467444094` m3/s is nearly three times the `0.0175885652` m3/s the area admits, so utilisation is `2.6576590519` and the status is `infeasible` rather than a refusal. **The snapshot still carries every number** - an infeasible assessment is evidence, not an error.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 50.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 0.2
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = "an undersized vessel"
+[cases.expected]
+status = "infeasible"
+diagnostic = "Gas capacity exceeds the evidenced design limit"
+design_basis_source = "equipment"
+governing_capacity_basis = "soudersBrown"
+gas_area = 0.031415926535897934
+gas_density = 20.157310986709337
+liquid_density = 542.3229671231129
+maximum_gas_velocity = 0.5598614171150242
+current_gas_flow = 0.046744409381466664
+mechanical_design_maximum_gas_flow = 0.0
+souders_brown_maximum_gas_flow = 0.01758856515036931
+maximum_gas_flow = 0.01758856515036931
+utilization = 2.6576590518803727
+[[cases]]
+id = "a_mechanical_limit_governs"
+tolerance = 2e-04
+source = "The capture's third block: the feasible vessel with a mechanical limit of `0.8` times its Souders-Brown flow. The limit is `0.3517713030` m3/s and is below `0.4397141288`, so it governs: source `mechanicalDesign`, basis `mechanicalDesignGasFlow`, maximum flow the limit, utilisation `0.0026576591`. **A limit the class holds in m3/hr is the same number over 3600**, which is the port's stated input.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = "mechanical design basis"
+mechanical_design_max_gas_flow = 0.3517713030073861
+[cases.expected]
+status = "feasible"
+diagnostic = "Gas capacity is within the evidenced design limit"
+design_basis_source = "mechanicalDesign"
+governing_capacity_basis = "mechanicalDesignGasFlow"
+gas_area = 0.7853981633974483
+gas_density = 20.157310986709366
+liquid_density = 542.322967123113
+maximum_gas_velocity = 0.559861417115024
+current_gas_flow = 9.34888187629334e-4
+mechanical_design_maximum_gas_flow = 0.3517713030073861
+souders_brown_maximum_gas_flow = 0.4397141287592326
+maximum_gas_flow = 0.3517713030073861
+utilization = 0.002657659051880375
+[[cases]]
+id = "a_mechanical_limit_above_the_souders_brown_flow_does_not_govern"
+tolerance = 2e-04
+source = "The capture's fourth block: the same vessel with a mechanical limit of `1.2` times its Souders-Brown flow. **A stated limit names a source even when it does not bind**: `design_basis_source` is `mechanicalDesign`, while the governing basis stays `soudersBrown` and the maximum flow is the Souders-Brown one. The mechanical maximum is still reported, at `0.5276569545` m3/s, because it is part of the snapshot rather than a discarded input.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = "a mechanical limit that does not bind"
+mechanical_design_max_gas_flow = 0.5276569545110791
+[cases.expected]
+status = "feasible"
+diagnostic = "Gas capacity is within the evidenced design limit"
+design_basis_source = "mechanicalDesign"
+governing_capacity_basis = "soudersBrown"
+gas_area = 0.7853981633974483
+gas_density = 20.157310986709366
+liquid_density = 542.322967123113
+maximum_gas_velocity = 0.559861417115024
+current_gas_flow = 9.34888187629334e-4
+mechanical_design_maximum_gas_flow = 0.5276569545110791
+souders_brown_maximum_gas_flow = 0.4397141287592326
+maximum_gas_flow = 0.4397141287592326
+utilization = 0.0021261272415043003
+[[cases]]
+id = "a_blank_provenance_is_unassessed"
+tolerance = 2e-04
+source = "The capture's fifth block: the feasible state with a whitespace provenance. **The class trims it and fails closed**: `unassessed`, the diagnostic `Design-basis provenance is required`, and no numeric evidence - the two string evidence fields are empty. The provenance check is the first one, so this row cannot be confused with a geometry failure.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = " "
+[cases.expected]
+status = "unassessed"
+diagnostic = "Design-basis provenance is required"
+design_basis_source = ""
+governing_capacity_basis = ""
+[[cases]]
+id = "a_liquid_only_feed_is_unassessed"
+tolerance = 2e-04
+source = "The capture's sixth block: n-butane at 250 K and 5 bar, a single liquid phase. **The class refuses to assess a vessel with no gas to size for** and answers `unassessed` with the geometry diagnostic, not a zero utilisation - that is `getCapacityUtilization`'s answer, and this snapshot is a different question.\n"
+[cases.inputs]
+components = ["n-butane"]
+feed_n = 1.0
+feed_z = [1.0]
+feed_p = 500000.0
+feed_t = 250.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = "liquid only"
+[cases.expected]
+status = "unassessed"
+diagnostic = "Finite geometry, design K-factor, and a calculated gas phase are required"
+design_basis_source = ""
+governing_capacity_basis = ""
+[[cases]]
+id = "a_zero_diameter_is_unassessed"
+tolerance = 2e-04
+source = "The capture's eleventh block: the feasible state with a zero diameter. **A non-positive geometry answers `unassessed` rather than a typed refusal**, which is the class's fail-closed contract and the reason this id declares no `valid_range` rows. The gas cannot be sized for a vessel of no area.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 0.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = "design basis A"
+[cases.expected]
+status = "unassessed"
+diagnostic = "Finite geometry, design K-factor, and a calculated gas phase are required"
+design_basis_source = ""
+governing_capacity_basis = ""
+[[cases]]
+id = "an_unknown_orientation_is_unassessed"
+tolerance = 2e-04
+source = "The capture's twelfth block: the feasible state with `orientation = inclined`. **The class accepts any string on the setter and fails closed at the assessment**, so the port carries the orientation as a string and reproduces that branch rather than refusing the input. The diagnostic names the two values the class knows.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "inclined"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = "design basis A"
+[cases.expected]
+status = "unassessed"
+diagnostic = "Separator orientation must be horizontal or vertical"
+design_basis_source = ""
+governing_capacity_basis = ""
+[[cases]]
+id = "a_full_liquid_level_is_unassessed"
+tolerance = 2e-04
+source = "The capture's thirteenth block: the feasible state with a design liquid level of exactly one. **The class's interval is `[0, 1)`**, so one is out and the level check precedes the evidence calculation. The diagnostic is the level's own, not the geometry's.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 1.0
+design_basis_provenance = "design basis A"
+[cases.expected]
+status = "unassessed"
+diagnostic = "Design liquid level fraction must be in [0, 1)"
+design_basis_source = ""
+governing_capacity_basis = ""
+[[cases]]
+id = "a_liquid_only_feed_with_a_full_level_is_unassessed"
+tolerance = 2e-04
+source = "The capture's sixth block: a liquid-only feed with a design liquid level of one. **The class checks the gas phase before the level**, so the answer is the geometry sentence - a vessel with nothing to size for - rather than the level's. The two checks share a feed and differ only in which one the code reaches first, which is what this row pins.\n"
+[cases.inputs]
+components = ["n-butane"]
+feed_n = 1.0
+feed_z = [1.0]
+feed_p = 500000.0
+feed_t = 250.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 1.0
+design_basis_provenance = "liquid only"
+[cases.expected]
+status = "unassessed"
+diagnostic = "Finite geometry, design K-factor, and a calculated gas phase are required"
+design_basis_source = ""
+governing_capacity_basis = ""
+[[cases]]
+id = "a_zero_design_k_is_unassessed"
+tolerance = 2e-04
+source = "The capture's seventh block: the feasible state with a design `K` of zero. **A vessel with no settling velocity is not a vessel**, and the class's `finitePositive` check answers the geometry sentence rather than dividing by it. The separator id's own capacity surface would refuse the input; this one reports it.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.0
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = "design basis A"
+[cases.expected]
+status = "unassessed"
+diagnostic = "Finite geometry, design K-factor, and a calculated gas phase are required"
+design_basis_source = ""
+governing_capacity_basis = ""
+[[cases]]
+id = "an_overflowing_design_k_is_unassessed"
+tolerance = 2e-04
+source = "The capture's eighth block: a `K` of `1e308`, whose Souders-Brown velocity overflows to infinity. **The class's final evidence check refuses an infinity** - `finitePositive(maximumVelocity)` is false - so the diagnostic is the evidence one, not the geometry one. This is the branch that says an infinite number is not an assessment.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 1.0e308
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = "design basis A"
+[cases.expected]
+status = "unassessed"
+diagnostic = "Separator capacity calculation returned non-finite evidence"
+design_basis_source = ""
+governing_capacity_basis = ""
+[[cases]]
+id = "a_horizontal_vessel_derates_the_gas_area"
+tolerance = 2e-04
+source = "The capture's ninth block: the feasible state with the vessel horizontal. **The area is `(1 - 0.8)` of the cross-section**, so the Souders-Brown flow falls from `0.4397141288` to `0.0879428258` m3/s and the utilisation rises from `0.0021261272` to `0.0106306362`; the maximum velocity does not move, because it is the densities' and the design `K`'s. The same 5x derating the separator capacity surface pins.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.11
+orientation = "horizontal"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = "design basis A"
+[cases.expected]
+status = "feasible"
+diagnostic = "Gas capacity is within the evidenced design limit"
+design_basis_source = "equipment"
+governing_capacity_basis = "soudersBrown"
+gas_area = 0.15707963267948963
+gas_density = 20.157310986709366
+liquid_density = 542.322967123113
+maximum_gas_velocity = 0.559861417115024
+current_gas_flow = 9.34888187629334e-4
+mechanical_design_maximum_gas_flow = 0.0
+souders_brown_maximum_gas_flow = 0.0879428257518465
+maximum_gas_flow = 0.0879428257518465
+utilization = 0.010630636207521504
+[[cases]]
+id = "the_pinned_3154_vessel_is_feasible"
+tolerance = 2e-04
+source = "The capture's fourteenth block: the pin's #3154 state mirrored on PR - a 3 m vertical vessel on 95/5 methane/ethane at 50000 kg/hr, 30 C and 50 bar. The gas area is `pi*9/4 = 7.0685834706` m2, matching the test's own assertion, and the Souders-Brown flow is `3.9839980013` m3/s against a current `0.3785215571`.\n"
+[cases.inputs]
+components = ["methane", "ethane"]
+feed_n = 829.4671867757713
+feed_z = [0.95, 0.05]
+feed_p = 5000000.0
+feed_t = 303.15
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 3.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = "Issue #3154 design basis"
+[cases.expected]
+status = "feasible"
+diagnostic = "Gas capacity is within the evidenced design limit"
+design_basis_source = "equipment"
+governing_capacity_basis = "soudersBrown"
+gas_area = 7.0685834705770345
+gas_density = 36.692464746744186
+liquid_density = 1000.0
+maximum_gas_velocity = 0.5636204223806067
+current_gas_flow = 0.3785215570758648
+mechanical_design_maximum_gas_flow = 0.0
+souders_brown_maximum_gas_flow = 3.983998001319203
+maximum_gas_flow = 3.983998001319203
+utilization = 0.09501047865750101
+[[cases]]
+id = "the_pinned_3154_mechanical_limit_governs"
+tolerance = 2e-04
+source = "The capture's fifteenth block: the same vessel with the test's `0.8` mechanical limit, `3.1871984011` m3/s. It governs, and **the test's own assertions are this case's expectations**: source `mechanicalDesign`, basis `mechanicalDesignGasFlow`, maximum flow the limit.\n"
+[cases.inputs]
+components = ["methane", "ethane"]
+feed_n = 829.4671867757713
+feed_z = [0.95, 0.05]
+feed_p = 5000000.0
+feed_t = 303.15
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 3.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = "Issue #3154 mechanical design basis"
+mechanical_design_max_gas_flow = 3.1871984010553627
+[cases.expected]
+status = "feasible"
+diagnostic = "Gas capacity is within the evidenced design limit"
+design_basis_source = "mechanicalDesign"
+governing_capacity_basis = "mechanicalDesignGasFlow"
+gas_area = 7.0685834705770345
+gas_density = 36.692464746744186
+liquid_density = 1000.0
+maximum_gas_velocity = 0.5636204223806067
+current_gas_flow = 0.3785215570758648
+mechanical_design_maximum_gas_flow = 3.1871984010553627
+souders_brown_maximum_gas_flow = 3.983998001319203
+maximum_gas_flow = 3.1871984010553627
+utilization = 0.11876309832187626
+[[cases]]
+id = "the_pinned_3154_blank_provenance_is_unassessed"
+tolerance = 2e-04
+source = "The capture's sixteenth block: the test's missing-provenance row. `getCapacityAssessment(\" \")` answers `UNASSESSED` and `isFeasible()` is false; the port's status string is `unassessed` and its evidence fields are absent.\n"
+[cases.inputs]
+components = ["methane", "ethane"]
+feed_n = 829.4671867757713
+feed_z = [0.95, 0.05]
+feed_p = 5000000.0
+feed_t = 303.15
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 3.0
+design_gas_load_factor = 0.11
+orientation = "vertical"
+design_liquid_level_fraction = 0.8
+design_basis_provenance = " "
+[cases.expected]
+status = "unassessed"
+diagnostic = "Design-basis provenance is required"
+design_basis_source = ""
+governing_capacity_basis = ""

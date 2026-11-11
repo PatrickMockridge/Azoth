@@ -46,6 +46,418 @@ impl From<&azoth_eos::results::ActivityCoefficientRow> for PyActivityCoefficient
     }
 }
 
+/// The standards the design pipeline applied.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "AppliedStandardRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyAppliedStandardRow {
+    /// one standard.
+    #[pyo3(get)]
+    pub name: String,
+}
+
+#[pymethods]
+impl PyAppliedStandardRow {
+    fn __repr__(&self) -> String {
+        format!("AppliedStandardRow(name={})", self.name)
+    }
+}
+
+impl From<&azoth_thermal::results::AppliedStandardRow> for PyAppliedStandardRow {
+    fn from(row: &azoth_thermal::results::AppliedStandardRow) -> Self {
+        Self {
+            name: row.name.clone(),
+        }
+    }
+}
+
+/// One row per mixing fraction, from all brine A to all brine B.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "BrineMixingPointRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyBrineMixingPointRow {
+    /// the fraction of brine A in the mixture.
+    #[pyo3(get)]
+    pub fraction_a: f64,
+    /// calcite's index.
+    #[pyo3(get)]
+    pub si_caco3: f64,
+    /// barite's index.
+    #[pyo3(get)]
+    pub si_baso4: f64,
+    /// gypsum's index.
+    #[pyo3(get)]
+    pub si_caso4: f64,
+    /// celestite's index.
+    #[pyo3(get)]
+    pub si_srso4: f64,
+}
+
+#[pymethods]
+impl PyBrineMixingPointRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "BrineMixingPointRow(fraction_a={}, si_caco3={}, si_baso4={}, si_caso4={}, si_srso4={})",
+            self.fraction_a, self.si_caco3, self.si_baso4, self.si_caso4, self.si_srso4
+        )
+    }
+}
+
+impl From<&azoth_eos::results::BrineMixingPointRow> for PyBrineMixingPointRow {
+    fn from(row: &azoth_eos::results::BrineMixingPointRow) -> Self {
+        Self {
+            fraction_a: row.fraction_a,
+            si_caco3: row.si_caco3,
+            si_baso4: row.si_baso4,
+            si_caso4: row.si_caso4,
+            si_srso4: row.si_srso4,
+        }
+    }
+}
+
+/// The blended fluid's components: its merged base components first, in the fluids' order, then the combined pseudo-components in ascending cut order, named `PC1_PC`, `PC2_PC` and so on.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CharacterizationComponent"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCharacterizationComponent {
+    /// The component's name: a base component's own, or the cut's position in the answer.
+    #[pyo3(get)]
+    pub name: String,
+    /// Whether the row is a pseudo-component. A base row carries its name and amount and no properties.
+    #[pyo3(get)]
+    pub pseudo_component: bool,
+    /// The component's mole amount. Over the whole answer it is the sum of the fluids' positive amounts, so no mole is gained or lost.
+    #[pyo3(get)]
+    pub moles: PyQty,
+    /// The cut's molar mass, its accumulated mass over its accumulated moles.
+    #[pyo3(get)]
+    pub molar_mass: Option<PyQty>,
+    /// The cut's normal liquid density, the mass over the volume its rows occupy.
+    #[pyo3(get)]
+    pub density: Option<PyQty>,
+    /// The cut's normal boiling point, weighted by fluid mass fraction times mole fraction within the fluid.
+    #[pyo3(get)]
+    pub normal_boiling_point: Option<PyQty>,
+    /// The cut's critical temperature, weighted the same way.
+    #[pyo3(get)]
+    pub critical_temperature: Option<PyQty>,
+    /// The cut's critical pressure, weighted the same way.
+    #[pyo3(get)]
+    pub critical_pressure: Option<PyQty>,
+    /// The cut's acentric factor, weighted the same way.
+    #[pyo3(get)]
+    pub acentric_factor: Option<f64>,
+    /// The cut's critical molar volume, mass-weighted. Absent where no contributing row states one.
+    #[pyo3(get)]
+    pub critical_volume: Option<PyQty>,
+    /// The cut's Rackett compressibility, mass-weighted.
+    #[pyo3(get)]
+    pub racket_z: Option<f64>,
+    /// The cut's CPA Rackett compressibility, mass-weighted.
+    #[pyo3(get)]
+    pub racket_z_cpa: Option<f64>,
+    /// The cut's parachor, mass-weighted.
+    #[pyo3(get)]
+    pub parachor: Option<f64>,
+    /// The cut's critical viscosity, mass-weighted.
+    #[pyo3(get)]
+    pub critical_viscosity: Option<PyQty>,
+    /// The cut's triple-point temperature, mass-weighted.
+    #[pyo3(get)]
+    pub triple_point_temperature: Option<PyQty>,
+    /// The cut's heat of fusion, mass-weighted.
+    #[pyo3(get)]
+    pub heat_of_fusion: Option<PyQty>,
+    /// The cut's ideal-gas enthalpy of formation, mass-weighted.
+    #[pyo3(get)]
+    pub ideal_gas_enthalpy_of_formation: Option<PyQty>,
+    /// The constant term of the cut's ideal-gas heat capacity, mass-weighted.
+    #[pyo3(get)]
+    pub cp_a: Option<PyQty>,
+    /// The coefficient of `T` in the cut's ideal-gas heat capacity.
+    #[pyo3(get)]
+    pub cp_b: Option<PyQty>,
+    /// The coefficient of `T**2` in the cut's ideal-gas heat capacity.
+    #[pyo3(get)]
+    pub cp_c: Option<PyQty>,
+    /// The coefficient of `T**3` in the cut's ideal-gas heat capacity, as the rebuilt component's `getCpD()` states it - the blended mean plus `1e-10`.
+    #[pyo3(get)]
+    pub cp_d: Option<PyQty>,
+    /// The fitted Soave coefficient of the cut's alpha function, mass-weighted.
+    #[pyo3(get)]
+    pub attractive_m: Option<f64>,
+}
+
+#[pymethods]
+impl PyCharacterizationComponent {
+    fn __repr__(&self) -> String {
+        format!(
+            "CharacterizationComponent(name={}, pseudo_component={:?}, moles={:?}, molar_mass={:?}, density={:?}, normal_boiling_point={:?}, critical_temperature={:?}, critical_pressure={:?}, acentric_factor={:?}, critical_volume={:?}, racket_z={:?}, racket_z_cpa={:?}, parachor={:?}, critical_viscosity={:?}, triple_point_temperature={:?}, heat_of_fusion={:?}, ideal_gas_enthalpy_of_formation={:?}, cp_a={:?}, cp_b={:?}, cp_c={:?}, cp_d={:?}, attractive_m={:?})",
+            self.name,
+            self.pseudo_component,
+            self.moles,
+            self.molar_mass,
+            self.density,
+            self.normal_boiling_point,
+            self.critical_temperature,
+            self.critical_pressure,
+            self.acentric_factor,
+            self.critical_volume,
+            self.racket_z,
+            self.racket_z_cpa,
+            self.parachor,
+            self.critical_viscosity,
+            self.triple_point_temperature,
+            self.heat_of_fusion,
+            self.ideal_gas_enthalpy_of_formation,
+            self.cp_a,
+            self.cp_b,
+            self.cp_c,
+            self.cp_d,
+            self.attractive_m
+        )
+    }
+}
+
+impl From<&azoth_characterization::component_row::CharacterizationComponent>
+    for PyCharacterizationComponent
+{
+    fn from(row: &azoth_characterization::component_row::CharacterizationComponent) -> Self {
+        Self {
+            name: row.name.clone(),
+            pseudo_component: row.pseudo_component,
+            moles: PyQty {
+                magnitude_si: row.moles,
+                unit: "mol".to_string(),
+            },
+            molar_mass: row.molar_mass.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg/mol".to_string(),
+            }),
+            density: row.density.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "kg/m**3".to_string(),
+            }),
+            normal_boiling_point: row.normal_boiling_point.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "K".to_string(),
+            }),
+            critical_temperature: row.critical_temperature.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "K".to_string(),
+            }),
+            critical_pressure: row.critical_pressure.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "Pa".to_string(),
+            }),
+            acentric_factor: row.acentric_factor,
+            critical_volume: row.critical_volume.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "m**3/mol".to_string(),
+            }),
+            racket_z: row.racket_z,
+            racket_z_cpa: row.racket_z_cpa,
+            parachor: row.parachor,
+            critical_viscosity: row.critical_viscosity.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "Pa*s".to_string(),
+            }),
+            triple_point_temperature: row.triple_point_temperature.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "K".to_string(),
+            }),
+            heat_of_fusion: row.heat_of_fusion.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "J/mol".to_string(),
+            }),
+            ideal_gas_enthalpy_of_formation: row.ideal_gas_enthalpy_of_formation.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "J/mol".to_string(),
+            }),
+            cp_a: row.cp_a.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "J/(mol*K)".to_string(),
+            }),
+            cp_b: row.cp_b.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "J/(mol*K**2)".to_string(),
+            }),
+            cp_c: row.cp_c.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "J/(mol*K**3)".to_string(),
+            }),
+            cp_d: row.cp_d.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "J/(mol*K**4)".to_string(),
+            }),
+            attractive_m: row.attractive_m,
+        }
+    }
+}
+
+/// The class's warning map, in insertion order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ChemicalWarningRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyChemicalWarningRow {
+    /// the warning's code.
+    #[pyo3(get)]
+    pub code: String,
+    /// the warning's message.
+    #[pyo3(get)]
+    pub message: String,
+}
+
+#[pymethods]
+impl PyChemicalWarningRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "ChemicalWarningRow(code={}, message={})",
+            self.code, self.message
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ChemicalWarningRow> for PyChemicalWarningRow {
+    fn from(row: &azoth_eos::results::ChemicalWarningRow) -> Self {
+        Self {
+            code: row.code.clone(),
+            message: row.message.clone(),
+        }
+    }
+}
+
+/// One row per evaluated segment, in the profile's order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "DepositionSegmentRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyDepositionSegmentRow {
+    /// the CaCO3 index at the segment's temperature and pressure.
+    #[pyo3(get)]
+    pub saturation_index: f64,
+    /// the deposit mass over the segment's wall area and the service time.
+    #[pyo3(get)]
+    pub deposition_mass: PyQty,
+    /// the deposit thickness over the segment.
+    #[pyo3(get)]
+    pub thickness: PyQty,
+}
+
+#[pymethods]
+impl PyDepositionSegmentRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "DepositionSegmentRow(saturation_index={}, deposition_mass={:?}, thickness={:?})",
+            self.saturation_index, self.deposition_mass, self.thickness
+        )
+    }
+}
+
+impl From<&azoth_eos::results::DepositionSegmentRow> for PyDepositionSegmentRow {
+    fn from(row: &azoth_eos::results::DepositionSegmentRow) -> Self {
+        Self {
+            saturation_index: row.saturation_index,
+            deposition_mass: PyQty {
+                magnitude_si: row.deposition_mass.value,
+                unit: "kg".to_string(),
+            },
+            thickness: PyQty {
+                magnitude_si: row.thickness.value,
+                unit: "m".to_string(),
+            },
+        }
+    }
+}
+
+/// the accepted stencil's states, centre first.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "EquilibriumSoundSpeedSample"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyEquilibriumSoundSpeedSample {
+    /// the sample's absolute pressure.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// the sample's temperature.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// the sample's mass over EOS total volume.
+    #[pyo3(get)]
+    pub density: PyQty,
+    /// the signed specific-entropy error.
+    #[pyo3(get)]
+    pub entropy_residual: PyQty,
+    /// what the flash found at the sample.
+    #[pyo3(get)]
+    pub phase: String,
+    /// the vapour fraction where the sample is two-phase.
+    #[pyo3(get)]
+    pub vapour_fraction: Option<f64>,
+}
+
+#[pymethods]
+impl PyEquilibriumSoundSpeedSample {
+    fn __repr__(&self) -> String {
+        format!(
+            "EquilibriumSoundSpeedSample(pressure={:?}, temperature={:?}, density={:?}, entropy_residual={:?}, phase={}, vapour_fraction={:?})",
+            self.pressure,
+            self.temperature,
+            self.density,
+            self.entropy_residual,
+            self.phase,
+            self.vapour_fraction
+        )
+    }
+}
+
+impl From<&azoth_eos::results::EquilibriumSoundSpeedSample> for PyEquilibriumSoundSpeedSample {
+    fn from(row: &azoth_eos::results::EquilibriumSoundSpeedSample) -> Self {
+        Self {
+            pressure: PyQty {
+                magnitude_si: row.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            temperature: PyQty {
+                magnitude_si: row.temperature.value,
+                unit: "K".to_string(),
+            },
+            density: PyQty {
+                magnitude_si: row.density,
+                unit: "kg/m**3".to_string(),
+            },
+            entropy_residual: PyQty {
+                magnitude_si: row.entropy_residual,
+                unit: "J/(kg*K)".to_string(),
+            },
+            phase: row.phase.as_str().to_string(),
+            vapour_fraction: row.vapour_fraction,
+        }
+    }
+}
+
 /// The `N + 1` points, inlet first; a point's index is absent where its ions are.
 #[pyclass(
     frozen,
@@ -119,6 +531,731 @@ impl From<&azoth_eos::results::FlowlineScaleSegment> for PyFlowlineScaleSegment 
     }
 }
 
+/// the five candidates in the class's enum order; empty when the design did not run.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HeatExchangerMechanicalType"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHeatExchangerMechanicalType {
+    /// the configuration's spelling.
+    #[pyo3(get)]
+    pub mechanical_type: String,
+    /// the required heat-transfer area, floored at 0.1.
+    #[pyo3(get)]
+    pub required_area: PyQty,
+    /// the UA the type's area is computed from.
+    #[pyo3(get)]
+    pub required_ua: PyQty,
+    /// the type's typical overall coefficient, which is also the area's divisor on this branch.
+    #[pyo3(get)]
+    pub overall_heat_transfer_coefficient: PyQty,
+    /// the larger of the estimate's approach and the type's allowable approach.
+    #[pyo3(get)]
+    pub approach_temperature: PyQty,
+    /// the estimated length: tube length, stack length, fan-module length, pipe length or core length.
+    #[pyo3(get)]
+    pub estimated_length: PyQty,
+    /// the equivalent inside diameter.
+    #[pyo3(get)]
+    pub inner_diameter: PyQty,
+    /// the equivalent outside diameter.
+    #[pyo3(get)]
+    pub outer_diameter: PyQty,
+    /// the wall or sheet thickness.
+    #[pyo3(get)]
+    pub wall_thickness: PyQty,
+    /// the tube or plate count.
+    #[pyo3(get)]
+    pub tube_count: f64,
+    /// the tube passes or plate pairs.
+    #[pyo3(get)]
+    pub tube_passes: f64,
+    /// the fin surface area; zero for the unfinned types.
+    #[pyo3(get)]
+    pub fin_surface_area: PyQty,
+    /// the class's qualitative pressure-drop proxy, in bar.
+    #[pyo3(get)]
+    pub estimated_pressure_drop: f64,
+    /// the estimated weight.
+    #[pyo3(get)]
+    pub estimated_weight: PyQty,
+    /// the module length.
+    #[pyo3(get)]
+    pub module_length: PyQty,
+    /// the module width.
+    #[pyo3(get)]
+    pub module_width: PyQty,
+    /// the module height.
+    #[pyo3(get)]
+    pub module_height: PyQty,
+}
+
+#[pymethods]
+impl PyHeatExchangerMechanicalType {
+    fn __repr__(&self) -> String {
+        format!(
+            "HeatExchangerMechanicalType(mechanical_type={}, required_area={:?}, required_ua={:?}, overall_heat_transfer_coefficient={:?}, approach_temperature={:?}, estimated_length={:?}, inner_diameter={:?}, outer_diameter={:?}, wall_thickness={:?}, tube_count={}, tube_passes={}, fin_surface_area={:?}, estimated_pressure_drop={}, estimated_weight={:?}, module_length={:?}, module_width={:?}, module_height={:?})",
+            self.mechanical_type,
+            self.required_area,
+            self.required_ua,
+            self.overall_heat_transfer_coefficient,
+            self.approach_temperature,
+            self.estimated_length,
+            self.inner_diameter,
+            self.outer_diameter,
+            self.wall_thickness,
+            self.tube_count,
+            self.tube_passes,
+            self.fin_surface_area,
+            self.estimated_pressure_drop,
+            self.estimated_weight,
+            self.module_length,
+            self.module_width,
+            self.module_height
+        )
+    }
+}
+
+impl From<&azoth_process::models::heat_exchanger::HeatExchangerMechanicalType>
+    for PyHeatExchangerMechanicalType
+{
+    fn from(row: &azoth_process::models::heat_exchanger::HeatExchangerMechanicalType) -> Self {
+        Self {
+            mechanical_type: row.mechanical_type.clone(),
+            required_area: PyQty {
+                magnitude_si: row.required_area.value,
+                unit: "m**2".to_string(),
+            },
+            required_ua: PyQty {
+                magnitude_si: row.required_ua.value,
+                unit: "W/K".to_string(),
+            },
+            overall_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.overall_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            approach_temperature: PyQty {
+                magnitude_si: row.approach_temperature.value,
+                unit: "K".to_string(),
+            },
+            estimated_length: PyQty {
+                magnitude_si: row.estimated_length.value,
+                unit: "m".to_string(),
+            },
+            inner_diameter: PyQty {
+                magnitude_si: row.inner_diameter.value,
+                unit: "m".to_string(),
+            },
+            outer_diameter: PyQty {
+                magnitude_si: row.outer_diameter.value,
+                unit: "m".to_string(),
+            },
+            wall_thickness: PyQty {
+                magnitude_si: row.wall_thickness.value,
+                unit: "m".to_string(),
+            },
+            tube_count: row.tube_count,
+            tube_passes: row.tube_passes,
+            fin_surface_area: PyQty {
+                magnitude_si: row.fin_surface_area.value,
+                unit: "m**2".to_string(),
+            },
+            estimated_pressure_drop: row.estimated_pressure_drop,
+            estimated_weight: PyQty {
+                magnitude_si: row.estimated_weight.value,
+                unit: "kg".to_string(),
+            },
+            module_length: PyQty {
+                magnitude_si: row.module_length.value,
+                unit: "m".to_string(),
+            },
+            module_width: PyQty {
+                magnitude_si: row.module_width.value,
+                unit: "m".to_string(),
+            },
+            module_height: PyQty {
+                magnitude_si: row.module_height.value,
+                unit: "m".to_string(),
+            },
+        }
+    }
+}
+
+/// the design's instrument list, in the class's insertion order; empty when the design did not run.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HeaterInstrument"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHeaterInstrument {
+    /// the tag the list assigns: `SYMBOL-(1000 + position)`.
+    #[pyo3(get)]
+    pub tag: String,
+    /// the ISA symbol, e.g. `TT` or `TSHH`.
+    #[pyo3(get)]
+    pub isa_symbol: String,
+    /// the service description.
+    #[pyo3(get)]
+    pub service: String,
+    /// `AI`, `AO`, `DI` or `DO`.
+    #[pyo3(get)]
+    pub io_type: String,
+    /// the unit the range is stated in; absent for a digital trip, whose constructor leaves it null.
+    #[pyo3(get)]
+    pub range_unit: Option<String>,
+    /// the range's lower bound, in the row's `range_unit`.
+    #[pyo3(get)]
+    pub range_min: f64,
+    /// the range's upper bound, in the row's `range_unit`.
+    #[pyo3(get)]
+    pub range_max: f64,
+    /// the SIL rating; zero for a non-safety instrument.
+    #[pyo3(get)]
+    pub sil_rating: f64,
+    /// whether the row is safety-related.
+    #[pyo3(get)]
+    pub safety_related: bool,
+}
+
+#[pymethods]
+impl PyHeaterInstrument {
+    fn __repr__(&self) -> String {
+        format!(
+            "HeaterInstrument(tag={}, isa_symbol={}, service={}, io_type={}, range_unit={:?}, range_min={}, range_max={}, sil_rating={}, safety_related={:?})",
+            self.tag,
+            self.isa_symbol,
+            self.service,
+            self.io_type,
+            self.range_unit,
+            self.range_min,
+            self.range_max,
+            self.sil_rating,
+            self.safety_related
+        )
+    }
+}
+
+impl From<&azoth_process::models::heater::HeaterInstrument> for PyHeaterInstrument {
+    fn from(row: &azoth_process::models::heater::HeaterInstrument) -> Self {
+        Self {
+            tag: row.tag.clone(),
+            isa_symbol: row.isa_symbol.clone(),
+            service: row.service.clone(),
+            io_type: row.io_type.clone(),
+            range_unit: row.range_unit.clone(),
+            range_min: row.range_min,
+            range_max: row.range_max,
+            sil_rating: row.sil_rating,
+            safety_related: row.safety_related,
+        }
+    }
+}
+
+/// the five candidates in the class's enum order; empty when the design did not run.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HeaterMechanicalType"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHeaterMechanicalType {
+    /// the configuration's spelling.
+    #[pyo3(get)]
+    pub mechanical_type: String,
+    /// the required heat-transfer area.
+    #[pyo3(get)]
+    pub required_area: PyQty,
+    /// the UA the type's area is computed from.
+    #[pyo3(get)]
+    pub required_ua: PyQty,
+    /// the type's typical overall coefficient.
+    #[pyo3(get)]
+    pub overall_heat_transfer_coefficient: PyQty,
+    /// the larger of the estimate's approach and the type's allowable approach.
+    #[pyo3(get)]
+    pub approach_temperature: PyQty,
+    /// the estimated length: tube length, stack length, fan-module length, pipe length or core length.
+    #[pyo3(get)]
+    pub estimated_length: PyQty,
+    /// the equivalent inside diameter.
+    #[pyo3(get)]
+    pub inner_diameter: PyQty,
+    /// the equivalent outside diameter.
+    #[pyo3(get)]
+    pub outer_diameter: PyQty,
+    /// the wall or sheet thickness.
+    #[pyo3(get)]
+    pub wall_thickness: PyQty,
+    /// the tube or plate count.
+    #[pyo3(get)]
+    pub tube_count: f64,
+    /// the tube passes or plate pairs.
+    #[pyo3(get)]
+    pub tube_passes: f64,
+    /// the fin surface area; zero for the unfinned types.
+    #[pyo3(get)]
+    pub fin_surface_area: PyQty,
+    /// the class's qualitative pressure-drop proxy, in bar.
+    #[pyo3(get)]
+    pub estimated_pressure_drop: f64,
+    /// the estimated weight.
+    #[pyo3(get)]
+    pub estimated_weight: PyQty,
+    /// the module length.
+    #[pyo3(get)]
+    pub module_length: PyQty,
+    /// the module width.
+    #[pyo3(get)]
+    pub module_width: PyQty,
+    /// the module height.
+    #[pyo3(get)]
+    pub module_height: PyQty,
+}
+
+#[pymethods]
+impl PyHeaterMechanicalType {
+    fn __repr__(&self) -> String {
+        format!(
+            "HeaterMechanicalType(mechanical_type={}, required_area={:?}, required_ua={:?}, overall_heat_transfer_coefficient={:?}, approach_temperature={:?}, estimated_length={:?}, inner_diameter={:?}, outer_diameter={:?}, wall_thickness={:?}, tube_count={}, tube_passes={}, fin_surface_area={:?}, estimated_pressure_drop={}, estimated_weight={:?}, module_length={:?}, module_width={:?}, module_height={:?})",
+            self.mechanical_type,
+            self.required_area,
+            self.required_ua,
+            self.overall_heat_transfer_coefficient,
+            self.approach_temperature,
+            self.estimated_length,
+            self.inner_diameter,
+            self.outer_diameter,
+            self.wall_thickness,
+            self.tube_count,
+            self.tube_passes,
+            self.fin_surface_area,
+            self.estimated_pressure_drop,
+            self.estimated_weight,
+            self.module_length,
+            self.module_width,
+            self.module_height
+        )
+    }
+}
+
+impl From<&azoth_process::models::heater::HeaterMechanicalType> for PyHeaterMechanicalType {
+    fn from(row: &azoth_process::models::heater::HeaterMechanicalType) -> Self {
+        Self {
+            mechanical_type: row.mechanical_type.clone(),
+            required_area: PyQty {
+                magnitude_si: row.required_area.value,
+                unit: "m**2".to_string(),
+            },
+            required_ua: PyQty {
+                magnitude_si: row.required_ua.value,
+                unit: "W/K".to_string(),
+            },
+            overall_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.overall_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            approach_temperature: PyQty {
+                magnitude_si: row.approach_temperature.value,
+                unit: "K".to_string(),
+            },
+            estimated_length: PyQty {
+                magnitude_si: row.estimated_length.value,
+                unit: "m".to_string(),
+            },
+            inner_diameter: PyQty {
+                magnitude_si: row.inner_diameter.value,
+                unit: "m".to_string(),
+            },
+            outer_diameter: PyQty {
+                magnitude_si: row.outer_diameter.value,
+                unit: "m".to_string(),
+            },
+            wall_thickness: PyQty {
+                magnitude_si: row.wall_thickness.value,
+                unit: "m".to_string(),
+            },
+            tube_count: row.tube_count,
+            tube_passes: row.tube_passes,
+            fin_surface_area: PyQty {
+                magnitude_si: row.fin_surface_area.value,
+                unit: "m**2".to_string(),
+            },
+            estimated_pressure_drop: row.estimated_pressure_drop,
+            estimated_weight: PyQty {
+                magnitude_si: row.estimated_weight.value,
+                unit: "kg".to_string(),
+            },
+            module_length: PyQty {
+                magnitude_si: row.module_length.value,
+                unit: "m".to_string(),
+            },
+            module_width: PyQty {
+                magnitude_si: row.module_width.value,
+                unit: "m".to_string(),
+            },
+            module_height: PyQty {
+                magnitude_si: row.module_height.value,
+                unit: "m".to_string(),
+            },
+        }
+    }
+}
+
+/// the model's assumption and warning records, in the order it forms them.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HemReleaseDiagnostic"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHemReleaseDiagnostic {
+    /// the stable machine code.
+    #[pyo3(get)]
+    pub code: String,
+    /// the engineering detail.
+    #[pyo3(get)]
+    pub message: String,
+}
+
+#[pymethods]
+impl PyHemReleaseDiagnostic {
+    fn __repr__(&self) -> String {
+        format!(
+            "HemReleaseDiagnostic(code={}, message={})",
+            self.code, self.message
+        )
+    }
+}
+
+impl From<&azoth_process::models::hem_release::HemReleaseDiagnostic> for PyHemReleaseDiagnostic {
+    fn from(row: &azoth_process::models::hem_release::HemReleaseDiagnostic) -> Self {
+        Self {
+            code: row.code.clone(),
+            message: row.message.clone(),
+        }
+    }
+}
+
+/// the resolved stations, upstream first: the stagnation state, the throat, the aliased exit and the receiving-pressure state. Empty on failure, and the ambient row is absent on no forward flow.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HemReleaseStation"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHemReleaseStation {
+    /// which station this row is.
+    #[pyo3(get)]
+    pub station: String,
+    /// the station's absolute pressure.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// the station's temperature.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// mass over EOS total volume.
+    #[pyo3(get)]
+    pub density: PyQty,
+    /// the station's molar enthalpy. The expansion's drop is read against the stagnation value.
+    #[pyo3(get)]
+    pub molar_enthalpy: PyQty,
+    /// the station's molar entropy, which the expansion holds fixed.
+    #[pyo3(get)]
+    pub molar_entropy: PyQty,
+    /// `sqrt(2 (h0 - h))`, the zero-slip acceleration from the stagnation enthalpy.
+    #[pyo3(get)]
+    pub velocity: PyQty,
+    /// `rho times velocity`, before the discharge coefficient.
+    #[pyo3(get)]
+    pub mass_flux: PyQty,
+    /// what the flash found at the station.
+    #[pyo3(get)]
+    pub phase: String,
+    /// the gas phase's share of the station's mass; one for a vapour state and zero for a liquid one. **A mass fraction, not the molar vapour fraction.**
+    #[pyo3(get)]
+    pub gas_mass_fraction: f64,
+}
+
+#[pymethods]
+impl PyHemReleaseStation {
+    fn __repr__(&self) -> String {
+        format!(
+            "HemReleaseStation(station={}, pressure={:?}, temperature={:?}, density={:?}, molar_enthalpy={:?}, molar_entropy={:?}, velocity={:?}, mass_flux={:?}, phase={}, gas_mass_fraction={})",
+            self.station,
+            self.pressure,
+            self.temperature,
+            self.density,
+            self.molar_enthalpy,
+            self.molar_entropy,
+            self.velocity,
+            self.mass_flux,
+            self.phase,
+            self.gas_mass_fraction
+        )
+    }
+}
+
+impl From<&azoth_process::models::hem_release::HemReleaseStation> for PyHemReleaseStation {
+    fn from(row: &azoth_process::models::hem_release::HemReleaseStation) -> Self {
+        Self {
+            station: row.station.as_str().to_string(),
+            pressure: PyQty {
+                magnitude_si: row.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            temperature: PyQty {
+                magnitude_si: row.temperature.value,
+                unit: "K".to_string(),
+            },
+            density: PyQty {
+                magnitude_si: row.density.value,
+                unit: "kg/m**3".to_string(),
+            },
+            molar_enthalpy: PyQty {
+                magnitude_si: row.molar_enthalpy.value,
+                unit: "J/mol".to_string(),
+            },
+            molar_entropy: PyQty {
+                magnitude_si: row.molar_entropy.value,
+                unit: "J/(mol*K)".to_string(),
+            },
+            velocity: PyQty {
+                magnitude_si: row.velocity.value,
+                unit: "m/s".to_string(),
+            },
+            mass_flux: PyQty {
+                magnitude_si: row.mass_flux.value,
+                unit: "kg/(m**2*s)".to_string(),
+            },
+            phase: row.phase.as_str().to_string(),
+            gas_mass_fraction: row.gas_mass_fraction,
+        }
+    }
+}
+
+/// One row per profile point, in the order the points were given.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HydrateRiskPoint"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHydrateRiskPoint {
+    /// the point's distance from the inlet.
+    #[pyo3(get)]
+    pub distance: PyQty,
+    /// the point's pressure.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// the point's actual temperature.
+    #[pyo3(get)]
+    pub actual_temperature: PyQty,
+    /// the hydrate formation temperature, absent where the solve failed.
+    #[pyo3(get)]
+    pub hydrate_temperature: Option<PyQty>,
+    /// the actual temperature less the hydrate one, absent where it is.
+    #[pyo3(get)]
+    pub subcooling: Option<PyQty>,
+    /// the point's band: critical, high, medium, low or unknown.
+    #[pyo3(get)]
+    pub risk_level: String,
+}
+
+#[pymethods]
+impl PyHydrateRiskPoint {
+    fn __repr__(&self) -> String {
+        format!(
+            "HydrateRiskPoint(distance={:?}, pressure={:?}, actual_temperature={:?}, hydrate_temperature={:?}, subcooling={:?}, risk_level={})",
+            self.distance,
+            self.pressure,
+            self.actual_temperature,
+            self.hydrate_temperature,
+            self.subcooling,
+            self.risk_level
+        )
+    }
+}
+
+impl From<&azoth_eos::results::HydrateRiskPoint> for PyHydrateRiskPoint {
+    fn from(row: &azoth_eos::results::HydrateRiskPoint) -> Self {
+        Self {
+            distance: PyQty {
+                magnitude_si: row.distance.value,
+                unit: "m".to_string(),
+            },
+            pressure: PyQty {
+                magnitude_si: row.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            actual_temperature: PyQty {
+                magnitude_si: row.actual_temperature.value,
+                unit: "K".to_string(),
+            },
+            hydrate_temperature: row.hydrate_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            subcooling: row.subcooling.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            risk_level: row.risk_level.clone(),
+        }
+    }
+}
+
+/// one row per zone, in the input order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "IncrementalZoneRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyIncrementalZoneRow {
+    /// the one-based position in the caller's list.
+    #[pyo3(get)]
+    pub zone_index: f64,
+    /// the zone's name, echoed.
+    #[pyo3(get)]
+    pub zone_name: String,
+    /// the tube regime's class spelling.
+    #[pyo3(get)]
+    pub tube_phase_regime: String,
+    /// the shell regime's class spelling, carried and unread.
+    #[pyo3(get)]
+    pub shell_phase_regime: String,
+    /// the zone's tube-side coefficient.
+    #[pyo3(get)]
+    pub tube_side_heat_transfer_coefficient: PyQty,
+    /// the zone's Kern shell-side coefficient.
+    #[pyo3(get)]
+    pub shell_side_heat_transfer_coefficient: PyQty,
+    /// the zone's overall coefficient on the outside area.
+    #[pyo3(get)]
+    pub overall_heat_transfer_coefficient: PyQty,
+    /// the zone's LMTD, from the class's three branches.
+    #[pyo3(get)]
+    pub lmtd: PyQty,
+    /// the zone's duty, echoed.
+    #[pyo3(get)]
+    pub duty: PyQty,
+    /// `duty/(U*LMTD)`, zero when either denominator is not positive.
+    #[pyo3(get)]
+    pub required_area: PyQty,
+    /// the zone's tube-side drop: Friedel for the two-phase regimes, Darcy friction otherwise.
+    #[pyo3(get)]
+    pub tube_side_pressure_drop: PyQty,
+    /// the zone's Kern shell-side drop with the scaled baffle count.
+    #[pyo3(get)]
+    pub shell_side_pressure_drop: PyQty,
+    /// the zone's hot-side inlet temperature, echoed.
+    #[pyo3(get)]
+    pub hot_inlet_temp: PyQty,
+    /// the zone's hot-side outlet temperature, echoed.
+    #[pyo3(get)]
+    pub hot_outlet_temp: PyQty,
+    /// the zone's cold-side inlet temperature, echoed.
+    #[pyo3(get)]
+    pub cold_inlet_temp: PyQty,
+    /// the zone's cold-side outlet temperature, echoed.
+    #[pyo3(get)]
+    pub cold_outlet_temp: PyQty,
+}
+
+#[pymethods]
+impl PyIncrementalZoneRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "IncrementalZoneRow(zone_index={}, zone_name={}, tube_phase_regime={}, shell_phase_regime={}, tube_side_heat_transfer_coefficient={:?}, shell_side_heat_transfer_coefficient={:?}, overall_heat_transfer_coefficient={:?}, lmtd={:?}, duty={:?}, required_area={:?}, tube_side_pressure_drop={:?}, shell_side_pressure_drop={:?}, hot_inlet_temp={:?}, hot_outlet_temp={:?}, cold_inlet_temp={:?}, cold_outlet_temp={:?})",
+            self.zone_index,
+            self.zone_name,
+            self.tube_phase_regime,
+            self.shell_phase_regime,
+            self.tube_side_heat_transfer_coefficient,
+            self.shell_side_heat_transfer_coefficient,
+            self.overall_heat_transfer_coefficient,
+            self.lmtd,
+            self.duty,
+            self.required_area,
+            self.tube_side_pressure_drop,
+            self.shell_side_pressure_drop,
+            self.hot_inlet_temp,
+            self.hot_outlet_temp,
+            self.cold_inlet_temp,
+            self.cold_outlet_temp
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::IncrementalZoneRow> for PyIncrementalZoneRow {
+    fn from(row: &azoth_thermal::results::IncrementalZoneRow) -> Self {
+        Self {
+            zone_index: row.zone_index,
+            zone_name: row.zone_name.clone(),
+            tube_phase_regime: row.tube_phase_regime.clone(),
+            shell_phase_regime: row.shell_phase_regime.clone(),
+            tube_side_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.tube_side_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            shell_side_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.shell_side_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            overall_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.overall_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            lmtd: PyQty {
+                magnitude_si: row.lmtd.value,
+                unit: "K".to_string(),
+            },
+            duty: PyQty {
+                magnitude_si: row.duty.value,
+                unit: "W".to_string(),
+            },
+            required_area: PyQty {
+                magnitude_si: row.required_area.value,
+                unit: "m**2".to_string(),
+            },
+            tube_side_pressure_drop: PyQty {
+                magnitude_si: row.tube_side_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            shell_side_pressure_drop: PyQty {
+                magnitude_si: row.shell_side_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            hot_inlet_temp: PyQty {
+                magnitude_si: row.hot_inlet_temp.value,
+                unit: "K".to_string(),
+            },
+            hot_outlet_temp: PyQty {
+                magnitude_si: row.hot_outlet_temp.value,
+                unit: "K".to_string(),
+            },
+            cold_inlet_temp: PyQty {
+                magnitude_si: row.cold_inlet_temp.value,
+                unit: "K".to_string(),
+            },
+            cold_outlet_temp: PyQty {
+                magnitude_si: row.cold_outlet_temp.value,
+                unit: "K".to_string(),
+            },
+        }
+    }
+}
+
 /// one row per fitting supplied, in the order they were listed
 #[pyclass(
     frozen,
@@ -155,6 +1292,132 @@ impl From<&azoth_hydraulics::results::KComponent> for PyKComponent {
             fitting_id: row.fitting_id.clone(),
             n_ld: row.n_ld,
             k: row.k,
+        }
+    }
+}
+
+/// the model's assumption, floor and failure records, in order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "LeakBlowdownDiagnostic"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyLeakBlowdownDiagnostic {
+    /// the stable machine code.
+    #[pyo3(get)]
+    pub code: String,
+    /// the engineering detail.
+    #[pyo3(get)]
+    pub message: String,
+}
+
+#[pymethods]
+impl PyLeakBlowdownDiagnostic {
+    fn __repr__(&self) -> String {
+        format!(
+            "LeakBlowdownDiagnostic(code={}, message={})",
+            self.code, self.message
+        )
+    }
+}
+
+impl From<&azoth_process::models::leak_blowdown::LeakBlowdownDiagnostic>
+    for PyLeakBlowdownDiagnostic
+{
+    fn from(row: &azoth_process::models::leak_blowdown::LeakBlowdownDiagnostic) -> Self {
+        Self {
+            code: row.code.clone(),
+            message: row.message.clone(),
+        }
+    }
+}
+
+/// one row per visited step, in time order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "LeakBlowdownPoint"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyLeakBlowdownPoint {
+    /// the step's time.
+    #[pyo3(get)]
+    pub time: PyQty,
+    /// the rate the class's simplified orifice gives at the recorded state.
+    #[pyo3(get)]
+    pub mass_flow_rate: PyQty,
+    /// the recorded state's temperature.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// the recorded state's pressure.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// the physical vapour mole fraction: 1 all-vapour, 0 all-liquid, beta two-phase.
+    #[pyo3(get)]
+    pub vapour_mole_fraction: f64,
+    /// `mdot/(rho A Cd)`, capped at 1.2 times the ideal-gas sound speed.
+    #[pyo3(get)]
+    pub jet_velocity: PyQty,
+    /// `mdot v + (P-back) A`, unclamped.
+    #[pyo3(get)]
+    pub jet_momentum: PyQty,
+    /// the liquid Sauter mean diameter, zero for a single phase or a trace liquid.
+    #[pyo3(get)]
+    pub droplet_smd: PyQty,
+}
+
+#[pymethods]
+impl PyLeakBlowdownPoint {
+    fn __repr__(&self) -> String {
+        format!(
+            "LeakBlowdownPoint(time={:?}, mass_flow_rate={:?}, temperature={:?}, pressure={:?}, vapour_mole_fraction={}, jet_velocity={:?}, jet_momentum={:?}, droplet_smd={:?})",
+            self.time,
+            self.mass_flow_rate,
+            self.temperature,
+            self.pressure,
+            self.vapour_mole_fraction,
+            self.jet_velocity,
+            self.jet_momentum,
+            self.droplet_smd
+        )
+    }
+}
+
+impl From<&azoth_process::models::leak_blowdown::LeakBlowdownPoint> for PyLeakBlowdownPoint {
+    fn from(row: &azoth_process::models::leak_blowdown::LeakBlowdownPoint) -> Self {
+        Self {
+            time: PyQty {
+                magnitude_si: row.time.value,
+                unit: "s".to_string(),
+            },
+            mass_flow_rate: PyQty {
+                magnitude_si: row.mass_flow_rate.value,
+                unit: "kg/s".to_string(),
+            },
+            temperature: PyQty {
+                magnitude_si: row.temperature.value,
+                unit: "K".to_string(),
+            },
+            pressure: PyQty {
+                magnitude_si: row.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            vapour_mole_fraction: row.vapour_mole_fraction,
+            jet_velocity: PyQty {
+                magnitude_si: row.jet_velocity.value,
+                unit: "m/s".to_string(),
+            },
+            jet_momentum: PyQty {
+                magnitude_si: row.jet_momentum.value,
+                unit: "N".to_string(),
+            },
+            droplet_smd: PyQty {
+                magnitude_si: row.droplet_smd.value,
+                unit: "m".to_string(),
+            },
         }
     }
 }
@@ -236,6 +1499,316 @@ impl From<&azoth_eos::results::MineralEquilibriumRow> for PyMineralEquilibriumRo
                 unit: "kg".to_string(),
             },
             limiting_ion_exhausted: row.limiting_ion_exhausted,
+        }
+    }
+}
+
+/// The NACE assessment's issue strings.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "NaceIssueRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyNaceIssueRow {
+    /// one issue.
+    #[pyo3(get)]
+    pub message: String,
+}
+
+#[pymethods]
+impl PyNaceIssueRow {
+    fn __repr__(&self) -> String {
+        format!("NaceIssueRow(message={})", self.message)
+    }
+}
+
+impl From<&azoth_thermal::results::NaceIssueRow> for PyNaceIssueRow {
+    fn from(row: &azoth_thermal::results::NaceIssueRow) -> Self {
+        Self {
+            message: row.message.clone(),
+        }
+    }
+}
+
+/// The candidate remedies, ordered by descending effectiveness.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "RemediationOptionRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyRemediationOptionRow {
+    /// the canonical deposit key, `UNKNOWN` for the fallback.
+    #[pyo3(get)]
+    pub scale_type: String,
+    /// `MINERAL_SCALE`, `SCAVENGER_SOLIDS`, `ORGANIC_DEPOSIT` or `UNSPECIFIED`.
+    #[pyo3(get)]
+    pub category: String,
+    /// the dissolver or solvent chemistry.
+    #[pyo3(get)]
+    pub dissolver: String,
+    /// the recommended concentration or dilution, as the CSV states it.
+    #[pyo3(get)]
+    pub concentration: String,
+    /// the application method.
+    #[pyo3(get)]
+    pub method: String,
+    /// `HIGH`, `MEDIUM` or `LOW`.
+    #[pyo3(get)]
+    pub effectiveness: String,
+    /// the lower bound of the effective window.
+    #[pyo3(get)]
+    pub min_temperature: PyQty,
+    /// the upper bound of the effective window.
+    #[pyo3(get)]
+    pub max_temperature: PyQty,
+    /// the operational and safety cautions.
+    #[pyo3(get)]
+    pub cautions: String,
+    /// the informational standard reference.
+    #[pyo3(get)]
+    pub standard: String,
+}
+
+#[pymethods]
+impl PyRemediationOptionRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "RemediationOptionRow(scale_type={}, category={}, dissolver={}, concentration={}, method={}, effectiveness={}, min_temperature={:?}, max_temperature={:?}, cautions={}, standard={})",
+            self.scale_type,
+            self.category,
+            self.dissolver,
+            self.concentration,
+            self.method,
+            self.effectiveness,
+            self.min_temperature,
+            self.max_temperature,
+            self.cautions,
+            self.standard
+        )
+    }
+}
+
+impl From<&azoth_eos::results::RemediationOptionRow> for PyRemediationOptionRow {
+    fn from(row: &azoth_eos::results::RemediationOptionRow) -> Self {
+        Self {
+            scale_type: row.scale_type.clone(),
+            category: row.category.clone(),
+            dissolver: row.dissolver.clone(),
+            concentration: row.concentration.clone(),
+            method: row.method.clone(),
+            effectiveness: row.effectiveness.clone(),
+            min_temperature: PyQty {
+                magnitude_si: row.min_temperature.value,
+                unit: "K".to_string(),
+            },
+            max_temperature: PyQty {
+                magnitude_si: row.max_temperature.value,
+                unit: "K".to_string(),
+            },
+            cautions: row.cautions.clone(),
+            standard: row.standard.clone(),
+        }
+    }
+}
+
+/// The inhibited risk index, one row per scale in the same order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleControlRiskRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleControlRiskRow {
+    /// `CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.
+    #[pyo3(get)]
+    pub scale: String,
+    /// `SI + log10(max(1e-6, 1 - efficiency))`; absent where the index is.
+    #[pyo3(get)]
+    pub risk_index: Option<f64>,
+}
+
+#[pymethods]
+impl PyScaleControlRiskRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleControlRiskRow(scale={}, risk_index={:?})",
+            self.scale, self.risk_index
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleControlRiskRow> for PyScaleControlRiskRow {
+    fn from(row: &azoth_eos::results::ScaleControlRiskRow) -> Self {
+        Self {
+            scale: row.scale.clone(),
+            risk_index: row.risk_index,
+        }
+    }
+}
+
+/// The uninhibited indices, one row per scale in the class's order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleControlRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleControlRow {
+    /// `CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.
+    #[pyo3(get)]
+    pub scale: String,
+    /// the index; absent where the water has none.
+    #[pyo3(get)]
+    pub saturation_index: Option<f64>,
+}
+
+#[pymethods]
+impl PyScaleControlRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleControlRow(scale={}, saturation_index={:?})",
+            self.scale, self.saturation_index
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScaleControlRow> for PyScaleControlRow {
+    fn from(row: &azoth_eos::results::ScaleControlRow) -> Self {
+        Self {
+            scale: row.scale.clone(),
+            saturation_index: row.saturation_index,
+        }
+    }
+}
+
+/// The treated minus baseline index, over the baseline's minerals.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScenarioChangeRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScenarioChangeRow {
+    /// the mineral's formula.
+    #[pyo3(get)]
+    pub mineral: String,
+    /// the change; absent where either side's index is.
+    #[pyo3(get)]
+    pub change: Option<f64>,
+}
+
+#[pymethods]
+impl PyScenarioChangeRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScenarioChangeRow(mineral={}, change={:?})",
+            self.mineral, self.change
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScenarioChangeRow> for PyScenarioChangeRow {
+    fn from(row: &azoth_eos::results::ScenarioChangeRow) -> Self {
+        Self {
+            mineral: row.mineral.clone(),
+            change: row.change,
+        }
+    }
+}
+
+/// The treated indices, in the same order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScenarioIndexRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScenarioIndexRow {
+    /// the mineral's formula.
+    #[pyo3(get)]
+    pub mineral: String,
+    /// the index.
+    #[pyo3(get)]
+    pub saturation_index: Option<f64>,
+}
+
+#[pymethods]
+impl PyScenarioIndexRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScenarioIndexRow(mineral={}, saturation_index={:?})",
+            self.mineral, self.saturation_index
+        )
+    }
+}
+
+impl From<&azoth_eos::results::ScenarioIndexRow> for PyScenarioIndexRow {
+    fn from(row: &azoth_eos::results::ScenarioIndexRow) -> Self {
+        Self {
+            mineral: row.mineral.clone(),
+            saturation_index: row.saturation_index,
+        }
+    }
+}
+
+/// One row per registered mineral, in the equilibrium's order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "StreamScaleMineralRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyStreamScaleMineralRow {
+    /// the mineral's formula.
+    #[pyo3(get)]
+    pub mineral: String,
+    /// the index before anything precipitated.
+    #[pyo3(get)]
+    pub initial_si: f64,
+    /// the index at the answer.
+    #[pyo3(get)]
+    pub final_si: f64,
+    /// the precipitated mass per cubic metre of water, 1699.4 mg/L as 1.6994 kg/m3.
+    #[pyo3(get)]
+    pub precipitated_mass: PyQty,
+    /// the precipitated mass times the aqueous throughput.
+    #[pyo3(get)]
+    pub scale_rate: PyQty,
+}
+
+#[pymethods]
+impl PyStreamScaleMineralRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "StreamScaleMineralRow(mineral={}, initial_si={}, final_si={}, precipitated_mass={:?}, scale_rate={:?})",
+            self.mineral, self.initial_si, self.final_si, self.precipitated_mass, self.scale_rate
+        )
+    }
+}
+
+impl From<&azoth_eos::results::StreamScaleMineralRow> for PyStreamScaleMineralRow {
+    fn from(row: &azoth_eos::results::StreamScaleMineralRow) -> Self {
+        Self {
+            mineral: row.mineral.clone(),
+            initial_si: row.initial_si,
+            final_si: row.final_si,
+            precipitated_mass: PyQty {
+                magnitude_si: row.precipitated_mass.value,
+                unit: "kg/m**3".to_string(),
+            },
+            scale_rate: PyQty {
+                magnitude_si: row.scale_rate.value,
+                unit: "kg/s".to_string(),
+            },
         }
     }
 }
@@ -353,6 +1926,83 @@ impl From<&azoth_eos::results::WaterMixingResult> for PyWaterMixingResult {
             si_srso4: row.si_srso4,
             si_caso4: row.si_caso4,
             si_feco3: row.si_feco3,
+        }
+    }
+}
+
+/// one row per zone, in the input order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ZoneRatingRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyZoneRatingRow {
+    /// the zone's name, echoed.
+    #[pyo3(get)]
+    pub zone_name: String,
+    /// the zone's duty fraction, echoed.
+    #[pyo3(get)]
+    pub duty_fraction: f64,
+    /// the zone's tube-side film coefficient.
+    #[pyo3(get)]
+    pub tube_side_heat_transfer_coefficient: PyQty,
+    /// the zone's shell-side film coefficient.
+    #[pyo3(get)]
+    pub shell_side_heat_transfer_coefficient: PyQty,
+    /// the zone's overall coefficient on the outside area.
+    #[pyo3(get)]
+    pub overall_heat_transfer_coefficient: PyQty,
+    /// the zone's stated LMTD, echoed.
+    #[pyo3(get)]
+    pub lmtd: PyQty,
+    /// `duty_fraction * total_duty / (U * lmtd)`, or zero when either denominator is non-positive.
+    #[pyo3(get)]
+    pub required_area: PyQty,
+}
+
+#[pymethods]
+impl PyZoneRatingRow {
+    fn __repr__(&self) -> String {
+        format!(
+            "ZoneRatingRow(zone_name={}, duty_fraction={}, tube_side_heat_transfer_coefficient={:?}, shell_side_heat_transfer_coefficient={:?}, overall_heat_transfer_coefficient={:?}, lmtd={:?}, required_area={:?})",
+            self.zone_name,
+            self.duty_fraction,
+            self.tube_side_heat_transfer_coefficient,
+            self.shell_side_heat_transfer_coefficient,
+            self.overall_heat_transfer_coefficient,
+            self.lmtd,
+            self.required_area
+        )
+    }
+}
+
+impl From<&azoth_thermal::results::ZoneRatingRow> for PyZoneRatingRow {
+    fn from(row: &azoth_thermal::results::ZoneRatingRow) -> Self {
+        Self {
+            zone_name: row.zone_name.clone(),
+            duty_fraction: row.duty_fraction,
+            tube_side_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.tube_side_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            shell_side_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.shell_side_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            overall_heat_transfer_coefficient: PyQty {
+                magnitude_si: row.overall_heat_transfer_coefficient.value,
+                unit: "W/(m**2*K)".to_string(),
+            },
+            lmtd: PyQty {
+                magnitude_si: row.lmtd.value,
+                unit: "K".to_string(),
+            },
+            required_area: PyQty {
+                magnitude_si: row.required_area.value,
+                unit: "m**2".to_string(),
+            },
         }
     }
 }

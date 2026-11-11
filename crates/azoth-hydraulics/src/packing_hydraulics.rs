@@ -16,7 +16,7 @@ use azoth_core::units::{
 };
 use azoth_core::{AzothError, Result, apply_checks};
 
-use crate::packing::{PackingSpecification, packing_or_default};
+use crate::packing::{PackingSpecification, packing};
 use crate::results::PackingHydraulicsResult;
 use crate::spec_gen;
 
@@ -87,10 +87,10 @@ pub struct PackingState {
 
 /// A packed bed's hydraulics, from the packing's geometry and the state it runs at.
 ///
-/// **The packing resolves by name**, with the class's own fallback: a name the library does not
-/// carry is `Pall-Ring-50`, and the compiled table's row for it **replaces the built-in** - the
-/// file is loaded after the built-ins and both normalize to `pallring50`, so the plastic row's
-/// geometry is the one that answers.
+/// **The packing resolves by name and an unknown name is refused**, as the class's `require`
+/// does since upstream PR #4405: it no longer falls back to `Pall-Ring-50`. The built-in table is
+/// the reference, and the compiled file adds material-qualified rows beside it - so
+/// `Pall-Ring-50` is the built-in metal estimate and `Pall-Ring-50-plastic` the file's plastic row.
 ///
 /// # Errors
 /// * [`azoth_core::AzothError::OutOfRange`] if the diameter, either mass flow, either density or
@@ -118,7 +118,7 @@ pub struct PackingState {
 ///     liquid_diffusivity: 1.9e-9,
 ///     hydraulic_capacity_factor: 1.0,
 /// })?;
-/// assert!((out.wetted_area - 47.63208581918636).abs() < 1e-12);
+/// assert!((out.wetted_area - 76.24118539046381).abs() < 1e-12);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 pub fn packing_hydraulics(name: &str, state: PackingState) -> Result<PackingHydraulicsResult> {
@@ -166,7 +166,15 @@ pub fn packing_hydraulics_with(
         &mut warnings,
     )?;
 
-    let resolved = packing_or_default(name);
+    let Some(resolved) = packing(name) else {
+        return Err(AzothError::invalid_input(
+            "packing",
+            format!(
+                "`{name}` is not a registered packing. NeqSim's calculator now requires a known \
+                 preset (upstream PR #4405) and no longer falls back to `Pall-Ring-50`"
+            ),
+        ));
+    };
     let overridden = structured.map(|flag| {
         let mut row = resolved.clone();
         row.category = if flag { "structured" } else { "random" }.to_string();

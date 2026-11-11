@@ -4,6 +4,8 @@
 
 `eos.chapman_enskog_diffusivity`
 
+Gas binary diffusivity from the Chapman-Enskog kinetic theory. Use it for gas mixing and mass-transfer estimates when no measured diffusivity is available.
+
 ## Equation
 
 $$
@@ -24,14 +26,26 @@ The first-approximation gas pair diffusivity, with Neufeld's collision-integral 
 
 DOI: [10.1063/1.1678363](https://doi.org/10.1063/1.1678363)
 
+## Notes
+
+Implementation detail: where this port departs from its source, which branches are not carried, and known deviations.
+
+
+- **this is a gas phase's default diffusivity, not Fuller's.** `GasPhysicalProperties` assigns the base `Diffusivity` class to a gas, and the Fuller class is reached only by `setDiffusionCoefficientModel`. `RateBasedPackedColumn` selects nothing, so this is what its segment fluxes use.
+
+- the pair parameters are inputs; `azoth_eos::databank::lennard_jones_pair` combines two components' values the way `GasPhysicalPropertyMethod` does: `sigma = (sigma_i + sigma_j)/2`, `eps = sqrt(eps_i eps_j)`, `MAB = 2/(1/M_i + 1/M_j)` in **g/mol**.
+
+- the correlation is dimensionless in `eps` and `t = T/eps`, and NeqSim prints a `kg/mol` molar mass into it: this spec takes kg/mol and multiplies by 1000 for the g/mol the equation is written in.
+
+
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
 | `MA` | kg/mol | Molar mass of the first component of the pair. |
 | `MB` | kg/mol | Molar mass of the second. |
-| `sigma` | m | The **pair's** Lennard-Jones collision diameter, in metres - NeqSim's `binaryMolecularDiameter`, in angstrom times 1e-10. The combining rule is in `azoth_eos::databank::lennard_jones_pair`. |
-| `eps` | K | The **pair's** Lennard-Jones energy parameter over Boltzmann's constant, in kelvin - NeqSim's `binaryEnergyParameter`. |
+| `sigma` | m | The pair's Lennard-Jones collision diameter, in metres. |
+| `eps` | K | The pair's Lennard-Jones energy parameter over Boltzmann's constant, in kelvin. |
 | `T` | K | Absolute temperature. |
 | `P` | Pa | Absolute pressure, which the correlation takes in bar - the port converts. |
 
@@ -53,19 +67,13 @@ DOI: [10.1063/1.1678363](https://doi.org/10.1063/1.1678363)
 | `eps > 0` | raises | `T/eps` is the collision integral's argument; a non-positive energy parameter is not a pair. |
 
 
-## Assumptions
+## Conditions for a valid result
 
 These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **this is a gas phase's default diffusivity, not Fuller's.** `GasPhysicalProperties` assigns the base `Diffusivity` class to a gas, and the Fuller class is reached only by `setDiffusionCoefficientModel`. `RateBasedPackedColumn` selects nothing, so this is what its segment fluxes use.
-
-- the pair parameters are inputs; `azoth_eos::databank::lennard_jones_pair` combines two components' values the way `GasPhysicalPropertyMethod` does: `sigma = (sigma_i + sigma_j)/2`, `eps = sqrt(eps_i eps_j)`, `MAB = 2/(1/M_i + 1/M_j)` in **g/mol**.
-
-- the correlation is dimensionless in `eps` and `t = T/eps`, and NeqSim prints a `kg/mol` molar mass into it: this spec takes kg/mol and multiplies by 1000 for the g/mol the equation is written in.
-
-- outside NeqSim's `Diffusivity.T_MIN`/`T_MAX` band the class *warns* rather than refusing (`enableTemperatureWarnings`); the port says the same in its own vocabulary.
+- outside the validated temperature band the calculation warns rather than refuses.
 
 
 

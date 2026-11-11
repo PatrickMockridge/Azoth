@@ -8,7 +8,11 @@
 use azoth_core::{CalcResult, Warning};
 
 use crate::characterise_plus_fraction::PlusModel;
-use uom::si::f64::{MassDensity, MolarMass, Pressure, ThermodynamicTemperature};
+use crate::component_row::CharacterizationComponent;
+use uom::si::f64::{
+    DynamicViscosity, Length, MassDensity, MolarEnergy, MolarMass, MolarVolume, Pressure,
+    ThermodynamicTemperature,
+};
 
 /// Result of `characterization.characterise_plus_fraction`.
 #[derive(Debug, Clone, PartialEq)]
@@ -439,6 +443,157 @@ pub struct DelumpingResult {
 impl CalcResult for DelumpingResult {
     const CALC_ID: &'static str = "characterization.delumping";
     const FIELDS: &'static [&'static str] = &["fractions", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `characterization.combine_reservoir_fluids`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CombineReservoirFluidsResult {
+    /// The blended fluid's components: its merged base components first, then the combined
+    /// pseudo-components in ascending cut order, renamed `PC1_PC`, `PC2_PC` and so on.
+    pub components: Vec<CharacterizationComponent>,
+    /// The blended fluid's total mole amount, base and pseudo.
+    pub total_moles: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for CombineReservoirFluidsResult {
+    const CALC_ID: &'static str = "characterization.combine_reservoir_fluids";
+    const FIELDS: &'static [&'static str] = &["components", "total_moles", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `characterization.characterize_to_common_slate`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CharacterizeToCommonSlateResult {
+    /// Every fluid's components, one fluid after another: its own base components, then the
+    /// shared slate's cuts in ascending order, named `PC1_PC`, `PC2_PC` and so on by their
+    /// position in the slate rather than by how many survived.
+    pub components: Vec<CharacterizationComponent>,
+    /// Which fluid each row belongs to, aligned with [`Self::components`]. A record's fields are
+    /// the component's, so the fluid is stated beside the row rather than on it.
+    pub fluid_index: Vec<f64>,
+    /// Each fluid's total mole amount after re-characterization, one per fluid in input order.
+    /// **A fluid's mass can move**: it keeps its own moles and takes the slate's molar mass.
+    pub fluid_moles: Vec<f64>,
+    /// How many shared cuts the answer has: the requested count, or the largest pseudo-component
+    /// count among the fluids when none was requested.
+    pub resolved_pseudo_components: u32,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for CharacterizeToCommonSlateResult {
+    const CALC_ID: &'static str = "characterization.characterize_to_common_slate";
+    const FIELDS: &'static [&'static str] = &[
+        "components",
+        "fluid_index",
+        "fluid_moles",
+        "resolved_pseudo_components",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `characterization.transfer_binary_interaction_parameters`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TransferBinaryInteractionParametersResult {
+    /// The target's interaction matrix after the transfer: its own values everywhere the
+    /// reference states none, and the reference's nonzero pairs written over it.
+    pub target_kij: Vec<Vec<f64>>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TransferBinaryInteractionParametersResult {
+    const CALC_ID: &'static str = "characterization.transfer_binary_interaction_parameters";
+    const FIELDS: &'static [&'static str] = &["target_kij", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `characterization.tbp_fraction_component`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TbpFractionComponentResult {
+    /// Critical temperature.
+    pub critical_temperature: ThermodynamicTemperature,
+    /// Critical pressure, in pascals; the class's correlation is written in bar.
+    pub critical_pressure: Pressure,
+    /// Normal boiling point.
+    pub boiling_temperature: ThermodynamicTemperature,
+    /// The acentric factor the component carries: the root its fitted `m` implies, not the
+    /// model's own Edmister value.
+    pub acentric_factor: f64,
+    /// The fitted coefficient of the Soave alpha function.
+    pub attraction_exponent: f64,
+    /// Critical volume, from the **model's** acentric factor.
+    pub critical_volume: MolarVolume,
+    /// The Peneloux Rackett compressibility, from the reference SRK phase's liquid root.
+    pub racket_z: f64,
+    /// The same compressibility on the CPA basis, which the class sets to the same number.
+    pub racket_z_cpa: f64,
+    /// The parachor, in NeqSim's mixed `(mN/m)**(1/4) * cm**3/mol`.
+    pub parachor: f64,
+    /// The critical viscosity.
+    pub critical_viscosity: DynamicViscosity,
+    /// The triple-point temperature.
+    pub triple_point_temperature: ThermodynamicTemperature,
+    /// The heat of fusion.
+    pub heat_of_fusion: MolarEnergy,
+    /// The ideal-gas enthalpy of formation.
+    pub ideal_gas_enthalpy_of_formation: MolarEnergy,
+    /// The constant term of the ideal-gas heat-capacity polynomial.
+    pub cp_a: f64,
+    /// The coefficient of `T`.
+    pub cp_b: f64,
+    /// The coefficient of `T**2`.
+    pub cp_c: f64,
+    /// The coefficient of `T**3`, as `getCpD()` states it: the stored zero plus `1e-10`.
+    pub cp_d: f64,
+    /// The Lennard-Jones collision diameter.
+    pub lennard_jones_diameter: Length,
+    /// The Lennard-Jones energy over Boltzmann's constant, as a temperature.
+    pub lennard_jones_energy: ThermodynamicTemperature,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TbpFractionComponentResult {
+    const CALC_ID: &'static str = "characterization.tbp_fraction_component";
+    const FIELDS: &'static [&'static str] = &[
+        "critical_temperature",
+        "critical_pressure",
+        "boiling_temperature",
+        "acentric_factor",
+        "attraction_exponent",
+        "critical_volume",
+        "racket_z",
+        "racket_z_cpa",
+        "parachor",
+        "critical_viscosity",
+        "triple_point_temperature",
+        "heat_of_fusion",
+        "ideal_gas_enthalpy_of_formation",
+        "cp_a",
+        "cp_b",
+        "cp_c",
+        "cp_d",
+        "lennard_jones_diameter",
+        "lennard_jones_energy",
+        "warnings",
+    ];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

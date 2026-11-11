@@ -52,12 +52,18 @@ ROOT = Path(__file__).resolve().parent.parent
 #: Where the NeqSim checkout lives. Gitignored, like the jar built from it.
 DEFAULT_CHECKOUT = Path("/tmp/neqsim-check/neqsim")
 
-#: The trees that are physics. The `process` tree is unit operations and
-#: `fluidmechanics` is hydraulics azoth writes its own; neither can invalidate a test here.
+#: The NeqSim trees this library ports. **`process` and `fluidmechanics` were excluded on the
+#: belief that azoth writes its own unit operations and hydraulics**; since P11/P12 it ports the
+#: palette and the executor, and since P1 the packing geometry's hydraulics - so the belief is
+#: stale and a process fix used to report zero changed classes. `equipment` and `pipeline`
+#: classes are under `process`, and the packing classes (`Packing`, `PallRingPacking`) under
+#: `fluidmechanics`, which is why both are here.
 TREES = (
     "src/main/java/neqsim/thermo",
     "src/main/java/neqsim/thermodynamicoperations",
     "src/main/java/neqsim/physicalproperties",
+    "src/main/java/neqsim/process",
+    "src/main/java/neqsim/fluidmechanics",
 )
 
 #: Where this tree cites a NeqSim class. The probes drive them, the specs and the tests

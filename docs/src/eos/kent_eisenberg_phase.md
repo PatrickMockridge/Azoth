@@ -52,9 +52,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `brine_at_313_k_and_5_bar` | components = ['water', 'Na+', 'Cl-', 'CO2'], T = 313.15, P = 500000.0, x = [0.89, 0.04, 0.04, 0.03] | gamma = [1.0, 1.0, 1.0, 1.0], ln_gamma = [0.0, 0.0, 0.0, 0.0], ln_phi = [-4.212658282214335, 18.420680743952367, 18.420680743952367, 2.7069240672486448] |
-| `brine_at_298_k_and_5_bar` | components = ['water', 'Na+', 'Cl-', 'CO2'], T = 298.15, P = 500000.0, x = [0.89, 0.04, 0.04, 0.03] | gamma = [1.0, 1.0, 1.0, 1.0], ln_gamma = [0.0, 0.0, 0.0, 0.0], ln_phi = [-5.058119157801453, 18.420680743952367, 18.420680743952367, 2.3351395840225817] |
-| `brine_at_373_k_and_5_bar` | components = ['water', 'Na+', 'Cl-', 'CO2'], T = 373.15, P = 500000.0, x = [0.89, 0.04, 0.04, 0.03] | gamma = [1.0, 1.0, 1.0, 1.0], ln_gamma = [0.0, 0.0, 0.0, 0.0], ln_phi = [-1.5990198338566504, 18.420680743952367, 18.420680743952367, 3.5581577891204947] |
+| `brine_at_313_k_and_5_bar` | components = ['water', 'Na+', 'Cl-', 'CO2'], T = 313.15, P = 500000.0, x = [0.89, 0.04, 0.04, 0.03] | gamma = [1.0, 1.0, 1.0, 1.0], ln_gamma = [0.0, 0.0, 0.0, 0.0], ln_phi = [-4.212658282214335, 18.420680743952367, 18.420680743952367, 2.1256471151406604] |
+| `brine_at_298_k_and_5_bar` | components = ['water', 'Na+', 'Cl-', 'CO2'], T = 298.15, P = 500000.0, x = [0.89, 0.04, 0.04, 0.03] | gamma = [1.0, 1.0, 1.0, 1.0], ln_gamma = [0.0, 0.0, 0.0, 0.0], ln_phi = [-5.058119157801453, 18.420680743952367, 18.420680743952367, 1.7561322915849262] |
+| `brine_at_373_k_and_5_bar` | components = ['water', 'Na+', 'Cl-', 'CO2'], T = 373.15, P = 500000.0, x = [0.89, 0.04, 0.04, 0.03] | gamma = [1.0, 1.0, 1.0, 1.0], ln_gamma = [0.0, 0.0, 0.0, 0.0], ln_phi = [-1.5990198338566504, 18.420680743952367, 18.420680743952367, 3.3066289684773054] |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.

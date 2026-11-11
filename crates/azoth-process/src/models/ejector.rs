@@ -9,7 +9,8 @@
 //! own name - the arrangement `process.heat_exchanger` introduced.
 
 use azoth_core::units::{
-    MolarEnergy, Pressure, ThermodynamicTemperature, Velocity, joules_per_mole,
+    Area, Length, MolarEnergy, Pressure, ThermodynamicTemperature, Velocity, Volume, cubic_meters,
+    joules_per_mole, meters, square_meters,
 };
 use azoth_core::{Result, Warning, apply_checks};
 use serde::Serialize;
@@ -29,6 +30,10 @@ use crate::stream::Stream;
 ///
 /// The five are `Option`s for one degenerate case and not for a mode: a machine handed no flow
 /// returns its motive stream unchanged, and a run on no fluid reached no pressure and no velocity.
+///
+/// The mechanical design that follows them is `updateDesign`'s container, and it is **plain
+/// numbers**: the class calls `resetDesign` on that same branch, and its getters then answer
+/// zero rather than nothing.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct EjectorResult {
     /// Outlet molar flow, mol/s.
@@ -59,6 +64,57 @@ pub struct EjectorResult {
     /// The diffuser's design velocity, m/s.
     #[serde(serialize_with = "optional_scalar")]
     pub diffuser_velocity: Option<Velocity>,
+    /// The motive nozzle's throat area, m2.
+    #[serde(serialize_with = "scalar")]
+    pub motive_nozzle_throat_area: Area,
+    /// Its throat diameter, m.
+    #[serde(serialize_with = "scalar")]
+    pub motive_nozzle_diameter: Length,
+    /// The suction inlet's area, m2.
+    #[serde(serialize_with = "scalar")]
+    pub suction_inlet_area: Area,
+    /// Its diameter, m.
+    #[serde(serialize_with = "scalar")]
+    pub suction_inlet_diameter: Length,
+    /// The mixing chamber's area, m2.
+    #[serde(serialize_with = "scalar")]
+    pub mixing_chamber_area: Area,
+    /// Its diameter, m.
+    #[serde(serialize_with = "scalar")]
+    pub mixing_chamber_diameter: Length,
+    /// The diffuser outlet's area, m2.
+    #[serde(serialize_with = "scalar")]
+    pub diffuser_outlet_area: Area,
+    /// Its diameter, m.
+    #[serde(serialize_with = "scalar")]
+    pub diffuser_outlet_diameter: Length,
+    /// The motive nozzle's effective length, m.
+    #[serde(serialize_with = "scalar")]
+    pub motive_nozzle_effective_length: Length,
+    /// The suction inlet's length, m.
+    #[serde(serialize_with = "scalar")]
+    pub suction_inlet_length: Length,
+    /// The mixing chamber's length, m.
+    #[serde(serialize_with = "scalar")]
+    pub mixing_chamber_length: Length,
+    /// The diffuser outlet's length, m.
+    #[serde(serialize_with = "scalar")]
+    pub diffuser_outlet_length: Length,
+    /// The four stages' cylinder volumes, m3.
+    #[serde(serialize_with = "scalar")]
+    pub body_volume: Volume,
+    /// The two connection pipes' cylinder volumes, m3.
+    #[serde(serialize_with = "scalar")]
+    pub connected_piping_volume: Volume,
+    /// The two volumes' sum, m3.
+    #[serde(serialize_with = "scalar")]
+    pub total_volume: Volume,
+    /// The suction connection's straight length, m.
+    #[serde(serialize_with = "scalar")]
+    pub suction_connection_length: Length,
+    /// The discharge connection's straight length, m.
+    #[serde(serialize_with = "scalar")]
+    pub discharge_connection_length: Length,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -84,6 +140,23 @@ impl EjectorResult {
             suction_nozzle_velocity: numbers.map(|n| n.suction_nozzle_velocity),
             mixing_velocity: numbers.map(|n| n.mixing_velocity),
             diffuser_velocity: numbers.map(|n| n.diffuser_velocity),
+            motive_nozzle_throat_area: square_meters(outcome.design.motive_nozzle_throat_area),
+            motive_nozzle_diameter: meters(outcome.design.motive_nozzle_diameter),
+            suction_inlet_area: square_meters(outcome.design.suction_inlet_area),
+            suction_inlet_diameter: meters(outcome.design.suction_inlet_diameter),
+            mixing_chamber_area: square_meters(outcome.design.mixing_chamber_area),
+            mixing_chamber_diameter: meters(outcome.design.mixing_chamber_diameter),
+            diffuser_outlet_area: square_meters(outcome.design.diffuser_outlet_area),
+            diffuser_outlet_diameter: meters(outcome.design.diffuser_outlet_diameter),
+            motive_nozzle_effective_length: meters(outcome.design.motive_nozzle_effective_length),
+            suction_inlet_length: meters(outcome.design.suction_inlet_length),
+            mixing_chamber_length: meters(outcome.design.mixing_chamber_length),
+            diffuser_outlet_length: meters(outcome.design.diffuser_outlet_length),
+            body_volume: cubic_meters(outcome.design.body_volume),
+            connected_piping_volume: cubic_meters(outcome.design.connected_piping_volume),
+            total_volume: cubic_meters(outcome.design.total_volume),
+            suction_connection_length: meters(outcome.design.suction_connection_length),
+            discharge_connection_length: meters(outcome.design.discharge_connection_length),
             warnings,
         }
     }

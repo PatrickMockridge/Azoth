@@ -134,7 +134,8 @@ process model needs.
   model 2's `LGTSurfaceTension` in every slot, and model 4's
   `GTSurfaceTensionSimple`/`LGTSurfaceTension`/Parachor, from the flashed pair and the
   profile parameters. Its Parachor and Firozabadi slots read the databank's `parachor`
-  and `tc`, and both phases' translated densities - the SRK Peneloux shift, which the
+  (the `parachor_cpa` column for a CPA mixture, per upstream PR #4004) and `tc`, and both
+  phases' translated densities - the SRK Peneloux shift, which the
   databank now carries beside the Peng-Robinson one, is what makes those densities
   NeqSim's rather than the untranslated cubic's. `FrictionTheoryConductivityMethod` is
   `eos.friction_theory_conductivity`, reached the only way the class reaches it - an
@@ -162,12 +163,17 @@ process model needs.
   `BariteCelestiteSolidSolution` (`eos.barite_celestite_solid_solution`),
   `MultiMineralScaleEquilibrium` (`eos.multi_mineral_scale_equilibrium`),
   `FlowlineScaleProfile` (`eos.flowline_scale_profile`) and `WaterCompatibilityScreener`
-  (`eos.water_compatibility`). The six asphaltene screens stay carried on NeqSim defect
-  `#3913`, and the one wax (`WaxCurveCalculator`), two corrosion (`CO2CorrosionAnalyzer`,
-  `DeWaardMilliamsCorrosion`) and five generic flow-assurance calculators
-  (`HydrateRiskMapper`, `PipelineCooldownCalculator`, `SurfCooldownAnalyzer`,
-  `ErosionPredictionCalculator`, `EmulsionViscosityCalculator`) are the group's remainder, in
-  Tier 4. **The rest of `pvtsimulation/` is not here**: the simulation suite,
+  (`eos.water_compatibility`). **The remaining reachable calculators are ported too**:
+  `DeWaardMilliamsCorrosion` (`eos.de_waard_milliams_corrosion`),
+  `ErosionPredictionCalculator` (`eos.erosion_prediction`),
+  `EmulsionViscosityCalculator` (`eos.emulsion_viscosity`),
+  `PipelineCooldownCalculator` (`eos.pipeline_cooldown`),
+  `HydrateRiskMapper` (`eos.hydrate_risk_map`) and `SurfCooldownAnalyzer`
+  (`eos.surf_cooldown`). **One class is left**: `CO2CorrosionAnalyzer`, whose pH comes from an
+  electrolyte-CPA flash this tree does not carry the system route for; it is Tier 4's alone.
+  The six asphaltene screens stay carried on NeqSim defect `#3913`, and the one wax
+  (`WaxCurveCalculator`) belongs to Tier 3's wax bullet. **The rest of `pvtsimulation/` is not
+  here**: the simulation suite,
   the model tuning and the reservoir properties are engineering deliverables, and
   [the specification](docs/src/architecture/specification.md) puts them beyond the port.
 
@@ -334,9 +340,17 @@ reaches equilibrium through.
   `pvtsimulation/flowassurance/` scale set is the other route and is ported too, its seven ids
   named in Tier 1's flow-assurance bullet: the water-analysis screen, its Pitzer coefficients,
   the solid solution, the mass estimate, the coupled equilibrium and the two composers.
-  **Not ported**: `AddIonToScaleSaturation` and `CalciumSulfatePhaseBoundaryQualification`, and
-  the eleven `process/chemistry/scale/` classes, 3,935 lines, `BrineMixingScaleEvaluator`
-  among them.
+  **Not ported**: `AddIonToScaleSaturation` and `CalciumSulfatePhaseBoundaryQualification`.
+  **All eleven `process/chemistry/scale/` classes are ported**, each with the id that carries it:
+  `ElectrolyteScaleCalculator` (`eos.electrolyte_scale_calculator`),
+  `BrineMixingScaleEvaluator` (`eos.brine_mixing_scale_evaluator`),
+  `ScaleInhibitorPerformance` (`eos.scale_inhibitor_performance`), `ScaleKinetics`
+  (`eos.scale_kinetics`), `ScaleRemediationAdvisor` (`eos.scale_remediation_advisor`),
+  `ScaleControlAssessor` (`eos.scale_control_assessor`), `StreamScaleAnalyzer`
+  (`eos.stream_scale_analyzer`), `ValveScaleDrift` (`eos.valve_scale_drift`) and
+  `ScaleDepositionAccumulator` (`eos.scale_deposition_accumulator`),
+  `ProductionChemicalScaleScenario` (`eos.production_chemical_scale_scenario`) and
+  `ClosedLoopDepositionSolver` (`eos.closed_loop_deposition_solver`).
 - **Freezing.** `FreezingPointTemperatureFlash` is ported as `eos.freezing_point`, on **both**
   of its routes. The Helmholtz one needs a `PhaseSolidHelmholtzEos`: `eos.hydrogen_phase` for
   the fluid and `eos.parahydrogen_solid_phase` for the solid, with the solid calibrated to the
@@ -361,7 +375,7 @@ The specialist physics.
   and `TBPfractionModel`'s eight cut models, `PlusCharacterize`, `PedersenPlusModelSolver`,
   `LumpingModel`, `Recombine`, and the assay and refinery-blend machinery around them. A wax
   or asphaltene fluid is built from TBP and plus fractions, so this is what those models
-  stand on. **The subsystem is ported, as fourteen ids over the tables it works on**:
+  stand on. **The subsystem is ported, as eighteen ids over the tables it works on**:
   `characterization.pedersen_plus_split` and `whitson_gamma_split` divide a plus fraction into
   carbon-number cuts, `lumping` groups a cut table into equal-mass lumps and `delumping` splits
   one back into a finer grid,
@@ -370,11 +384,17 @@ The specialist physics.
   convert between a cut's boiling point, its molar mass and its gravity, `tbp_cut_boundaries`
   cuts a cumulative TBP curve into an assay, `assay_mass_fractions` resolves one to a mass basis,
   `oil_assay_derivation` derives each cut's molar mass and mole amount, `tbp_grouping` groups a
-  phase by boiling point, `set_heavy_tbp_to_plus` picks the row a plus end begins at, and
-  `characterise_plus_fraction` is the chain from a C7+ end to lumps. **What is owed is the part
-  that rebuilds a fluid rather than a table**: `apply`'s `addTBPfraction` loop, `Recombine`, and
-  `combineReservoirFluids` — each needs a `Mixture` that can be added to. The delumping was on
-  that list and is not on it: it is a function of a table, and it is `characterization.delumping`.
+  phase by boiling point, `set_heavy_tbp_to_plus` picks the row a plus end begins at,
+  `characterise_plus_fraction` is the chain from a C7+ end to lumps,
+  `combine_reservoir_fluids` blends several fluids onto one slate,
+  `characterize_to_common_slate` re-characterizes several onto a shared one,
+  `transfer_binary_interaction_parameters` moves an interaction table between two, and
+  `tbp_fraction_component` is `addTBPfraction`'s card for one cut - the Rackett compressibility
+  among it, from the reference SRK phase's liquid root. `mixture_from_characterization` turns the
+  rows any of them answers with into a `Mixture` and its ideal-gas model, and
+  `oil_assay_to_mixture` is `OilAssayCharacterisation.apply`'s composition - an assay's cuts
+  derived, carded and built into a fluid. What is owed of the class is only its parts that build
+  nothing: `Recombine`, whose constructor is empty and whose `runRecombination` returns null.
 - **Hydrate.** Ported, each with the id that carries it: `PhaseHydrate` over
   `ComponentHydratePVTsim`, which is the component model `PhaseHydrate` selects by default,
   through `HydrateFormationTemperatureFlash` (`eos.hydrate_formation_temperature`) and
@@ -388,13 +408,15 @@ The specialist physics.
   have: the **phase label** `PhaseEos.init` assigns - a volume ratio against `1.75`, then
   whether a phase's hydrocarbons outweigh its aqueous components - which `eos.hydrate_inhibitor_wt`
   carries because it is the only model here that asks which phase is the aqueous one.
-  **Not ported**: `PitzerHydrateFlash` with `ComponentHydratePitzer`, which is reachable through
-  the model name. It was recorded as gated on the EoS/GE hybrid seam P8 did not close - **and
-  that seam is now closed** (`eos.hybrid_eos_ge_flash`, with the reactive coupling over it in
-  `reactions.reactive_hybrid_eos_ge_flash`), so `SystemPitzer`'s two-models-in-one-flash route
-  exists here. What is left is the flash itself and the Pitzer hydrate component, which is this
-  tier's. `HydrateEquilibriumDiagnostics` is an audit of a
-  state rather than a model, and what it asserts belongs in a test. **Carried as unreachable
+  **The Pitzer route is ported**: `eos.pitzer_hydrate_formation_temperature` and
+  `eos.pitzer_hydrate_formation_pressure` carry `PitzerHydrateFlash` with
+  `ComponentHydratePitzer`, whose water reference is the pure-water Antoine pressure, over
+  `eos.hybrid_eos_ge_flash`. A salty CO2 state runs the manual PHREEQC CO2-chloride dataset
+  the upstream test applies, selected by the `pitzer_dataset` input. The tranche also closed
+  the two defects it exposed: the hybrid flash's role activation
+  (`activateSupportedHybridPhaseRoles`) and the neutral layer's contribution to an ion's
+  Pitzer coefficient. `HydrateEquilibriumDiagnostics` is an audit of a state rather than a
+  model, and what it asserts belongs in a test. **Carried as unreachable
   upstream**: `ComponentHydrateKluda`, which has no construction site anywhere in `src/main`,
   `ComponentHydrateStatoil` and `ComponentHydrateBallard`, whose only sites are two
   commented-out lines in `PhaseHydrate`, and `OLGAhydrateCurveGenerator`, which only a test
@@ -476,19 +498,15 @@ Port on demand, as a caller needs them:
   `thermo/util/spanwagner/`, `thermo/util/Vega/`.
 - **UMR.** `ComponentUMRCPA`, `ComponentUMRCPAvolcor`, `ComponentGEUnifacUMRPRU`,
   `AttractiveTermUMRPRU`, `SystemUMRPRUEos`, `SystemUMRPRUMCEos`.
-- **Flow assurance with no tranche behind it.** The rest of `pvtsimulation/flowassurance/`:
-  corrosion (`DeWaardMilliamsCorrosion`, the de Waard-Williams correlation NORSOK M-506
-  references, and `CO2CorrosionAnalyzer`, which couples it to an **electrolyte-CPA flash for
-  pH** - so the coupled one has no route even upstream, Electrolyte-CPA being carried as
-  unreachable), cooldown (`PipelineCooldownCalculator`, a lumped-parameter thermal transient,
-  and `SurfCooldownAnalyzer`, which composes it with `eos.hydrate_formation_temperature` to
-  give a no-touch time), `ErosionPredictionCalculator` (API RP 14E and DNV RP O501) and
-  `EmulsionViscosityCalculator` (oil-water viscosity correlations and the inversion point).
-  The specification assigns `flowassurance/` to "the tranche that backs each" and **no tranche
-  backs these four** - so they are here, in the long tail, rather than behind a P-number that
-  no page defines. The seven scale calculations in the same directory are ported (Tier 2's
-  salts bullet) and the six asphaltene screens belong to Tier 3's asphaltene bullet; neither
-  is here.
+- **Flow assurance's one remainder.** `CO2CorrosionAnalyzer` couples the de Waard-Williams
+  correlation to an **electrolyte-CPA flash for pH**, and this tree carries the
+  electrolyte-CPA phase without the system route that solves an aqueous pH - so the coupled
+  analyzer has no route here. **Everything else in `pvtsimulation/flowassurance/` is ported**:
+  the seven scale calculations (Tier 2's salts bullet), `DeWaardMilliamsCorrosion`,
+  `ErosionPredictionCalculator`, `EmulsionViscosityCalculator`, `PipelineCooldownCalculator`,
+  `HydrateRiskMapper` and `SurfCooldownAnalyzer` (Tier 1's flow-assurance bullet). The six
+  asphaltene screens belong to Tier 3's asphaltene bullet and `WaxCurveCalculator` to its
+  wax bullet; neither is here.
 - **Solids.** Ported, each with the id that carries it: `ComponentSolid`
   (`eos.solid_fugacity`, the tabulated coefficient) and `SolidFlash`
   (`eos.tp_solid_flash`, the fluid flash carrying one pure solid), over the
@@ -527,8 +545,8 @@ complete rather than silent about them:
 unit-operation tier, which the specification puts at tranche P11, and the flowsheet executor
 at P12. It is founded on the process calculus — `crates/azoth-process` carries the channel
 types, the stream record, the palette loader, the checker and the executor, and `specs/unit_ops/`
-declares 29 unit operations of which **28 carry kernels**. Two do not, and each says why; a third
-has one and is refused by the executor, which is a different statement again. **`unit_ops.simple_absorber` is refused on measured
+declares 31 unit operations of which **30 carry kernels**. The one that does not says why, and
+the executor refuses it by name. **`unit_ops.simple_absorber` is refused on measured
 evidence**: `SimpleAbsorber` is not the stage-wise absorber its ports describe but a fixed-point
 loop over MDEA/CO₂ loading whose `setNumberOfStages` writes a field its `run` never reads, and a
 faithful port needs the amine electrolyte chemistry P8 declined — `AmineSystem` and
@@ -574,7 +592,10 @@ to `1e-8`, because the class is reconciling against a return this port has no tr
 `component_splitter`, `ejector`, `flare`, `gas_scrubber`, `plug_flow_reactor`,
 `stirred_tank_reactor`, `tank` and `three_phase_separator` - each a registered `process.*` id
 with a spec, two implementations, a NeqSim capture and a case set; so have the classes the column
-is the source of, beside the column itself, and so has `gibbs_reactor`:
+is the source of, beside the column itself, and so has `gibbs_reactor`. **The plug-flow reactor's
+axial profile is published rather than summarised** - the summed reaction rate, on a vocabulary
+dimension added for it, the per-station molar flows as a matrix, and the residence time - so the
+class's `toJson()` has nothing left to serialise that the result does not already carry:
 
 - **`gibbs_reactor` was not the composition the P11 plan expected, and it cost a tier of its
   own.** `GibbsReactor.run` never calls `ChemicalEquilibrium`: the class is 3,163 lines carrying
@@ -583,8 +604,13 @@ is the source of, beside the column itself, and so has `gibbs_reactor`:
   read the solver, and built it - `data/reactors/`, `reactor::gibbs_solver`, and the id. **The
   port reproduces the class to the accuracy the class's conditioning permits**: one iteration
   from the same state agrees to `8e-14` on the major species, and the hundred damped steps the
-  class takes separate two runs by the class's own `cond(J) = 6.12e6`. What is owed is the
-  pseudo-inverse its singular-Jacobian row needs.
+  class takes separate two runs by the class's own `cond(J) = 6.12e6`. **The solver's own
+  machinery is in**: a singular Jacobian falls back to `SimpleMatrix.pseudoInverse`'s
+  construction (`solve_least_squares`), the Armijo and adaptive step controls and the Tikhonov
+  augmentation are optional inputs at the class's own defaults, and `getConditionNumberHistory()`
+  is an output - all held to `process_gibbs_algorithms.tsv`, the capture the class's own
+  algorithm test supplies. **`runTransient` is stated as the interface's fallback rather than
+  owed**, because neither reactor overrides it.
 
 **And the one that was a second physics is ported.** `unit_ops.rate_based_packed_column` is
 4,081 lines of segment model - axial slices through the packing, each with gas and liquid film
@@ -649,16 +675,19 @@ a claim nothing holds.
   absorber. **The geometry is not a declared surface on those two** — `AbsorptionColumn` carries
   no tray spacing, weir height or hole diameter of its own, so the two entries declare the six
   *class* inputs alone and the vessel is built at the designer's own defaults, which is what the
-  capture's row is. **`stripping_column` still has no mechanical row of its own**: it inherits
-  every getter and overrides none, so one absorber row cannot settle whether a second reading is
-  needed there, and the capacity families' own experience — where one row was not enough for the
-  absorber pair — says to add one rather than claim the shape. Its spec says so rather than
-  implying the row holds it.
+  capture's row is. **`stripping_column` has its own row too**: the capture's
+  `hydrocarbon_stripper_mechanical` is built from the case's own recipe - it inherits every getter
+  and overrides none, and one absorber row was not enough to claim the shape - and the case holds
+  the eleven outputs to it.
   **`AbsorberMechanicalDesign` is a measured
   non-port**: its only `src/main` caller is `SimpleAbsorber.getMechanicalDesign()`, and
   `SimpleAbsorber extends Separator`, so driving it on an `AbsorptionColumn` throws — it is the
-  separator family's sizing, which this tree already refuses. **`ReactorMechanicalDesign`** for
-  `process.gibbs_reactor` and `process.plug_flow_reactor` is still owed.
+  separator family's sizing, which this tree already refuses. **`ReactorMechanicalDesign` is
+  landed on `process.gibbs_reactor`**: eleven declared inputs and thirteen outputs, held to
+  `validation/neqsim/captures/process_reactor_mechanical_design.tsv`'s three rows.
+  **`PlugFlowReactor` is not owed it**: the class overrides no `getMechanicalDesign`, so it
+  answers the base `MechanicalDesign`, whose `calcDesign` only reads design specifications and
+  computes no vessel.
   **`TrayHydraulicsCalculator` is no longer one of them**: its arithmetic is the registered
   `hydraulics.tray_hydraulics` id.
 - **`ColumnInternalsDesigner`** is two halves and both are in. Its **packing** side is done
@@ -681,13 +710,19 @@ a claim nothing holds.
   of its own in `src/test`. **Neither name appears anywhere in the pinned jar**, which is where
   every capture in this tree came from, so neither is in the artifact the oracle was read from.
   A port would be a class nothing calls.
-- **`MechanicalDesign`** — `process.ejector`'s own size, whose areas, diameters, lengths and
-  volumes `updateDesign` fills. They are absent rather than guessed.
-- **`FilterPressureDropModel`** — `FLOW_SCALED`, `TABULATED` and `ERGUN`, which replace
-  `process.filter`'s fixed drop with a curve, a table or a packed-bed correlation. The palette's
-  `pressure_drop` is the `FIXED` branch, and the other three need media geometry. Beside it,
-  **`updateParticleCapturePerformance`**: `concentrationLoadingModelEnabled` is false by
-  default, and with it off nothing about a particle reaches the fluid.
+- **`MechanicalDesign`** — `process.ejector`'s `updateDesign` container is ported: the four
+  areas, their diameters, the fixed length multiples, the two connection estimates and the
+  swept volumes. The base class's weights and cost estimate are a separate tree and are still
+  absent rather than guessed.
+- **`process.filter`'s loaded state, one transient step and mechanical design landed** — the
+  carried solids loading, breakthrough, the loading's pressure drop, the bypass above its
+  cracking drop and the terminal-drop replacement check; then `runTransient`'s
+  `calculateSteadyState=false` branch as `time_step`, with the accretion at the pre-step
+  efficiency, backwash and regeneration removing loading, and the residence time published;
+  then `FilterMechanicalDesign.calcDesign`'s element count, vessel, ASME-shaped pressure
+  boundary, nozzle and weights. The class's "element-integrity check" is two stored values: the
+  steady run reads neither, while the design's collapse utilization and integrity warning do.
+  What remains is the session-level loop, `FilterCostEstimate` (USD) and the `toJson` DTO.
 - **`getCapacityUtilization` is ported**, as a pair of optional inputs — `internal_diameter` and
   `design_gas_load_factor`, **both or neither**, because half a vessel has nothing to check — and
   an optional `capacity_utilization`. **It reads the system `run` entrained rather than the flash
@@ -700,20 +735,22 @@ a claim nothing holds.
 - **The energy port** — `process.stirred_tank_reactor` runs `PHflash(inlet + duty)` when an
   `EnergyStream` is connected, and this library's five-field record has no place for one. The
   duty is declared out with the port named rather than guessed at.
-- **`process.pipe`'s remaining three**: `getEffectiveLength`'s fittings, `setPressureOut`/
-  `calcFlow`, and the Beggs-and-Brill multiphase limit. With no fittings added the effective
-  length is the physical length, which is what the entry's `length` is. **`process.mixer`** owes
-  the pressure-mismatch flag, which warns that the inlets arrived at different pressures — a
-  fact about upstream equipment rather than the record — and, with the rest of the tree,
-  `runTransient`.
+- **`process.pipe`'s transient**: `AdiabaticPipe.runTransient` re-runs the steady state, so the
+  line participates in a dynamic system without line-pack or wave propagation; this port has
+  the steady state and no transient, with the rest of the tree. **`process.mixer`'s
+  pressure-mismatch flag landed** — it reports the spread and warns when it exceeds the
+  class's `0.5` bar tolerance — and its `runTransient` is owed with the rest of the tree.
 - **`process.distillation_column`'s cold seed** — `runBostonSullivanRefinement`, declined on a
   measurement: without it the class's first Newton step moves the variables by `1e11` times their
-  own size. **`process.shortcut_distillation_column`** owes the tray hydraulics, the tray
-  optimization and `getResultsJson`; its own `setNumberOfTrays` override is inert, and says so.
-- **`process.throttling_valve`'s sizing mode** — solving the drop from the trim, with `Kv` from
-  `MechanicalDesign.calcValveSize()` and a `ValveSizingMethod`. `valve_opening` is not a
-  parameter here and the `isCalcPressure` branch is absent, for the same reason: it is the
-  mechanical-design tree.
+  own size. **`process.shortcut_distillation_column`'s `setNumberOfTrays` override is inert, and
+  says so** — the class computes the stages, it has no tray hydraulics or tray optimization, and
+  `getResultsJson` only serialises fields the result already carries.
+- **`process.throttling_valve`'s controller** — the laminar branch belongs to
+  `ControlValveSizing_IEC_60534_full`, which the spec refuses by name, and the controller is a
+  transient surface. The `ControlValveSizing`
+  default, its inverse flow and `isCalcPressure` solve, the choked cap, the fouling fraction and
+  the isothermal mode are ported; **the eight other sizing standards are refused by name** in
+  the spec's `[[unported]]` rows, each naming its class.
 - **The `eos` family's**: `ComponentGE.fugcoef`'s **Henry's-law branch is complete** - the
   four `eos.ge_*_phase` ids resolve both reference states, which the vendored table's
   `REFERENCESTATETYPE` selects on 115 of its 348 rows (113 `solute` and the two literal
@@ -732,6 +769,31 @@ a claim nothing holds.
   `eos.soreide_whitson_phase`'s two newer parameterisations, **Chabab 2019** and
   **Burgoyne-Nielsen 2026**. The CPA rules and the hydrate coupling are P7's and P9's, each
   gated on a component family or a system type this crate does not carry.
+- **`PhaseEos.getSoundSpeed` is `eos.sound_speed`** — the phase value, the beta-weighted system
+  value and the phase. The system value doubles on an unflashed system (two phase objects, both
+  `beta = 1.0`), which the port records and does not reproduce; `PhaseGE`'s constant `1470.0`
+  m/s and `PhaseDefault`'s `NaN` are not models. **`EquilibriumSoundSpeed` is
+  `eos.equilibrium_sound_speed`** - the fixed-entropy pressure stencil, the pure-fluid
+  saturation quality and the closure checks. **Its consumer landed as `process.hem_release`**:
+  `HomogeneousEquilibriumReleaseModel`'s 49-sample isentropic scan, the throat flux maximum and
+  choked test, the throat's equilibrium sound speed and Mach warning, and the four stations,
+  held to `process_hem_release.tsv` on PR - the class's own tests are SRK and are captured as
+  evidence. **`LeakModel.calculateSourceTerm` landed as `process.leak_blowdown`**: the
+  inventory from the corrected density and the vessel volume, the record-then-update loop with
+  its simplified orifice, capped jet velocity, unclamped momentum and droplet SMD, and the
+  isentropic update with its initial-mass denominator and back-pressure floor. Its scalar
+  methods are its internal arithmetic, not ids; the class's four silent fallbacks are refused,
+  its cached density is not reproduced (the port flashes every step), and its single-phase
+  `getBeta()` is recorded as the molar artefact it is. `SourceTermFrame`'s payload is that
+  result; its schema, UUID, sequence, time and fingerprint are session state, with this
+  library's provenance block as the envelope. What remains owed in `process/safety/release/` is
+  `SourceTermResult`'s six file exporters (PHAST, FLACS, KFX, OpenFOAM, CSV, JSON - the
+  time-series container is the result, the writers are session output), `ReleaseOrientation`
+  (stored and read by no arithmetic), `ReleaseFlowEnsemble` (zero callers), `SourceTermSession`
+  and the Fanno/pipe-decompression pair (they need `runTransient`), and the frame's canonical
+  JSON envelope if byte-compatible output is ever required. The package's `ReleaseInventory`,
+  `ReleaseModelEvidence`, `ReleaseSolidRiskAssessment` and `CoupledReleaseSource` are named here
+  as neither ported nor refused: they are a later scoping, not silently dropped.
 - **The reactions family's**: the **ionic branch** of `reactions.reactive_tp_flash` and
   `reactions.reactive_ph_flash`, which is why a charged substance is refused at all;
   `reactions.reactive_ph_flash`'s **entropy-specified variant** and its `NR = 0` delegation to
@@ -743,17 +805,125 @@ a claim nothing holds.
 - **The steady-state entries, and the transient and design surface beside each.** Every
   `process.*` class NeqSim carries also carries a `runTransient`, and most carry a mechanical
   design and a performance or control surface the steady `run` never reads. Owed entry by
-  entry: `Splitter`'s capacity map; `Flare`'s radiation model and capacity check; `Heater`'s
-  electrical and instrument design and its bounded outlet temperatures; `Pump`'s performance
-  curve; `Compressor`'s and `Expander`'s chart and catalogue, polytropic branch, anti-surge
-  machinery, deposit model and `useGERG2008`/`useLeachman`/`useVega` property overrides;
-  `HeatExchanger`'s thermal-hydraulic rating, `useDeltaT` variant and correlation-based UA;
-  `Separator`'s capacity check and droplet-performance calculator; `ThreePhaseSeparator`'s
-  levels and outlet-valve fractions; `GasScrubber`'s vessel sizing and mesh pad; `Tank`'s wall
-  temperature, steel mass and auto-sizing; `ThrottlingValve`'s choked-flow and laminar
-  branches, fouling fraction, `isIsoThermal` mode and controller path; `Filter`'s solids
-  loading, breakthrough, backwash, regeneration and element-integrity check; and
-  `StirredTankReactor`'s vessel volume, residence time and agitator power.
+  entry: **`Splitter`'s capacity map and mechanical design landed** - the two lazy SOFT
+  constraints, the header-diameter read and the empty-map answers, and `calcDesign`'s NPS
+  sizing, wall, manifold volume, drop and weights - and what remains owed there is
+  `runTransient` and `calculateSplitterCost`, which needs a currency dimension the unit system
+  does not carry; **`Flare`'s radiation model, dispersion surrogate and
+  capacity check landed** - the point-source flux and its inverse, the tip's exit velocity and
+  momentum flux over the system density, and the three design-axis utilisations with their
+  overload flag - what remains owed there is `runTransient`, the cumulative accumulators and
+  the performance DTO's per-component emission map; **`Heater`'s bounded outlet temperatures
+  landed** - the two HARD limits, their inverse/minimum utilization and the hard-flag quirk -
+  **and so did its instrument design**: the static list of eight (or six, or another type's),
+  its I/O counts and the SIL trips behind `instrument_design`; **and its electrical design's
+  motor surface**: the duty as shaft power, the IEC 60034 motor tables, the voltage taps,
+  currents, losses and auxiliary loads behind `electrical_design`; **and its utility
+  specification as carried state**: five values and their `has_*` predicates; **and its mechanical
+  design's thermal estimate**: the LMTD, approach, UA and the five candidate types with their
+  required areas, geometry models and selection; **and its cable and switchgear**: the tray
+  ampacity derating, the voltage-drop upsizing, the starter, breaker and fuse ratings and the
+  short-circuit rating and weight; **and its VFD**: the topology, pulse, harmonic, cooling,
+  weight and enclosure tables and the input losses the drive adds. The detailed
+  `ShellAndTubeDesignCalculator` is `thermal.shell_and_tube_design`, and `runTransient` is
+  the steady re-run plus the clock, recorded as a measured non-port - the two-stream
+  `HeatExchanger` branch's thermal estimate is `process.heat_exchanger`'s and has landed -
+  and the transformer and hazardous-area classification are the class's carried fields that
+  `calcDesign` never reads;
+  `Compressor`'s
+  catalogue and readers, the anti-surge controllers (its surge curve, read-outs, run-time
+  recycle block and steady recycle calculator have landed), and
+  `useGERG2008`/`useLeachman`/`useVega` property overrides - **its two alternative map
+  lookups, the `CompressorChartKhader2015` map, the speed-solve mode, the no-chart
+  polytropic default branch and the deposit model have landed**;
+  **`Expander`'s recovered-power capacity constraint landed** - the HARD rating, its two
+  thresholds and the disabled chart constraints - **and so did its stated-power mode and the
+  outlet-temperature solve**: `shaft_power` back-computes the efficiency, and
+  `outlet_temperature` is the inherited secant (the expander's `run` never reads
+  `useOutTemperature`, so it is a method rather than a mode). What remains owed there is the
+  dynamic nozzle and the transient;
+  **`HeatExchanger`'s thermal-hydraulic rating and correlation-based UA landed** as
+  `thermal.shell_and_tube_rating` and `process.heat_exchanger`'s `use_rating_pressure_drop`,
+  held to `thermal_rating_probe.tsv` and `process_heat_exchanger_rating.tsv`; **its
+  tube-vibration screen landed** as `thermal.shell_and_tube_vibration`, held to
+  `tube_vibration_probe.tsv`, **and so did its LMTD correction factor** as
+  `thermal.lmtd_correction_factor`, held to `lmtd_correction_probe.tsv`, **and its
+  condensation correlation** as `thermal.shah_condensation`, held to
+  `shah_condensation_probe.tsv`, **and its boiling correlations** as
+  `thermal.boiling_heat_transfer`, held to `boiling_heat_transfer_probe.tsv`, **and its
+  two-phase pressure drop** as `thermal.two_phase_pressure_drop`, held to
+  `two_phase_pressure_drop_probe.tsv`, **and its fouling model** as
+  `thermal.fouling_model`, held to `fouling_model_probe.tsv`, **and its tube-insert
+  enhancement** as `thermal.tube_insert_model`, held to `tube_insert_probe.tsv`, **and its
+  TEMA standard** as `thermal.tema_standard`, held to `tema_standard_probe.tsv`, **and its
+  zone-by-zone rating** as `thermal.zone_rating`, held to `zone_analysis_probe.tsv`, **and its
+  incremental zone analysis** as `thermal.incremental_zone_analysis`, held to
+  `incremental_zone_analysis_probe.tsv`, **and the detailed design loop** as
+  `thermal.shell_and_tube_design`, held to `shell_and_tube_design_probe.tsv`, with the
+  material table vendored; the exchanger package is closed, and `runTransient`'s enabled
+  branch is `process.heat_exchanger`'s one-step surface, held to
+  `process_heat_exchanger_transient.tsv`;
+  **its `useDeltaT` closure landed as `use_delta_t`**, held to
+  `process_heat_exchanger_delta_t.tsv`, **and so did its mechanical design's two-stream
+  thermal estimate**: the LMTD and approach from the four stream temperatures, the
+  type-specific areas and the five-candidate selection, held to
+  `process_heat_exchanger_mechanical_design.tsv`; **`Separator`'s
+  capacity surface landed** - utilisation, the maximum allowable and superficial velocities,
+  the no-argument gas load factor and the overload flag, with the sizing rule's and the load
+  factor's density rules kept apart - **and `SeparatorCapacityAssessment` landed as
+  `process.separator_capacity_assessment`**, the fail-closed snapshot with its optional
+  mechanical-design gas limit; **the droplet-performance calculator landed as
+  `process.separator_performance`** - the standard path's six fractions and four efficiencies
+  over the class's droplet distributions, grade curves and settling solve, **and the enhanced
+  chain landed too**: the regime map, inlet-device model and geometry calculator feed the
+  gravity, mist and API 12J stages, with the design K read from the shipped database's
+  wire-mesh, vane-pack and axial-cyclone records and refused by name for the others, and the
+  inlet device's two overrides and the post-inlet d50/d32 published; the capture's eleven
+  states are `process_separator_performance_enhanced.tsv`; **`getGasLoadFactor(int)`'s
+  phase-indexed and `sizeFromFlow` landed** - the operating holdup against the design gas
+  area, and the closed-form diameter; **`SeparatorMechanicalDesign.calcDesign` landed** as a
+  `mechanical_design` group on the same id - the sized vessel, its shell and skid weights, its
+  module box, the seven levels, the three nozzles and the surge and retention times, held to
+  `process_separator_mechanical_design.tsv` on the port's PR fluid and on the class's own SRK
+  fixture - **and `Separator.autoSize` landed as `auto_size`**, with the shipped design
+  database's K and Fg and `performSizingCalculations`, held to
+  `process_separator_autosize.tsv`; and
+  **`GasScrubberMechanicalDesign` landed too**, on `process.gas_scrubber` with the scrubber
+  standard's `1.1` factor, `5 d` length and `2 d` module - held to
+  `process_gas_scrubber_mechanical_design.tsv` - and **`getDeRatedGasLoadFactor` is refused with its measurement**: the
+  class's interphase model is a pre-flash clone whose zero-density phases answer a surface
+  tension of `0.0`, so the getter's factor is exactly `0.5` on every two-phase state where
+  the live Parachor answers `0.0089` and the formula would give `0.946` (capture
+  `process_separator_sizing.tsv`);
+  **`ThreePhaseSeparator`'s levels and its oil/water retention times landed, and so did
+  `calcInterfaceSettlingTime`** - the 150 µm Stokes settle, held to
+  `process_three_phase_settling.tsv` on the initialised state, because the class's own call on
+  a fresh run reads an uninitialised aqueous density and answers `Infinity`; **the three
+  outlet valve fractions landed as stored state**, and `getMassBalance` is recorded as a
+  zero-by-construction residual the port does not publish; the droplet calculator is
+  `process.separator_performance`; **`GasScrubber`'s vessel sizing and mesh pad landed**;
+  still owed are `Tank`'s residence-time `autoSize` — its wall temperature and steel mass are
+  `runTransient`'s, with the level solve —; `ThrottlingValve`'s controller path;
+  `Filter`'s session transient loop and cost, its loading, one step and mechanical design
+  having landed; **`StirredTankReactor`'s vessel volume, residence time and agitator power landed as
+  carried state** - declared, echoed, and their product published - with only its
+  `runTransient` still owed. **The
+  turbo-expander landed**: `TurboExpanderCompressor` and `ExpanderChartKhader` are one coupled
+  machine, the chart's only reader. **`MapTurboExpanderCompressor` landed as its own id**,
+  `process.map_turbo_expander_compressor`: the second shaft, its speed bisected over the same
+  chart's measured lines. What is still owed is the map surface around it:
+  `RadialExpanderGeometryMap`, the synthetic-map generator whose consumers
+  (`TurboExpanderMapIngestion`, `TurboMachineryChartLibrary`) nothing here calls; both
+  classes' `toJson`/`toMap` reports and the map machine's `feasible` flag. **The expander
+  chart's two stated sound speeds are closed**: its own surface reads them from
+  `eos.sound_speed`, and the class's `830.84` m/s is recorded as its unflashed doubling.
+  **Anti-surge landed** - the two boundary splines, the chart's
+  generated surge and stonewall curves, the machine's surge read-outs, `run`'s recycle
+  block and the steady `AntiSurgeRecycleCalculator` (`process.anti_surge_recycle`). What it
+  left owed is the legacy
+  `Calculator.runAntiSurgeCalc` step, `AntiSurgeController` and the dynamic/application layer
+  (`AntiSurgeDynamicBenchmark`, `AdvancedAntiSurgeControlSystem`, `CompressorAntiSurgeApplication`,
+  `CompressorOperatingHistory`, `RecycleFlowCoordinator`).
 - **Three behaviours of the same shape, in `eos` and `reactions`.** `RachfordRice.calcBeta`
   clamps its root to `[1e-12, 1 - 1e-12]` and declines to iterate where no root exists - the
   port returns the root the equation gives, so the negative flash stays visible;
@@ -764,22 +934,24 @@ a claim nothing holds.
   with them: no oil or aqueous phase exists here, and they are the only fields that re-run the
   *vapour*.
 
-- **The characterisation methods that rebuild a fluid rather than a table.**
-  `OilAssayCharacterisation.apply`'s arithmetic is `characterization.oil_assay_derivation`, and
-  what its class does with the answer is `system.addTBPfraction` and `system.addComponent` — so
-  the owed part is a `Mixture` a component can be added to, which is the same one
-  `PseudoComponentCombiner` needs: `combineReservoirFluids` and `characterizeToCommonSlate`
-  (several fluids weighted into one imaginary pool before cutting),
-  `transferBinaryInteractionParameters`, `normalizeComposition` and `generateValidationReport`.
-  **The delumping is not on the list, and it never needed a fluid.**
-  `characterization.delumping` is `delumpContributions` as a table→table id, and
+- **The characterisation methods that rebuild a fluid rather than a table.** The arithmetic is
+  ported and the fluid is built from it: `PseudoComponentCombiner`'s `combineReservoirFluids`,
+  `characterizeToCommonSlate` and `transferBinaryInteractionParameters` are
+  `characterization.combine_reservoir_fluids`, `characterization.characterize_to_common_slate`
+  and `characterization.transfer_binary_interaction_parameters`, each over rows;
+  `characterization.tbp_fraction_component` is `addTBPfraction`'s card for one cut, its Rackett
+  compressibility a reference SRK liquid root; and `mixture_from_characterization` turns rows
+  into a `Mixture` and its ideal-gas model. So the rows are the whole of the fluid's
+  description, and three engine-side quirks travel with them: `getCpD`'s `1e-10` offset, the
+  acentric factor `setm` rewrites, and the coefficient `init` then re-derives from it.
   `characterization.characterize_to_reference` carries all four of the class's own options -
   `inheritReferenceProperties`, `delumpBeforeRecharacterization` with its resolution, and
-  `sharedImaginaryBoundaries`, which is `determineReferenceEqualMassBoundaries`. **`Recombine`
-  is the same shape as the owed ones**: it turns a plus fraction back into one component. **And
-  the rows are twenty fields wide where the port reads four**: `AssayCut`'s sulfur, nitrogen,
-  API gravity and Watson factor, and `PseudoComponentContribution`'s critical constants,
-  parachor, racketZ and heat of fusion, join the rows when a ported method reads one.
+  `sharedImaginaryBoundaries`, which is `determineReferenceEqualMassBoundaries`. They are
+  composed into a fluid by `mixture_from_characterization`, and an assay reaches it through
+  `oil_assay_to_mixture` - the derivation, the cards and the assembler in that order. **What is
+  left of the subsystem is what builds nothing**: `Recombine` is unreachable (its constructor is
+  empty and `runRecombination` returns null), `normalizeComposition` computes a total and never
+  uses it, and `generateValidationReport` reports on data; none is an id.
 
 ## Beyond the port
 

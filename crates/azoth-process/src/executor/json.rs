@@ -23,8 +23,9 @@
 //! take the whole envelope with it, which is the failure `run_error` exists to prevent.
 
 use azoth_core::units::{
-    DiffusionCoefficient, DynamicViscosity, Length, MassDensity, MassRate, MolarEnergy, Power,
-    Pressure, ThermalConductance, ThermodynamicTemperature, Velocity,
+    Area, DiffusionCoefficient, DynamicViscosity, Force, HeatFluxDensity, HeatTransfer, Length,
+    Mass, MassDensity, MassFlux, MassRate, MolarEnergy, MolarHeatCapacity, Power, Pressure,
+    ThermalConductance, ThermodynamicTemperature, Time, Velocity, Volume, VolumeRate,
 };
 use azoth_core::{AzothError, Result, Warning};
 use serde::ser::SerializeSeq;
@@ -119,6 +120,13 @@ impl WireScalar for MassRate {
     }
 }
 
+impl WireScalar for HeatTransfer {
+    const UNIT: &'static str = "W/(m**2*K)";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
 impl WireScalar for ThermalConductance {
     const UNIT: &'static str = "W/K";
     fn magnitude(&self) -> f64 {
@@ -128,6 +136,69 @@ impl WireScalar for ThermalConductance {
 
 impl WireScalar for Length {
     const UNIT: &'static str = "m";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for Mass {
+    const UNIT: &'static str = "kg";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for Volume {
+    const UNIT: &'static str = "m**3";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for Area {
+    const UNIT: &'static str = "m**2";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for VolumeRate {
+    const UNIT: &'static str = "m**3/s";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for HeatFluxDensity {
+    const UNIT: &'static str = "W/m**2";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for Time {
+    const UNIT: &'static str = "s";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for Force {
+    const UNIT: &'static str = "N";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for MassFlux {
+    const UNIT: &'static str = "kg/(m**2*s)";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for MolarHeatCapacity {
+    const UNIT: &'static str = "J/(mol*K)";
     fn magnitude(&self) -> f64 {
         self.value
     }

@@ -1,0 +1,232 @@
+id = "characterization.characterize_to_common_slate"
+name = "Several fluids re-characterized onto one shared pseudo-component slate"
+kind = "direct"
+assumptions = [
+    "**this is Pedersen's Common EoS slate (Chapter 5.6).** Each fluid comes back separate, with its own mole amounts and one shared set of pseudo-component properties, so one equation of state can span fluids that were cut differently.",
+    "**the cuts are placed on a weighted imaginary pool, not on the pooled mass.** Each fluid's pseudo-components are normalised to unit pseudo-mass and then scaled by its weight, so the grid follows the weighting rather than whichever fluid carries the most.",
+    "**a fluid contributes to a cut by its weight times its cut's mole fraction** of that fluid's total - base components included - which is what makes a dilute fluid's pseudo-components count for less than its weight alone says.",
+    "**the shared molar mass is the weighted mean of the cuts' own.** The shared density is that mean over the weighted mean of their molar volumes, so a cut's mass and its volume enter the average separately rather than as a ratio.",
+    "**the fluids keep their own moles.** A fluid's physical mass therefore changes wherever its cuts differed from the slate; that is the slate's definition rather than an error, and it is why the answer reports each fluid's moles.",
+    "**the baseline is the largest pseudo-component count among the fluids, at least one.** A caller can state the count instead, and the answer reports which it used, so a reader of the rows knows the slate's size.",
+    "**a cut that is invalid in any fluid is dropped from every fluid**, and the names keep their slate positions - `PC1_PC`, `PC3_PC` - so the same name is the same cut across the fluids even where one does not carry it.",
+    "**weights are non-negative and at least one is positive**, and the vector is one per fluid. Absent means equal weighting, which is the class's own default entry point; a zero weight removes its fluid from the grid and the averages.",
+    "**a fluid with no pseudo-component contributes nothing to the slate.** If no fluid has one, the answer is the fluids as they came in - the class's early return - and the rows are their base components.",
+    "**the base components are not merged across the fluids.** Unlike the blend, each fluid is its own answer, so two fluids both carrying methane each report their own methane.",
+    "**the same two getter quirks the blend reproduces apply here**: `cp_d` is the number `getCpD` states, and a finite fitted `m` rewrites the acentric factor through Soave's polynomial.",
+    "the slate is a bookkeeping design and not a measurement: it makes two reports comparable with one equation of state, it does not make either report right.",
+]
+references = [
+    "Pedersen, K. S.; Christensen, P. L. (2007). \"Phase Behavior of Petroleum Reservoir Fluids.\", CRC Press. Chapter 5.6, the common equation of state and the weighted cut grid.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/PseudoComponentCombiner.java`'s `characterizeToCommonSlate`, with its weighted imaginary pool and `computeCommonSlate`, is the port source.",
+    "`validation/neqsim/captures/characterization_fluid_rebuild_probe.tsv` - five slates from `validation/neqsim/CharacterizationFluidRebuildProbe.java`: equal and weighted fluids, three fluids, a zero weight, and a set with no pseudo-component at all.",
+]
+[source]
+standard = "NeqSim master `PseudoComponentCombiner.characterizeToCommonSlate`"
+edition = "Its two `characterizeToCommonSlate` overloads through `resolveWeights`, `inferCommonSlateSize`, `buildWeightedImaginaryPool`, `determineQuantileBoundaries`, `distributeToProfiles` and `computeCommonSlate`. The class returns re-characterized clones; the rows they carry are this id's answer."
+[inputs]
+[inputs.components]
+type = "record_list"
+row_type = "FluidComponent"
+description = "The fluids' components, one record each, in the order the fluids carry them. A record with a positive mole amount in the same fluid twice is one component at the summed amount; a non-positive amount is a row the class skips.\n"
+[inputs.components.fields.fluid]
+unit = "dimensionless"
+description = "Which fluid the row belongs to, 0-based. Fluids are ordered by first appearance, and a whole number from zero is required: a fractional or negative index is not a fluid.\n"
+[inputs.components.fields.name]
+type = "string"
+description = "The component's name. A base component merges by it across the fluids; a pseudo-component's is its own fluid's name and does not survive into the answer.\n"
+[inputs.components.fields.pseudo_component]
+type = "boolean"
+description = "Whether the row is a TBP or plus fraction rather than a base component. A base row's properties are absent and are the databank's at assembly.\n"
+[inputs.components.fields.moles]
+unit = "mol"
+description = "The component's mole amount. Only a positive one is read; a zero or negative amount is a row that is not on the grid.\n"
+[inputs.components.fields.molar_mass]
+unit = "kg/mol"
+optional = true
+description = "The pseudo-component's molar mass, which is what the row's mass is and what its sorting key falls back to. Required on a pseudo row and ignored on a base row.\n"
+[inputs.components.fields.density]
+unit = "kg/m**3"
+optional = true
+description = "The pseudo-component's normal liquid density, which a group's volume is the mass over. Required on a pseudo row and ignored on a base row.\n"
+[inputs.components.fields.normal_boiling_point]
+unit = "K"
+optional = true
+description = "The pseudo-component's normal boiling point, its sorting key where it states a finite positive one. A row without one sorts by its molar mass.\n"
+[inputs.components.fields.critical_temperature]
+unit = "K"
+optional = true
+description = "The pseudo-component's critical temperature, part of the blend's mole-fraction-weighted override.\n"
+[inputs.components.fields.critical_pressure]
+unit = "Pa"
+optional = true
+description = "The pseudo-component's critical pressure, part of the blend's mole-fraction-weighted override.\n"
+[inputs.components.fields.acentric_factor]
+unit = "dimensionless"
+optional = true
+description = "The pseudo-component's acentric factor, part of the blend's mole-fraction-weighted override.\n"
+[inputs.components.fields.critical_volume]
+unit = "m**3/mol"
+optional = true
+description = "The pseudo-component's critical molar volume, mass-weighted into the group's.\n"
+[inputs.components.fields.racket_z]
+unit = "dimensionless"
+optional = true
+description = "The pseudo-component's Rackett compressibility, mass-weighted into the group's and read again when the row becomes a component.\n"
+[inputs.components.fields.racket_z_cpa]
+unit = "dimensionless"
+optional = true
+description = "The same compressibility on the CPA basis, mass-weighted into the group's.\n"
+[inputs.components.fields.parachor]
+unit = "dimensionless"
+optional = true
+description = "The pseudo-component's parachor, in NeqSim's mixed `(mN/m)**(1/4) * cm**3/mol`, mass-weighted into the group's.\n"
+[inputs.components.fields.critical_viscosity]
+unit = "Pa*s"
+optional = true
+description = "The pseudo-component's critical viscosity, mass-weighted into the group's.\n"
+[inputs.components.fields.triple_point_temperature]
+unit = "K"
+optional = true
+description = "The pseudo-component's triple-point temperature, mass-weighted into the group's.\n"
+[inputs.components.fields.heat_of_fusion]
+unit = "J/mol"
+optional = true
+description = "The pseudo-component's heat of fusion, mass-weighted into the group's.\n"
+[inputs.components.fields.ideal_gas_enthalpy_of_formation]
+unit = "J/mol"
+optional = true
+description = "The pseudo-component's ideal-gas enthalpy of formation, mass-weighted into the group's. It has no home on a `Component` and is dropped when a mixture is assembled.\n"
+[inputs.components.fields.cp_a]
+unit = "J/(mol*K)"
+optional = true
+description = "The constant term of the pseudo-component's ideal-gas heat capacity, mass-weighted into the group's.\n"
+[inputs.components.fields.cp_b]
+unit = "J/(mol*K**2)"
+optional = true
+description = "The coefficient of `T` in the pseudo-component's ideal-gas heat capacity.\n"
+[inputs.components.fields.cp_c]
+unit = "J/(mol*K**3)"
+optional = true
+description = "The coefficient of `T**2` in the pseudo-component's ideal-gas heat capacity.\n"
+[inputs.components.fields.cp_d]
+unit = "J/(mol*K**4)"
+optional = true
+description = "The coefficient of `T**3` in the pseudo-component's ideal-gas heat capacity, as `getCpD()` states it: the stored coefficient plus `1e-10`.\n"
+[inputs.components.fields.attractive_m]
+unit = "dimensionless"
+optional = true
+description = "The fitted coefficient of the pseudo-component's Soave alpha function, which NeqSim's `addTBPfraction` installs in place of the acentric factor's correlation.\n"
+[inputs.weights]
+type = "vector"
+unit = "dimensionless"
+optional = true
+description = "One non-negative weight per fluid, in first-appearance order. Absent is equal weighting. At least one must be positive, and a fluid weighted zero takes part in neither the cut grid nor the averages.\n"
+[inputs.target_pseudo_components]
+unit = "dimensionless"
+optional = true
+description = "How many shared pseudo-components the slate has. Absent takes the largest pseudo-component count among the fluids, and at least one; the answer reports which was used.\n"
+[outputs]
+[outputs.components]
+type = "record_list"
+description = "Every fluid's components in order - its own base components, then the shared cuts named by their slate position. A cut invalid in any fluid is dropped from every fluid, so a name can be absent from one fluid's run.\n"
+[outputs.components.fields.name]
+type = "string"
+description = "The component's name: a base component's own, or the cut's position in the answer.\n"
+[outputs.components.fields.pseudo_component]
+type = "boolean"
+description = "Whether the row is a pseudo-component. A base row carries its name and amount and no properties.\n"
+[outputs.components.fields.moles]
+unit = "mol"
+description = "The component's mole amount. Over the whole answer it is the sum of the fluids' positive amounts, so no mole is gained or lost.\n"
+[outputs.components.fields.molar_mass]
+unit = "kg/mol"
+optional = true
+description = "The cut's molar mass, its accumulated mass over its accumulated moles.\n"
+[outputs.components.fields.density]
+unit = "kg/m**3"
+optional = true
+description = "The cut's normal liquid density, the mass over the volume its rows occupy.\n"
+[outputs.components.fields.normal_boiling_point]
+unit = "K"
+optional = true
+description = "The cut's normal boiling point, weighted by fluid mass fraction times mole fraction within the fluid.\n"
+[outputs.components.fields.critical_temperature]
+unit = "K"
+optional = true
+description = "The cut's critical temperature, weighted the same way.\n"
+[outputs.components.fields.critical_pressure]
+unit = "Pa"
+optional = true
+description = "The cut's critical pressure, weighted the same way.\n"
+[outputs.components.fields.acentric_factor]
+unit = "dimensionless"
+optional = true
+description = "The cut's acentric factor, weighted the same way.\n"
+[outputs.components.fields.critical_volume]
+unit = "m**3/mol"
+optional = true
+description = "The cut's critical molar volume, mass-weighted. Absent where no contributing row states one.\n"
+[outputs.components.fields.racket_z]
+unit = "dimensionless"
+optional = true
+description = "The cut's Rackett compressibility, mass-weighted.\n"
+[outputs.components.fields.racket_z_cpa]
+unit = "dimensionless"
+optional = true
+description = "The cut's CPA Rackett compressibility, mass-weighted.\n"
+[outputs.components.fields.parachor]
+unit = "dimensionless"
+optional = true
+description = "The cut's parachor, mass-weighted.\n"
+[outputs.components.fields.critical_viscosity]
+unit = "Pa*s"
+optional = true
+description = "The cut's critical viscosity, mass-weighted.\n"
+[outputs.components.fields.triple_point_temperature]
+unit = "K"
+optional = true
+description = "The cut's triple-point temperature, mass-weighted.\n"
+[outputs.components.fields.heat_of_fusion]
+unit = "J/mol"
+optional = true
+description = "The cut's heat of fusion, mass-weighted.\n"
+[outputs.components.fields.ideal_gas_enthalpy_of_formation]
+unit = "J/mol"
+optional = true
+description = "The cut's ideal-gas enthalpy of formation, mass-weighted.\n"
+[outputs.components.fields.cp_a]
+unit = "J/(mol*K)"
+optional = true
+description = "The constant term of the cut's ideal-gas heat capacity, mass-weighted.\n"
+[outputs.components.fields.cp_b]
+unit = "J/(mol*K**2)"
+optional = true
+description = "The coefficient of `T` in the cut's ideal-gas heat capacity.\n"
+[outputs.components.fields.cp_c]
+unit = "J/(mol*K**3)"
+optional = true
+description = "The coefficient of `T**2` in the cut's ideal-gas heat capacity.\n"
+[outputs.components.fields.cp_d]
+unit = "J/(mol*K**4)"
+optional = true
+description = "The coefficient of `T**3` in the cut's ideal-gas heat capacity, as the rebuilt component's `getCpD()` states it - the blended mean plus `1e-10`.\n"
+[outputs.components.fields.attractive_m]
+unit = "dimensionless"
+optional = true
+description = "The fitted Soave coefficient of the cut's alpha function, mass-weighted.\n"
+[outputs.fluid_index]
+type = "vector"
+unit = "dimensionless"
+length = "one per row, aligned with `components`"
+description = "Which fluid each row belongs to. The row is the component's, and the fluid is a fact about the answer rather than the component, so it travels beside the row.\n"
+[outputs.fluid_moles]
+type = "vector"
+unit = "mol"
+length = "one per fluid, in input order"
+description = "Each fluid's total mole amount after re-characterization. A fluid keeps its own moles and takes the slate's molar mass, so its mass can move from the input's.\n"
+[outputs.resolved_pseudo_components]
+unit = "dimensionless"
+description = "How many shared cuts the answer has: the requested count, or the largest pseudo-component count among the fluids when none was requested.\n"
+[implementations]
+python = "azoth.characterization.characterize_to_common_slate"
+rust = "azoth_characterization::characterize_to_common_slate"

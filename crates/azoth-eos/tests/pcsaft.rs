@@ -343,3 +343,13 @@ fn the_composition_derivative_is_a_finite_difference_of_the_extensive_energy() {
         );
     }
 }
+
+/// **A packing fraction of one is not a state** (upstream #3816): `PhasePCSAFTRahmat.calcVolume`
+/// converged past it and answered from outside the model's domain, where every hard-sphere term
+/// diverges. At `1e-9` m**3/mol methane's packing fraction is four orders above one, and `state`
+/// refuses the volume rather than returning a number.
+#[test]
+fn a_packing_fraction_of_one_is_refused() {
+    let error = state(&[methane()], &[0.0], &[1.0], 300.0, 1.0e-9).expect_err("eta > 1");
+    assert!(error.to_string().contains("packing fraction"), "{error}");
+}

@@ -24,6 +24,153 @@ class ActivityCoefficientRow:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class AppliedStandardRow:
+    """The standards the design pipeline applied."""
+
+    #: one standard.
+    name: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class BrineMixingPointRow:
+    """One row per mixing fraction, from all brine A to all brine B."""
+
+    #: the fraction of brine A in the mixture.
+    fraction_a: float
+
+    #: calcite's index.
+    si_caco3: float
+
+    #: barite's index.
+    si_baso4: float
+
+    #: gypsum's index.
+    si_caso4: float
+
+    #: celestite's index.
+    si_srso4: float
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class CharacterizationComponent:
+    """The blended fluid's components: its merged base components first, in the fluids' order, then the combined pseudo-components in ascending cut order, named `PC1_PC`, `PC2_PC` and so on."""
+
+    #: The component's name: a base component's own, or the cut's position in the answer.
+    name: str
+
+    #: Whether the row is a pseudo-component. A base row carries its name and amount and no properties.
+    pseudo_component: bool
+
+    #: The component's mole amount. Over the whole answer it is the sum of the fluids' positive amounts, so no mole is gained or lost.
+    moles: Q
+
+    #: The cut's molar mass, its accumulated mass over its accumulated moles.
+    molar_mass: Q | None
+
+    #: The cut's normal liquid density, the mass over the volume its rows occupy.
+    density: Q | None
+
+    #: The cut's normal boiling point, weighted by fluid mass fraction times mole fraction within the fluid.
+    normal_boiling_point: Q | None
+
+    #: The cut's critical temperature, weighted the same way.
+    critical_temperature: Q | None
+
+    #: The cut's critical pressure, weighted the same way.
+    critical_pressure: Q | None
+
+    #: The cut's acentric factor, weighted the same way.
+    acentric_factor: float | None
+
+    #: The cut's critical molar volume, mass-weighted. Absent where no contributing row states one.
+    critical_volume: Q | None
+
+    #: The cut's Rackett compressibility, mass-weighted.
+    racket_z: float | None
+
+    #: The cut's CPA Rackett compressibility, mass-weighted.
+    racket_z_cpa: float | None
+
+    #: The cut's parachor, mass-weighted.
+    parachor: float | None
+
+    #: The cut's critical viscosity, mass-weighted.
+    critical_viscosity: Q | None
+
+    #: The cut's triple-point temperature, mass-weighted.
+    triple_point_temperature: Q | None
+
+    #: The cut's heat of fusion, mass-weighted.
+    heat_of_fusion: Q | None
+
+    #: The cut's ideal-gas enthalpy of formation, mass-weighted.
+    ideal_gas_enthalpy_of_formation: Q | None
+
+    #: The constant term of the cut's ideal-gas heat capacity, mass-weighted.
+    cp_a: Q | None
+
+    #: The coefficient of `T` in the cut's ideal-gas heat capacity.
+    cp_b: Q | None
+
+    #: The coefficient of `T**2` in the cut's ideal-gas heat capacity.
+    cp_c: Q | None
+
+    #: The coefficient of `T**3` in the cut's ideal-gas heat capacity, as the rebuilt component's `getCpD()` states it - the blended mean plus `1e-10`.
+    cp_d: Q | None
+
+    #: The fitted Soave coefficient of the cut's alpha function, mass-weighted.
+    attractive_m: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ChemicalWarningRow:
+    """The class's warning map, in insertion order."""
+
+    #: the warning's code.
+    code: str
+
+    #: the warning's message.
+    message: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class DepositionSegmentRow:
+    """One row per evaluated segment, in the profile's order."""
+
+    #: the CaCO3 index at the segment's temperature and pressure.
+    saturation_index: float
+
+    #: the deposit mass over the segment's wall area and the service time.
+    deposition_mass: Q
+
+    #: the deposit thickness over the segment.
+    thickness: Q
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class EquilibriumSoundSpeedSample:
+    """the accepted stencil's states, centre first."""
+
+    #: the sample's absolute pressure.
+    pressure: Q
+
+    #: the sample's temperature.
+    temperature: Q
+
+    #: the sample's mass over EOS total volume.
+    density: Q
+
+    #: the signed specific-entropy error.
+    entropy_residual: Q
+
+    #: what the flash found at the sample.
+    phase: str
+
+    #: the vapour fraction where the sample is two-phase.
+    vapour_fraction: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FlowlineScaleSegment:
     """The `N + 1` points, inlet first; a point's index is absent where its ions are."""
 
@@ -53,6 +200,272 @@ class FlowlineScaleSegment:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HeatExchangerMechanicalType:
+    """the five candidates in the class's enum order; empty when the design did not run."""
+
+    #: the configuration's spelling.
+    mechanical_type: str
+
+    #: the required heat-transfer area, floored at 0.1.
+    required_area: Q
+
+    #: the UA the type's area is computed from.
+    required_ua: Q
+
+    #: the type's typical overall coefficient, which is also the area's divisor on this branch.
+    overall_heat_transfer_coefficient: Q
+
+    #: the larger of the estimate's approach and the type's allowable approach.
+    approach_temperature: Q
+
+    #: the estimated length: tube length, stack length, fan-module length, pipe length or core length.
+    estimated_length: Q
+
+    #: the equivalent inside diameter.
+    inner_diameter: Q
+
+    #: the equivalent outside diameter.
+    outer_diameter: Q
+
+    #: the wall or sheet thickness.
+    wall_thickness: Q
+
+    #: the tube or plate count.
+    tube_count: float
+
+    #: the tube passes or plate pairs.
+    tube_passes: float
+
+    #: the fin surface area; zero for the unfinned types.
+    fin_surface_area: Q
+
+    #: the class's qualitative pressure-drop proxy, in bar.
+    estimated_pressure_drop: float
+
+    #: the estimated weight.
+    estimated_weight: Q
+
+    #: the module length.
+    module_length: Q
+
+    #: the module width.
+    module_width: Q
+
+    #: the module height.
+    module_height: Q
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class HeaterInstrument:
+    """the design's instrument list, in the class's insertion order; empty when the design did not run."""
+
+    #: the tag the list assigns: `SYMBOL-(1000 + position)`.
+    tag: str
+
+    #: the ISA symbol, e.g. `TT` or `TSHH`.
+    isa_symbol: str
+
+    #: the service description.
+    service: str
+
+    #: `AI`, `AO`, `DI` or `DO`.
+    io_type: str
+
+    #: the unit the range is stated in; absent for a digital trip, whose constructor leaves it null.
+    range_unit: str | None
+
+    #: the range's lower bound, in the row's `range_unit`.
+    range_min: float
+
+    #: the range's upper bound, in the row's `range_unit`.
+    range_max: float
+
+    #: the SIL rating; zero for a non-safety instrument.
+    sil_rating: float
+
+    #: whether the row is safety-related.
+    safety_related: bool
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class HeaterMechanicalType:
+    """the five candidates in the class's enum order; empty when the design did not run."""
+
+    #: the configuration's spelling.
+    mechanical_type: str
+
+    #: the required heat-transfer area.
+    required_area: Q
+
+    #: the UA the type's area is computed from.
+    required_ua: Q
+
+    #: the type's typical overall coefficient.
+    overall_heat_transfer_coefficient: Q
+
+    #: the larger of the estimate's approach and the type's allowable approach.
+    approach_temperature: Q
+
+    #: the estimated length: tube length, stack length, fan-module length, pipe length or core length.
+    estimated_length: Q
+
+    #: the equivalent inside diameter.
+    inner_diameter: Q
+
+    #: the equivalent outside diameter.
+    outer_diameter: Q
+
+    #: the wall or sheet thickness.
+    wall_thickness: Q
+
+    #: the tube or plate count.
+    tube_count: float
+
+    #: the tube passes or plate pairs.
+    tube_passes: float
+
+    #: the fin surface area; zero for the unfinned types.
+    fin_surface_area: Q
+
+    #: the class's qualitative pressure-drop proxy, in bar.
+    estimated_pressure_drop: float
+
+    #: the estimated weight.
+    estimated_weight: Q
+
+    #: the module length.
+    module_length: Q
+
+    #: the module width.
+    module_width: Q
+
+    #: the module height.
+    module_height: Q
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class HemReleaseDiagnostic:
+    """the model's assumption and warning records, in the order it forms them."""
+
+    #: the stable machine code.
+    code: str
+
+    #: the engineering detail.
+    message: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class HemReleaseStation:
+    """the resolved stations, upstream first: the stagnation state, the throat, the aliased exit and the receiving-pressure state. Empty on failure, and the ambient row is absent on no forward flow."""
+
+    #: which station this row is.
+    station: str
+
+    #: the station's absolute pressure.
+    pressure: Q
+
+    #: the station's temperature.
+    temperature: Q
+
+    #: mass over EOS total volume.
+    density: Q
+
+    #: the station's molar enthalpy. The expansion's drop is read against the stagnation value.
+    molar_enthalpy: Q
+
+    #: the station's molar entropy, which the expansion holds fixed.
+    molar_entropy: Q
+
+    #: `sqrt(2 (h0 - h))`, the zero-slip acceleration from the stagnation enthalpy.
+    velocity: Q
+
+    #: `rho times velocity`, before the discharge coefficient.
+    mass_flux: Q
+
+    #: what the flash found at the station.
+    phase: str
+
+    #: the gas phase's share of the station's mass; one for a vapour state and zero for a liquid one. **A mass fraction, not the molar vapour fraction.**
+    gas_mass_fraction: float
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class HydrateRiskPoint:
+    """One row per profile point, in the order the points were given."""
+
+    #: the point's distance from the inlet.
+    distance: Q
+
+    #: the point's pressure.
+    pressure: Q
+
+    #: the point's actual temperature.
+    actual_temperature: Q
+
+    #: the hydrate formation temperature, absent where the solve failed.
+    hydrate_temperature: Q | None
+
+    #: the actual temperature less the hydrate one, absent where it is.
+    subcooling: Q | None
+
+    #: the point's band: critical, high, medium, low or unknown.
+    risk_level: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class IncrementalZoneRow:
+    """one row per zone, in the input order."""
+
+    #: the one-based position in the caller's list.
+    zone_index: float
+
+    #: the zone's name, echoed.
+    zone_name: str
+
+    #: the tube regime's class spelling.
+    tube_phase_regime: str
+
+    #: the shell regime's class spelling, carried and unread.
+    shell_phase_regime: str
+
+    #: the zone's tube-side coefficient.
+    tube_side_heat_transfer_coefficient: Q
+
+    #: the zone's Kern shell-side coefficient.
+    shell_side_heat_transfer_coefficient: Q
+
+    #: the zone's overall coefficient on the outside area.
+    overall_heat_transfer_coefficient: Q
+
+    #: the zone's LMTD, from the class's three branches.
+    lmtd: Q
+
+    #: the zone's duty, echoed.
+    duty: Q
+
+    #: `duty/(U*LMTD)`, zero when either denominator is not positive.
+    required_area: Q
+
+    #: the zone's tube-side drop: Friedel for the two-phase regimes, Darcy friction otherwise.
+    tube_side_pressure_drop: Q
+
+    #: the zone's Kern shell-side drop with the scaled baffle count.
+    shell_side_pressure_drop: Q
+
+    #: the zone's hot-side inlet temperature, echoed.
+    hot_inlet_temp: Q
+
+    #: the zone's hot-side outlet temperature, echoed.
+    hot_outlet_temp: Q
+
+    #: the zone's cold-side inlet temperature, echoed.
+    cold_inlet_temp: Q
+
+    #: the zone's cold-side outlet temperature, echoed.
+    cold_outlet_temp: Q
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class KComponent:
     """one row per fitting supplied, in the order they were listed"""
 
@@ -64,6 +477,46 @@ class KComponent:
 
     #: this fitting's resistance coefficient, f_t * n_ld
     k: float
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class LeakBlowdownDiagnostic:
+    """the model's assumption, floor and failure records, in order."""
+
+    #: the stable machine code.
+    code: str
+
+    #: the engineering detail.
+    message: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class LeakBlowdownPoint:
+    """one row per visited step, in time order."""
+
+    #: the step's time.
+    time: Q
+
+    #: the rate the class's simplified orifice gives at the recorded state.
+    mass_flow_rate: Q
+
+    #: the recorded state's temperature.
+    temperature: Q
+
+    #: the recorded state's pressure.
+    pressure: Q
+
+    #: the physical vapour mole fraction: 1 all-vapour, 0 all-liquid, beta two-phase.
+    vapour_mole_fraction: float
+
+    #: `mdot/(rho A Cd)`, capped at 1.2 times the ideal-gas sound speed.
+    jet_velocity: Q
+
+    #: `mdot v + (P-back) A`, unclamped.
+    jet_momentum: Q
+
+    #: the liquid Sauter mean diameter, zero for a single phase or a trace liquid.
+    droplet_smd: Q
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -96,6 +549,113 @@ class MineralEquilibriumRow:
 
     #: Whether a limiting ion was exhausted while solid was present.
     limiting_ion_exhausted: bool
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class NaceIssueRow:
+    """The NACE assessment's issue strings."""
+
+    #: one issue.
+    message: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class RemediationOptionRow:
+    """The candidate remedies, ordered by descending effectiveness."""
+
+    #: the canonical deposit key, `UNKNOWN` for the fallback.
+    scale_type: str
+
+    #: `MINERAL_SCALE`, `SCAVENGER_SOLIDS`, `ORGANIC_DEPOSIT` or `UNSPECIFIED`.
+    category: str
+
+    #: the dissolver or solvent chemistry.
+    dissolver: str
+
+    #: the recommended concentration or dilution, as the CSV states it.
+    concentration: str
+
+    #: the application method.
+    method: str
+
+    #: `HIGH`, `MEDIUM` or `LOW`.
+    effectiveness: str
+
+    #: the lower bound of the effective window.
+    min_temperature: Q
+
+    #: the upper bound of the effective window.
+    max_temperature: Q
+
+    #: the operational and safety cautions.
+    cautions: str
+
+    #: the informational standard reference.
+    standard: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScaleControlRiskRow:
+    """The inhibited risk index, one row per scale in the same order."""
+
+    #: `CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.
+    scale: str
+
+    #: `SI + log10(max(1e-6, 1 - efficiency))`; absent where the index is.
+    risk_index: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScaleControlRow:
+    """The uninhibited indices, one row per scale in the class's order."""
+
+    #: `CACO3`, `BASO4`, `SRSO4`, `CASO4` or `FECO3`.
+    scale: str
+
+    #: the index; absent where the water has none.
+    saturation_index: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScenarioChangeRow:
+    """The treated minus baseline index, over the baseline's minerals."""
+
+    #: the mineral's formula.
+    mineral: str
+
+    #: the change; absent where either side's index is.
+    change: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ScenarioIndexRow:
+    """The treated indices, in the same order."""
+
+    #: the mineral's formula.
+    mineral: str
+
+    #: the index.
+    saturation_index: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class StreamScaleMineralRow:
+    """One row per registered mineral, in the equilibrium's order."""
+
+    #: the mineral's formula.
+    mineral: str
+
+    #: the index before anything precipitated.
+    initial_si: float
+
+    #: the index at the answer.
+    final_si: float
+
+    #: the precipitated mass per cubic metre of water, 1699.4 mg/L as 1.6994 kg/m3.
+    precipitated_mass: Q
+
+    #: the precipitated mass times the aqueous throughput.
+    scale_rate: Q
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -139,3 +699,29 @@ class WaterMixingResult:
 
     #: siderite's index.
     si_feco3: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ZoneRatingRow:
+    """one row per zone, in the input order."""
+
+    #: the zone's name, echoed.
+    zone_name: str
+
+    #: the zone's duty fraction, echoed.
+    duty_fraction: float
+
+    #: the zone's tube-side film coefficient.
+    tube_side_heat_transfer_coefficient: Q
+
+    #: the zone's shell-side film coefficient.
+    shell_side_heat_transfer_coefficient: Q
+
+    #: the zone's overall coefficient on the outside area.
+    overall_heat_transfer_coefficient: Q
+
+    #: the zone's stated LMTD, echoed.
+    lmtd: Q
+
+    #: `duty_fraction * total_duty / (U * lmtd)`, or zero when either denominator is non-positive.
+    required_area: Q

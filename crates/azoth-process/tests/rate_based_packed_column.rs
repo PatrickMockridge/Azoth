@@ -75,6 +75,18 @@ fn settings(
     )
 }
 
+/// The class's configured state on the packing its `Pall-Ring-50` resolved to before upstream
+/// PR #4405: the file's plastic 50 mm ring, now reachable only by its material-qualified name.
+fn plastic_settings(
+    height: f64,
+    heat_none: bool,
+    billet_schultes: bool,
+) -> (ProfileSettings, SnapshotSettings) {
+    let (profile, mut snapshot) = settings(height, heat_none, billet_schultes);
+    snapshot.packing = "Pall-Ring-50-plastic".to_string();
+    (profile, snapshot)
+}
+
 /// **The class's own claim, and it is a direction rather than a digit.** `testAbsorbsCarbonDioxideFromGas`
 /// asserts that the gas outlet's CO2 fraction falls, that the transfer total is positive, that
 /// there are four segments and that the component balance closes to `1e-5` mol/s.
@@ -193,7 +205,7 @@ fn relative(actual: f64, expected: f64, tolerance: f64, what: &str) {
 /// own output on PR, and every number here is read from its `co2_water_absorber` block.
 ///
 /// The convergence pair is the sharpest of them: the port stops after **fifteen** passes at a
-/// residual of `6.02e-10` mol/s, and NeqSim's own row says `15` and `6.009670053264138e-10`.
+/// residual of `6.02e-10` mol/s, and NeqSim's own row says `15` and `6.770219315721526e-10`.
 /// That is the loop, the segment step, the interface flash, the hydraulics and the two-film
 /// transfer agreeing at once - a wrong index anywhere in that chain moves the state by orders
 /// of magnitude rather than by digits.
@@ -214,13 +226,13 @@ fn the_classs_absorber_state_is_reproduced_on_pr() {
     assert_eq!(outcome.iterations, 15, "NeqSim takes fifteen passes");
     relative(
         outcome.convergence_residual,
-        6.009670053264138e-10,
+        6.770219315721526e-10,
         1.0e-4,
         "residual",
     );
     relative(
         outcome.total_absolute_molar_transfer,
-        0.021771811808519004,
+        0.025846775244300083,
         1.0e-6,
         "total absolute transfer",
     );
@@ -230,29 +242,29 @@ fn the_classs_absorber_state_is_reproduced_on_pr() {
         .find(|(name, _)| name == "CO2")
         .expect("CO2 transfers")
         .1;
-    relative(co2_total, 0.0034653825611094258, 1.0e-5, "CO2 total");
+    relative(co2_total, 0.004113987595920424, 1.0e-5, "CO2 total");
 
     relative(
         outcome.gas_outlet.n,
-        14.74081280540249,
+        14.740164200367678,
         1.0e-8,
         "gas outlet flow",
     );
     relative(
         outcome.gas_outlet.z[1],
-        0.09978842114433098,
+        0.09974880952572864,
         1.0e-8,
         "gas outlet CO2",
     );
     relative(
         outcome.liquid_outlet.n,
-        30.841964163798856,
+        30.842612768752357,
         1.0e-8,
         "liquid outlet flow",
     );
     relative(
         outcome.liquid_outlet.z[1],
-        0.00011235931347143501,
+        0.00013338645801194666,
         1.0e-4,
         "liquid outlet CO2",
     );
@@ -261,51 +273,51 @@ fn the_classs_absorber_state_is_reproduced_on_pr() {
     let first = &outcome.segments[0];
     relative(
         first.gas_temperature,
-        308.7440274651043,
+        308.74413554097646,
         1.0e-6,
         "segment 1 gas T",
     );
     relative(
         first.liquid_temperature,
-        305.43212846307154,
+        305.43231753905155,
         1.0e-5,
         "segment 1 liquid T",
     );
-    relative(first.k_ga, 135.79988356254145, 1.0e-6, "segment 1 kGa");
-    relative(first.k_la, 0.009432860559780317, 1.0e-6, "segment 1 kLa");
+    relative(first.k_ga, 138.97591872603377, 1.0e-6, "segment 1 kGa");
+    relative(first.k_la, 0.011209042099418165, 1.0e-6, "segment 1 kLa");
     relative(
         first.wetted_area,
-        57.01800105586562,
+        87.20366010445194,
         1.0e-5,
         "segment 1 wetted area",
     );
     relative(
         first.percent_flood,
-        3.404657951671574,
+        2.061655207251793,
         1.0e-4,
         "segment 1 flood",
     );
     relative(
         first.pressure_drop_per_meter,
-        0.007530567871836917,
+        0.0024223263501765213,
         1.0e-6,
         "segment 1 pressure drop",
     );
     relative(
         first.heat_transfer_rate,
-        2731.7582800165587,
+        2731.7559692069076,
         1.0e-3,
         "segment 1 heat rate",
     );
     relative(
         first.interface_temperature,
-        309.3469076998667,
+        309.0214199680199,
         1.0e-5,
         "segment 1 interface T",
     );
     relative(
         first.net_molar_transfer,
-        -0.0018659748797604063,
+        -0.0022152237008773393,
         1.0e-5,
         "segment 1 net transfer",
     );
@@ -350,10 +362,10 @@ fn the_reference_diffusivity_is_the_classs_constant_and_the_matrix_is_real() {
         "the class's constant stood in, and the record says so"
     );
     // The two properties the class *does* answer, against the same capture.
-    relative(snap.k_ga, 135.79988356254145, 1.0e-6, "kGa");
+    relative(snap.k_ga, 138.97591872603377, 1.0e-6, "kGa");
     relative(
         snap.overall_heat_transfer_coefficient,
-        483220.7509944843,
+        537357.436508997,
         1.0e-4,
         "the overall heat coefficient",
     );
@@ -395,16 +407,18 @@ fn the_union_transfer_list_names_a_component_the_gas_does_not_carry() {
 /// configured absorber state twice on PR, once at each correlation; every number here is read
 /// from those two blocks.
 ///
-/// `Pall-Ring-50` resolves to the file's plastic row, `cp = 0.698` and `ch = 2.725`, so the
-/// multipliers are `ch/6/0.4 = 1.1354166...` on `kGa` and `cp = 0.698` on `kLa` - **neither
-/// floored at the class's `0.1`**, which is why this state does not exercise the clamp. What it
-/// does pin is that the multiplier is applied *after* `finiteNonNegative` and *before*
-/// `massTransferCorrectionFactor`, and that both film coefficients carry it into the heat
-/// coefficients rather than only into the transfer.
+/// `Pall-Ring-50-plastic` carries `cp = 0.698` and `ch = 2.725`, so the multipliers are
+/// `ch/6/0.4 = 1.1354166...` on `kGa` and `cp = 0.698` on `kLa` - **neither floored at the
+/// class's `0.1`**, which is why this state does not exercise the clamp. **The name is
+/// qualified because upstream PR #4405 made `Pall-Ring-50` the built-in metal row, whose own
+/// constants are `1.0` and `0.40`: on that row the two correlations are the identity, and the
+/// plastic row is where the pin's state lived.** What the pair pins is that the multiplier is
+/// applied *after* `finiteNonNegative` and *before* `massTransferCorrectionFactor`, and that
+/// both film coefficients carry it into the heat coefficients rather than only into the transfer.
 #[test]
 fn the_billet_schultes_multiplier_is_the_packings_own_two_constants() {
-    let (profile, onda) = settings(6.0, false, false);
-    let (_, billet) = settings(6.0, false, true);
+    let (profile, onda) = plastic_settings(6.0, false, false);
+    let (_, billet) = plastic_settings(6.0, false, true);
     let solve = |snapshot: &SnapshotSettings| {
         solve_fixed_point_profile(
             &configured(6.0),
@@ -517,15 +531,16 @@ fn row_number(row: &std::collections::BTreeMap<String, String>, key: &str) -> f6
 /// `process_rate_based_solvers.tsv` runs `configuredColumn`'s own state - the PR row
 /// [`the_classs_absorber_state_is_reproduced_on_pr`] holds - five ways. The first is the pair
 /// this port carries, and it is the control: it lands on the port's own fifteen passes and
-/// `6.009670053264138e-10`, so what the other four show is a statement about the two solvers and
+/// `6.770219315721526e-10`, so what the other four show is a statement about the two solvers and
 /// not about a mis-built state.
 ///
 /// What they show is not that the branches are slow. **They are refused because neither
 /// publishes a state anything can be held to**: `SIMULTANEOUS_RESIDUAL` takes the whole twenty
-/// pass cap and its vapour leaves at `2.2e-29` K, and `EQUATION_ORIENTED` stalls after two Newton
-/// passes with a residual six orders above its own gate and freezes the gas at `153` K beside a
-/// `454` K liquid. In both equation-oriented rows the component balances close **exactly** and
-/// the energy balance does not - the stall is the energy equation alone.
+/// pass cap at `0.25` mol/s against a `1e-9` gate and leaves a vapour at `4.3e-31` K, and
+/// `EQUATION_ORIENTED` stalls after two Newton passes with a residual two orders above its own
+/// gate and freezes the liquid at `463` K beside a `300` K gas. In both equation-oriented rows
+/// the component balances close **exactly** and the energy balance does not - the stall is the
+/// energy equation alone.
 ///
 /// **The class's own test of that Newton is the reason this is a recorded non-port rather than a
 /// tranche.** It caps the Newton at two iterations and the homotopy at one, and asserts
@@ -581,8 +596,8 @@ fn neither_refused_solver_converges_on_the_classs_own_state() {
         "the segment solve takes the whole cap"
     );
     assert!(
-        row_number(&simultaneous, "convergence_residual") > 1.0,
-        "and ends nine orders above its gate: {} mol/s",
+        row_number(&simultaneous, "convergence_residual") > 0.1,
+        "and ends eight orders above its gate: {} mol/s",
         row_number(&simultaneous, "convergence_residual")
     );
     assert!(
@@ -591,8 +606,8 @@ fn neither_refused_solver_converges_on_the_classs_own_state() {
         row_number(&simultaneous, "gas_out_T")
     );
 
-    // `EQUATION_ORIENTED` alone: stalls in two passes, publishes a `153` K gas beside a `454` K
-    // liquid, closes both component balances exactly and leaves the energy balance at `1.1e8` J.
+    // `EQUATION_ORIENTED` alone: stalls in two passes, publishes a `300` K gas beside a `463` K
+    // liquid, closes both component balances exactly and leaves the energy balance at `2.2e8` J.
     let equation_oriented = capture_row(CAPTURE, "sequential_equation_oriented");
     assert_eq!(
         row_number(&equation_oriented, "column_residual_tolerance"),
@@ -617,7 +632,7 @@ fn neither_refused_solver_converges_on_the_classs_own_state() {
         "and the energy balance is what stalled: {} J",
         row_number(&equation_oriented, "column_energy_balance_residual")
     );
-    assert!(row_number(&equation_oriented, "gas_out_T") < 200.0);
+    assert!(row_number(&equation_oriented, "gas_out_T") < 320.0);
     assert!(row_number(&equation_oriented, "liquid_out_T") > 400.0);
 
     // Both together, which is worse on both counts: a larger norm and a transfer two orders below
@@ -630,7 +645,7 @@ fn neither_refused_solver_converges_on_the_classs_own_state() {
     );
     relative(
         row_number(&both, "total_absolute_molar_transfer_mol_per_s"),
-        1.6818984914629715e-4,
+        5.477522604169529e-7,
         1.0e-6,
         "the pair's transfer",
     );
@@ -657,7 +672,7 @@ fn neither_refused_solver_converges_on_the_classs_own_state() {
 /// **A refusal reads the declaration rather than carrying its own sentence**, and what it
 /// reads is the row the spec's `[[unported]]` array declares.
 ///
-/// The numbers behind the refusal - `1.76` mol/s against a `1e-9` gate, `65.9` against
+/// The numbers behind the refusal - `0.25` mol/s against a `1e-9` gate, `118.6` against
 /// `1e-6` - are the spec's own `description` of the two inputs, and the capture measures
 /// them. What travels through the code is the key, the class and the capture, which is
 /// what makes the two implementations comparable at all.
