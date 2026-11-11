@@ -387,6 +387,59 @@ describe("the editor", () => {
     expect(pill(container)).toBe("stale");
   });
 
+  it("offers the menu bar over the same commands without duplicating their buttons", async () => {
+    stubFetch();
+    const { container } = await open();
+
+    // The visible command is still one button; the menu item is a menuitem, not a second button.
+    expect(screen.getAllByRole("button", { name: "Solve" })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Run" }));
+    expect(screen.getByRole("menuitem", { name: "Solve" })).toBeDefined();
+    expect(screen.getAllByRole("button", { name: "Solve" })).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("menuitem", { name: "Solve" }));
+    await waitFor(() => expect(pill(container)).toBe("solved"));
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("closes a menu on Escape and returns focus to its trigger", async () => {
+    stubFetch();
+    await open();
+
+    const trigger = screen.getByRole("button", { name: "Case" });
+    fireEvent.click(trigger);
+    expect(screen.getByRole("menu", { name: "Case" })).toBeDefined();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("opens the Cyberpunk command palette, filters and runs a command", async () => {
+    stubFetch();
+    const { container } = await open({
+      "azoth.appearance": JSON.stringify({ layout: "cyberpunk", theme: "dark" }),
+    });
+    expect(document.documentElement.dataset.layout).toBe("cyberpunk");
+
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    const dialog = await screen.findByRole("dialog", { name: "Command palette" });
+    const search = within(dialog).getByRole("combobox", { name: "Search commands" });
+
+    fireEvent.change(search, { target: { value: "solve" } });
+    fireEvent.keyDown(search, { key: "Enter" });
+
+    await waitFor(() => expect(pill(container)).toBe("solved"));
+    expect(screen.queryByRole("dialog", { name: "Command palette" })).toBeNull();
+  });
+
+  it("leaves Ctrl+K to the browser outside Cyberpunk", async () => {
+    stubFetch();
+    await open();
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    expect(screen.queryByRole("dialog", { name: "Command palette" })).toBeNull();
+  });
+
   it("opens in Windows XP light, and remembers the layout and colour chosen", async () => {
     stubFetch();
     await open();

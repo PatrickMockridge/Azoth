@@ -2,8 +2,10 @@ import { asExecutionOrder } from "../wire/decode";
 import { manualHome } from "../manual";
 import { AppearanceMenu } from "./AppearanceMenu";
 import { DraftField } from "./DraftField";
+import { MenuBar } from "./MenuBar";
 import { WorkspaceSwitch, type Workspace } from "./calculations/WorkspaceSwitch";
 import { statusClass as classOf, statusWord } from "../state/status";
+import type { MenuSpec } from "../commands/model";
 import type { Appearance } from "../state/appearance";
 import type { Envelope, ExecutionOrder } from "../wire/types";
 import type { Units } from "../state/units";
@@ -24,6 +26,7 @@ import type { Units } from "../state/units";
 export function TitleStrip({
   envelope,
   session,
+  menus,
   appearance,
   units,
   unsaved,
@@ -37,6 +40,7 @@ export function TitleStrip({
   envelope: Envelope | null;
   /** Whether a session is open, which is what makes the order settable. */
   session: boolean;
+  menus: readonly MenuSpec[];
   appearance: Appearance;
   units: Units;
   /** The document differs from the one last opened or saved. */
@@ -67,6 +71,7 @@ export function TitleStrip({
         >
           not for design work yet
         </a>
+        <MenuBar menus={menus} />
         {envelope === null ? null : (
           <div className="case-name">
             <DraftField

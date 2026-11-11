@@ -10,6 +10,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import blankBook from "../../../../specs/calcbooks/blank.toml?raw";
 import demoBook from "../../../../specs/calcbooks/demo.toml?raw";
+import { CommandIcon } from "../CommandIcon";
+import { CommandPalette } from "../CommandPalette";
+import { menusOf, type CommandSpec, type MenuSpec } from "../../commands/model";
+import { manualHome } from "../../manual";
 import { saveText } from "../../save";
 import { declaredToSI, type Units } from "../../state/units";
 import type { Appearance } from "../../state/appearance";
@@ -64,10 +68,12 @@ export function CalculationsApp({
   const [active, setActive] = useState<string | null>(null);
   const [fault, setFault] = useState<string | null>(null);
   const [reporting, setReporting] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [history, setHistory] = useState<Snapshot[]>([]);
   const [future, setFuture] = useState<Snapshot[]>([]);
 
   const issued = useRef(0);
+  const openInput = useRef<HTMLInputElement>(null);
   const lastDocument = useRef<string | null>(null);
   const activeRef = useRef<string | null>(null);
 
@@ -321,11 +327,126 @@ export function CalculationsApp({
   const canUndo = openable && history.length > 0;
   const canRedo = openable && future.length > 0;
 
+  const openFile = (file: File): void => {
+    void file.text().then(open);
+  };
+
+  const commands: CommandSpec[] = [
+    {
+      id: "new",
+      label: "New",
+      menu: "book",
+      run: () => open(blankBook),
+      enabled: openable,
+    },
+    {
+      id: "open",
+      label: "Open…",
+      menu: "book",
+      run: () => openInput.current?.click(),
+      enabled: openable,
+    },
+    { id: "demo", label: "Demo", menu: "book", run: () => open(demoBook), enabled: openable },
+    { id: "save", label: "Save…", menu: "book", run: save, enabled: session !== null },
+    { id: "undo", label: "Undo", menu: "edit", run: undo, enabled: canUndo, shortcut: "Ctrl+Z" },
+    { id: "redo", label: "Redo", menu: "edit", run: redo, enabled: canRedo, shortcut: "Ctrl+Y" },
+    {
+      id: "calculate",
+      label: "Calculate",
+      menu: "run",
+      run: () => {
+        if (current !== undefined) {
+          calculate(current.id);
+        }
+      },
+      enabled: current !== undefined && current.ready,
+    },
+    {
+      id: "calculate-all",
+      label: "Calculate all",
+      menu: "run",
+      run: () => calculate(null),
+      enabled: envelope?.dirty === true,
+    },
+    {
+      id: "report",
+      label: "Report…",
+      menu: "run",
+      run: () => setReporting(true),
+      enabled: canReport,
+    },
+    {
+      id: "workspace-flowsheet",
+      label: "Flowsheet",
+      menu: "view",
+      run: () => onWorkspace("flowsheet"),
+      enabled: true,
+    },
+    {
+      id: "workspace-calculations",
+      label: "Calculations",
+      menu: "view",
+      run: () => onWorkspace("calculations"),
+      enabled: true,
+    },
+    {
+      id: "manual",
+      label: "User manual",
+      menu: "help",
+      run: () => {
+        window.open(manualHome(), "_blank", "noopener");
+      },
+      enabled: true,
+    },
+  ];
+  const menus: MenuSpec[] = menusOf(
+    commands,
+    { case: "Case", book: "Book", edit: "Edit", run: "Run", view: "View", help: "Help" },
+    ["book", "edit", "run", "view", "help"],
+  );
+
+  useEffect(() => {
+    if (appearance.layout !== "cyberpunk") {
+      setPaletteOpen(false);
+    }
+  }, [appearance.layout]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "k") {
+        return;
+      }
+      if (appearance.layout !== "cyberpunk" || hidden || reporting) {
+        return;
+      }
+      event.preventDefault();
+      setPaletteOpen((open) => !open);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [appearance.layout, hidden, reporting]);
+
   return (
     <div className={`app calculations${hidden ? " off" : ""}`} hidden={hidden}>
+      <input
+        ref={openInput}
+        className="sr-only"
+        type="file"
+        accept=".toml,text/plain"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file !== undefined) {
+            openFile(file);
+          }
+          event.target.value = "";
+        }}
+      />
       <CalcTitleStrip
         envelope={envelope}
         workspace={workspace}
+        menus={menus}
         appearance={appearance}
         units={units}
         unsaved={unsaved}
@@ -362,6 +483,7 @@ export function CalculationsApp({
                 : blocked ?? "run this sheet"
             }
           >
+            <CommandIcon kind="calculate" />
             Calculate
           </button>
           <button
@@ -370,6 +492,7 @@ export function CalculationsApp({
             disabled={!envelope?.dirty}
             title="run every sheet that is ready and older than its inputs"
           >
+            <CommandIcon kind="calculate-all" />
             Calculate all
           </button>
           <button
@@ -378,6 +501,7 @@ export function CalculationsApp({
             disabled={!canUndo}
             title={openable ? "undo the last edit" : "undo is not available on a served book"}
           >
+            <CommandIcon kind="undo" />
             Undo
           </button>
           <button
@@ -386,6 +510,7 @@ export function CalculationsApp({
             disabled={!canRedo}
             title={openable ? "redo the last undone edit" : "redo is not available on a served book"}
           >
+            <CommandIcon kind="redo" />
             Redo
           </button>
           <button
@@ -398,6 +523,7 @@ export function CalculationsApp({
                 : "calculate every sheet first; a stale book is not a report"
             }
           >
+            <CommandIcon kind="report" />
             Report
           </button>
         </RibbonGroup>
@@ -408,30 +534,25 @@ export function CalculationsApp({
             disabled={!openable}
             title={openable ? "a book with no sheets" : "a served book cannot be replaced"}
           >
+            <CommandIcon kind="new" />
             New
           </button>
-          <label className={`button${openable ? "" : " off"}`} title={openable ? undefined : "a served book cannot be replaced"}>
+          <button
+            type="button"
+            onClick={() => openInput.current?.click()}
+            disabled={!openable}
+            title={openable ? "open a TOML book" : "a served book cannot be replaced"}
+          >
+            <CommandIcon kind="open" />
             Open
-            {openable ? (
-              <input
-                type="file"
-                accept=".toml,text/plain"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file !== undefined) {
-                    void file.text().then(open);
-                  }
-                  event.target.value = "";
-                }}
-              />
-            ) : null}
-          </label>
+          </button>
           <button
             type="button"
             onClick={() => open(demoBook)}
             disabled={!openable}
             title={openable ? "the shipped worked-example book" : "a served book cannot be replaced"}
           >
+            <CommandIcon kind="demo" />
             Demo
           </button>
           <button
@@ -440,6 +561,7 @@ export function CalculationsApp({
             disabled={session === null}
             title="write the book where you say; it rides every envelope, so this is no call"
           >
+            <CommandIcon kind="save" />
             Save
           </button>
         </RibbonGroup>
@@ -462,6 +584,10 @@ export function CalculationsApp({
           onRemove={removeSheet}
         />
       </div>
+
+      {paletteOpen && appearance.layout === "cyberpunk" ? (
+        <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />
+      ) : null}
 
       {reporting && envelope !== null && catalogue !== null ? (
         <CalcReportView

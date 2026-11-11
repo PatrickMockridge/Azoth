@@ -162,6 +162,7 @@ const LAYOUT_TOKENS: readonly string[] = [
   "glow-accent",
   "texture",
   "backdrop",
+  "command-icon-size",
   "t-fast",
   "t-mid",
   "t-slow",

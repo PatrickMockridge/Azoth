@@ -185,8 +185,9 @@ describe("the editor on a served door", () => {
     expect(disabled("Save")).toBe(false);
     // Open is a label rather than a button, because a file input cannot be styled — so what says
     // it is refused is that there is no input inside it to open.
-    const open = screen.getByText("Open").closest("label");
-    expect(open?.classList.contains("off")).toBe(true);
-    expect(open?.querySelector("input")).toBeNull();
+    // A served door cannot be handed another document: the control is a disabled button, and
+    // the picker it would open belongs to the app rather than to the label.
+    const open = screen.getByRole("button", { name: "Open" });
+    expect((open as HTMLButtonElement).disabled).toBe(true);
   });
 });

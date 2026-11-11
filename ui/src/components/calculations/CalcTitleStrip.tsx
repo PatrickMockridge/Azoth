@@ -10,8 +10,10 @@
 
 import { AppearanceMenu } from "../AppearanceMenu";
 import { DraftField } from "../DraftField";
+import { MenuBar } from "../MenuBar";
 import { manualHome } from "../../manual";
 import { WorkspaceSwitch, type Workspace } from "./WorkspaceSwitch";
+import type { MenuSpec } from "../../commands/model";
 import type { Appearance } from "../../state/appearance";
 import type { Units } from "../../state/units";
 import type { SheetEnvelope } from "../../wire/types";
@@ -19,6 +21,7 @@ import type { SheetEnvelope } from "../../wire/types";
 export function CalcTitleStrip({
   envelope,
   workspace,
+  menus,
   appearance,
   units,
   unsaved,
@@ -30,6 +33,7 @@ export function CalcTitleStrip({
 }: {
   envelope: SheetEnvelope | null;
   workspace: Workspace;
+  menus: readonly MenuSpec[];
   appearance: Appearance;
   units: Units;
   unsaved: boolean;
@@ -55,6 +59,7 @@ export function CalcTitleStrip({
         >
           not for design work yet
         </a>
+        <MenuBar menus={menus} />
         {envelope === null ? null : (
           <div className="case-name">
             <DraftField

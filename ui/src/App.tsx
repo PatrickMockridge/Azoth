@@ -18,6 +18,9 @@ import "@xyflow/react/dist/style.css";
 import blankDocument from "../../specs/flowsheets/blank.toml?raw";
 import demoDocument from "../../specs/flowsheets/examples/two_feed_mixer.toml?raw";
 import { BoundaryPanel } from "./components/BoundaryPanel";
+import { CommandIcon } from "./components/CommandIcon";
+import { CommandPalette } from "./components/CommandPalette";
+import { menusOf, type CommandSpec, type MenuSpec } from "./commands/model";
 import { CalculationsApp } from "./components/calculations/CalculationsApp";
 import type { Workspace } from "./components/calculations/WorkspaceSwitch";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
@@ -37,6 +40,7 @@ import { TitleStrip } from "./components/TitleStrip";
 import { Welcome } from "./components/Welcome";
 import { Workbook } from "./components/workbook/Workbook";
 import { EXAMPLES } from "./examples";
+import { manualHome } from "./manual";
 import { saveDocument } from "./save";
 import { selectedEdge, selectedNode } from "./state/selection";
 import {
@@ -130,6 +134,8 @@ export function App() {
 
   /** The printable report, a view over the last run and not a second call. */
   const [reporting, setReporting] = useState(false);
+  /** The command palette is the Cyberpunk shell's; it is closed by any other layout. */
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const canReport =
     envelope !== null &&
     envelope.ok &&
@@ -155,6 +161,7 @@ export function App() {
   }, [envelope]);
 
   const middleware = useRef<Door | null>(null);
+  const openInput = useRef<HTMLInputElement>(null);
 
   /**
    * **The newest call's number, so an answer to an older one cannot land on top of it.** The module
@@ -537,15 +544,144 @@ export function App() {
   const edge = envelope === null ? null : selectedEdge(envelope, selected);
   const overviewNode = envelope === null ? null : selectedNode(envelope, overview);
 
+  /** Open the file picker the ribbon's Open button and the Case menu share. */
+  const openFile = useCallback(
+    (file: File) => {
+      void file.text().then(open);
+    },
+    [open],
+  );
+
+  const commands: CommandSpec[] = [
+    { id: "new", label: "New", menu: "case", run: openBlank, enabled: openable },
+    {
+      id: "open",
+      label: "Open…",
+      menu: "case",
+      run: () => openInput.current?.click(),
+      enabled: openable,
+    },
+    { id: "demo", label: "Demo", menu: "case", run: openDemo, enabled: openable },
+    ...EXAMPLES.map((example) => ({
+      id: `example-${example.file}`,
+      label: `Open “${example.title}”`,
+      menu: "case" as const,
+      run: () => openExample(example.document),
+      enabled: openable,
+      keywords: "example case",
+    })),
+    {
+      id: "save",
+      label: "Save…",
+      menu: "case",
+      run: save,
+      enabled: session !== null,
+      shortcut: "Ctrl+S",
+    },
+    {
+      id: "undo",
+      label: "Undo",
+      menu: "edit",
+      run: undo,
+      enabled: canUndo,
+      shortcut: "Ctrl+Z",
+    },
+    {
+      id: "redo",
+      label: "Redo",
+      menu: "edit",
+      run: redo,
+      enabled: canRedo,
+      shortcut: "Ctrl+Y",
+    },
+    { id: "solve", label: "Solve", menu: "run", run, enabled: canSolve },
+    {
+      id: "report",
+      label: "Report…",
+      menu: "run",
+      run: () => setReporting(true),
+      enabled: canReport,
+    },
+    {
+      id: "workspace-flowsheet",
+      label: "Flowsheet",
+      menu: "view",
+      run: () => chooseWorkspace("flowsheet"),
+      enabled: true,
+    },
+    {
+      id: "workspace-calculations",
+      label: "Calculations",
+      menu: "view",
+      run: () => chooseWorkspace("calculations"),
+      enabled: true,
+    },
+    { id: "guide", label: "Open the guide", menu: "help", run: showHelp, enabled: true },
+    {
+      id: "manual",
+      label: "User manual",
+      menu: "help",
+      run: () => {
+        window.open(manualHome(), "_blank", "noopener");
+      },
+      enabled: true,
+    },
+  ];
+  const menus: MenuSpec[] = menusOf(
+    commands,
+    { case: "Case", book: "Book", edit: "Edit", run: "Run", view: "View", help: "Help" },
+    ["case", "edit", "run", "view", "help"],
+  );
+
+  useEffect(() => {
+    if (appearance.layout !== "cyberpunk") {
+      setPaletteOpen(false);
+    }
+  }, [appearance.layout]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "k") {
+        return;
+      }
+      if (appearance.layout !== "cyberpunk" || workspace !== "flowsheet") {
+        return;
+      }
+      if (overview !== null || reporting) {
+        return;
+      }
+      event.preventDefault();
+      setPaletteOpen((open) => !open);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [appearance.layout, overview, reporting, workspace]);
+
   return (
     <>
     <div
       className={`app${workspace === "calculations" ? " off" : ""}`}
       hidden={workspace === "calculations"}
     >
+      <input
+        ref={openInput}
+        className="sr-only"
+        type="file"
+        accept=".toml,text/plain"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file !== undefined) {
+            openFile(file);
+          }
+          event.target.value = "";
+        }}
+      />
       <TitleStrip
         envelope={envelope}
         session={session !== null}
+        menus={menus}
         appearance={appearance}
         units={units}
         unsaved={unsaved}
@@ -571,6 +707,7 @@ export function App() {
                 : "fix the messages first; a refused document cannot run"
             }
           >
+            <CommandIcon kind="solve" />
             Solve
           </button>
           <button
@@ -579,6 +716,7 @@ export function App() {
             disabled={!canUndo}
             title={openable ? "undo the last edit" : "undo is not available on a served document"}
           >
+            <CommandIcon kind="undo" />
             Undo
           </button>
           <button
@@ -587,6 +725,7 @@ export function App() {
             disabled={!canRedo}
             title={openable ? "redo the last undone edit" : "redo is not available on a served document"}
           >
+            <CommandIcon kind="redo" />
             Redo
           </button>
           <button
@@ -599,6 +738,7 @@ export function App() {
                 : "solve the document first; a stale case is not a report"
             }
           >
+            <CommandIcon kind="report" />
             Report
           </button>
         </RibbonGroup>
@@ -609,31 +749,25 @@ export function App() {
             disabled={!openable}
             title={openable ? "a document with nothing in it" : HOSTED}
           >
+            <CommandIcon kind="new" />
             New
           </button>
-          <label className={`button${openable ? "" : " off"}`} title={openable ? undefined : HOSTED}>
+          <button
+            type="button"
+            onClick={() => openInput.current?.click()}
+            disabled={!openable}
+            title={openable ? "open a TOML case" : HOSTED}
+          >
+            <CommandIcon kind="open" />
             Open
-            {openable ? (
-              <input
-                type="file"
-                accept=".toml,text/plain"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file !== undefined) {
-                    void file.text().then(open);
-                  }
-                  // So that choosing the same file twice fires again.
-                  event.target.value = "";
-                }}
-              />
-            ) : null}
-          </label>
+          </button>
           <button
             type="button"
             onClick={openDemo}
             disabled={!openable}
             title={openable ? "the shipped demo flowsheet" : HOSTED}
           >
+            <CommandIcon kind="demo" />
             Demo
           </button>
           <select
@@ -662,6 +796,7 @@ export function App() {
             disabled={session === null}
             title="write the document where you say; it rides every envelope, so this is no call"
           >
+            <CommandIcon kind="save" />
             Save
           </button>
         </RibbonGroup>
@@ -794,6 +929,10 @@ export function App() {
       </Dock>
 
       <StatusBar envelope={envelope} units={units} />
+
+      {paletteOpen && appearance.layout === "cyberpunk" ? (
+        <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />
+      ) : null}
 
       {overviewNode !== null && envelope !== null ? (
         <NodeOverview

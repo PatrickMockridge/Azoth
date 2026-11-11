@@ -217,6 +217,7 @@
   --chart-h: 28px;
   --bar-pad-y: 4px;
   --bar-pad-x: 12px;
+  --command-icon-size: 16px;
 
   /* focus: the shape is the layout's, the colour is the tone's */
   --focus-w: 1px;
@@ -428,6 +429,7 @@
   --splitter-h: 6px;
   --bar-pad-y: 3px;
   --bar-pad-x: 8px;
+  --command-icon-size: 14px;
 
   --focus-w: 1px;
   --focus-style: dotted;
@@ -730,6 +732,7 @@
   --splitter-h: 6px;
   --bar-pad-y: 6px;
   --bar-pad-x: 10px;
+  --command-icon-size: 18px;
 
   --focus-w: 2px;
   --focus-style: solid;

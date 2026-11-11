@@ -16,6 +16,7 @@
 @import "./base.css";
 @import "./chrome.css";
 @import "./appearance.css";
+@import "./commands.css";
 @import "./canvas.css";
 @import "./forms.css";
 @import "./tables.css";
