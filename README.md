@@ -1,6 +1,6 @@
 # azoth
 
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/azoth-engine.svg)](https://pypi.org/project/azoth-engine/)
+[![PyPI](https://img.shields.io/pypi/v/azoth-engine.svg)](https://pypi.org/project/azoth-engine/)
 
 Chemical-engineering calculations — equations of state, flashes, property models, and the
 hydraulics and heat transfer around them — **written twice from one declaration, once in
