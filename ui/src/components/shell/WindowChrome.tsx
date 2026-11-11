@@ -15,11 +15,11 @@ import type { ReactNode } from "react";
 export function WindowChrome({ title, children }: { title: string; children: ReactNode }) {
   return (
     <>
-      <div className="window-title" aria-hidden="true">
+      <div className="window-title" tabIndex={0} aria-label={`${title} window`}>
         {title}
       </div>
       <div className="window-body">{children}</div>
-      <span className="window-grip" aria-hidden="true" />
+      <span className="window-grip" tabIndex={0} role="button" aria-label="Resize window" />
     </>
   );
 }

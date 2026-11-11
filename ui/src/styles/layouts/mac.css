@@ -1,37 +1,187 @@
 /*
- * Macintosh / Platinum.
+ * Macintosh / Platinum: a desktop with windows, not one window with panels.
  *
- * **One pixel, and no shadow except the hard one.** The period's window was a black frame around
- * a pinstriped title bar, with square controls and a grey desktop behind it; elevation was a 1px
- * black offset, not a gradient. Those are shapes, so they live here; the Platinum greys, the
- * stipple and the black ink come from the tone cell in `tokens.css`.
+ * **The app is the desktop, not a frame.** The old 12px window around everything is gone; the
+ * `body` stipple is the desktop, the menu bar is a screen-wide strip, and the palette, document,
+ * inspector, workbook and status are separate windows with pinstriped title bars. The regions
+ * are the same `aside.side`, `.canvas`, `.dock` and friends the other layouts use; only their
+ * boxes and positions change.
+ *
+ * **`display: contents` is the seam.** `.body`/`.calc-body`/`.calc-workspace` lose their boxes so
+ * the regions become absolutely positioned children of `.app`, which is why the menu bar and the
+ * windows can share one desktop without a second render tree. `.app` must not create a stacking
+ * context: a z-index on `.bar` would cap the Appearance popover below the later overlays.
  */
 
 [data-layout="mac"] .app {
-  height: calc(100% - 2 * var(--desktop-gap));
-  margin: var(--desktop-gap);
-  overflow: hidden;
-  border: var(--frame-w) solid var(--frame);
-  background: var(--bg-panel);
-  box-shadow:
-    inset 0 0 0 1px var(--bevel-light),
-    2px 2px 0 var(--frame);
+  display: block;
+  position: relative;
+  height: 100%;
+  margin: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
 }
 
-/* The title bar is the pinstripe; the tool row is a plain grey band under a black rule. */
+/* --- the menu bar ----------------------------------------------------------- */
+
 [data-layout="mac"] .bar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: flex;
+  height: var(--menubar-h);
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--s5);
+  padding: 0 var(--s5);
   border-bottom: var(--frame-w) solid var(--frame);
+  background: var(--surface-menubar);
+  color: var(--menubar-ink);
+  box-shadow: none;
 }
 
 [data-layout="mac"] .bar-identity {
-  position: relative;
-  min-height: var(--head-h);
-  padding-inline: var(--s8);
+  width: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  gap: var(--s4);
+  color: inherit;
 }
 
-/* The close box and the zoom box: 11px squares at the ends of the title bar. */
-[data-layout="mac"] .bar-identity::before,
-[data-layout="mac"] .bar-identity::after {
+[data-layout="mac"] .bar-tools {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+[data-layout="mac"] .bar h1 {
+  color: inherit;
+  font-size: var(--fs-lg);
+  letter-spacing: 0;
+}
+
+[data-layout="mac"] .bar .screening,
+[data-layout="mac"] .bar .pill,
+[data-layout="mac"] .bar .case-name input {
+  border-color: var(--frame);
+}
+
+[data-layout="mac"] .bar .menubar .menu-trigger {
+  color: var(--menubar-ink);
+}
+
+/* --- the desktop ------------------------------------------------------------ */
+
+[data-layout="mac"] .body,
+[data-layout="mac"] .calc-body,
+[data-layout="mac"] .calc-workspace {
+  display: contents;
+}
+
+/* Every region is a Macintosh window. */
+[data-layout="mac"] [data-window] {
+  position: absolute;
+  display: flex;
+  z-index: var(--wz);
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: var(--frame-w) solid var(--frame);
+  border-radius: 0;
+  background: var(--bg-panel);
+  box-shadow:
+    inset 0 0 0 1px var(--bevel-light),
+    var(--window-shadow);
+}
+
+[data-layout="mac"] [data-window="commands"] {
+  left: var(--commands-x);
+  top: var(--commands-y);
+  width: var(--commands-w);
+  height: var(--commands-h);
+  /* The Appearance popover and menu dropdowns escape this window. */
+  overflow: visible;
+}
+
+[data-layout="mac"] [data-window="palette"] {
+  left: var(--palette-x);
+  top: var(--palette-y);
+  width: var(--palette-w);
+  height: var(--palette-h);
+}
+
+[data-layout="mac"] [data-window="document"] {
+  left: var(--document-x);
+  top: var(--document-y);
+  width: var(--document-w);
+  height: var(--document-h);
+}
+
+[data-layout="mac"] [data-window="inspector"] {
+  left: var(--inspector-x);
+  top: var(--inspector-y);
+  width: var(--inspector-w);
+  height: var(--inspector-h);
+}
+
+[data-layout="mac"] [data-window="workbook"] {
+  left: var(--workbook-x);
+  top: var(--workbook-y);
+  width: var(--workbook-w);
+  height: var(--workbook-h);
+}
+
+[data-layout="mac"] [data-window="status"] {
+  left: var(--status-x);
+  top: var(--status-y);
+  width: var(--status-w);
+  height: var(--status-h);
+}
+
+[data-layout="mac"] [data-window="picker"] {
+  left: var(--picker-x);
+  top: var(--picker-y);
+  width: var(--picker-w);
+  height: var(--picker-h);
+}
+
+[data-layout="mac"] [data-window="worksheet"] {
+  left: var(--worksheet-x);
+  top: var(--worksheet-y);
+  width: var(--worksheet-w);
+  height: var(--worksheet-h);
+}
+
+/* --- window furniture ------------------------------------------------------- */
+
+[data-layout="mac"] .window-title {
+  position: relative;
+  display: flex;
+  height: var(--window-title-h);
+  flex: 0 0 var(--window-title-h);
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--s8);
+  border-bottom: var(--frame-w) solid var(--frame);
+  background: var(--surface-window-title);
+  color: var(--window-title-ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  cursor: move;
+  user-select: none;
+}
+
+/* The close box and the zoom box. */
+[data-layout="mac"] .window-title::before,
+[data-layout="mac"] .window-title::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -42,31 +192,117 @@
   background: var(--bg-panel);
 }
 
-[data-layout="mac"] .bar-identity::before {
+[data-layout="mac"] .window-title::before {
   inset-inline-start: var(--s3);
 }
 
-[data-layout="mac"] .bar-identity::after {
+[data-layout="mac"] .window-title::after {
   inset-inline-end: var(--s3);
 }
 
-[data-layout="mac"] .bar h1 {
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  letter-spacing: 0;
+[data-layout="mac"] .window-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  background: inherit;
 }
 
-[data-layout="mac"] .bar-tools {
-  border-top: var(--frame-w) solid var(--frame);
+[data-layout="mac"] [data-window="palette"] .window-body,
+[data-layout="mac"] [data-window="inspector"] .window-body,
+[data-layout="mac"] [data-window="picker"] .window-body {
+  overflow-y: auto;
 }
 
-[data-layout="mac"] .bar-identity .screening,
-[data-layout="mac"] .bar-identity .pill {
-  border-color: var(--frame);
-  background: var(--bg-panel);
+[data-layout="mac"] [data-window="document"] .window-body {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-canvas);
 }
 
-/* Square controls with a white top-left inner line and a black bottom-right one. */
+[data-layout="mac"] [data-window="worksheet"] .window-body {
+  overflow: hidden;
+}
+
+[data-layout="mac"] [data-window="workbook"] .window-body {
+  overflow: hidden;
+}
+
+[data-layout="mac"] [data-window="commands"] .window-body {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  overflow: visible;
+}
+
+[data-layout="mac"] [data-window="status"] .window-body {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  overflow: hidden;
+  padding: var(--s1) var(--s3);
+  font-size: var(--fs-2xs);
+  line-height: 1.25;
+}
+
+[data-layout="mac"] [data-window="status"] .spacer {
+  display: none;
+}
+
+[data-layout="mac"] .window-grip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: block;
+  width: var(--window-grip);
+  height: var(--window-grip);
+  border: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 2px,
+    var(--line-strong) 2px 3px
+  );
+  cursor: nwse-resize;
+}
+
+/* The ribbon is the body of the Tools window; the window owns its frame and padding. */
+[data-layout="mac"] .ribbon {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+[data-layout="mac"] .ribbon-group {
+  padding: 0 var(--s3);
+}
+
+[data-layout="mac"] .dock {
+  border: 0;
+  background: transparent;
+}
+
+[data-layout="mac"] .status-bar {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+[data-layout="mac"] .side {
+  border: 0;
+  background: transparent;
+}
+
+[data-layout="mac"] .dock-body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* --- the controls and their surfaces ---------------------------------------- */
+
 [data-layout="mac"] button,
 [data-layout="mac"] .button,
 [data-layout="mac"] input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
@@ -155,20 +391,14 @@
   background: var(--tab-face-active);
 }
 
-/* Panels are black-ruled and flat; the desktop stipple shows only outside the window. */
-[data-layout="mac"] .side,
-[data-layout="mac"] .dock,
-[data-layout="mac"] .status-bar {
-  border-color: var(--frame);
-}
-
+/* Panels inside the windows are flat; the window frame is the boundary. */
 [data-layout="mac"] .side h2,
 [data-layout="mac"] .prop-header {
   border-bottom: var(--frame-w) solid var(--frame);
 }
 
-[data-layout="mac"] .status-bar {
-  box-shadow: inset 0 1px 0 var(--bevel-light);
+[data-layout="mac"] .status-bar .value {
+  color: var(--text);
 }
 
 /* A node is a small Mac window: pinstriped title over a white body, square and hard-shadowed. */
@@ -188,7 +418,7 @@
   background: var(--well);
 }
 
-/* Overlay windows carry the same frame and pinstripe. */
+/* Overlay windows carry the same frame and hard shadow. */
 [data-layout="mac"] .overview,
 [data-layout="mac"] .welcome {
   border: var(--frame-w) solid var(--frame);

@@ -32,6 +32,7 @@ export function Dock({
   onTab,
   size,
   onSize,
+  managed = false,
   children,
 }: {
   tabs: readonly { id: string; label: string; count?: number }[];
@@ -39,6 +40,8 @@ export function Dock({
   onTab: (id: string) => void;
   size: number;
   onSize: (size: number) => void;
+  /** A Macintosh window or a HUD terminal owns the dock's height; the splitter is absent. */
+  managed?: boolean;
   children: ReactNode;
 }) {
   const drag = useRef<{ y: number; size: number } | null>(null);
@@ -72,31 +75,33 @@ export function Dock({
   return (
     <div
       className={`dock${dragging ? " dragging" : ""}`}
-      style={{ height: size }}
+      style={managed ? undefined : { height: size }}
       data-window="workbook"
     >
-      <div
-        className="splitter"
-        role="separator"
-        aria-orientation="horizontal"
-        aria-label="resize the dock"
-        aria-valuenow={size}
-        aria-valuemin={MIN}
-        aria-valuemax={MAX}
-        tabIndex={0}
-        onMouseDown={(event) => {
-          drag.current = { y: event.clientY, size };
-          setDragging(true);
-        }}
-        onKeyDown={(event) => {
-          const step = event.key === "ArrowUp" ? 20 : event.key === "ArrowDown" ? -20 : 0;
-          if (step === 0) {
-            return;
-          }
-          event.preventDefault();
-          onSize(clamp(size + step));
-        }}
-      />
+      {managed ? null : (
+        <div
+          className="splitter"
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="resize the dock"
+          aria-valuenow={size}
+          aria-valuemin={MIN}
+          aria-valuemax={MAX}
+          tabIndex={0}
+          onMouseDown={(event) => {
+            drag.current = { y: event.clientY, size };
+            setDragging(true);
+          }}
+          onKeyDown={(event) => {
+            const step = event.key === "ArrowUp" ? 20 : event.key === "ArrowDown" ? -20 : 0;
+            if (step === 0) {
+              return;
+            }
+            event.preventDefault();
+            onSize(clamp(size + step));
+          }}
+        />
+      )}
       <WindowChrome title={title}>
         <DockTabs tabs={tabs} active={active} onTab={onTab} label="docked panels" />
         <div className="dock-body">{children}</div>

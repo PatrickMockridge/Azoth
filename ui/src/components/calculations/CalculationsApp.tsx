@@ -15,6 +15,7 @@ import { CommandPalette } from "../CommandPalette";
 import { menusOf, type CommandSpec, type MenuSpec } from "../../commands/model";
 import { manualHome } from "../../manual";
 import { saveText } from "../../save";
+import { useWindowManager } from "../../hooks/useWindowManager";
 import { declaredToSI, type Units } from "../../state/units";
 import type { Appearance } from "../../state/appearance";
 import { RibbonGroup } from "../RibbonGroup";
@@ -74,6 +75,7 @@ export function CalculationsApp({
 
   const issued = useRef(0);
   const openInput = useRef<HTMLInputElement>(null);
+  const appRoot = useRef<HTMLDivElement>(null);
   const lastDocument = useRef<string | null>(null);
   const activeRef = useRef<string | null>(null);
 
@@ -331,6 +333,10 @@ export function CalculationsApp({
     void file.text().then(open);
   };
 
+  const { reset: resetWindows } = useWindowManager(appRoot, {
+    active: appearance.layout === "mac" && !hidden,
+  });
+
   const commands: CommandSpec[] = [
     {
       id: "new",
@@ -390,6 +396,13 @@ export function CalculationsApp({
       enabled: true,
     },
     {
+      id: "reset-windows",
+      label: "Reset window positions",
+      menu: "view",
+      run: resetWindows,
+      enabled: appearance.layout === "mac",
+    },
+    {
       id: "manual",
       label: "User manual",
       menu: "help",
@@ -427,7 +440,7 @@ export function CalculationsApp({
   }, [appearance.layout, hidden, reporting]);
 
   return (
-    <div className={`app calculations${hidden ? " off" : ""}`} hidden={hidden}>
+    <div className={`app calculations${hidden ? " off" : ""}`} hidden={hidden} ref={appRoot}>
       <input
         ref={openInput}
         className="sr-only"

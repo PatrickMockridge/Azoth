@@ -219,6 +219,51 @@
   --bar-pad-x: 12px;
   --command-icon-size: 16px;
 
+  /* The shells' furniture: a menu bar, a window title and a resize grip. */
+  --menubar-h: 22px;
+  --menubar-ink: var(--text);
+  --surface-menubar: var(--bg-panel);
+  --window-title-h: 22px;
+  --window-title-ink: var(--text);
+  --surface-window-title: var(--surface-bar);
+  --window-shadow: var(--e2);
+  --window-grip: 0px;
+
+  /* The Macintosh desktop's resting geometry; the window manager overwrites these inline. */
+  --commands-x: 1%;
+  --commands-y: 4%;
+  --commands-w: 66%;
+  --commands-h: 12%;
+  --palette-x: 1%;
+  --palette-y: 18%;
+  --palette-w: 18%;
+  --palette-h: 40%;
+  --document-x: 20%;
+  --document-y: 18%;
+  --document-w: 57%;
+  --document-h: 54%;
+  --inspector-x: 78%;
+  --inspector-y: 18%;
+  --inspector-w: 21%;
+  --inspector-h: 54%;
+  --workbook-x: 20%;
+  --workbook-y: 74%;
+  --workbook-w: 57%;
+  --workbook-h: 24%;
+  --status-x: 1%;
+  --status-y: 72%;
+  --status-w: 18%;
+  --status-h: 12%;
+  --picker-x: 1%;
+  --picker-y: 18%;
+  --picker-w: 24%;
+  --picker-h: 52%;
+  --worksheet-x: 26%;
+  --worksheet-y: 18%;
+  --worksheet-w: 73%;
+  --worksheet-h: 76%;
+  --wz: 1;
+
   /* focus: the shape is the layout's, the colour is the tone's */
   --focus-w: 1px;
   --focus-style: dotted;
@@ -430,6 +475,19 @@
   --bar-pad-y: 3px;
   --bar-pad-x: 8px;
   --command-icon-size: 14px;
+
+  --menubar-h: 24px;
+  --menubar-ink: var(--text);
+  --surface-menubar: var(--bg-panel);
+  --window-title-h: 20px;
+  --window-title-ink: var(--text);
+  --surface-window-title: repeating-linear-gradient(
+    0deg,
+    var(--pin-a) 0 1px,
+    var(--pin-b) 1px 2px
+  );
+  --window-shadow: 2px 2px 0 var(--frame);
+  --window-grip: 16px;
 
   --focus-w: 1px;
   --focus-style: dotted;
@@ -733,6 +791,15 @@
   --bar-pad-y: 6px;
   --bar-pad-x: 10px;
   --command-icon-size: 18px;
+
+  --menubar-h: 0px;
+  --menubar-ink: var(--text);
+  --surface-menubar: var(--surface-bar);
+  --window-title-h: 0px;
+  --window-title-ink: var(--text);
+  --surface-window-title: var(--surface-panel);
+  --window-shadow: var(--e3);
+  --window-grip: 0px;
 
   --focus-w: 2px;
   --focus-style: solid;

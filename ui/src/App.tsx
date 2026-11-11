@@ -42,6 +42,7 @@ import { Workbook } from "./components/workbook/Workbook";
 import { EXAMPLES } from "./examples";
 import { manualHome } from "./manual";
 import { saveDocument } from "./save";
+import { useWindowManager } from "./hooks/useWindowManager";
 import { selectedEdge, selectedNode } from "./state/selection";
 import {
   applyAppearance,
@@ -162,6 +163,7 @@ export function App() {
 
   const middleware = useRef<Door | null>(null);
   const openInput = useRef<HTMLInputElement>(null);
+  const appRoot = useRef<HTMLDivElement>(null);
 
   /**
    * **The newest call's number, so an answer to an older one cannot land on top of it.** The module
@@ -544,6 +546,11 @@ export function App() {
   const edge = envelope === null ? null : selectedEdge(envelope, selected);
   const overviewNode = envelope === null ? null : selectedNode(envelope, overview);
 
+  /** The Macintosh windows are live only while this workspace is front and the layout is Mac. */
+  const { reset: resetWindows } = useWindowManager(appRoot, {
+    active: appearance.layout === "mac" && workspace === "flowsheet",
+  });
+
   /** Open the file picker the ribbon's Open button and the Case menu share. */
   const openFile = useCallback(
     (file: File) => {
@@ -616,6 +623,13 @@ export function App() {
       run: () => chooseWorkspace("calculations"),
       enabled: true,
     },
+    {
+      id: "reset-windows",
+      label: "Reset window positions",
+      menu: "view",
+      run: resetWindows,
+      enabled: appearance.layout === "mac",
+    },
     { id: "guide", label: "Open the guide", menu: "help", run: showHelp, enabled: true },
     {
       id: "manual",
@@ -662,6 +676,7 @@ export function App() {
     <div
       className={`app${workspace === "calculations" ? " off" : ""}`}
       hidden={workspace === "calculations"}
+      ref={appRoot}
     >
       <input
         ref={openInput}
@@ -905,6 +920,7 @@ export function App() {
         }}
         size={dockSize}
         onSize={setDockSize}
+        managed={appearance.layout === "mac"}
       >
         <div role="tabpanel" id={`sheet-${docked}`}>
         {docked === "help" ? (
