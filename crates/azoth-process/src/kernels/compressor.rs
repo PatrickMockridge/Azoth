@@ -436,8 +436,7 @@ pub fn compressor_with_chart(
     let molar_mass = feed.molar_mass()?.value;
     // **The feed's own root, at the feed's composition** - `getZ()` and `getCP()` on the one
     // phase the class holds, not the flash's incipient phase.
-    let (z, cp) = feed_z_cp(feed)?;
-    let kappa = cp / (cp - R_J_PER_MOL_K);
+    let (z, _cp) = feed_z_cp(feed)?;
     // `getZvolcorr` = `P v/(R T)` at the Peneloux-shifted molar volume.
     let shift = {
         let (mixture, _) = feed.mixture()?;
@@ -447,7 +446,7 @@ pub fn compressor_with_chart(
 
     let mut boosted_n = fresh_n;
     let mut passes = 0;
-    let (efficiency, head_m, head_j_per_kg, pressure_ratio) = loop {
+    let (efficiency, head_m, head_j_per_kg) = loop {
         let flow_m3hr = fresh_flow_m3hr * (boosted_n / fresh_n);
         let efficiency = chart
             .polytropic_efficiency(flow_m3hr, speed)?
@@ -457,18 +456,6 @@ pub fn compressor_with_chart(
         // specific work is `head * 9.81` J/kg.
         let head_m = chart.polytropic_head(flow_m3hr, speed)?;
         let head_j_per_kg = head_m * METRE_TO_JOULE_PER_KG;
-        let n = 1.0 / (1.0 - (kappa - 1.0) / kappa / efficiency);
-        let flow_work = n / (n - 1.0) * z * R_J_PER_MOL_K * feed.t.value / molar_mass;
-        if !flow_work.is_finite() || flow_work <= 0.0 || !n.is_finite() {
-            return Err(AzothError::invalid_input(
-                "curve",
-                format!(
-                    "the chart's head and the inlet's state give no polytropic ratio: n={n}, \
-                     flow work={flow_work}"
-                ),
-            ));
-        }
-        let pressure_ratio = ((head_j_per_kg + flow_work) / flow_work).powf(n / (n - 1.0));
 
         if settings.active && chart.is_surge(head_m, flow_m3hr) {
             if let Some(target) = chart.surge_flow(head_m) {
@@ -481,10 +468,15 @@ pub fn compressor_with_chart(
                 }
             }
         }
-        break (efficiency, head_m, head_j_per_kg, pressure_ratio);
+        break (efficiency, head_m, head_j_per_kg);
     };
 
-    let outlet_pressure = pascals(feed.p.value * pressure_ratio);
+    let outlet_pressure = chart_pressure_for_head(
+        feed,
+        head_j_per_kg,
+        efficiency,
+        molar_mass,
+    )?;
     let dh = head_j_per_kg * molar_mass / efficiency;
     let outlet = Stream::from_ph(
         feed.components.clone(),
@@ -810,6 +802,61 @@ pub fn compressor_speed_solve(
 }
 
 /// The class's polytropic pressure ratio: `((H + W)/W)^(n/(n-1))`.
+/// `chartPressureForHead`: the discharge pressure whose polytropic head is the chart's.
+///
+/// The target's default method is `"schultz"`, so the constant-inlet-property ratio is not
+/// its answer. This inverts the port's own no-chart polytropic path by bisection, the same
+/// forward calculation the target's `polytropicHeadResidual` runs through its reference
+/// compressor.
+fn chart_pressure_for_head(
+    feed: &Stream,
+    head_j_per_kg: f64,
+    efficiency: f64,
+    molar_mass: f64,
+) -> Result<Pressure> {
+    if head_j_per_kg == 0.0 {
+        return Ok(feed.p);
+    }
+    let head_at = |outlet_pressure: Pressure| -> Result<f64> {
+        let (outlet, _) = compressor_polytropic(feed, outlet_pressure, efficiency)?;
+        Ok((outlet.h.value - feed.h.value) / molar_mass * efficiency)
+    };
+    let mut lower = feed.p;
+    let mut upper = pascals(feed.p.value * 2.0);
+    let mut upper_residual = head_at(upper)? - head_j_per_kg;
+    for _ in 0..12 {
+        if upper_residual >= 0.0 {
+            break;
+        }
+        lower = upper;
+        upper = pascals(upper.value * 2.0);
+        upper_residual = head_at(upper)? - head_j_per_kg;
+    }
+    if upper_residual < 0.0 {
+        return Err(AzothError::invalid_input(
+            "outlet_pressure",
+            format!(
+                "the chart head {head_j_per_kg} J/kg cannot be bracketed above {} Pa",
+                feed.p.value
+            ),
+        ));
+    }
+    let tolerance = (1.0e-8 * head_j_per_kg).max(1.0e-12);
+    for _ in 0..72 {
+        let middle = pascals(0.5 * (lower.value + upper.value));
+        let residual = head_at(middle)? - head_j_per_kg;
+        if residual.abs() <= tolerance {
+            return Ok(middle);
+        }
+        if residual < 0.0 {
+            lower = middle;
+        } else {
+            upper = middle;
+        }
+    }
+    Ok(pascals(0.5 * (lower.value + upper.value)))
+}
+
 fn polytropic_pressure_ratio(
     head_j_per_kg: f64,
     z: f64,

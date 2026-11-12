@@ -535,6 +535,59 @@ def _feed_state(
     return single(list(z), flash.phase != "all_vapour")
 
 
+def _chart_pressure_for_head(
+    components: list[str],
+    inlet_z: list[float],
+    t: float,
+    p: float,
+    head_j: float,
+    efficiency: float,
+    molar_mass: float,
+) -> float:
+    """``chartPressureForHead``: the discharge pressure whose polytropic head is the chart's.
+
+    The target's default method is ``"schultz"``, so the old constant-inlet-property
+    pressure ratio is not its answer. This inverts the port's own no-chart polytropic path
+    (``_polytropic_states``) by bisection, which is the same forward calculation the target's
+    ``polytropicHeadResidual`` runs through its reference compressor.
+    """
+    if head_j == 0.0:
+        return p
+
+    def head_at(outlet_p: float) -> float:
+        h_in, h_out, _, _ = _polytropic_states(
+            components, t, p, inlet_z, outlet_p, efficiency
+        )
+        return (h_out - h_in) / molar_mass * efficiency
+
+    lower = p
+    upper = 2.0 * p
+    upper_residual = head_at(upper) - head_j
+    for _ in range(12):
+        if upper_residual >= 0.0:
+            break
+        lower = upper
+        upper *= 2.0
+        upper_residual = head_at(upper) - head_j
+    else:
+        raise InvalidInputError(
+            "outlet_pressure",
+            f"the chart head {head_j} J/kg cannot be bracketed above {p} Pa",
+        )
+
+    tolerance = max(1.0e-12, 1.0e-8 * head_j)
+    for _ in range(72):
+        middle = 0.5 * (lower + upper)
+        residual = head_at(middle) - head_j
+        if abs(residual) <= tolerance:
+            return middle
+        if residual < 0.0:
+            lower = middle
+        else:
+            upper = middle
+    return 0.5 * (lower + upper)
+
+
 def _chart_states(
     components: list[str],
     n: float,
@@ -558,7 +611,6 @@ def _chart_states(
             f"the chart branch needs a positive flow to scale, and {n} mol/s gives "
             f"{fresh_flow} m3/hr",
         )
-    kappa = cp / (cp - R)
     # ``getZvolcorr`` = ``P v/(R T)`` at the Peneloux-shifted molar volume.
     zvolcorr = z - p * mixture.volume_shift(list(inlet_z)) / (R * t)
 
@@ -569,15 +621,6 @@ def _chart_states(
         efficiency = min(1.0, max(MIN_EFFICIENCY, chart.polytropic_efficiency(flow_m3hr, speed)))
         head = chart.polytropic_head(flow_m3hr, speed)
         head_j = head * METRE_TO_JOULE_PER_KG
-        exponent = 1.0 / (1.0 - (kappa - 1.0) / kappa / efficiency)
-        flow_work = exponent / (exponent - 1.0) * z * R * t / molar_mass
-        if not flow_work > 0.0 or not math.isfinite(flow_work):
-            raise InvalidInputError(
-                "curve",
-                f"the chart's head and the inlet's state give no polytropic ratio: n={exponent}, "
-                f"flow work={flow_work}",
-            )
-        pressure_ratio = ((head_j + flow_work) / flow_work) ** (exponent / (exponent - 1.0))
 
         if settings.active and chart.is_surge(head, flow_m3hr):
             target = chart.surge_flow(head)
@@ -588,7 +631,15 @@ def _chart_states(
                     continue
         break
 
-    out_p = p * pressure_ratio
+    out_p = _chart_pressure_for_head(
+        components,
+        inlet_z,
+        t,
+        p,
+        head_j,
+        efficiency,
+        molar_mass,
+    )
     h_in, _ = enthalpy_at(mixture, ideal_gas, t, p, inlet_z)
     dh = head_j * molar_mass / efficiency
     h_out = h_in + dh
