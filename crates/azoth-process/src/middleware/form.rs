@@ -17,6 +17,7 @@ use crate::channel::{Direction, FieldType, Multiplicity, Shape};
 use crate::executor::{DISPATCH, UNRUNNABLE};
 use crate::model_gen;
 use crate::model_inputs_gen;
+use crate::model_outputs_gen;
 use crate::unit_op::UnitOpSpec;
 
 /// The dimension a unit is at, as a vocabulary id.
@@ -84,6 +85,28 @@ pub struct FormRange {
     pub rationale: &'static str,
 }
 
+/// One output, as a result sheet explains it.
+///
+/// **The other half of the declaration.** A form described what a kernel reads; a result needs
+/// the model's own account of what it wrote. The name is the record's field, the unit is what a
+/// bare float is in, and the description is the sentence the spec uses - often the equation the
+/// value comes from, which is what lets a reader cross-check it without reading the kernel.
+#[derive(Debug, Clone, Serialize)]
+pub struct FormOutput {
+    pub name: String,
+    /// `quantity`, `vector`, `boolean`, `enum`, `string`, `components`, `matrix`,
+    /// `record_list` or `vector_string`, as the spec's `type` says.
+    pub kind: &'static str,
+    pub unit: Option<String>,
+    pub dimension: Option<&'static str>,
+    /// An `enum`'s allowed values, in the spec's order; empty for every other kind.
+    pub values: &'static [&'static str],
+    /// The spec's own sentence, which is what a result sheet shows beside the value.
+    pub description: String,
+    /// Present only when the design it belongs to was configured, for an optional output.
+    pub optional: bool,
+}
+
 /// One port, as a node's handles come from it.
 #[derive(Debug, Clone, Serialize)]
 pub struct FormPort {
@@ -127,6 +150,11 @@ pub struct FormSpec {
     pub refusal: Option<&'static str>,
     pub ports: Vec<FormPort>,
     pub parameters: Vec<FormParameter>,
+    /// The model's declared outputs, in the spec's order.
+    ///
+    /// **Empty for an entry with no model**, which is the same entry the executor refuses and
+    /// whose result nothing can produce; the form says so rather than inventing a result shape.
+    pub outputs: Vec<FormOutput>,
     /// The bounds the model puts on inputs no parameter of this entry carries.
     ///
     /// **Named rather than dropped.** A model bounds its stream fields too - the compressor's
@@ -169,6 +197,10 @@ pub fn form(spec: &UnitOpSpec) -> FormSpec {
         })
         .collect();
 
+    let outputs = model_outputs_gen::outputs_for(&spec.id)
+        .map(|entry| entry.outputs.iter().map(output).collect())
+        .unwrap_or_default();
+
     let unmodelled_ranges = checks()
         .into_iter()
         .map(|check| check.quantity)
@@ -189,7 +221,20 @@ pub fn form(spec: &UnitOpSpec) -> FormSpec {
             .map(|(_, reason)| *reason),
         ports: spec.ports.iter().map(port).collect(),
         parameters,
+        outputs,
         unmodelled_ranges,
+    }
+}
+
+fn output(entry: &model_outputs_gen::ModelOutput) -> FormOutput {
+    FormOutput {
+        name: entry.name.to_string(),
+        kind: entry.kind,
+        unit: entry.unit.map(str::to_string),
+        dimension: entry.dimension,
+        values: entry.values,
+        description: entry.description.to_string(),
+        optional: entry.optional,
     }
 }
 

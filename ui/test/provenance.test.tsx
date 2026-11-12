@@ -62,11 +62,19 @@ describe("what a document rests on", () => {
     expect(shortHash(null)).toBeNull();
   });
 
-  it("renders the model and the verification, in the library's words", () => {
+  it("renders the model, the source, the data authority and what the status means", () => {
     render(<ProvenanceSheet envelope={envelope} instance="hx1" />);
-    expect(screen.getByText("partially_verified")).toBeDefined();
     expect(screen.getByText("process.heater")).toBeDefined();
-    expect(screen.queryByText(/NeqSim/)).toBeNull();
+    // The port's own line for the class it came from, now on the sheet a reader asks.
+    expect(screen.getByText(/NeqSim process\/equipment/)).toBeDefined();
+    // The data authority the run used, so a reader reproducing it knows what to supply.
+    expect(screen.getByText(/standard keycard/)).toBeDefined();
+    // **The raw spelling and one sentence.** The word alone is what confused a reader; the
+    // sentence is the library's own account of what it does and does not claim.
+    expect(screen.getByText("partially_verified")).toBeDefined();
+    expect(screen.getByText(/reproduce the examples pinned in the model/)).toBeDefined();
+    // And the run, which is a different fact from the model's check.
+    expect(screen.getByText(/Calculated, from this run/)).toBeDefined();
   });
 
   it("says so, rather than showing nothing, where the document has no entry", () => {

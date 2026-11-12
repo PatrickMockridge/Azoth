@@ -49,6 +49,14 @@ pub struct ProvenanceRecord {
     /// The library that produced the answer, and the version this binary reports.
     pub library: &'static str,
     pub version: &'static str,
+    /// The data authority the run used.
+    ///
+    /// **The shipped card, because neither editor door takes an overlay.** `azoth crosscheck`
+    /// is the one command that reads a caller's keycard; the wasm and `azoth serve` bind the
+    /// compiled table, so every envelope they answer is calculated against the standard keycard
+    /// this build ships. A reader reproducing a number needs to know that before it can supply
+    /// its own data.
+    pub keycard: &'static str,
     /// One entry per instantiated unit operation, in the document's own order.
     ///
     /// The document's order rather than a sort: the envelope is what a canvas diffs between
@@ -106,6 +114,7 @@ pub fn session_provenance(workspace: &Workspace) -> ProvenanceRecord {
     ProvenanceRecord {
         library: "azoth",
         version: env!("CARGO_PKG_VERSION"),
+        keycard: "azoth standard keycard (shipped; derived from NeqSim values)",
         units: workspace
             .flowsheet()
             .instances
@@ -124,6 +133,7 @@ mod tests {
         let record = ProvenanceRecord {
             library: "azoth",
             version: "0.1.0",
+            keycard: "azoth standard keycard (shipped; derived from NeqSim values)",
             units: Vec::new(),
         };
         assert!(record.is_complete());
@@ -136,6 +146,7 @@ mod tests {
         let record = ProvenanceRecord {
             library: "azoth",
             version: "0.1.0",
+            keycard: "azoth standard keycard (shipped; derived from NeqSim values)",
             units: vec![UnitProvenance {
                 instance: "feed".to_string(),
                 unit: "unit_ops.feed".to_string(),

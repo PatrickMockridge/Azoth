@@ -21,6 +21,7 @@ pub mod load;
 pub mod middleware;
 pub mod model_gen;
 pub mod model_inputs_gen;
+pub mod model_outputs_gen;
 pub mod model_records_gen;
 pub mod models;
 pub mod order;

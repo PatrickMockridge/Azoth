@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 
 use azoth_process::check::Mismatch;
 use azoth_process::middleware::diagnostic::{DiagnosticRecord, records};
-use azoth_process::middleware::form::{FormSpec, dimension_id, forms};
+use azoth_process::middleware::form::{FormSpec, dimension_id, form, forms};
 use azoth_process::middleware::graph::{Graph, Node, graph};
 use azoth_process::{
     Connection, Diagnostic, Direction, Flowsheet, Instance, Layout, NodeRole, Severity, Target,
@@ -724,6 +724,137 @@ fn the_generated_input_table_is_the_models_own() {
     // carried openings, the requested opening, the two time constants and the carried outlet -
     // 727 + 12 = 739.
     assert_eq!(walked, 739, "the inputs this test walked");
+}
+
+/// **The generated output table is the spec files' own, read a second time.**
+///
+/// A result sheet explains a value with the output's declared unit and the spec's sentence.
+/// A generator that dropped a description, lost an `optional`, or read the wrong unit would
+/// otherwise make every result sheet quietly explain the wrong field.
+#[test]
+fn the_generated_output_table_is_the_models_own() {
+    let vocabulary: std::collections::BTreeMap<String, String> = {
+        let text = std::fs::read_to_string(root().join("specs/vocabulary/vocabulary.toml"))
+            .expect("the vocabulary table is there");
+        let document: toml::Value = toml::from_str(&text).expect("it parses");
+        document["units"]
+            .as_array()
+            .expect("a `[[units]]` array")
+            .iter()
+            .map(|unit| {
+                (
+                    unit["id"].as_str().expect("an id").to_string(),
+                    unit["dimension"].as_str().expect("a dimension").to_string(),
+                )
+            })
+            .collect()
+    };
+    let mut walked = 0;
+    for entry in azoth_process::model_outputs_gen::model_outputs() {
+        let path = root().join("specs/models/process").join(format!(
+            "{}.toml",
+            entry.model.trim_start_matches("process.")
+        ));
+        let text = std::fs::read_to_string(&path).expect("the model spec is there");
+        let document: toml::Value = toml::from_str(&text).expect("it parses");
+        let declared = document["outputs"]
+            .as_table()
+            .expect("an `[outputs]` block");
+        assert_eq!(
+            entry.outputs.len(),
+            declared.len(),
+            "{}: the table has {} outputs and the spec {}",
+            entry.model,
+            entry.outputs.len(),
+            declared.len()
+        );
+        assert!(!entry.outputs.is_empty(), "{}: no outputs", entry.model);
+        for output in entry.outputs {
+            let spec = declared
+                .get(output.name)
+                .unwrap_or_else(|| panic!("{}: `{}` is not an output", entry.model, output.name));
+            assert_eq!(
+                output.kind,
+                spec.get("type")
+                    .and_then(toml::Value::as_str)
+                    .unwrap_or("quantity"),
+                "{}: `{}`'s kind",
+                entry.model,
+                output.name
+            );
+            let values: Vec<&str> = spec
+                .get("values")
+                .and_then(toml::Value::as_array)
+                .map(|values| values.iter().filter_map(toml::Value::as_str).collect())
+                .unwrap_or_default();
+            assert_eq!(
+                output.values, values,
+                "{}: `{}`'s enum",
+                entry.model, output.name
+            );
+            assert_eq!(
+                output.optional,
+                spec.get("optional").and_then(toml::Value::as_bool) == Some(true),
+                "{}: `{}`'s optional",
+                entry.model,
+                output.name
+            );
+            assert_eq!(
+                output.description,
+                spec.get("description")
+                    .and_then(toml::Value::as_str)
+                    .expect("the schema requires a description"),
+                "{}: `{}`'s description",
+                entry.model,
+                output.name
+            );
+            let unit = spec.get("unit").and_then(toml::Value::as_str);
+            assert_eq!(
+                output.unit, unit,
+                "{}: `{}`'s declared unit",
+                entry.model, output.name
+            );
+            let expected = unit.map(|unit| {
+                vocabulary
+                    .get(unit)
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "{}: `{}` declares unit {unit}, which is not in the vocabulary",
+                            entry.model, output.name
+                        )
+                    })
+                    .as_str()
+            });
+            assert_eq!(
+                output.dimension, expected,
+                "{}: `{}`'s dimension",
+                entry.model, output.name
+            );
+            walked += 1;
+        }
+    }
+    assert!(walked > 500, "the outputs this test walked: {walked}");
+
+    // And the middleware carries the same declarations to the wire, in spec order.
+    let heater = palette()
+        .into_iter()
+        .find(|spec| spec.id == "unit_ops.heater")
+        .expect("the heater is in the palette");
+    let shape = form(&heater);
+    let duty = shape
+        .outputs
+        .iter()
+        .find(|output| output.name == "outlet_duty")
+        .expect("the heater declares its duty");
+    assert_eq!(duty.unit.as_deref(), Some("W"));
+    assert!(!duty.optional);
+    assert!(duty.description.contains("inlet_n"));
+    let vfd = shape
+        .outputs
+        .iter()
+        .find(|output| output.name == "vfd_efficiency")
+        .expect("the heater declares its VFD's efficiency");
+    assert!(vfd.optional);
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

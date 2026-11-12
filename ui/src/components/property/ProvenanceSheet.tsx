@@ -1,19 +1,22 @@
 import { provenanceOf, shortHash } from "../../state/provenance";
+import { resultOf } from "../../state/results";
+import { runNote, statusWord } from "../../state/status";
+import { definitionOf } from "../../state/verification";
 import type { Envelope } from "../../wire/types";
 
 /**
  * What this unit operation rests on: where it came from, and how far it is checked.
  *
- * **Every value here is the library's own word.** `source` is the provenance line the palette
- * carries — the NeqSim class a unit operation was ported from — `verification` is the model's
- * declared status, and the two hashes are of the spec and the Rust kernel the answer came from.
- * Nothing on this sheet is a second label for something the library already named, which is the
- * rule the result sheets follow and the reason this sheet exists at all: a reader asking "how
- * far is this checked" should not have to open a TOML file to find out.
+ * **The machine record, in the one place a reader looks for it.** `source` is the provenance
+ * line the palette carries - the NeqSim class a unit operation was ported from - `verification`
+ * is the model's derived status, the hashes are of the spec and the Rust kernel the answer came
+ * from, and `keycard` is the data authority the run used. Nothing here is a second label for
+ * something the library already named; the status is printed as the library spells it, with one
+ * sentence saying what that spelling means.
  *
  * **A document with no entry for the object says so.** The record is written per *instantiated*
  * unit operation, so a feed, a product and a connection have none, and an instance the
- * projection drew but the palette cannot resolve has none either — which is a fact about the
+ * projection drew but the palette cannot resolve has none either - which is a fact about the
  * document rather than an error, and it is rendered as one.
  */
 export function ProvenanceSheet({
@@ -35,6 +38,10 @@ export function ProvenanceSheet({
     );
   }
 
+  const status = statusWord(envelope);
+  const verification = definitionOf(entry.verification);
+  const calculated = resultOf(envelope, instance) !== undefined;
+
   return (
     <div className="sheet" id="sheet-provenance" role="tabpanel" aria-labelledby="tab-provenance">
       <table className="grid">
@@ -48,13 +55,25 @@ export function ProvenanceSheet({
             <td>{entry.model ?? "—"}</td>
           </tr>
           <tr>
-            <th scope="row">verification</th>
-            {/* The library's own status word, and not a sentence about it. */}
-            <td>{entry.verification ?? "—"}</td>
+            <th scope="row">source</th>
+            <td>{entry.source ?? "—"}</td>
           </tr>
           <tr>
-            <th scope="row">runs</th>
-            <td>{entry.runnable ? "yes" : (entry.refusal ?? "no")}</td>
+            <th scope="row">data authority</th>
+            <td>{envelope.provenance.keycard}</td>
+          </tr>
+          <tr>
+            <th scope="row">run</th>
+            <td>
+              {status} · {runNote(status, calculated)}
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">verification</th>
+            <td>
+              <code>{verification.raw ?? "—"}</code>
+              <p className="result-description">{verification.definition}</p>
+            </td>
           </tr>
           <tr>
             <th scope="row">spec</th>

@@ -169,6 +169,7 @@ const KINDS = [
   "matrix",
   "fitting_list",
   "record_list",
+  "vector_string",
   "unknown",
 ] as const;
 
@@ -478,6 +479,7 @@ function provenance(value: unknown, path: string): ProvenanceRecord {
   return {
     library: str(raw.library, `${path}.library`),
     version: str(raw.version, `${path}.version`),
+    keycard: str(raw.keycard, `${path}.keycard`),
     units: list(raw.units, `${path}.units`, unitProvenance),
   };
 }
@@ -569,6 +571,7 @@ function form(value: unknown, path: string): Form {
     refusal: nullable(raw.refusal, `${path}.refusal`, str),
     ports: list(raw.ports, `${path}.ports`, formPort),
     parameters: list(raw.parameters, `${path}.parameters`, formParameter),
+    outputs: list(raw.outputs, `${path}.outputs`, calcOutput),
     unmodelled_ranges: list(raw.unmodelled_ranges, `${path}.unmodelled_ranges`, str),
   };
 }

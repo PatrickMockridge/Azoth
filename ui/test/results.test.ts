@@ -12,15 +12,26 @@
 
 import { describe, expect, it } from "vitest";
 
-import { resultOf, resultTabs, scalarsOf, seriesOf, warningsOf } from "../src/state/results";
+import {
+  outputRowsOf,
+  resultOf,
+  resultTabs,
+  scalarsOf,
+  seriesOf,
+  warningsOf,
+} from "../src/state/results";
 import { unitsOf } from "../src/state/units";
 import catalogue from "./fixtures/catalogue.json";
 import fixture from "./fixtures/envelope.json";
 import type { Catalogue, Envelope, UnitResult } from "../src/wire/types";
 
 const envelope = fixture as unknown as Envelope;
-const field = unitsOf(catalogue as unknown as Catalogue, "field");
+const forms = catalogue as unknown as Catalogue;
+const field = unitsOf(forms, "field");
+const si = unitsOf(forms, "si");
 const heater = resultOf(envelope, "hx1") as UnitResult;
+const heaterForm = forms.unit_ops.find((entry) => entry.id === "unit_ops.heater");
+const heaterOutputs = heaterForm?.outputs ?? [];
 
 describe("the result reader", () => {
   it("finds the result an instance published, and none where it published none", () => {
@@ -97,12 +108,58 @@ describe("the result reader", () => {
 
   it("offers each sheet only where it has something to draw", () => {
     // The heater published scalars and no vector.
-    expect(resultTabs(heater)).toEqual(["results"]);
+    expect(resultTabs(heater, heaterOutputs)).toEqual(["results"]);
     // A column offers both, profile first.
     expect(
       resultTabs({ condenser_duty: { magnitude_si: 1, unit: "W" }, tray_temperature: [300, 310] }),
     ).toEqual(["stages", "results"]);
     // And a document that has not run has no result, so no sheets.
     expect(resultTabs(undefined)).toEqual([]);
+    // A result whose every field is absent has nothing to draw either, so it offers no sheet.
+    expect(resultTabs({ outlet_duty: null, instruments: [] }, heaterOutputs)).toEqual([]);
+  });
+
+  it("draws only the fields the run published, in the model's declared order", () => {
+    const rows = outputRowsOf(heater, si, heaterOutputs);
+    // hx1 declares 76 fields and publishes 8: an absent optional field is not a dash row.
+    expect(rows).toHaveLength(8);
+    expect(rows.map((row) => row.key)).toEqual([
+      "outlet_n",
+      "outlet_p",
+      "outlet_t",
+      "outlet_h",
+      "outlet_duty",
+      "max_utilization",
+      "capacity_exceeded",
+      "hard_limit_exceeded",
+    ]);
+    expect(rows.every((row) => row.text !== "—")).toBe(true);
+    // A bare float takes the unit its declaration gives it.
+    const flow = rows.find((row) => row.key === "outlet_n");
+    expect(flow?.unit).toBe("mol/s");
+    expect(flow?.text).toBe("1");
+    // The human label and the library's sentence.
+    expect(rows.find((row) => row.key === "outlet_duty")?.label).toBe("Outlet duty");
+    expect(rows.find((row) => row.key === "outlet_duty")?.description).toContain("inlet_n");
+    // `false` is a value and stays; an empty record list is not.
+    expect(rows.find((row) => row.key === "capacity_exceeded")?.text).toBe("no");
+    expect(rows.some((row) => row.key === "instruments")).toBe(false);
+  });
+
+  it("appends a field the form does not declare rather than dropping it", () => {
+    const rows = outputRowsOf({ outlet_n: 1, mystery: 2 }, si, []);
+    expect(rows.map((row) => row.key)).toEqual(["outlet_n", "mystery"]);
+    expect(rows[1]?.kind).toBeNull();
+    expect(rows[1]?.description).toBeNull();
+  });
+
+  it("reports a published record list as a count, not a table", () => {
+    const rows = outputRowsOf(
+      { instruments: [{ tag: "TIC-1" }, { tag: "TIC-2" }] },
+      si,
+      [{ name: "instruments", kind: "record_list", unit: null, dimension: null, values: [], description: "one row per instrument.", optional: false }],
+    );
+    expect(rows[0]?.text).toBe("2 records");
+    expect(rows[0]?.records).toBe(2);
   });
 });

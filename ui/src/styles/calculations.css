@@ -259,12 +259,13 @@
   font-size: var(--fs-2xs);
 }
 
-.calc-badge.verified {
+/* The run state of this sheet: has it an answer, and is the answer older than the inputs. */
+.calc-badge.calculated {
   border-color: var(--ok);
   color: var(--ok);
 }
 
-.calc-badge.partially_verified {
+.calc-badge.out-of-date {
   border-color: var(--warn);
   color: var(--warn);
 }
@@ -316,17 +317,6 @@
   line-height: var(--lh-body);
 }
 
-.calc-stale-badge {
-  margin-inline-start: var(--s3);
-  padding: 1px var(--s2);
-  border: 1px solid var(--warn);
-  border-radius: var(--r-pill);
-  color: var(--warn);
-  font-size: var(--fs-2xs);
-  font-weight: 600;
-  letter-spacing: var(--ls-label);
-  text-transform: var(--label-transform);
-}
 
 .calc-stale {
   margin: 0;

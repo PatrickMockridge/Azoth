@@ -8,6 +8,15 @@
  */
 
 import { manualHome } from "../manual";
+import { definitionOf } from "../state/verification";
+
+/** The four statuses the library derives, in the order its own enum lists them. */
+const VERIFICATION_STATUSES = [
+  "verified",
+  "partially_verified",
+  "source_needed",
+  "unverified",
+] as const;
 
 export function Help() {
   return (
@@ -62,12 +71,34 @@ export function Help() {
 
       <h2>Messages and results</h2>
       <p>
-        <strong>Messages</strong> holds the model check's findings and any run error; click one to
-        select the object it is about. A unit operation&apos;s <strong>Results</strong> sheet holds
-        what it reached that is not on an outlet stream, and its <strong>Caveats</strong> are the
-        calculation&apos;s own warnings. <strong>Checks</strong> names the model and how far it is
-        verified.
+        <strong>Messages</strong> holds the model check&apos;s findings and any run error; click one
+        to select the object it is about. A unit operation&apos;s <strong>Results</strong> sheet
+        holds what it reached that is not on an outlet stream: a plain label, the value and unit,
+        and the library&apos;s own sentence about how the number is obtained — often the equation
+        behind it, so the answer can be checked by hand. Only fields the run published are drawn,
+        and its <strong>Caveats</strong> are the calculation&apos;s own warnings. The collapsed
+        <strong> Machine-readable fields</strong> block and the <strong>Provenance</strong> tab
+        hold the same values in the model&apos;s field names and the hashes behind them.
       </p>
+
+      <h2>Provenance</h2>
+      <p>
+        The <strong>Provenance</strong> tab answers what a number rests on: the model, the NeqSim
+        class it was ported from, the data authority (the standard keycard this build ships), the
+        spec and kernel hashes, and the model&apos;s verification status. The status says how far
+        the model itself is checked; it is not the status of the run, which <strong>Report</strong>
+        and the run record carry separately.
+      </p>
+      <dl>
+        {VERIFICATION_STATUSES.map((status) => (
+          <div key={status}>
+            <dt>
+              <code>{status}</code>
+            </dt>
+            <dd>{definitionOf(status).definition}</dd>
+          </div>
+        ))}
+      </dl>
 
       <h2>Calculation sheets</h2>
       <p>

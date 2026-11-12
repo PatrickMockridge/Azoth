@@ -19,11 +19,11 @@ This page is part of the user manual; [Using azoth](./index.md) is its start.
 2. Press **Solve**. The status changes from `stale` to `solved`, and each connection shows the
    temperature and pressure the run reached.
 3. Click a unit operation to open its window. **Design** holds the parameters, **Conditions** the
-   feed or product stream, **Worksheet** the streams on its ports, and **Results** whatever the
-   model reached besides its streams.
+   feed or product stream, **Worksheet** the streams on its ports, **Results** whatever the model
+   reached besides its streams, and **Provenance** the model, hashes and data authority behind it.
 4. Open **Workbook** at the bottom for every stream in one table. **Messages** holds the model
    check's findings and any run error; clicking an entry selects the object it is about.
-5. **Case → Examples** opens other worked cases.
+5. **Case → Demo cases** opens other worked cases.
 
 ## The drawing
 
@@ -64,9 +64,9 @@ grey desktop: the menu bar is at the top and the navigator, drawing, inspector, 
 status are separate windows — drag a title bar to move one, drag its bottom-right corner to
 resize it, and use **View → Reset window positions** to put them back. **Cyberpunk** is a
 full-bleed drawing with translucent HUD rails; the switches at the right of the top strip hide
-the navigator, inspector, workbook or command deck, and **Cmd** in the strip — or
+the navigator, inspector, workbook or command deck, and **Commands** in the strip — or
 **Ctrl/Cmd+K** anywhere in that layout — opens a command palette over the same commands as the
-toolbar and menus.
+toolbar and menus. The workbook rail's top edge resizes it.
 
 ![The Macintosh desktop](../images/editor-mac.png)
 
@@ -78,20 +78,41 @@ the unit set, and is not written into a case.
 
 ## What the numbers mean
 
-**Checks** on a unit operation names the model, how far it is verified, and the hashes of the
-declaration and the kernel that produced the number. **Caveats** on a result sheet are the calculation's own warnings — a bound that could not
-be checked, a correlation at the edge of its range.
+A result has two readings, and the split is deliberate.
 
-The port is incomplete. Every shipped model is marked `unverified` or `partially_verified`, and
-what is missing is recorded in the [road map](../agentic/roadmap.md) and at the front of this
-book. **These are screening values, not design deliverables.**
+**The human reading** is the **Results** sheet and the report's cover: a plain label, the value
+and unit in the unit set in force, and the library's own sentence about how the number is
+obtained — often the equation behind it, so an engineer can check the answer by hand. Only fields
+the run published are drawn. `false` and `0` are values; a field the design did not configure is
+not a dash row, and a parameter that was never set is not in the report.
+
+**The machine record** is the collapsed *Machine-readable fields* block on the same sheet, the
+**Provenance** tab, and the report's appendix. It keeps the model's own field names in the
+library's units, the parameters the run was given, the model id, the NeqSim class it was ported
+from, the data authority (the standard keycard this build ships, derived from NeqSim values) and
+the spec and kernel hashes. **Download run record (JSON)** on the report writes the same record —
+the document, the raw session, the provenance and the diagnostics — so another tool or agent can
+reproduce the run and compare it field by field.
+
+**Verification is a record field, not a badge on the answer.** `verified`,
+`partially_verified`, `source_needed` and `unverified` describe how far the *model* is checked
+against evidence outside its own examples. `partially_verified` means the kernels reproduce the
+examples pinned in the model's own specification and no independent validation case is recorded;
+it is the normal state for this port. The status is printed as the library spells it, once, in
+Provenance and the report's appendix, with the sentence that defines it. **Caveats** on a result
+sheet are the calculation's own warnings about a number it did return — a bound that could not be
+checked, a correlation at the edge of its range.
+
+The port is incomplete, and what is missing is recorded in the [road map](../agentic/roadmap.md)
+and at the front of this book. **These are screening values, not design deliverables.**
 
 ## Saving and printing
 
 **Save** writes the case under its name as a TOML document; **Open** reads one back. The header's
 case-name field sets that name. The workbook exports to CSV,
 and **Report** prints or saves a case file with the drawing, the streams, the results, the
-caveats and the source record.
+caveats and the source record. The report also downloads the run as JSON, which is the
+machine-readable form of the same run.
 
 The **Calculations** switch opens a separate workspace for the library's standalone calculations;
 the **View** menu carries the same two commands. See [calculation sheets](./calculations.md) for

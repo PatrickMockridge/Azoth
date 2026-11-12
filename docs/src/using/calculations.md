@@ -54,8 +54,10 @@ Each result carries its value, unit and meaning. Below it:
 - **Warnings** are conditions that do not stop the calculation but change how much the number
   should be trusted — a transitional flow regime, a result outside the validated range.
 - A red sentence is the calculation's own refusal, naming the input that caused it.
-- **Model check** gives the model id, its verification status, the spec and code hashes, and the
-  test count. It links to the implementation notes on the calculation's manual page.
+- **Model check** gives the model id, its verification status with the one sentence defining it,
+  the spec and code hashes, and the test count. It links to the implementation notes on the
+  calculation's manual page. The badge beside the sheet's name is the *run* state — calculated,
+  out of date, or not calculated — and does not repeat the model's verification.
 
 The printable **Report** shows the purpose, the inputs and outputs with their meanings, the
 assumptions, references, warnings and model check for every sheet, one sheet per page. **Save**

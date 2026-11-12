@@ -6,9 +6,12 @@
  * caveats and messages are its own sentences. Nothing is recomputed and nothing is rounded into
  * a claim.
  *
- * **The report is a list of tables.** A caller (the printable view, a future export) draws them
- * without knowing which one it has, so a field added to a result or a stream appears in the
- * report the same way it appears in the workbook.
+ * **Two layers, and the reader chooses.** The `cover` is for a person: the drawing, the streams
+ * and a results table in plain labels, display units and the library's own sentence about how
+ * each number is obtained - often the equation behind it. The `appendix` is the machine record:
+ * the model's field names, the library's units, the design parameters that were set, the
+ * profiles, and the provenance (model, raw verification status, hashes, data authority). A
+ * reader can check the cover by hand; an agent can reproduce and compare the appendix.
  */
 
 import {
@@ -18,7 +21,7 @@ import {
   streamRows,
 } from "../state/columns";
 import { displayUnitOf, inDisplayUnit, type Units } from "../state/units";
-import { scalarsOf, seriesOf, warningsOf } from "../state/results";
+import { formatNumber, outputRowsOf, seriesOf, warningsOf } from "../state/results";
 import { provenanceOf, shortHash } from "../state/provenance";
 import { fieldTextIn } from "../wire/field";
 import type { Catalogue, Envelope } from "../wire/types";
@@ -30,6 +33,8 @@ export interface ReportTable {
   title: string;
   headers: string[];
   rows: string[][];
+  /** A sentence under the table, where the table needs one to be read correctly. */
+  note?: string;
 }
 
 /** The case, as the printable view and its tests read it. */
@@ -41,7 +46,10 @@ export interface CaseReport {
   library: string;
   version: string;
   unitSet: string;
-  tables: ReportTable[];
+  /** What a person reads: results in plain labels, streams and caveats. */
+  cover: ReportTable[];
+  /** The machine record: field names, library units, parameters, profiles and provenance. */
+  appendix: ReportTable[];
   diagnostics: ReportTable;
   summary: {
     unitOps: number;
@@ -68,6 +76,9 @@ export function buildCaseReport(
   const feeds = nodes.filter((node) => node.role === "input");
   const set = units.sets.find((candidate) => candidate.id === units.active);
 
+  const formOf = (unit: string | undefined) =>
+    unit === undefined ? undefined : catalogue?.unit_ops.find((entry) => entry.id === unit);
+
   const feedRows = feeds.flatMap((node) => {
     const record = node.data.input;
     if (record === undefined) {
@@ -84,18 +95,26 @@ export function buildCaseReport(
     ];
   });
 
+  // **Only the parameters that were set.** The editor's Design sheet draws every declared field
+  // so one can be filled in; a report is a record of what the run was given, and an unset field
+  // is not part of that record. A dash would look like a value nobody supplied.
   const parameterRows = unitOps.flatMap((node) => {
-    const form = catalogue?.unit_ops.find((entry) => entry.id === node.data.unit);
+    const form = formOf(node.data.unit);
     if (form === undefined) {
       return [];
     }
-    return form.parameters.map((parameter) => {
+    return form.parameters.flatMap((parameter) => {
       const value = node.data.parameters?.[parameter.name];
+      if (value === undefined || value === null || value === "") {
+        return [];
+      }
       return [
-        node.data.name,
-        parameter.name,
-        value === undefined ? "—" : fieldTextIn(value, parameter.unit, units),
-        displayUnitOf(units, parameter.unit) ?? "",
+        [
+          node.data.name,
+          parameter.name,
+          fieldTextIn(value, parameter.unit, units),
+          displayUnitOf(units, parameter.unit) ?? "",
+        ],
       ];
     });
   });
@@ -120,27 +139,46 @@ export function buildCaseReport(
       : String(Number(inDisplayUnit(units, row.mass_flow, "kg/s").toPrecision(5))),
   ]);
 
-  const resultRows: string[][] = [];
+  const humanResultRows: string[][] = [];
+  const machineResultRows: string[][] = [];
+  const profileRows: string[][] = [];
+  const caveatRows: string[][] = [];
   let warningCount = 0;
   for (const node of unitOps) {
     const result = envelope.session?.results[node.data.name];
     if (result === undefined) {
       continue;
     }
-    for (const scalar of scalarsOf(result, units)) {
-      resultRows.push([node.data.name, scalar.key, scalar.text, scalar.unit ?? ""]);
+    const outputs = formOf(node.data.unit)?.outputs ?? [];
+    for (const row of outputRowsOf(result, units, outputs)) {
+      humanResultRows.push([
+        node.data.name,
+        row.label,
+        row.text,
+        row.unit ?? "",
+        row.description ?? "",
+      ]);
     }
-    for (const series of seriesOf(result, units)) {
-      resultRows.push([
+    for (const row of outputRowsOf(result, undefined, outputs)) {
+      machineResultRows.push([
+        node.data.name,
+        row.key,
+        row.text,
+        row.unit ?? "",
+        row.description ?? "",
+      ]);
+    }
+    for (const series of seriesOf(result)) {
+      profileRows.push([
         node.data.name,
         series.key,
-        series.values.map((value) => String(Number(value.toPrecision(5)))).join(", "),
+        series.values.map((value) => formatNumber(value)).join(", "),
         series.unit ?? "",
       ]);
     }
     for (const warning of warningsOf(result)) {
       warningCount += 1;
-      resultRows.push([node.data.name, warning.code, warning.message, warning.field ?? ""]);
+      caveatRows.push([node.data.name, warning.code, warning.field ?? "", warning.message]);
     }
   }
 
@@ -148,7 +186,6 @@ export function buildCaseReport(
     const entry = provenanceOf(envelope, node.data.name);
     return [
       node.data.name,
-      entry?.unit ?? node.data.unit ?? "—",
       entry?.model ?? "—",
       entry?.verification ?? "—",
       shortHash(entry?.spec_sha256 ?? null) ?? "—",
@@ -177,6 +214,100 @@ export function buildCaseReport(
     diagnostic.message,
   ]);
 
+  const cover: ReportTable[] = [
+    {
+      title: "Feeds",
+      headers: [
+        "feed",
+        "components",
+        `n [${displayUnitOf(units, "mol/s") ?? "mol/s"}]`,
+        `P [${displayUnitOf(units, "Pa") ?? "Pa"}]`,
+        `T [${displayUnitOf(units, "K") ?? "K"}]`,
+      ],
+      rows: feedRows,
+    },
+  ];
+  if (humanResultRows.length > 0) {
+    cover.push({
+      title: "Results",
+      headers: ["unit operation", "output", "value", "unit", "how it is calculated"],
+      rows: humanResultRows,
+    });
+  }
+  cover.push(
+    {
+      title: "Streams",
+      headers: [
+        "stream",
+        ...columns.map((column) =>
+          column.unit === null ? column.label : `${column.label} [${column.unit}]`,
+        ),
+      ],
+      rows: streamRowsReport,
+    },
+    {
+      title: "Composition",
+      headers: [
+        "component",
+        "stream",
+        "mole fraction",
+        `n·z [${displayUnitOf(units, "mol/s") ?? "mol/s"}]`,
+        "mass fraction",
+        `mass flow [${displayUnitOf(units, "kg/s") ?? "kg/s"}]`,
+      ],
+      rows: compositionTable,
+    },
+  );
+  if (caveatRows.length > 0) {
+    cover.push({
+      title: "Caveats",
+      headers: ["unit operation", "code", "field", "message"],
+      rows: caveatRows,
+    });
+  }
+
+  const appendix: ReportTable[] = [
+    {
+      title: "Design parameters",
+      headers: ["unit operation", "parameter", "value", "unit"],
+      rows: parameterRows,
+      note: "Only parameters the run was given are listed; an unset field uses the model's declared default.",
+    },
+  ];
+  if (machineResultRows.length > 0) {
+    appendix.push({
+      title: "Result fields",
+      headers: ["unit operation", "field", "value", "unit", "description"],
+      rows: machineResultRows,
+      note: "The model's own field names, in the library's units, for comparison and reproduction.",
+    });
+  }
+  if (profileRows.length > 0) {
+    appendix.push({
+      title: "Profiles",
+      headers: ["unit operation", "field", "values", "unit"],
+      rows: profileRows,
+    });
+  }
+  if (tearRows.length > 0) {
+    appendix.push({
+      title: "Recycles",
+      headers: ["stream", "from", "passes", "solved", "active"],
+      rows: tearRows,
+    });
+  }
+  appendix.push({
+    title: "Model checks",
+    headers: ["unit operation", "model", "verification", "spec", "kernel"],
+    rows: provenanceRows,
+    note: "Verification describes how far the model itself is checked; it is not the status of the run.",
+  });
+  appendix.push({
+    title: "Data authority",
+    headers: ["keycard"],
+    rows: [[envelope.provenance.keycard]],
+  });
+
   return {
     title: envelope.flowsheet.name,
     id: envelope.flowsheet.id,
@@ -185,61 +316,8 @@ export function buildCaseReport(
     library: envelope.provenance.library,
     version: envelope.provenance.version,
     unitSet: set?.name ?? units.active,
-    tables: [
-      {
-        title: "Feeds",
-        headers: [
-          "feed",
-          "components",
-          `n [${displayUnitOf(units, "mol/s") ?? "mol/s"}]`,
-          `P [${displayUnitOf(units, "Pa") ?? "Pa"}]`,
-          `T [${displayUnitOf(units, "K") ?? "K"}]`,
-        ],
-        rows: feedRows,
-      },
-      {
-        title: "Unit operations",
-        headers: ["unit operation", "parameter", "value", "unit"],
-        rows: parameterRows,
-      },
-      {
-        title: "Streams",
-        headers: [
-          "stream",
-          ...columns.map((column) =>
-            column.unit === null ? column.label : `${column.label} [${column.unit}]`,
-          ),
-        ],
-        rows: streamRowsReport,
-      },
-      {
-        title: "Composition",
-        headers: [
-          "component",
-          "stream",
-          "mole fraction",
-          `n·z [${displayUnitOf(units, "mol/s") ?? "mol/s"}]`,
-          "mass fraction",
-          `mass flow [${displayUnitOf(units, "kg/s") ?? "kg/s"}]`,
-        ],
-        rows: compositionTable,
-      },
-      {
-        title: "Results and caveats",
-        headers: ["unit operation", "field", "value", "unit or field"],
-        rows: resultRows,
-      },
-      {
-        title: "Recycles",
-        headers: ["stream", "from", "passes", "solved", "active"],
-        rows: tearRows,
-      },
-      {
-        title: "Model checks",
-        headers: ["unit operation", "entry", "model", "verification", "spec", "kernel"],
-        rows: provenanceRows,
-      },
-    ],
+    cover,
+    appendix,
     diagnostics: {
       title: "Messages",
       headers: ["severity", "code", "where", "message"],

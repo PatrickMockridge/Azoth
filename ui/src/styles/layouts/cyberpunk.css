@@ -251,6 +251,16 @@
   overflow: hidden;
 }
 
+/* The workbook's height is a reader's, not a fixed rail: the splitter is the HUD edge. */
+[data-layout="cyberpunk"] .dock .splitter {
+  border-top-color: var(--accent);
+}
+
+[data-layout="cyberpunk"] .dock .splitter:hover,
+[data-layout="cyberpunk"] .dock.dragging .splitter {
+  box-shadow: 0 0 8px var(--glow-accent);
+}
+
 [data-layout="cyberpunk"] .window-grip {
   display: none;
 }

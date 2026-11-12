@@ -30,6 +30,42 @@ export function statusWord(envelope: Envelope): StatusWord {
   return envelope.dirty ? "stale" : "solved";
 }
 
+/**
+ * Whether a number is calculated, in a sentence rather than a status word.
+ *
+ * **The question a reader asks first.** The status chip answers "what is the document", and a
+ * result sheet has to answer "is this number from this run, or from before the last edit" in
+ * the same breath. Kept here so the sheet, the overview and any report sentence agree.
+ */
+export function runNote(status: StatusWord, published: boolean): string {
+  if (!published) {
+    switch (status) {
+      case "solved":
+        return "No separate result: this operation's answer is its outlet streams.";
+      case "stale":
+        return "Not calculated: the document has changed since the last solve.";
+      case "incomplete":
+        return "Not calculated: the document is incomplete.";
+      case "refused":
+        return "Not calculated: the model check refused the document.";
+      case "failed":
+        return "The run failed; there is no result.";
+    }
+  }
+  switch (status) {
+    case "solved":
+      return "Calculated, from this run.";
+    case "stale":
+      return "Calculated, from the last run; the document has changed since.";
+    case "incomplete":
+      return "Calculated before the document was left incomplete.";
+    case "refused":
+      return "Calculated before the document was refused.";
+    case "failed":
+      return "Calculated before the last run failed.";
+  }
+}
+
 /** The colour class for the word: green, amber, or red. */
 export function statusClass(envelope: Envelope): "ok" | "stale" | "warn" | "bad" {
   switch (statusWord(envelope)) {

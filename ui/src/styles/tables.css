@@ -68,6 +68,45 @@
   color: var(--warn);
 }
 
+/* The human result rows: the label is prose, not a field name, and the library's sentence sits
+   under it. The grid's row-header face is the mono one, so this table takes it back. */
+.result-table tbody th {
+  font-family: var(--font-ui);
+  white-space: normal;
+  vertical-align: top;
+  padding-top: var(--s2);
+  padding-bottom: var(--s2);
+}
+
+.result-label {
+  display: block;
+}
+
+.result-description {
+  margin: var(--s1) 0 0;
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+/* The machine-readable block at the foot of a result sheet. */
+.result-machine {
+  margin-top: var(--s4);
+}
+
+.result-machine summary {
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  text-transform: var(--label-transform);
+  letter-spacing: var(--ls-label);
+}
+
+.result-machine code {
+  font-family: var(--font-mono);
+}
+
 /* A kernel's caveat, which is the library's sentence about a number it did return - and not a
    checker's diagnostic, which is about the document. */
 .caveat {

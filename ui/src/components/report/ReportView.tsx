@@ -4,12 +4,18 @@
  * **A view over the report model, and a print dialog over the view.** The report is assembled
  * once from the envelope; this draws the tables and the drawing and calls `window.print()`, which
  * is the browser's PDF path and needs no library. Nothing here reaches the engine.
+ *
+ * **The cover reads, the appendix reproduces.** The results on the cover are plain labels, the
+ * reader's units and the library's sentence about each number. The appendix keeps the model's
+ * field names, library units and provenance, and the same run can be downloaded as JSON so an
+ * agent can reproduce and compare it. One standing notice, not one per table.
  */
 
 import { useEffect, useRef } from "react";
 
 import { Pfd } from "../../report/pfd";
-import { buildCaseReport } from "../../report/model";
+import { buildCaseReport, type ReportTable } from "../../report/model";
+import { buildRunRecord } from "../../report/runRecord";
 import { saveText } from "../../save";
 import type { Units } from "../../state/units";
 import type { Catalogue, Envelope } from "../../wire/types";
@@ -48,13 +54,19 @@ export function ReportView({ envelope, catalogue, units, onClose }: ReportViewPr
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const stem = report.title.replace(/[^A-Za-z0-9._-]+/g, "_") || "case";
+
   const downloadSvg = () => {
     const drawing = svg.current?.outerHTML;
     if (drawing === undefined) {
       return;
     }
-    const stem = report.title.replace(/[^A-Za-z0-9._-]+/g, "_") || "case";
     void saveText(`${stem}-pfd.svg`, drawing, "image/svg+xml");
+  };
+
+  const downloadRecord = () => {
+    const record = buildRunRecord(envelope, units, new Date().toISOString());
+    void saveText(`${stem}-run.json`, JSON.stringify(record, null, 2), "application/json");
   };
 
   return (
@@ -98,16 +110,14 @@ export function ReportView({ envelope, catalogue, units, onClose }: ReportViewPr
           <button type="button" onClick={downloadSvg}>
             Download drawing (SVG)
           </button>
+          <button type="button" onClick={downloadRecord}>
+            Download run record (JSON)
+          </button>
           <button type="button" onClick={onClose}>
             Close
           </button>
         </div>
       </header>
-
-      <p className="report-screen-note note">
-        The port is incomplete and every shipped model is marked unverified or partially verified.
-        These are screening values, not design deliverables.
-      </p>
 
       <div className="report-pfd">
         <Pfd envelope={envelope} svgRef={svg} />
@@ -118,16 +128,29 @@ export function ReportView({ envelope, catalogue, units, onClose }: ReportViewPr
         {report.summary.warnings} caveat(s) · {report.summary.errors} error(s)
       </p>
 
-      {report.tables.map((table) => (
-        <section className="report-table" key={table.title}>
-          <h3>{table.title}</h3>
-          {table.rows.length === 0 ? (
-            <p className="note">nothing to show</p>
+      {report.cover.map((table) => (
+        <Table key={table.title} table={table} />
+      ))}
+
+      <section className="report-appendix">
+        <h2>Appendix — machine-readable record</h2>
+        <p className="note">
+          The model&apos;s own field names and units, the parameters the run was given, and the
+          provenance. Download the run record for the same values in JSON.
+        </p>
+        {report.appendix.map((table) => (
+          <Table key={table.title} table={table} />
+        ))}
+
+        <section className="report-table">
+          <h3>{report.diagnostics.title}</h3>
+          {report.diagnostics.rows.length === 0 ? (
+            <p className="note">the model check has no objection to this document</p>
           ) : (
             <table className="grid">
               <thead>
                 <tr>
-                  {table.headers.map((header) => (
+                  {report.diagnostics.headers.map((header) => (
                     <th scope="col" key={header}>
                       {header}
                     </th>
@@ -135,8 +158,8 @@ export function ReportView({ envelope, catalogue, units, onClose }: ReportViewPr
                 </tr>
               </thead>
               <tbody>
-                {table.rows.map((row, index) => (
-                  <tr key={`${table.title}-${String(index)}`}>
+                {report.diagnostics.rows.map((row, index) => (
+                  <tr key={`diagnostic-${String(index)}`}>
                     {row.map((cell, at) => (
                       <td key={`${String(at)}-${cell}`}>{cell}</td>
                     ))}
@@ -146,40 +169,46 @@ export function ReportView({ envelope, catalogue, units, onClose }: ReportViewPr
             </table>
           )}
         </section>
-      ))}
-
-      <section className="report-table">
-        <h3>{report.diagnostics.title}</h3>
-        {report.diagnostics.rows.length === 0 ? (
-          <p className="note">the model check has no objection to this document</p>
-        ) : (
-          <table className="grid">
-            <thead>
-              <tr>
-                {report.diagnostics.headers.map((header) => (
-                  <th scope="col" key={header}>
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {report.diagnostics.rows.map((row, index) => (
-                <tr key={`diagnostic-${String(index)}`}>
-                  {row.map((cell, at) => (
-                    <td key={`${String(at)}-${cell}`}>{cell}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
       </section>
 
       <p className="report-statement">
-        The report is a reading of one run of the document above. It is not a design deliverable;
-        each model and its verification are printed in Model checks.
+        Screening values. Every number is a result object with its provenance; the appendix and the
+        run record carry the model, the verification status and the hashes for an independent
+        cross-check.
       </p>
+    </section>
+  );
+}
+
+/** One table, with its note. An empty table is not printed: a heading over nothing is noise. */
+function Table({ table }: { table: ReportTable }) {
+  if (table.rows.length === 0) {
+    return null;
+  }
+  return (
+    <section className="report-table">
+      <h3>{table.title}</h3>
+      {table.note === undefined ? null : <p className="note">{table.note}</p>}
+      <table className="grid">
+        <thead>
+          <tr>
+            {table.headers.map((header) => (
+              <th scope="col" key={header}>
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, index) => (
+            <tr key={`${table.title}-${String(index)}`}>
+              {row.map((cell, at) => (
+                <td key={`${String(at)}-${cell}`}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </section>
   );
 }

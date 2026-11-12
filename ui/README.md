@@ -85,6 +85,24 @@ To add a layout: add its id to the union and the chooser, add the full shape set
 `layouts/<id>.css` imported before `report.css`. The token and contrast tests name what is
 missing.
 
+**Results are two layers, from one envelope.** The model spec's `[outputs]` block (unit, kind,
+description and `optional`) is generated into `model_outputs_gen.rs` and carried on each
+unit-op form, so `state/results.ts`'s `outputRowsOf` can label a value, convert a bare float from
+its declared unit and show the library's own sentence — often the equation behind the number —
+without a hand-written table. Only fields the run publishes are rows: a `null`, an `undefined` or
+an empty array is absent rather than a dash, while `false` and `0` stay. `property/ResultsSheet`
+and the report's cover are the human reading; the sheet's *Machine-readable fields* block, the
+Provenance tab and the report's appendix keep the model's field names, library units and hashes.
+`report/runRecord.ts` builds the downloadable JSON record from the envelope — document, raw
+session, provenance, diagnostics — and `state/verification.ts` is the one place the four model
+verification statuses are explained; they are provenance, not a badge on an answer.
+
+**A layout hides decoration, never a control.** `test/layoutVisibility.test.ts` scans the layout
+stylesheets and refuses a `display: none` that names a switch, splitter, tab, menu trigger or any
+other control; the Cyberpunk workbook's splitter and the Macintosh workspace switch are the two
+regressions the rule exists for. The Macintosh title bar draws no close or zoom box, because a
+control that does nothing is worse than none.
+
 **Connectors are routed, not guessed.** `src/pfd/route.ts` treats each node plate as an obstacle
 and finds an orthogonal path on a visibility grid; a recycle gets a return lane below the
 drawing, one lane per recycle. `src/components/PfdEdge.tsx` draws that path and keeps the old

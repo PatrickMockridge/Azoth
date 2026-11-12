@@ -9,6 +9,7 @@ import { useEffect, useRef } from "react";
 
 import { quantityParts } from "../../wire/field";
 import { displayUnitOf, engineeringUnit, type Units } from "../../state/units";
+import { definitionOf } from "../../state/verification";
 import type {
   CalcForm,
   CalcInput,
@@ -206,8 +207,23 @@ export function CalcReportView({
                       <td>{form.id}</td>
                     </tr>
                     <tr>
+                      <th scope="row">run</th>
+                      <td>
+                        {sheet.result === null
+                          ? "not calculated"
+                          : sheet.stale
+                            ? "out of date"
+                            : "calculated"}
+                      </td>
+                    </tr>
+                    <tr>
                       <th scope="row">verification</th>
-                      <td>{form.provenance.verification}</td>
+                      <td>
+                        <code>{form.provenance.verification}</code>
+                        <p className="result-description">
+                          {definitionOf(form.provenance.verification).definition}
+                        </p>
+                      </td>
                     </tr>
                     <tr>
                       <th scope="row">spec hash</th>

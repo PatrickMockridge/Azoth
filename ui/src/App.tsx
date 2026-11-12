@@ -968,7 +968,7 @@ export function App() {
         }}
         size={dockSize}
         onSize={setDockSize}
-        managed={appearance.layout === "mac" || appearance.layout === "cyberpunk"}
+        managed={appearance.layout === "mac"}
       >
         <div role="tabpanel" id={`sheet-${docked}`}>
         {docked === "help" ? (

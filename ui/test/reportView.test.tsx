@@ -76,9 +76,15 @@ describe("the report view", () => {
     render(<ReportView envelope={envelope} catalogue={catalogue} units={units} onClose={onClose} />);
 
     expect(screen.getByRole("heading", { name: "Feed, pump, heat, separate, recycle" })).toBeDefined();
+    expect(screen.getByRole("heading", { name: "Results" })).toBeDefined();
     expect(screen.getByRole("heading", { name: "Streams" })).toBeDefined();
     expect(screen.getAllByText("hx1.outlet").length).toBeGreaterThan(0);
-    expect(screen.getByText(/not design deliverables/)).toBeDefined();
+    // **Two layers, and the boundary is on the page.** The cover ends and the machine record
+    // begins; one standing notice replaces the paragraphs that used to repeat over every table.
+    expect(screen.getByRole("heading", { name: /machine-readable record/ })).toBeDefined();
+    expect(screen.getByText(/Screening values/)).toBeDefined();
+    expect(screen.queryByText(/Results and caveats/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Download run record (JSON)" })).toBeDefined();
 
     fireEvent.click(screen.getByRole("button", { name: "Print / PDF" }));
     expect(print).toHaveBeenCalledOnce();

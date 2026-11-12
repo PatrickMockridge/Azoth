@@ -198,27 +198,10 @@
   user-select: none;
 }
 
-/* The close box and the zoom box. */
-[data-layout="mac"] .window-title::before,
-[data-layout="mac"] .window-title::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 11px;
-  height: 11px;
-  margin-block-start: -6px;
-  border: 1px solid var(--frame);
-  background: var(--bg-panel);
-}
-
-[data-layout="mac"] .window-title::before {
-  inset-inline-start: var(--s3);
-}
-
-[data-layout="mac"] .window-title::after {
-  inset-inline-end: var(--s3);
-}
-
+/*
+ * No close box and no zoom box: a title-bar control that does nothing is worse than none. The
+ * whole title bar drags the window and the grip resizes it; the View menu resets the positions.
+ */
 [data-layout="mac"] .window-body {
   display: flex;
   flex: 1 1 auto;

@@ -2,10 +2,12 @@ import { useState } from "react";
 
 import { kindOf, tabFor, tabsFor, type Kind, type TabId } from "../../state/layout";
 import { resultOf, resultTabs } from "../../state/results";
+import { statusWord } from "../../state/status";
 import type { Units } from "../../state/units";
 import type { EditorCommand } from "../../wire/commands";
 import { removeCommandFor } from "../../wire/nodes";
 import type {
+  CalcOutput,
   Catalogue,
   Envelope,
   Form,
@@ -36,7 +38,7 @@ const LABELS: Record<TabId, string> = {
   profiles: "Profiles",
   performance: "Performance",
   results: "Results",
-  provenance: "Checks",
+  provenance: "Provenance",
 };
 
 /**
@@ -82,6 +84,9 @@ export function PropertyView({
    * its streams publishes no result, so it offers none either.
    */
   const result = kind === "instance" ? resultOf(envelope, node?.data.name ?? "") : undefined;
+  const form: Form | undefined =
+    node === null ? undefined : catalogue?.unit_ops.find((entry) => entry.id === node.data.unit);
+  const outputs = form?.outputs ?? [];
   const removal: EditorCommand | null =
     node !== null
       ? removeCommandFor(node.id)
@@ -90,10 +95,8 @@ export function PropertyView({
         : edge.data.kind === "recycle"
           ? { command: "remove_recycle", stream: edge.data.path }
           : { command: "disconnect", from: edge.data.from, to: edge.data.to };
-  const available = tabsFor(kind, edge, resultTabs(result));
+  const available = tabsFor(kind, edge, resultTabs(result, outputs));
   const active = tabFor(kind, remembered, available);
-  const form: Form | undefined =
-    node === null ? undefined : catalogue?.unit_ops.find((entry) => entry.id === node.data.unit);
 
   return (
     <>
@@ -120,7 +123,17 @@ export function PropertyView({
         tabs={available.map((id) => ({ id, label: LABELS[id] }))}
         onTab={(id) => setRemembered({ ...remembered, [kind]: id })}
       />
-      {sheet(active, { catalogue, envelope, node, edge, result, units, onCommand, onSelect })}
+      {sheet(active, {
+        catalogue,
+        envelope,
+        node,
+        edge,
+        result,
+        outputs,
+        units,
+        onCommand,
+        onSelect,
+      })}
     </>
   );
 }
@@ -168,19 +181,28 @@ function sheet(
     node: GraphNode | null;
     edge: GraphEdge | null;
     result: UnitResult | undefined;
+    outputs: readonly CalcOutput[];
     units: Units;
     onCommand: (command: EditorCommand) => void;
     onSelect: (id: string | null) => void;
   },
 ) {
-  const { catalogue, envelope, node, edge, result, units, onCommand, onSelect } = context;
+  const { catalogue, envelope, node, edge, result, outputs, units, onCommand, onSelect } =
+    context;
   switch (active) {
     case "design":
       return node === null ? null : (
         <DesignSheet catalogue={catalogue} node={node} units={units} onCommand={onCommand} />
       );
     case "results":
-      return result === undefined ? null : <ResultsSheet result={result} units={units} />;
+      return result === undefined ? null : (
+        <ResultsSheet
+          result={result}
+          units={units}
+          outputs={outputs}
+          status={statusWord(envelope)}
+        />
+      );
     case "stages":
       return result === undefined ? null : <StagesSheet result={result} units={units} />;
     case "conditions":

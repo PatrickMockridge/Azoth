@@ -33,6 +33,7 @@ const withFamilies = (families: (string | null)[]): Catalogue =>
       refusal: null,
       ports: [],
       parameters: [],
+      outputs: [],
       unmodelled_ranges: [],
     })),
   }) as Catalogue;
@@ -63,7 +64,12 @@ const envelopeOf = (nodes: GraphNode[], edges: GraphEdge[] = []): Envelope =>
     // **What the document rests on, which is a fact about the document and not about a run**:
     // a graph whose instances have not been instantiated has no units to describe, so the
     // record is here with an empty list rather than absent.
-    provenance: { library: "azoth", version: "0.1.0", units: [] },
+    provenance: {
+      library: "azoth",
+      version: "0.1.0",
+      keycard: "azoth standard keycard (shipped; derived from NeqSim values)",
+      units: [],
+    },
   });
 
 /** The labels of the groups, and of the rows under each, as a reader sees them. */

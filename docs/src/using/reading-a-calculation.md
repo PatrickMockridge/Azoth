@@ -49,8 +49,11 @@ fills the same inputs, so the number on the sheet can be retraced by hand.
 
 The page lists the tests that exercise the calculation and the provenance record: the verification
 status, the hashes of the specification and the kernels, and whether any external validation case
-names it. `partially_verified` is the normal case for this port; it means the expectations are
-pinned in the specification and no independent oracle is recorded.
+names it. `partially_verified` is the normal case for this port; it means the kernels reproduce
+the examples pinned in the calculation's own specification and no independent validation case is
+recorded. The editor prints the status as the library spells it, with this sentence beside it, in
+the sheet's **Model check** — not as a badge on the answer, which the run's own calculated/out-of-
+date state describes.
 
 ## Implementation
 

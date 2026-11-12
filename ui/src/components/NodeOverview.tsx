@@ -11,8 +11,8 @@ import { useEffect, useRef } from "react";
 
 import { groupDiagnostics } from "../state/diagnostics";
 import { provenanceOf } from "../state/provenance";
-import { resultOf, scalarsOf, warningsOf } from "../state/results";
-import { statusClass, statusWord } from "../state/status";
+import { outputRowsOf, resultOf, warningsOf } from "../state/results";
+import { runNote, statusClass, statusWord } from "../state/status";
 import type { Units } from "../state/units";
 import { formatQuantity } from "../wire/field";
 import type { Catalogue, Envelope, GraphNode } from "../wire/types";
@@ -70,8 +70,16 @@ export function NodeOverview({
       port.handles.map((path) => ({ path, side: "out" as const, port: port.name })),
     ),
   ];
-  const scalars = result === undefined ? [] : scalarsOf(result, units);
+  const outputRows =
+    result === undefined ? [] : outputRowsOf(result, units, form?.outputs ?? []);
   const warnings = result === undefined ? [] : warningsOf(result);
+  const setParameters =
+    form === undefined
+      ? []
+      : form.parameters.filter((parameter) => {
+          const value = values[parameter.name];
+          return value !== undefined && value !== null && value !== "";
+        });
 
   return (
     <div
@@ -128,7 +136,7 @@ export function NodeOverview({
 
         <div className="overview-body">
           <section className="overview-section">
-            <h3>Status</h3>
+            <h3>Run</h3>
             <p>
               <span className={`chip ${statusClass(envelope)}`}>{status}</span>
               {messages === undefined ? null : (
@@ -137,6 +145,7 @@ export function NodeOverview({
                 </span>
               )}
             </p>
+            <p className="note">{runNote(status, outputRows.length > 0)}</p>
             {provenance === undefined ? (
               <p className="note">
                 {node.role === "instance"
@@ -147,12 +156,15 @@ export function NodeOverview({
               <dl className="overview-facts">
                 <dt>model</dt>
                 <dd>{provenance.model ?? "—"}</dd>
-                <dt>verification</dt>
-                <dd>{provenance.verification ?? "—"}</dd>
-                <dt>runs</dt>
-                <dd>{provenance.runnable ? "yes" : (provenance.refusal ?? "no")}</dd>
+                <dt>source</dt>
+                <dd>{provenance.source ?? "—"}</dd>
+                <dt>data authority</dt>
+                <dd>{envelope.provenance.keycard}</dd>
+                <dt>kernel</dt>
+                <dd>{provenance.runnable ? "available" : (provenance.refusal ?? "not available")}</dd>
               </dl>
             )}
+            <p className="note">the spec and kernel hashes are on the Provenance tab</p>
           </section>
 
           {node.data.input === undefined ? null : (
@@ -226,13 +238,13 @@ export function NodeOverview({
             </section>
           )}
 
-          {form === undefined || form.parameters.length === 0 ? null : (
+          {setParameters.length === 0 ? null : (
             <section className="overview-section">
               <h3>Design</h3>
               <dl className="overview-facts">
-                {form.parameters.map((parameter) => (
+                {setParameters.map((parameter) => (
                   <div className="overview-fact" key={parameter.name}>
-                    <dt>{parameter.name}</dt>
+                    <dt title={parameter.description}>{parameter.name}</dt>
                     <dd>{parameterText(values[parameter.name], parameter.unit, units)}</dd>
                   </div>
                 ))}
@@ -240,24 +252,29 @@ export function NodeOverview({
             </section>
           )}
 
-          {scalars.length === 0 && warnings.length === 0 ? null : (
+          {outputRows.length === 0 && warnings.length === 0 ? null : (
             <section className="overview-section">
               <h3>Results</h3>
-              {scalars.length === 0 ? null : (
-                <table className="grid">
+              {outputRows.length === 0 ? null : (
+                <table className="grid result-table">
                   <thead>
                     <tr>
-                      <th scope="col">field</th>
+                      <th scope="col">output</th>
                       <th scope="col">value</th>
                       <th scope="col">unit</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {scalars.map((scalar) => (
-                      <tr key={scalar.key}>
-                        <th scope="row">{scalar.key}</th>
-                        <td data-num={scalar.numeric ? "true" : undefined}>{scalar.text}</td>
-                        <td className="unit">{scalar.unit ?? "—"}</td>
+                    {outputRows.map((row) => (
+                      <tr key={row.key}>
+                        <th scope="row">
+                          <span className="result-label">{row.label}</span>
+                          {row.description === null ? null : (
+                            <p className="result-description">{row.description}</p>
+                          )}
+                        </th>
+                        <td data-num={row.numeric ? "true" : undefined}>{row.text}</td>
+                        <td className="unit">{row.unit ?? ""}</td>
                       </tr>
                     ))}
                   </tbody>

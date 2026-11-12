@@ -40,7 +40,7 @@ export function Dock({
   onTab: (id: string) => void;
   size: number;
   onSize: (size: number) => void;
-  /** A Macintosh window or a HUD terminal owns the dock's height; the splitter is absent. */
+  /** A Macintosh window owns the dock's height; the splitter is absent there. */
   managed?: boolean;
   children: ReactNode;
 }) {

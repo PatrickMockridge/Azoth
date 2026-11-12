@@ -122,6 +122,37 @@ fn the_palette_comes_back_as_a_form_per_entry() {
             .expect("a sentence")
             .is_empty()
     );
+
+    // The model's declared outputs travel with the form: the unit a result sheet explains a bare
+    // float with, the spec's sentence, and the flag that says when the field exists.
+    let head = pump["outputs"]
+        .as_array()
+        .expect("an array")
+        .iter()
+        .find(|output| output["name"] == "head")
+        .expect("declared");
+    assert_eq!(head["kind"], "quantity");
+    assert_eq!(head["unit"], "m");
+    assert_eq!(head["optional"], false);
+    assert!(!head["description"].as_str().expect("a sentence").is_empty());
+    let heater = entries
+        .iter()
+        .find(|entry| entry["id"] == "unit_ops.heater")
+        .expect("the heater is in the palette");
+    let vfd = heater["outputs"]
+        .as_array()
+        .expect("an array")
+        .iter()
+        .find(|output| output["name"] == "vfd_efficiency")
+        .expect("the heater's VFD efficiency is declared");
+    assert_eq!(vfd["optional"], true);
+
+    // An entry with no model has no outputs to describe.
+    let absorber = entries
+        .iter()
+        .find(|entry| entry["id"] == "unit_ops.simple_absorber")
+        .expect("declared");
+    assert_eq!(absorber["outputs"].as_array().expect("an array").len(), 0);
 }
 
 #[test]

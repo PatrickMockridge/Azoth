@@ -239,6 +239,14 @@ export interface UnitProvenance {
 export interface ProvenanceRecord {
   library: string;
   version: string;
+  /**
+   * The data authority the run used.
+   *
+   * The editor's two doors bind the compiled databank and take no overlay, so this is the
+   * shipped standard keycard. A reader reproducing a number with its own data needs to know
+   * which authority produced this one.
+   */
+  keycard: string;
   /** One entry per instantiated unit operation, **in the document's own order**. */
   units: UnitProvenance[];
 }
@@ -274,6 +282,7 @@ export type Kind =
   | "matrix"
   | "fitting_list"
   | "record_list"
+  | "vector_string"
   | "unknown";
 
 export interface FormField {
@@ -332,6 +341,14 @@ export interface Form {
   refusal: string | null;
   ports: FormPort[];
   parameters: FormParameter[];
+  /**
+   * The model's declared outputs, in the spec's order.
+   *
+   * **The other half of the declaration.** Each carries the unit a bare float is in, the kind,
+   * the spec's own sentence and whether it exists only when the design it belongs to was
+   * configured. A result sheet explains a value from this; it is not a second schema.
+   */
+  outputs: CalcOutput[];
   unmodelled_ranges: string[];
 }
 

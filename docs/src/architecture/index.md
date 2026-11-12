@@ -29,6 +29,7 @@ specs/schema/*.json      the contract each of those is held to
         ├─► tools/gen_dispatch.py   ─► crates/azoth-process/src/executor/dispatch_gen.rs
         ├─► tools/provenance.py     ─► provenance.json
         └─► tools/gen_model_inputs.py ─► crates/azoth-process/src/model_inputs_gen.rs
+                                        crates/azoth-process/src/model_outputs_gen.rs
                                         lean/Azoth/Inputs.lean
 
 specs/unit_ops/**/*.toml ─► tools/gen_palette.py ─► crates/azoth-process/src/palette_gen.rs

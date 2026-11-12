@@ -50,7 +50,7 @@ export function HudControls({
         title="Open the command palette (Ctrl+K)"
         onClick={onCommands}
       >
-        Cmd
+        Commands
       </button>
     </div>
   );

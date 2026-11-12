@@ -43,11 +43,11 @@ function rect(x: number, y: number, width: number, height: number): DOMRect {
   } as DOMRect;
 }
 
-async function openMac(): Promise<HTMLElement> {
+async function openLayout(layout: "xp" | "mac" | "cyberpunk"): Promise<HTMLElement> {
   window.localStorage.setItem("azoth.welcome", "seen");
   window.localStorage.setItem(
     "azoth.appearance",
-    JSON.stringify({ layout: "mac", theme: "light" }),
+    JSON.stringify({ layout, theme: "light" }),
   );
   const { App } = await import("../src/App");
   const rendered = render(<App />);
@@ -56,6 +56,8 @@ async function openMac(): Promise<HTMLElement> {
   });
   return rendered.container;
 }
+
+const openMac = () => openLayout("mac");
 
 const windowOf = (container: HTMLElement, id: string): HTMLElement => {
   const element = container.querySelector<HTMLElement>(`[data-window="${id}"]`);
@@ -139,4 +141,62 @@ it("drags from the title, resizes from the grip, raises, and resets", async () =
   fireEvent.click(screen.getByRole("menuitem", { name: "Reset window positions" }));
   expect(palette.style.getPropertyValue("--palette-x")).toBe("");
   expect(palette.style.getPropertyValue("--palette-w")).toBe("");
+});
+
+it("gives the Cyberpunk workbook a real resizer", async () => {
+  stubFetch();
+  const container = await openLayout("cyberpunk");
+  const dock = container.querySelector<HTMLElement>(".dock");
+  const splitter = dock?.querySelector<HTMLElement>(".splitter");
+  if (dock === null || dock === undefined || splitter === null || splitter === undefined) {
+    throw new Error("the Cyberpunk workbook has no splitter");
+  }
+  // The one control the HUD used to lose: its height is the reader's, by pointer or keyboard.
+  expect(splitter.getAttribute("role")).toBe("separator");
+  expect(dock.style.height).toBe("200px");
+  fireEvent.keyDown(splitter, { key: "ArrowUp" });
+  expect(dock.style.height).toBe("220px");
+  // And the palette's pointer entry says what it opens.
+  expect(
+    screen
+      .getAllByRole("button", { name: "Open the command palette" })
+      .some((button) => button.textContent === "Commands"),
+  ).toBe(true);
+});
+
+it("keeps the workspace switch reachable in the Macintosh and Cyberpunk shells", async () => {
+  for (const layout of ["mac", "cyberpunk"] as const) {
+    stubFetch();
+    const container = await openLayout(layout);
+    const flowsheet = container.querySelector<HTMLElement>(".app:not(.calculations)");
+    if (flowsheet === null) {
+      throw new Error("the flowsheet should be mounted");
+    }
+    const toCalculations = flowsheet.querySelectorAll<HTMLButtonElement>(
+      ".workspace-switch button",
+    )[1];
+    if (toCalculations === undefined) {
+      throw new Error("the workspace switch has no Calculations button");
+    }
+    // The switch is the visible path; the View menu is the same commands, not a substitute.
+    expect(toCalculations.textContent).toBe("Calculations");
+    fireEvent.click(toCalculations);
+    const calculations = container.querySelector<HTMLElement>(".app.calculations");
+    if (calculations === null) {
+      throw new Error("the calculation workspace should open");
+    }
+    expect(calculations.hidden).toBe(false);
+    expect(flowsheet.hidden).toBe(true);
+
+    const back = calculations.querySelectorAll<HTMLButtonElement>(
+      ".workspace-switch button",
+    )[0];
+    if (back === undefined) {
+      throw new Error("the switch has no Flowsheet button");
+    }
+    fireEvent.click(back);
+    expect(flowsheet.hidden).toBe(false);
+    expect(calculations.hidden).toBe(true);
+    cleanup();
+  }
 });

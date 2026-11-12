@@ -136,6 +136,19 @@
   color: var(--text-strong);
 }
 
+/* The cover ends and the record begins; the rule is the boundary a reader can see. */
+.report-appendix {
+  margin-block-start: var(--s8);
+  padding-block-start: var(--s5);
+  border-top: 1px solid var(--line-strong);
+}
+
+.report-appendix h2 {
+  margin-block-end: var(--s2);
+  color: var(--text-strong);
+  font-size: var(--fs-lg);
+}
+
 .report-table table {
   width: 100%;
 }
