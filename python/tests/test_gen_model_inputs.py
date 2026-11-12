@@ -63,10 +63,7 @@ def test_the_table_keeps_every_declaration(generator) -> None:
     # own prose uses the same words (`a flag, a name, a record list`).
     table = text.split("static ALL", 1)[1]
     assert (
-        table.index("outlet_p")
-        < table.index("regime")
-        < table.index("flag")
-        < table.index("rows")
+        table.index("outlet_p") < table.index("regime") < table.index("flag") < table.index("rows")
     )
     # The default kind is a quantity, with its unit and the dimension the vocabulary gives it.
     assert 'kind: "quantity"' in text
@@ -89,9 +86,7 @@ def test_an_output_unit_outside_the_vocabulary_is_refused(generator) -> None:
 
 
 def test_the_committed_table_carries_the_heater_it_was_generated_from(generator) -> None:
-    text = (REPO_ROOT / "crates/azoth-process/src/model_outputs_gen.rs").read_text(
-        encoding="utf-8"
-    )
+    text = (REPO_ROOT / "crates/azoth-process/src/model_outputs_gen.rs").read_text(encoding="utf-8")
     heater = text.split('unit_op: "unit_ops.heater"', 1)[1]
     assert 'model: "process.heater"' in heater
     assert 'name: "outlet_duty"' in heater
