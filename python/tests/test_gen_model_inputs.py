@@ -15,6 +15,7 @@ from __future__ import annotations
 import importlib
 import sys
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 import pytest
@@ -24,7 +25,7 @@ TOOLS = REPO_ROOT / "tools"
 
 
 @pytest.fixture(scope="module")
-def generator():
+def generator() -> ModuleType:
     sys.path.insert(0, str(TOOLS))
     return importlib.import_module("gen_model_inputs")
 
@@ -53,7 +54,7 @@ def synthetic() -> tuple[list[dict[str, Any]], list[tuple[dict[str, Any], dict[s
     return palette, [(palette[0], model)]
 
 
-def test_the_table_keeps_every_declaration(generator) -> None:
+def test_the_table_keeps_every_declaration(generator: ModuleType) -> None:
     palette, rows = synthetic()
     text = generator.emit_outputs_rust(rows, palette)
 
@@ -78,14 +79,16 @@ def test_the_table_keeps_every_declaration(generator) -> None:
     assert "the outlet pressure.\\n" in text
 
 
-def test_an_output_unit_outside_the_vocabulary_is_refused(generator) -> None:
+def test_an_output_unit_outside_the_vocabulary_is_refused(generator: ModuleType) -> None:
     palette, rows = synthetic()
     rows[0][1]["outputs"]["outlet_p"]["unit"] = "furlong"
     with pytest.raises(SystemExit):
         generator.emit_outputs_rust(rows, palette)
 
 
-def test_the_committed_table_carries_the_heater_it_was_generated_from(generator) -> None:
+def test_the_committed_table_carries_the_heater_it_was_generated_from(
+    generator: ModuleType,
+) -> None:
     text = (REPO_ROOT / "crates/azoth-process/src/model_outputs_gen.rs").read_text(encoding="utf-8")
     heater = text.split('unit_op: "unit_ops.heater"', 1)[1]
     assert 'model: "process.heater"' in heater
