@@ -630,10 +630,9 @@ def _lookup_lines(
         return value * speed / reference if head else value
     (first, first_value), (second, second_value) = values
     slope = (second_value - first_value) / (second - first)
-    blended = first_value + slope * (speed - first)
     # The target's two-line branch interpolates or extrapolates in speed without a second
     # head scaling; only a single selected line retains ``speed / reference``.
-    return blended
+    return first_value + slope * (speed - first)
 
 
 def _line_value(

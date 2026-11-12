@@ -211,9 +211,9 @@ pub fn mechanical_design(
         liquid_outlet.n * liquid_z * NEQSIM_R * liquid_outlet.t.value / liquid_outlet.p.value;
 
     let mut max_design_volume_flow = inputs.volume_safety_factor * gas_volume_flow * 3600.0;
-    let allowable_gas_velocity = inputs.max_gas_velocity.min(
-        inputs.gas_load_factor * ((liquid_density - gas_density) / gas_density).sqrt(),
-    );
+    let allowable_gas_velocity = inputs
+        .max_gas_velocity
+        .min(inputs.gas_load_factor * ((liquid_density - gas_density) / gas_density).sqrt());
     let gas_area_fraction = if horizontal { inputs.fg } else { 1.0 };
     let liquid_area_fraction = if horizontal { 1.0 - inputs.fg } else { 1.0 };
     let mut inner_diameter = (4.0 * (max_design_volume_flow / 3600.0)
@@ -257,28 +257,24 @@ pub fn mechanical_design(
             * inputs.foam_allowance_factor
             * inputs.volume_safety_factor;
         if liquid_area_fraction > 0.0 {
-            inner_diameter =
-                inner_diameter.max((4.0 * required_volume / (5.0 * std::f64::consts::PI
-                    * liquid_area_fraction))
-                    .cbrt());
-            let liquid_area = std::f64::consts::PI
-                * inner_diameter
-                * inner_diameter
-                * liquid_area_fraction
-                / 4.0;
-            tantan_length = tantan_length.max(2.0 * inner_diameter).max(required_volume / liquid_area);
+            inner_diameter = inner_diameter.max(
+                (4.0 * required_volume / (5.0 * std::f64::consts::PI * liquid_area_fraction))
+                    .cbrt(),
+            );
+            let liquid_area =
+                std::f64::consts::PI * inner_diameter * inner_diameter * liquid_area_fraction / 4.0;
+            tantan_length = tantan_length
+                .max(2.0 * inner_diameter)
+                .max(required_volume / liquid_area);
         } else {
             tantan_length = tantan_length.max(2.0 * inner_diameter);
         }
     }
 
-    let max_design_gas_volume_flow = allowable_gas_velocity
-        * std::f64::consts::PI
-        * inner_diameter
-        * inner_diameter
-        / 4.0
-        * gas_area_fraction
-        * 3600.0;
+    let max_design_gas_volume_flow =
+        allowable_gas_velocity * std::f64::consts::PI * inner_diameter * inner_diameter / 4.0
+            * gas_area_fraction
+            * 3600.0;
     max_design_volume_flow = max_design_gas_volume_flow;
 
     // `performSizingCalculations` runs on the design-standard state `autoSize` read, which on
@@ -501,7 +497,11 @@ mod tests {
             1_494_450.000_000_000_5,
             "retention",
         );
-        close(design.surge_volume_m3, 0.205_074_922_382_108_28, "surge volume");
+        close(
+            design.surge_volume_m3,
+            0.205_074_922_382_108_28,
+            "surge volume",
+        );
         close(design.surge_time_s, 740_303.342_040_814_7, "surge time");
         close(design.inlet_nozzle_id, 0.1, "inlet nozzle");
         close(design.gas_outlet_nozzle_id, 0.1, "gas nozzle");

@@ -343,9 +343,13 @@ def t2_d2_flr_dt2(state: FurstState) -> float:
     d_f_d_alpha = -state.xlr / (4.0 * NEQSIM_PI)
     alpha_dt = alpha_lr2_dt(state)
     return (
-        d_f_d_alpha * alpha_dtdt
-        - alpha_dt * state.xlr_dgamma / (4.0 * NEQSIM_PI) * state.shielding_dt
-    ) * t * t
+        (
+            d_f_d_alpha * alpha_dtdt
+            - alpha_dt * state.xlr_dgamma / (4.0 * NEQSIM_PI) * state.shielding_dt
+        )
+        * t
+        * t
+    )
 
 
 def fborn(state: FurstState) -> float:
@@ -372,11 +376,15 @@ def t2_d2_fborn_dt2(state: FurstState) -> float:
     f_born_d = -k / eps**2 * state.born_x
     f_born_dd = 2.0 * k / eps**3 * state.born_x
     return (
-        f_born_tt
-        + 2.0 * f_born_td * state.solvent_dielectric_dt
-        + f_born_dd * state.solvent_dielectric_dt**2
-        + f_born_d * state.solvent_dielectric_dtdt
-    ) * t * t
+        (
+            f_born_tt
+            + 2.0 * f_born_td * state.solvent_dielectric_dt
+            + f_born_dd * state.solvent_dielectric_dt**2
+            + f_born_d * state.solvent_dielectric_dtdt
+        )
+        * t
+        * t
+    )
 
 
 class FurstSolution(NamedTuple):
@@ -498,9 +506,9 @@ def ln_phi_contributions(
         # zero. NeqSim's issue 3862 is that observation and its fix is the one term, so both
         # models read `FBornX XBorni + FBornD solventdiElectricdn` here.
         born = f_born_x * born_i + f_born_d * solvent_dn
-        # **No shielding chain in the first derivative.** At the solved γ,
-        # ``∂FLR/∂γ = 0``, so ``dFLR/dN_i`` is the partial at fixed γ; NeqSim leaves the
-        # chain commented out in ``dFLRdN`` and carries it only in the second derivatives.
+        # **No shielding chain in the first derivative.** At the solved gamma,
+        # ``dFLR/dgamma = 0``, so ``dFLR/dN_i`` is the partial at fixed gamma; NeqSim leaves
+        # the chain commented out in ``dFLRdN`` and carries it only in the second derivatives.
         out.append(
             CompositionContribution(
                 short_range=fsr2_eps * scale + fsr2_w * component.w_i,
@@ -575,9 +583,11 @@ def shielding_parameter(
     alpha = alpha_lr2(state.dielectric, state.temperature)
     volume = state.molar_volume * state.moles
     ionic_square_charge = sum(moles * component.charge**2 for component, moles in ions)
-    upper = math.sqrt(
-        NEQSIM_AVOGADRO * alpha * ionic_square_charge / (4.0 * volume)
-    ) if volume > 0.0 else 0.0
+    upper = (
+        math.sqrt(NEQSIM_AVOGADRO * alpha * ionic_square_charge / (4.0 * volume))
+        if volume > 0.0
+        else 0.0
+    )
     gamma = upper if upper > 0.0 and math.isfinite(upper) else 1.0e10
     for _ in range(1000):
         repulsive = 4.0 * gamma * gamma / NEQSIM_AVOGADRO
@@ -590,9 +600,7 @@ def shielding_parameter(
             attractive += coefficient / (denominator * denominator)
             derivative += 2.0 * coefficient * sigma / denominator**3
         residual = repulsive - attractive
-        if math.isfinite(residual) and abs(residual) <= 1.0e-12 * max(
-            repulsive, attractive
-        ):
+        if math.isfinite(residual) and abs(residual) <= 1.0e-12 * max(repulsive, attractive):
             return gamma
         gamma -= 0.8 * residual / derivative
         if not (gamma > 0.0) or not math.isfinite(gamma):

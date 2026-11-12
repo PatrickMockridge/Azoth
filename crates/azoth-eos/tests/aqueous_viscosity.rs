@@ -88,9 +88,10 @@ fn a_brine_is_refused_with_the_reason() {
     );
 }
 
-/// **The interaction term is the table's** (upstream PR #4003): water/TEG is `0.8`, the
-/// pair the class's own test names, and the matrix is symmetric. Every other pair the
-/// probe prints is zero - which is the table's answer and not the old loop's.
+/// **The interaction term is the table's** (upstream PR #4003): water/TEG is `0.8` and
+/// water/methanol is `1.60204833` at this pin, and the matrix is symmetric. The pair table
+/// is what the property mixing rule reads; the probe's water/methanol row decodes to zero
+/// because that fluid's per-component viscosity model does not consult it.
 #[test]
 fn the_viscosity_interaction_comes_from_the_pair_table() {
     assert!((databank::viscosity_gij("water", "TEG") - 0.8).abs() < 1e-12);
@@ -98,5 +99,5 @@ fn the_viscosity_interaction_comes_from_the_pair_table() {
         databank::viscosity_gij("water", "TEG"),
         databank::viscosity_gij("TEG", "water")
     );
-    assert_eq!(databank::viscosity_gij("water", "methanol"), 0.0);
+    assert_eq!(databank::viscosity_gij("water", "methanol"), 1.60204833);
 }
