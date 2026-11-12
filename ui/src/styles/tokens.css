@@ -239,39 +239,38 @@
   --surface-hud: var(--surface-panel);
   --hud-border: var(--line-strong);
 
-  /* The Macintosh desktop's resting geometry; the window manager overwrites these inline. */
-  --commands-x: 1%;
-  --commands-y: 4%;
-  --commands-w: 66%;
-  --commands-h: 14%;
-  --palette-x: 1%;
-  --palette-y: 20%;
-  --palette-w: 18%;
-  --palette-h: 38%;
-  --document-x: 20%;
-  --document-y: 20%;
-  --document-w: 57%;
-  --document-h: 52%;
-  --inspector-x: 78%;
-  --inspector-y: 20%;
-  --inspector-w: 21%;
-  --inspector-h: 52%;
-  --workbook-x: 20%;
-  --workbook-y: 74%;
-  --workbook-w: 57%;
-  --workbook-h: 24%;
-  --status-x: 1%;
-  --status-y: 72%;
-  --status-w: 18%;
-  --status-h: 12%;
-  --picker-x: 1%;
-  --picker-y: 20%;
-  --picker-w: 24%;
-  --picker-h: 52%;
-  --worksheet-x: 26%;
-  --worksheet-y: 20%;
-  --worksheet-w: 73%;
-  --worksheet-h: 76%;
+  /* Neutral fallbacks for the Macintosh window geometry; the Mac cell owns the real values. */
+  --commands-x: 0px;
+  --commands-y: 0px;
+  --commands-w: 0px;
+  --commands-h: 0px;
+  --palette-x: 0px;
+  --palette-y: 0px;
+  --palette-w: 0px;
+  --palette-h: 0px;
+  --document-x: 0px;
+  --document-y: 0px;
+  --document-w: 0px;
+  --document-h: 0px;
+  --inspector-x: 0px;
+  --inspector-y: 0px;
+  --inspector-h: 0px;
+  --workbook-x: 0px;
+  --workbook-y: 0px;
+  --workbook-w: 0px;
+  --workbook-h: 0px;
+  --status-x: 0px;
+  --status-y: 0px;
+  --status-w: 0px;
+  --status-h: 0px;
+  --picker-x: 0px;
+  --picker-y: 0px;
+  --picker-w: 0px;
+  --picker-h: 0px;
+  --worksheet-x: 0px;
+  --worksheet-y: 0px;
+  --worksheet-w: 0px;
+  --worksheet-h: 0px;
   --wz: 1;
 
   /* focus: the shape is the layout's, the colour is the tone's */
@@ -501,7 +500,6 @@
   --hud-bar-h: 0px;
   --hud-gap: 0px;
   --tools-w: 0px;
-  --inspector-w: 0px;
   --dock-h: 0px;
   --deck-h: 0px;
   --deck-w: 0px;
@@ -767,6 +765,47 @@
   --pin-b: #3a3a3a;
   --desktop-a: #1e1e1e;
   --desktop-b: #2a2a2a;
+}
+
+/*
+ * The Macintosh desktop's resting geometry, after every Mac block and therefore after the
+ * generic furniture that would otherwise collapse the Inspector. Theme cells carry colour only;
+ * the window manager's inline variables are the one intended override.
+ */
+[data-layout="mac"] {
+  --commands-x: 1%;
+  --commands-y: 4%;
+  --commands-w: 66%;
+  --commands-h: 14%;
+  --palette-x: 1%;
+  --palette-y: 20%;
+  --palette-w: 18%;
+  --palette-h: 38%;
+  --document-x: 20%;
+  --document-y: 20%;
+  --document-w: 57%;
+  --document-h: 52%;
+  --inspector-x: 78%;
+  --inspector-y: 20%;
+  --inspector-w: 21%;
+  --inspector-h: 52%;
+  --workbook-x: 20%;
+  --workbook-y: 74%;
+  --workbook-w: 57%;
+  --workbook-h: 24%;
+  --status-x: 1%;
+  --status-y: 72%;
+  --status-w: 18%;
+  --status-h: 12%;
+  --picker-x: 1%;
+  --picker-y: 20%;
+  --picker-w: 24%;
+  --picker-h: 52%;
+  --worksheet-x: 26%;
+  --worksheet-y: 20%;
+  --worksheet-w: 73%;
+  --worksheet-h: 76%;
+  --wz: 1;
 }
 
 /* --------------------------------------------------------------------------------------- */

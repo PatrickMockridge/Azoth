@@ -18,9 +18,11 @@ This page is part of the user manual; [Using azoth](./index.md) is its start.
 1. The demo opens on its own: two feeds meeting at a mixer, then a pump, a heater, a separator and a liquid recycle. Each mixer feed has its own inlet point.
 2. Press **Solve**. The status changes from `stale` to `solved`, and each connection shows the
    temperature and pressure the run reached.
-3. Click a unit operation to open its window. **Design** holds the parameters, **Conditions** the
-   feed or product stream, **Worksheet** the streams on its ports, **Results** whatever the model
-   reached besides its streams, and **Provenance** the model, hashes and data authority behind it.
+3. Click a unit operation to open its Inspector. **Design** holds the editable parameters, and
+   double-clicking the node opens the same Design fields in the node window itself. **Conditions**
+   holds the feed or product stream, **Worksheet** the streams on its ports, **Results** whatever
+   the model reached besides its streams, and **Provenance** the model, hashes and data authority
+   behind it.
 4. Open **Workbook** at the bottom for every stream in one table. **Messages** holds the model
    check's findings and any run error; clicking an entry selects the object it is about.
 5. **Case → Demo cases** opens other worked cases.
@@ -31,8 +33,9 @@ This page is part of the user manual; [Using azoth](./index.md) is its start.
   says `IN` or `OUT`; a two-stream exchanger labels `hot` and `cold` on each side. **One line uses
   one point**: a mixer has a separate inlet for every feed, and a splitter a separate outlet for
   every product. Connectors are drawn as right-angle routes with rounded corners.
-- Double-click a node for a read-only overview: its status, its streams, its design highlights, its
-  results and its messages, with a button that hands it to the property bar for editing.
+- Double-click a node for its window: a unit operation's Design fields are editable in place,
+  followed by its status, streams, results and messages. The button in the window hands the other
+  sheets to the Inspector.
 - Click an object to select it; drag a unit operation to move it.
 - Delete or Backspace, or **Remove** in the object's window, removes the selected object. A removed
   feed takes its connections with it; **Undo** restores it.

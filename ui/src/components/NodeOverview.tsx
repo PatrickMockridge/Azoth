@@ -1,10 +1,11 @@
 /**
- * A node's whole story, in one read-only card.
+ * A node's window: editable Design, then the run story in one read.
  *
- * **Double-click is the gesture the canvas had free.** Single click selects and opens the property
- * bar; this is the summary a reader wants before deciding which tab to edit. Everything here is
- * read from the one envelope the editor already holds - no second store, no second query, and no
- * second editor: "Edit in the property bar" hands the object back to the surface that owns writes.
+ * **Double-click is the gesture the canvas had free.** Single click selects and opens the full
+ * Inspector; this card puts the parameter controls in front of the reader immediately, and the
+ * rest of the operation's story below them. The fields and their command mapping are
+ * `DesignFields`, the same component the Inspector uses, so there is one parameter editor with
+ * two presentations. "Edit in the property bar" hands the object to the other sheets.
  */
 
 import { useEffect, useRef } from "react";
@@ -15,7 +16,13 @@ import { outputRowsOf, resultOf, warningsOf } from "../state/results";
 import { runNote, statusClass, statusWord } from "../state/status";
 import type { Units } from "../state/units";
 import { formatQuantity } from "../wire/field";
+import type { EditorCommand } from "../wire/commands";
 import type { Catalogue, Envelope, GraphNode } from "../wire/types";
+import { DesignFields } from "./property/DesignFields";
+
+/** Every control the dialog's Tab trap cycles through. */
+const FOCUSABLE =
+  'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
 
 export function NodeOverview({
   envelope,
@@ -24,6 +31,7 @@ export function NodeOverview({
   node,
   onClose,
   onEdit,
+  onCommand,
 }: {
   envelope: Envelope;
   catalogue: Catalogue | null;
@@ -31,11 +39,15 @@ export function NodeOverview({
   node: GraphNode;
   onClose: () => void;
   onEdit: () => void;
+  onCommand: (command: EditorCommand) => void;
 }) {
   const dialog = useRef<HTMLElement>(null);
   useEffect(() => {
     const previous = document.activeElement;
-    dialog.current?.querySelector<HTMLElement>("button")?.focus();
+    const field = dialog.current?.querySelector<HTMLElement>(
+      ".overview-body input, .overview-body select, .overview-body textarea",
+    );
+    (field ?? dialog.current?.querySelector<HTMLElement>("button"))?.focus();
     return () => {
       if (previous instanceof HTMLElement) {
         previous.focus();
@@ -45,7 +57,7 @@ export function NodeOverview({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !event.defaultPrevented) {
         onClose();
       }
     };
@@ -54,7 +66,6 @@ export function NodeOverview({
   }, [onClose]);
 
   const form = catalogue?.unit_ops.find((entry) => entry.id === node.data.unit);
-  const values = node.data.parameters ?? {};
   const provenance = node.role === "instance" ? provenanceOf(envelope, node.data.name) : undefined;
   const result = node.role === "instance" ? resultOf(envelope, node.data.name) : undefined;
   const messages = groupDiagnostics(envelope).find((group) => group.select === node.id);
@@ -73,13 +84,6 @@ export function NodeOverview({
   const outputRows =
     result === undefined ? [] : outputRowsOf(result, units, form?.outputs ?? []);
   const warnings = result === undefined ? [] : warningsOf(result);
-  const setParameters =
-    form === undefined
-      ? []
-      : form.parameters.filter((parameter) => {
-          const value = values[parameter.name];
-          return value !== undefined && value !== null && value !== "";
-        });
 
   return (
     <div
@@ -100,7 +104,7 @@ export function NodeOverview({
           if (event.key !== "Tab") {
             return;
           }
-          const buttons = [...(dialog.current?.querySelectorAll<HTMLElement>("button") ?? [])];
+          const buttons = [...(dialog.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])];
           const first = buttons[0];
           const last = buttons[buttons.length - 1];
           if (first === undefined || last === undefined) {
@@ -135,6 +139,22 @@ export function NodeOverview({
         </header>
 
         <div className="overview-body">
+          {node.role === "instance" ? (
+            <section
+              className="overview-section overview-design"
+              aria-labelledby="overview-design-title"
+            >
+              <h3 id="overview-design-title">Design</h3>
+              <DesignFields
+                catalogue={catalogue}
+                node={node}
+                units={units}
+                onCommand={onCommand}
+                layout="row"
+              />
+            </section>
+          ) : null}
+
           <section className="overview-section">
             <h3>Run</h3>
             <p>
@@ -238,20 +258,6 @@ export function NodeOverview({
             </section>
           )}
 
-          {setParameters.length === 0 ? null : (
-            <section className="overview-section">
-              <h3>Design</h3>
-              <dl className="overview-facts">
-                {setParameters.map((parameter) => (
-                  <div className="overview-fact" key={parameter.name}>
-                    <dt title={parameter.description}>{parameter.name}</dt>
-                    <dd>{parameterText(values[parameter.name], parameter.unit, units)}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          )}
-
           {outputRows.length === 0 && warnings.length === 0 ? null : (
             <section className="overview-section">
               <h3>Results</h3>
@@ -309,13 +315,3 @@ export function NodeOverview({
   );
 }
 
-/** A declared parameter, in the unit set in force where it has one. */
-function parameterText(value: unknown, unit: string | null, units: Units): string {
-  if (value === undefined || value === null || value === "") {
-    return "—";
-  }
-  if (typeof value === "number" && unit !== null && unit !== "dimensionless") {
-    return formatQuantity(value, unit, 6, units);
-  }
-  return String(value);
-}

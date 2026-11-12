@@ -251,6 +251,53 @@ it("gives every layout the same shape contract", () => {
   }
 });
 
+/**
+ * **A Macintosh window with no width is not a window.** The Inspector carries the only editable
+ * Design tab; a later generic furniture block once reset its width to zero, and jsdom cannot see
+ * it because no test applies a stylesheet. This reads the cascade itself.
+ */
+it("gives every Macintosh window a nonzero resting box", () => {
+  const windows = [
+    "commands",
+    "palette",
+    "document",
+    "inspector",
+    "workbook",
+    "status",
+    "picker",
+    "worksheet",
+  ];
+  for (const theme of ["light", "neutral", "dark"] as const) {
+    const map = resolve({ layout: "mac", theme });
+    for (const name of windows) {
+      for (const edge of ["w", "h"] as const) {
+        const raw = map.get(`${name}-${edge}`);
+        expect(raw, `mac/${theme} declares --${name}-${edge}`).toBeDefined();
+        expect(
+          Number.parseFloat(raw ?? "0"),
+          `mac/${theme} gives --${name}-${edge} a size`,
+        ).toBeGreaterThan(0);
+      }
+    }
+    expect(map.get("inspector-w"), `mac/${theme} Inspector width`).toBe("21%");
+  }
+  // And the window stylesheet still consumes that token rather than a literal of its own.
+  const inspector = block(
+    read("layouts/mac.css"),
+    '[data-layout="mac"] [data-window="inspector"]',
+  );
+  expect(inspector).toMatch(/width:\s*var\(--inspector-w\)/);
+});
+
+/**
+ * **A tab strip is a fixed row, not a shrinking one.** The Inspector's body is a scrolling column;
+ * a scroll container's automatic minimum height is zero, so the tabs once collapsed to their
+ * border and every sheet below them became unreachable.
+ */
+it("keeps the tab strip from collapsing in a scrolling panel", () => {
+  expect(block(read("chrome.css"), ".tabs")).toMatch(/flex:\s*0\s+0\s+auto/);
+});
+
 /** A block may override a name the contract declares; it may not invent one. */
 it("overrides only names the contract declares", () => {
   const contract = names(block(read("tokens.css"), ":root"));

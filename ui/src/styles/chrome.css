@@ -538,6 +538,9 @@
  */
 .tabs {
   display: flex;
+  /* A scroll container's automatic minimum height is zero, so without this the tab row shrinks
+     to its border inside a column-flex Inspector and every sheet disappears. */
+  flex: 0 0 auto;
   align-items: stretch;
   gap: 0;
   border-bottom: 1px solid var(--line);

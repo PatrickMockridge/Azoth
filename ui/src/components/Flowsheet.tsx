@@ -75,7 +75,7 @@ export interface FlowsheetProps {
   units: Units;
   onSelect: (id: string | null) => void;
   onCommand: (command: EditorCommand) => void;
-  /** A double-click opens the node's read-only overview. */
+  /** A double-click opens the node's window; a unit operation's Design fields are editable there. */
   onOverview: (id: string) => void;
 }
 

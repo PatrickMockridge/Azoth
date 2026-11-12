@@ -155,7 +155,8 @@ export function ParameterField({
         onKeyDown={(event) => {
           if (event.key === "Enter") {
             commit();
-          } else if (event.key === "Escape") {
+          } else if (event.key === "Escape" && draft !== null) {
+            event.preventDefault();
             setDraft(null);
           }
         }}

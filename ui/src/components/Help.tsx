@@ -44,7 +44,7 @@ export function Help() {
       <h2>The drawing</h2>
       <dl>
         <dt>Select</dt>
-        <dd>Click a unit operation, a feed, a product or a stream. The navigator on the left does the same. Double-click a node for a read-only overview of what it is, what it is wired to and what it reached.</dd>
+        <dd>Click a unit operation, a feed, a product or a stream. The navigator on the left does the same. Double-click a node for its window: a unit operation&apos;s Design fields are editable there, and below them are what it is wired to and what it reached.</dd>
         <dt>Move</dt>
         <dd>Drag a unit operation. Nothing is recomputed by moving it.</dd>
         <dt>Connect</dt>

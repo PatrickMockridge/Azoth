@@ -165,6 +165,68 @@ describe("the editor", () => {
     expect(container.querySelector(".prop-header")?.textContent).toContain("hx1");
   });
 
+  it.each(["xp", "mac", "cyberpunk"] as const)(
+    "exposes the unit operation's Design fields in the %s inspector",
+    async (layout) => {
+      stubFetch();
+      const { container } = await open({
+        "azoth.appearance": JSON.stringify({ layout, theme: "light" }),
+      });
+      const heater = container.querySelector<HTMLElement>('[data-id="instance:hx1"]');
+      fireEvent.click(heater as HTMLElement);
+
+      const inspector = container.querySelector<HTMLElement>('[data-window="inspector"]');
+      if (inspector === null) {
+        throw new Error("the inspector is mounted in every layout");
+      }
+      // jsdom applies no stylesheet, so this proves the surface exists; the Mac width is the
+      // token test's subject, not this one.
+      await waitFor(() => expect(within(inspector).getByDisplayValue("300")).toBeDefined());
+    },
+  );
+
+  it("edits a unit operation from its node window and keeps the window open", async () => {
+    stubFetch();
+    const { container } = await open();
+    const heater = container.querySelector<HTMLElement>('[data-id="instance:hx1"]');
+    fireEvent.doubleClick(heater as HTMLElement);
+    const dialog = await screen.findByRole("dialog");
+
+    const field = within(dialog).getByDisplayValue("300");
+    fireEvent.change(field, { target: { value: "340" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+
+    await waitFor(() => expect(pill(container)).toBe("stale"));
+    expect(screen.getByRole("dialog")).toBe(dialog);
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    const inspector = container.querySelector<HTMLElement>('[data-window="inspector"]');
+    if (inspector === null) {
+      throw new Error("the inspector is mounted");
+    }
+    fireEvent.click(heater as HTMLElement);
+    await waitFor(() => expect(within(inspector).getByDisplayValue("340")).toBeDefined());
+  });
+
+  it("lets Escape cancel a field draft before it closes the node window", async () => {
+    stubFetch();
+    const { container } = await open();
+    const heater = container.querySelector<HTMLElement>('[data-id="instance:hx1"]');
+    fireEvent.doubleClick(heater as HTMLElement);
+    const dialog = await screen.findByRole("dialog");
+    const field = within(dialog).getByDisplayValue("300") as HTMLInputElement;
+
+    fireEvent.change(field, { target: { value: "340" } });
+    fireEvent.keyDown(field, { key: "Escape" });
+    await waitFor(() => expect(field.value).toBe("300"));
+    expect(screen.getByRole("dialog")).toBe(dialog);
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
   it("uses a distinct inlet point for every mixer feed", async () => {
     stubFetch();
     const { container } = await open();

@@ -1,8 +1,9 @@
 /*
- * The node overview: a read-only card over the drawing.
+ * The node window: editable Design over the drawing, with the run story below it.
  *
- * **A modal, not a second editor.** The property bar owns writes; this layer is the whole story of
- * one node in one read, and its only actions are Close and handing the node back to the bar.
+ * **One writer, two presentations.** The Design fields are `DesignFields`, the same component and
+ * command mapping the Inspector uses; the rest of the card is a read-only reading of the envelope.
+ * Close and "Edit in the property bar" hand the other sheets back to the Inspector.
  */
 
 .overview-backdrop {

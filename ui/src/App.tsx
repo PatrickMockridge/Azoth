@@ -1009,6 +1009,7 @@ export function App() {
             setSelected(overviewNode.id);
             setOverview(null);
           }}
+          onCommand={send}
         />
       ) : null}
 

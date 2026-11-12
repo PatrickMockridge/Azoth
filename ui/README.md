@@ -85,6 +85,14 @@ To add a layout: add its id to the union and the chooser, add the full shape set
 `layouts/<id>.css` imported before `report.css`. The token and contrast tests name what is
 missing.
 
+**The unit operation's Design fields are one component, two presentations.** `property/DesignFields`
+owns the parameter mapping and is mounted by the Inspector's Design tab and by the double-click
+node window; the Inspector stacks the controls and the node window uses the row layout. Both send
+the same `set_parameter`/`unset_parameter` commands. A layout may never collapse or hide that
+surface: the Macintosh Inspector's resting width lives in a final `[data-layout="mac"]` geometry
+block, after the generic furniture, and `test/tokens.test.ts` reads the cascade to prove every
+Mac window has a nonzero box.
+
 **Results are two layers, from one envelope.** The model spec's `[outputs]` block (unit, kind,
 description and `optional`) is generated into `model_outputs_gen.rs` and carried on each
 unit-op form, so `state/results.ts`'s `outputRowsOf` can label a value, convert a bare float from
