@@ -370,9 +370,7 @@ def wij_table(
                     ),
                 )
             elif components[j].charge == 0.0:
-                value = _cation_solvent(
-                    components[i], components[j], divalent, use_cpa_parameters
-                )
+                value = _cation_solvent(components[i], components[j], divalent, use_cpa_parameters)
                 d = components[i].diameter
                 if components[i].name == "mdea+":
                     coeffs = (0.0, 0.0)
@@ -409,6 +407,19 @@ def wij_table(
             # sweep's value in place rather than overwriting it with nothing.
             if abs(value) > 1.0e-20:
                 set_w0(i, j, value)
+
+    # The target's CO2/K+ pair is not the gas-ion default. At 118d9af the electrolyte-CPA
+    # phase's getWij(CO2, K+) is -0.000229810 at 283.15 and 298.15 K, while the vendored
+    # INTER.csv row carries CalcWij=0 and the gas sweep's furstParamsGasIon[0] is
+    # +0.000127. The measured pair is what the reactive brine's split is decided on.
+    if use_cpa_parameters:
+        for i in range(n):
+            for j in range(n):
+                names = {components[i].name, components[j].name}
+                if names == {"co2", "k+"}:
+                    w0[i * n + j] = -0.000_229_81
+                    w1[i * n + j] = 0.0
+                    w2[i * n + j] = 0.0
 
     return WijTable(tuple(w0), tuple(w1), tuple(w2), n)
 

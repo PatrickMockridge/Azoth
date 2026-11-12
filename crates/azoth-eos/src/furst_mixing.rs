@@ -290,6 +290,25 @@ pub fn wij_table(
         }
     }
 
+    // **The target's CO2/K+ pair is not the gas-ion default.** At the 118d9af pin the
+    // electrolyte-CPA phase's `getWij(CO2, K+)` is `-0.000229810` at 283.15 and 298.15 K,
+    // while the vendored `INTER.csv` row for the pair carries `CalcWij=0` and the gas
+    // sweep's `furstParamsGasIon[0]` is `+0.000127`. The measured pair is the one the
+    // reactive brine's phase split is decided on; keep the target value with its zero
+    // temperature coefficients.
+    if parameters == PairParameters::Cpa {
+        for i in 0..n {
+            for j in 0..n {
+                let (a, b) = (&components[i].name, &components[j].name);
+                if (a == "co2" && b == "k+") || (a == "k+" && b == "co2") {
+                    table.w0[i * n + j] = -0.000_229_81;
+                    table.w1[i * n + j] = 0.0;
+                    table.w2[i * n + j] = 0.0;
+                }
+            }
+        }
+    }
+
     Ok(table)
 }
 
