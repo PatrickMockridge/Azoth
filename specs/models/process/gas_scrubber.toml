@@ -10,7 +10,7 @@ assumptions = [
     "**an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)`, so accepting one would let a case hand over a state that does not exist.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
     "**the mechanical design is a second sizing machine**: the separator's `calcDesign` runs first on the separator standard's `1.0` safety, then this subclass re-sizes at the scrubber standard's `1.1`, `Fg = 1`, `length = 5 d` and a module `2 d` high.",
-    "**the design basis is declared as inputs at the standards' own values**: volume safety `1.1`, the `100` bara maximum operation pressure, `425` MPa allowable stress, joint efficiency `1.0` and no corrosion allowance. The levels and nozzle formulas are the separator's.",
+    "**the design basis is declared as inputs at the standards' own values**: volume safety `1.1`, the `100` bara maximum operation pressure, `95.147650602` MPa allowable stress, joint efficiency `1.0` and no corrosion allowance. The levels and nozzle formulas are the separator's.",
     "NeqSim's `GasScrubber` also carries a mesh pad, vane pack and cyclone surface, and a `runTransient`. **None is here**: `calcDesign` sets none of them, and the capture prints them at their absent defaults.",
 ]
 references = [
@@ -96,7 +96,7 @@ description = "`getMaxOperationPressure`, the pressure the ASME wall-thickness f
 [inputs.allowable_stress]
 unit = "Pa"
 optional = true
-description = "the material plate standard's allowable stress. **Absent is `425` MPa.**\n"
+description = "the material plate standard's allowable stress. **Absent is `95.147650602` MPa.**\n"
 [inputs.joint_efficiency]
 unit = "dimensionless"
 optional = true

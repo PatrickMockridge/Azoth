@@ -345,7 +345,7 @@ def gas_scrubber(
             gas_fraction,
             1.1 if volume_factor is None else volume_factor,
             100.0e5 if max_pressure is None else max_pressure,
-            (425.0e6 if stress is None else stress) / 1.0e6,
+            (95.147650602e6 if stress is None else stress) / 1.0e6,
             1.0 if joint is None else joint,
             0.0 if corrosion is None else corrosion,
         )
@@ -490,6 +490,7 @@ def _scrubber_design(
         joint_efficiency,
         corrosion_allowance_mm,
         vessel="scrubber",
+        aqueous=True,
     )
 
 
