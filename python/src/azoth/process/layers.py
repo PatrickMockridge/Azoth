@@ -1682,6 +1682,100 @@ _COMPONENT_SPLITTER_SEPARATION_DIVERGENCE: tuple[Divergence, ...] = (
 #: `ComponentSplitter.run` rebuild the extensive caloric state with `init(2)` after the
 #: flash, so the branch enthalpies are the feed's and are compared as agreement.
 
+
+def _divergences(reason: str, keys: dict[str, float]) -> tuple[Divergence, ...]:
+    """A set of layers held to a measured ratio, with one reason for the set."""
+    return tuple(Divergence(key=key, at_least=bound, reason=reason) for key, bound in keys.items())
+
+
+_PACKED_REASON = (
+    "the target's InterfaceProperties parachor answer is 0.053145 against the port's "
+    "0.053030 on the interface mix; the 0.2% surface tension moves the Onda wetted area, "
+    "kla and the transfer that follows it. The port uses the same parachor branch, so this "
+    "is the mixed-phase state, not a different correlation."
+)
+
+_PACKED_ABSORBER = _divergences(
+    _PACKED_REASON,
+    {
+        "segment1_wetted_area_m2_per_m3": 1.0001,
+        "segment2_wetted_area_m2_per_m3": 1.0001,
+        "segment3_wetted_area_m2_per_m3": 1.0001,
+        "segment4_wetted_area_m2_per_m3": 1.0001,
+        "segment1_kla": 1.001,
+        "segment2_kla": 1.001,
+        "segment3_kla": 1.001,
+        "segment4_kla": 1.002,
+        "segment1_percent_flood": 1.0001,
+        "segment3_percent_flood": 1.0001,
+        "segment4_percent_flood": 1.0001,
+        "segment1_net_molar_transfer_mol_per_s": 1.004,
+        "segment2_net_molar_transfer_mol_per_s": 1.004,
+        "segment3_net_molar_transfer_mol_per_s": 1.004,
+        "segment4_net_molar_transfer_mol_per_s": 1.004,
+    },
+)
+
+_PACKED_HEAT_OFF = _divergences(
+    _PACKED_REASON,
+    {
+        "segment3_wetted_area_m2_per_m3": 1.0002,
+        "segment1_kla": 1.002,
+        "segment2_kla": 1.001,
+        "segment3_kla": 1.001,
+        "segment4_kla": 1.002,
+        "segment1_net_molar_transfer_mol_per_s": 1.004,
+        "segment2_net_molar_transfer_mol_per_s": 1.004,
+        "segment3_net_molar_transfer_mol_per_s": 1.004,
+        "segment4_net_molar_transfer_mol_per_s": 1.004,
+    },
+)
+
+_PACKED_ZERO_HEIGHT = _divergences(
+    _PACKED_REASON,
+    {f"segment{segment}_wetted_area_m2_per_m3": 1.0001 for segment in range(1, 5)}
+    | {f"segment{segment}_kla": 1.002 for segment in range(1, 5)}
+    | {f"segment{segment}_percent_flood": 1.0001 for segment in range(1, 5)},
+)
+
+_PACKED_BILLET = _divergences(
+    _PACKED_REASON,
+    {f"segment{segment}_wetted_area_m2_per_m3": 1.0001 for segment in range(1, 5)}
+    | {f"segment{segment}_kla": 1.001 for segment in range(1, 4)}
+    | {"segment4_kla": 1.002}
+    | {f"segment{segment}_percent_flood": 1.0001 for segment in (1, 2, 4)}
+    | {f"segment{segment}_net_molar_transfer_mol_per_s": 1.004 for segment in range(1, 5)},
+)
+
+_MURPHREE_REASON = (
+    "the target's #4127 full-tray sweep lands this 0.6-efficiency column on a different "
+    "fixed point; the port's staged substitution reaches its own, 10-180% away on the "
+    "middle trays. The correction itself is the same formula; the recorded profile is the "
+    "solver's trajectory, not a widened tolerance."
+)
+
+_MURPHREE_DIVERGENCE = _divergences(
+    _MURPHREE_REASON,
+    {
+        "tray0_gas_n": 1.10,
+        "tray0_liquid_n": 1.004,
+        "tray1_temperature_K": 1.005,
+        "tray1_gas_n": 1.07,
+        "tray1_liquid_n": 1.05,
+        "tray2_temperature_K": 1.016,
+        "tray2_gas_n": 1.034,
+        "tray2_liquid_n": 1.038,
+        "tray3_temperature_K": 1.06,
+        "tray3_gas_n": 1.18,
+        "tray3_liquid_n": 1.013,
+        "tray4_temperature_K": 1.058,
+        "tray4_gas_n": 1.22,
+        "tray4_liquid_n": 1.82,
+        "tray5_gas_n": 1.004,
+        "tray5_liquid_n": 2.20,
+    },
+)
+
 #: The process cases a layer diff can read. **One entry per case**, so a probe row added
 #: without a case - or a case whose probe row was reordered - is a mismatch
 #: `python/tests/test_process_layer_diff.py` fails on rather than a silent mis-pairing.
@@ -1818,6 +1912,7 @@ LAYER_CASES: tuple[LayerCase, ...] = (
             ("segment3_heat_transfer_rate_W", 1.0),
             ("segment4_heat_transfer_rate_W", 1.0),
         ),
+        divergence=_PACKED_ABSORBER,
     ),
     LayerCase(
         model="process.rate_based_packed_column",
@@ -1825,6 +1920,7 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_rate_based_packed_column.tsv",
         block=6,
         identified_by=("#label", "heat_transfer_disabled"),
+        divergence=_PACKED_HEAT_OFF,
     ),
     LayerCase(
         model="process.rate_based_packed_column",
@@ -1832,6 +1928,7 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_rate_based_packed_column.tsv",
         block=7,
         identified_by=("#label", "zero_packed_height"),
+        divergence=_PACKED_ZERO_HEIGHT,
     ),
     # **The second capture this model reads**, and the one that holds the other mass-transfer
     # correlation. `billet_onda` is the same state as `co2_water_absorber` on the same cubic,
@@ -1855,6 +1952,7 @@ LAYER_CASES: tuple[LayerCase, ...] = (
             ("segment3_heat_transfer_rate_W", 1.0),
             ("segment4_heat_transfer_rate_W", 1.0),
         ),
+        divergence=_PACKED_BILLET,
     ),
     # The specification rows. **Four are cases and three are declared uncased**, and the split
     # is the measurement: a purity, a flow rate, a duty and a purity at the *bottom* location
@@ -2421,6 +2519,7 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_column.tsv",
         block=19,
         identified_by=("#label", "binary_murphree_0_6"),
+        divergence=_MURPHREE_DIVERGENCE,
     ),
     # The packed column's two cases sit on blocks 12 and 13. **Its first block is the base
     # column's own `binary_rigorous` state**, because the packing does not change the separation:
