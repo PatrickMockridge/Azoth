@@ -3997,7 +3997,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         python_path: "python/src/azoth/reactions/reference/reference_potentials.py",
         python_sha256: "6489faf190ca620a1dfd0458f2037178af007c214bd9a5252737f0f055d7993b",
         rust_path: "crates/azoth-reactions/src/reference_potentials.rs",
-        rust_sha256: "47196f681600092b0974233177dbee80731b35300d1211294870f5339da2e090",
+        rust_sha256: "d0c115012f3dee52dd1b930e25a9d0e08a178cb42a3593d2d5f56f4eb2d880f8",
         source: "NeqSim master `ChemicalReactionList`",
         verification: VerificationStatus::PartiallyVerified,
         validation_cases: 0,

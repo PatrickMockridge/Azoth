@@ -2934,7 +2934,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "calc_id": 'reactions.reference_potentials',
         "name": 'Reference potentials from an independent reaction basis',
         "spec": {'path': 'specs/models/reactions/reference_potentials.toml', 'sha256': '67d930536aaf0d36b9a5c1c310e3008e408704f296ef2526a2fa4b10c836e81b'},
-        "code": [{'path': 'python/src/azoth/reactions/reference/reference_potentials.py', 'sha256': '6489faf190ca620a1dfd0458f2037178af007c214bd9a5252737f0f055d7993b'}, {'path': 'crates/azoth-reactions/src/reference_potentials.rs', 'sha256': '47196f681600092b0974233177dbee80731b35300d1211294870f5339da2e090'}],
+        "code": [{'path': 'python/src/azoth/reactions/reference/reference_potentials.py', 'sha256': '6489faf190ca620a1dfd0458f2037178af007c214bd9a5252737f0f055d7993b'}, {'path': 'crates/azoth-reactions/src/reference_potentials.rs', 'sha256': 'd0c115012f3dee52dd1b930e25a9d0e08a178cb42a3593d2d5f56f4eb2d880f8'}],
         "source": 'NeqSim master `ChemicalReactionList`',
         "verification": 'partially_verified',
         "validation_cases": 0,
