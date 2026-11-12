@@ -584,7 +584,7 @@ class _SchultzHead:
             (inverse + self.schultz_x) / self.isentropic_exponent - self.schultz_y * (inverse - 1.0)
         )
         term = exponent / (exponent - 1.0)
-        return term * self.head_factor * (self.pressure_ratio ** (1.0 / term) - 1.0) * 1000.0
+        return float(term * self.head_factor * (self.pressure_ratio ** (1.0 / term) - 1.0) * 1000.0)
 
 
 def _schultz_head(

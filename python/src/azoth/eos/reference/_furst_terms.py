@@ -548,11 +548,11 @@ def shielding_parameter(
             gamma_old = gamma
             f = 4.0 * gamma * gamma / NEQSIM_AVOGADRO
             df = 8.0 * gamma / NEQSIM_AVOGADRO
-            ions = 0
+            ion_count = 0
             for component, moles in zip(components, mole_numbers, strict=True):
                 if component.charge == 0.0:
                     continue
-                ions += 1
+                ion_count += 1
                 sigma = component.diameter_m
                 denominator = 1.0 + gamma * sigma
                 f -= (
@@ -563,7 +563,7 @@ def shielding_parameter(
                     * (component.charge / denominator)
                 )
                 df += 2.0 * alpha * moles / v_total * component.charge**2 * sigma / denominator**3
-            gamma = gamma_old - 0.8 * f / df if ions > 0 else 0.0
+            gamma = gamma_old - 0.8 * f / df if ion_count > 0 else 0.0
             if not ((abs(f) > 1.0e-10 and iterations < 1000) or iterations < 3):
                 break
         return gamma
