@@ -66,6 +66,17 @@ pub struct DesignInputs {
     pub joint_efficiency: f64,
     /// `MechanicalDesign.getCorrosionAllowance`, mm. Default `0`.
     pub corrosion_allowance_mm: f64,
+    /// `SeparatorMechanicalDesign.getMaxGasVelocity`, m/s. Default `3.0`; it caps the
+    /// Souders-Brown velocity.
+    pub max_gas_velocity: f64,
+    /// `getFoamAllowanceFactor`. The shipped database's value is `1.35`.
+    pub foam_allowance_factor: f64,
+    /// `getMinOilRetentionTime`, seconds. Default `120`.
+    pub min_oil_retention_s: f64,
+    /// `getMinWaterRetentionTime`, seconds. Default `180`.
+    pub min_water_retention_s: f64,
+    /// Whether the liquid phase is aqueous, which raises the retention floor.
+    pub aqueous: bool,
 }
 
 /// The design's own numbers, in SI (m, kg, m3, s), on the state the separator leaves.
@@ -199,58 +210,76 @@ pub fn mechanical_design(
     let liquid_volume_flow =
         liquid_outlet.n * liquid_z * NEQSIM_R * liquid_outlet.t.value / liquid_outlet.p.value;
 
-    let max_design_volume_flow = inputs.volume_safety_factor * gas_volume_flow * 3600.0;
-    let max_gas_velocity =
-        inputs.gas_load_factor * ((liquid_density - gas_density) / gas_density).sqrt();
+    let mut max_design_volume_flow = inputs.volume_safety_factor * gas_volume_flow * 3600.0;
+    let allowable_gas_velocity = inputs.max_gas_velocity.min(
+        inputs.gas_load_factor * ((liquid_density - gas_density) / gas_density).sqrt(),
+    );
     let gas_area_fraction = if horizontal { inputs.fg } else { 1.0 };
     let liquid_area_fraction = if horizontal { 1.0 - inputs.fg } else { 1.0 };
-    let inner_diameter = (4.0 * (max_design_volume_flow / 3600.0)
-        / (std::f64::consts::PI * max_gas_velocity * gas_area_fraction))
+    let mut inner_diameter = (4.0 * (max_design_volume_flow / 3600.0)
+        / (std::f64::consts::PI * allowable_gas_velocity * gas_area_fraction))
         .sqrt();
-    let cross_area = std::f64::consts::PI * (inner_diameter / 2.0).powi(2);
-    let max_design_gas_volume_flow = max_gas_velocity * cross_area * gas_area_fraction * 3600.0;
 
-    let (inner_diameter, tantan_length) = match kind {
+    let mut tantan_length = match kind {
         VesselKind::Separator => {
-            let mut tantan_length = if perform_sizing && liquid_volume_flow <= 1.0e-10 {
-                // `performSizingCalculations`' no-liquid branch.
-                inner_diameter * 4.0
-            } else {
-                (4.0 * inputs.retention_time_s * liquid_volume_flow * inputs.volume_safety_factor
-                    / (std::f64::consts::PI
-                        * inner_diameter
-                        * inner_diameter
-                        * liquid_area_fraction))
-                    .sqrt()
-            };
-            let total = tantan_length + inner_diameter;
-            if total / inner_diameter > 6.0 || total / inner_diameter < 3.0 {
-                // `calcDesign` resets to five diameters; `performSizingCalculations` to four.
-                tantan_length = inner_diameter * if perform_sizing { 4.0 } else { 5.0 };
-            }
-
-            if perform_sizing {
-                (inner_diameter, tantan_length)
-            } else {
+            if !perform_sizing {
                 // The bubble alternative: a 250 µm bubble in the liquid, settled by Stokes.
                 let bubble_velocity =
                     9.82 * (250.0e-6_f64).powi(2) * (liquid_density - gas_density)
                         / (18.0 * liquid_viscosity);
                 let ar = liquid_volume_flow / bubble_velocity;
                 let daim = (ar / 4.0).sqrt();
-                let length2 = 4.0 * daim;
                 if daim > inner_diameter {
-                    (daim, length2)
+                    inner_diameter = daim;
+                    4.0 * daim
                 } else {
-                    (inner_diameter, tantan_length)
+                    inner_diameter * 2.0
                 }
+            } else {
+                inner_diameter * 2.0
             }
         }
         // **The scrubber's length is five diameters and nothing else sizes it.** Its class
         // never reads the retention time in `calcDesign`, so the liquid flow and viscosity
         // above do not reach the geometry.
-        VesselKind::Scrubber => (inner_diameter, inner_diameter * 5.0),
+        VesselKind::Scrubber => inner_diameter * 5.0,
     };
+
+    if kind == VesselKind::Separator {
+        // `sizeForLiquidHoldup`: the class field's retention, floored by the oil and
+        // aqueous minimums, then the required liquid volume sets both dimensions.
+        let mut retention = inputs.retention_time_s.max(inputs.min_oil_retention_s);
+        if inputs.aqueous {
+            retention = retention.max(inputs.min_water_retention_s);
+        }
+        let required_volume = liquid_volume_flow
+            * retention
+            * inputs.foam_allowance_factor
+            * inputs.volume_safety_factor;
+        if liquid_area_fraction > 0.0 {
+            inner_diameter =
+                inner_diameter.max((4.0 * required_volume / (5.0 * std::f64::consts::PI
+                    * liquid_area_fraction))
+                    .cbrt());
+            let liquid_area = std::f64::consts::PI
+                * inner_diameter
+                * inner_diameter
+                * liquid_area_fraction
+                / 4.0;
+            tantan_length = tantan_length.max(2.0 * inner_diameter).max(required_volume / liquid_area);
+        } else {
+            tantan_length = tantan_length.max(2.0 * inner_diameter);
+        }
+    }
+
+    let max_design_gas_volume_flow = allowable_gas_velocity
+        * std::f64::consts::PI
+        * inner_diameter
+        * inner_diameter
+        / 4.0
+        * gas_area_fraction
+        * 3600.0;
+    max_design_volume_flow = max_design_gas_volume_flow;
 
     // `performSizingCalculations` runs on the design-standard state `autoSize` read, which on
     // the capture has no pressure-vessel code: the wall, the weights and the outer diameter
@@ -427,14 +456,19 @@ mod tests {
             true,
             VesselKind::Separator,
             &DesignInputs {
-                gas_load_factor: 0.11,
+                gas_load_factor: 0.137,
                 fg: 0.8,
                 volume_safety_factor: 1.0,
-                retention_time_s: 60.0,
+                retention_time_s: 150.0,
                 max_operation_pressure: pascals(100.0e5),
-                allowable_stress: 425.0,
+                allowable_stress: 95.147_650_602,
                 joint_efficiency: 1.0,
                 corrosion_allowance_mm: 0.0,
+                max_gas_velocity: 3.0,
+                foam_allowance_factor: 1.35,
+                min_oil_retention_s: 120.0,
+                min_water_retention_s: 180.0,
+                aqueous: false,
             },
             false,
         )
@@ -446,29 +480,29 @@ mod tests {
                 "{what}: {actual} against {expected} ({error:.3e})"
             );
         };
-        close(design.inner_diameter, 0.549_391_925_705_361_6, "diameter");
-        close(design.tantan_length, 1.123_404_314_814_735_7, "length");
-        close(design.wall_thickness, 0.006_555_989_566_889_756, "wall");
+        close(design.inner_diameter, 0.635_887_318_997_330_6, "diameter");
+        close(design.tantan_length, 3.179_436_594_986_652_3, "length");
+        close(design.wall_thickness, 0.035_664_838_877_036_247, "wall");
         close(
             design.max_design_volume_flow_m3_hr,
-            397.290_883_915_601_1,
+            662.875_955_687_116,
             "design flow",
         );
-        close(design.hhll, 0.439_513_540_564_289_26, "HHLL");
-        close(design.nll, 0.274_695_962_852_680_8, "NLL");
-        close(design.weir_height, 0.137_347_981_426_340_4, "weir");
+        close(design.hhll, 0.508_709_855_197_864_5, "HHLL");
+        close(design.nll, 0.317_943_659_498_665_3, "NLL");
+        close(design.weir_height, 0.158_971_829_749_332_66, "weir");
         close(
             design.effective_length_liquid,
-            0.921_191_538_148_083_2,
+            2.607_138_007_889_054_7,
             "liquid length",
         );
         close(
             design.liquid_retention_time_s,
-            394_159.070_034_392_4,
+            1_494_450.000_000_000_5,
             "retention",
         );
-        close(design.surge_volume_m3, 0.054_088_220_210_45, "surge volume");
-        close(design.surge_time_s, 195_253.957_537_662_82, "surge time");
+        close(design.surge_volume_m3, 0.205_074_922_382_108_28, "surge volume");
+        close(design.surge_time_s, 740_303.342_040_814_7, "surge time");
         close(design.inlet_nozzle_id, 0.1, "inlet nozzle");
         close(design.gas_outlet_nozzle_id, 0.1, "gas nozzle");
         close(design.oil_outlet_nozzle_id, 0.05, "oil nozzle");
@@ -490,9 +524,14 @@ mod tests {
                 volume_safety_factor: 1.1,
                 retention_time_s: 60.0,
                 max_operation_pressure: pascals(100.0e5),
-                allowable_stress: 425.0,
+                allowable_stress: 95.147_650_602,
                 joint_efficiency: 1.0,
                 corrosion_allowance_mm: 0.0,
+                max_gas_velocity: 3.0,
+                foam_allowance_factor: 1.35,
+                min_oil_retention_s: 120.0,
+                min_water_retention_s: 180.0,
+                aqueous: true,
             },
             false,
         )
@@ -506,10 +545,10 @@ mod tests {
         };
         close(design.inner_diameter, 0.515_375_309_329_634_3, "diameter");
         close(design.tantan_length, 2.576_876_546_648_171_6, "length");
-        close(design.wall_thickness, 0.006_150_063_357_155_54, "wall");
+        close(design.wall_thickness, 0.028_905_714_612_184_743, "wall");
         close(
             design.vessel_shell_weight_kg,
-            261.364_614_659_532_8,
+            1_228.431_403_439_446,
             "shell weight",
         );
         close(

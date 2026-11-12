@@ -1248,11 +1248,15 @@ def _mechanical_layers(inputs: Mapping[str, Any], states: Any) -> dict[str, floa
         1.0
         if inputs.get("volume_safety_factor") is None
         else float(inputs["volume_safety_factor"]),
-        60.0 if inputs.get("retention_time") is None else float(inputs["retention_time"]),
+        150.0 if inputs.get("retention_time") is None else float(inputs["retention_time"]),
         1.0e7
         if inputs.get("max_operation_pressure") is None
         else float(inputs["max_operation_pressure"]),
-        (425.0e6 if inputs.get("allowable_stress") is None else float(inputs["allowable_stress"]))
+        (
+            95.147650602e6
+            if inputs.get("allowable_stress") is None
+            else float(inputs["allowable_stress"])
+        )
         / 1.0e6,
         1.0 if inputs.get("joint_efficiency") is None else float(inputs["joint_efficiency"]),
         0.0
