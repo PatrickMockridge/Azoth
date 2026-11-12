@@ -333,7 +333,7 @@ def separator(
             states.n_liquid,
             kind == "horizontal",
             load_factor if load_factor is not None else 0.137,
-            (0.5 if auto else 0.8) if design_fg is None else design_fg,
+            0.8 if design_fg is None else design_fg,
             (
                 (1.2 if safety_factor is None else float(safety_factor))
                 if auto

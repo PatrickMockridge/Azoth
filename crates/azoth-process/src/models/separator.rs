@@ -354,7 +354,7 @@ pub fn separator(
         let inputs = DesignInputs {
             gas_load_factor: load_factor,
             // The database's `Fg` midpoint for the same standard.
-            fg: fg.unwrap_or(if auto { 0.5 } else { 0.8 }),
+            fg: fg.unwrap_or(0.8),
             // `autoSize(safetyFactor)` sets the volume factor; its no-argument form is 1.2.
             volume_safety_factor: if auto {
                 safety_factor.unwrap_or(1.2)
@@ -363,8 +363,7 @@ pub fn separator(
             },
             // The database's `LiquidRetentionTime` is 150 s; `autoSize` keeps 120 s until
             // `sizeForLiquidHoldup` floors it by the minimum.
-            retention_time_s: retention_time
-                .map_or(if auto { 120.0 } else { 150.0 }, |value| value.value),
+            retention_time_s: retention_time.map_or(150.0, |value| value.value),
             max_operation_pressure: max_operation_pressure.unwrap_or(pascals(100.0e5)),
             // The spec declares pascals; the ASME formula is written in MPa.
             allowable_stress: allowable_stress.unwrap_or(95.147650602e6) / 1.0e6,
