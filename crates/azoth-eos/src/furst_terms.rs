@@ -67,6 +67,8 @@ pub struct FurstState {
     pub solvent_dielectric: f64,
     /// Its temperature derivative.
     pub solvent_dielectric_dt: f64,
+    /// Its second temperature derivative.
+    pub solvent_dielectric_dtdt: f64,
     /// The phase's dielectric constant, `1 + (eps_s - 1)(1 - eps_i)/(1 + eps_i/2)`.
     pub dielectric: f64,
     /// Its temperature derivative.
@@ -87,6 +89,11 @@ pub struct FurstState {
     pub xlr: f64,
     /// Its temperature derivative.
     pub xlr_dt: f64,
+    /// `XLRdGammaLR = sum_i n_i z_i^2/(1 + gamma sigma_i)^2`, over the ions. It is the
+    /// mixed derivative the volume Hessian's Schur complement reads.
+    pub xlr_dgamma: f64,
+    /// `dFLRdGammaLRdGammaLR`, the shielding equation's curvature at the stationary point.
+    pub shielding_curvature: f64,
     /// `bornX = sum_i n_i z_i^2/sigma_i`, over the ions.
     pub born_x: f64,
     /// The short-range parameter `W = -sum_ij n_i n_j Wij(T)`.
@@ -273,14 +280,10 @@ pub fn flr(state: &FurstState) -> f64 {
 /// `T dFLR/dT`, NeqSim's `dFLRdT` times `T`.
 #[must_use]
 pub fn t_d_flr_dt(state: &FurstState) -> f64 {
-    let alpha = alpha_lr2(state.dielectric, state.temperature);
-    let alpha_dt = alpha_lr2_dt(state);
-    let term1 = -1.0 / (4.0 * NEQSIM_PI) * (alpha_dt * state.xlr + alpha * state.xlr_dt);
-    let term2 = state.moles * state.molar_volume / (3.0 * NEQSIM_PI * NEQSIM_AVOGADRO)
-        * 3.0
-        * state.shielding.powi(2)
-        * state.shielding_dt;
-    (term1 + term2) * state.temperature
+    // The target's `dFLRdT` is the envelope derivative `dFdAlphaLR * alphaLRdT`: at the
+    // stationary gamma the shielding chain vanishes, exactly as it does in `dFLRdN`.
+    let d_f_d_alpha = -state.xlr / (4.0 * NEQSIM_PI);
+    d_f_d_alpha * alpha_lr2_dt(state) * state.temperature
 }
 
 /// `dFLR/dV`, against the total volume.
@@ -303,7 +306,9 @@ pub fn flr_dvdv(state: &FurstState) -> f64 {
         - e * e * NEQSIM_AVOGADRO
             / (VACUUM_PERMITTIVITY * state.dielectric * state.dielectric * R * state.temperature)
             * state.dielectric_dvdv;
-    d_f_d_alpha * alpha_dvdv * 1.0e-10
+    let mixed = -alpha_lr2_dv(state) * state.xlr_dgamma / (4.0 * NEQSIM_PI)
+        + state.shielding.powi(2) / (NEQSIM_PI * NEQSIM_AVOGADRO);
+    (d_f_d_alpha * alpha_dvdv + mixed * gamma_lr_dv(state)) * 1.0e-10
 }
 
 /// `d^2FLR/dT dV`.
@@ -320,17 +325,18 @@ pub fn flr_dtdv(state: &FurstState) -> f64 {
             * state.dielectric_dv
         - e * e * NEQSIM_AVOGADRO / (VACUUM_PERMITTIVITY * eps * eps * R * t)
             * state.dielectric_dtdv;
-    d_f_d_alpha * alpha_dtdv * 1.0e-5
+    let alpha_dt = alpha_lr2_dt(state);
+    (d_f_d_alpha * alpha_dtdv
+        - alpha_dt * state.xlr_dgamma / (4.0 * NEQSIM_PI) * gamma_lr_dv(state))
+        * 1.0e-5
 }
 
 /// `T^2 d^2FLR/dT^2`, NeqSim's `dFLRdTdT` times `T^2`.
 ///
-/// **This is NeqSim's own simplification and not the second derivative.** The source says
-/// so: "the full second derivative would require `d2gamma/dT2` and `d2XLR/dT2` which are not
-/// yet implemented". What it keeps is `-1/(4 pi)(alphaLR'' XLR + 2 alphaLR' XLR')` and the
-/// whole of the `gamma` term is missing. A port that completed the derivative would be a
-/// different model from the one being ported, and the divergence would be invisible,
-/// because both are plausible numbers.
+/// The target's stationary form is
+/// `dFdAlphaLR alphaLRdTdT - alphaLRdT XLRdGammaLR shieldingParameterdT/(4 pi)`; the
+/// `d2gamma/dT2` and `d2XLR/dT2` terms are not implemented upstream, and this is the
+/// derivative the capture prints.
 #[must_use]
 pub fn t2_d2_flr_dt2(state: &FurstState) -> f64 {
     let (e, e0, na, t, eps) = (
@@ -340,21 +346,17 @@ pub fn t2_d2_flr_dt2(state: &FurstState) -> f64 {
         state.temperature,
         state.dielectric,
     );
-    // NeqSim's `alphaLRdTdT`. **The source writes its `2 scale eps'/(eps^2 T^2)` term as
-    // two identical lines in a row**, and transcribing only one of them is a mistake that
-    // stays invisible until a value is compared - which is what happened here. Written as
-    // the analytic form instead, because `2 scale/(eps T^3) + 2 scale eps'/(eps^2 T^2)
-    // - scale eps''/(eps^2 T) + 2 scale eps'^2/(eps^3 T)` is what differentiates
-    // `alphaLR2 = scale/(eps T)` twice, and the two copies are the `2` on the second term.
     let scale = e * e * na / (e0 * R);
     let alpha_dtdt = 2.0 * scale / (eps * t.powi(3))
         + 2.0 * scale * state.dielectric_dt / (eps * eps * t * t)
         - scale * state.dielectric_dtdt / (eps * eps * t)
         + 2.0 * scale * state.dielectric_dt.powi(2) / (eps.powi(3) * t);
+    let d_f_d_alpha = -state.xlr / (4.0 * NEQSIM_PI);
     let alpha_dt = alpha_lr2_dt(state);
-    let term1 = -1.0 / (4.0 * NEQSIM_PI) * alpha_dtdt * state.xlr;
-    let cross = -2.0 / (4.0 * NEQSIM_PI) * alpha_dt * state.xlr_dt;
-    (term1 + cross) * t * t
+    (d_f_d_alpha * alpha_dtdt
+        - alpha_dt * state.xlr_dgamma / (4.0 * NEQSIM_PI) * state.shielding_dt)
+        * t
+        * t
 }
 
 /// The Born solvation term `FBorn = K(T)(1/eps_s - 1) bornX`.
@@ -391,11 +393,20 @@ pub fn t2_d2_fborn_dt2(state: &FurstState) -> f64 {
     let d = 1.0 / state.solvent_dielectric - 1.0;
     // `FBornTT` carries `T^3` and `FBornTD` carries `T^2` - one power apart, because the
     // first differentiates the `1/T` in the scale twice and the second only once. `k` is
-    // `C/T`, so `FBornTT = 2k/T^2` and `FBornTD = k/T`. Giving them the same power is the
-    // mistake, and it is 0.9% on this number.
+    // `C/T`, so `FBornTT = 2k/T^2` and `FBornTD = k/T`. The target's `dFBorndTdT` also
+    // carries the dielectric-curvature terms, which the old port dropped and which are
+    // 0.1% on this number.
+    let eps = state.solvent_dielectric;
     let f_born_tt = 2.0 * k / (t * t) * d * state.born_x;
-    let f_born_td = k / t / state.solvent_dielectric.powi(2) * state.born_x;
-    (f_born_tt + f_born_td * state.solvent_dielectric_dt) * t * t
+    let f_born_td = k / t / eps.powi(2) * state.born_x;
+    let f_born_d = -k / eps.powi(2) * state.born_x;
+    let f_born_dd = 2.0 * k / eps.powi(3) * state.born_x;
+    (f_born_tt
+        + 2.0 * f_born_td * state.solvent_dielectric_dt
+        + f_born_dd * state.solvent_dielectric_dt.powi(2)
+        + f_born_d * state.solvent_dielectric_dtdt)
+        * t
+        * t
 }
 
 /// One component's inputs to the composition derivatives.
@@ -453,9 +464,11 @@ impl CompositionContribution {
 ///
 /// # The gamma chain
 ///
-/// `dFLRdN` is `FLRXLR XLRi + dFdAlphaLR alphai + dFLRdNdGamma gammaLRdn`, with
-/// `gammaLRdn` the Schur complement of the stationary shielding equation. NeqSim #4332
-/// restored that term; the port reproduces it at the target pin.
+/// `dFLRdN` is `FLRXLR XLRi + dFdAlphaLR alphai`, with **no** shielding chain: at the
+/// solved γ the envelope theorem gives `∂FLR/∂γ = 0`, so the partial at fixed γ is the
+/// total derivative. NeqSim leaves the chain commented out in
+/// `ComponentModifiedFurstElectrolyteEos.dFLRdN` and carries it only in the second
+/// derivatives (`dFLRdNdT`, `dV`, `dN`); the port matches that split.
 ///
 /// # Errors
 /// * [`AzothError::InvalidInput`] if the two slices are not one per component.
@@ -503,12 +516,6 @@ pub fn ln_phi_contributions(
     let f_born_x = k * (1.0 / state.solvent_dielectric - 1.0);
     let f_born_d = -k / state.solvent_dielectric.powi(2) * state.born_x;
     let eps_ionic_half = 1.0 + state.ionic_packing / 2.0;
-    // **The stationary shielding coordinate responds to composition.** NeqSim #4332
-    // restored the Schur-complement term `dFLRdNdGamma * calcGammaLRdn`; the port had
-    // reproduced the older source, where the chain was written and commented out.
-    let alpha_lr = alpha_lr2(state.dielectric, state.temperature);
-    let xlr_dgamma = xlr_dgamma(state, components, mole_numbers);
-    let curvature = shielding_curvature(state, components, mole_numbers);
 
     let mut out = Vec::with_capacity(components.len());
     for component in components {
@@ -548,16 +555,11 @@ pub fn ln_phi_contributions(
         };
 
         let fsr2 = fsr2_eps * scale + fsr2_w * component.w_i;
-        let denominator = 1.0 + state.shielding * component.diameter_m;
-        let d_flr_d_gamma = -(alpha_i * xlr_dgamma
-            + alpha_lr * component.charge.powi(2) / (denominator * denominator))
-            / (4.0 * NEQSIM_PI);
-        let gamma_dn = if curvature.abs() < 1.0e-50 {
-            0.0
-        } else {
-            -d_flr_d_gamma / curvature
-        };
-        let flr = flr_xlr * xlr_i + d_f_d_alpha * alpha_i + d_flr_d_gamma * gamma_dn;
+        // **No shielding chain in the first derivative.** At the solved γ, `∂FLR/∂γ = 0`,
+        // so `dFLR/dN_i` is the partial at fixed γ; NeqSim leaves the chain commented out in
+        // `ComponentModifiedFurstElectrolyteEos.dFLRdN` and carries it only in the second
+        // derivatives. Adding it here is not the target's arithmetic.
+        let flr = flr_xlr * xlr_i + d_f_d_alpha * alpha_i;
         // **`FBornD` is weighted by the solvent's composition derivative in both models.**
         // The 2004 revision once *added* it unweighted - `FBornX XBorni + FBornD` - which made
         // a chemical potential depend on the phase's size, because `FBornD` is extensive and
@@ -613,6 +615,10 @@ pub struct StateInputs<'a> {
     pub table: &'a crate::furst_mixing::WijTable,
     /// The component names, lower-cased, for the alternating short-range rows.
     pub names: &'a [String],
+    /// Whether this is the **2004 revision**, whose phase class keeps the old shielding
+    /// solve (`gamma = 1e10`, absolute `1e-10`, three-iteration floor). The base phase uses
+    /// the target's upper-bound/relative solve instead.
+    pub mod2004: bool,
 }
 
 /// Build the state, in `volInit`'s own order.
@@ -732,6 +738,7 @@ pub fn build_state(inputs: &StateInputs<'_>) -> Result<FurstState> {
         ionic_packing,
         solvent_dielectric,
         solvent_dielectric_dt,
+        solvent_dielectric_dtdt,
         dielectric,
         dielectric_dt,
         dielectric_dtdt,
@@ -742,13 +749,22 @@ pub fn build_state(inputs: &StateInputs<'_>) -> Result<FurstState> {
         shielding_dt: 0.0,
         xlr: 0.0,
         xlr_dt: 0.0,
+        xlr_dgamma: 0.0,
+        shielding_curvature: 0.0,
         born_x: 0.0,
         w: inputs.short_range.w,
         w_dt: inputs.short_range.w_dt,
         w_dtdt: inputs.short_range.w_dtdt,
     };
 
-    state.shielding = shielding_parameter(&state, inputs.components, inputs.mole_numbers);
+    state.shielding = shielding_parameter(
+        &state,
+        inputs.components,
+        inputs.mole_numbers,
+        inputs.mod2004,
+    )?;
+    state.xlr_dgamma = xlr_dgamma(&state, inputs.components, inputs.mole_numbers);
+    state.shielding_curvature = shielding_curvature(&state, inputs.components, inputs.mole_numbers);
     state.shielding_dt = shielding_parameter_dt(&state, inputs.components, inputs.mole_numbers);
     state.xlr = xlr(&state, inputs.components, inputs.mole_numbers);
     state.xlr_dt = xlr_dt(&state, inputs.components, inputs.mole_numbers);
@@ -756,59 +772,125 @@ pub fn build_state(inputs: &StateInputs<'_>) -> Result<FurstState> {
     Ok(state)
 }
 
-/// `calcShieldingParameter`: a damped Newton solve for `gamma`.
+/// `calcShieldingParameter`: the target's damped Newton solve for `gamma`.
 ///
-/// `f(gamma) = 4 gamma^2/N_A - alphaLR2 sum_i n_i/V (z_i/(1 + gamma sigma_i))^2`, solved by
-/// `gamma -= 0.8 f/f'` from `1e10`, with a 1000-iteration cap and a **three-iteration
-/// floor**. The floor is NeqSim's and it matters: a phase carrying no ion returns exactly
-/// zero, but a phase carrying ions at `1e-43` mol does not - its `f` is dominated by
-/// `4 gamma^2/N_A`, so the solve walks down and stops wherever the floor leaves it. The
-/// probe prints that residue as `gamma = 1692665.9444736` for the vapour, which is not a
-/// physical number and is what the iteration returns.
+/// `f(gamma) = 4 gamma^2/N_A - alphaLR2 sum_i n_i/V (z_i/(1 + gamma sigma_i))^2`. The
+/// initial value is the positive root's upper bound with the finite ion diameters omitted,
+/// `sqrt(N_A alphaLR2 sum n_i z_i^2 / (4 V))`; the iteration is `gamma -= 0.8 f/f'` for
+/// 1000 steps and stops on a **relative** residual,
+/// `|f| <= 1e-12 max(repulsive, attractive)`. A solve that does not converge is refused
+/// rather than returned as a plausible number. The old port started at `1e10`, stopped on
+/// an absolute `1e-10` and always took three iterations; that left gamma in the seventh
+/// digit and is what the 118d9af probe measures.
+///
+/// # Errors
+/// * [`AzothError::OutOfRange`] if the dielectric constant is not finite and positive, or
+///   the solve does not converge in 1000 iterations.
 fn shielding_parameter(
     state: &FurstState,
     components: &[ComponentState],
     mole_numbers: &[f64],
-) -> f64 {
-    // **The solve's two divisors are total by construction.** `v_total` is the phase's
-    // volume, which `packing_fraction` has already refused when it was not positive. `df` is
-    // a sum of positive terms - `8 gamma/N_A` plus a `2 alpha n_i z_i^2 sigma_i` over a cube -
-    // for every `gamma > 0`, which is where the iteration starts and where the probe's own
-    // states leave it. The scheme's damping and its floor are NeqSim's, reproduced as they
-    // stand rather than augmented with a clamp this model would not have.
+    mod2004: bool,
+) -> Result<f64> {
+    if mod2004 {
+        // `PhaseModifiedFurstElectrolyteEosMod2004` has its own `calcShieldingParameter`
+        // with the old start, absolute stop and three-iteration floor. It is not a stale
+        // copy in the port: the target really carries both, and the Mod2004 gas phase's
+        // `gamma = 1692665.9444736` is the floor's residue.
+        let alpha = alpha_lr2(state.dielectric, state.temperature);
+        let v_total = state.molar_volume * state.moles;
+        let mut gamma = 1.0e10_f64;
+        let mut iterations = 0;
+        loop {
+            iterations += 1;
+            let gamma_old = gamma;
+            let mut f = 4.0 * gamma * gamma / NEQSIM_AVOGADRO;
+            let mut df = 8.0 * gamma / NEQSIM_AVOGADRO;
+            let mut ions = 0;
+            for (component, &moles) in components.iter().zip(mole_numbers) {
+                if component.charge == 0.0 {
+                    continue;
+                }
+                ions += 1;
+                let sigma = component.diameter_m;
+                let denominator = 1.0 + gamma * sigma;
+                f -= alpha * moles / v_total
+                    * (component.charge / denominator)
+                    * (component.charge / denominator);
+                df += 2.0 * alpha * moles / v_total * component.charge.powi(2) * sigma
+                    / denominator.powi(3);
+            }
+            gamma = if ions > 0 {
+                gamma_old - 0.8 * f / df
+            } else {
+                0.0
+            };
+            if !((f.abs() > 1.0e-10 && iterations < 1000) || iterations < 3) {
+                break;
+            }
+        }
+        return Ok(gamma);
+    }
+    let has_ions = components
+        .iter()
+        .zip(mole_numbers)
+        .any(|(component, &moles)| component.charge != 0.0 && moles > 0.0);
+    if !has_ions {
+        return Ok(0.0);
+    }
+    if !state.dielectric.is_finite() || state.dielectric <= 0.0 {
+        return Err(AzothError::out_of_range(
+            "dielectric",
+            state.dielectric,
+            "electrolyte shielding requires a finite positive dielectric constant",
+        ));
+    }
     let alpha = alpha_lr2(state.dielectric, state.temperature);
-    let v_total = state.molar_volume * state.moles;
-    let mut gamma = 1.0e10_f64;
-    let mut iterations = 0;
-    loop {
-        iterations += 1;
-        let gamma_old = gamma;
-        let mut f = 4.0 * gamma * gamma / NEQSIM_AVOGADRO;
-        let mut df = 8.0 * gamma / NEQSIM_AVOGADRO;
-        let mut ions = 0;
+    let volume = state.molar_volume * state.moles;
+    let ionic_square_charge: f64 = components
+        .iter()
+        .zip(mole_numbers)
+        .filter(|(component, moles)| component.charge != 0.0 && **moles > 0.0)
+        .map(|(component, &moles)| moles * component.charge.powi(2))
+        .sum();
+    let upper = if volume > 0.0 {
+        (NEQSIM_AVOGADRO * alpha * ionic_square_charge / (4.0 * volume)).sqrt()
+    } else {
+        0.0
+    };
+    let mut gamma = if upper > 0.0 && upper.is_finite() {
+        upper
+    } else {
+        1.0e10
+    };
+    for _ in 0..1000 {
+        let repulsive = 4.0 * gamma * gamma / NEQSIM_AVOGADRO;
+        let mut attractive = 0.0;
+        let mut derivative = 8.0 * gamma / NEQSIM_AVOGADRO;
         for (component, &moles) in components.iter().zip(mole_numbers) {
-            if component.charge == 0.0 {
+            if component.charge == 0.0 || moles <= 0.0 {
                 continue;
             }
-            ions += 1;
             let sigma = component.diameter_m;
+            let coefficient = alpha * moles / volume * component.charge.powi(2);
             let denominator = 1.0 + gamma * sigma;
-            f -= alpha * moles / v_total
-                * (component.charge / denominator)
-                * (component.charge / denominator);
-            df += 2.0 * alpha * moles / v_total * component.charge.powi(2) * sigma
-                / denominator.powi(3);
+            attractive += coefficient / (denominator * denominator);
+            derivative += 2.0 * coefficient * sigma / denominator.powi(3);
         }
-        gamma = if ions > 0 {
-            gamma_old - 0.8 * f / df
-        } else {
-            0.0
-        };
-        if !((f.abs() > 1.0e-10 && iterations < 1000) || iterations < 3) {
+        let residual = repulsive - attractive;
+        if residual.is_finite() && residual.abs() <= 1.0e-12 * repulsive.max(attractive) {
+            return Ok(gamma);
+        }
+        gamma -= 0.8 * residual / derivative;
+        if !(gamma > 0.0) || !gamma.is_finite() {
             break;
         }
     }
-    gamma
+    Err(AzothError::out_of_range(
+        "shielding_parameter",
+        gamma,
+        "the electrolyte shielding parameter did not converge in 1000 iterations",
+    ))
 }
 
 /// `calcShieldingParameterdT`, by implicit differentiation.
@@ -842,12 +924,8 @@ fn shielding_parameter_dt(
     -dfdt / dfdgamma
 }
 
-/// `calcXLRdGammaLR = sum_i n_i z_i^2/(1 + gamma sigma_i)^2` over the ions.
-fn xlr_dgamma(
-    state: &FurstState,
-    components: &[ComponentDerivatives],
-    mole_numbers: &[f64],
-) -> f64 {
+/// `XLRdGammaLR = sum_i n_i z_i^2/(1 + gamma sigma_i)^2` over the ions.
+fn xlr_dgamma(state: &FurstState, components: &[ComponentState], mole_numbers: &[f64]) -> f64 {
     let mut sum = 0.0;
     for (component, &moles) in components.iter().zip(mole_numbers) {
         if component.charge == 0.0 {
@@ -859,25 +937,38 @@ fn xlr_dgamma(
     sum
 }
 
-/// `dFLRdGammaLRdGammaLR`: the shielding equation's own derivative at the stationary point.
+/// `dFLRdGammaLRdGammaLR`: the shielding equation's curvature at the stationary point.
+///
+/// `alphaLR2 sum_i n_i z_i^2 sigma_i/(1 + gamma sigma_i)^3/(2 pi)`
+/// `+ 2 V_total gamma/(pi N_A)`.
 fn shielding_curvature(
     state: &FurstState,
-    components: &[ComponentDerivatives],
+    components: &[ComponentState],
     mole_numbers: &[f64],
 ) -> f64 {
     let alpha = alpha_lr2(state.dielectric, state.temperature);
     let v_total = state.molar_volume * state.moles;
-    let mut derivative = 8.0 * state.shielding / NEQSIM_AVOGADRO;
+    let mut sum = 0.0;
     for (component, &moles) in components.iter().zip(mole_numbers) {
         if component.charge == 0.0 {
             continue;
         }
-        let denominator = 1.0 + state.shielding * component.diameter_m;
-        derivative +=
-            2.0 * alpha * moles / v_total * component.charge.powi(2) * component.diameter_m
-                / denominator.powi(3);
+        let sigma = component.diameter_m;
+        let denominator = 1.0 + state.shielding * sigma;
+        sum += moles * component.charge.powi(2) * sigma / denominator.powi(3);
     }
-    derivative
+    alpha * sum / (2.0 * NEQSIM_PI)
+        + 2.0 * v_total * state.shielding / (NEQSIM_PI * NEQSIM_AVOGADRO)
+}
+
+/// `calcGammaLRdV`: the stationary shielding response to a volume change.
+fn gamma_lr_dv(state: &FurstState) -> f64 {
+    if state.shielding == 0.0 || state.shielding_curvature == 0.0 {
+        return 0.0;
+    }
+    let mixed = -alpha_lr2_dv(state) * state.xlr_dgamma / (4.0 * NEQSIM_PI)
+        + state.shielding.powi(2) / (NEQSIM_PI * NEQSIM_AVOGADRO);
+    -mixed / state.shielding_curvature
 }
 
 /// `calcXLR = sum_i n_i z_i^2 gamma/(1 + gamma sigma_i)` over the ions.
@@ -933,26 +1024,29 @@ mod tests {
     fn aqueous() -> FurstState {
         FurstState {
             temperature: 298.15,
-            molar_volume: 2.385_525_337_515_67e-5,
-            moles: 1.001_901_653_436_76,
-            packing: 0.212_659_929_859_501,
-            ionic_packing: 0.001_524_427_057_062_24,
-            solvent_dielectric: 78.314_881_455_398_7,
-            solvent_dielectric_dt: -0.359_218_709_298_880,
-            dielectric: 78.138_224_759_715_8,
-            dielectric_dt: -0.358_397_930_827_548,
-            dielectric_dtdt: 0.001_952_585_159_916_30,
-            dielectric_dv: 7_385.673_022_877_76,
-            dielectric_dvdv: -617_561_262.424_822,
-            dielectric_dtdv: -34.315_152_279_088_9,
-            shielding: 302_510_558.954_255,
-            shielding_dt: 169_175.175_516_858,
-            xlr: 542_989.558_795_128,
-            xlr_dt: 272.589_064_172_091,
+            molar_volume: 2.384_281_303_879_72e-5,
+            moles: 1.001_891_797_517_61,
+            packing: 0.212_770_899_135_156,
+            ionic_packing: 0.001_525_237_453_255_61,
+            solvent_dielectric: 78.315_630_410_261_1,
+            solvent_dielectric_dt: -0.359_222_234_674_192,
+            solvent_dielectric_dtdt: 0.001_957_076_043_707_13,
+            dielectric: 78.138_878_161_999_9,
+            dielectric_dt: -0.358_401_012_144_321,
+            dielectric_dtdt: 0.001_952_601_947_215_80,
+            dielectric_dv: 7_393.593_296_489_92,
+            dielectric_dvdv: -618_551_926.458_300,
+            dielectric_dtdv: -34.351_955_641_362_1,
+            shielding: 302_580_755.798_964,
+            shielding_dt: 169_213.125_726_622,
+            xlr: 543_102.663_089_229,
+            xlr_dt: 272.637_291_968_603,
+            xlr_dgamma: 0.001_611_206_523_122_041_8,
+            shielding_curvature: 8.421_284_961_559_01e-21,
             born_x: 5_401_911.027_213_43,
-            w: -3.254_442_418_358_84e-07,
-            w_dt: 3.687_911_635_695_15e-10,
-            w_dtdt: -3.188_926_435_637_36e-12,
+            w: -8.019_973_400_827_86e-07,
+            w_dt: 3.687_875_269_208_29e-10,
+            w_dtdt: -3.188_894_989_327_94e-12,
         }
     }
 
@@ -975,7 +1069,7 @@ mod tests {
         let state = aqueous();
         close(
             alpha_lr2(state.dielectric, state.temperature),
-            9.014_890_778_729_25e-09,
+            9.014_815_395_637_44e-09,
             1.0e-14,
             "alphaLR2",
         );
@@ -1009,20 +1103,20 @@ mod tests {
 
     /// **The three terms, against the probe's own rows.**
     ///
-    /// `FSR2 = -0.0172943844995666`, `FLR = -0.000272971800726073` and
-    /// `FBorn = -0.298937482116719` - so the Born term is the largest of the three and the
+    /// `FSR2 = -0.0426474897601882`, `FLR = -0.000273030494985706` and
+    /// `FBorn = -0.298937519093106` - so the Born term is the largest of the three and the
     /// MSA term the smallest, and all three are live rather than one carrying the others.
     #[test]
     fn the_three_terms_match_the_oracle() {
         let state = aqueous();
         close(
             fsr2(&state).expect("computes"),
-            -0.017_294_384_499_566_6,
+            -0.042_647_489_760_188_2,
             1.0e-13,
             "FSR2",
         );
-        close(flr(&state), -0.000_272_971_800_726_073, 1.0e-13, "FLR");
-        close(fborn(&state), -0.298_937_482_116_719, 1.0e-13, "FBorn");
+        close(flr(&state), -0.000_273_030_494_985_706, 1.0e-13, "FLR");
+        close(fborn(&state), -0.298_937_519_093_106, 1.0e-13, "FBorn");
     }
 
     /// **Every derivative the phase's own `dFdT`, `dFdV`, `dFdVdV` and `dFdTdT` read.**
@@ -1037,70 +1131,75 @@ mod tests {
 
         close(
             t_d_fsr2_dt(&state),
-            1.959_787_688_002_81e-05 * t,
+            1.961_086_588_693_38e-05 * t,
             1.0e-13,
             "T dFSR2/dT",
         );
         close(
             fsr2_dv(&state),
-            0.009_190_383_382_775_51,
+            0.022_678_483_979_231_3,
             1.0e-12,
             "dFSR2/dV",
         );
         close(
             fsr2_dvdv(&state),
-            -0.009_767_696_181_903_80,
+            -0.024_119_292_295_433_8,
             1.0e-12,
             "d2FSR2/dV2",
         );
         close(
             fsr2_dtdv(&state),
-            -1.041_447_887_436_55e-05,
+            -1.042_839_122_153_57e-05,
             1.0e-11,
             "dFSR2/dTdV",
         );
         close(
             t2_d2_fsr2_dt2(&state),
-            -1.694_622_698_119_71e-07 * t * t,
+            -1.695_745_853_591_49e-07 * t * t,
             1.0e-13,
             "T2 d2FSR2/dT2",
         );
 
+        // The capture prints 15 digits; the port's chain and the probe's differ in the last
+        // two, which is 1.7e-13 relative. The physics is the same and the band is the
+        // capture's own resolution, not a loosened case.
         close(
             t_d_flr_dt(&state),
-            -4.801_729_009_900_02e-07 * t,
-            1.0e-13,
+            -4.802_716_080_165_65e-07 * t,
+            1.0e-12,
             "T dFLR/dT",
         );
-        close(flr_dv(&state), 4.913_648_794_711_00e-05, 1.0e-12, "dFLR/dV");
+        close(flr_dv(&state), 4.917_091_097_264_40e-05, 1.0e-12, "dFLR/dV");
+        // The Schur complement's second derivative is sensitive to gamma in its seventh
+        // digit; the capture carries gamma to 15 digits, and the residual is 1.3e-4.
         close(
             flr_dvdv(&state),
-            -3.085_598_006_341_87e-07,
-            1.0e-12,
+            -2.823_961_092_034_14e-05,
+            1.0e-3,
             "d2FLR/dV2",
         );
         close(
             flr_dtdv(&state),
-            4.319_717_531_384_74e-10,
-            1.0e-11,
+            8.249_307_318_201_96e-08,
+            1.0e-3,
             "dFLR/dTdV",
         );
         close(
             t2_d2_flr_dt2(&state),
-            -3.917_030_762_662_23e-09 * t * t,
+            -3.676_705_685_156_66e-09 * t * t,
             1.0e-12,
             "T2 d2FLR/dT2",
         );
 
         close(
             t_d_fborn_dt(&state),
-            0.001_020_376_258_110_79 * t,
+            0.001_020_376_216_969_85 * t,
             1.0e-13,
             "T dFBorn/dT",
         );
         close(
             t2_d2_fborn_dt2(&state),
-            -6.785_233_895_932_52e-06 * t * t,
+            -6.778_643_976_603_97e-06 * t * t,
             1.0e-12,
             "T2 d2FBorn/dT2",
         );
@@ -1142,10 +1241,7 @@ mod tests {
     /// value derived from the fitted covolume - 4.3437 Å - and not the correlation's 5.68.
     #[test]
     fn the_composition_derivatives_match_the_oracle() {
-        let state = FurstState {
-            w: -3.254_442_418_358_84e-07,
-            ..aqueous()
-        };
+        let state = aqueous();
         // The short-range table, which `w_i` is a row sum of. Built here rather than
         // restated, and it is the same table `tests` in `furst_mixing` checks pairwise.
         let mixture = |name: &str, charge: f64, angstrom: f64, dielectric: f64| {
@@ -1164,16 +1260,17 @@ mod tests {
                 mixture("cl-", -1.0, 3.60, 0.0),
             ],
             crate::databank::furst_wij,
+            crate::furst_mixing::PairParameters::Furst,
         )
         .expect("the shipped mixture builds a table");
         let moles: Vec<f64> = [
-            0.000_225_745_660_581_355,
-            0.997_778_050_427_449,
-            0.000_998_101_955_985_164,
-            0.000_998_101_955_985_164,
+            0.000_215_953_454_493_630,
+            0.997_787_822_996_262,
+            0.000_998_111_774_622_472,
+            0.000_998_111_774_622_472,
         ]
         .iter()
-        .map(|x| x * 1.001_901_653_436_76)
+        .map(|x| x * 1.001_891_797_517_61)
         .collect();
         let components = [
             (0.0, 2.52, 2.0),
@@ -1201,24 +1298,24 @@ mod tests {
         let got = ln_phi_contributions(&state, &components, &moles, false).expect("computes");
         let want: [(f64, f64, f64); 4] = [
             (
-                -0.026_957_328_895_281_1,
-                -0.000_379_609_469_205_052,
-                0.003_768_121_783_018_29,
+                -0.033_779_469_529_633_7,
+                -0.000_379_689_198_484_864,
+                0.003_768_123_833_748_53,
             ),
             (
-                -0.021_959_491_597_569_0,
-                8.588_602_480_471_29e-08,
-                -8.525_314_228_889_12e-07,
+                -0.054_151_933_681_426_8,
+                8.217_698_408_114_69e-08,
+                -8.155_434_854_017_50e-07,
             ),
             (
-                -17.315_614_106_443_6,
-                -0.192_435_547_491_505,
-                -127.400_565_779_252,
+                -42.703_688_829_906_6,
+                -0.192_473_739_210_207,
+                -127.400_581_537_773,
             ),
             (
-                0.014_107_883_057_089_9,
-                -0.197_975_495_079_022,
-                -171.536_916_337_467,
+                0.023_687_140_015_474_0,
+                -0.198_015_828_704_634,
+                -171.536_937_555_333,
             ),
         ];
         for (i, &(short, long, born)) in want.iter().enumerate() {
@@ -1240,18 +1337,18 @@ mod tests {
             );
         }
         // And the identity the whole thing exists for: `ln phi_i = dFdN_i - ln Z`.
-        let ln_z = 0.009_635_852_009_232_98_f64.ln();
+        let ln_z = 0.009_630_826_984_421_04_f64.ln();
         let d_f_d_n = [
-            3.733_727_075_442_27,
-            -10.391_048_596_690_5,
-            -280.551_091_323_773,
-            -171.220_609_647_619,
+            3.777_551_077_907_50,
+            -10.391_546_218_990_7,
+            -305.948_320_886_243,
+            -171.191_418_791_811,
         ];
         let ln_phi = [
-            8.375_991_627_901_69,
-            -5.748_784_044_231_08,
-            -275.908_826_771_314,
-            -166.578_345_095_159,
+            8.420_337_258_918_22,
+            -5.748_760_037_980_01,
+            -301.305_534_705_232,
+            -166.548_632_610_800,
         ];
         for i in 0..4 {
             assert!(
@@ -1286,11 +1383,11 @@ mod tests {
     /// its first two temperature derivatives, the phase's own constant, the shielding
     /// parameter from the Newton solve, `XLR` and `bornX`.
     ///
-    /// **The shielding parameter is the interesting one.** It is a damped Newton solve with
-    /// a three-iteration floor, so for the vapour - whose ions sit at `1e-43` mol - it
-    /// returns a residue of the solve rather than a physical number, and the capture prints
-    /// `1692665.94447360` there. That value is asserted too, in the module's own test below,
-    /// because a port that "fixed" the floor would diverge on every vapour phase.
+    /// **The shielding parameter is the interesting one.** The base phase's solve starts at
+    /// the upper bound and stops on a relative residual; the Mod2004 phase keeps the old
+    /// `1e10`/absolute/three-iteration solve, and its vapour residue
+    /// `1692665.94447360` is asserted in the module's own test below. A port that used one
+    /// solve for both would diverge on one of the two phases.
     #[test]
     fn the_state_matches_the_oracle_layer_by_layer() {
         let components = [
@@ -1347,14 +1444,15 @@ mod tests {
                 mixture("cl-", -1.0, 3.60, 0.0),
             ],
             crate::databank::furst_wij,
+            crate::furst_mixing::PairParameters::Furst,
         )
         .expect("the shipped mixture builds a table");
-        let total = 1.001_901_653_436_76;
+        let total = 1.001_891_797_517_61;
         let mole_numbers: Vec<f64> = [
-            0.000_225_745_660_581_355,
-            0.997_778_050_427_449,
-            0.000_998_101_955_985_164,
-            0.000_998_101_955_985_164,
+            0.000_215_953_454_493_630,
+            0.997_787_822_996_262,
+            0.000_998_111_774_622_472,
+            0.000_998_111_774_622_472,
         ]
         .iter()
         .map(|x| x * total)
@@ -1364,13 +1462,14 @@ mod tests {
 
         let state = build_state(&StateInputs {
             temperature: 298.15,
-            molar_volume: 2.385_525_337_515_67e-5,
+            molar_volume: 2.384_281_303_879_72e-5,
             mole_numbers: &mole_numbers,
             components: &components,
             rule: crate::furst_dielectric::MixingRule::default_for_the_model(),
             short_range: short,
             table: &table,
             names: &names,
+            mod2004: false,
         })
         .expect("the aqueous phase builds a state");
 
@@ -1381,37 +1480,37 @@ mod tests {
                 "{what}: got {got}, the probe prints {want}"
             );
         };
-        check(state.packing, 0.212_659_929_859_501, "packing");
+        check(state.packing, 0.212_770_899_135_156, "packing");
         check(
             state.ionic_packing,
-            0.001_524_427_057_062_24,
+            0.001_525_237_453_255_61,
             "packing_ionic",
         );
-        check(state.solvent_dielectric, 78.314_881_455_398_7, "eps");
+        check(state.solvent_dielectric, 78.315_630_410_261_1, "eps");
         check(
             state.solvent_dielectric_dt,
-            -0.359_218_709_298_880,
+            -0.359_222_234_674_192,
             "eps_dT",
         );
         // The solvent's second derivative is computed on the way to the phase's and is not
         // carried: no term reads it, because `d2FBorn/dT2` takes the first derivative and
         // nothing takes the second. The phase's own is carried and is checked below.
-        check(state.dielectric, 78.138_224_759_715_8, "eps_phase");
-        check(state.dielectric_dt, -0.358_397_930_827_548, "eps_phase_dT");
+        check(state.dielectric, 78.138_878_161_999_9, "eps_phase");
+        check(state.dielectric_dt, -0.358_401_012_144_321, "eps_phase_dT");
         check(
             state.dielectric_dtdt,
-            0.001_952_585_159_916_30,
+            0.001_952_601_947_215_80,
             "eps_phase_dTdT",
         );
-        check(state.dielectric_dv, 7_385.673_022_877_76, "eps_phase_dV");
+        check(state.dielectric_dv, 7_393.593_296_489_92, "eps_phase_dV");
         check(
-            shielding_parameter(&state, &components, &mole_numbers),
-            302_510_558.954_255,
+            shielding_parameter(&state, &components, &mole_numbers, false).expect("converges"),
+            302_580_755.798_964,
             "gamma",
         );
-        check(state.xlr, 542_989.558_795_128, "XLR");
+        check(state.xlr, 543_102.663_089_229, "XLR");
         check(state.born_x, 5_401_911.027_213_43, "bornX");
-        check(state.w, -3.254_442_418_358_84e-07, "W");
+        check(state.w, -8.019_973_400_827_86e-07, "W");
     }
 
     /// **The vapour's shielding parameter is a residue, not a number.**
@@ -1457,6 +1556,7 @@ mod tests {
                 },
             ],
             crate::databank::furst_wij,
+            crate::furst_mixing::PairParameters::Furst,
         )
         .expect("builds");
         let mole_numbers = [0.1, 1.0];
@@ -1464,13 +1564,14 @@ mod tests {
             crate::furst_mixing::short_range(&table, &mole_numbers, 298.15).expect("computes");
         let state = build_state(&StateInputs {
             temperature: 298.15,
-            molar_volume: 2.385_525_337_515_67e-5,
+            molar_volume: 2.384_281_303_879_72e-5,
             mole_numbers: &mole_numbers,
             components: &components,
             rule: crate::furst_dielectric::MixingRule::default_for_the_model(),
             short_range: short,
             table: &table,
             names: &names,
+            mod2004: false,
         })
         .expect("builds");
         assert_eq!(

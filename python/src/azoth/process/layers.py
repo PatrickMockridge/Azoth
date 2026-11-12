@@ -1674,34 +1674,9 @@ _COMPONENT_SPLITTER_SEPARATION_DIVERGENCE: tuple[Divergence, ...] = (
 )
 
 
-#: The splitter's three divergent layers, declared once because both its rows carry the
-#: same split and therefore the same bands.
-#:
-#: The capture has `-93092.87`, `-28142.87` and a weighted `-47627.87` against a feed of
-#: `-20689.86`, which is `4.50`, `1.36` and `2.30` times the port's answer. The bounds sit
-#: a little under each, so that the bands are the *ratios* and not their last digits: what
-#: is asserted is that the capture is still several times away, not how many.
-_SPLITTER_DIVERGENCE: tuple[Divergence, ...] = (
-    Divergence(
-        key="products0_h",
-        at_least=3.0,
-        reason="`Splitter.run` reaches its branch state through `init(0)` and "
-        "`addComponent(int, double)` over every phase, so the first branch's enthalpy is "
-        "not the feed's and the port's is: a split changes no state",
-    ),
-    Divergence(
-        key="products1_h",
-        at_least=1.2,
-        reason="the same defect on the branch that carries most of the flow, where it is "
-        "the smallest - the stale phase's share of the total is what moves",
-    ),
-    Divergence(
-        key="molar_enthalpy_out_weighted",
-        at_least=1.8,
-        reason="the two branches weighted by their fractions, which is the balance a "
-        "splitter owes and the row where NeqSim's 2.3 times the feed is visible",
-    ),
-)
+#: The splitter's caloric divergence was closed upstream in #4158: `Splitter.run` and
+#: `ComponentSplitter.run` rebuild the extensive caloric state with `init(2)` after the
+#: flash, so the branch enthalpies are the feed's and are compared as agreement.
 
 #: The process cases a layer diff can read. **One entry per case**, so a probe row added
 #: without a case - or a case whose probe row was reordered - is a mismatch
@@ -2204,7 +2179,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter.tsv",
         block=0,
         identified_by=("split_factors", "0.3 0.7"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2212,7 +2186,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter.tsv",
         block=1,
         identified_by=("split_factors", "3.0 7.0"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     # The capacity map's nine branches, in the probe's own order. The pairing is the
     # block's `case=` key, which is what the probe prints first.
@@ -2222,7 +2195,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_capacity.tsv",
         block=0,
         identified_by=("case", "no_setters"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2230,7 +2202,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_capacity.tsv",
         block=1,
         identified_by=("case", "header_alone"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2238,7 +2209,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_capacity.tsv",
         block=2,
         identified_by=("case", "enabled_defaults"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2246,7 +2216,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_capacity.tsv",
         block=3,
         identified_by=("case", "sized_header_design_drop"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2254,7 +2223,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_capacity.tsv",
         block=4,
         identified_by=("case", "tight_velocity_disabled"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2262,7 +2230,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_capacity.tsv",
         block=5,
         identified_by=("case", "zero_design_drop"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2270,7 +2237,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_capacity.tsv",
         block=6,
         identified_by=("case", "zero_max_velocity"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2278,7 +2244,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_capacity.tsv",
         block=7,
         identified_by=("case", "cap_9_99"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2286,7 +2251,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_capacity.tsv",
         block=8,
         identified_by=("case", "two_phase_one_outlet"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     # The mechanical design's nine branches, in the probe's own order.
     LayerCase(
@@ -2295,7 +2259,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_mechanical_design.tsv",
         block=0,
         identified_by=("case", "default_design"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2303,7 +2266,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_mechanical_design.tsv",
         block=1,
         identified_by=("case", "twenty_mol"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2311,7 +2273,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_mechanical_design.tsv",
         block=2,
         identified_by=("case", "design_velocity_ten"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2319,7 +2280,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_mechanical_design.tsv",
         block=3,
         identified_by=("case", "high_pressure"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2327,7 +2287,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_mechanical_design.tsv",
         block=4,
         identified_by=("case", "low_tensile"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2335,7 +2294,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_mechanical_design.tsv",
         block=5,
         identified_by=("case", "corrosion"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2343,7 +2301,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_mechanical_design.tsv",
         block=6,
         identified_by=("case", "joint_efficiency"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2351,7 +2308,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_mechanical_design.tsv",
         block=7,
         identified_by=("case", "two_phase"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     LayerCase(
         model="process.splitter",
@@ -2359,7 +2315,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_splitter_mechanical_design.tsv",
         block=8,
         identified_by=("case", "design_with_capacity"),
-        divergence=_SPLITTER_DIVERGENCE,
     ),
     # The heater's outlet-temperature constraints, in the probe's own order. The heater's
     # outlet record is the flash's answer; the capacity utilisations are the interior.

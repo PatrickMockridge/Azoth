@@ -424,7 +424,11 @@ class FurstElectrolyte:
         )
         return cls(
             species=species,
-            table=_furst_wij_table(components, furst_wij),
+            table=_furst_wij_table(
+                components,
+                furst_wij,
+                use_cpa_parameters=ion_parameters == "furstParamsCPA",
+            ),
             rule=rule,
             mod2004=mod2004,
             ion_parameters=ion_parameters,

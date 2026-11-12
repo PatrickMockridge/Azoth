@@ -332,16 +332,16 @@ def separator(
             list(states.liquid_z),
             states.n_liquid,
             kind == "horizontal",
-            load_factor if load_factor is not None else 0.107,
+            load_factor if load_factor is not None else 0.137,
             (0.5 if auto else 0.8) if design_fg is None else design_fg,
             (
                 (1.2 if safety_factor is None else float(safety_factor))
                 if auto
                 else (1.0 if volume_factor is None else volume_factor)
             ),
-            (120.0 if auto else 60.0) if retention is None else retention,
+            150.0 if retention is None else retention,
             100.0e5 if max_pressure is None else max_pressure,
-            (425.0e6 if stress is None else stress) / 1.0e6,
+            (95.147650602e6 if stress is None else stress) / 1.0e6,
             1.0 if joint is None else joint,
             0.0 if corrosion is None else corrosion,
             perform_sizing=auto,
@@ -977,6 +977,11 @@ def _mechanical_design(
     corrosion_allowance_mm: float,
     vessel: str = "separator",
     perform_sizing: bool = False,
+    max_gas_velocity: float = 3.0,
+    foam_allowance_factor: float = 1.35,
+    min_oil_retention_s: float = 120.0,
+    min_water_retention_s: float = 180.0,
+    aqueous: bool = False,
 ) -> MechanicalDesign:
     """`calcDesign` on the two outlets, in the order the class computes it.
 
@@ -1018,35 +1023,27 @@ def _mechanical_design(
     liquid_volume_flow = liquid_n * liquid_flash.z_liquid * _NEQSIM_R * t / p
 
     max_design_volume_flow = volume_safety_factor * gas_volume_flow * 3600.0
-    max_gas_velocity = gas_load_factor * math.sqrt((liquid_density - gas_density) / gas_density)
+    # #4429 caps the Souders-Brown velocity at the class's `maxGasVelocity`.
+    allowable_gas_velocity = min(
+        max_gas_velocity,
+        gas_load_factor * math.sqrt((liquid_density - gas_density) / gas_density),
+    )
     gas_area_fraction = fg if horizontal else 1.0
     liquid_area_fraction = 1.0 - fg if horizontal else 1.0
     inner_diameter = math.sqrt(
-        4.0 * (max_design_volume_flow / 3600.0) / (math.pi * max_gas_velocity * gas_area_fraction)
+        4.0
+        * (max_design_volume_flow / 3600.0)
+        / (math.pi * allowable_gas_velocity * gas_area_fraction)
     )
     cross_area = math.pi * (inner_diameter / 2.0) ** 2
-    max_design_gas_volume_flow = max_gas_velocity * cross_area * gas_area_fraction * 3600.0
+    max_design_gas_volume_flow = allowable_gas_velocity * cross_area * gas_area_fraction * 3600.0
     if vessel == "scrubber":
         # **The scrubber's length is five diameters and nothing else sizes it.** Its class
         # never reads the retention time in `calcDesign`.
         tantan_length = inner_diameter * 5.0
-    elif perform_sizing and liquid_volume_flow <= 1.0e-10:
-        # `performSizingCalculations`' no-liquid branch.
-        tantan_length = inner_diameter * 4.0
     else:
-        tantan_length = math.sqrt(
-            4.0
-            * retention_time_s
-            * liquid_volume_flow
-            * volume_safety_factor
-            / (math.pi * inner_diameter * inner_diameter * liquid_area_fraction)
-        )
-        total = tantan_length + inner_diameter
-        if total / inner_diameter > 6.0 or total / inner_diameter < 3.0:
-            # `calcDesign` resets to five diameters; `performSizingCalculations` to four.
-            tantan_length = inner_diameter * (4.0 if perform_sizing else 5.0)
-
         if not perform_sizing:
+            # The bubble alternative, before the liquid holdup sizes the vessel.
             bubble_velocity = (
                 9.82 * (250.0e-6) ** 2 * (liquid_density - gas_density) / (18.0 * liquid_viscosity)
             )
@@ -1055,6 +1052,33 @@ def _mechanical_design(
             if daim > inner_diameter:
                 inner_diameter = daim
                 tantan_length = 4.0 * daim
+        # `sizeForLiquidHoldup`: the class field `retentionTime`, floored by the oil and
+        # aqueous minimums, then the required liquid volume sets both dimensions.
+        retention = max(retention_time_s, min_oil_retention_s)
+        if aqueous:
+            retention = max(retention, min_water_retention_s)
+        required_volume = (
+            liquid_volume_flow * retention * foam_allowance_factor * volume_safety_factor
+        )
+        if liquid_area_fraction > 0.0:
+            inner_diameter = max(
+                inner_diameter,
+                (4.0 * required_volume / (5.0 * math.pi * liquid_area_fraction)) ** (1.0 / 3.0),
+            )
+            liquid_area = math.pi * inner_diameter * inner_diameter * liquid_area_fraction / 4.0
+            tantan_length = max(2.0 * inner_diameter, required_volume / liquid_area)
+        else:
+            tantan_length = 2.0 * inner_diameter
+    max_design_gas_volume_flow = (
+        allowable_gas_velocity
+        * math.pi
+        * inner_diameter
+        * inner_diameter
+        / 4.0
+        * gas_area_fraction
+        * 3600.0
+    )
+    max_design_volume_flow = max_design_gas_volume_flow
 
     if perform_sizing:
         # `performSizingCalculations` on the design-standard state `autoSize` read, which on

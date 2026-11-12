@@ -901,6 +901,7 @@ def _furst_state(reduced: ReducedParameters, x: list[float], molar_volume: float
         short.w,
         short.w_dt,
         short.w_dtdt,
+        term.mod2004,
     )
 
 

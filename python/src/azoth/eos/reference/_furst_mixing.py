@@ -143,14 +143,37 @@ def _predictive(solvent_dielectric: float, diameter: float, divalent: bool) -> f
     )
 
 
-def _cation_anion(cation: float, anion: float, divalent: bool) -> tuple[float, float, float]:
-    """``Wij(cation, anion) = p4 (d + d)^4 + p5`` on the monovalent or divalent set."""
+def _cation_anion(
+    cation: float,
+    anion: float,
+    divalent: bool,
+    use_cpa_parameters: bool,
+    cation_name: str,
+) -> tuple[float, float, float]:
+    """``Wij(cation, anion) = p4 (d + d)^4 + p5`` on the monovalent or divalent set.
+
+    The base ScRK phase reads ``furstParams[4],[5]`` for both valences; only a
+    ``PhaseCPAInterface`` phase reads the CPA set's ``[8],[9]`` for a divalent cation.
+    ``MDEA+`` is the exception the target spells out in both branches: its own
+    ``furstParamsCPA_MDEA[4],[5]`` set.
+    """
     sum4 = (cation + anion) ** 4
+    if not use_cpa_parameters and cation_name != "mdea+":
+        return (
+            _named("furstParams", 4) * sum4 + _named("furstParams", 5),
+            *_t_dep_for(divalent, sum4),
+        )
     if divalent:
         return (
             _cpa(8) * sum4 + _cpa(9),
             _t_dep(12) * sum4 + _t_dep(13),
             _t_dep(14) * sum4 + _t_dep(15),
+        )
+    if cation_name == "mdea+":
+        return (
+            _named("furstParamsCPA_MDEA", 4) * sum4 + _named("furstParamsCPA_MDEA", 5),
+            _t_dep(4) * sum4 + _t_dep(5),
+            _t_dep(6) * sum4 + _t_dep(7),
         )
     return (
         _cpa(4) * sum4 + _cpa(5),
@@ -159,11 +182,25 @@ def _cation_anion(cation: float, anion: float, divalent: bool) -> tuple[float, f
     )
 
 
-def _cation_solvent(cation: FurstComponent, solvent: FurstComponent, divalent: bool) -> float:
+def _t_dep_for(divalent: bool, sum4: float) -> tuple[float, float]:
+    """The ``w1``/``w2`` terms, which stay on the CPA TDep set in both branches."""
+    if divalent:
+        return (_t_dep(12) * sum4 + _t_dep(13), _t_dep(14) * sum4 + _t_dep(15))
+    return (_t_dep(4) * sum4 + _t_dep(5), _t_dep(6) * sum4 + _t_dep(7))
+
+
+def _cation_solvent(
+    cation: FurstComponent,
+    solvent: FurstComponent,
+    divalent: bool,
+    use_cpa_parameters: bool,
+) -> float:
     """``Wij(cation, neutral)``, by the neutral's name."""
     d = cation.diameter
     name = solvent.name
     if name == "water":
+        if not use_cpa_parameters:
+            return _named("furstParams", 2) * d + _named("furstParams", 3)
         return _cpa(6) * d + _cpa(7) if divalent else _cpa(2) * d + _cpa(3)
     # **Each glycol reads its own fit.** NeqSim's chain tested `TEG` twice and the first match
     # won, so a TEG pair was given the MEG set - issue 3846, closed upstream in #3847 by the
@@ -173,7 +210,9 @@ def _cation_solvent(cation: FurstComponent, solvent: FurstComponent, divalent: b
     if name in ("meg", "ethylene glycol"):
         return _glycol_fit("furstParamsCPA_MEG", d, divalent)
     if name == "mdea":
-        return _named("furstParams", 6) if divalent else _named("furstParams", 2)
+        if divalent:
+            return _named("furstParamsCPA_MDEA", 6) * d + _named("furstParamsCPA_MDEA", 7)
+        return _named("furstParamsCPA_MDEA", 2) * d + _named("furstParamsCPA_MDEA", 3)
     if name == "piperazine":
         return _cpa(6) * d + _cpa(7) if divalent else _cpa(2) * d + _cpa(3)
     if name == "methanol":
@@ -263,8 +302,16 @@ def oil_indices(name: str) -> tuple[int, int] | None:
 def wij_table(
     components: Sequence[FurstComponent],
     fitted: Callable[[str, str], tuple[float, float, float, bool] | None],
+    *,
+    use_cpa_parameters: bool = False,
 ) -> WijTable:
     """Build the pair table for a phase, the way ``ElectrolyteMixRule.calcWij`` builds it.
+
+    ``use_cpa_parameters`` is NeqSim's ``phase instanceof PhaseCPAInterface``: false for
+    ``PhaseModifiedFurstElectrolyteEos`` (the base and Mod2004 phases), true for the
+    electrolyte-CPA family. It selects ``furstParams`` or ``furstParamsCPA`` for the
+    cation-water and cation-anion pairs only; the gas, oil and named-solvent sweeps are
+    unchanged.
 
     Raises:
         InvalidInputError: if ``components`` is empty.
@@ -312,10 +359,20 @@ def wij_table(
                 continue
             if components[j].is_anion:
                 set_symmetric(
-                    i, j, *_cation_anion(components[i].diameter, components[j].diameter, divalent)
+                    i,
+                    j,
+                    *_cation_anion(
+                        components[i].diameter,
+                        components[j].diameter,
+                        divalent,
+                        use_cpa_parameters,
+                        components[i].name,
+                    ),
                 )
             elif components[j].charge == 0.0:
-                value = _cation_solvent(components[i], components[j], divalent)
+                value = _cation_solvent(
+                    components[i], components[j], divalent, use_cpa_parameters
+                )
                 d = components[i].diameter
                 if components[i].name == "mdea+":
                     coeffs = (0.0, 0.0)

@@ -36,7 +36,9 @@ use crate::furst_dielectric::{
     MixingRule, NEQSIM_AVOGADRO, NEQSIM_PI, component_dielectric, component_dielectric_dt,
     component_dielectric_dtdt,
 };
-use crate::furst_mixing::{FurstComponent, ShortRange, WijTable, short_range, wij_table};
+use crate::furst_mixing::{
+    FurstComponent, PairParameters, ShortRange, WijTable, short_range, wij_table,
+};
 use crate::furst_terms::{
     ComponentDerivatives, ComponentState, FurstState, StateInputs, build_state, fborn, flr, flr_dv,
     fsr2, fsr2_dv, ln_phi_contributions,
@@ -94,6 +96,11 @@ pub struct FurstElectrolyte {
     /// `3.8721e-5`, a 50 % difference in the covolume of every ion in the phase, and the
     /// diameter derived back out of it moves too - so the MSA and Born terms move with it.
     ion_parameters: IonParameters,
+    /// Which fitted set the short-range pair table reads. It follows `ion_parameters` in
+    /// this library's two Furst builders: the base ScRK phase reads `Furst`, the
+    /// electrolyte-CPA phase reads `Cpa`, matching NeqSim's
+    /// `useCpaParameters = phase instanceof PhaseCPAInterface`.
+    pair_parameters: PairParameters,
 }
 
 /// Which attractive term a Fürst-family fluid runs.
@@ -162,13 +169,18 @@ impl FurstElectrolyte {
                 dielectric_at_reference: s.dielectric_at_reference,
             })
             .collect();
-        let table = wij_table(&components, crate::databank::furst_wij)?;
+        let table = wij_table(
+            &components,
+            crate::databank::furst_wij,
+            PairParameters::Furst,
+        )?;
         Ok(Self {
             species,
             table,
             rule,
             mod2004: false,
             ion_parameters: IonParameters::default(),
+            pair_parameters: PairParameters::Furst,
         })
     }
 
@@ -216,8 +228,31 @@ impl FurstElectrolyte {
     }
 
     /// This term, reading the other fitted parameter set for its ions.
+    ///
+    /// The short-range pair table follows the same selector, because the two families are
+    /// selected by one phase-class test upstream: the base ScRK phase is not a
+    /// `PhaseCPAInterface`, and the electrolyte-CPA phase is.
     #[must_use]
     pub fn with_ion_parameters(mut self, parameters: IonParameters) -> Self {
+        let pair_parameters = match parameters {
+            IonParameters::Furst => PairParameters::Furst,
+            IonParameters::Cpa => PairParameters::Cpa,
+        };
+        if pair_parameters != self.pair_parameters {
+            let components: Vec<FurstComponent> = self
+                .species
+                .iter()
+                .map(|s| FurstComponent {
+                    name: s.name.clone(),
+                    charge: s.charge,
+                    diameter: s.table_diameter,
+                    dielectric_at_reference: s.dielectric_at_reference,
+                })
+                .collect();
+            self.table = wij_table(&components, crate::databank::furst_wij, pair_parameters)
+                .expect("the species were validated when the term was built");
+            self.pair_parameters = pair_parameters;
+        }
         self.ion_parameters = parameters;
         self
     }
@@ -280,6 +315,7 @@ impl FurstElectrolyte {
             short_range: short,
             table: &self.table,
             names: &names,
+            mod2004: self.mod2004,
         })?;
 
         let helmholtz_rt = fsr2(&state)? + flr(&state) + fborn(&state);
@@ -697,13 +733,13 @@ mod tests {
 
     fn moles() -> Vec<f64> {
         [
-            0.000_225_745_660_581_355,
-            0.997_778_050_427_449,
-            0.000_998_101_955_985_164,
-            0.000_998_101_955_985_164,
+            0.000_215_953_454_493_630,
+            0.997_787_822_996_262,
+            0.000_998_111_774_622_472,
+            0.000_998_111_774_622_472,
         ]
         .iter()
-        .map(|x| x * 1.001_901_653_436_76)
+        .map(|x| x * 1.001_891_797_517_61)
         .collect()
     }
 
@@ -718,10 +754,10 @@ mod tests {
         let term = FurstElectrolyte::new(species(), MixingRule::default_for_the_model())
             .expect("the shipped mixture builds a term");
         let solution = term
-            .solve(298.15, &moles(), 2.385_525_337_515_67e-5)
+            .solve(298.15, &moles(), 2.384_281_303_879_72e-5)
             .expect("evaluates");
 
-        let want = -0.017_294_384_499_566_6 - 0.000_272_971_800_726_073 - 0.298_937_482_116_719;
+        let want = -0.042_647_489_760_188_2 - 0.000_273_030_494_985_706 - 0.298_937_519_093_106;
         assert!(
             (solution.helmholtz_rt - want).abs() < 1.0e-12,
             "A^R/RT = {}, and the three terms add to {want}",
@@ -731,7 +767,7 @@ mod tests {
         // The pressure, as a check on the identity the root solve rests on: the electrolyte
         // shares of `dFdV` are `dFSR2dV + dFLRdV`, and `1e5` times them plus `dFdV`'s cubic
         // part must give the printed total. The Born share is zero, asserted separately.
-        let want_dv = 1.0e5 * (0.009_190_383_382_775_51 + 4.913_648_794_711_00e-05);
+        let want_dv = 1.0e5 * (0.022_678_483_979_231_3 + 4.917_091_097_264_40e-05);
         assert!(
             (solution.helmholtz_rt_dv - want_dv).abs() < 1.0e-9,
             "d(A^R/RT)/dV = {}, and the probe's two volume derivatives give {want_dv}",
@@ -739,10 +775,10 @@ mod tests {
         );
 
         let want_ln_phi = [
-            -0.026_957_328_895_281_1 - 0.000_379_609_469_205_052 + 0.003_768_121_783_018_29,
-            -0.021_959_491_597_569_0 + 8.588_602_480_471_29e-08 - 8.525_314_228_889_12e-07,
-            -17.315_614_106_443_6 - 0.192_435_547_491_505 - 127.400_565_779_252,
-            0.014_107_883_057_089_9 - 0.197_975_495_079_022 - 171.536_916_337_467,
+            -0.033_779_469_529_633_7 - 0.000_379_689_198_484_864 + 0.003_768_123_833_748_53,
+            -0.054_151_933_681_426_8 + 8.217_698_408_114_69e-08 - 8.155_434_854_017_50e-07,
+            -42.703_688_829_906_6 - 0.192_473_739_210_207 - 127.400_581_537_773,
+            0.023_687_140_015_474_0 - 0.198_015_828_704_634 - 171.536_937_555_333,
         ];
         for (i, want) in want_ln_phi.iter().enumerate() {
             assert!(
@@ -760,18 +796,18 @@ mod tests {
     /// omits it from `dFdV`, `dFdVdV` and `dFdTdV` and includes it in `getF`, `dFdT` and
     /// `dFdTdT` - consistent, and stated here because a port that added it would move every
     /// root by the Born share of the pressure, which at this state is `0.2989` against the
-    /// others' `0.0175`.
+    /// others' `0.0426`.
     #[test]
     fn the_born_term_carries_no_volume() {
         let term =
             FurstElectrolyte::new(species(), MixingRule::default_for_the_model()).expect("builds");
         let solution = term
-            .solve(298.15, &moles(), 2.385_525_337_515_67e-5)
+            .solve(298.15, &moles(), 2.384_281_303_879_72e-5)
             .expect("evaluates");
         let short = term.short_range(298.15, &moles()).expect("computes");
         let state = build_state(&StateInputs {
             temperature: 298.15,
-            molar_volume: 2.385_525_337_515_67e-5,
+            molar_volume: 2.384_281_303_879_72e-5,
             mole_numbers: &moles(),
             components: &species()
                 .iter()
@@ -792,10 +828,11 @@ mod tests {
                 .iter()
                 .map(|s| s.name.clone())
                 .collect::<Vec<_>>(),
+            mod2004: false,
         })
         .expect("builds");
         assert!(
-            (fborn(&state) - (-0.298_937_482_116_719)).abs() < 1.0e-12,
+            (fborn(&state) - (-0.298_937_519_093_106)).abs() < 1.0e-12,
             "the Born term is the largest of the three and carries no volume"
         );
         assert!(
