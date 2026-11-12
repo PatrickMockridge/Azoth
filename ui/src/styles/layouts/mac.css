@@ -82,9 +82,11 @@
   color: var(--menubar-ink);
 }
 
-/* The View menu already carries the workspace switch and the build stamp is not a Macintosh
-   control; hiding both keeps the one-row menu bar from crowding the case name. */
-[data-layout="mac"] .bar-tools .workspace-switch,
+/*
+ * The workspace switch stays visible: the View menu carries the same two commands, but a reader
+ * should not have to open a menu to find the other half of the editor. The build stamp is not a
+ * Macintosh control and is hidden to leave it room.
+ */
 [data-layout="mac"] .bar-tools .build {
   display: none;
 }

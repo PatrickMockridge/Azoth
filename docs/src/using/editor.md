@@ -93,7 +93,7 @@ case-name field sets that name. The workbook exports to CSV,
 and **Report** prints or saves a case file with the drawing, the streams, the results, the
 caveats and the source record.
 
-The **Calculations** switch opens a separate workspace for the library's standalone calculations
-(on Macintosh it is in the **View** menu). See [calculation sheets](./calculations.md) for the
-workspace and [reading a calculation page](./reading-a-calculation.md) for the reference page a
-sheet links to.
+The **Calculations** switch opens a separate workspace for the library's standalone calculations;
+the **View** menu carries the same two commands. See [calculation sheets](./calculations.md) for
+the workspace and [reading a calculation page](./reading-a-calculation.md) for the reference page
+a sheet links to.
