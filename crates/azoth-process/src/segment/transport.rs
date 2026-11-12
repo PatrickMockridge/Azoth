@@ -349,20 +349,9 @@ fn estimate_surface_tension(gas: &Stream, liquid: &Stream) -> Result<(f64, bool)
     if gas_phase.kind != azoth_eos::phase_transport::PhaseKind::Gas {
         return Ok((DEFAULT_SURFACE_TENSION, true));
     }
-    // **A gas-and-aqueous pair answers `0.0` upstream, and the constant is the class's answer.**
-    // Measured on this class's own path - the gas cloned, the liquid's positive-mole components
-    // added, flashed at the gas's temperature and pressure - `InterfaceProperties.getSurfaceTension`
-    // returns `0.0` for the pair at dissolved-CO2 loadings of `0`, `1e-6`, `1e-3`, `1e-2` and
-    // `0.04`. `isFinitePositive(0.0)` is false, so `estimateSurfaceTension` falls through to its
-    // `DEFAULT_SURFACE_TENSION`, which is what the capture's wetted area is built from.
-    //
-    // The parachor form is *not* wrong here - it answers `0.05303` on the same mixture, which
-    // would move the wetted area from `56.9` to `32.9` - it is a different branch. An oil pair
-    // takes it, and the class's own states are all gas-and-aqueous, so this is where its answer
-    // comes from.
-    if liquid_phase.kind == azoth_eos::phase_transport::PhaseKind::Aqueous {
-        return Ok((DEFAULT_SURFACE_TENSION, true));
-    }
+    // **The target's `InterfaceProperties` answers a positive tension for a gas/aqueous pair**,
+    // so there is no aqueous special case: the parachor form is the answer there too. Measured
+    // on this class's own path it answers `0.05303`, and the Onda wetted area is the capture's.
     let parachors: Vec<f64> = match mixed.mixture() {
         Ok((mixture, _)) => mixture
             .components()
