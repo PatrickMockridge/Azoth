@@ -631,9 +631,9 @@ def _lookup_lines(
     (first, first_value), (second, second_value) = values
     slope = (second_value - first_value) / (second - first)
     blended = first_value + slope * (speed - first)
-    # **The pinned class scales the blended head by ``speed / max(s1, s2)``**, and leaves the
-    # efficiency unscaled.
-    return blended * speed / max(first, second) if head else blended
+    # The target's two-line branch interpolates or extrapolates in speed without a second
+    # head scaling; only a single selected line retains ``speed / reference``.
+    return blended
 
 
 def _line_value(

@@ -52,8 +52,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `the_40_bara_aqueous_phase_at_ten_percent_salt` | components = ['CO2', 'water', 'Na+', 'Cl-'], T = 283.15, P = 4000000.0, x = [0.0199838194895481, 0.917183084665173, 0.0314165479226397, 0.0314165479226397] | molality = [1.20945, 55.5093, 1.90138, 1.90138], mass_ratio = [0.0532279, 1.0, 0.0437126, 0.0674038], activity_coefficient = [1.05024, 0.999046, 0.68748, 0.69305] |
-| `the_100_bara_aqueous_phase_at_five_percent_salt` | components = ['CO2', 'water', 'Na+', 'Cl-'], T = 283.15, P = 10000000.0, x = [0.0279290026609336, 0.9415201565979, 0.015275420370583, 0.015275420370583] | molality = [1.64661, 55.5093, 0.900594, 0.900594], mass_ratio = [0.0724674, 1.0, 0.0207047, 0.0319261], activity_coefficient = [0.89545, 1.00298, 1.16645, 0.416939] |
+| `the_40_bara_aqueous_phase_at_ten_percent_salt` | components = ['CO2', 'water', 'Na+', 'Cl-'], T = 283.15, P = 4000000.0, x = [0.0199838194895481, 0.917183084665173, 0.0314165479226397, 0.0314165479226397] | molality = [1.20945, 55.5093, 1.90138, 1.90138], mass_ratio = [0.0532279, 1.0, 0.0437126, 0.0674038], activity_coefficient = [1.05024, 0.999046, 0.686676, 0.692239] |
+| `the_100_bara_aqueous_phase_at_five_percent_salt` | components = ['CO2', 'water', 'Na+', 'Cl-'], T = 283.15, P = 10000000.0, x = [0.0279290026609336, 0.9415201565979, 0.015275420370583, 0.015275420370583] | molality = [1.64661, 55.5093, 0.900594, 0.900594], mass_ratio = [0.0724674, 1.0, 0.0207047, 0.0319261], activity_coefficient = [0.89545, 1.00298, 1.16508, 0.416452] |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.

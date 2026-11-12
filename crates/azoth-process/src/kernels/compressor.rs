@@ -3,6 +3,7 @@
 use azoth_core::units::{Power, Pressure, joules_per_mole, joules_per_mole_kelvin, pascals, watts};
 use azoth_core::{AzothError, Result};
 
+use azoth_eos::heat_capacity::{phase_capacity, volume_derivatives};
 use azoth_eos::{Phase, RootSide, molar_enthalpy_entropy, ph_flash, ps_flash, pt_flash};
 
 use crate::compressor_chart::CompressorChart;
@@ -21,8 +22,6 @@ const MAX_SURGE_PASSES: usize = 20;
 const SPEED_SOLVE_ITERATIONS: usize = 200;
 /// The numerical derivative's speed increment, `deltaSpeed`.
 const SPEED_SOLVE_DELTA_RPM: f64 = 100.0;
-/// `Math.abs(currentPressure - targetPressure) <= 1e-3` bar, in pascals.
-const SPEED_SOLVE_TOLERANCE_PA: f64 = 100.0;
 /// The derivative floor, `1e-6` bar/rpm, in pascals per rpm.
 const SPEED_SOLVE_DERIVATIVE_FLOOR_PA: f64 = 1.0e-4;
 /// The fallback slope, `0.01` bar/rpm, in pascals per rpm.
@@ -471,12 +470,7 @@ pub fn compressor_with_chart(
         break (efficiency, head_m, head_j_per_kg);
     };
 
-    let outlet_pressure = chart_pressure_for_head(
-        feed,
-        head_j_per_kg,
-        efficiency,
-        molar_mass,
-    )?;
+    let outlet_pressure = chart_pressure_for_head(feed, head_j_per_kg, efficiency)?;
     let dh = head_j_per_kg * molar_mass / efficiency;
     let outlet = Stream::from_ph(
         feed.components.clone(),
@@ -641,8 +635,7 @@ pub fn compressor_speed_solve(
         ));
     }
     let molar_mass = feed.molar_mass()?.value;
-    let (z, cp) = feed_z_cp(feed)?;
-    let kappa = cp / (cp - R_J_PER_MOL_K);
+    let (z, _cp) = feed_z_cp(feed)?;
     let shift = {
         let (mixture, _) = feed.mixture()?;
         mixture.volume_shift(&feed.z)
@@ -670,6 +663,10 @@ pub fn compressor_speed_solve(
     let mut dh_molar = 0.0;
     let mut converged: Option<f64> = None;
     let mut limited: Option<f64> = None;
+    // `createSchultzHeadFunction` at the target pressure: one isentropic flash supplies
+    // every efficiency trial, which is why the residual is a head comparison and not a
+    // nested pressure solve.
+    let schultz = schultz_head(feed, settings.target)?;
 
     for iteration in 1..SPEED_SOLVE_ITERATIONS {
         let percent = chart.polytropic_efficiency(fresh_flow_m3hr, speed)? * 100.0;
@@ -685,22 +682,14 @@ pub fn compressor_speed_solve(
         if head_j <= 0.0 {
             head_j = MIN_POLYTROPIC_HEAD_J_PER_KG;
         }
-        let current = feed.p.value
-            * polytropic_pressure_ratio(head_j, z, feed.t.value, molar_mass, kappa, formula)?;
+        let current_residual = head_j - schultz.head_j_per_kg(formula);
+        let residual_tolerance = 1.0e-8 * head_j.max(1.0);
         // The derivative's read is never clamped, as the class's second read is not.
         let percent_delta = chart.polytropic_efficiency(fresh_flow_m3hr, speed + delta)? * 100.0;
         let head_delta =
             chart.polytropic_head(fresh_flow_m3hr, speed + delta)? * METRE_TO_JOULE_PER_KG;
-        let ratio_delta = polytropic_pressure_ratio(
-            head_delta,
-            z,
-            feed.t.value,
-            molar_mass,
-            kappa,
-            percent_delta / 100.0,
-        )?;
-        let next = feed.p.value * ratio_delta;
-        let mut derivative = (next - current) / delta;
+        let delta_residual = head_delta - schultz.head_j_per_kg(percent_delta / 100.0);
+        let mut derivative = (delta_residual - current_residual) / delta;
         if !derivative.is_finite() {
             return Err(AzothError::invalid_input(
                 "curve",
@@ -715,7 +704,7 @@ pub fn compressor_speed_solve(
         }
         let relaxation = 0.8_f64.min(iteration as f64 / (iteration as f64 + 3.0));
         let cap = 500.0_f64.max(0.2 * speed);
-        let mut update = (settings.target.value - current) / derivative;
+        let mut update = -current_residual / derivative;
         if update.abs() > cap {
             update = update.signum() * cap;
         }
@@ -740,7 +729,7 @@ pub fn compressor_speed_solve(
             });
             break;
         }
-        if (current - settings.target.value).abs() <= SPEED_SOLVE_TOLERANCE_PA {
+        if current_residual.abs() <= residual_tolerance {
             converged = Some(speed);
             break;
         }
@@ -802,35 +791,53 @@ pub fn compressor_speed_solve(
 }
 
 /// The class's polytropic pressure ratio: `((H + W)/W)^(n/(n-1))`.
-/// `chartPressureForHead`: the discharge pressure whose polytropic head is the chart's.
+/// `chartPressureForHead`: the discharge pressure whose Schultz head is the chart's.
 ///
-/// The target's default method is `"schultz"`, so the constant-inlet-property ratio is not
-/// its answer. This inverts the port's own no-chart polytropic path by bisection, the same
-/// forward calculation the target's `polytropicHeadResidual` runs through its reference
-/// compressor.
-fn chart_pressure_for_head(
-    feed: &Stream,
-    head_j_per_kg: f64,
-    efficiency: f64,
-    molar_mass: f64,
-) -> Result<Pressure> {
+/// The target's chart branch calls this even when the historical kappa ratio is the initial
+/// bracket estimate (`Compressor.java:2251-2305`). The reference is the selected polytropic
+/// method, whose default is Schultz; the target's `polytropicHeadResidual` is the same
+/// forward calculation used here.
+fn chart_pressure_for_head(feed: &Stream, head_j_per_kg: f64, efficiency: f64) -> Result<Pressure> {
     if head_j_per_kg == 0.0 {
         return Ok(feed.p);
     }
-    let head_at = |outlet_pressure: Pressure| -> Result<f64> {
-        let (outlet, _) = compressor_polytropic(feed, outlet_pressure, efficiency)?;
-        Ok((outlet.h.value - feed.h.value) / molar_mass * efficiency)
+    if !(efficiency > 0.0 && efficiency <= 1.0) {
+        return Err(AzothError::invalid_input(
+            "curve",
+            format!("the chart head's efficiency is in (0, 1], and {efficiency} is not"),
+        ));
+    }
+    let inlet_pressure = feed.p.value;
+    let (z, cp) = feed_z_cp(feed)?;
+    let kappa = cp / (cp - R_J_PER_MOL_K);
+    let molar_mass = feed.molar_mass()?.value;
+    let ideal_pressure = inlet_pressure
+        * polytropic_pressure_ratio(
+            head_j_per_kg,
+            z,
+            feed.t.value,
+            molar_mass,
+            kappa,
+            efficiency,
+        )?;
+    let lower = 0.0;
+    let lower_residual = -head_j_per_kg;
+    let mut upper = if ideal_pressure.is_finite() && ideal_pressure > inlet_pressure {
+        (ideal_pressure / inlet_pressure).ln()
+    } else {
+        2.0_f64.ln()
     };
-    let mut lower = feed.p;
-    let mut upper = pascals(feed.p.value * 2.0);
-    let mut upper_residual = head_at(upper)? - head_j_per_kg;
+    let mut upper_residual = schultz_head(feed, pascals(inlet_pressure * upper.exp()))?
+        .head_j_per_kg(efficiency)
+        - head_j_per_kg;
     for _ in 0..12 {
         if upper_residual >= 0.0 {
             break;
         }
-        lower = upper;
-        upper = pascals(upper.value * 2.0);
-        upper_residual = head_at(upper)? - head_j_per_kg;
+        upper *= 2.0;
+        upper_residual = schultz_head(feed, pascals(inlet_pressure * upper.exp()))?
+            .head_j_per_kg(efficiency)
+            - head_j_per_kg;
     }
     if upper_residual < 0.0 {
         return Err(AzothError::invalid_input(
@@ -842,19 +849,40 @@ fn chart_pressure_for_head(
         ));
     }
     let tolerance = (1.0e-8 * head_j_per_kg).max(1.0e-12);
-    for _ in 0..72 {
-        let middle = pascals(0.5 * (lower.value + upper.value));
-        let residual = head_at(middle)? - head_j_per_kg;
+    let (mut lower, mut lower_residual) = (lower, lower_residual);
+    for iteration in 0..72 {
+        let trial = if iteration < 12 {
+            upper - upper_residual * (upper - lower) / (upper_residual - lower_residual)
+        } else {
+            f64::NAN
+        };
+        let trial = if iteration >= 12
+            || !trial.is_finite()
+            || trial <= lower
+            || trial >= upper
+            || iteration % 5 == 4
+        {
+            0.5 * (lower + upper)
+        } else {
+            trial
+        };
+        let pressure = pascals(inlet_pressure * trial.exp());
+        let residual = schultz_head(feed, pressure)?.head_j_per_kg(efficiency) - head_j_per_kg;
         if residual.abs() <= tolerance {
-            return Ok(middle);
+            return Ok(pressure);
         }
         if residual < 0.0 {
-            lower = middle;
+            lower = trial;
+            lower_residual = residual;
         } else {
-            upper = middle;
+            upper = trial;
+            upper_residual = residual;
         }
     }
-    Ok(pascals(0.5 * (lower.value + upper.value)))
+    Err(AzothError::invalid_input(
+        "outlet_pressure",
+        "the chart head-pressure solve did not converge",
+    ))
 }
 
 fn polytropic_pressure_ratio(
@@ -940,4 +968,157 @@ fn feed_z_cp(feed: &Stream) -> Result<(f64, f64)> {
             ))
         }
     }
+}
+
+/// `getdVdTpn` and `getdVdPtn` at the feed's own root, m3/(mol K) and m3/Pa.
+///
+/// Target `SystemThermo` sums each phase's `-dPdT/dPdV` and `1/dPdV`; a single-phase feed is
+/// the common chart state, and the two-phase branch uses the same beta weighting the feed's
+/// `z` and `cp` do.
+fn feed_volume_derivatives(feed: &Stream) -> Result<(f64, f64)> {
+    let (mixture, ideal_gas) = feed.mixture()?;
+    let flash = pt_flash(&mixture, feed.t, feed.p, &feed.z)?;
+    let reduced = mixture.reduced_parameters(feed.t, feed.p)?;
+    let single = |composition: &[f64], side: RootSide| -> Result<(f64, f64)> {
+        let root = mixture.phase_state(&reduced, composition, side)?.z;
+        let capacity = phase_capacity(
+            &mixture,
+            &ideal_gas,
+            &reduced,
+            feed.t,
+            feed.p,
+            composition,
+            root,
+        )?;
+        Ok(volume_derivatives(&capacity))
+    };
+    match flash.phase {
+        Phase::AllVapour => single(&feed.z, RootSide::Vapour),
+        Phase::AllLiquid | Phase::Trivial => single(&feed.z, RootSide::Liquid),
+        Phase::TwoPhase => {
+            let beta = flash.vapour_fraction.unwrap_or(1.0);
+            let vapour = single(&flash.y, RootSide::Vapour)?;
+            let liquid = single(&flash.x, RootSide::Liquid)?;
+            Ok((
+                beta * vapour.0 + (1.0 - beta) * liquid.0,
+                beta * vapour.1 + (1.0 - beta) * liquid.1,
+            ))
+        }
+    }
+}
+
+/// `Compressor`'s Schultz head relation at a fixed discharge pressure.
+///
+/// The target's `createSchultzHeadFunction` (`Compressor.java:2337-2380`) forms the
+/// isentropic endpoint once, then returns a function of the polytropic efficiency. This
+/// struct is that function's four state numbers.
+struct SchultzHead {
+    schultz_x: f64,
+    schultz_y: f64,
+    isentropic_exponent: f64,
+    head_factor: f64,
+    pressure_ratio: f64,
+}
+
+impl SchultzHead {
+    /// The function's value at a fractional polytropic efficiency, J/kg.
+    fn head_j_per_kg(&self, efficiency: f64) -> f64 {
+        let inverse = 1.0 / efficiency;
+        let exponent = (1.0 + self.schultz_x)
+            / ((inverse + self.schultz_x) / self.isentropic_exponent
+                - self.schultz_y * (inverse - 1.0));
+        let term = exponent / (exponent - 1.0);
+        term * self.head_factor * (self.pressure_ratio.powf(1.0 / term) - 1.0) * 1000.0
+    }
+}
+
+/// Build the target's Schultz head relation at `outlet_pressure`.
+fn schultz_head(feed: &Stream, outlet_pressure: Pressure) -> Result<SchultzHead> {
+    if outlet_pressure.value <= feed.p.value {
+        return Err(AzothError::invalid_input(
+            "outlet_pressure",
+            format!(
+                "the Schultz reference compresses, and it is given {} Pa against the inlet's \
+                 {} Pa",
+                outlet_pressure.value, feed.p.value
+            ),
+        ));
+    }
+    let (mixture, ideal_gas) = feed.mixture()?;
+    let inlet_density = feed.density()?;
+    let (entropy, _) = ps_flash::entropy_at(&mixture, &ideal_gas, feed.t, feed.p, &feed.z)?;
+    let isentropic = ps_flash::ps_flash(
+        &mixture,
+        &ideal_gas,
+        outlet_pressure,
+        joules_per_mole_kelvin(entropy),
+        &feed.z,
+    )?;
+    let isentropic_stream = Stream::from_pt(
+        feed.components.clone(),
+        feed.z.clone(),
+        feed.n,
+        outlet_pressure,
+        isentropic.temperature,
+    )?;
+    let isentropic_density = isentropic_stream.density()?;
+    let (isentropic_enthalpy, _) = ph_flash::enthalpy_at(
+        &mixture,
+        &ideal_gas,
+        isentropic.temperature,
+        outlet_pressure,
+        &feed.z,
+    )?;
+    let (d_v_d_t, d_v_d_p) = feed_volume_derivatives(feed)?;
+    let molar_volume = feed_volumetric_flow(feed)? / feed.n;
+    let temperature = feed.t.value;
+    let inlet_pressure = feed.p.value;
+    let schultz_x = temperature / molar_volume * d_v_d_t - 1.0;
+    let schultz_y = -inlet_pressure / molar_volume * d_v_d_p;
+    let pressure_ratio = outlet_pressure.value / inlet_pressure;
+    let density_ratio = isentropic_density / inlet_density;
+    if !pressure_ratio.is_finite()
+        || !density_ratio.is_finite()
+        || pressure_ratio <= 1.0
+        || density_ratio <= 1.0
+    {
+        return Err(AzothError::invalid_input(
+            "outlet_pressure",
+            format!(
+                "the Schultz reference has pressure ratio {pressure_ratio} and density ratio \
+                 {density_ratio}, which the isentropic exponent cannot divide"
+            ),
+        ));
+    }
+    let isentropic_exponent = pressure_ratio.ln() / density_ratio.ln();
+    let correction_factor = (isentropic_enthalpy - feed.h.value) * feed.n
+        / (1.0e5
+            * (outlet_pressure.value / isentropic_density - inlet_pressure / inlet_density)
+            * isentropic_exponent
+            / (isentropic_exponent - 1.0));
+    let mass_flow = feed.n * feed.molar_mass()?.value;
+    let head_factor =
+        correction_factor * 1.0e5 * inlet_pressure / inlet_density / mass_flow / 1000.0;
+    if ![
+        schultz_x,
+        schultz_y,
+        isentropic_exponent,
+        head_factor,
+        pressure_ratio,
+    ]
+    .iter()
+    .all(|value| value.is_finite())
+    {
+        return Err(AzothError::invalid_input(
+            "outlet_pressure",
+            "the Schultz reference's state numbers are not all finite",
+        ));
+    }
+    Ok(SchultzHead {
+        schultz_x,
+        schultz_y,
+        isentropic_exponent,
+        head_factor,
+        pressure_ratio,
+    })
 }

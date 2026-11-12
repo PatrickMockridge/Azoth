@@ -2,31 +2,31 @@ model = "reactions.reactive_phase_equilibrium"
 [[cases]]
 id = "co2_water_aqueous_phase"
 tolerance = 1e-06
-source = "NeqSim master, from `validation/neqsim/captures/reaction_operations_probe.tsv`: the CO2-water fluid's aqueous phase after a flash, with the element matrix and the element amounts the facade built for it and the ideal Newton solve's own answer. **The seed is on and does nothing here**: `LinearProgrammingChemicalEquilibrium`'s program has no exact solution on this state, so the estimate is absent and the two paths start from the same composition - the divergence this case records is the adaptive-derivative refinement and the certification, and the case pins the absence as well as the answer. The phase charge is summed from the capture's `n_before`, which is the state the caller is holding. The composition agrees to `1.5e-7` relative, worst on the trace ions, at the same pass count. **`error` is not pinned**: it is the quantity the loop stops on, and the bordered matrix's conditioning (`2.5e13` here) spreads it - the capture has `3.37e-8`, the reference `2.27e-8` and the extension `3.72e-8`, which is why `converged` crosses with it.\n"
+source = "NeqSim master, from `validation/neqsim/captures/reaction_operations_probe.tsv`: the CO2-water fluid's aqueous phase after a flash, with the element matrix and the element amounts the facade built for it and the ideal Newton solve's own answer. **The LP estimate is absent on this state**, so the solve starts from the composition the phase holds and the case pins the answer rather than a seed. The phase charge is summed from the capture's `n_before`. **`error` is not pinned**: it is the quantity the loop stops on, and the bordered matrix's conditioning spreads it between the two kernels; the composition is what the case holds.\n"
 [cases.inputs]
 concentration_basis = "mole_fraction"
 source = "standard"
-seed = "linear_programming"
+seed = "none"
 phase = "aqueous"
 components = ["CO2", "water", "OH-", "H3O+", "HCO3-", "CO3--"]
 moles = [
-    1.2573383934458022e-04,
-    9.999733292115952,
-    8.690090644094265e-12,
-    3.7523303281414325e-05,
-    1.4784390876737142e-05,
-    2.6728220502961853e-21,
+    1.1772758526856489e-04,
+    9.999740017845612,
+    1.429788322751092e-11,
+    2.279087916763068e-05,
+    2.2790864872950143e-05,
+    8.37416022446026e-15,
 ]
 whole_system = false
-phase_charge = 2.273890371458653e-05
-phase_moles = 9.999911333658144
+phase_charge = -1.995100962072944e-14
+phase_moles = 9.99990332718923
 log_activity = [
-    -3.1030489400052375e-04,
-    2.691048273106844e-09,
-    1.6340107041479257e-04,
-    -4.45333543268589e-04,
-    1.2896333374889934e-04,
-    -1.9997187576947795e-05,
+    -2.5143685467909904e-04,
+    1.7483241521176751e-09,
+    1.980300722914663e-04,
+    -3.8031741354416226e-04,
+    1.4494253645924715e-04,
+    2.6309691635084675e-05,
 ]
 T = 298.15
 max_iterations = 100
@@ -38,32 +38,32 @@ a_matrix = [
     [2.0, 1.0, 1.0, 1.0, 3.0, 3.0],
     [0.0, 0.0, -1.0, 1.0, -1.0, -2.0],
 ]
-b = [1.4051823021470568e-04, 19.999593938541302, 10.000066636279326, 0.0]
+b = [1.405184501498892e-04, 19.999571199207896, 10.00006663650426, 0.0]
 chem_ref = [
-    -135846.03262887645,
-    86061.16003668531,
-    72306.22849248124,
-    199632.18316177875,
-    -127079.60827279043,
-    -154589.47136119858,
+    135846.03262887645,
+    -86061.16003668531,
+    -72306.22849248124,
+    0.0,
+    0.0,
+    0.0,
 ]
 moles = [
-    1.2573384043449446e-04,
-    9.99973329211278,
-    8.685091891949694e-12,
-    3.7523306303882275e-05,
-    1.4784389997460746e-05,
-    3.2997798471182613e-15,
+    1.1772758509412744e-04,
+    9.999740017845804,
+    1.4297883231686749e-11,
+    2.2790879161010973e-05,
+    2.27908648341255e-05,
+    8.37416021262357e-15,
 ]
-iterations = 19.0
+iterations = 2.0
 seed_applied = false
 seed_moles = [
-    1.2573383934458022e-04,
-    9.999733292115952,
-    8.690090644094265e-12,
-    3.7523303281414325e-05,
-    1.4784390876737142e-05,
-    2.6728220502961853e-21,
+    1.1772758526856489e-04,
+    9.999740017845612,
+    1.429788322751092e-11,
+    2.279087916763068e-05,
+    2.2790864872950143e-05,
+    8.37416022446026e-15,
 ]
 [[cases]]
 id = "bicarbonate_brine_carries_its_spectator_charge"
@@ -76,23 +76,23 @@ seed = "none"
 phase = "aqueous"
 components = ["CO2", "water", "HCO3-", "CO3--", "OH-", "H3O+"]
 moles = [
-    1.355791821408818e-04,
-    9.999762521408506,
-    0.01997989768435248,
-    1.0295648328160809e-13,
-    1.7001418398616546e-08,
-    3.111766580692449e-08,
+    1.3555660310596667e-04,
+    9.999762508418874,
+    0.01997990994374972,
+    5.159053910716665e-09,
+    1.0067799179405033e-08,
+    3.352486564443659e-08,
 ]
 whole_system = false
-phase_charge = 1.3138935581800328e-08
-phase_moles = 10.039857943101433
+phase_charge = -1.2592674785002813e-13
+phase_moles = 10.039857920522113
 log_activity = [
-    0.035523536890543994,
-    3.686576278028042e-06,
-    -0.001870113251873029,
-    0.04431928501758531,
-    0.04451635300816914,
-    -0.07984441634095774,
+    0.0355235884341063,
+    3.6866856838457807e-06,
+    -0.001870159275820349,
+    0.04431928847221389,
+    0.044516351712531765,
+    -0.07984440346007204,
 ]
 T = 298.15
 max_iterations = 100
@@ -104,24 +104,24 @@ a_matrix = [
     [2.0, 1.0, 3.0, 3.0, 1.0, 1.0],
     [0.0, 0.0, -1.0, -2.0, -1.0, 1.0],
 ]
-b = [0.020115476866617132, 20.019505050855795, 10.059973420945283, -0.019979896707241075]
+b = [0.020115471705909597, 20.019505037423894, 10.059973410526162, -0.01997989680466515]
 chem_ref = [
-    -27386.689890154594,
-    49908.04579044469,
-    36153.11424624062,
-    99569.74518438231,
-    127079.60827279044,
-    72552.57488898831,
+    27386.6898901546,
+    -49908.04579044469,
+    -36153.11424624062,
+    0.0,
+    0.0,
+    0.0,
 ]
 moles = [
-    1.3557499371962708e-04,
-    9.999762521742847,
-    0.019979896714367944,
-    5.158348135543692e-09,
-    1.0066427974203557e-08,
-    3.3529432680236246e-08,
+    1.355566031073728e-04,
+    9.999762508418884,
+    0.01997990994373334,
+    5.159053911435445e-09,
+    1.006779918081616e-08,
+    3.352486563973759e-08,
 ]
-iterations = 18.0
+iterations = 2.0
 [[cases]]
 id = "a_single_gas_phase_is_skipped"
 tolerance = 1e-09
@@ -163,12 +163,12 @@ a_matrix = [
 ]
 b = [0.010000000000594776, 2.0000000001185216, 1.0200000000604503, 0.0]
 chem_ref = [
-    -178983.82465811548,
-    114828.6944246573,
-    111965.52575477365,
-    235383.72618908188,
-    -134036.59780668365,
-    -139762.93514645094,
+    178983.82465811548,
+    -114828.6944246573,
+    -111965.52575477365,
+    0.0,
+    0.0,
+    0.0,
 ]
 moles = [
     0.010000000000594776,

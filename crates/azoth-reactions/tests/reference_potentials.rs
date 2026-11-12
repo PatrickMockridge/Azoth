@@ -104,12 +104,12 @@ fn the_potentials_are_what_the_capture_attributes_to_each_component() {
 
     // From `captures/reference_potential_probe.tsv`, `fluid=co2-water`.
     let expected = [
-        ("CO2", -135_846.032_628_876_45),
-        ("water", 86_061.160_036_685_31),
-        ("OH-", 72_306.228_492_481_24),
-        ("H3O+", 199_632.183_161_778_75),
-        ("HCO3-", -127_079.608_272_790_43),
-        ("CO3--", -154_589.471_361_198_58),
+        ("CO2", 135_846.032_628_876_45),
+        ("water", -86_061.160_036_685_31),
+        ("OH-", -72_306.228_492_481_24),
+        ("H3O+", 0.0),
+        ("HCO3-", 0.0),
+        ("CO3--", 0.0),
     ];
     for (i, (name, want)) in expected.iter().enumerate() {
         assert_eq!(&names[i], name, "the case's component order");
@@ -168,21 +168,19 @@ fn a_fluid_the_table_cannot_react_has_an_empty_basis() {
     );
 }
 
-/// The deadlock fallback is reproduced, and this is the case that exercises it.
+/// A one-reaction basis leaves its dependent components at the zero gauge.
 ///
-/// `water/H3O+/OH-` reduces to one independent column and two dependent ones, and no
-/// surviving reaction has exactly one unknown - so NeqSim seeds the first uncomputed
-/// dependent component with its Gibbs energy of formation and carries on from there.
-/// `water` is solved for, `H3O+` takes its Gibbs energy of formation raw and not negated,
-/// and `OH-` follows from it by ordinary propagation.
+/// `water/H3O+/OH-` reduces to one independent column and two dependent ones. The target
+/// solves only `water` against `-RT ln K` and leaves both ions at zero; it does not
+/// propagate or seed them.
 #[test]
-fn the_deadlock_fallback_seeds_one_component_and_propagates_from_it() {
+fn a_one_reaction_basis_leaves_the_ions_at_zero_gauge() {
     let names: Vec<String> = ["water", "H3O+", "OH-"]
         .iter()
         .map(|name| (*name).to_string())
         .collect();
     let result = reference_potentials(&names, ReactionDataSource::Standard, kelvins(298.15))
-        .expect("the deadlock branch answers rather than refusing");
+        .expect("the one-reaction branch answers rather than refusing");
 
     assert_eq!(result.rank, 1);
     assert_eq!(
@@ -190,36 +188,21 @@ fn the_deadlock_fallback_seeds_one_component_and_propagates_from_it() {
         vec![1.0, 0.0, 0.0],
         "only the first column is solved for"
     );
-
-    let seeded = formation_properties("H3O+")
-        .expect("parses")
-        .expect("the component databank carries it");
-    assert_eq!(
-        result.potentials[1], seeded.gibbs_energy_of_formation,
-        "the seed is the component's Gibbs energy of formation, not its negative"
-    );
-
-    let propagated = formation_properties("OH-")
-        .expect("parses")
-        .expect("the component databank carries it");
-    assert_ne!(
-        result.potentials[2], propagated.gibbs_energy_of_formation,
-        "OH- is propagated from the seeded pair, not seeded itself"
-    );
+    assert_eq!(result.potentials[1], 0.0, "H3O+ is the zero gauge");
+    assert_eq!(result.potentials[2], 0.0, "OH- is the zero gauge");
 }
 
-/// **Every subset of the species the three tables' loaded reactions name answers**, and
-/// the deadlock fallback is what makes that true: 3,320 of these 14,333 subsets seed a
-/// component the propagation cannot reach, measured.
+/// **Every subset of the species the three tables' loaded reactions name answers.** Of the
+/// 26,621 subsets, 9,984 are refused by the pitzer source's evidence gate and 16,637
+/// answer with a full-rank basis. No dependent component is seeded: the zero gauge is the
+/// only dependent value, and the formation-Gibbs branch is reserved for a rank-deficient
+/// basis.
 ///
-/// The counts are asserted rather than described, in both directions. A change that left
-/// the propagation unable to finish would stop the sweep from answering at all, and a
-/// change that made the reduction complete on its own would leave the fallback
-/// unexercised and drop the second count to zero - so the branch cannot quietly stop
-/// being reached, and a pin move that adds a reaction to any of the three tables has to
-/// re-measure both numbers.
+/// The counts are asserted rather than described. A change that stopped the sweep from
+/// answering would move the first number; a pin that added reactions to any table has to
+/// re-measure it, and the seeded count is the check that no propagation path returned.
 #[test]
-fn every_reaction_set_the_vendored_tables_admit_answers_and_the_seed_is_exercised() {
+fn every_reaction_set_the_vendored_tables_admit_answers_and_no_dependent_component_is_seeded() {
     let mut subsets = 0usize;
     let mut refused = 0usize;
     let mut seeded = 0usize;
@@ -286,17 +269,17 @@ fn every_reaction_set_the_vendored_tables_admit_answers_and_the_seed_is_exercise
     // The three counts, each of which a silent change would hide:
     assert_eq!(
         subsets + refused,
-        14_333,
+        26_621,
         "the three tables' loaded species, subset by subset"
     );
     assert_eq!(
-        refused, 2_496,
+        refused, 9_984,
         "subsets the pitzer source's evidence gate refuses - every one of them a set whose \
          survivors include a row that is not VALIDATED"
     );
     assert_eq!(
-        seeded, 3_320,
-        "answered subsets where the deadlock fallback seeds a component"
+        seeded, 0,
+        "answered subsets where a dependent potential is seeded"
     );
 }
 

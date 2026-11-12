@@ -3,8 +3,9 @@
 use azoth_core::units::{kelvins, pascals};
 use azoth_eos::cubic::Cubic;
 use azoth_eos::databank;
-use azoth_eos::heat_capacity::phase_capacity;
+use azoth_eos::heat_capacity::{phase_capacity, volume_derivatives};
 use azoth_eos::mixture::RootSide;
+use azoth_eos::pr_molar_volume::MOLAR_GAS_CONSTANT;
 use azoth_eos::pt_flash::pt_flash;
 use azoth_eos::results::Phase;
 
@@ -41,6 +42,57 @@ fn capacity(components: &[&str], t: f64, p: f64, composition: &[f64], side: Root
     let gamma = capacity.cp / capacity.cv;
     assert!((1.0..=2.0).contains(&gamma), "gamma={gamma}");
     assert!(capacity.d_p_d_v < 0.0, "dP/dV={}", capacity.d_p_d_v);
+}
+
+#[test]
+fn volume_derivatives_match_finite_differences() {
+    let (mixture, ideal_gas) =
+        databank::mixture_of(&["methane"], Cubic::Pr, None).expect("the fluid");
+    let t = 300.0;
+    let p = 500_000.0;
+    let composition = [1.0];
+    let reduced = mixture
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("the state");
+    let root = mixture
+        .phase_state(&reduced, &composition, RootSide::Vapour)
+        .expect("the root")
+        .z;
+    let capacity = phase_capacity(
+        &mixture,
+        &ideal_gas,
+        &reduced,
+        kelvins(t),
+        pascals(p),
+        &composition,
+        root,
+    )
+    .expect("the capacities");
+    let (d_v_d_t, d_v_d_p) = volume_derivatives(&capacity);
+
+    let volume_at = |temperature: f64, pressure: f64| {
+        let reduced = mixture
+            .reduced_parameters(kelvins(temperature), pascals(pressure))
+            .expect("the state");
+        let root = mixture
+            .phase_state(&reduced, &composition, RootSide::Vapour)
+            .expect("the root")
+            .z;
+        root * MOLAR_GAS_CONSTANT * temperature / pressure - mixture.volume_shift(&composition)
+    };
+    let step_t = 1.0e-3;
+    let step_p = 1.0;
+    let finite_t = (volume_at(t + step_t, p) - volume_at(t - step_t, p)) / (2.0 * step_t);
+    let finite_p = (volume_at(t, p + step_p) - volume_at(t, p - step_p)) / (2.0 * step_p);
+
+    assert!(
+        (d_v_d_t / finite_t - 1.0).abs() < 1.0e-6,
+        "dV/dT={d_v_d_t}, finite difference={finite_t}"
+    );
+    assert!(
+        (d_v_d_p / finite_p - 1.0).abs() < 1.0e-6,
+        "dV/dP={d_v_d_p}, finite difference={finite_p}"
+    );
 }
 
 #[test]

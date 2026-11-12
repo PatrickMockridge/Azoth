@@ -1,14 +1,14 @@
 model = "reactions.reference_potentials"
 [[cases]]
-id = "a_deadlocked_propagation_takes_the_formation_gibbs_seed"
+id = "a_one_reaction_basis_leaves_the_ions_at_zero_gauge"
 tolerance = 1e-12
-source = "NeqSim master, `ChemicalReactionList.calcReferencePotentials`, from `validation/neqsim/captures/reference_fallback_probe.tsv`. **The case where the propagation deadlocks**: `2 H2O = H3O+ + OH-` is one reaction over three components, so only `water` raises the rank to the reaction count and the two ions have no reaction in which every other component is known. NeqSim seeds `H3O+` with its Gibbs energy of formation taken raw and carries on, and `OH-` follows from it.\n"
+source = "NeqSim master, `ChemicalReactionList.calcReferencePotentials`, from `validation/neqsim/captures/reference_fallback_probe.tsv`. **The one-reaction basis**: `2 H2O = H3O+ + OH-` is one reaction over three components, so only `water` raises the rank to the reaction count and the two ions are the zero gauge. The target leaves both dependent potentials at zero rather than propagating from the water solve.\n"
 [cases.inputs]
 components = ["water", "H3O+", "OH-"]
 source = "standard"
 T = 298.15
 [cases.expected]
-potentials = [49908.04579044469, -237129.0, 436761.1831617787]
+potentials = [-49908.04579044469, 0.0, 0.0]
 independent = [1.0, 0.0, 0.0]
 survivors = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 rank = 1.0
@@ -22,12 +22,12 @@ source = "standard"
 T = 298.15
 [cases.expected]
 potentials = [
-    -135846.03262887645,
-    86061.16003668531,
-    72306.22849248124,
-    199632.18316177875,
-    -127079.60827279043,
-    -154589.47136119858,
+    135846.03262887645,
+    -86061.16003668531,
+    -72306.22849248124,
+    0.0,
+    0.0,
+    0.0,
 ]
 independent = [1.0, 1.0, 1.0, 0.0, 0.0, 0.0]
 survivors = [1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]
@@ -42,15 +42,15 @@ source = "standard"
 T = 298.15
 [cases.expected]
 potentials = [
-    -135846.03262887645,
-    -15109.3096192815,
-    86061.16003668531,
-    21019.134456794694,
-    72306.22849248124,
-    199632.18316177875,
-    -127079.60827279043,
-    14528.405825181253,
-    -154589.47136119858,
+    135846.03262887645,
+    15109.3096192815,
+    -86061.16003668531,
+    -21019.134456794694,
+    -72306.22849248124,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
 ]
 independent = [1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]
 survivors = [1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
@@ -65,12 +65,12 @@ source = "standard"
 T = 298.15
 [cases.expected]
 potentials = [
-    44289.36733828517,
-    86061.16003668531,
-    -135846.03262887645,
-    72306.22849248124,
-    199632.18316177875,
-    -127079.60827279043,
+    -44289.36733828517,
+    -86061.16003668531,
+    135846.03262887645,
+    -72306.22849248124,
+    0.0,
+    0.0,
 ]
 independent = [1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
 survivors = [1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]

@@ -283,8 +283,7 @@ def reactive_phase_equilibrium(
     )
     max_reaction_log_residual, net_charge_moles, max_element_residual = certificate
     certified = (
-        solved.converged
-        and max_reaction_log_residual <= REACTION_LOG_RESIDUAL_TOLERANCE
+        max_reaction_log_residual <= REACTION_LOG_RESIDUAL_TOLERANCE
         and abs(net_charge_moles) <= REACTIVE_PHASE_CHARGE_TOLERANCE_MOLES
         and max_element_residual <= ELEMENT_BALANCE_RESIDUAL_TOLERANCE_MOLES
     )

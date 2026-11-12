@@ -56,7 +56,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | Case | Inputs | Expected |
 |---|---|---|
 | `the_aqueous_phase_of_the_40_bara_brine` | components = ['CO2', 'water', 'Na+', 'Cl-'], T = 283.15, P = 4000000.0, x = [0.0199838194895481, 0.917183084665173, 0.0314165479226397, 0.0314165479226397], compressed_phase = liquid | z_factor = 0.0314046546320745, ln_phi = [3.65314216519995, -8.04447341518401, -127.642339607682, -170.734154291934] |
-| `the_gas_phase_of_the_same_brine` | components = ['CO2', 'water', 'Na+', 'Cl-'], T = 283.15, P = 4000000.0, x = [0.999495590252868, 0.000504409747132707, 1e-50, 1e-50], compressed_phase = vapour | z_factor = 0.700255333545298, ln_phi = [-0.25918565618861, -0.538799955867045, -60.7163097247917, -92.4685400845073] |
+| `the_gas_phase_of_the_same_brine` | components = ['CO2', 'water', 'Na+', 'Cl-'], T = 283.15, P = 4000000.0, x = [0.999495590252868, 0.000504409747132707, 1e-50, 1e-50], compressed_phase = vapour | z_factor = 0.700255333545298, ln_phi = [-0.259185656540842, -0.538799955975849, -60.667408108481, -92.4196243460445] |
 | `the_aqueous_phase_with_no_salt` | components = ['CO2', 'water'], T = 283.15, P = 4000000.0, x = [0.0250294141123647, 0.974970585887635], compressed_phase = liquid | z_factor = 0.0310103702842816, ln_phi = [3.42797986423899, -8.04127938788781] |
 
 ## How far this is checked

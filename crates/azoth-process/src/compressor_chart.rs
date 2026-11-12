@@ -819,13 +819,9 @@ fn lookup_lines(
     let (second, second_value) = values[1];
     let slope = (second_value - first_value) / (second - first);
     let blended = first_value + slope * (speed - first);
-    // **The pinned class scales the blended head by `speed / max(s1, s2)`**, and leaves the
-    // efficiency unscaled; the later working-tree source drops it and the jar is the oracle.
-    Ok(if head {
-        blended * speed / first.max(second)
-    } else {
-        blended
-    })
+    // The target's two-line branch interpolates or extrapolates in speed without a second
+    // head scaling; only the single-line branch retains `speed / reference`.
+    Ok(blended)
 }
 
 /// One speed line's head or efficiency at a flow: the natural spline inside the knots, and
@@ -1196,17 +1192,18 @@ mod tests {
     #[test]
     fn the_extrapolating_lookup_reproduces_the_capture() {
         // `process_compressor_map_lookup.tsv`'s `speed_interpolation_extrapolate` block, on
-        // the three-speed table. **The pinned class blends in speed and then scales the head by
-        // `speed / max(s1, s2)`** - which is why 6500 rpm reads 65, not the later source's 70.
+        // the three-speed table. The target's two-line branch interpolates in speed without a
+        // second head scaling, so 6500 rpm reads 70; only a single selected line keeps
+        // `speed / reference`.
         let chart =
             CompressorChart::with_kind(&interpolation_table(), ChartKind::MapLookupExtrapolate)
                 .expect("the table fits");
         for (speed, expected) in [
             (6000.0, 60.0),
-            (6001.0, 51.454_288_571_428_58),
-            (6500.0, 65.0),
+            (6001.0, 60.02),
+            (6500.0, 70.0),
             (7000.0, 80.0),
-            (7500.0, 84.375),
+            (7500.0, 90.0),
             (8000.0, 100.0),
             (0.0, 0.0),
             (5000.0, 50.0),

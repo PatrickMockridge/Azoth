@@ -21,6 +21,18 @@ pub struct PhaseCapacity {
     pub cv: f64,
     /// The cubic's `(dP/dV)_T`, Pa m3/mol; negative for a stable phase.
     pub d_p_d_v: f64,
+    /// The cubic's `(dP/dT)_V`, Pa/(mol K).
+    pub d_p_d_t: f64,
+}
+
+/// The cubic's molar volume derivatives at constant moles and the other state variable.
+///
+/// `(dV/dT)_P = -(dP/dT)_V / (dP/dV)_T` and `(dV/dP)_T = 1 / (dP/dV)_T`, the two forms
+/// `SystemThermo.getdVdTpn` and `getdVdPtn` return. The ratio is the same for molar and total
+/// volume, so the Schultz compressor head can use these directly.
+#[must_use]
+pub fn volume_derivatives(capacity: &PhaseCapacity) -> (f64, f64) {
+    (-capacity.d_p_d_t / capacity.d_p_d_v, 1.0 / capacity.d_p_d_v)
 }
 
 /// One phase's `cp` and `cv` from the cubic's closed-form derivatives.
@@ -71,5 +83,10 @@ pub fn phase_capacity(
             format!("the phase's heat capacities are cp={cp}, cv={cv}, and both must be positive"),
         ));
     }
-    Ok(PhaseCapacity { cp, cv, d_p_d_v })
+    Ok(PhaseCapacity {
+        cp,
+        cv,
+        d_p_d_v,
+        d_p_d_t,
+    })
 }

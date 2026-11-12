@@ -78,8 +78,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `the_50_bara_brine_at_rest` | components = ['CO2', 'water', 'Na+', 'K+', 'Cl-', 'OH-', 'H3O+', 'HCO3-', 'CO3--'], moles = [10.0, 55.508435061791985, 0.540339675351135, 0.28239120684612296, 0.822730882197258, 0.0, 0.0, 0.0, 0.0], T = 283.15, P = 5000000.0 | phase_count = 2.0, phase_fractions = [0.119700156811226, 0.880299843188774], minimum_trial_distance = -0.793097484269184 |
-| `the_40_bara_brine_at_ninety_percent_salt` | components = ['CO2', 'water', 'Na+', 'K+', 'Cl-', 'OH-', 'H3O+', 'HCO3-', 'CO3--'], moles = [10.0, 55.508435061791985, 0.4863057078160215, 0.2541520861615107, 0.7404577939775322, 0.0, 0.0, 0.0, 0.0], T = 283.15, P = 4000000.0 | phase_count = 2.0, phase_fractions = [0.123229841485858, 0.876770158514142], minimum_trial_distance = -0.880785051453328 |
+| `the_50_bara_brine_at_rest` | components = ['CO2', 'water', 'Na+', 'K+', 'Cl-', 'OH-', 'H3O+', 'HCO3-', 'CO3--'], moles = [10.0, 55.508435061791985, 0.540339675351135, 0.28239120684612296, 0.822730882197258, 0.0, 0.0, 0.0, 0.0], T = 283.15, P = 5000000.0 | phase_count = 2.0, phase_fractions = [0.127635036803297, 0.872364963196703], minimum_trial_distance = -0.917598834987758 |
+| `the_40_bara_brine_at_ninety_percent_salt` | components = ['CO2', 'water', 'Na+', 'K+', 'Cl-', 'OH-', 'H3O+', 'HCO3-', 'CO3--'], moles = [10.0, 55.508435061791985, 0.4863057078160215, 0.2541520861615107, 0.7404577939775322, 0.0, 0.0, 0.0, 0.0], T = 283.15, P = 4000000.0 | phase_count = 2.0, phase_fractions = [0.129581524453422, 0.870418475546579], minimum_trial_distance = -0.992797941086293 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.

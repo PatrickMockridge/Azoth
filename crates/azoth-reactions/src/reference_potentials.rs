@@ -15,8 +15,10 @@
 //!    any *survivor* is not `VALIDATED`. It runs after both removals, so it judges the
 //!    active set and not the table, and it is the only source that asks.
 //! 4. **`calcReferencePotentials`** - a greedy rank test over the *components*, a solve
-//!    for the independent ones from `sum(nu_i mu_i) = -R T ln K`, then a propagation to
-//!    the rest in dependency order.
+//!    for the independent ones from `sum(nu_i mu_i) = -R T ln K`, and the dependent ones
+//!    left at the zero gauge. There is no propagation: reassigning a dependent potential
+//!    after the solve would break the reaction equations the independent solution already
+//!    satisfies.
 //!
 //! # The two places a naive port goes wrong
 //!
@@ -31,35 +33,20 @@
 //! of the chemistry. `potentials` here is in the caller's order, and the capture records
 //! what NeqSim's order happened to be for the fluid it was run on.
 //!
-//! # The two branches that answer from the databank
+//! # The one branch that answers from the databank
 //!
-//! `calcReferencePotentials` has two ways to answer from a component's Gibbs energy of
-//! formation rather than from the reaction set, and **both are reproduced**:
+//! When the component rank falls below the reaction count, `calcReferencePotentials`
+//! returns null and `ChemicalReactionOperations.calcChemRefPot` reads that null as *every*
+//! component's Gibbs energy of formation (`ChemicalReactionOperations.java:510-528`). The
+//! number is [`crate::databank::formation_properties`]'s, out of
+//! `GIBBSENERGYOFFORMATION`, and it is taken **raw and not negated**. Nothing is marked
+//! independent there, because nothing was solved for; `independent` therefore reports only
+//! the columns the basis actually solved, and a rank-deficient answer has no set bits.
 //!
-//! * when the component rank falls below the reaction count it returns null, and
-//!   `ChemicalReactionOperations.calcChemRefPot` reads that null as *every* component's
-//!   Gibbs energy of formation (`ChemicalReactionOperations.java:513-519`);
-//! * when the propagation deadlocks it seeds the first uncomputed dependent component with
-//!   that same number and carries on, and a final sweep seeds whatever is left
-//!   (`ChemicalReactionList.java:526-557`).
-//!
-//! The number is [`crate::databank::formation_properties`]'s, out of
-//! `GIBBSENERGYOFFORMATION`, and it is taken **raw and not negated** - NeqSim's line is
-//! `result[depCol] = gf` against a solve that used `-RT ln K` - so a seeded potential is
-//! not on the same footing as a solved one. That is what makes this a fallback rather
-//! than an equation, and it is why `independent` is reported: a caller can tell which
-//! potentials came from the basis and which were filled in.
-//!
-//! **The fallback is not an edge case.** Of the 14,333 subsets of the species the three
-//! tables' loaded reactions name, 11,837 answer - 3,320 of them seeding at least one
-//! component - and 2,496 are refused by the pitzer source's evidence gate.
-//! `every_reaction_set_the_vendored_tables_admit_answers_and_the_seed_is_exercised`
-//! asserts all three counts. **The product fallback moved the seed count**: it was 4,888
-//! before, on the reactant-only rule, because the reactions the products keep are ones the
-//! propagation no longer deadlocks on. **A component the databank has no row for is refused rather than
-//! seeded with zero**: NeqSim's `Component` field defaults to zero when the row is absent
-//! and such a component cannot be built there at all, while here the name is a caller's
-//! string, and eight of the element table's eighty components are in that state.
+//! **A component the databank has no row for is refused rather than seeded with zero**:
+//! NeqSim's `Component` field defaults to zero when the row is absent and such a component
+//! cannot be built there at all, while here the name is a caller's string, and eight of
+//! the element table's eighty components are in that state.
 
 use std::collections::HashMap;
 
@@ -70,10 +57,6 @@ use crate::databank::{ReactionDataSource, formation_properties, stoichiometry};
 use crate::equilibrium_constant::GAS_CONSTANT;
 use crate::linalg::{rank_of_integer_matrix, solve_lu};
 use crate::model_gen;
-
-/// The magnitude below which a stoichiometric coefficient counts as absent, from
-/// `calcReferencePotentials`.
-const COEFFICIENT_FLOOR: f64 = 1e-10;
 
 /// One side of `reactantsContains`: every component on this side is one the caller supplied,
 /// and the side is not empty.
@@ -322,7 +305,6 @@ pub fn reference_potentials(
     let n_rows = survivors.len();
     let mut current: Vec<Vec<f64>> = Vec::new();
     let mut independent_columns: Vec<usize> = Vec::new();
-    let mut dependent_columns: Vec<usize> = Vec::new();
 
     for column in 0..width {
         // The candidate matrix: every column kept so far, plus this one. With nothing
@@ -350,13 +332,8 @@ pub fn reference_potentials(
             current = next;
             independent_columns.push(column);
             if independent_columns.len() == n_rows {
-                for k in (column + 1)..width {
-                    dependent_columns.push(k);
-                }
                 break;
             }
-        } else {
-            dependent_columns.push(column);
         }
     }
 
@@ -367,88 +344,26 @@ pub fn reference_potentials(
     // solved for; `rank` still reports the rank it fell short of.
     let rank = independent_columns.len();
     let mut potentials = vec![0.0; width];
-    let mut computed = vec![false; width];
     let mut independent_mask = vec![0.0; width];
 
     if rank < n_rows {
         for column in 0..width {
             potentials[column] = formation_seed(components, column)?;
-            computed[column] = true;
         }
     } else if n_rows > 0 {
-        // The solve: `A_indep x = -B`, with `A_indep` square by the test above.
+        // The target's solve: `A_indep x = -RT ln K`. Dependent components stay at the
+        // zero gauge and are not propagated: a later dependent assignment would break the
+        // reaction equations the independent solution already satisfies.
         let mut square = vec![vec![0.0; n_rows]; n_rows];
         for (i, row) in current.iter().enumerate() {
             for (j, value) in row.iter().enumerate() {
                 square[i][j] = *value;
             }
         }
-        let negated: Vec<f64> = independent_rhs.iter().map(|value| -value).collect();
-        let solved = solve_lu(&square, &negated)?;
+        let solved = solve_lu(&square, &independent_rhs)?;
         for (i, &column) in independent_columns.iter().enumerate() {
             potentials[column] = solved[i];
-            computed[column] = true;
             independent_mask[column] = 1.0;
-        }
-
-        // The propagation: a dependent component is computable once a surviving reaction
-        // exists in which every *other* component it names is known.
-        let max_iterations = dependent_columns.len() * 2 + 1;
-        for _ in 0..max_iterations {
-            let mut progress = false;
-            for &column in &dependent_columns {
-                if computed[column] {
-                    continue;
-                }
-                for (r, row) in independent_reactions.iter().enumerate() {
-                    let nu = row[column];
-                    if nu.abs() < COEFFICIENT_FLOOR {
-                        continue;
-                    }
-                    let all_others_known = (0..width)
-                        .all(|j| j == column || row[j].abs() <= COEFFICIENT_FLOOR || computed[j]);
-                    if !all_others_known {
-                        continue;
-                    }
-                    let mut sum_others = 0.0;
-                    for j in 0..width {
-                        if j != column {
-                            sum_others += row[j] * potentials[j];
-                        }
-                    }
-                    potentials[column] = (independent_rhs[r] - sum_others) / nu;
-                    computed[column] = true;
-                    progress = true;
-                    break;
-                }
-            }
-            if progress {
-                continue;
-            }
-            // **The deadlock fallback, reproduced.** NeqSim seeds the first uncomputed
-            // dependent component with its Gibbs energy of formation and carries on, one
-            // per round that made no progress (`ChemicalReactionList.java:526-541`). The
-            // propagation then continues from that value, which is what makes the seed a
-            // step and not a resting place.
-            let next = dependent_columns
-                .iter()
-                .copied()
-                .find(|&column| !computed[column]);
-            match next {
-                Some(column) => {
-                    potentials[column] = formation_seed(components, column)?;
-                    computed[column] = true;
-                }
-                None => break,
-            }
-        }
-
-        // The final sweep (`:546-557`): whatever the rounds above left uncomputed takes
-        // the same seed. It is reached only when a round had nothing left to seed.
-        for &column in &dependent_columns {
-            if !computed[column] {
-                potentials[column] = formation_seed(components, column)?;
-            }
         }
     }
 
@@ -483,9 +398,9 @@ fn formation_seed(components: &[String], column: usize) -> Result<f64> {
         None => Err(AzothError::InvalidInput {
             field: "reactions".to_string(),
             reason: format!(
-                "the reference potential of {name} cannot be reached by propagation and \
-                 the component databank has no row for it, so there is no Gibbs energy of \
-                 formation to seed it with as NeqSim's fallback does"
+                "the reference basis is rank-deficient and the component databank has no \
+                 row for {name}, so there is no Gibbs energy of formation to seed it with \
+                 as NeqSim's fallback does"
             ),
         }),
     }
