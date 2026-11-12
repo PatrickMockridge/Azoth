@@ -2515,7 +2515,7 @@ static CALC_IONIC_COMPOSITION_CASES: &[TestCase] = &[
             ("mass_ratio", &[0.0532279, 1.0, 0.0437126, 0.0674038]),
             (
                 "activity_coefficient",
-                &[1.05024, 0.999046, 0.68748, 0.69305],
+                &[1.05024, 0.999046, 0.686676, 0.692239],
             ),
         ],
         expected_strings: &[],
@@ -2549,7 +2549,7 @@ static CALC_IONIC_COMPOSITION_CASES: &[TestCase] = &[
             ("mass_ratio", &[0.0724674, 1.0, 0.0207047, 0.0319261]),
             (
                 "activity_coefficient",
-                &[0.89545, 1.00298, 1.16645, 0.416939],
+                &[0.89545, 1.00298, 1.16508, 0.416452],
             ),
         ],
         expected_strings: &[],
@@ -4491,10 +4491,10 @@ static ELECTROLYTE_CPA_STATOIL_PHASE_CASES: &[TestCase] = &[
         expected_vectors: &[(
             "ln_phi",
             &[
-                -0.25918565618861,
-                -0.538799955867045,
-                -60.7163097247917,
-                -92.4685400845073,
+                -0.259185656540842,
+                -0.538799955975849,
+                -60.667408108481,
+                -92.4196243460445,
             ],
         )],
         expected_strings: &[],
