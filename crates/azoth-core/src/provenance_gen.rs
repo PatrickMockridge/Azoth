@@ -3498,7 +3498,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         calc_id: "process.gibbs_reactor",
         name: "Gibbs reactor",
         spec_path: "specs/models/process/gibbs_reactor.toml",
-        spec_sha256: "fd215c8e43b5d432f8dd019519b566b90011ea74fc2b26f5146736398cc90fd3",
+        spec_sha256: "b995febbb98c0d0d02c482d61de8b98233d5cfacf8e5e6892de26d3a824c0dc7",
         python_path: "python/src/azoth/process/reference/gibbs_reactor.py",
         python_sha256: "778d1deab7a7447287031c596105de8da4ba067dc7aa07f4518855dfce75cf00",
         rust_path: "crates/azoth-process/src/models/gibbs_reactor.rs",

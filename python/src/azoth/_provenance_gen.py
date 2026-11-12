@@ -2570,7 +2570,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.gibbs_reactor': {
         "calc_id": 'process.gibbs_reactor',
         "name": 'Gibbs reactor',
-        "spec": {'path': 'specs/models/process/gibbs_reactor.toml', 'sha256': 'fd215c8e43b5d432f8dd019519b566b90011ea74fc2b26f5146736398cc90fd3'},
+        "spec": {'path': 'specs/models/process/gibbs_reactor.toml', 'sha256': 'b995febbb98c0d0d02c482d61de8b98233d5cfacf8e5e6892de26d3a824c0dc7'},
         "code": [{'path': 'python/src/azoth/process/reference/gibbs_reactor.py', 'sha256': '778d1deab7a7447287031c596105de8da4ba067dc7aa07f4518855dfce75cf00'}, {'path': 'crates/azoth-process/src/models/gibbs_reactor.rs', 'sha256': 'dd4ebc822aee627477d67042040c9b2b1f44c41d7b22dc264730a1ff7219c75b'}],
         "source": 'NeqSim process/equipment/reactor/GibbsReactor.java',
         "verification": 'partially_verified',
