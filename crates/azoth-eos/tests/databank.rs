@@ -1121,7 +1121,7 @@ fn the_cubic_ln_phi_is_the_derivative_at_the_association_shifted_root() {
 
 /// The PC-SAFT columns are read, and zero is how the table spells absence.
 ///
-/// The three are vendored and unparsed until a model reads them, and 106 of the 348 rows
+/// The three are vendored and unparsed until a model reads them, and 107 of the 349 rows
 /// carry `0` in all three rather than a blank - so "the table has no PC-SAFT set for this
 /// substance" is a *value*, and a model that computed with `m = 0` would be solving for a
 /// fluid with no segments rather than refusing one it has no parameters for.
@@ -1158,7 +1158,7 @@ fn the_saft_vr_mie_columns_are_read_and_zero_means_absent() {
     );
 
     // A substance with no SAFT-VR-Mie set is absent as a zero in all five, which is the
-    // shape a model has to refuse rather than compute with. **Twelve of the table's 348
+    // shape a model has to refuse rather than compute with. **Twelve of the table's 349
     // rows carry one** - the light alkanes, `co2`, nitrogen and water - and the count is
     // asserted rather than left to a sample, so a generator that stopped emitting the
     // columns fails here rather than at a model. Counting it off the CSV with a
@@ -1265,7 +1265,7 @@ fn the_pcsaft_interaction_column_is_read() {
 
 /// The ion rows are vendored for the columns an electrolyte model reads.
 ///
-/// `COMP.csv` files 62 rows under `COMPTYPE = 'ion'`, and this table kept none of them
+/// `COMP.csv` files 63 rows under `COMPTYPE = 'ion'`, and this table kept none of them
 /// until the electrolyte tranche: a cubic has no notion of an ion and the file fills those
 /// rows' critical columns with a default. What an activity model reads is the *charge*,
 /// the Deshmukh-Mather *diameter*, the molar mass and the dielectric coefficients, so the
@@ -1282,7 +1282,7 @@ fn an_ion_is_vendored_for_its_charge_and_not_its_critical_constants() {
     assert_eq!(sodium.molar_mass, Some(0.02299));
 
     // **The critical columns are the filler, and the values are worth pinning.** All four
-    // are one default set on 27 of the 62 rows - an acentric factor of exactly 0.344 for
+    // are one default set on 28 of the 63 rows - an acentric factor of exactly 0.344 for
     // twenty-nine different substances is not a coincidence - so a cubic over these numbers
     // would be a plausible-looking wrong answer rather than a failure.
     assert!(

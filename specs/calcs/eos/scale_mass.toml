@@ -6,7 +6,7 @@ latex = '''f = \min\left(1 - 10^{-\mathrm{SI}},\ 0.99\right), \qquad n = \min(c_
 assumptions = ["The answer is an approximation, not an equilibrium: it takes the limiting ion's concentration, multiplies by `1 - 10^-SI`, and calls that the precipitated amount. An exact calculation would iterate the equilibrium."]
 notes = ["the fraction is **capped at 0.99**, so every SI above about 2 gives the same mass; the capture's SI 2.5 and SI 5 rows are identical.\n", "an SI at or below zero returns zero before the fraction is computed; the limiting concentration is still reported.\n", "the five minerals differ only in molar mass: CaCO3 100.09, BaSO4 233.39, SrSO4 183.68, CaSO4 136.14, FeCO3 115.85 g/mol - the class's own constants.\n", "**the class's held water volume is never read by the calculation**: `setWaterVolume` only feeds a JSON report. The mass is per litre, and this calc takes no volume.\n", "the class's results map is never populated and its `toJson` always reports an empty list; neither is a calculation, so both are outside this spec.\n"]
 references = [
-    "NeqSim master, `pvtsimulation/flowassurance/ScaleMassCalculator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "NeqSim master, `pvtsimulation/flowassurance/ScaleMassCalculator.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.",
     "`validation/neqsim/captures/scale_family_probe.tsv` - the five minerals over four states, including the 0.99 cap and the below-saturation zero.",
 ]
 [source]

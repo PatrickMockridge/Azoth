@@ -7,8 +7,8 @@
 // a one-component SRK phase at 15 C and one atmosphere, and a port that skipped that solve would
 // state a plausible Z that is not this one.
 //
-//   ../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TbpFractionComponentProbe.java
-//   ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TbpFractionComponentProbe > captures/tbp_fraction_component_probe.tsv
+//   ../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar TbpFractionComponentProbe.java
+//   ../../tools/gated.sh java -cp .:neqsim-118d9af.jar TbpFractionComponentProbe > captures/tbp_fraction_component_probe.tsv
 
 import java.util.Locale;
 import neqsim.thermo.ThermodynamicConstantsInterface;
@@ -118,16 +118,24 @@ public class TbpFractionComponentProbe {
     System.out.println(text);
   }
 
+  private static void attempt(String label, double molarMass, double density) {
+    try {
+      state(label, molarMass, density);
+    } catch (RuntimeException refused) {
+      System.out.println(label + "|refused|" + refused.getMessage());
+    }
+  }
+
   public static void main(String[] args) {
-    System.out.println("TBP fraction component at f0c7436c69");
+    System.out.println("TBP fraction component at 118d9aff");
     System.out.println("# columns = " + COLUMNS);
     System.out.println("# units = " + UNITS);
     System.out.println();
-    state("c7", 0.095, 0.73);
-    state("c10", 0.134, 0.81);
-    state("c15", 0.206, 0.86);
-    state("below_the_boiling_point_switch", 0.500, 0.95);
-    state("above_it", 1.000, 1.00);
-    state("above_the_heavy_switch", 1.500, 1.05);
+    attempt("c7", 0.095, 0.73);
+    attempt("c10", 0.134, 0.81);
+    attempt("c15", 0.206, 0.86);
+    attempt("below_the_boiling_point_switch", 0.500, 0.95);
+    attempt("above_it", 1.000, 1.00);
+    attempt("above_the_heavy_switch", 1.500, 1.05);
   }
 }

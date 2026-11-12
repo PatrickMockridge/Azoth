@@ -466,6 +466,11 @@ def ln_phi_contributions(
     f_born_x = k * (1.0 / state.solvent_dielectric - 1.0)
     f_born_d = -k / state.solvent_dielectric**2 * state.born_x
     eps_ionic_half = 1.0 + state.ionic_packing / 2.0
+    # **The stationary shielding coordinate responds to composition.** NeqSim #4332
+    # restored the Schur-complement term ``dFLRdNdGamma * calcGammaLRdn``.
+    alpha_lr = alpha_lr2(state.dielectric, state.temperature)
+    xlr_dgamma_value = xlr_dgamma(state, components, mole_numbers)
+    curvature = shielding_curvature(state, components, mole_numbers)
 
     out: list[CompositionContribution] = []
     for component in components:
@@ -499,10 +504,16 @@ def ln_phi_contributions(
         # zero. NeqSim's issue 3862 is that observation and its fix is the one term, so both
         # models read `FBornX XBorni + FBornD solventdiElectricdn` here.
         born = f_born_x * born_i + f_born_d * solvent_dn
+        denominator = 1.0 + state.shielding * component.diameter_m
+        d_flr_d_gamma = -(
+            alpha_i * xlr_dgamma_value
+            + alpha_lr * component.charge**2 / (denominator * denominator)
+        ) / (4.0 * NEQSIM_PI)
+        gamma_dn = 0.0 if abs(curvature) < 1.0e-50 else -d_flr_d_gamma / curvature
         out.append(
             CompositionContribution(
                 short_range=fsr2_eps * scale + fsr2_w * component.w_i,
-                long_range=flr_xlr * xlr_i + d_f_d_alpha * alpha_i,
+                long_range=flr_xlr * xlr_i + d_f_d_alpha * alpha_i + d_flr_d_gamma * gamma_dn,
                 born=born,
             )
         )
@@ -576,6 +587,42 @@ def shielding_parameter_dt(
     if abs(dfdgamma) < 1.0e-50:
         return 0.0
     return -dfdt / dfdgamma
+
+
+def xlr_dgamma(
+    state: FurstState, components: Sequence[ComponentState], mole_numbers: Sequence[float]
+) -> float:
+    """``calcXLRdGammaLR`` over the ions."""
+    total = 0.0
+    for component, moles in zip(components, mole_numbers, strict=True):
+        if component.charge == 0.0:
+            continue
+        denominator = 1.0 + state.shielding * component.diameter_m
+        total += moles * component.charge**2 / (denominator * denominator)
+    return total
+
+
+def shielding_curvature(
+    state: FurstState, components: Sequence[ComponentState], mole_numbers: Sequence[float]
+) -> float:
+    """``dFLRdGammaLRdGammaLR``: the shielding equation's derivative at the stationary point."""
+    alpha = alpha_lr2(state.dielectric, state.temperature)
+    v_total = state.molar_volume * state.moles
+    derivative = 8.0 * state.shielding / NEQSIM_AVOGADRO
+    for component, moles in zip(components, mole_numbers, strict=True):
+        if component.charge == 0.0:
+            continue
+        denominator = 1.0 + state.shielding * component.diameter_m
+        derivative += (
+            2.0
+            * alpha
+            * moles
+            / v_total
+            * component.charge**2
+            * component.diameter_m
+            / denominator**3
+        )
+    return derivative
 
 
 def xlr(

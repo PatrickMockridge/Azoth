@@ -1,4 +1,4 @@
-# azoth UmrCpaProbe - NeqSim 3.20.0's SystemUMRCPAEoS (PhaseUMRCPA).
+# azoth UmrCpaProbe - NeqSim master's SystemUMRCPAEoS (PhaseUMRCPA).
 # The mixing rule is the lifecycle test's: HV with UNIFAC_UMRPRU.
 
 # methane/water at T=283.150 K, P=30.0000 bara
@@ -45,7 +45,7 @@ molarVolume_internal_1e5_m3_per_mol 72.2681039105744
 molarVolume_SI_from_ZRT_over_P     0.000722681039105744
 HresTP_J_per_mol                   -646.011205985740
 SresTP_J_per_molK                  -1.61159107556201
-gibbsEnergy_J_per_mol              7549.42931832437
+gibbsEnergy_J_per_mol              7549.42970056731
 lnPhi[0]                           -0.0761917183912148
 lnPhi[1]                           -0.295277418620525
 flashPhases 2
@@ -100,7 +100,7 @@ molarVolume_internal_1e5_m3_per_mol 27.8928409543994
 molarVolume_SI_from_ZRT_over_P     0.000278928409543994
 HresTP_J_per_mol                   -1532.63405638182
 SresTP_J_per_molK                  -3.89629873555943
-gibbsEnergy_J_per_mol              9304.46390891964
+gibbsEnergy_J_per_mol              9304.46429116258
 lnPhi[0]                           -0.171388241637018
 lnPhi[1]                           -0.721630054301236
 flashPhases 2
@@ -155,7 +155,7 @@ molarVolume_internal_1e5_m3_per_mol 14.8191561911541
 molarVolume_SI_from_ZRT_over_P     0.000148191561911541
 HresTP_J_per_mol                   -2570.76938297095
 SresTP_J_per_molK                  -6.62665042930696
-gibbsEnergy_J_per_mol              10308.3547559087
+gibbsEnergy_J_per_mol              10308.3551381517
 lnPhi[0]                           -0.274979619946506
 lnPhi[1]                           -1.27456568767511
 flashPhases 2
@@ -210,7 +210,7 @@ molarVolume_internal_1e5_m3_per_mol 77.1950215222277
 molarVolume_SI_from_ZRT_over_P     0.000771950215222276
 HresTP_J_per_mol                   -582.345117234036
 SresTP_J_per_molK                  -1.39232333948758
-gibbsEnergy_J_per_mol              7949.52764261238
+gibbsEnergy_J_per_mol              7949.53011972454
 lnPhi[0]                           -0.0644374986567295
 lnPhi[1]                           -0.215431114775041
 flashPhases 2
@@ -265,7 +265,7 @@ molarVolume_internal_1e5_m3_per_mol 30.4601708456157
 molarVolume_SI_from_ZRT_over_P     0.000304601708456157
 HresTP_J_per_mol                   -1361.12998393193
 SresTP_J_per_molK                  -3.30552825032943
-gibbsEnergy_J_per_mol              9841.57967635907
+gibbsEnergy_J_per_mol              9841.58215347123
 lnPhi[0]                           -0.143929410664324
 lnPhi[1]                           -0.522958472994785
 flashPhases 2
@@ -320,7 +320,7 @@ molarVolume_internal_1e5_m3_per_mol 16.5336780248414
 molarVolume_SI_from_ZRT_over_P     0.000165336780248414
 HresTP_J_per_mol                   -2260.41656346914
 SresTP_J_per_molK                  -5.55750081200216
-gibbsEnergy_J_per_mol              10949.8677972388
+gibbsEnergy_J_per_mol              10949.8702743510
 lnPhi[0]                           -0.229614435984045
 lnPhi[1]                           -0.920296311214395
 flashPhases 2
@@ -375,7 +375,7 @@ molarVolume_internal_1e5_m3_per_mol 82.0129721369035
 molarVolume_SI_from_ZRT_over_P     0.000820129721369035
 HresTP_J_per_mol                   -528.716726514680
 SresTP_J_per_molK                  -1.21671559223086
-gibbsEnergy_J_per_mol              8319.70079398380
+gibbsEnergy_J_per_mol              8319.70736691092
 lnPhi[0]                           -0.0546405282582267
 lnPhi[1]                           -0.159033916327553
 flashPhases 2
@@ -430,7 +430,7 @@ molarVolume_internal_1e5_m3_per_mol 32.8978386743508
 molarVolume_SI_from_ZRT_over_P     0.000328978386743508
 HresTP_J_per_mol                   -1221.91647147498
 SresTP_J_per_molK                  -2.84960899367920
-gibbsEnergy_J_per_mol              10343.9288631781
+gibbsEnergy_J_per_mol              10343.9354361053
 lnPhi[0]                           -0.121329483173734
 lnPhi[1]                           -0.383632267801579
 flashPhases 2
@@ -485,7 +485,7 @@ molarVolume_internal_1e5_m3_per_mol 18.1422624840310
 molarVolume_SI_from_ZRT_over_P     0.000181422624840310
 HresTP_J_per_mol                   -2013.43257729626
 SresTP_J_per_molK                  -4.74857561002556
-gibbsEnergy_J_per_mol              11550.4452240806
+gibbsEnergy_J_per_mol              11550.4517970077
 lnPhi[0]                           -0.192582904708918
 lnPhi[1]                           -0.672540500794121
 flashPhases 2

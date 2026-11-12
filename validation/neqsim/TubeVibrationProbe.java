@@ -2,8 +2,8 @@
 //
 // Compile and run from this directory:
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar TubeVibrationProbe.java
-//     java -cp .:neqsim-f0c7436.jar TubeVibrationProbe > captures/tube_vibration_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar TubeVibrationProbe.java
+//     java -cp .:neqsim-118d9af.jar TubeVibrationProbe > captures/tube_vibration_probe.tsv
 //
 // **The screening is the class's own `performScreening`, and the four helpers are its
 // intermediates.** The natural frequency fixes the end condition at "pinned" in the

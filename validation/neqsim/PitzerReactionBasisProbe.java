@@ -15,8 +15,8 @@
 // that is the only place the branch is driven: `SystemPitzer` at 1.01325 bar, water and one
 // acid, `setMixingRule("classic")`, then `solveChemEq(1, 0)` and `solveChemEq(1, 1)`.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar PitzerReactionBasisProbe.java
-//     java -cp .:neqsim-f0c7436.jar PitzerReactionBasisProbe > captures/pitzer_reaction_basis_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar PitzerReactionBasisProbe.java
+//     java -cp .:neqsim-118d9af.jar PitzerReactionBasisProbe > captures/pitzer_reaction_basis_probe.tsv
 
 import java.lang.reflect.Method;
 import java.util.Map;

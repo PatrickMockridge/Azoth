@@ -19,8 +19,8 @@
 // projection produces and the one the port has to reproduce, without a second call to the
 // method that would run it against an inventory it has already been applied to.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar HybridEosGeReactiveLoopProbe.java
-//     java -cp .:neqsim-f0c7436.jar HybridEosGeReactiveLoopProbe > captures/hybrid_eos_ge_reactive_loop_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar HybridEosGeReactiveLoopProbe.java
+//     java -cp .:neqsim-118d9af.jar HybridEosGeReactiveLoopProbe > captures/hybrid_eos_ge_reactive_loop_probe.tsv
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

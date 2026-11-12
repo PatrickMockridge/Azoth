@@ -52,7 +52,7 @@
   ln gamma(water ) = -0.0188268052237012
   ln gamma(Na+   ) = -0.729784139681492
   ln gamma(Ca++  ) = -2.98316821081693
-  ln gamma(Cl-   ) = 1.00206452801946
+  ln gamma(Cl-   ) = 0.939509005773350
 
 === the parameter getters across temperature ===
   catalogue: Na+ / Cl-   (dataset phreeqc)
@@ -85,7 +85,7 @@
     ln gamma(water ) =    -0.0563151245495846   molality = 55.5092978074   z = +0
     ln gamma(Na+   ) =     -0.504259131023400   molality = 1.89236242525   z = +1
     ln gamma(Ca++  ) =      -1.84132192677047   molality = 1.89236242525   z = +2
-    ln gamma(Cl-   ) =      0.726599630955942   molality = 3.78472485050   z = -1
+    ln gamma(Cl-   ) =      0.673600304838076   molality = 3.78472485050   z = -1
   water + Na+ + HCO3-   (dataset=legacy, common-ion=false, unequal-charge-same-sign=false, non-2-2 beta2=false)
     I = 3.78472485050337   phi = 0.879292649731133
     ln gamma(water ) =    0.00792982836473036   molality = 55.5092978074   z = +0

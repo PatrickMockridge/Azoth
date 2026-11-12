@@ -1,4 +1,4 @@
-# azoth SaftVrMieProbe - NeqSim 3.20.0's SystemSAFTVRMie (PhaseSAFTVRMie).
+# azoth SaftVrMieProbe - NeqSim master's SystemSAFTVRMie (PhaseSAFTVRMie).
 # The phase reads no interaction parameter, so a mixture runs with
 # the component sets alone; no k_ij appears in these layers.
 

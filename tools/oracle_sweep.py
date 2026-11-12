@@ -103,10 +103,8 @@ def build(classes: Path, jar: Path) -> bool:
 
 def recipes() -> list[tuple[str, str]]:
     """Every documented invocation, as `(arguments, capture name)`."""
-    return [
-        (m.group("run"), m.group("capture"))
-        for m in RECIPE.finditer(README.read_text(encoding="utf-8"))
-    ]
+    text = README.read_text(encoding="utf-8").replace("\\\n", " ")
+    return [(m.group("run"), m.group("capture")) for m in RECIPE.finditer(text)]
 
 
 def probe_names() -> dict[str, str]:
@@ -218,7 +216,7 @@ def main() -> int:
             head, *rest = arguments.split()
             stem = head.split(".")[-1]
             if stem in names:
-                runs.append((stem, names[stem], " ".join(rest), produced))
+                runs.append((stem, names[stem], " ".join(rest), produced.removesuffix(".tsv")))
 
         # `fresh` is keyed by the probe's stem for a bare run and by the capture's name for
         # a recipe, because a recipe is only ever compared with the capture it produces.
@@ -232,19 +230,19 @@ def main() -> int:
 
         # A recipe's capture belongs to that invocation, not to the probe's bare run.
         # Matching a bare run to it would compare a default state with an argument state.
-        recipe_captures = {produced for _, produced in recipes()}
+        recipe_captures = {produced.removesuffix(".tsv") for _, produced in recipes()}
 
         matched: dict[str, str] = {}
         for stem, text in fresh.items():
             if (gen.CAPTURES / f"{stem}.tsv").exists():
                 matched[stem] = f"{stem}.tsv"
                 continue
-            snake = f"{capture_stem(stem)}.tsv"
-            if snake not in recipe_captures and (gen.CAPTURES / snake).exists():
-                matched[stem] = snake
+            snake = capture_stem(stem)
+            if snake not in recipe_captures and (gen.CAPTURES / f"{snake}.tsv").exists():
+                matched[stem] = f"{snake}.tsv"
                 continue
             for candidate in sorted(gen.CAPTURES.glob("*.tsv")):
-                if candidate.name in recipe_captures:
+                if candidate.stem in recipe_captures:
                     continue
                 if body(text) == body(candidate.read_text(encoding="utf-8")):
                     matched[stem] = candidate.name

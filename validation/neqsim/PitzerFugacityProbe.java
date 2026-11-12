@@ -38,8 +38,8 @@
 // `init(1)` is what calls `fugcoef`. A `TPflash` here relabels and can collapse the phases,
 // which would change what is being measured.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar PitzerFugacityProbe.java
-//     java -cp .:neqsim-f0c7436.jar PitzerFugacityProbe > captures/pitzer_fugacity_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar PitzerFugacityProbe.java
+//     java -cp .:neqsim-118d9af.jar PitzerFugacityProbe > captures/pitzer_fugacity_probe.tsv
 
 import java.lang.reflect.Method;
 import neqsim.thermo.component.ComponentInterface;

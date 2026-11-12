@@ -2,8 +2,8 @@ package neqsim.thermodynamicoperations.flashops;
 
 // Which construct puts a phase into NeqSim's multiphase flash, attributed state by state.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar -d . TpMultiflashSeedProbe.java
-//     java -cp .:neqsim-f0c7436.jar neqsim.thermodynamicoperations.flashops.TpMultiflashSeedProbe \
+//     javac -proc:none -cp neqsim-118d9af.jar -d . TpMultiflashSeedProbe.java
+//     java -cp .:neqsim-118d9af.jar neqsim.thermodynamicoperations.flashops.TpMultiflashSeedProbe \
 //       > captures/tp_multiflash_seed_probe.tsv
 //
 // # Why this probe declares NeqSim's package

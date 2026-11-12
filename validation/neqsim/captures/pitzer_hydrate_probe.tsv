@@ -1,33 +1,33 @@
 pitzer_hydrate_flash
  temperature_solve
-  co2_water_30bara status=solved temperature_k=280.17475098609924 structure=1 residual=-1.8016255154569482E-11 water_activity=0.9754346764318317 converged=true
-  co2_water_60bara status=solved temperature_k=282.73878425598144 structure=1 residual=2.7375397466943803E-9 water_activity=0.9684024541611205 converged=true
-  co2_water_100bara status=solved temperature_k=283.06364387512207 structure=1 residual=-8.384699192356112E-9 water_activity=0.9655041655657208 converged=true
-  co2_nacl_1molal_30bara status=solved temperature_k=277.8689917945862 structure=1 residual=3.960352926642293E-9 water_activity=0.9421844191719909 converged=true
-  co2_nacl_5wt_30bara status=solved temperature_k=278.09896797180176 structure=1 residual=2.1052881638049497E-9 water_activity=0.9454799547668561 converged=true
-  co2_nacl_10wt_30bara status=solved temperature_k=275.7223567390442 structure=1 residual=3.141425337144897E-9 water_activity=0.9116592594062679 converged=true
+  co2_water_30bara status=solved temperature_k=280.174751018728 structure=1 residual=4.4608028372293157E-10 water_activity=0.9754346764528251 converged=true
+  co2_water_60bara status=solved temperature_k=282.7387841854995 structure=1 residual=1.8853041332525557E-9 water_activity=0.9684024541371306 converged=true
+  co2_water_100bara status=solved temperature_k=283.0636447462426 structure=1 residual=2.084320491805802E-9 water_activity=0.9655041658732478 converged=true
+  co2_nacl_1molal_30bara status=solved temperature_k=277.8689919091802 structure=1 residual=5.617808868970387E-9 water_activity=0.9421844192511913 converged=true
+  co2_nacl_5wt_30bara status=solved temperature_k=278.0989682144884 structure=1 residual=5.607598591959426E-9 water_activity=0.9454799549354393 converged=true
+  co2_nacl_10wt_30bara status=solved temperature_k=275.7223565939862 structure=1 residual=9.964333797550205E-10 water_activity=0.9116592593140112 converged=true
   co2_nacl_20wt_30bara status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.7052447594600049
-  co2_mgcl2_5wt_30bara status=solved temperature_k=278.1578740501404 structure=1 residual=9.305516353142156E-10 water_activity=0.9463248356723797 converged=true
+  co2_mgcl2_5wt_30bara status=solved temperature_k=278.15787436457356 structure=1 residual=5.449857217314373E-9 water_activity=0.9463248359060416 converged=true
   co2_mgcl2_15wt_30bara status=refused reason=IllegalStateException:No Pitzer hydrate equilibrium bracket in 274.19-323.15 K; last log fugacity residual=0.6686771092030135
-  methane_water_50bara status=solved temperature_k=279.82848044395445 structure=1 residual=-1.815887220019172E-9 water_activity=0.9999999999991899 converged=true
-  methane_water_100bara status=solved temperature_k=286.31409998893736 structure=1 residual=5.340626149269116E-9 water_activity=0.9999999999985014 converged=true
-  co2_methane_water_50bara status=solved temperature_k=282.7388953781128 structure=2 residual=-9.320886772553373E-9 water_activity=0.9842564673248485 converged=true
+  methane_water_50bara status=solved temperature_k=279.8284805987489 structure=1 residual=2.9461277857402185E-10 water_activity=0.9999999999991899 converged=true
+  methane_water_100bara status=solved temperature_k=286.3140995871058 structure=1 residual=8.983036536806719E-12 water_activity=0.9999999999985014 converged=true
+  co2_methane_water_50bara status=solved temperature_k=282.73889608198857 structure=2 residual=3.3555336281719945E-10 water_activity=0.9842564675701154 converged=true
  pressure_solve
-  co2_water_274.5k status=solved pressure_bara=14.303200754701937 structure=1 residual=-2.019089340369983E-10 water_activity=0.9845210432384743 converged=true
-  co2_water_278.0k status=solved pressure_bara=22.211362285557975 structure=1 residual=-4.922664066279617E-9 water_activity=0.9795219483984382 converged=true
-  co2_water_280.0k status=solved pressure_bara=29.248062342644033 structure=1 residual=5.784100293096772E-9 water_activity=0.9757992693376938 converged=true
-  co2_water_283.0k status=solved pressure_bara=91.39019720244215 structure=1 residual=1.8470123191600878E-9 water_activity=0.966135421258541 converged=true
-  co2_nacl_5wt_278k status=solved pressure_bara=29.563871481200017 structure=1 residual=-1.2115730641705333E-10 water_activity=0.945688038723503 converged=true
+  co2_water_274.5k status=solved pressure_bara=14.30320135957685 structure=1 residual=-5.385260918378992E-9 water_activity=0.9845210426574513 converged=true
+  co2_water_278.0k status=solved pressure_bara=22.211361327531208 structure=1 residual=-1.886963918629588E-10 water_activity=0.9795219491303602 converged=true
+  co2_water_280.0k status=solved pressure_bara=29.24806424937917 structure=1 residual=-6.4355942817787E-10 water_activity=0.9757992681183102 converged=true
+  co2_water_283.0k status=solved pressure_bara=91.3902831713482 structure=1 residual=-5.983990099130478E-9 water_activity=0.9661354147517075 converged=true
+  co2_nacl_5wt_278k status=solved pressure_bara=29.563871833257434 structure=1 residual=-1.2874237240128634E-9 water_activity=0.9456880384989069 converged=true
  structure_request
-  co2_water_30bara_auto status=solved temperature_k=280.17475098609924 structure=1 residual=-1.8016255154569482E-11 water_activity=0.9754346764318317 converged=true
-  co2_water_30bara_si status=solved temperature_k=280.17475098609924 structure=1 residual=-1.8016255154569482E-11 water_activity=0.9754346764318317 converged=true
-  co2_water_30bara_sii status=solved temperature_k=278.39950651168823 structure=2 residual=1.383115844068455E-11 water_activity=0.9742596461289182 converged=true
-  co2_water_60bara_auto status=solved temperature_k=282.73878425598144 structure=1 residual=2.7375397466943803E-9 water_activity=0.9684024541611205 converged=true
-  co2_water_60bara_si status=solved temperature_k=282.73878425598144 structure=1 residual=2.7375397466943803E-9 water_activity=0.9684024541611205 converged=true
-  co2_water_60bara_sii status=solved temperature_k=280.4494711780548 structure=2 residual=-1.0373796271830414E-9 water_activity=0.9676196965903248 converged=true
+  co2_water_30bara_auto status=solved temperature_k=280.174751018728 structure=1 residual=4.4608028372293157E-10 water_activity=0.9754346764528251 converged=true
+  co2_water_30bara_si status=solved temperature_k=280.174751018728 structure=1 residual=4.4608028372293157E-10 water_activity=0.9754346764528251 converged=true
+  co2_water_30bara_sii status=solved temperature_k=278.3995066116573 structure=2 residual=1.4139758243154419E-9 water_activity=0.9742596461969765 converged=true
+  co2_water_60bara_auto status=solved temperature_k=282.7387841854995 structure=1 residual=1.8853041332525557E-9 water_activity=0.9684024541371306 converged=true
+  co2_water_60bara_si status=solved temperature_k=282.7387841854995 structure=1 residual=1.8853041332525557E-9 water_activity=0.9684024541371306 converged=true
+  co2_water_60bara_sii status=solved temperature_k=280.449471265059 structure=2 residual=1.053424014679785E-11 water_activity=0.967619696620213 converged=true
  public_operations_api
-  hydrate_formation_temperature status=solved temperature_k=278.09896797180176 structure=1 residual=2.1052881638049497E-9 water_activity=0.9454799547668561
-  hydrate_formation_pressure status=solved pressure_bara=30.00000125895657 temperature_k=278.09896797180176 temperature_change_k=0.0
+  hydrate_formation_temperature status=solved temperature_k=278.0989682144884 structure=1 residual=5.607598591959426E-9 water_activity=0.9454799549354393
+  hydrate_formation_pressure status=solved pressure_bara=30.00000254066503 temperature_k=278.0989682144884 temperature_change_k=0.0
  refusals
   water_only_30bara status=refused reason=IllegalArgumentException:Pitzer hydrate equilibrium requires a hydrate-forming guest
   co2_only_30bara status=refused reason=IllegalArgumentException:Pitzer hydrate equilibrium requires a positive water inventory

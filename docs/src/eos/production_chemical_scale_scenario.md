@@ -104,5 +104,5 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `process/chemistry/scale/ProductionChemicalScaleScenario.java` and `process/chemistry/ProductionChemical.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `process/chemistry/scale/ProductionChemicalScaleScenario.java` and `process/chemistry/ProductionChemical.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/production_chemical_scenario_probe.tsv` - caustic, MDEA and HCl adjusters, two triazine doses, a scale and a corrosion inhibitor, no bicarbonate, a large caustic dose, the B-dot and Pitzer models, and an unsupported active.

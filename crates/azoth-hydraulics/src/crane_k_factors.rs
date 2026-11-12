@@ -4,12 +4,13 @@
 //! K = f_t * sum(n_ld for each fitting)
 //! ```
 //!
-//! Spec: `specs/calcs/hydraulics/crane_k_factors.toml`, which records that the
-//! coefficients this sums are placeholders and what that means for testing.
+//! Spec: `specs/calcs/hydraulics/crane_k_factors.toml`.
 //!
 //! The method is standard; the coefficients come from
-//! `data/fittings/crane_k_factors.csv`, and every row there is an estimated dummy value
-//! rather than a value from Crane TP-410 or any other standard.
+//! `data/fittings/crane_k_factors.csv`. Twenty-three rows are NeqSim's
+//! equivalent-length defaults, cited but not independently confirmed; one
+//! azoth-only row is an estimated dummy. No row is a verified Crane TP-410
+//! transcription.
 
 use crate::fittings::{self, Fitting};
 use crate::results::{KComponent, KFactorsResult};

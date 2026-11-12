@@ -94,9 +94,10 @@ DUMMY_WARNING = """\
 NOT_A_PLACEHOLDER_WARNING = """\
 #  WARNING: NOT EVERY VALUE IN THIS FILE IS A PLACEHOLDER.
 #
-#  Rows marked `unverified` or `verified` are real values; rows marked
-#  `estimated_dummy` are not. Which is which is in the verify_status column, and
-#  it is the column to read before trusting anything here.
+#  Rows marked `verified` are checked against an authoritative copy. Rows marked
+#  `unverified` are cited but not independently confirmed. Rows marked
+#  `estimated_dummy` are placeholders. Which is which is in the verify_status
+#  column, and it is the column to read before trusting anything here.
 #
 #  IF YOU RAN tools/gen_user_data.py TO MAKE THIS FILE: do not commit it. Values
 #  that came from a standard you licensed are redistributed by committing them.

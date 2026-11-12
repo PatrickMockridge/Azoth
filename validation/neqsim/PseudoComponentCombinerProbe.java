@@ -8,8 +8,8 @@
 // in. A group's molar mass is its accumulated mass over its accumulated moles, and its density is
 // the mass over the volume the rows would occupy.
 //
-//   javac -proc:none -cp /path/to/neqsim-f0c7436.jar PseudoComponentCombinerProbe.java
-//   java -cp .:/path/to/neqsim-f0c7436.jar PseudoComponentCombinerProbe > captures/pseudo_component_combiner_probe.tsv
+//   javac -proc:none -cp /path/to/neqsim-118d9af.jar PseudoComponentCombinerProbe.java
+//   java -cp .:/path/to/neqsim-118d9af.jar PseudoComponentCombinerProbe > captures/pseudo_component_combiner_probe.tsv
 
 import java.util.ArrayList;
 import java.util.Comparator;

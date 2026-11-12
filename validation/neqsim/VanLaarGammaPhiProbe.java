@@ -17,8 +17,8 @@
 // 2%, and each gas mole fraction is `p_i / sum(p_i)` to 2e-3, which is what makes that route
 // a bubble-point calculation and not only a flash.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar VanLaarGammaPhiProbe.java
-//     java -cp .:neqsim-f0c7436.jar VanLaarGammaPhiProbe > captures/van_laar_gamma_phi_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar VanLaarGammaPhiProbe.java
+//     java -cp .:neqsim-118d9af.jar VanLaarGammaPhiProbe > captures/van_laar_gamma_phi_probe.tsv
 
 import neqsim.thermo.component.ComponentInterface;
 import neqsim.thermo.phase.PhaseInterface;

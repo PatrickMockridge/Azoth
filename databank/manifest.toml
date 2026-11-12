@@ -3,30 +3,28 @@ schema_version = 2
 id = "neqsim"
 project = "NeqSim"
 url = "https://github.com/equinor/neqsim"
-version = "3.21.0"
-commit = "f0c7436c6923766b1e22957b7075f650600457a7"
+version = "3.28.0"
+commit = "118d9aff9206504c136a08e1348b86cdd6cff669"
 licence = "Apache-2.0"
-retrieved = 2026-09-21
+retrieved = 2026-11-12
 notice = "NOTICE"
 [[upstreams.files]]
 id = "neqsim/COMP.csv"
 upstream_path = "src/main/resources/data/COMP.csv"
-commit = "8bb7bace99dc733493587b4ea60c6c7b6c5a8006"
-retrieved = "2026-10-23"
 vendored_source = "databank/sources/neqsim/COMP.csv"
 compiled_to = "data/components/components.csv"
-source_rows = 389
-compiled_rows = 348
+source_rows = 390
+compiled_rows = 349
 generated = ["citation"]
 [[upstreams.files.rows]]
 selector = "COMPTYPE == 'ion'"
-count = 62
+count = 63
 reason = """\
     used: the electrolyte models, `PhasePitzer` and `PhaseDesmukhMather`, read \
     `IONICCHARGE`, `DeshMatIonicDiameter`, `MOLARMASS` and `DIELECTRICPARAMETER1..5` \
     from these rows. That is what they are kept for. **Their critical constants are \
-    filler** - `Pc` is 290.89 bar on 27 of the 62, `omega` 0.344 on 29, `CRITVOL` \
-    99.0 cm3/mol on 38, one shared default per column over different row sets, and the \
+    filler** - `Pc` is 290.89 bar on 28 of the 63, `omega` 0.344 on 30, `CRITVOL` \
+    99.0 cm3/mol on 39, one shared default per column over different row sets, and the \
     rest inherit a neutral parent's numbers (`MDEA+` carries MDEA's). None of it is a \
     property of an ion. `mixture_of` refuses a cubic over one, so *azoth* never reads the \
     filler as data. **NeqSim does.** On a `SystemSrkEos` chemical system the ions the \
@@ -1358,6 +1356,58 @@ name = "HVGJIT"
 disposition = "used"
 as = "hvgjit"
 unit = "neqsim-internal"
+[[upstreams.files.columns]]
+name = "GIJVISCT"
+disposition = "dropped"
+reason = "not-ported: the temperature-dependent Grunberg-Nissan parameter; NeqSim's `thermo/mixingrule/PhysicalPropertyMixingRule`"
+[[upstreams.files.columns]]
+name = "HVTYPE_SRK"
+disposition = "dropped"
+reason = "not-ported: the SRK Huron-Vidal parameter set; NeqSim's `thermo/mixingrule/EosMixingRuleHandler`"
+[[upstreams.files.columns]]
+name = "HVALPHA_SRK"
+disposition = "dropped"
+reason = "not-ported: the SRK Huron-Vidal parameter set; NeqSim's `thermo/mixingrule/EosMixingRuleHandler`"
+[[upstreams.files.columns]]
+name = "HVGIJ_SRK"
+disposition = "dropped"
+reason = "not-ported: the SRK Huron-Vidal parameter set; NeqSim's `thermo/mixingrule/EosMixingRuleHandler`"
+[[upstreams.files.columns]]
+name = "HVGJI_SRK"
+disposition = "dropped"
+reason = "not-ported: the SRK Huron-Vidal parameter set; NeqSim's `thermo/mixingrule/EosMixingRuleHandler`"
+[[upstreams.files.columns]]
+name = "HVGIJT_SRK"
+disposition = "dropped"
+reason = "not-ported: the SRK Huron-Vidal parameter set; NeqSim's `thermo/mixingrule/EosMixingRuleHandler`"
+[[upstreams.files.columns]]
+name = "HVGJIT_SRK"
+disposition = "dropped"
+reason = "not-ported: the SRK Huron-Vidal parameter set; NeqSim's `thermo/mixingrule/EosMixingRuleHandler`"
+[[upstreams.files.columns]]
+name = "HVTYPE_PR"
+disposition = "dropped"
+reason = "not-ported: the PR Huron-Vidal parameter set; NeqSim's `thermo/mixingrule/EosMixingRuleHandler`"
+[[upstreams.files.columns]]
+name = "HVALPHA_PR"
+disposition = "dropped"
+reason = "not-ported: the PR Huron-Vidal parameter set; NeqSim's `thermo/mixingrule/EosMixingRuleHandler`"
+[[upstreams.files.columns]]
+name = "HVGIJ_PR"
+disposition = "dropped"
+reason = "not-ported: the PR Huron-Vidal parameter set; NeqSim's `thermo/mixingrule/EosMixingRuleHandler`"
+[[upstreams.files.columns]]
+name = "HVGJI_PR"
+disposition = "dropped"
+reason = "not-ported: the PR Huron-Vidal parameter set; NeqSim's `thermo/mixingrule/EosMixingRuleHandler`"
+[[upstreams.files.columns]]
+name = "HVGIJT_PR"
+disposition = "dropped"
+reason = "not-ported: the PR Huron-Vidal parameter set; NeqSim's `thermo/mixingrule/EosMixingRuleHandler`"
+[[upstreams.files.columns]]
+name = "HVGJIT_PR"
+disposition = "dropped"
+reason = "not-ported: the PR Huron-Vidal parameter set; NeqSim's `thermo/mixingrule/EosMixingRuleHandler`"
 
 [[upstreams.files.columns]]
 name = "WSGIJT"
@@ -2498,8 +2548,6 @@ reason = "not-ported: vendored whole; nothing reads it yet"
 id = "neqsim/Packing.csv"
 compiled_to = "data/packing/packing.csv"
 upstream_path = "src/main/resources/designdata/Packing.csv"
-commit = "834b5c4fecda20540203f013401d3e7a31b214ea"
-retrieved = "2026-10-23"
 vendored_source = "databank/sources/neqsim/Packing.csv"
 source_rows = 28
 compiled_rows = 28
@@ -2572,8 +2620,6 @@ reason = "unread-upstream: `PackingSpecificationLibrary.parseCsvLine` reads no s
 id = "neqsim/HeatExchangerTubeMaterials.csv"
 compiled_to = "data/heat_exchanger/tube_materials.csv"
 upstream_path = "src/main/resources/designdata/HeatExchangerTubeMaterials.csv"
-commit = "f0c7436c6923766b1e22957b7075f650600457a7"
-retrieved = "2026-11-09"
 vendored_source = "databank/sources/neqsim/HeatExchangerTubeMaterials.csv"
 source_rows = 22
 compiled_rows = 22
@@ -3006,11 +3052,9 @@ generated = ["carbon_number", "molar_mass_g_per_mol", "density_g_per_cm3"]
 id = "neqsim/element.csv"
 compiled_to = "data/reactions/elements.csv"
 upstream_path = "src/main/resources/data/element.csv"
-commit = "9cea9724b66bbdc721a12d8a4e8fd79068890704"
-retrieved = "2026-10-23"
 vendored_source = "databank/sources/neqsim/element.csv"
-source_rows = 173
-compiled_rows = 173
+source_rows = 176
+compiled_rows = 176
 [[upstreams.files.columns]]
 name = "ID"
 disposition = "vendored"
@@ -3221,7 +3265,7 @@ upstream_path = "src/main/resources/data/GibbsReactDatabase/GibbsReactDatabase.c
 vendored_source = "databank/sources/neqsim/GibbsReactDatabase/GibbsReactDatabase.csv"
 compiled_to = "data/reactors/gibbs_reactor.csv"
 source_rows = 79
-compiled_rows = 49
+compiled_rows = 50
 generated = ["citation"]
 [[upstreams.files.rows]]
 selector = "molecule not a component azoth's component table carries"
@@ -3640,8 +3684,8 @@ id = "neqsim/STOCCOEFDATA.csv"
 compiled_to = "data/reactions/stoichiometry.csv"
 upstream_path = "src/main/resources/data/STOCCOEFDATA.csv"
 vendored_source = "databank/sources/neqsim/STOCCOEFDATA.csv"
-source_rows = 151
-compiled_rows = 151
+source_rows = 155
+compiled_rows = 155
 [[upstreams.files.columns]]
 name = "ID"
 disposition = "vendored"
@@ -8526,8 +8570,6 @@ unit = "neqsim-internal"
 id = "neqsim/REACTIONDATA.csv"
 compiled_to = "data/reactions/REACTIONDATA.csv"
 upstream_path = "src/main/resources/data/REACTIONDATA.csv"
-commit = "1acf06520bc0c05db006a0592e0f286f90800206"
-retrieved = "2026-10-23"
 vendored_source = "databank/sources/neqsim/REACTIONDATA.csv"
 source_rows = 47
 compiled_rows = 47
@@ -8666,11 +8708,9 @@ unit = "neqsim-internal"
 id = "neqsim/REACTIONDATAPITZER.csv"
 compiled_to = "data/reactions/REACTIONDATAPITZER.csv"
 upstream_path = "src/main/resources/data/REACTIONDATAPITZER.csv"
-commit = "1acf06520bc0c05db006a0592e0f286f90800206"
-retrieved = "2026-10-23"
 vendored_source = "databank/sources/neqsim/REACTIONDATAPITZER.csv"
-source_rows = 47
-compiled_rows = 47
+source_rows = 48
+compiled_rows = 48
 [[upstreams.files.columns]]
 name = "ID"
 disposition = "vendored"

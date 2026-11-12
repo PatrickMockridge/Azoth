@@ -162,7 +162,7 @@ pub const UNSIZED_COLUMN_DIAMETER_M: f64 = -1.0;
 /// The vapour viscosity `PackingHydraulicsCalculator` holds when nobody sets one, in Pa*s.
 ///
 /// **`ColumnInternalsDesigner.calculatePacked` does not set it, and that is read from the jar
-/// rather than guessed.** Disassembling the pinned `neqsim-f0c7436.jar` shows the designer calling
+/// rather than guessed.** Disassembling the pinned `neqsim-118d9af.jar` shows the designer calling
 /// exactly `setPackingPreset`, `setDesignFloodFraction`, `setVaporDensity`, `setLiquidDensity`,
 /// `setLiquidViscosity`, `setSurfaceTension` and `setColumnDiameter` on the calculator - so this
 /// field keeps its constructor initialiser. Handing it the tray's own viscosity instead would be a

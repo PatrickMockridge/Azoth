@@ -38,8 +38,8 @@ import neqsim.thermodynamicoperations.ThermodynamicOperations;
  * NeqSim carries volume in {@code m^3/mol * 1e5}, the same scale {@code a} and {@code b} use.
  *
  * <pre>
- * javac -proc:none -cp neqsim-f0c7436.jar UmrCpaProbe.java
- * java -cp .:neqsim-f0c7436.jar UmrCpaProbe [T_K P_bara name z ...]
+ * javac -proc:none -cp neqsim-118d9af.jar UmrCpaProbe.java
+ * java -cp .:neqsim-118d9af.jar UmrCpaProbe [T_K P_bara name z ...]
  * </pre>
  */
 public final class UmrCpaProbe {

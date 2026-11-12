@@ -644,14 +644,14 @@ SELFTEST: list[tuple[str, bool]] = [
     ),
     # **the spellings that ran on 2026-10-22.** `timeout` must not hide the JVM, and the
     # per-command ceiling refuses an hour even when it is written down.
-    ("timeout 900 java -cp .:neqsim-f0c7436.jar Probe", False),
-    ("timeout 3600 java -cp .:neqsim-f0c7436.jar Probe", False),
-    ("tools/gated.sh timeout 3600 java -cp .:neqsim-f0c7436.jar Probe", False),
+    ("timeout 900 java -cp .:neqsim-118d9af.jar Probe", False),
+    ("timeout 3600 java -cp .:neqsim-118d9af.jar Probe", False),
+    ("tools/gated.sh timeout 3600 java -cp .:neqsim-118d9af.jar Probe", False),
     # a bare scope is uncapped, so it is not the wrapper
-    ("systemd-run --user --scope java -cp .:neqsim-f0c7436.jar Probe", False),
+    ("systemd-run --user --scope java -cp .:neqsim-118d9af.jar Probe", False),
     (
         "systemd-run --user --scope -p MemoryMax=12G -p MemorySwapMax=0 "
-        "java -cp .:neqsim-f0c7436.jar Probe",
+        "java -cp .:neqsim-118d9af.jar Probe",
         True,
     ),
     # package runners resolve to the program they run

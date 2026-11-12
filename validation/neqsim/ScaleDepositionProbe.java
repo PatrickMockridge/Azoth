@@ -9,8 +9,8 @@
 // thicknesses and its summaries, across the inhibitor, service-time, base-rate and
 // no-scaling corners.
 //
-//   ../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ScaleDepositionProbe.java
-//   ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ScaleDepositionProbe > captures/scale_deposition_probe.tsv
+//   ../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ScaleDepositionProbe.java
+//   ../../tools/gated.sh java -cp .:neqsim-118d9af.jar ScaleDepositionProbe > captures/scale_deposition_probe.tsv
 
 import java.util.List;
 import neqsim.process.chemistry.scale.ScaleDepositionAccumulator;

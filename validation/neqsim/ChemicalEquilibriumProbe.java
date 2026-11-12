@@ -18,8 +18,8 @@
 // initial estimate and then a refinement loop that switches fugacity derivatives on from
 // the second pass. The two can disagree, and one of these fluids is where they do.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ChemicalEquilibriumProbe.java
-//     java -cp .:neqsim-f0c7436.jar ChemicalEquilibriumProbe > captures/chemical_equilibrium_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar ChemicalEquilibriumProbe.java
+//     java -cp .:neqsim-118d9af.jar ChemicalEquilibriumProbe > captures/chemical_equilibrium_probe.tsv
 
 import neqsim.chemicalreactions.ChemicalReactionOperations;
 import neqsim.chemicalreactions.chemicalequilibrium.ChemicalEquilibrium;

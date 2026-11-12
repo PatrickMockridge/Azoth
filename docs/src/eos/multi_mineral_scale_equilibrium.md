@@ -147,5 +147,5 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `pvtsimulation/flowassurance/MultiMineralScaleEquilibrium.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `pvtsimulation/flowassurance/MultiMineralScaleEquilibrium.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/scale_family_probe.tsv` - the solver on a sulphate-limited brine, a high-salinity brine, a co-precipitating brine and a single-mineral state, each in all three activity modes, plus the iteration-cap, water-volume and explicit-strength controls.

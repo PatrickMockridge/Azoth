@@ -17,8 +17,8 @@
 // are read at whichever state the iteration abandoned - printed for completeness, not as a
 // property of the mode at a physical composition.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ChemEqJacobianProbe.java
-//     java -Xmx2g -cp .:neqsim-f0c7436.jar ChemEqJacobianProbe > captures/chem_eq_jacobian_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar ChemEqJacobianProbe.java
+//     java -Xmx2g -cp .:neqsim-118d9af.jar ChemEqJacobianProbe > captures/chem_eq_jacobian_probe.tsv
 
 import java.lang.reflect.Field;
 import neqsim.chemicalreactions.ChemicalReactionOperations;

@@ -3,8 +3,8 @@
 // the bulk pressure, and the sigma at two fixed widths. The port has to reproduce these
 // numbers, not a re-derivation of them.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar CdftTraceProbe.java
-//     java -cp .:neqsim-f0c7436.jar CdftTraceProbe
+//     javac -proc:none -cp neqsim-118d9af.jar CdftTraceProbe.java
+//     java -cp .:neqsim-118d9af.jar CdftTraceProbe
 
 import java.lang.reflect.Method;
 import neqsim.physicalproperties.interfaceproperties.surfacetension.CDFTSurfaceTension;

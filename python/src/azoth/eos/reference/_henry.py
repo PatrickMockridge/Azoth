@@ -22,7 +22,7 @@ What they share is ``H(T)`` and the cap, and that is what this module is. The
 constants an insoluble ion gets are three *different* numbers, and each belongs to the
 model that chose it rather than to a rule here.
 
-The data behind it is sourced, and its history is worth keeping: of the 348 compiled
+The data behind it is sourced, and its history is worth keeping: of the 349 compiled
 rows, 269 carry no correlation and the other 79 carry 75 distinct two-term sets.
 **Upstream PR #4045 replaced the four placeholder sets this module used to describe** -
 forty rows of ``900``, the constant ``2.92``, the ``0.059565`` quartet and the one CO2 set
@@ -83,7 +83,7 @@ class HenryRecord(NamedTuple):
     """The four coefficients of NeqSim's Henry correlation, dimensionless, in bar.
 
     ``HenryCoef1``..``HenryCoef4`` of ``COMP.csv``, which ``Component.java:2210`` reads as
-    ``henryCoefParameter[0..3]``. **All four are zero on 269 of the 348 rows**, which is
+    ``henryCoefParameter[0..3]``. **All four are zero on 270 of the 349 rows**, which is
     the table's marker for a substance it fits no correlation for - and a zero set
     evaluated as a polynomial gives ``1.802 bar`` for every one of them, so a caller must
     refuse rather than evaluate. :func:`effective_coefficient` is that refusal.

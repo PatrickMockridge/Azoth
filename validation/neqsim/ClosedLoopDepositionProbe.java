@@ -9,8 +9,8 @@
 // line, a brine that deposits nothing, an inhibited line, a tolerance wider than the step, and
 // a Peng-Robinson fluid.
 //
-//   ../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ClosedLoopDepositionProbe.java
-//   ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ClosedLoopDepositionProbe > captures/closed_loop_deposition_probe.tsv
+//   ../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ClosedLoopDepositionProbe.java
+//   ../../tools/gated.sh java -cp .:neqsim-118d9af.jar ClosedLoopDepositionProbe > captures/closed_loop_deposition_probe.tsv
 
 import java.util.List;
 import neqsim.process.chemistry.scale.ClosedLoopDepositionSolver;
@@ -90,7 +90,7 @@ public class ClosedLoopDepositionProbe {
   }
 
   public static void main(String[] args) {
-    System.out.println("ClosedLoopDepositionSolver at f0c7436c69 - 80 mol/sec, 100 bara, 60 C, 1000 m, 0.1 m, 10 increments");
+    System.out.println("ClosedLoopDepositionSolver at 118d9aff - 80 mol/sec, 100 bara, 60 C, 1000 m, 0.1 m, 10 increments");
     row("base_1yr", "srk", 1.0, 0.0, 1000.0, 6.5, 1.0e-4, 10);
     row("service_1000yr", "srk", 1000.0, 0.0, 1000.0, 6.5, 1.0e-4, 10);
     row("max_iterations_2", "srk", 1000.0, 0.0, 1000.0, 6.5, 1.0e-4, 2);

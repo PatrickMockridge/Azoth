@@ -186,7 +186,7 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `process/equipment/pipeline/PipeBeggsAndBrills.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `process/equipment/pipeline/PipeBeggsAndBrills.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/pipe_beggs_and_brills_probe.tsv` - the `correlation` rows, one flashed segment per fluid and inclination with its phase properties and correlation outputs, and the twelve line states that reach every regime.
 - Beggs, H. D.; Brill, J. P. (1973). J. Pet. Technol. 25(5), 607-617.
 

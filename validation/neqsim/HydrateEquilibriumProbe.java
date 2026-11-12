@@ -16,8 +16,8 @@
 // rather than leaving a hole.
 //
 // A capture, not a test: run it against the pinned jar and commit what it prints.
-//   javac -proc:none -cp neqsim-f0c7436.jar HydrateEquilibriumProbe.java
-//   java -cp .:neqsim-f0c7436.jar HydrateEquilibriumProbe > captures/hydrate_equilibrium_probe.tsv
+//   javac -proc:none -cp neqsim-118d9af.jar HydrateEquilibriumProbe.java
+//   java -cp .:neqsim-118d9af.jar HydrateEquilibriumProbe > captures/hydrate_equilibrium_probe.tsv
 
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemSrkEos;

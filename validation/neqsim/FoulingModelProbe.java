@@ -2,8 +2,8 @@
 //
 // Compile and run from this directory:
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar FoulingModelProbe.java
-//     java -cp .:neqsim-f0c7436.jar FoulingModelProbe > captures/fouling_model_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar FoulingModelProbe.java
+//     java -cp .:neqsim-118d9af.jar FoulingModelProbe > captures/fouling_model_probe.tsv
 //
 // **The Ebert-Panchal resistance is the class's analytical path** (`getFoulingResistance(time)`),
 // not the stateful `advanceTime` Euler step, which is a separate row. The threshold temperature

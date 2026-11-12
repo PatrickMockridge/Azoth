@@ -12,7 +12,7 @@ phase1_component_0_x=0.09542082642782022
 phase1_component_0_influence_parameter=9.634812734820117E-21
 phase1_component_1_x=0.9045791735721797
 phase1_component_1_influence_parameter=2.7571945977326497E-19
-sigma_N_per_m=0.00950471504464287
+error=IllegalStateException:Full gradient-theory Newton iteration did not converge
 
 methane_nheptane_313K_30bara
 phase_count=2
@@ -28,7 +28,7 @@ phase1_component_0_x=0.13019261725316564
 phase1_component_0_influence_parameter=9.338094864869405E-21
 phase1_component_1_x=0.8698073827468343
 phase1_component_1_influence_parameter=8.71891375210775E-19
-sigma_N_per_m=0.01469953306363218
+error=IllegalStateException:Full gradient-theory Newton iteration did not converge
 
 co2_water_313K_50bara
 phase_count=2
@@ -44,7 +44,7 @@ phase1_component_0_x=6.691762234084198E-4
 phase1_component_0_influence_parameter=3.453431599008472E-20
 phase1_component_1_x=0.9993308237765915
 phase1_component_1_influence_parameter=1.9939776242117276E-20
-sigma_N_per_m=0.018431814630995885
+sigma_N_per_m=0.0184318146309958
 
 methane_150K_10bara
 phase_count=1
@@ -63,10 +63,10 @@ phase0_component_0_influence_parameter=8.673919735107106E-19
 phase0_component_1_x=4.0364957895044424E-4
 phase0_component_1_influence_parameter=1.9939776242117276E-20
 phase1_type=AQUEOUS
-phase1_molar_volume=2.385039353645803
+phase1_molar_volume=2.385039353645804
 phase1_component_0_x=9.208893557273499E-26
 phase1_component_0_influence_parameter=8.673919735107106E-19
 phase1_component_1_x=1.0
 phase1_component_1_influence_parameter=1.9939776242117276E-20
-sigma_N_per_m=0.008295124802206816
+error=IllegalStateException:Full gradient-theory mesh refinement did not converge
 

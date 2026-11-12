@@ -3,8 +3,8 @@
 //
 // Compile and run from this directory:
 //
-//     javac -cp .:neqsim-f0c7436.jar -d . FullerProbe.java
-//     java -cp .:neqsim-f0c7436.jar FullerProbe > captures/fuller_probe.tsv
+//     javac -cp .:neqsim-118d9af.jar -d . FullerProbe.java
+//     java -cp .:neqsim-118d9af.jar FullerProbe > captures/fuller_probe.tsv
 //
 // **The two experimental rows are the oracle and the probe cannot state them itself**: the class
 // is a correlation, so what a port can be held to is the number the class answers for a pair whose

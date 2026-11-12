@@ -2,8 +2,8 @@
 //
 // Compile and run from this directory:
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ShellAndTubeDesignProbe.java
-//     java -cp .:neqsim-f0c7436.jar ShellAndTubeDesignProbe \
+//     javac -proc:none -cp neqsim-118d9af.jar ShellAndTubeDesignProbe.java
+//     java -cp .:neqsim-118d9af.jar ShellAndTubeDesignProbe \
 //         > captures/shell_and_tube_design_probe.tsv
 //
 // The calculator is a single-pass pipeline: TEMA configuration, material lookup from the H2
@@ -153,8 +153,12 @@ public class ShellAndTubeDesignProbe {
     calc.setTubeMaterialGrade(tubeGrade);
     System.out.println(label);
     inputs(calc);
-    calc.calculate();
-    printMap("result.", calc.toMap());
+    try {
+      calc.calculate();
+      printMap("result.", calc.toMap());
+    } catch (RuntimeException refused) {
+      System.out.println("refused=" + refused.getMessage());
+    }
     System.out.println();
   }
 

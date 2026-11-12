@@ -20,8 +20,8 @@
 // the base `V0` afterwards makes `calc_lngi` evaluate at the base volume. The difference is
 // therefore the derivative the perturbed composition asks for.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar CpaHessianProbe.java
-//     java -Xmx2g -cp .:neqsim-f0c7436.jar CpaHessianProbe > captures/cpa_hessian_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar CpaHessianProbe.java
+//     java -Xmx2g -cp .:neqsim-118d9af.jar CpaHessianProbe > captures/cpa_hessian_probe.tsv
 
 import neqsim.thermo.component.ComponentSrkCPA;
 import neqsim.thermo.phase.PhaseInterface;

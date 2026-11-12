@@ -5,7 +5,7 @@
 
 A **capture** is a probe's standard output, committed verbatim under
 ``validation/neqsim/captures/``. The probes are run by hand, against the pinned
-``neqsim-f0c7436.jar``, and the capture is what they printed. This reads a capture and emits
+``neqsim-118d9af.jar``, and the capture is what they printed. This reads a capture and emits
 ``validation/eos/<name>_against_neqsim.json``, the shape
 ``python/tests/validation/test_validation_cases.py`` already consumes.
 
@@ -225,7 +225,7 @@ CASES: tuple[Case, ...] = (
         id="water_methanol_srk_cpa_against_neqsim",
         calc="eos.srk_cpa_phase",
         tol=1.0e-10,
-        command="java -cp .:neqsim-f0c7436.jar CpaSweep 300 100 0.6",
+        command="java -cp .:neqsim-118d9af.jar CpaSweep 300 100 0.6",
         header="case 0",
         attribution=(
             "NeqSim master, SystemSrkCPA with setMixingRule(10), run from "
@@ -264,7 +264,7 @@ CASES: tuple[Case, ...] = (
         # `1e-7` and not `1e-8`: see the note. Upstream reworked both PCSAFT phases after
         # 3.20.0, which is the revision this conversion is a port of.
         tol=1.0e-07,
-        command="java -cp .:neqsim-f0c7436.jar PcsaftProbe 350 30 methane 0.6 n-butane 0.4",
+        command="java -cp .:neqsim-118d9af.jar PcsaftProbe 350 30 methane 0.6 n-butane 0.4",
         header="# methane/n-butane at T=350",
         attribution=(
             "NeqSim master, SystemPCSAFT - which builds PhasePCSAFTRahmat - run from "
@@ -313,7 +313,7 @@ CASES: tuple[Case, ...] = (
         id="methane_butane_saft_vr_mie_against_neqsim",
         calc="eos.saft_vr_mie_phase",
         tol=1.0e-04,
-        command="java -cp .:neqsim-f0c7436.jar SaftVrMieProbe 350 30 methane 0.6 n-butane 0.4",
+        command="java -cp .:neqsim-118d9af.jar SaftVrMieProbe 350 30 methane 0.6 n-butane 0.4",
         header="# methane/n-butane at T=350",
         attribution=(
             "NeqSim master, SystemSAFTVRMie - which builds PhaseSAFTVRMie - run from "
@@ -358,7 +358,7 @@ CASES: tuple[Case, ...] = (
         id="methane_butane_saft_flash_against_neqsim",
         calc="eos.tp_flash_saft",
         tol=1.0e-04,
-        command="java -cp .:neqsim-f0c7436.jar SaftVrMieFlashProbe",
+        command="java -cp .:neqsim-118d9af.jar SaftVrMieFlashProbe",
         header="# methane/n-butane at T=250",
         attribution=(
             "NeqSim master, SystemSAFTVRMie with TPflashSAFT, run from "
@@ -402,7 +402,7 @@ CASES: tuple[Case, ...] = (
         id="methane_water_umr_cpa_against_neqsim",
         calc="eos.umr_cpa_phase",
         tol=1.0e-09,
-        command="java -cp .:neqsim-f0c7436.jar UmrCpaProbe",
+        command="java -cp .:neqsim-118d9af.jar UmrCpaProbe",
         header="# methane/water at T=298.150 K, P=70",
         attribution=(
             "NeqSim master, SystemUMRCPAEoS - which builds PhaseUMRCPA - run from "
@@ -444,7 +444,7 @@ CASES: tuple[Case, ...] = (
         id="methane_water_sodium_chloride_furst_against_neqsim",
         calc="eos.furst_electrolyte_phase",
         tol=1.0e-10,
-        command="java -cp .:neqsim-f0c7436.jar FurstProbe",
+        command="java -cp .:neqsim-118d9af.jar FurstProbe",
         header="# the shipped test: methane water Na+ Cl- phase 1",
         attribution=(
             "NeqSim master, SystemFurstElectrolyteEos - which builds "

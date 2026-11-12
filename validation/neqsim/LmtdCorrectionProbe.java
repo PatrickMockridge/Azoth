@@ -2,8 +2,8 @@
 //
 // Compile and run from this directory:
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar LmtdCorrectionProbe.java
-//     java -cp .:neqsim-f0c7436.jar LmtdCorrectionProbe > captures/lmtd_correction_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar LmtdCorrectionProbe.java
+//     java -cp .:neqsim-118d9af.jar LmtdCorrectionProbe > captures/lmtd_correction_probe.tsv
 //
 // **The four temperature inputs are the class's own**, and `R`, `P` and `F_t` are its
 // intermediates. The multi-pass path is the Bowman-Mueller-Nagle conversion: the overall

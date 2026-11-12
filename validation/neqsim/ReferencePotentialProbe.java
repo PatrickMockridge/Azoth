@@ -20,8 +20,8 @@
 // reimplements the correlation - the matrix, the rank calls and the potentials are
 // NeqSim's own.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ReferencePotentialProbe.java
-//     java -cp .:neqsim-f0c7436.jar ReferencePotentialProbe > captures/reference_potential_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar ReferencePotentialProbe.java
+//     java -cp .:neqsim-118d9af.jar ReferencePotentialProbe > captures/reference_potential_probe.tsv
 
 import java.util.ArrayList;
 import neqsim.chemicalreactions.ChemicalReactionOperations;

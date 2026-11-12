@@ -199,7 +199,7 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `pvtsimulation/flowassurance/DeWaardMilliamsCorrosion.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `pvtsimulation/flowassurance/DeWaardMilliamsCorrosion.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/flow_assurance_remainder_probe.tsv` - the thirty-one states: the four severity bands, both sides of the pH saturation, the scale and glycol and flow branches, both inhibitor clamps, the sulfur and FeS contributions and the FeS cap, and the four morphologies.
 - NORSOK M-506 and NACE MR0175 / ISO 15156.
 

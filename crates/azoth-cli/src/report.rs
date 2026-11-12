@@ -294,8 +294,10 @@ pub fn render_fittings() -> Result<String> {
         ));
     }
     out.push_str(
-        "\nEvery coefficient above is a placeholder for software testing. See\n\
-         data/fittings/crane_k_factors.csv. Do not size equipment with them.\n\n",
+        "\nThe coefficients above are NeqSim equivalent-length defaults, cited but not\n\
+         verified against Crane TP-410, apart from the one estimated dummy marked.\n\
+         See data/fittings/crane_k_factors.csv. Do not size equipment with them\n\
+         without a licensed source.\n\n",
     );
     Ok(out)
 }

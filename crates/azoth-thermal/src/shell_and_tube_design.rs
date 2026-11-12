@@ -1,6 +1,6 @@
 //! `thermal.shell_and_tube_design` - the detailed TEMA/ASME VIII/NACE design loop.
 //!
-//! Transcribed from `ShellAndTubeDesignCalculator.java` at NeqSim `f0c7436c69`. The pipeline
+//! Transcribed from `ShellAndTubeDesignCalculator.java` at NeqSim `118d9aff`. The pipeline
 //! is single-pass: TEMA configuration, material lookup, tube bundle, shell dimensions,
 //! baffles, UHX-13, UG-37, UG-27, UG-99, the optional NACE assessment, the optional thermal
 //! and vibration block, weights and costs. Nothing iterates.

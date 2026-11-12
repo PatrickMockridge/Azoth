@@ -10,8 +10,8 @@
 // coarse cap loses the critical point while a fine cap finds it, and it is *silent* if
 // nothing on the returned object distinguishes the two cases.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar EnvelopeCritProbe.java
-//     java -Xmx2g -cp .:neqsim-f0c7436.jar EnvelopeCritProbe > captures/envelope_crit_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar EnvelopeCritProbe.java
+//     java -Xmx2g -cp .:neqsim-118d9af.jar EnvelopeCritProbe > captures/envelope_crit_probe.tsv
 
 import java.util.Arrays;
 import neqsim.thermo.system.SystemInterface;

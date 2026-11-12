@@ -17,8 +17,8 @@
 // `ACTENERGY` is not evaluated, and the legacy law ignores it. `methanecombustion` is
 // included to show the dormant-flag path as well: its `usereaction` is 0.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ReactionProbe.java
-//     java -cp .:neqsim-f0c7436.jar ReactionProbe > captures/reaction_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar ReactionProbe.java
+//     java -cp .:neqsim-118d9af.jar ReactionProbe > captures/reaction_probe.tsv
 
 import neqsim.chemicalreactions.chemicalreaction.ChemicalReaction;
 import neqsim.chemicalreactions.chemicalreaction.ChemicalReactionFactory;

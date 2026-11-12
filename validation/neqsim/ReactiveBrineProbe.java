@@ -1,8 +1,8 @@
 // The reactive CO2/brine equilibrium: the species `chemicalReactionInit` adds, and the
 // residuals its coupling loop is accepted on.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ReactiveBrineProbe.java
-//     java -cp .:neqsim-f0c7436.jar ReactiveBrineProbe > captures/reactive_brine_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar ReactiveBrineProbe.java
+//     java -cp .:neqsim-118d9af.jar ReactiveBrineProbe > captures/reactive_brine_probe.tsv
 //
 // `BrineProbe` runs the class and reports the phase inventory, but it prints the *count* of
 // components and never their names - and the nine the five-component brine grows to are the

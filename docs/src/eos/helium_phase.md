@@ -79,4 +79,4 @@ declared checks *that call* could not evaluate.
 
 - Arp, V. D.; McCarty, R. D.; Friend, D. G. (1998). "Thermophysical Properties of Helium-4 from 0.8 to 1500 K with Pressures to 2000 MPa." NIST Technical Note 1334 (revised).
 - NIST IR 8474 (2023), the helium fundamental equation of state.
-- NeqSim master, `thermo/util/Vega/Vega.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `thermo/util/Vega/Vega.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.

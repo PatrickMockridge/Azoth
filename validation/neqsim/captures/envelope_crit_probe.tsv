@@ -2,105 +2,105 @@
 ################ methane/n-butane 50/50 ################
 === the class's own default caps (no setter called) ===
 default
-critical_T_K=374.321398681148
-critical_P_bar=98.9682653626339
+critical_T_K=374.321398681160
+critical_P_bar=98.9682653626253
 number_of_critical_points=1
-bubble_points=43 bubble_last_T_K=364.523886838120 bubble_last_P_bar=105.075576904518
-dew_points=24 dew_last_T_K=260.343565820202 dew_last_P_bar=1.26333837432210
+bubble_points=43 bubble_last_T_K=364.523886838121 bubble_last_P_bar=105.075576904518
+dew_points=24 dew_last_T_K=260.343565820193 dew_last_P_bar=1.26333837432161
 
 === step caps swept ===
 dTmax=10 dPmax=10
-critical_T_K=374.321398681148
-critical_P_bar=98.9682653626339
+critical_T_K=374.321398681160
+critical_P_bar=98.9682653626253
 number_of_critical_points=1
-bubble_points=43 bubble_last_T_K=364.523886838120 bubble_last_P_bar=105.075576904518
-dew_points=24 dew_last_T_K=260.343565820202 dew_last_P_bar=1.26333837432210
+bubble_points=43 bubble_last_T_K=364.523886838121 bubble_last_P_bar=105.075576904518
+dew_points=24 dew_last_T_K=260.343565820193 dew_last_P_bar=1.26333837432161
 
 dTmax=50 dPmax=50
-critical_T_K=374.941376905447
-critical_P_bar=100.358890006150
+critical_T_K=374.941376905463
+critical_P_bar=100.358890006139
 number_of_critical_points=1
-bubble_points=33 bubble_last_T_K=361.582182009457 bubble_last_P_bar=106.358621073364
-dew_points=17 dew_last_T_K=264.055833726937 dew_last_P_bar=1.47579393223026
+bubble_points=33 bubble_last_T_K=361.582182009463 bubble_last_P_bar=106.358621073358
+dew_points=17 dew_last_T_K=264.055833726937 dew_last_P_bar=1.47579393223027
 
 dTmax=100 dPmax=100
-critical_T_K=374.642058754221
-critical_P_bar=99.6857364757976
+critical_T_K=374.642058754278
+critical_P_bar=99.6857364757493
 number_of_critical_points=1
-bubble_points=33 bubble_last_T_K=366.643294616954 bubble_last_P_bar=103.975394161938
+bubble_points=33 bubble_last_T_K=366.643294616988 bubble_last_P_bar=103.975394161907
 dew_points=15 dew_last_T_K=264.983259183307 dew_last_P_bar=1.53313310352264
 
 dTmax=250 dPmax=250
-critical_T_K=374.642058754221
-critical_P_bar=99.6857364757976
+critical_T_K=374.642058754278
+critical_P_bar=99.6857364757493
 number_of_critical_points=1
-bubble_points=33 bubble_last_T_K=366.643294616954 bubble_last_P_bar=103.975394161938
+bubble_points=33 bubble_last_T_K=366.643294616988 bubble_last_P_bar=103.975394161907
 dew_points=15 dew_last_T_K=264.983259183307 dew_last_P_bar=1.53313310352264
 
 dTmax=500 dPmax=500
-critical_T_K=374.642058754221
-critical_P_bar=99.6857364757976
+critical_T_K=374.642058754278
+critical_P_bar=99.6857364757493
 number_of_critical_points=1
-bubble_points=33 bubble_last_T_K=366.643294616954 bubble_last_P_bar=103.975394161938
+bubble_points=33 bubble_last_T_K=366.643294616988 bubble_last_P_bar=103.975394161907
 dew_points=15 dew_last_T_K=264.983259183307 dew_last_P_bar=1.53313310352264
 
 dTmax=1000 dPmax=1000
-critical_T_K=374.642058754221
-critical_P_bar=99.6857364757976
+critical_T_K=374.642058754278
+critical_P_bar=99.6857364757493
 number_of_critical_points=1
-bubble_points=33 bubble_last_T_K=366.643294616954 bubble_last_P_bar=103.975394161938
+bubble_points=33 bubble_last_T_K=366.643294616988 bubble_last_P_bar=103.975394161907
 dew_points=15 dew_last_T_K=264.983259183307 dew_last_P_bar=1.53313310352264
 
 
 ################ methane/n-butane/n-heptane 40/30/30 ################
 === the class's own default caps (no setter called) ===
 default
-critical_T_K=464.474923420829
-critical_P_bar=91.5572013861063
+critical_T_K=464.474923420702
+critical_P_bar=91.5572013862220
 number_of_critical_points=1
-bubble_points=57 bubble_last_T_K=458.318860197196 bubble_last_P_bar=96.5985437609908
-dew_points=20 dew_last_T_K=345.030680045289 dew_last_P_bar=1.41998059113430
+bubble_points=57 bubble_last_T_K=458.318860197152 bubble_last_P_bar=96.5985437610339
+dew_points=20 dew_last_T_K=345.030680045298 dew_last_P_bar=1.41998059113475
 
 === step caps swept ===
 dTmax=10 dPmax=10
-critical_T_K=464.474923420829
-critical_P_bar=91.5572013861063
+critical_T_K=464.474923420702
+critical_P_bar=91.5572013862220
 number_of_critical_points=1
-bubble_points=57 bubble_last_T_K=458.318860197196 bubble_last_P_bar=96.5985437609908
-dew_points=20 dew_last_T_K=345.030680045289 dew_last_P_bar=1.41998059113430
+bubble_points=57 bubble_last_T_K=458.318860197152 bubble_last_P_bar=96.5985437610339
+dew_points=20 dew_last_T_K=345.030680045298 dew_last_P_bar=1.41998059113475
 
 dTmax=50 dPmax=50
-critical_T_K=464.473097759313
-critical_P_bar=91.5545362240299
+critical_T_K=464.746826464276
+critical_P_bar=92.0166892996573
 number_of_critical_points=1
-bubble_points=41 bubble_last_T_K=459.413158095958 bubble_last_P_bar=95.7768758850590
-dew_points=17 dew_last_T_K=349.895438870905 dew_last_P_bar=1.67892353516635
+bubble_points=39 bubble_last_T_K=461.428800737951 bubble_last_P_bar=94.1474370007838
+dew_points=12 dew_last_T_K=337.589255843443 dew_last_P_bar=1.08786708130219
 
 dTmax=100 dPmax=100
-critical_T_K=464.424770650769
-critical_P_bar=91.4708697989056
+critical_T_K=465.880212872290
+critical_P_bar=93.9306628076080
 number_of_critical_points=1
-bubble_points=41 bubble_last_T_K=460.990174083837 bubble_last_P_bar=94.5158290104330
-dew_points=21 dew_last_T_K=336.886383773442 dew_last_P_bar=1.06012128164190
+bubble_points=39 bubble_last_T_K=448.800663469430 bubble_last_P_bar=102.351129184757
+dew_points=14 dew_last_T_K=351.312570334412 dew_last_P_bar=1.76122931396047
 
 dTmax=250 dPmax=250
-critical_T_K=464.424770650769
-critical_P_bar=91.4708697989056
+critical_T_K=465.880212872290
+critical_P_bar=93.9306628076080
 number_of_critical_points=1
-bubble_points=41 bubble_last_T_K=460.990174083837 bubble_last_P_bar=94.5158290104330
-dew_points=21 dew_last_T_K=336.886383773442 dew_last_P_bar=1.06012128164190
+bubble_points=39 bubble_last_T_K=448.800663469430 bubble_last_P_bar=102.351129184757
+dew_points=14 dew_last_T_K=351.312570334412 dew_last_P_bar=1.76122931396047
 
 dTmax=500 dPmax=500
-critical_T_K=464.424770650769
-critical_P_bar=91.4708697989056
+critical_T_K=465.880212872290
+critical_P_bar=93.9306628076080
 number_of_critical_points=1
-bubble_points=41 bubble_last_T_K=460.990174083837 bubble_last_P_bar=94.5158290104330
-dew_points=21 dew_last_T_K=336.886383773442 dew_last_P_bar=1.06012128164190
+bubble_points=39 bubble_last_T_K=448.800663469430 bubble_last_P_bar=102.351129184757
+dew_points=14 dew_last_T_K=351.312570334412 dew_last_P_bar=1.76122931396047
 
 dTmax=1000 dPmax=1000
-critical_T_K=464.424770650769
-critical_P_bar=91.4708697989056
+critical_T_K=465.880212872290
+critical_P_bar=93.9306628076080
 number_of_critical_points=1
-bubble_points=41 bubble_last_T_K=460.990174083837 bubble_last_P_bar=94.5158290104330
-dew_points=21 dew_last_T_K=336.886383773442 dew_last_P_bar=1.06012128164190
+bubble_points=39 bubble_last_T_K=448.800663469430 bubble_last_P_bar=102.351129184757
+dew_points=14 dew_last_T_K=351.312570334412 dew_last_P_bar=1.76122931396047
 

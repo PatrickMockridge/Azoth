@@ -1,8 +1,8 @@
 // The gamma-phi flash of an SRK vapour over a `PhaseGENRTL` liquid, for
 // `eos.ge_nrtl_flash`.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar NrtlGammaPhiFlash.java
-//     java -cp .:neqsim-f0c7436.jar NrtlGammaPhiFlash
+//     javac -proc:none -cp neqsim-118d9af.jar NrtlGammaPhiFlash.java
+//     java -cp .:neqsim-118d9af.jar NrtlGammaPhiFlash
 //
 // **Why this drives the loop itself.** `SystemNRTL` does not opt into NeqSim's direct
 // gamma-phi flash: `EosGeFlashModel.requiresDirectGammaPhiFlash` defaults to false,
@@ -128,9 +128,19 @@ public class NrtlGammaPhiFlash {
     System.out.println("  zVapour=" + vapour.getZ());
   }
 
-  public static void main(String[] args) throws Exception {
-    one("methanol", "water", 350.0, 1.0, 0.5);
-    one("methanol", "water", 353.0, 1.0, 0.4);
-    one("ethanol", "water", 360.0, 1.0, 0.3);
+  public static void main(String[] args) {
+    attempt("methanol", "water", 350.0, 1.0, 0.5);
+    attempt("methanol", "water", 353.0, 1.0, 0.4);
+    attempt("ethanol", "water", 360.0, 1.0, 0.3);
+  }
+
+  private static void attempt(String first, String second, double temperatureK,
+      double pressureBar, double zFirst) {
+    try {
+      one(first, second, temperatureK, pressureBar, zFirst);
+    } catch (Exception refused) {
+      System.out.println(first + "/" + second + "  T=" + temperatureK + " P=" + pressureBar
+          + "  z=" + zFirst + "  refused=" + refused.getMessage());
+    }
   }
 }

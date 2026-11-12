@@ -2,14 +2,15 @@
 //!
 //! # What these tests can and cannot check
 //!
-//! The coefficients in `data/fittings/crane_k_factors.csv` are estimated dummy
-//! values, not engineering data. There is therefore no correct answer for this
-//! calc to be checked against, and nothing here can detect a wrong coefficient.
+//! The coefficients in `data/fittings/crane_k_factors.csv` are NeqSim's
+//! equivalent-length defaults, cited but not verified against Crane TP-410, with
+//! one estimated dummy. There is therefore no authoritative answer for this calc
+//! to be checked against, and nothing here can detect a wrong coefficient.
 //!
 //! These tests validate the arithmetic, the registry lookup and the error
-//! handling. They are honest about the gap: the numerical assertions compare
-//! against values derived from the same dummy coefficients, so they would all
-//! still pass if the coefficients were nonsense.
+//! handling. The numerical assertions compare against values derived from the
+//! same coefficients, so they would all still pass if the coefficients were
+//! nonsense.
 
 use azoth_test_support as common;
 
@@ -139,28 +140,17 @@ fn components_echo_the_registry_coefficients() {
 }
 
 #[test]
-fn the_registry_is_entirely_estimated_dummy_data_right_now() {
-    // This test exists to fail loudly the day someone populates the registry
-    // from a real source. At that point this assertion breaks, and whoever did
-    // the work is forced to update the spec's notes and the docs
-    // rather than leaving them claiming the data is placeholder. Deleting this
-    // test is the correct response to that failure, not updating the expected
-    // number.
+fn only_the_plug_valve_is_estimated_dummy() {
+    // The NeqSim defaults are cited but unverified; the plug valve has no
+    // NeqSim counterpart and remains a placeholder. If a primary source is
+    // transcribed, this list shrinks and the spec's notes move with it.
     let rows = fittings::registry().unwrap();
     let estimated: Vec<&str> = rows
         .iter()
         .filter(|r| r.is_estimated())
         .map(|r| r.id.as_str())
         .collect();
-    assert_eq!(
-        estimated.len(),
-        rows.len(),
-        "some rows are no longer estimated_dummy ({:?} of {}). If the coefficients have \
-         now been verified against the primary standard, delete this test and update the \
-         spec's notes.",
-        estimated,
-        rows.len()
-    );
+    assert_eq!(estimated, vec!["plug_valve_straightway"]);
 }
 
 #[test]

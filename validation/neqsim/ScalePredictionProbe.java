@@ -2,8 +2,8 @@
 // brines, the Ksp pins, the auto-pH path and the pressure-correction boundary. Every
 // intermediate the class exposes is printed, so the port can be diffed key by key.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ScalePredictionProbe.java
-//     java -cp .:neqsim-f0c7436.jar ScalePredictionProbe > captures/scale_prediction_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar ScalePredictionProbe.java
+//     java -cp .:neqsim-118d9af.jar ScalePredictionProbe > captures/scale_prediction_probe.tsv
 
 import java.lang.reflect.Field;
 import neqsim.pvtsimulation.flowassurance.ScalePredictionCalculator;

@@ -16,8 +16,8 @@
 // Each case prints the fluid as the walk sees it (names, molar masses, mole fractions, normal
 // liquid densities) and then what the walk set on the characteriser.
 //
-//   javac -proc:none -cp /path/to/neqsim-f0c7436.jar SetHeavyTbpProbe.java
-//   java -cp .:/path/to/neqsim-f0c7436.jar SetHeavyTbpProbe > captures/set_heavy_tbp_probe.tsv
+//   javac -proc:none -cp /path/to/neqsim-118d9af.jar SetHeavyTbpProbe.java
+//   java -cp .:/path/to/neqsim-118d9af.jar SetHeavyTbpProbe > captures/set_heavy_tbp_probe.tsv
 
 import java.util.function.ToDoubleFunction;
 import neqsim.thermo.characterization.PlusCharacterize;

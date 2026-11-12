@@ -67,7 +67,7 @@ def test_the_shipped_baseline_survives_the_writer() -> None:
 
     `databank/keycard.toml` is emitted from the CSVs by `tools/gen_keycard.py` and its `--check`
     gate is a byte comparison of that emission, so nothing has ever read it back. This is the
-    stronger claim: the 348 components it states survive a round trip as values, and the Rust
+    stronger claim: the 349 components it states survive a round trip as values, and the Rust
     reader resolves the written text to the same rows as the Python one.
     """
     card = keycard.load(BASELINE)

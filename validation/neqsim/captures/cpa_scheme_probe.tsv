@@ -7,26 +7,26 @@
 # water alone (4C) at 300 K, 100 bara
    water          scheme=4C  sites=4
    phase sites              = 4
-   hcpa  the association    = 3.69488732209711
+   hcpa  the association    = 3.69488732211839
    (hcpa = 0 means every association term was computed over nothing)
 
 # H2S alone (2A, eps = 5000 J/mol) at 300 K, 100 bara
    H2S            scheme=2A  sites=2
    phase sites              = 2
-   hcpa  the association    = 0.0307464482674069
+   hcpa  the association    = 0.0307464482517443
    (hcpa = 0 means every association term was computed over nothing)
 
 # H2S and water (2A with 4C) at 300 K, 100 bara
    H2S            scheme=2A  sites=2
    water          scheme=4C  sites=4
    phase sites              = 6
-   hcpa  the association    = 1.90280580287429
+   hcpa  the association    = 1.90280580289391
    (hcpa = 0 means every association term was computed over nothing)
 
 # asphaltene alone (1A with one site, eps = 3500 J/mol) at 300 K, 100 bara
    asphaltene     scheme=1A  sites=1
    phase sites              = 1
-   hcpa  the association    = 0.0276646810810010
+   hcpa  the association    = 0.0276646810809991
    (hcpa = 0 means every association term was computed over nothing)
 
 # acetic acid alone (1A, eps = 40323 J/mol) at 300 K, 100 bara

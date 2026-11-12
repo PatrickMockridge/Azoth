@@ -79,4 +79,4 @@ declared checks *that call* could not evaluate.
 ## References
 
 - Gernert, J.; Span, R. (2016). "EOS-CG: A Helmholtz energy mixture model for humid gases and CCS mixtures." Journal of Chemical Thermodynamics 93, 274-293.
-- NeqSim master, `thermo/util/gerg/EOSCGModel.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `thermo/util/gerg/EOSCGModel.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.

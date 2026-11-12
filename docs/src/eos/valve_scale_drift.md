@@ -87,5 +87,5 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `process/chemistry/scale/ValveScaleDrift.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `process/chemistry/scale/ValveScaleDrift.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/valve_scale_drift_probe.tsv` - the not-advanced, thirty-day, one-year and pinned states, zero growth, an unset port, a clean opening at 100 percent, a reset, and a growth rate taken from the evaluated `ScaleKinetics`.

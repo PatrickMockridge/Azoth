@@ -1,7 +1,7 @@
 //! `BellDelawareMethod` - the shell-side helpers a shell-and-tube rating reads.
 //!
 //! Transcribed from `process/mechanicaldesign/heatexchanger/BellDelawareMethod.java` at
-//! NeqSim `f0c7436c69`. Every coefficient is the class's own literal; where a published
+//! NeqSim `118d9aff`. Every coefficient is the class's own literal; where a published
 //! correlation would differ, the class's inline constant is what is carried.
 
 /// The ideal crossflow coefficient for a tube bank, Zhukauskas' two layouts.

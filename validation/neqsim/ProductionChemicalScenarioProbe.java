@@ -7,8 +7,8 @@
 // the treated pH and bicarbonate, the dose equivalents, the scavenger capacity and residual
 // H2S, the baseline and treated indices, the change, and the warning map.
 //
-//   ../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProductionChemicalScenarioProbe.java
-//   ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProductionChemicalScenarioProbe > captures/production_chemical_scenario_probe.tsv
+//   ../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProductionChemicalScenarioProbe.java
+//   ../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProductionChemicalScenarioProbe > captures/production_chemical_scenario_probe.tsv
 
 import java.util.Map;
 import neqsim.process.chemistry.ProductionChemical;

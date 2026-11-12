@@ -112,5 +112,5 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `pvtsimulation/flowassurance/PipelineCooldownCalculator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `pvtsimulation/flowassurance/PipelineCooldownCalculator.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/flow_assurance_remainder_probe.tsv` - the thirteen states: the default U and its half and double, the layer value insulated, bare and at a higher external coefficient, the ceil-step overshoot, both target outcomes, a heat-up, non-default steel and a thick coating.

@@ -1,6 +1,6 @@
 //! `thermal.incremental_zone_analysis` - the HTRI-style incremental rating.
 //!
-//! Transcribed from `IncrementalZoneAnalysis.java` at NeqSim `f0c7436c69`. The class is a
+//! Transcribed from `IncrementalZoneAnalysis.java` at NeqSim `118d9aff`. The class is a
 //! single pass over the caller's zones in insertion order: no subdivision, no iteration and no
 //! convergence test. The tube side dispatches on the regime - Shah for `CONDENSING`,
 //! Gungor-Winterton for `EVAPORATING`, the single-phase path for everything else, `TWO_PHASE`

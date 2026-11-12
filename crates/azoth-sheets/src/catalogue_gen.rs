@@ -11896,7 +11896,7 @@ pub static CALCS: &[CalcForm] = &[
     CalcForm {
         id: "hydraulics.crane_k_factors",
         name: "Fitting resistance coefficients by the equivalent-length method",
-        summary: "Total fitting resistance coefficient from a list of fittings and their equivalent lengths. Use it to add valve and fitting losses to a line pressure-drop calculation.",
+        summary: "Total fitting resistance coefficient from a list of fittings and their equivalent lengths. The coefficients are equivalent-length engineering defaults, cited but not verified against Crane TP-410.",
         namespace: "hydraulics",
         available: false,
         refusal: Some(
@@ -11912,7 +11912,6 @@ pub static CALCS: &[CalcForm] = &[
         ],
         references: &[
             "Crane Technical Paper No. 410, \"Flow of Fluids Through Valves, Fittings and Pipe\" (2013).",
-            "The coefficients in data/fittings/crane_k_factors.csv are estimated dummy values for software testing, with no source.",
         ],
         inputs: &[
             CalcInput {

@@ -449,16 +449,13 @@ impl CompositionContribution {
 /// `ComponentEos.fugcoef` is `exp(dFdN - ln(PV/RT))`, and this library's cubic `ln phi` is
 /// already `dFdN - ln Z` for its own part - so these are the *changes*, and adding them to
 /// the cubic's logarithm gives the electrolyte phase's fugacity coefficient. The identity is
-/// checked rather than assumed: the capture's `lnPhi[2]` is `-275.908826771314` and its
-/// `dFdN[2]` `-280.551091323773`, which differ by `-ln Z` to the last digit.
+/// checked rather than assumed: the capture's `lnPhi` and `dFdN` differ by `-ln Z`.
 ///
-/// # The gamma chain is missing, upstream
+/// # The gamma chain
 ///
-/// `dFLRdN` is `FLRXLR XLRi + dFdAlphaLR alphai`, and **the chain through the shielding
-/// parameter is commented out in the source** - `FLRGammaLR * gammaLRdn` is written and
-/// disabled, and `dFLRdNdN` has the same hole. A port that completed it would have a
-/// different fugacity coefficient from the one being ported, so it is reproduced and the
-/// omission stated where a reader meets it.
+/// `dFLRdN` is `FLRXLR XLRi + dFdAlphaLR alphai + dFLRdNdGamma gammaLRdn`, with
+/// `gammaLRdn` the Schur complement of the stationary shielding equation. NeqSim #4332
+/// restored that term; the port reproduces it at the target pin.
 ///
 /// # Errors
 /// * [`AzothError::InvalidInput`] if the two slices are not one per component.
@@ -506,6 +503,12 @@ pub fn ln_phi_contributions(
     let f_born_x = k * (1.0 / state.solvent_dielectric - 1.0);
     let f_born_d = -k / state.solvent_dielectric.powi(2) * state.born_x;
     let eps_ionic_half = 1.0 + state.ionic_packing / 2.0;
+    // **The stationary shielding coordinate responds to composition.** NeqSim #4332
+    // restored the Schur-complement term `dFLRdNdGamma * calcGammaLRdn`; the port had
+    // reproduced the older source, where the chain was written and commented out.
+    let alpha_lr = alpha_lr2(state.dielectric, state.temperature);
+    let xlr_dgamma = xlr_dgamma(state, components, mole_numbers);
+    let curvature = shielding_curvature(state, components, mole_numbers);
 
     let mut out = Vec::with_capacity(components.len());
     for component in components {
@@ -545,7 +548,16 @@ pub fn ln_phi_contributions(
         };
 
         let fsr2 = fsr2_eps * scale + fsr2_w * component.w_i;
-        let flr = flr_xlr * xlr_i + d_f_d_alpha * alpha_i;
+        let denominator = 1.0 + state.shielding * component.diameter_m;
+        let d_flr_d_gamma = -(alpha_i * xlr_dgamma
+            + alpha_lr * component.charge.powi(2) / (denominator * denominator))
+            / (4.0 * NEQSIM_PI);
+        let gamma_dn = if curvature.abs() < 1.0e-50 {
+            0.0
+        } else {
+            -d_flr_d_gamma / curvature
+        };
+        let flr = flr_xlr * xlr_i + d_f_d_alpha * alpha_i + d_flr_d_gamma * gamma_dn;
         // **`FBornD` is weighted by the solvent's composition derivative in both models.**
         // The 2004 revision once *added* it unweighted - `FBornX XBorni + FBornD` - which made
         // a chemical potential depend on the phase's size, because `FBornD` is extensive and
@@ -828,6 +840,44 @@ fn shielding_parameter_dt(
         return 0.0;
     }
     -dfdt / dfdgamma
+}
+
+/// `calcXLRdGammaLR = sum_i n_i z_i^2/(1 + gamma sigma_i)^2` over the ions.
+fn xlr_dgamma(
+    state: &FurstState,
+    components: &[ComponentDerivatives],
+    mole_numbers: &[f64],
+) -> f64 {
+    let mut sum = 0.0;
+    for (component, &moles) in components.iter().zip(mole_numbers) {
+        if component.charge == 0.0 {
+            continue;
+        }
+        let denominator = 1.0 + state.shielding * component.diameter_m;
+        sum += moles * component.charge.powi(2) / (denominator * denominator);
+    }
+    sum
+}
+
+/// `dFLRdGammaLRdGammaLR`: the shielding equation's own derivative at the stationary point.
+fn shielding_curvature(
+    state: &FurstState,
+    components: &[ComponentDerivatives],
+    mole_numbers: &[f64],
+) -> f64 {
+    let alpha = alpha_lr2(state.dielectric, state.temperature);
+    let v_total = state.molar_volume * state.moles;
+    let mut derivative = 8.0 * state.shielding / NEQSIM_AVOGADRO;
+    for (component, &moles) in components.iter().zip(mole_numbers) {
+        if component.charge == 0.0 {
+            continue;
+        }
+        let denominator = 1.0 + state.shielding * component.diameter_m;
+        derivative +=
+            2.0 * alpha * moles / v_total * component.charge.powi(2) * component.diameter_m
+                / denominator.powi(3);
+    }
+    derivative
 }
 
 /// `calcXLR = sum_i n_i z_i^2 gamma/(1 + gamma sigma_i)` over the ions.

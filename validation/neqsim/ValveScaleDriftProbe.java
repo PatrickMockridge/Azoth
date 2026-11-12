@@ -8,8 +8,8 @@
 // opening. The valve is constructed without a stream and given a Kv directly; nothing in
 // the drift arithmetic reads a fluid.
 //
-//   ../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ValveScaleDriftProbe.java
-//   ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ValveScaleDriftProbe > captures/valve_scale_drift_probe.tsv
+//   ../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ValveScaleDriftProbe.java
+//   ../../tools/gated.sh java -cp .:neqsim-118d9af.jar ValveScaleDriftProbe > captures/valve_scale_drift_probe.tsv
 
 import neqsim.process.chemistry.scale.ScaleKinetics;
 import neqsim.process.chemistry.scale.ValveScaleDrift;

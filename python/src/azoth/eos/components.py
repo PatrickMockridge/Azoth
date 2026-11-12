@@ -116,7 +116,7 @@ WATER_MOLAR_MASS = 0.018015
 
 #: The `COMPTYPE` value whose rows carry no critical constants of their own.
 #:
-#: `COMP.csv` files 62 rows under it, and for 27 of them the four critical columns hold one
+#: `COMP.csv` files 63 rows under it, and for 28 of them the four critical columns hold one
 #: default set - `Tc = 444.15` as the file states it, which the generator's 273.15 makes
 #: `717.3 K`, then `Pc = 290.89 bar`, `omega = 0.344` and `Vc = 99 cm3/mol`. The remaining
 #: 35 inherit a neutral parent's numbers (`MDEA+` carries MDEA's) or carry values with no
@@ -536,11 +536,11 @@ class DatabankEntry:
     #: Never computed with.
     component_type: str
     #: The association parameters, or ``None`` for a component the table gives no
-    #: scheme - which is 181 of the 348 compiled rows, and is the table's own marker
+    #: scheme - which is 182 of the 349 compiled rows, and is the table's own marker
     #: rather than a missing value.
     association: AssociationParameters | None
     #: PC-SAFT's segment number ``m``, dimensionless. **Zero means the table carries no
-    #: PC-SAFT set**, which is how 106 of the 348 rows spell absence - the column is never
+    #: PC-SAFT set**, which is how 107 of the 349 rows spell absence - the column is never
     #: blank - so a model must refuse a zero rather than solve for a fluid with no
     #: segments. The rule ``ComponentSrkCPA``'s ``|aCPA| > 1e-6`` guard already follows.
     m_saft: float
@@ -552,14 +552,14 @@ class DatabankEntry:
     epsik_saft: float
     #: SAFT-VR-Mie's repulsive exponent ``lambda_r``, dimensionless. **It is an absence
     #: marker too, on exactly the rows :attr:`m_mie` is**: the table carries the standard
-    #: ``12`` on 336 of its 348 rows and a fitted exponent on the 12 with a set, so
+    #: ``12`` on 337 of its 349 rows and a fitted exponent on the 12 with a set, so
     #: ``lambda_r_mie == 12.0`` and ``m_mie == 0.0`` hold on the same rows.
     lambda_r_mie: float
     #: SAFT-VR-Mie's attractive exponent ``lambda_a``, dimensionless, ``6`` on 347 rows.
     #: Not a marker: the fitted rows carry ``6`` as well, apart from ``co2`` at ``5.055``.
     lambda_a_mie: float
     #: SAFT-VR-Mie's segment number ``m``, dimensionless. **Zero means the table carries
-    #: no SAFT-VR-Mie set**, which is how 336 of the 348 rows spell absence - 12 carry
+    #: no SAFT-VR-Mie set**, which is how 337 of the 349 rows spell absence - 12 carry
     #: one, the light alkanes with ``co2``, nitrogen and water. ``sigma_mie`` and
     #: ``epsik_mie`` are zero on exactly those rows, so a model refuses rather than
     #: solving for a fluid with no segments.
@@ -594,7 +594,7 @@ class DatabankEntry:
     #: read by every occupancy loop. Water is excluded by name rather than by this.
     hydrate_former: bool
     #: Whether the substance precipitates as wax: NeqSim's ``waxformer``, read by the wax
-    #: family. 16 of the 348 rows carry it and they are the n-alkanes from n-hexane up.
+    #: family. 16 of the 349 rows carry it and they are the n-alkanes from n-hexane up.
     wax_former: bool
     #: Heat of fusion in J/mol and the triple-point temperature in K, read for **every**
     #: substance and not only the solids - NeqSim's ``Component`` constructor reads them
@@ -629,7 +629,7 @@ class DatabankEntry:
     #: the ions. :attr:`component_type` is the marker; this is the value.
     ionic_charge: float
     #: The Deshmukh-Mather ion diameter, in ångström. **The table's absence marker is
-    #: ``0.0``, not a blank**, which is what 18 of the 62 ``"ion"`` rows carry. A model
+    #: ``0.0``, not a blank**, which is what 18 of the 63 ``"ion"`` rows carry. A model
     #: that needs one must refuse a zero: a zero diameter is the infinite-dilution limit
     #: of the term it belongs to, so a plausible number would come out of it.
     deshmukh_mather_diameter: float
@@ -638,7 +638,7 @@ class DatabankEntry:
     #: ``neqsim-internal`` - so no conversion is applied and none is guessed.
     dielectric: tuple[float, float, float, float, float]
     #: The four coefficients of NeqSim's Henry correlation. **All four are zero on 296 of
-    #: the 348 rows**, which is how the table spells "no correlation", so a caller must
+    #: the 349 rows**, which is how the table spells "no correlation", so a caller must
     #: refuse rather than evaluate - see :mod:`azoth.eos.reference._henry`, which is the
     #: surface a model takes them through.
     henry: HenryRecord
@@ -1044,7 +1044,7 @@ def form_from_type(label: str, e: float) -> str:
 
     **``none`` is not a form, and it is empty here rather than a fall-through.** It is
     the marker upstream added in ``83b64e5`` (PR #3775) for a row whose correlation is
-    *unavailable*: 313 of its 389 rows now carry it, with all five coefficients zero.
+    *unavailable*: 332 of its 390 rows now carry it, with all five coefficients zero.
     Sent to Wagner those give ``exp(0) * Pc = Pc``, so an unavailable correlation would
     come back as the component's **critical pressure** - measured, ``1.82e6 Pa`` for
     ``nc12``, whose vapour pressure there is about ``42 Pa``. A caller that gets ``""``

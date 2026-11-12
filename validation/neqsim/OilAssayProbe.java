@@ -10,8 +10,8 @@
 // total within `1e-10`. That is a different id's scope, and the reason is measured rather than
 // assumed - see the capture's last rows, which record the two refusals it raises.
 //
-//   javac -proc:none -cp /path/to/neqsim-f0c7436.jar OilAssayProbe.java
-//   java -cp .:/path/to/neqsim-f0c7436.jar OilAssayProbe > captures/oil_assay_probe.tsv
+//   javac -proc:none -cp /path/to/neqsim-118d9af.jar OilAssayProbe.java
+//   java -cp .:/path/to/neqsim-118d9af.jar OilAssayProbe > captures/oil_assay_probe.tsv
 
 import java.util.Arrays;
 import neqsim.thermo.characterization.OilAssayCharacterisation;

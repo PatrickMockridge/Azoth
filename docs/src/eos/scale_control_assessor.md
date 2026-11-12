@@ -95,5 +95,5 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `process/chemistry/scale/ScaleControlAssessor.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `process/chemistry/scale/ScaleControlAssessor.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/process_scale_probe.tsv` - the `control_assessor` rows: the RCA state with calcite inhibition, the skill state with barite inhibition, no inhibitor, a zero dose and a dose past the cap.

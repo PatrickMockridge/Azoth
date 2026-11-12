@@ -84,7 +84,7 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `physicalproperties/methods/commonphasephysicalproperties/conductivity/FrictionTheoryConductivityMethod.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `physicalproperties/methods/commonphasephysicalproperties/conductivity/FrictionTheoryConductivityMethod.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/friction_conductivity_probe.tsv` - an oil and a gas on both cubics, with the phase's own viscosity and the class's pure-component arrays.
 - Chung, T.-H.; Ajlan, M.; Lee, L. L.; Starling, K. E. (1988). Ind. Eng. Chem. Res. 27(4), 671-679. Poling, Prausnitz and O'Connell (2001), The Properties of Gases and Liquids, 5th edition, Chapter 10.
 

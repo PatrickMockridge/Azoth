@@ -31,8 +31,8 @@ import neqsim.thermo.system.SystemPrEos;
  * Usage:
  *
  * <pre>
- * javac -proc:none -cp neqsim-f0c7436.jar CubicFdProbe.java
- * java -cp .:neqsim-f0c7436.jar CubicFdProbe
+ * javac -proc:none -cp neqsim-118d9af.jar CubicFdProbe.java
+ * java -cp .:neqsim-118d9af.jar CubicFdProbe
  * </pre>
  */
 public final class CubicFdProbe {

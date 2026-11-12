@@ -1,7 +1,7 @@
 // NeqSim's `Iapws_if97` steam tables, so azoth's IF97 kernel has an oracle this repo re-runs.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar IapwsIf97Probe.java
-//     java -cp .:neqsim-f0c7436.jar IapwsIf97Probe > captures/iapws_if97_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar IapwsIf97Probe.java
+//     java -cp .:neqsim-118d9af.jar IapwsIf97Probe > captures/iapws_if97_probe.tsv
 //
 // `crates/azoth-eos/src/iapws_if97.rs` and `eos.water_phase` were landed with the literals of
 // NeqSim's own shipped `Iapws_if97Test` copied by hand - four states and two saturation points.

@@ -3,8 +3,8 @@
 // phase's *existing* viscosity, so that is printed beside the answer, with each
 // component's Cv0 and the class's own pure-component arrays.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar FrictionConductivityProbe.java
-//     java -cp .:neqsim-f0c7436.jar FrictionConductivityProbe > captures/friction_conductivity_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar FrictionConductivityProbe.java
+//     java -cp .:neqsim-118d9af.jar FrictionConductivityProbe > captures/friction_conductivity_probe.tsv
 
 import java.lang.reflect.Field;
 import neqsim.physicalproperties.methods.commonphasephysicalproperties.conductivity.FrictionTheoryConductivityMethod;

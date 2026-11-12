@@ -11,9 +11,10 @@ side reads against the bytes the Rust core embedded. The second check is the str
 one - parsed values can agree across two different files, and a stale copy bundled
 into a wheel would look exactly like that.
 
-**Every coefficient in that file is currently an estimated dummy value, not
-engineering data.** See the file's header. :attr:`Fitting.is_estimated` reports
-it, so a computed pressure drop need not be mistaken for a design-grade one.
+**Most coefficients are cited NeqSim defaults, not verified engineering data,
+and one is an estimated dummy.** See the file's header. :attr:`Fitting.is_estimated`
+reports the placeholder row, so a computed pressure drop need not be mistaken for
+a design-grade one.
 """
 
 from __future__ import annotations

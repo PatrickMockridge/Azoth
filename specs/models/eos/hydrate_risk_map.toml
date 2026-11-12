@@ -12,7 +12,7 @@ assumptions = [
     "**the class's hydrate flash converges on the water fugacity residual (1e-6), not on temperature**, so its temperature carries about 1e-4 K of its own precision; the cases use a 1e-3 relative tolerance here and the hydrate arithmetic is pinned by that model's own 1e-8 cases.\n",
 ]
 references = [
-    "NeqSim master, `pvtsimulation/flowassurance/HydrateRiskMapper.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "NeqSim master, `pvtsimulation/flowassurance/HydrateRiskMapper.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.",
     "`validation/neqsim/captures/flow_assurance_remainder_probe.tsv` - the six profiles: four wet-gas points across the bands, a profile chosen for one point per band, tightened thresholds, a single point, a dry fluid and a zero-water fluid.",
 ]
 [source]

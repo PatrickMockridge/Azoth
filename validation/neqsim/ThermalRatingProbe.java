@@ -2,8 +2,8 @@
 //
 // Compile and run from this directory:
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ThermalRatingProbe.java
-//     java -cp .:neqsim-f0c7436.jar ThermalRatingProbe > captures/thermal_rating_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar ThermalRatingProbe.java
+//     java -cp .:neqsim-118d9af.jar ThermalRatingProbe > captures/thermal_rating_probe.tsv
 //
 // **The equipment path is measured separately.** `process_heat_exchanger_rating.tsv` runs
 // `HeatExchanger.runThermalHydraulicRating`, which feeds this calculator from two flashed

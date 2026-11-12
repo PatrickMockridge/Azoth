@@ -1,16 +1,14 @@
 # azoth fittings registry
 #
 # ============================================================================
-#  WARNING: EVERY VALUE IN THIS FILE IS AN ESTIMATED DUMMY VALUE.
+#  WARNING: NOT EVERY VALUE IN THIS FILE IS A PLACEHOLDER.
 #
-#  These numbers were NOT taken from Crane TP-410, or from any other standard. They are
-#  placeholders of a plausible magnitude. THEY ARE NOT ENGINEERING DATA. DO NOT USE THEM
-#  TO SIZE ANYTHING: a pressure drop computed from this file can be wrong by a factor of
-#  two or more and will still look reasonable, and no test here can detect that.
-#
-#  Replace every row with values read from the primary standard before this library is
-#  used for design work, and set its verify_status to `verified` with the source in
-#  `citation`.
+#  23 rows are NeqSim equivalent-length defaults, cited but not independently
+#  confirmed. One row (`plug_valve_straightway`) is an estimated dummy with no
+#  NeqSim counterpart. None is a verified transcription of Crane TP-410: NeqSim
+#  itself states that its built-in values are engineering defaults, not a
+#  verified Crane table. Design use requires a licensed copy of TP-410 or
+#  manufacturer data and a named reviewer.
 # ============================================================================
 #
 # Numbers in these rows are rendered from their values, not from the text written in
@@ -26,16 +24,33 @@
 # verify_status: estimated_dummy (placeholder) | unverified (cited, unconfirmed) |
 # verified (confirmed against an authoritative copy).
 #
-# Rows in this file: 7 estimated_dummy.
+# Rows in this file: 23 unverified, 1 estimated_dummy.
 #
 # Licence: CC-BY-4.0. This data is deliberately not AGPL: the reference
 # values are meant to be reusable and citable without a copyleft
 # obligation. See LICENSE-CC-BY-4.0.
 fitting_id,family,name,n_ld,f_t_basis,citation,verify_status
-90_elbow,bend,90 degree standard elbow,30,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
-90_elbow_long_radius,bend,90 degree long-radius elbow,16,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
-45_elbow,bend,45 degree standard elbow,16,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
-gate_valve_open,valve,gate valve fully open,8,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
-ball_valve_open,valve,ball valve full bore,3,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
-plug_valve_straightway,valve,plug valve straightway,18,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
-globe_valve_open,valve,globe valve fully open,340,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+90_elbow,bend,90 degree standard elbow,30,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES elbow_90_standard; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+90_elbow_long_radius,bend,90 degree long-radius elbow,16,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES elbow_90_long_radius; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+90_elbow_mitre,bend,90 degree mitre elbow,60,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES elbow_90_mitre; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+45_elbow,bend,45 degree standard elbow,16,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES elbow_45_standard; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+45_elbow_long_radius,bend,45 degree long-radius elbow,10,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES elbow_45_long_radius; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+tee_through,tee,tee through flow,20,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES tee_through; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+tee_branch,tee,tee branch flow,60,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES tee_branch; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+gate_valve_open,valve,gate valve fully open,8,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES valve_gate_open; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+gate_valve_three_quarters_open,valve,gate valve three-quarters open,35,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES valve_gate_3_4_open; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+gate_valve_half_open,valve,gate valve half open,160,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES valve_gate_1_2_open; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+gate_valve_quarter_open,valve,gate valve quarter open,900,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES valve_gate_1_4_open; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+ball_valve_open,valve,ball valve full bore,3,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES valve_ball_open; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+butterfly_valve_open,valve,butterfly valve fully open,45,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES valve_butterfly_open; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+check_valve_swing,valve,swing check valve,100,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES valve_check_swing; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+check_valve_lift,valve,lift check valve,600,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES valve_check_lift; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+plug_valve_straightway,valve,plug valve straightway,18,f_t,ESTIMATED DUMMY VALUE - no NeqSim counterpart; placeholder of plausible magnitude for software testing only,estimated_dummy
+globe_valve_open,valve,globe valve fully open,340,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES valve_globe_open; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+reducer_sudden,fitting,sudden reducer,30,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES reducer_sudden; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+expander_sudden,fitting,sudden expander,50,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES expander_sudden; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+reducer_gradual,fitting,gradual reducer,10,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES reducer_gradual; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+expander_gradual,fitting,gradual expander,20,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES expander_gradual; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+entrance_sharp,fitting,sharp-edged entrance,25,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES entrance_sharp; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+entrance_rounded,fitting,rounded entrance,10,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES entrance_rounded; equivalent-length default, not a verified Crane TP-410 transcription",unverified
+exit,fitting,pipe exit,50,f_t,"NeqSim master (118d9aff) Fittings.STANDARD_LD_VALUES exit; equivalent-length default, not a verified Crane TP-410 transcription",unverified

@@ -241,11 +241,11 @@ pub const UNBOUNDED: &[(&str, &str)] = &[
     ),
     (
         "ionic_charge",
-        "a charge is a class rather than a magnitude; 289 of the 348 shipped rows are zero",
+        "a charge is a class rather than a magnitude; 289 of the 349 shipped rows are zero",
     ),
     (
         "deshmukh_mather_diameter",
-        "28 of the 348 shipped rows are zero - a placeholder rather than a state - so a positivity bound would refuse the table this derives from",
+        "28 of the 349 shipped rows are zero - a placeholder rather than a state - so a positivity bound would refuse the table this derives from",
     ),
     (
         "dielectric_1",

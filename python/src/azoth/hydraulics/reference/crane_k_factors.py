@@ -11,17 +11,17 @@ Spec: ``specs/calcs/hydraulics/crane_k_factors.toml``
 
 The *method* is standard: a fitting's resistance coefficient is its equivalent
 length ratio times the friction factor. The **coefficients** come from
-``data/fittings/crane_k_factors.csv``, where every row is currently an estimated
-dummy value - a placeholder of plausible magnitude, not from Crane TP-410 or any
-other standard.
+``data/fittings/crane_k_factors.csv``: twenty-three are NeqSim's equivalent-length
+defaults, cited but not verified against Crane TP-410, and one is an estimated
+dummy.
 
-The consequence is unusual and worth stating plainly: because the coefficients
-are placeholders, there is no correct value for this calc to be checked against,
-and **no test in this repository can detect a wrong coefficient**. The tests
-validate the arithmetic and the registry lookup. A pressure drop computed from
-this data can be wrong by a factor of two and still look entirely reasonable, so
-the placeholder status is recorded in the data file and in this calc's spec
-rather than announced by a warning on the result.
+The consequence is unusual and worth stating plainly: because no coefficient is a
+verified transcription of the standard, there is no authoritative value for this
+calc to be checked against, and **no test in this repository can detect a wrong
+coefficient**. The tests validate the arithmetic and the registry lookup. A
+pressure drop computed from this data can be wrong by a factor of two and still
+look entirely reasonable, so the per-row status is recorded in the data file and
+in this calc's spec.
 """
 
 from __future__ import annotations

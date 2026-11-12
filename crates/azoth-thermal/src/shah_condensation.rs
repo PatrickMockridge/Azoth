@@ -1,7 +1,7 @@
 //! `thermal.shah_condensation` - Shah's in-tube condensation correlation.
 //!
 //! Transcribed from `process/mechanicaldesign/heatexchanger/ShahCondensation.java` at
-//! NeqSim `f0c7436c69`, composed as `IncrementalZoneAnalysis` uses it: the liquid-only
+//! NeqSim `118d9aff`, composed as `IncrementalZoneAnalysis` uses it: the liquid-only
 //! coefficient feeds the local, average and vertical entries.
 //!
 //! Spec: `specs/calcs/thermal/shah_condensation.toml`.

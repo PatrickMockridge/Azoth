@@ -121,16 +121,16 @@ efficiency_percent=80.44058596702989
 inlet_n=61676.9975637586
 inlet_P=1.0
 inlet_T=293.15
-inlet_h=-45290.28228348391
-inlet_s=-121.58334374521735
+inlet_h=-45290.32774260622
+inlet_s=-121.583504159729
 inlet_z=water:1.0
 outlet_n=61676.9975637586
 outlet_P=7.835092096221417
-outlet_T=293.1960946104581
-outlet_h=-45274.80497547171
-outlet_s=-121.57984558097407
+outlet_T=293.1960961696492
+outlet_h=-45274.85042431936
+outlet_s=-121.58000596047322
 outlet_z=water:1.0
-power_kW=954.5938885622024
+power_kW=954.59452227211
 
 run_chart_reference_density
 inlet_m3_per_hr=4044.3831677560142
@@ -140,37 +140,37 @@ efficiency_percent=80.44058596702989
 inlet_n=61676.9975637586
 inlet_P=1.0
 inlet_T=293.15
-inlet_h=-45290.28228348391
-inlet_s=-121.58334374521735
+inlet_h=-45290.32774260622
+inlet_s=-121.583504159729
 inlet_z=water:1.0
 outlet_n=61676.9975637586
 outlet_P=7.8971109902930055
-outlet_T=293.19651279434976
-outlet_h=-45274.66454056424
-outlet_s=-121.57981383138423
+outlet_T=293.1965143676869
+outlet_h=-45274.709989319
+outlet_s=-121.57997421056723
 outlet_z=water:1.0
-power_kW=963.2554920077324
+power_kW=963.2561314473152
 
 npsh_available_water_25c_2bara
-npsh_available_m=20.420875957705324
+npsh_available_m=20.420875957711477
 npsh_required_m=2.0
 npsh_cavitating=false
 npsh_margin=1.3
 
 npsh_available_water_60c_1p5bara
-npsh_available_m=14.057588738128642
+npsh_available_m=14.057588738216973
 npsh_required_m=2.0
 npsh_cavitating=false
 npsh_margin=1.3
 
 npsh_available_water_80c_1p5bara
-npsh_available_m=11.499270993699872
+npsh_available_m=11.499270993869347
 npsh_required_m=2.0
 npsh_cavitating=false
 npsh_margin=1.3
 
 npsh_available_hexane
-npsh_available_m=28.3567792702668
+npsh_available_m=28.356779270439507
 npsh_required_m=2.0
 npsh_cavitating=false
 npsh_margin=1.3
@@ -183,18 +183,18 @@ npsh_run_efficiency_percent=82.0389061190195
 inlet_n=615.228050698492
 inlet_P=2.0
 inlet_T=298.15
-inlet_h=-44883.14365257968
-inlet_s=-120.2133768879234
+inlet_h=-44883.20203384986
+inlet_s=-120.21358100793799
 inlet_z=water:1.0
 outlet_n=615.228050698492
 outlet_P=12.596208540335423
-outlet_T=298.21808354632856
-outlet_h=-44859.52897068571
-outlet_s=-120.20955819724922
+outlet_T=298.2180859610342
+outlet_h=-44859.58733675493
+outlet_s=-120.20976226636023
 outlet_z=water:1.0
-npsh_run_power_kW=14.528414709493518
+npsh_run_power_kW=14.52842406155169
 npsh_run_required=3.012675168303445
-npsh_run_available=20.42087595770533
+npsh_run_available=20.420875957711484
 npsh_run_cavitating=false
 npsh_run_margin=1.3
 

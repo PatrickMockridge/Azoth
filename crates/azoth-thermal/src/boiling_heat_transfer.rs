@@ -1,7 +1,7 @@
 //! `thermal.boiling_heat_transfer` - Chen and Gungor-Winterton flow boiling.
 //!
 //! Transcribed from `process/mechanicaldesign/heatexchanger/BoilingHeatTransfer.java` at
-//! NeqSim `f0c7436c69`, composed as `IncrementalZoneAnalysis` uses it: the average
+//! NeqSim `118d9aff`, composed as `IncrementalZoneAnalysis` uses it: the average
 //! Gungor-Winterton coefficient over a quality range, with the Chen local, the two factors
 //! and the horizontal correction beside it.
 //!

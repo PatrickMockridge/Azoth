@@ -1,7 +1,7 @@
 //! `thermal.shell_and_tube_rating` - the shell-and-tube thermal-hydraulic rating.
 //!
 //! Transcribed from `process/mechanicaldesign/heatexchanger/ThermalDesignCalculator.java`
-//! at NeqSim `f0c7436c69`. The port implements `calculateStrict()`'s refusal, not
+//! at NeqSim `118d9aff`. The port implements `calculateStrict()`'s refusal, not
 //! `calculate()`'s silent zeros: a geometry the class would leave at zero is an error
 //! here, because a zero coefficient is not an answer.
 //!

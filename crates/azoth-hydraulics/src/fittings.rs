@@ -13,10 +13,11 @@
 //! check is why [`embedded_csv`] exists - parsed values can agree across two
 //! different files, and a stale copy in a wheel would look exactly like that.
 //!
-//! **Every coefficient in that file is currently an estimated dummy value, not
-//! engineering data.** See the file's header. [`Fitting::is_estimated`] reports
-//! it, and `crane_k_factors` turns it into a warning on every affected result so
-//! a computed pressure drop cannot be mistaken for a design-grade one.
+//! **Most coefficients are cited NeqSim defaults, not verified engineering data,
+//! and one is an estimated dummy.** See the file's header. [`Fitting::is_estimated`]
+//! reports the placeholder row, and `crane_k_factors` turns it into a warning on
+//! every affected result so a computed pressure drop cannot be mistaken for a
+//! design-grade one.
 
 use azoth_core::{AzothError, Result};
 

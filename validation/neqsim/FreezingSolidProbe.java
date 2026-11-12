@@ -21,8 +21,8 @@
 // measurement rather than an assumption.
 //
 // A capture, not a test: run it against the pinned jar and commit what it prints.
-//   javac -proc:none -cp neqsim-f0c7436.jar FreezingSolidProbe.java
-//   java -cp .:neqsim-f0c7436.jar FreezingSolidProbe > captures/freezing_solid_probe.tsv
+//   javac -proc:none -cp neqsim-118d9af.jar FreezingSolidProbe.java
+//   java -cp .:neqsim-118d9af.jar FreezingSolidProbe > captures/freezing_solid_probe.tsv
 
 import neqsim.thermo.phase.PhaseInterface;
 import neqsim.thermodynamicoperations.ThermodynamicOperations;

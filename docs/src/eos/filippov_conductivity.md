@@ -85,4 +85,4 @@ declared checks *that call* could not evaluate.
 - Filippov, L. P. (1955). "Teploprovodnost' zhidkikh smesey." Vestnik Moskovskogo Universiteta, Seriya Fiziko-Matematicheskikh i Estestvennykh Nauk 8, 67-69.
 - Missenard, F. A. (1965). Comptes Rendus 260, 5521. The pressure correction.
 - Poling, B. E.; Prausnitz, J. M.; O'Connell, J. P. (2001). "The Properties of Gases and Liquids", 5th edition, Chapter 10.
-- NeqSim master, `physicalproperties/methods/liquidphysicalproperties/conductivity/FilippovConductivityMethod.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `physicalproperties/methods/liquidphysicalproperties/conductivity/FilippovConductivityMethod.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.

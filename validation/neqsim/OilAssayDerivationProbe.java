@@ -12,8 +12,8 @@
 // fraction is skipped, and the class then checks that what it rebuilt is the total it started
 // from to `1e-10` relative.
 //
-//   javac -proc:none -cp /path/to/neqsim-f0c7436.jar OilAssayDerivationProbe.java
-//   java -cp .:/path/to/neqsim-f0c7436.jar OilAssayDerivationProbe > captures/oil_assay_derivation_probe.tsv
+//   javac -proc:none -cp /path/to/neqsim-118d9af.jar OilAssayDerivationProbe.java
+//   java -cp .:/path/to/neqsim-118d9af.jar OilAssayDerivationProbe > captures/oil_assay_derivation_probe.tsv
 
 import neqsim.thermo.characterization.OilAssayCharacterisation;
 import neqsim.thermo.characterization.OilAssayCharacterisation.AssayCut;

@@ -28,8 +28,8 @@
 // aqueous phase there, so a caller that flashes before initialising the reactions
 // classifies a different phase.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ReactionOperationsProbe.java
-//     java -cp .:neqsim-f0c7436.jar ReactionOperationsProbe > captures/reaction_operations_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar ReactionOperationsProbe.java
+//     java -cp .:neqsim-118d9af.jar ReactionOperationsProbe > captures/reaction_operations_probe.tsv
 
 import java.lang.reflect.Method;
 

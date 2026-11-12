@@ -1,9 +1,3 @@
-# azoth PitzerProbe - NeqSim master's SystemPitzer.
-# Committed verbatim from `validation/neqsim/PitzerProbe.java`; regenerate by running it.
-# The dataset ids below are the record of NeqSim's per-topology parameter choice:
-# `usgs-phreeqc-...-catalog-v1` is the PHREEQC catalogue and
-# `neqsim-legacy-pitzer-parameters-v1` is `PitzerParameters.csv`.
-
 
 === water + NaCl ===
 phases = 2

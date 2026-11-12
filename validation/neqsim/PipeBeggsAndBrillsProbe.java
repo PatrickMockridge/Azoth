@@ -9,8 +9,8 @@
 // a three-phase oil/water/gas line, a single-phase gas and a single-phase liquid, and a
 // rough wall.
 //
-//   ../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar PipeBeggsAndBrillsProbe.java
-//   ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PipeBeggsAndBrillsProbe > captures/pipe_beggs_and_brills_probe.tsv
+//   ../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar PipeBeggsAndBrillsProbe.java
+//   ../../tools/gated.sh java -cp .:neqsim-118d9af.jar PipeBeggsAndBrillsProbe > captures/pipe_beggs_and_brills_probe.tsv
 
 import java.util.List;
 import neqsim.process.equipment.pipeline.PipeBeggsAndBrills;
