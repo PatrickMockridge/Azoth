@@ -27,7 +27,7 @@ reported as probes with no committed capture, which is the honest form of the ga
 number exists, and nothing here can say whether it moved.
 
 Usage:
-    python tools/oracle_sweep.py [--jar PATH] [--timeout SECONDS]
+    python tools/oracle_sweep.py [--jar PATH] [--timeout SECONDS] [--write-captures]
 """
 
 from __future__ import annotations
@@ -103,10 +103,8 @@ def build(classes: Path, jar: Path) -> bool:
 
 def recipes() -> list[tuple[str, str]]:
     """Every documented invocation, as `(arguments, capture name)`."""
-    return [
-        (m.group("run"), m.group("capture"))
-        for m in RECIPE.finditer(README.read_text(encoding="utf-8"))
-    ]
+    text = README.read_text(encoding="utf-8").replace("\\\n", " ")
+    return [(m.group("run"), m.group("capture")) for m in RECIPE.finditer(text)]
 
 
 def probe_names() -> dict[str, str]:
@@ -118,6 +116,12 @@ def probe_names() -> dict[str, str]:
     return out
 
 
+def capture_stem(probe: str) -> str:
+    """A probe's stem in the capture registry's spelling: `CpaSweep` -> `cpa_sweep`."""
+    spaced = re.sub(r"(?<!^)(?=[A-Z])", "_", probe).lower()
+    return re.sub(r"_+", "_", spaced)
+
+
 def run(jar: Path, classes: Path, name: str, arguments: str, timeout: float) -> str | None:
     try:
         done = subprocess.run(
@@ -126,6 +130,7 @@ def run(jar: Path, classes: Path, name: str, arguments: str, timeout: float) -> 
             text=True,
             timeout=timeout,
             check=False,
+            cwd=PROBES,
         )
     except subprocess.TimeoutExpired:
         return None
@@ -185,6 +190,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--jar", type=Path, default=None)
     parser.add_argument("--timeout", type=float, default=120.0, help="per probe, in seconds")
+    parser.add_argument(
+        "--write-captures",
+        action="store_true",
+        help="rewrite every matched capture with the fresh output (after the report)",
+    )
     args = parser.parse_args()
 
     jar = args.jar or pinned_jar()
@@ -206,7 +216,7 @@ def main() -> int:
             head, *rest = arguments.split()
             stem = head.split(".")[-1]
             if stem in names:
-                runs.append((stem, names[stem], " ".join(rest), produced))
+                runs.append((stem, names[stem], " ".join(rest), produced.removesuffix(".tsv")))
 
         # `fresh` is keyed by the probe's stem for a bare run and by the capture's name for
         # a recipe, because a recipe is only ever compared with the capture it produces.
@@ -218,12 +228,22 @@ def main() -> int:
                 continue
             fresh[produced or stem] = text
 
+        # A recipe's capture belongs to that invocation, not to the probe's bare run.
+        # Matching a bare run to it would compare a default state with an argument state.
+        recipe_captures = {produced.removesuffix(".tsv") for _, produced in recipes()}
+
         matched: dict[str, str] = {}
         for stem, text in fresh.items():
             if (gen.CAPTURES / f"{stem}.tsv").exists():
                 matched[stem] = f"{stem}.tsv"
                 continue
+            snake = capture_stem(stem)
+            if snake not in recipe_captures and (gen.CAPTURES / f"{snake}.tsv").exists():
+                matched[stem] = f"{snake}.tsv"
+                continue
             for candidate in sorted(gen.CAPTURES.glob("*.tsv")):
+                if candidate.stem in recipe_captures:
+                    continue
                 if body(text) == body(candidate.read_text(encoding="utf-8")):
                     matched[stem] = candidate.name
                     break
@@ -282,6 +302,16 @@ def main() -> int:
             print("  " + ", ".join(orphans))
             print()
             print()
+
+        if args.write_captures:
+            written = 0
+            for stem, capture_name in sorted(matched.items()):
+                path = gen.CAPTURES / capture_name
+                text = fresh[stem]
+                if path.read_text(encoding="utf-8") != text:
+                    path.write_text(text, encoding="utf-8")
+                    written += 1
+            print(f"# wrote {written} capture(s)", file=sys.stderr)
 
         return 1 if stale else 0
     finally:

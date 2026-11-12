@@ -476,7 +476,7 @@ mod tests {
     #[test]
     fn the_element_table_loads_and_bounds_what_can_react() {
         let names = reactive_components().expect("the table parses");
-        assert_eq!(names.len(), 80, "the element table's component count");
+        assert_eq!(names.len(), 81, "the element table's component count");
         // **The glycols are absent**, which is a property of the data and not of the
         // caller: a P9 inhibitor fluid is not reactive.
         for absent in ["MEG", "DEG", "TEG"] {

@@ -95,6 +95,6 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `pvtsimulation/flowassurance/BariteCelestiteSolidSolution.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `pvtsimulation/flowassurance/BariteCelestiteSolidSolution.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/scale_family_probe.tsv` - both pure end members, the both-zero state, a trace cation, and the mixed state at three Margules parameters and two Ksp pairs.
 - Prieto, M.; Putnis, A.; Fernandez-Diaz, L. (1993). The (Ba,Sr)SO4 solid solution. Geochim. Cosmochim. Acta. The Margules parameter's typical range is 2.1-2.5.

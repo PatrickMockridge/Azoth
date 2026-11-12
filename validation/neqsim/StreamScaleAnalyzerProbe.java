@@ -6,8 +6,8 @@
 // the equilibrium capture's brines so the two layers can be compared directly, plus the
 // zero-flow, no-scale, auto-pH and absent-ion corners.
 //
-//   ../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar StreamScaleAnalyzerProbe.java
-//   ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar StreamScaleAnalyzerProbe > captures/stream_scale_analyzer_probe.tsv
+//   ../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar StreamScaleAnalyzerProbe.java
+//   ../../tools/gated.sh java -cp .:neqsim-118d9af.jar StreamScaleAnalyzerProbe > captures/stream_scale_analyzer_probe.tsv
 
 import java.util.Map;
 import neqsim.process.chemistry.scale.StreamScaleAnalyzer;

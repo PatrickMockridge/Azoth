@@ -20,8 +20,8 @@ import neqsim.thermodynamicoperations.ThermodynamicOperations;
  * Usage, the same shape {@code CpaSweep} takes so the two are read the same way:
  *
  * <pre>
- * javac -proc:none -cp neqsim-f0c7436.jar PrCpaFlash.java
- * java -cp .:neqsim-f0c7436.jar PrCpaFlash [T_K P_bara n_water]...
+ * javac -proc:none -cp neqsim-118d9af.jar PrCpaFlash.java
+ * java -cp .:neqsim-118d9af.jar PrCpaFlash [T_K P_bara n_water]...
  * </pre>
  */
 public final class PrCpaFlash {

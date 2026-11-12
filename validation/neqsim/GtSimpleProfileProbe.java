@@ -2,8 +2,8 @@
 // against. LGT's capture gave the linear path; this one adds the inner solve, which is the
 // only new machinery between the two ports.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar GtSimpleProfileProbe.java
-//     java -cp .:neqsim-f0c7436.jar GtSimpleProfileProbe > captures/gt_simple_profile_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar GtSimpleProfileProbe.java
+//     java -cp .:neqsim-118d9af.jar GtSimpleProfileProbe > captures/gt_simple_profile_probe.tsv
 //
 // The class's stored densities are mol/m³, its pressures Pa, and its `getDmudn2` holds the
 // last step's matrix. The interaction rule in this class assigns 0.0 in both arms of its
@@ -56,26 +56,30 @@ public class GtSimpleProfileProbe {
       return;
     }
 
-    GTSurfaceTensionSimple gt = new GTSurfaceTensionSimple(system);
-    double sigma = gt.calcSurfaceTension(0, 1);
-    System.out.println("sigma_N_per_m=" + sigma);
-    int count = system.getPhase(0).getNumberOfComponents();
-    for (int step = 0; step < 200; step++) {
-      StringBuilder densities = new StringBuilder("step" + step + "_molar_density=");
-      for (int c = 0; c < count; c++) {
-        densities.append(gt.getMolarDensity(c)[step]).append(" ");
+    try {
+      GTSurfaceTensionSimple gt = new GTSurfaceTensionSimple(system);
+      double sigma = gt.calcSurfaceTension(0, 1);
+      System.out.println("sigma_N_per_m=" + sigma);
+      int count = system.getPhase(0).getNumberOfComponents();
+      for (int step = 0; step < 200; step++) {
+        StringBuilder densities = new StringBuilder("step" + step + "_molar_density=");
+        for (int c = 0; c < count; c++) {
+          densities.append(gt.getMolarDensity(c)[step]).append(" ");
+        }
+        System.out.println(densities.toString().trim());
+        System.out.println("step" + step + "_pressure_Pa=" + gt.getPressure()[step]);
+        System.out.println("step" + step + "_z=" + gt.getz()[step]);
       }
-      System.out.println(densities.toString().trim());
-      System.out.println("step" + step + "_pressure_Pa=" + gt.getPressure()[step]);
-      System.out.println("step" + step + "_z=" + gt.getz()[step]);
-    }
-    double[][][] dmu = gt.getDmudn2();
-    if (dmu != null) {
-      for (int i = 0; i < count; i++) {
-        for (int k = 0; k < count; k++) {
-          System.out.println("last_dmudn_" + i + k + "=" + dmu[199][i][k]);
+      double[][][] dmu = gt.getDmudn2();
+      if (dmu != null) {
+        for (int i = 0; i < count; i++) {
+          for (int k = 0; k < count; k++) {
+            System.out.println("last_dmudn_" + i + k + "=" + dmu[199][i][k]);
+          }
         }
       }
+    } catch (RuntimeException refused) {
+      System.out.println("refused=" + refused.getMessage());
     }
     System.out.println();
   }

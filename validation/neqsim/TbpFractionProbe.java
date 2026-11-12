@@ -9,8 +9,8 @@
 // `calcPC` switch their coefficient set at MW 1120, and a port that picked the wrong side of
 // either would still be right at a single pair.
 //
-//   javac -proc:none -cp neqsim-f0c7436.jar TbpFractionProbe.java
-//   java -cp .:neqsim-f0c7436.jar TbpFractionProbe > captures/tbp_fraction_probe.tsv
+//   javac -proc:none -cp neqsim-118d9af.jar TbpFractionProbe.java
+//   java -cp .:neqsim-118d9af.jar TbpFractionProbe > captures/tbp_fraction_probe.tsv
 
 import neqsim.thermo.characterization.TBPfractionModel;
 import neqsim.thermo.characterization.TBPModelInterface;
@@ -45,19 +45,23 @@ public class TbpFractionProbe {
       double molarMass = cuts[i][0];
       double density = cuts[i][1];
       System.out.printf("# cut[%d] MW = %.15g g/mol, density = %.15g g/cm3%n", i, molarMass, density);
-      row("cut[" + i + "].mw", molarMass);
-      row("cut[" + i + "].density", density);
-      row("cut[" + i + "].tc", model.calcTC(molarMass, density));
-      row("cut[" + i + "].pc", model.calcPC(molarMass, density));
-      row("cut[" + i + "].tb", model.calcTB(molarMass, density));
-      row("cut[" + i + "].acentric", model.calcAcentricFactor(molarMass, density));
-      row("cut[" + i + "].calcm", model.isCalcm() ? model.calcm(molarMass, density) : Double.NaN);
-      row("cut[" + i + "].critical_volume", model.calcCriticalVolume(molarMass, density));
-      row("cut[" + i + "].parachor", model.calcParachorParameter(molarMass, density));
-      row("cut[" + i + "].critical_viscosity", model.calcCriticalViscosity(molarMass, density));
-      row(
-          "cut[" + i + "].watson_k",
-          model.calcWatsonCharacterizationFactor(molarMass, density));
+      try {
+        row("cut[" + i + "].mw", molarMass);
+        row("cut[" + i + "].density", density);
+        row("cut[" + i + "].tc", model.calcTC(molarMass, density));
+        row("cut[" + i + "].pc", model.calcPC(molarMass, density));
+        row("cut[" + i + "].tb", model.calcTB(molarMass, density));
+        row("cut[" + i + "].acentric", model.calcAcentricFactor(molarMass, density));
+        row("cut[" + i + "].calcm", model.isCalcm() ? model.calcm(molarMass, density) : Double.NaN);
+        row("cut[" + i + "].critical_volume", model.calcCriticalVolume(molarMass, density));
+        row("cut[" + i + "].parachor", model.calcParachorParameter(molarMass, density));
+        row("cut[" + i + "].critical_viscosity", model.calcCriticalViscosity(molarMass, density));
+        row(
+            "cut[" + i + "].watson_k",
+            model.calcWatsonCharacterizationFactor(molarMass, density));
+      } catch (RuntimeException refused) {
+        System.out.printf("# cut[%d] refused: %s%n", i, refused.getMessage());
+      }
       System.out.println();
     }
 

@@ -2,8 +2,8 @@
 // bulk densities, then `runcase`'s outer loop replayed with its public statics so each
 // refinement's Newton answer, its `sigmaCalc`, its width and its new grid are visible.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar FullGtTraceProbe.java
-//     java -cp .:neqsim-f0c7436.jar FullGtTraceProbe > captures/full_gt_trace.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar FullGtTraceProbe.java
+//     java -cp .:neqsim-118d9af.jar FullGtTraceProbe > captures/full_gt_trace.tsv
 
 import java.lang.reflect.Field;
 import neqsim.physicalproperties.interfaceproperties.surfacetension.GTSurfaceTensionFullGT;

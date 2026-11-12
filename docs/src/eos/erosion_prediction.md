@@ -195,7 +195,7 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `pvtsimulation/flowassurance/ErosionPredictionCalculator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `pvtsimulation/flowassurance/ErosionPredictionCalculator.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/flow_assurance_remainder_probe.tsv` - the twenty-eight states: the API ratio bands, every geometry factor and impact angle, both Stokes bands, every material, the straight branch, an eroded-through wall and the rate-driven bands.
 - API RP 14E and DNV-RP-O501.
 

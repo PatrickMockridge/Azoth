@@ -20,8 +20,8 @@
 // and then `updateMoles` **writes the flash's stale vector into the phase** - which is what
 // `without_initcalc_moles` measures, and it is a defect rather than a second experiment.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ReactionLpSeedProbe.java
-//     java -cp .:neqsim-f0c7436.jar ReactionLpSeedProbe > captures/reaction_lp_seed_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar ReactionLpSeedProbe.java
+//     java -cp .:neqsim-118d9af.jar ReactionLpSeedProbe > captures/reaction_lp_seed_probe.tsv
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

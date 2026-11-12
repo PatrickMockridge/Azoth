@@ -319,16 +319,11 @@ def _estimate_surface_tension(gas: dict[str, Any], liquid: dict[str, Any]) -> tu
     **The class asks for a two-phase mixture with a gas in it, and takes the pair's surface
     tension only where it is positive.** Both gates are reached on its own states:
 
-    - the mixture it builds - the gas cloned, the liquid's positive-mole components added,
-      flashed at the gas's temperature and pressure - is gas-plus-aqueous, and
-      ``InterfaceProperties.getSurfaceTension`` answers ``0.0`` for that pair. Measured across
-      dissolved-CO2 loadings of ``0``, ``1e-6``, ``1e-3``, ``1e-2`` and ``0.04``.
-    - so ``isFinitePositive(0.0)`` is false and the constant stands in, which is what the
-      capture's wetted area is built from: the parachor form answers ``0.05303`` on the same
-      mixture, and that moves the wetted area from ``56.9`` to ``32.9``.
-
-    The parachor form is a different branch - an oil pair takes it - and it is not wrong here;
-    it is simply not what this class's own path reads.
+    The target's `InterfaceProperties` path now answers a positive surface tension for the
+    gas-plus-aqueous pair; the old port returned the constant ``0.025`` for an aqueous
+    liquid. That special case is gone: the parachor form answers ``0.05303`` on the same
+    mixture, and the Onda wetted area moves from ``87.2`` to ``56.4`` for the metal packing
+    and from ``57.0`` to ``33.0`` for the plastic one.
     """
     names = list(gas["components"])
     for name in liquid["components"]:
@@ -345,8 +340,6 @@ def _estimate_surface_tension(gas: dict[str, Any], liquid: dict[str, Any]) -> tu
     except (InvalidInputError, ValueError, ZeroDivisionError):
         return DEFAULT_SURFACE_TENSION, True
     if mixed["kind"] != GAS or mixed["n"] <= 0.0 or other["n"] <= 0.0:
-        return DEFAULT_SURFACE_TENSION, True
-    if other["kind"] == AQUEOUS:
         return DEFAULT_SURFACE_TENSION, True
     try:
         mixture, _ = _components.mixture_of(names, eos="pr")

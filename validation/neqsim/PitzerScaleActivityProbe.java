@@ -2,8 +2,8 @@
 // (read by reflection, so the transcription surface is visible), the nine ion coefficients at
 // a strength grid, and the two products the equilibrium solver reads.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar PitzerScaleActivityProbe.java
-//     java -cp .:neqsim-f0c7436.jar PitzerScaleActivityProbe > captures/pitzer_scale_activity_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar PitzerScaleActivityProbe.java
+//     java -cp .:neqsim-118d9af.jar PitzerScaleActivityProbe > captures/pitzer_scale_activity_probe.tsv
 
 import java.lang.reflect.Field;
 import java.util.Arrays;

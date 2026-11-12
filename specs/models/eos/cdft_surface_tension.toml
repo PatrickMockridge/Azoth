@@ -11,7 +11,7 @@ assumptions = [
     "the cubic constants are chosen by system class name: SRK takes `(1, 0)` and everything else the Peng-Robinson pair, so only `pr` and `srk` are offered; an RK state would mix RK's attraction with the PR denominator.\n",
 ]
 references = [
-    "NeqSim master, `physicalproperties/interfaceproperties/surfacetension/CDFTSurfaceTension.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "NeqSim master, `physicalproperties/interfaceproperties/surfacetension/CDFTSurfaceTension.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.",
     "`validation/neqsim/captures/cdft_probe.tsv` - eight states, the densities each branch receives and the class's answers, with the parachor beside them so a silent fallback would show.\n",
 ]
 [source]

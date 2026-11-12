@@ -7,8 +7,8 @@
 // density instead. The walk is identical either way: the same boundaries from the same reference
 // keys, the same binning, the same groups. Only the two numbers each group reports change.
 //
-//   javac -proc:none -cp /path/to/neqsim-f0c7436.jar InheritReferenceProbe.java
-//   java -cp .:/path/to/neqsim-f0c7436.jar InheritReferenceProbe > captures/inherit_reference_probe.tsv
+//   javac -proc:none -cp /path/to/neqsim-118d9af.jar InheritReferenceProbe.java
+//   java -cp .:/path/to/neqsim-118d9af.jar InheritReferenceProbe > captures/inherit_reference_probe.tsv
 
 import java.util.ArrayList;
 import java.util.Comparator;

@@ -5,8 +5,8 @@
 // cooldown march, the hydrate risk map over a profile, and the surface cooldown no-touch-time
 // analyser. Each section prints the class's own units; the cases convert once.
 //
-//   ../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar FlowAssuranceRemainderProbe.java
-//   ../../tools/gated.sh java -cp .:neqsim-f0c7436.jar FlowAssuranceRemainderProbe > captures/flow_assurance_remainder_probe.tsv
+//   ../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar FlowAssuranceRemainderProbe.java
+//   ../../tools/gated.sh java -cp .:neqsim-118d9af.jar FlowAssuranceRemainderProbe > captures/flow_assurance_remainder_probe.tsv
 
 import java.util.List;
 import neqsim.pvtsimulation.flowassurance.DeWaardMilliamsCorrosion;
@@ -271,7 +271,7 @@ public class FlowAssuranceRemainderProbe {
   }
 
   public static void main(String[] args) {
-    System.out.println("pvtsimulation/flowassurance remainder at f0c7436c69");
+    System.out.println("pvtsimulation/flowassurance remainder at 118d9aff");
 
     System.out.println("# --- DeWaardMilliamsCorrosion ---");
     dew("default", 60, 2, 4.5, 0, 2, 0, 0, 0, 25);

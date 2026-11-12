@@ -46,6 +46,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the association is off when the phase has no sites.** `cpaon` is zero unless `getTotalNumberOfAccociationSites()` is positive, which is a property of the composition. In a CO2/water brine it is never zero: even the gas phase carries water and reports six sites.
 - **the radial distribution function is `1/(1 - 1.9 eta)`**, which `PhaseElectrolyteCPAstatoil.calc_g` overrides the interface's simplified Carnahan-Starling default with. The `aCPA`/`bCPA` columns were fitted under this form.
 - **the association's cross rule is NeqSim's CR-1 table, not Elliott.** Rule 10 is `CPAMixingRuleHandler`, which reads `cpaAssosiationType` per pair: `CO2`/`water` takes CR-1 and bonds, at a site fraction of `0.6282`.
+- **the CO2/K+ short-range pair is `-2.2981e-4`, not the gas-ion default `+1.27e-4`.** The phase's `getWij` matrix keeps that value with zero temperature coefficients; it decides the reactive brine's gas fraction.
 - **and the rule is temperature-dependent.** `cpakijT_SRK` is added as `kij + kijT * T`, so `CO2`/`water` is `+0.04055` at 283.15 K against the constant column's `-0.27686`. The `PhaseSrkCPA` family is owed the same term.
 - **there is no flash.** `eos.pt_flash`'s Jacobian is `d ln phi / d n`, which the mixing rule this system installs refuses. The cases record phase states at compositions NeqSim's own flash reports.
 - no `h_res` or `s_res`: the departure is not assembled, so one reported here would be the cubic's alone.
@@ -56,7 +57,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | Case | Inputs | Expected |
 |---|---|---|
 | `the_aqueous_phase_of_the_40_bara_brine` | components = ['CO2', 'water', 'Na+', 'Cl-'], T = 283.15, P = 4000000.0, x = [0.0199838194895481, 0.917183084665173, 0.0314165479226397, 0.0314165479226397], compressed_phase = liquid | z_factor = 0.0314046546320745, ln_phi = [3.65314216519995, -8.04447341518401, -127.642339607682, -170.734154291934] |
-| `the_gas_phase_of_the_same_brine` | components = ['CO2', 'water', 'Na+', 'Cl-'], T = 283.15, P = 4000000.0, x = [0.999495590252868, 0.000504409747132707, 1e-50, 1e-50], compressed_phase = vapour | z_factor = 0.700255333545298, ln_phi = [-0.25918565618861, -0.538799955867045, -60.7163097247917, -92.4685400845073] |
+| `the_gas_phase_of_the_same_brine` | components = ['CO2', 'water', 'Na+', 'Cl-'], T = 283.15, P = 4000000.0, x = [0.999495590252868, 0.000504409747132707, 1e-50, 1e-50], compressed_phase = vapour | z_factor = 0.700255333545298, ln_phi = [-0.259185656540842, -0.538799955975849, -60.667408108481, -92.4196243460445] |
 | `the_aqueous_phase_with_no_salt` | components = ['CO2', 'water'], T = 283.15, P = 4000000.0, x = [0.0250294141123647, 0.974970585887635], compressed_phase = liquid | z_factor = 0.0310103702842816, ln_phi = [3.42797986423899, -8.04127938788781] |
 
 ## How far this is checked

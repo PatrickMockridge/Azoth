@@ -166,7 +166,7 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `process/chemistry/scale/ScaleInhibitorPerformance.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `process/chemistry/scale/ScaleInhibitorPerformance.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/process_scale_probe.tsv` - the `inhibitor` rows: every scale type and chemistry, both sides of the temperature knee, the TDS and saturation floors, the calcium penalty and the efficiency at half, at and above the MIC.
 - Kan, A. T.; Tomson, M. B. (2010). SPE 130901. Sorbie, K. S.; Mackay, E. J. (2000). SPE 169787. NACE TM0374.
 

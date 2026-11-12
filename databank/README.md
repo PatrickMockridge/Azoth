@@ -132,12 +132,12 @@ generated into the wrong tree.
 ## What none of this can tell you
 
 **Whether the vendored slice is current.** `manifest.toml` records the NeqSim commit it
-was last checked against (`f0c7436c6923766b1e22957b7075f650600457a7`, master), and
+was last checked against (`118d9aff9206504c136a08e1348b86cdd6cff669`, master), and
 nothing here can tell you a newer NeqSim exists. The `not_vendored` list was built by
 expanding NeqSim's resource directory by hand, at that commit.
 
 **The `version` field does not identify the revision.** It names the `revision` property in
-NeqSim's own `pom.xml`, which reads `3.21.0` both at the `v3.21.0` tag and on master — 50
+NeqSim's own `pom.xml`, which reads `3.28.0` both at the `v3.28.0` tag and on master — 84
 commits apart — so the same version names two different trees. **The `commit` is the pin**,
 and a document wanting a readable name for it says `NeqSim master`, because that is the only
 name that resolves to the bytes vendored here.
@@ -170,7 +170,8 @@ files stayed on the previous revision through the last refresh.
 `retrieved` beside the upstream's, and `tools/gen_databank.py` cites them; the code pin stays
 where it is. That is how a post-pin data fix is reflected without dragging five hundred
 commits of code with it - and a capture taken against such a file states the ingredients it
-actually used, in `validation/neqsim/captures/README.md`.
+actually used, in `validation/neqsim/captures/README.md`. **A full sweep removes those
+overrides and re-vendors every file at the pin**, which is what the 3.28.0 refresh did.
 
 **The models with no probe are the residual gap.** `crates/*/tests/` holds reference-equation
 tests - ammonia, Vega, Span-Wagner, Leachman, argon and para-hydrogen solid - whose NeqSim

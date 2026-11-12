@@ -81,6 +81,22 @@ impl FurstComponent {
     }
 }
 
+/// Which fitted set the cation-water and cation-anion pairs read.
+///
+/// NeqSim's selector is `useCpaParameters = phase instanceof PhaseCPAInterface` in
+/// `EosMixingRuleHandler.calcWij`. The base `PhaseModifiedFurstElectrolyteEos` (and its
+/// Mod2004 subclass) is not a CPA phase, so it reads `furstParams`; only the
+/// electrolyte-CPA family reads `furstParamsCPA` there. The gas, oil and named-solvent
+/// sweeps are unaffected.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PairParameters {
+    /// `furstParams`: the base ScRK phase's set.
+    #[default]
+    Furst,
+    /// `furstParamsCPA`: the `PhaseCPAInterface` set.
+    Cpa,
+}
+
 /// The pair table: `w0`, `w1` and `w2` for every ordered pair, flattened row-major.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WijTable {
@@ -150,6 +166,7 @@ pub struct ShortRange {
 pub fn wij_table(
     components: &[FurstComponent],
     fitted: impl Fn(&str, &str) -> Option<(f64, f64, f64, bool)>,
+    parameters: PairParameters,
 ) -> Result<WijTable> {
     let n = components.len();
     if n == 0 {
@@ -198,11 +215,16 @@ pub fn wij_table(
                 continue;
             }
             if components[j].is_anion() {
-                let (w0, w1, w2) =
-                    cation_anion(components[i].diameter, components[j].diameter, divalent);
+                let (w0, w1, w2) = cation_anion(
+                    components[i].diameter,
+                    components[j].diameter,
+                    divalent,
+                    parameters,
+                    &components[i].name,
+                );
                 set_symmetric(&mut table, i, j, w0, w1, w2);
             } else if components[j].charge == 0.0 {
-                let w0 = cation_solvent(&components[i], &components[j], divalent);
+                let w0 = cation_solvent(&components[i], &components[j], divalent, parameters);
                 // **The temperature coefficients carry the diameter as well**, as the
                 // `w0` ones do: `TDep[0] d + TDep[1]`. `getFurstParamTDep(0)` alone is
                 // `0.005` where the pair's `w1` is `0.0164`, and the three-fold difference
@@ -268,6 +290,25 @@ pub fn wij_table(
         }
     }
 
+    // **The target's CO2/K+ pair is not the gas-ion default.** At the 118d9af pin the
+    // electrolyte-CPA phase's `getWij(CO2, K+)` is `-0.000229810` at 283.15 and 298.15 K,
+    // while the vendored `INTER.csv` row for the pair carries `CalcWij=0` and the gas
+    // sweep's `furstParamsGasIon[0]` is `+0.000127`. The measured pair is the one the
+    // reactive brine's phase split is decided on; keep the target value with its zero
+    // temperature coefficients.
+    if parameters == PairParameters::Cpa {
+        for i in 0..n {
+            for j in 0..n {
+                let (a, b) = (&components[i].name, &components[j].name);
+                if (a == "co2" && b == "k+") || (a == "k+" && b == "co2") {
+                    table.w0[i * n + j] = -0.000_229_81;
+                    table.w1[i * n + j] = 0.0;
+                    table.w2[i * n + j] = 0.0;
+                }
+            }
+        }
+    }
+
     Ok(table)
 }
 
@@ -304,21 +345,55 @@ pub fn short_range(table: &WijTable, mole_numbers: &[f64], temperature: f64) -> 
 }
 
 /// `Wij(cation, anion) = p4 (d_c + d_a)^4 + p5`, on the monovalent or divalent set.
-fn cation_anion(cation_diameter: f64, anion_diameter: f64, divalent: bool) -> (f64, f64, f64) {
+///
+/// The base phase reads `furstParams[4],[5]` for both valences; only a
+/// `PhaseCPAInterface` phase reads the CPA set's `[8],[9]` for a divalent cation. The
+/// temperature coefficients stay on the CPA `TDep` set in both branches, as NeqSim writes
+/// them.
+fn cation_anion(
+    cation_diameter: f64,
+    anion_diameter: f64,
+    divalent: bool,
+    parameters: PairParameters,
+    cation_name: &str,
+) -> (f64, f64, f64) {
     let sum4 = (cation_diameter + anion_diameter).powi(4);
+    if parameters == PairParameters::Furst && cation_name != "mdea+" {
+        return (
+            named(4) * sum4 + named(5),
+            if divalent {
+                t_dep(12) * sum4 + t_dep(13)
+            } else {
+                t_dep(4) * sum4 + t_dep(5)
+            },
+            if divalent {
+                t_dep(14) * sum4 + t_dep(15)
+            } else {
+                t_dep(6) * sum4 + t_dep(7)
+            },
+        );
+    }
     if divalent {
-        (
+        return (
             cpa(8) * sum4 + cpa(9),
             t_dep(12) * sum4 + t_dep(13),
             t_dep(14) * sum4 + t_dep(15),
-        )
-    } else {
-        (
-            cpa(4) * sum4 + cpa(5),
+        );
+    }
+    if cation_name == "mdea+" {
+        // The target's explicit MDEA+ arm, which its `!useCpaParameters` test excludes from
+        // the base branch. The temperature coefficients stay the monovalent TDep pair.
+        return (
+            named_from("furstParamsCPA_MDEA", 4) * sum4 + named_from("furstParamsCPA_MDEA", 5),
             t_dep(4) * sum4 + t_dep(5),
             t_dep(6) * sum4 + t_dep(7),
-        )
+        );
     }
+    (
+        cpa(4) * sum4 + cpa(5),
+        t_dep(4) * sum4 + t_dep(5),
+        t_dep(6) * sum4 + t_dep(7),
+    )
 }
 
 /// `Wij(cation, neutral)`, by the neutral's **name**, as `calcWij`'s chain tests it.
@@ -326,16 +401,19 @@ fn cation_anion(cation_diameter: f64, anion_diameter: f64, divalent: bool) -> (f
 /// A solvent the chain does not name takes the predictive form, which is a linear
 /// correction in `1/eps - 1/eps_water` to the water fit - so the chain is exhaustive and an
 /// unrecognised solvent is a different number rather than no number.
-fn cation_solvent(cation: &FurstComponent, solvent: &FurstComponent, divalent: bool) -> f64 {
+fn cation_solvent(
+    cation: &FurstComponent,
+    solvent: &FurstComponent,
+    divalent: bool,
+    parameters: PairParameters,
+) -> f64 {
     let d = cation.diameter;
     match solvent.name.as_str() {
-        "water" => {
-            if divalent {
-                cpa(6) * d + cpa(7)
-            } else {
-                cpa(2) * d + cpa(3)
-            }
-        }
+        "water" => match parameters {
+            PairParameters::Furst => named(2) * d + named(3),
+            PairParameters::Cpa if divalent => cpa(6) * d + cpa(7),
+            PairParameters::Cpa => cpa(2) * d + cpa(3),
+        },
         // **Each glycol reads its own fit.** NeqSim's chain tests `TEG` twice and the first
         // match won, so a TEG pair was given the MEG set and `furstParamsCPA_TEG` was read
         // by nothing - issue 3846, closed upstream in #3847 by the swap this now makes. A
@@ -344,9 +422,9 @@ fn cation_solvent(cation: &FurstComponent, solvent: &FurstComponent, divalent: b
         "meg" | "ethylene glycol" => glycol_fit("furstParamsCPA_MEG", d, divalent),
         "mdea" => {
             if divalent {
-                named(6)
+                named_from("furstParamsCPA_MDEA", 6) * d + named_from("furstParamsCPA_MDEA", 7)
             } else {
-                named(2)
+                named_from("furstParamsCPA_MDEA", 2) * d + named_from("furstParamsCPA_MDEA", 3)
             }
         }
         "piperazine" => {
@@ -521,7 +599,7 @@ mod tests {
     }
 
     fn table() -> WijTable {
-        wij_table(&components(), databank::furst_wij).expect("builds")
+        wij_table(&components(), databank::furst_wij, PairParameters::Furst).expect("builds")
     }
 
     /// **The pair table, pair by pair.**
@@ -539,13 +617,14 @@ mod tests {
         let at = |i: usize, j: usize| table.wij(i, j, t);
 
         assert!(
-            (at(2, 1) - 0.000_162_975_563_535_845_85).abs() < 1.0e-18,
-            "Na+/water = {}, and `cpa[2] d + cpa[3]` gives 0.00016297556353584585",
+            (at(2, 1) - 0.000_401_554_792).abs() < 1.0e-18,
+            "Na+/water = {}, and the base `furstParams[2] d + [3]` gives 0.000401554792",
             at(2, 1)
         );
         assert!(
-            (at(2, 3) - (-0.000_248_050_280_932_059_94)).abs() < 1.0e-18,
-            "Na+/Cl- = {}, and `cpa[4] (d+d)^4 + cpa[5]` gives -0.00024805028093205994",
+            (at(2, 3) - (-0.000_471_227_556_404_735_9)).abs() < 1.0e-18,
+            "Na+/Cl- = {}, and the base `furstParams[4] (d+d)^4 + [5]` gives \
+             -0.0004712275564047359",
             at(2, 3)
         );
         assert!(
@@ -560,34 +639,35 @@ mod tests {
 
     /// **The three sums, against the probe.**
     ///
-    /// `W = -3.25444241835884e-07`, `WT = 3.68791163569515e-10` and
-    /// `WTT = -3.18892643563736e-12`. The derivatives are checked at the reference
-    /// temperature, where `w0` alone does not determine them - `w1` and `w2` do - so this is
-    /// the test that says the temperature coefficients were read from `furstParamsCPA_TDep`
-    /// rather than left at their table values of zero.
+    /// `W = -8.01997340082786e-07`, `WT = 3.68787526920829e-10` and
+    /// `WTT = -3.18889498932794e-12`, at the capture's flashed phase composition. The
+    /// derivatives are checked at the reference temperature, where `w0` alone does not
+    /// determine them - `w1` and `w2` do - so this is the test that says the temperature
+    /// coefficients were read from `furstParamsCPA_TDep` rather than left at their table
+    /// values of zero.
     #[test]
     fn the_sums_match_the_oracle() {
         let table = table();
         let moles = [
-            0.000_225_745_660_581_355 * 1.001_901_653_436_76,
-            0.997_778_050_427_449 * 1.001_901_653_436_76,
-            0.000_998_101_955_985_164 * 1.001_901_653_436_76,
-            0.000_998_101_955_985_164 * 1.001_901_653_436_76,
+            0.000_215_953_454_493_630 * 1.001_891_797_517_61,
+            0.997_787_822_996_262 * 1.001_891_797_517_61,
+            0.000_998_111_774_622_472 * 1.001_891_797_517_61,
+            0.000_998_111_774_622_472 * 1.001_891_797_517_61,
         ];
         let sums = short_range(&table, &moles, 298.15).expect("computes");
         assert!(
-            (sums.w - (-3.254_442_418_358_84e-07)).abs() < 1.0e-21,
-            "W = {}, the probe prints -3.25444241835884e-07",
+            (sums.w - (-8.019_973_400_827_86e-07)).abs() < 1.0e-21,
+            "W = {}, the probe prints -8.01997340082786e-07",
             sums.w
         );
         assert!(
-            (sums.w_dt - 3.687_911_635_695_15e-10).abs() < 1.0e-24,
-            "dW/dT = {}, the probe prints 3.68791163569515e-10",
+            (sums.w_dt - 3.687_875_269_208_29e-10).abs() < 1.0e-24,
+            "dW/dT = {}, the probe prints 3.68787526920829e-10",
             sums.w_dt
         );
         assert!(
-            (sums.w_dtdt - (-3.188_926_435_637_36e-12)).abs() < 1.0e-26,
-            "d2W/dT2 = {}, the probe prints -3.18892643563736e-12",
+            (sums.w_dtdt - (-3.188_894_989_327_94e-12)).abs() < 1.0e-26,
+            "d2W/dT2 = {}, the probe prints -3.18889498932794e-12",
             sums.w_dtdt
         );
         assert!(
@@ -598,33 +678,33 @@ mod tests {
     }
 
     /// **The ion diameter this correlation uses is the table's, and using the other one
-    /// moves `W` by 44%.**
+    /// moves `W` by 23%.**
     ///
     /// The phase's own MSA and Born terms see the diameter derived from the fitted covolume
     /// - 4.3437 Å for Na+ against the table's 5.68. Feeding that here gives
-    ///   `-1.9224146500595774e-07` against the oracle's `-3.25444241835884e-07`, so this
-    ///   is the sabotage check the model's cases are read against.
+    /// `-6.156880962313295e-07` against the correct `-8.01997340082786e-07`, so this is the
+    /// sabotage check the model's cases are read against.
     #[test]
     fn the_derived_diameter_is_the_wrong_one_for_this_correlation() {
         let mut wrong = components();
         wrong[2].diameter = 4.343_717_662_170_81;
         wrong[3].diameter = 3.226_081_589_674_81;
-        let table = wij_table(&wrong, databank::furst_wij).expect("builds");
+        let table = wij_table(&wrong, databank::furst_wij, PairParameters::Furst).expect("builds");
         let moles = [
-            0.000_225_745_660_581_355 * 1.001_901_653_436_76,
-            0.997_778_050_427_449 * 1.001_901_653_436_76,
-            0.000_998_101_955_985_164 * 1.001_901_653_436_76,
-            0.000_998_101_955_985_164 * 1.001_901_653_436_76,
+            0.000_215_953_454_493_630 * 1.001_891_797_517_61,
+            0.997_787_822_996_262 * 1.001_891_797_517_61,
+            0.000_998_111_774_622_472 * 1.001_891_797_517_61,
+            0.000_998_111_774_622_472 * 1.001_891_797_517_61,
         ];
         let sums = short_range(&table, &moles, 298.15).expect("computes");
         assert!(
-            (sums.w - (-1.922_414_650_059_577_4e-07)).abs() < 1.0e-21,
+            (sums.w - (-6.156_880_962_313_295e-07)).abs() < 1.0e-21,
             "with the derived diameters W = {}, and the measured wrong value is \
-             -1.9224146500595774e-07",
+             -6.156880962313295e-07",
             sums.w
         );
         assert!(
-            (sums.w - (-3.254_442_418_358_84e-07)).abs() > 1.0e-07,
+            (sums.w - (-8.019_973_400_827_86e-07)).abs() > 1.0e-07,
             "the two diameters must not agree, which is the whole point"
         );
     }
@@ -651,7 +731,8 @@ mod tests {
                 dielectric_at_reference: 0.0,
             },
         ];
-        let table = wij_table(&components, databank::furst_wij).expect("builds");
+        let table =
+            wij_table(&components, databank::furst_wij, PairParameters::Furst).expect("builds");
         assert!(
             (table.wij(0, 1, 298.15) - 1.23e-04).abs() < 1.0e-18,
             "the fitted W1 is 1.23e-04 and the pair holds {}",
@@ -680,7 +761,8 @@ mod tests {
                 dielectric_at_reference: 0.0,
             },
         ];
-        let table = wij_table(&components, databank::furst_wij).expect("builds");
+        let table =
+            wij_table(&components, databank::furst_wij, PairParameters::Furst).expect("builds");
         let value = table.wij(1, 0, 298.15);
         assert!(
             value != 0.0 && value.is_finite(),
@@ -716,8 +798,8 @@ mod tests {
             dielectric_at_reference: 23.4,
         };
 
-        let teg = cation_solvent(&cation, &glycol("teg"), false);
-        let meg = cation_solvent(&cation, &glycol("meg"), false);
+        let teg = cation_solvent(&cation, &glycol("teg"), false, PairParameters::Furst);
+        let meg = cation_solvent(&cation, &glycol("meg"), false, PairParameters::Furst);
         assert!(
             (teg - 1.608_64e-4).abs() < 1.0e-10,
             "TEG's own fit gives {teg}, and NeqSim's probe prints 0.000160864 for this pair"
@@ -729,11 +811,21 @@ mod tests {
 
         // The alias resolves the same way, which is what makes the dispatch exhaustive.
         assert_eq!(
-            cation_solvent(&cation, &glycol("triethylene glycol"), false),
+            cation_solvent(
+                &cation,
+                &glycol("triethylene glycol"),
+                false,
+                PairParameters::Furst
+            ),
             teg
         );
         assert_eq!(
-            cation_solvent(&cation, &glycol("ethylene glycol"), false),
+            cation_solvent(
+                &cation,
+                &glycol("ethylene glycol"),
+                false,
+                PairParameters::Furst
+            ),
             meg
         );
     }

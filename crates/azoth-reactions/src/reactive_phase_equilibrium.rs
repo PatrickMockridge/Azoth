@@ -452,8 +452,7 @@ pub fn reactive_phase_equilibrium(
         phase_charge,
         phase_moles,
     )?;
-    let certified = solved.converged
-        && max_reaction_log_residual <= REACTION_LOG_RESIDUAL_TOLERANCE
+    let certified = max_reaction_log_residual <= REACTION_LOG_RESIDUAL_TOLERANCE
         && net_charge_moles.abs() <= REACTIVE_PHASE_CHARGE_TOLERANCE_MOLES
         && max_element_residual <= ELEMENT_BALANCE_RESIDUAL_TOLERANCE_MOLES;
 

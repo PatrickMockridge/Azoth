@@ -103,5 +103,5 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `process/chemistry/scale/ClosedLoopDepositionSolver.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `process/chemistry/scale/ClosedLoopDepositionSolver.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/closed_loop_deposition_probe.tsv` - the eight solves: a one-year service that meets the tolerance first, a long service that iterates, the cap reached, a blocked line, no deposit, half inhibition, a wide tolerance and a Peng-Robinson fluid.

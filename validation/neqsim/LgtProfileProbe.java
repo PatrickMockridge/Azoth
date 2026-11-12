@@ -5,8 +5,8 @@
 //
 // Compile and run from this directory:
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar LgtProfileProbe.java
-//     java -cp .:neqsim-f0c7436.jar LgtProfileProbe > captures/lgt_profile_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar LgtProfileProbe.java
+//     java -cp .:neqsim-118d9af.jar LgtProfileProbe > captures/lgt_profile_probe.tsv
 //
 // The densities are the class's own, in the unit its `1e5` factor produces; the influence
 // parameter's unit is NeqSim's, and the two are what the port has to reproduce.

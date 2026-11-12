@@ -31,7 +31,7 @@ values is the expected case, not a failure.
 
 Usage:
     python tools/pin_impact.py --from 805cf0f910819a19fdc45702fc44c4a3675d93d8 \\
-                               --to   f0c7436c6923766b1e22957b7075f650600457a7
+                               --to   118d9aff9206504c136a08e1348b86cdd6cff669
 
 The checkout is a local prerequisite, like the jar: `~/.claude` is not where NeqSim lives.
 Set it with `--checkout` or `$NEQSIM_CHECKOUT`; the default is the copy the refresh used.

@@ -87,8 +87,8 @@ def saturation(antoine: Any, t_k: float) -> tuple[list[float], list[Warning]]:
     p_sat: list[float] = []
     for i in range(len(antoine.antoine_type)):
         # **A row with no correlation is refused rather than evaluated.** Upstream's marker
-        # for an *unavailable* correlation - `83b64e5`, PR #3775, which now covers 331 of its
-        # 389 rows - and an activity-coefficient phase's standard state **is** `P0`, so a
+        # for an *unavailable* correlation - `83b64e5`, PR #3775, which now covers 332 of its
+        # 390 rows - and an activity-coefficient phase's standard state **is** `P0`, so a
         # component without one cannot be in this phase. Sent to Wagner the row's five zeros
         # give `exp(0) * Pc = Pc`: a plausible number four orders of magnitude wrong, which is
         # the failure this library exists to make impossible. The rust kernel refuses at the

@@ -27,7 +27,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-VENDORED = "f0c7436c6923766b1e22957b7075f650600457a7"
+VENDORED = "118d9aff9206504c136a08e1348b86cdd6cff669"
 STALE = "dedba8735d030c6411e09b6fd7e69f6c4a136114"
 
 

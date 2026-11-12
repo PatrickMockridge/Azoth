@@ -1,7 +1,7 @@
 // ISO 6976 gas quality, for the `standards.iso6976` id.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar StandardsProbe.java
-//     java -cp .:neqsim-f0c7436.jar StandardsProbe > captures/process_gas_quality.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar StandardsProbe.java
+//     java -cp .:neqsim-118d9af.jar StandardsProbe > captures/process_gas_quality.tsv
 //
 // The only file in the repository that is not part of either implementation, and here on
 // purpose: it is the ground truth the port is measured against.

@@ -135,7 +135,7 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `pvtsimulation/flowassurance/ScaleMassCalculator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `pvtsimulation/flowassurance/ScaleMassCalculator.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/scale_family_probe.tsv` - the five minerals over four states, including the 0.99 cap and the below-saturation zero.
 
 

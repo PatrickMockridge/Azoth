@@ -3,15 +3,15 @@
 //
 // `ChemicalReactionList.calcReferencePotentials` decides which components' standard-state
 // potentials to solve for directly and which to propagate from the rest. Both halves are
-// greedy rank tests on a `Jama.Matrix`, so the answer depends on JAMA's `rank()` and on
-// nothing else - and JAMA's rank is a singular-value count against
-// `max(m, n) * s[0] * 2**-52`.
+// greedy rank tests on NeqSim's own `LinearAlgebraOperations` (EJML at the target pin), so
+// the answer depends on that routine's `rank()` and on nothing else - and its rank is a
+// singular-value count against a tolerance the implementation states.
 //
 // **The singular values are printed beside that tolerance, because the size of the gap
-// decides how much of JAMA has to be reproduced.** If every singular value the test
+// decides how much of the routine has to be reproduced.** If every singular value the test
 // rejects is orders of magnitude below the cutoff, then any correct rank routine selects
-// the same basis and the tolerance is not load-bearing; if one sits near it, the
-// Golub-Reinsch SVD is part of the port and there is no shortcut.
+// the same basis and the tolerance is not load-bearing; if one sits near it, the SVD is
+// part of the port and there is no shortcut.
 //
 // The matrices are the real ones: three fluids on a plain `SystemSrkEos`, whose
 // `chemicalReactionInit` loads the standard source's active rows and whose components are
@@ -20,21 +20,22 @@
 // reimplements the correlation - the matrix, the rank calls and the potentials are
 // NeqSim's own.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ReferencePotentialProbe.java
-//     java -cp .:neqsim-f0c7436.jar ReferencePotentialProbe > captures/reference_potential_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar ReferencePotentialProbe.java
+//     java -cp .:neqsim-118d9af.jar ReferencePotentialProbe > captures/reference_potential_probe.tsv
 
 import java.util.ArrayList;
-import Jama.Matrix;
-import Jama.SingularValueDecomposition;
 import neqsim.chemicalreactions.ChemicalReactionOperations;
 import neqsim.chemicalreactions.chemicalreaction.ChemicalReaction;
 import neqsim.chemicalreactions.chemicalreaction.ChemicalReactionList;
+import neqsim.mathlib.linearalgebra.EjmlLinearAlgebra;
+import neqsim.mathlib.linearalgebra.LinearAlgebraOperations;
 import neqsim.thermo.component.ComponentInterface;
 import neqsim.thermo.phase.PhaseInterface;
 import neqsim.thermo.system.SystemSrkEos;
 
 public class ReferencePotentialProbe {
   static final double EPS = Math.pow(2.0, -52.0);
+  static final LinearAlgebraOperations ALGEBRA = new EjmlLinearAlgebra();
 
   public static void main(String[] args) {
     // Several fluids, because the size of the gap between the smallest rejected singular
@@ -98,29 +99,28 @@ public class ReferencePotentialProbe {
     // values behind it are in the capture. Same loop as `calcReferencePotentials`.
     ArrayList<Integer> independent = new ArrayList<Integer>();
     ArrayList<Integer> dependent = new ArrayList<Integer>();
-    Matrix current = null;
+    double[][] current = null;
 
     for (int j = 0; j < nCols; j++) {
-      Matrix next;
+      double[][] next;
       if (current == null) {
-        next = new Matrix(nRows, 1);
+        next = new double[nRows][1];
         for (int i = 0; i < nRows; i++) {
-          next.set(i, 0, g[i][j]);
+          next[i][0] = g[i][j];
         }
       } else {
-        next = new Matrix(nRows, current.getColumnDimension() + 1);
-        next.setMatrix(0, nRows - 1, 0, current.getColumnDimension() - 1, current);
+        next = new double[nRows][current[0].length + 1];
         for (int i = 0; i < nRows; i++) {
-          next.set(i, current.getColumnDimension(), g[i][j]);
+          System.arraycopy(current[i], 0, next[i], 0, current[i].length);
+          next[i][current[i].length] = g[i][j];
         }
       }
 
-      int currentRank = current == null ? 0 : current.rank();
-      int nextRank = next.rank();
+      int currentRank = current == null ? 0 : ALGEBRA.rank(current);
+      int nextRank = ALGEBRA.rank(next);
 
-      double[] singular = new SingularValueDecomposition(next).getSingularValues();
-      double tolerance = Math.max(next.getRowDimension(), next.getColumnDimension())
-          * singular[0] * EPS;
+      double[] singular = ALGEBRA.singularValueDecomposition(next).getSingularValues();
+      double tolerance = Math.max(next.length, next[0].length) * singular[0] * EPS;
 
       System.out.println("  step[col=" + j + "] current_rank=" + currentRank + " next_rank="
           + nextRank + " tolerance=" + tolerance + " smallest_sv=" + singular[singular.length - 1]

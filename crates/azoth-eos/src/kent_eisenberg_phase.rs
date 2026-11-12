@@ -41,7 +41,7 @@ use crate::results::KentEisenbergPhaseResult;
 /// * [`AzothError::InvalidInput`] if a component is not in the databank, if `x` is not a
 ///   composition, or if a `solvent`-reference component carries no Antoine correlation.
 /// * [`AzothError::PropertyUnavailable`] if a component's Henry row is the all-zero filler
-///   NeqSim's database gives 296 of its 348 substances, which is an absence rather than a
+///   NeqSim's database gives 297 of its 349 substances, which is an absence rather than a
 ///   value.
 /// * [`AzothError::OutOfRange`] if `T` or `P` is not positive.
 ///

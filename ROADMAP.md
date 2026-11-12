@@ -753,7 +753,7 @@ a claim nothing holds.
   the spec's `[[unported]]` rows, each naming its class.
 - **The `eos` family's**: `ComponentGE.fugcoef`'s **Henry's-law branch is complete** - the
   four `eos.ge_*_phase` ids resolve both reference states, which the vendored table's
-  `REFERENCESTATETYPE` selects on 115 of its 348 rows (113 `solute` and the two literal
+  `REFERENCESTATETYPE` selects on 116 of its 349 rows (114 `solute` and the two literal
   `0.0`). **Three states are refused rather than given a number**: a non-ion row carrying
   the four zeros NeqSim evaluates to `1.802 bar`, a solvent-tagged IAPWS species in water
   (upstream's one-component reference phase throws), and a solvent component with no
@@ -1027,6 +1027,13 @@ That was the last hole P12 named, and it is the one that let `specs/flowsheets/d
 `OK` is one an executor can consume, was false. `Param` now carries `required`, as
 [the process schema](docs/src/architecture/process-schema.md) states, and the flag's two sources
 agree on all twenty-eight runnable entries - which `tests/palette.rs` re-checks on every run.
+
+**The fitting catalogue is cited but not production-verified.** The twenty-three rows from
+NeqSim's `Fittings.STANDARD_LD_VALUES` are equivalent-length defaults, not a verified Crane
+TP-410 transcription, and one azoth-only row is still an estimated dummy. **`verified` requires
+a licensed copy of TP-410 or manufacturer data and a named reviewer**; the sweep can replace
+placeholders with cited defaults, but it cannot manufacture the primary source. That is a
+data-verification gap, not an unported calculation.
 
 **What is named as not built, with the class that would close each**: Broyden through
 `BroydenAccelerator`, for the measured reason above. The tier's own acceptance is the NeqSim

@@ -2,8 +2,8 @@
 //
 // Compile and run from this directory:
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar TemaStandardProbe.java
-//     java -cp .:neqsim-f0c7436.jar TemaStandardProbe > captures/tema_standard_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar TemaStandardProbe.java
+//     java -cp .:neqsim-118d9af.jar TemaStandardProbe > captures/tema_standard_probe.tsv
 //
 // **The class speaks millimetres in every static method**; the port converts from metres. The
 // tube-count result is an int truncation, and the material factor is a substring match on the

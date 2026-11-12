@@ -3,13 +3,13 @@
   salt input = 0.00000000000 mol/sec, phase concentration = 0.00000000000
   after the flash: salt = 0.00000000000, phase concentration = 0.00000000000
   phases = 2   T = 318.15 K   P = 40.0000 bar
-  [0] PhaseSoreideWhitson beta = 0.902338118026  z = 0.870487529540554  salinity = 0.00000000000
+  [0] PhaseSoreideWhitson beta = 0.902338118031  z = 0.870487529540554  salinity = 0.00000000000
         nitrogen   x = 0.110818402794  ln phi = 0.0471688081401
         CO2        x = 0.221422141728  ln phi = -0.154317433458
         methane    x = 0.332455899714  ln phi = -0.0560489328823
         ethane     x = 0.332455590773  ln phi = -0.250178013049
         water      x = 0.00284796499037  ln phi = -0.173340993361
-  [1] PhaseSoreideWhitson beta = 0.0976618819737  z = 0.0325913627959958  salinity = 0.00000000000
+  [1] PhaseSoreideWhitson beta = 0.0976618819689  z = 0.0325913627959958  salinity = 0.00000000000
         nitrogen   x = 4.43466786008e-05  ln phi = 7.87077912257
         CO2        x = 0.00207206064762  ln phi = 4.51720999562
         methane    x = 0.000126652518641  ln phi = 7.81676630214
@@ -18,20 +18,20 @@
 
 === the same brine at 0.5 mol/sec salinity ===
   salt input = 0.500000000000 mol/sec, phase concentration = 0.00000000000
-  after the flash: salt = 0.500000000000, phase concentration = 18.6818202154
+  after the flash: salt = 0.500000000000, phase concentration = 18.6818202163
   phases = 2   T = 318.15 K   P = 40.0000 bar
-  [0] PhaseSoreideWhitson beta = 0.900957936504  z = 0.870552111432383  salinity = 0.00000000000
+  [0] PhaseSoreideWhitson beta = 0.900957936509  z = 0.870552111432386  salinity = 0.00000000000
         nitrogen   x = 0.110992863880  ln phi = 0.0471006782056
         CO2        x = 0.221985009289  ln phi = -0.154001680613
         methane    x = 0.332978852846  ln phi = -0.0561305291887
         ethane     x = 0.332978897006  ln phi = -0.250291717828
-        water      x = 0.00106437697996  ln phi = -0.190656442175
-  [1] PhaseSoreideWhitson beta = 0.0990420634955  z = 0.0321265381818626  salinity = 18.6818202154
-        nitrogen   x = 9.93433563451e-07  ln phi = 11.6709100019
-        CO2        x = 8.52259067533e-06  ln phi = 10.0136431770
-        methane    x = 6.04176191059e-07  ln phi = 13.1635932246
-        ethane     x = 2.02464818140e-07  ln phi = 14.0627319131
-        water      x = 0.999989677335  ln phi = -7.03601178038
+        water      x = 0.00106437697991  ln phi = -0.190656442176
+  [1] PhaseSoreideWhitson beta = 0.0990420634906  z = 0.0321265381818418  salinity = 18.6818202163
+        nitrogen   x = 9.93433563284e-07  ln phi = 11.6709100021
+        CO2        x = 8.52259067246e-06  ln phi = 10.0136431774
+        methane    x = 6.04176190888e-07  ln phi = 13.1635932249
+        ethane     x = 2.02464818071e-07  ln phi = 14.0627319134
+        water      x = 0.999989677335  ln phi = -7.03601178043
 
 === a condensate: CO2 C1 nC4 nC7 water, 60 C, 100 bara ===
   salt input = 0.00000000000 mol/sec, phase concentration = 0.00000000000

@@ -7,14 +7,14 @@ delta_p_bar=0.1
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.9
 outlet_T=298.15
-outlet_h=519.8638561838793
-outlet_s=-22.52078272321884
+outlet_h=519.8054749136932
+outlet_s=-22.520986843233402
 outlet_z=methane:1.0
 
 flow_scaled_methane_1000_kg_per_hr
@@ -26,14 +26,14 @@ delta_p_bar=0.1
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.9
 outlet_T=298.15
-outlet_h=519.8638561838793
-outlet_s=-22.52078272321884
+outlet_h=519.8054749136932
+outlet_s=-22.520986843233402
 outlet_z=methane:1.0
 
 flow_scaled_methane_2000_kg_per_hr
@@ -45,14 +45,14 @@ delta_p_bar=0.4
 inlet_n=34.62915636449265
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=34.62915636449265
 outlet_P=19.6
 outlet_T=298.15
-outlet_h=525.3552022816244
-outlet_s=-22.381421982088355
+outlet_h=525.2968210114384
+outlet_s=-22.381626102102917
 outlet_z=methane:1.0
 
 tabulated_methane_1000_kg_per_hr
@@ -64,14 +64,14 @@ delta_p_bar=0.30000000000000004
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.7
 outlet_T=298.15
-outlet_h=523.5247917958733
-outlet_s=-22.4280886225777
+outlet_h=523.4664105256871
+outlet_s=-22.428292742592262
 outlet_z=methane:1.0
 
 ergun_methane_1000_kg_per_hr
@@ -83,14 +83,14 @@ delta_p_bar=0.001457628909180396
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.99854237109082
 outlet_T=298.15
-outlet_h=518.0600145934741
-outlet_s=-22.566144987971676
+outlet_h=518.0016333232879
+outlet_s=-22.566349107986234
 outlet_z=methane:1.0
 
 ergun_methane_2000_kg_per_hr
@@ -102,14 +102,14 @@ delta_p_bar=0.004325447208812192
 inlet_n=34.62915636449265
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=34.62915636449265
 outlet_P=19.995674552791186
 outlet_T=298.15
-outlet_h=518.1125111990125
-outlet_s=-22.564827693151717
+outlet_h=518.0541299288263
+outlet_s=-22.565031813166275
 outlet_z=methane:1.0
 
 capture_beta_ratio_methane_1000_kg_per_hr
@@ -124,13 +124,13 @@ captured_rate_kg_per_hr=0.099
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.99
 outlet_T=298.15
-outlet_h=518.2163861562253
-outlet_s=-22.56222065861413
+outlet_h=518.1580048860393
+outlet_s=-22.562424778628692
 outlet_z=methane:1.0
 

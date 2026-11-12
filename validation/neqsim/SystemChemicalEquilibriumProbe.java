@@ -15,8 +15,8 @@
 //    re-solves the *same* phase every pass. Driving `solveChemEq(1)` and `solveChemEq(0)` on the
 //    same two-phase system is what shows it: both move phase 1, and phase 0 never moves.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar SystemChemicalEquilibriumProbe.java
-//     java -cp .:neqsim-f0c7436.jar SystemChemicalEquilibriumProbe > captures/system_chemical_equilibrium_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar SystemChemicalEquilibriumProbe.java
+//     java -cp .:neqsim-118d9af.jar SystemChemicalEquilibriumProbe > captures/system_chemical_equilibrium_probe.tsv
 
 import neqsim.chemicalreactions.ChemicalReactionOperations;
 import neqsim.thermo.component.ComponentInterface;

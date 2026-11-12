@@ -9,8 +9,8 @@
 // `CavettModel`'s API correction applies only below API 30 (SG above ~0.876). A port that
 // picked the wrong side of any of them would still be right at a single cut.
 //
-//   javac -proc:none -cp neqsim-f0c7436.jar CharacterizationProbe.java
-//   java -cp .:neqsim-f0c7436.jar CharacterizationProbe > captures/characterization_probe.tsv
+//   javac -proc:none -cp neqsim-118d9af.jar CharacterizationProbe.java
+//   java -cp .:neqsim-118d9af.jar CharacterizationProbe > captures/characterization_probe.tsv
 
 import neqsim.thermo.characterization.TBPfractionModel;
 import neqsim.thermo.characterization.TBPModelInterface;
@@ -29,27 +29,31 @@ public class CharacterizationProbe {
       double molarMass = cuts[i][0];
       double density = cuts[i][1];
       System.out.printf("# cut[%d] MW = %.15g g/mol, density = %.15g g/cm3%n", i, molarMass, density);
-      row("cut[" + i + "].tc", model.calcTC(molarMass, density));
-      row("cut[" + i + "].pc", model.calcPC(molarMass, density));
-      row("cut[" + i + "].tb", model.calcTB(molarMass, density));
-      row("cut[" + i + "].acentric", model.calcAcentricFactor(molarMass, density));
-      // `calcm` throws for the five models that do not use the cubic's alpha exponent, which is
-      // a statement the port owes rather than a gap in this probe: `isCalcm()` is what the caller
-      // reads, and it is false for exactly those.
-      if (model.isCalcm()) {
-        row("cut[" + i + "].calcm", model.calcm(molarMass, density));
-      } else {
-        System.out.printf("cut[%d].calcm = # not applicable (isCalcm false)%n", i);
+      try {
+        row("cut[" + i + "].tc", model.calcTC(molarMass, density));
+        row("cut[" + i + "].pc", model.calcPC(molarMass, density));
+        row("cut[" + i + "].tb", model.calcTB(molarMass, density));
+        row("cut[" + i + "].acentric", model.calcAcentricFactor(molarMass, density));
+        // `calcm` throws for the five models that do not use the cubic's alpha exponent, which is
+        // a statement the port owes rather than a gap in this probe: `isCalcm()` is what the caller
+        // reads, and it is false for exactly those.
+        if (model.isCalcm()) {
+          row("cut[" + i + "].calcm", model.calcm(molarMass, density));
+        } else {
+          System.out.printf("cut[%d].calcm = # not applicable (isCalcm false)%n", i);
+        }
+        row("cut[" + i + "].critical_volume", model.calcCriticalVolume(molarMass, density));
+        // **The models do not share one unit for `molarMass`, and `addTBPfraction` compensates per
+        // call site.** There the local is kg/mol, and it passes `molarMass * 1000.0` to
+        // `calcCriticalViscosity` (g/mol) but the bare `molarMass` to `calcParachorParameter`, which
+        // multiplies by 1000 inside. This probe works in g/mol throughout, so parachor takes the
+        // thousandth and the others do not.
+        row("cut[" + i + "].parachor", model.calcParachorParameter(molarMass / 1000.0, density));
+        row("cut[" + i + "].critical_viscosity", model.calcCriticalViscosity(molarMass, density));
+        row("cut[" + i + "].watson_k", model.calcWatsonCharacterizationFactor(molarMass, density));
+      } catch (RuntimeException refused) {
+        System.out.printf("# cut[%d] refused: %s%n", i, refused.getMessage());
       }
-      row("cut[" + i + "].critical_volume", model.calcCriticalVolume(molarMass, density));
-      // **The models do not share one unit for `molarMass`, and `addTBPfraction` compensates per
-      // call site.** There the local is kg/mol, and it passes `molarMass * 1000.0` to
-      // `calcCriticalViscosity` (g/mol) but the bare `molarMass` to `calcParachorParameter`, which
-      // multiplies by 1000 inside. This probe works in g/mol throughout, so parachor takes the
-      // thousandth and the others do not.
-      row("cut[" + i + "].parachor", model.calcParachorParameter(molarMass / 1000.0, density));
-      row("cut[" + i + "].critical_viscosity", model.calcCriticalViscosity(molarMass, density));
-      row("cut[" + i + "].watson_k", model.calcWatsonCharacterizationFactor(molarMass, density));
       System.out.println();
     }
   }

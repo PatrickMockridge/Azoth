@@ -8,8 +8,8 @@
 // is the probe that reaches them, and it builds the row the same way `extractComponents` does:
 // every component that is a TBP fraction or a plus fraction and carries a positive mole amount.
 //
-//   javac -proc:none -cp /path/to/neqsim-f0c7436.jar PseudoComponentDelumpingProbe.java
-//   java -cp .:/path/to/neqsim-f0c7436.jar PseudoComponentDelumpingProbe > captures/pseudo_component_delumping_probe.tsv
+//   javac -proc:none -cp /path/to/neqsim-118d9af.jar PseudoComponentDelumpingProbe.java
+//   java -cp .:/path/to/neqsim-118d9af.jar PseudoComponentDelumpingProbe > captures/pseudo_component_delumping_probe.tsv
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;

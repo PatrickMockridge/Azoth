@@ -19,8 +19,8 @@
 //     after `LumpingModel.generateLumpedComposition` has grouped it. That is a different id's
 //     number, and it is here because the two are easy to confuse.
 //
-//   javac -proc:none -cp /path/to/neqsim-f0c7436.jar PlusFractionProbe.java
-//   java -cp .:/path/to/neqsim-f0c7436.jar PlusFractionProbe > captures/plus_fraction_probe.tsv
+//   javac -proc:none -cp /path/to/neqsim-118d9af.jar PlusFractionProbe.java
+//   java -cp .:/path/to/neqsim-118d9af.jar PlusFractionProbe > captures/plus_fraction_probe.tsv
 
 import neqsim.thermo.characterization.Characterise;
 import neqsim.thermo.characterization.LumpingModelInterface;

@@ -132,27 +132,11 @@ cut[9].watson_k = 12.3088534124109
 # cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
 cut[10].mw = 1121.00000000000
 cut[10].density = 1.00000000000000
-cut[10].tc = 994.658850370848
-cut[10].pc = 15.4016795450655
-cut[10].tb = 1006.34005439028
-cut[10].acentric = -44.6358323245519
-cut[10].calcm = -7177.99524606000
-cut[10].critical_volume = 23808.7408707686
-cut[10].parachor = 2623199.30000000
-cut[10].critical_viscosity = 5.21406875668607e-05
-cut[10].watson_k = 12.1900575133568
+# cut[10] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRK, molecular weight 1121.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
 cut[11].mw = 2000.00000000000
 cut[11].density = 1.05000000000000
-cut[11].tc = 1090.85859361806
-cut[11].pc = 14.8606945509713
-cut[11].tb = 1222.55863129697
-cut[11].acentric = -5.64008208774161
-cut[11].calcm = -22945.2300325000
-cut[11].critical_volume = 4975.39396362750
-cut[11].parachor = 4680059.30000000
-cut[11].critical_viscosity = 6.69659309669646e-05
-cut[11].watson_k = 12.3877215474042
+# cut[11] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRK, molecular weight 2000.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # racketZ needs a flashed reference system and is not a function of (MW, density)

@@ -14,27 +14,27 @@ scale_deposition
  cooled_profile
   profile_size=11 pressure_size=11
     segment=0 temperature=333.15 pressure=100.0
-    segment=1 temperature=295.7630284790509 pressure=99.9607033961295
-    segment=2 temperature=293.18764045683355 pressure=99.93125976391863
-    segment=3 temperature=293.1423035510404 pressure=99.90247608621769
-    segment=4 temperature=293.1341132975394 pressure=99.87368993896372
-    segment=5 temperature=293.14159951262286 pressure=99.84489159378359
-    segment=6 temperature=293.13339840650065 pressure=99.81607692955471
-    segment=7 temperature=293.14157924182285 pressure=99.78725003532436
-    segment=8 temperature=293.13336715453545 pressure=99.75840660188211
-    segment=9 temperature=293.1415677292142 pressure=99.72955090610036
-    segment=10 temperature=293.13334463084226 pressure=99.7006786273677
+    segment=1 temperature=295.7635995610879 pressure=99.9606992759617
+    segment=2 temperature=293.18765945755393 pressure=99.93126686021785
+    segment=3 temperature=293.1423070305253 pressure=99.90249594440874
+    segment=4 temperature=293.13412010679804 pressure=99.87372259268822
+    segment=5 temperature=293.1416028889631 pressure=99.84493705274313
+    segment=6 temperature=293.1334050288429 pressure=99.8161351972232
+    segment=7 temperature=293.1415826223189 pressure=99.78732112145642
+    segment=8 temperature=293.133373785429 pressure=99.75849050957244
+    segment=9 temperature=293.14157111553163 pressure=99.72964764513358
+    segment=10 temperature=293.13335127311296 pressure=99.70078820085514
   cooled total_mass_kg=0.4647339094263216 max_thickness_mm=0.0060267532443246145 time_to_blockage_years=4148.170496866197 segments=11
     segment=0 si=0.013908764040233352 mass_kg=0.4647339094263216 thickness_mm=0.0060267532443246145
-    segment=1 si=-0.3134979056496238 mass_kg=0.0 thickness_mm=0.0
-    segment=2 si=-0.3384900821623057 mass_kg=0.0 thickness_mm=0.0
-    segment=3 si=-0.33890580225081696 mass_kg=0.0 thickness_mm=0.0
-    segment=4 si=-0.33895637758087044 mass_kg=0.0 thickness_mm=0.0
-    segment=5 si=-0.33885280183028277 mass_kg=0.0 thickness_mm=0.0
-    segment=6 si=-0.33890345297006963 mass_kg=0.0 thickness_mm=0.0
-    segment=7 si=-0.3387930190702319 mass_kg=0.0 thickness_mm=0.0
-    segment=8 si=-0.33884374657876604 mass_kg=0.0 thickness_mm=0.0
-    segment=9 si=-0.33873309028626875 mass_kg=0.0 thickness_mm=0.0
-    segment=10 si=-0.33878389436663964 mass_kg=0.0 thickness_mm=0.0
+    segment=1 si=-0.3134924144857825 mass_kg=0.0 thickness_mm=0.0
+    segment=2 si=-0.3384899028029352 mass_kg=0.0 thickness_mm=0.0
+    segment=3 si=-0.33890578870437454 mass_kg=0.0 thickness_mm=0.0
+    segment=4 si=-0.3389563446071284 mass_kg=0.0 thickness_mm=0.0
+    segment=5 si=-0.33885281593872374 mass_kg=0.0 thickness_mm=0.0
+    segment=6 si=-0.3389034484900478 mass_kg=0.0 thickness_mm=0.0
+    segment=7 si=-0.33879305980631147 mass_kg=0.0 thickness_mm=0.0
+    segment=8 si=-0.33884376869778365 mass_kg=0.0 thickness_mm=0.0
+    segment=9 si=-0.33873315766026785 mass_kg=0.0 thickness_mm=0.0
+    segment=10 si=-0.3387839430838694 mass_kg=0.0 thickness_mm=0.0
   no_calcite total_mass_kg=0.0 max_thickness_mm=0.0 time_to_blockage_years=Infinity segments=1
     segment=0 si=-5.547666164411428 mass_kg=0.0 thickness_mm=0.0

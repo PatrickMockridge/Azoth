@@ -3,8 +3,8 @@
 //
 // Compile and run from this directory:
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ZoneAnalysisProbe.java
-//     java -cp .:neqsim-f0c7436.jar ZoneAnalysisProbe > captures/zone_analysis_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar ZoneAnalysisProbe.java
+//     java -cp .:neqsim-118d9af.jar ZoneAnalysisProbe > captures/zone_analysis_probe.tsv
 //
 // `calculateZones` calls the permissive `calculate()`, not `calculateStrict()`. Each zone
 // overrides only the eight transport properties, runs the full rating, and restores them; the

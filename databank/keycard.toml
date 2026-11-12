@@ -12310,6 +12310,66 @@ unit = "1/K**2"
 value = 0.0
 unit = "1/K**3"
 
+[components.hso4-.Tc]
+value = 717.3
+unit = "K"
+
+[components.hso4-.Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components.hso4-.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.hso4-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.hso4-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.hso4-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.hso4-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.hso4-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.hso4-.ionic_charge]
+value = -1.0
+unit = "dimensionless"
+
+[components.hso4-.deshmukh_mather_diameter]
+value = 1.0
+unit = "angstrom"
+
+[components.hso4-.dielectric_1]
+value = 0.0
+unit = "dimensionless"
+
+[components.hso4-.dielectric_2]
+value = 0.0
+unit = "K"
+
+[components.hso4-.dielectric_3]
+value = 0.0
+unit = "1/K"
+
+[components.hso4-.dielectric_4]
+value = 0.0
+unit = "1/K**2"
+
+[components.hso4-.dielectric_5]
+value = 0.0
+unit = "1/K**3"
+
 [components."hydrochloric acid".Tc]
 value = 324.68
 unit = "K"

@@ -46,8 +46,8 @@ import neqsim.thermo.system.SystemPrEos;
  * `Z`. NeqSim's class is a third thing: SRK constants, an SRK-CPA fit and a PR cubic.
  *
  * <pre>
- * javac -proc:none -cp neqsim-f0c7436.jar PrCpaSubstitution.java
- * java -cp .:neqsim-f0c7436.jar PrCpaSubstitution
+ * javac -proc:none -cp neqsim-118d9af.jar PrCpaSubstitution.java
+ * java -cp .:neqsim-118d9af.jar PrCpaSubstitution
  * </pre>
  */
 public final class PrCpaSubstitution {

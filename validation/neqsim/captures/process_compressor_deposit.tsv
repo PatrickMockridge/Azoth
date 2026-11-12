@@ -31,7 +31,7 @@ efficiency_multiplier=0.77
 head_multiplier=0.7331640624999999
 
 machine_clean
-power_kw=5576.456857118875
+power_kw=5576.5361101064145
 polytropic_efficiency_out=0.6
 degradation_factor=1.0
 fouling_factor=0.0
@@ -40,7 +40,7 @@ machine_fouled_3kg
 inlet_volume_flow_m3_s=1.9067068584252902
 wetted_area_m2=0.254227581123372
 passage_half_height_m=0.019355728457755725
-power_kw=12255.180371306184
+power_kw=12255.51435347111
 polytropic_efficiency_out=0.317258240540486
 degradation_factor=0.5287637342341434
 fouling_factor=0.5023017313585125

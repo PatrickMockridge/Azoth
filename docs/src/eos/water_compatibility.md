@@ -73,5 +73,5 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `pvtsimulation/flowassurance/WaterCompatibilityScreener.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `pvtsimulation/flowassurance/WaterCompatibilityScreener.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/scale_family_probe.tsv` - the `water_compatibility` rows: an eleven-ratio seawater flood, the single ratio, the inert pH argument at 4 and 11, and a five-ratio grid whose worst case moves to 75 percent.

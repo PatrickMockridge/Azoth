@@ -4,12 +4,12 @@ in_cooling_valve_opening_percent=50.0
 in_outlet_temperature_K=308.15
 out_cooling_valve_opening_percent=50.0
 out_outlet_temperature_K=308.15
-out_duty_W_java=-323067.28168942
+out_duty_W_java=-323038.98495165876
 outlet_n=173.14578182246325
 outlet_P=50.0
 outlet_T=308.15
-outlet_h=384.6389581077152
-outlet_s=-30.13672381594042
+outlet_h=384.55270979727413
+outlet_s=-30.137019844210805
 outlet_z=methane:1.0
 
 cooler_configured_no_controller
@@ -18,12 +18,12 @@ in_cooling_valve_opening_percent=50.0
 in_outlet_temperature_K=308.15
 out_cooling_valve_opening_percent=50.0
 out_outlet_temperature_K=308.15
-out_duty_W_java=-323067.28168942
+out_duty_W_java=-323038.98495165876
 outlet_n=173.14578182246325
 outlet_P=50.0
 outlet_T=308.15
-outlet_h=384.6389581077152
-outlet_s=-30.13672381594042
+outlet_h=384.55270979727413
+outlet_s=-30.137019844210805
 outlet_z=methane:1.0
 
 cooler_configured_hotter_inlet
@@ -32,12 +32,12 @@ in_cooling_valve_opening_percent=50.0
 in_outlet_temperature_K=308.15
 out_cooling_valve_opening_percent=50.0
 out_outlet_temperature_K=308.9833333333333
-out_duty_W_java=-462538.50654017075
+out_duty_W_java=-462494.036730358
 outlet_n=173.14578182246325
 outlet_P=50.0
 outlet_T=308.9833333333333
-outlet_h=419.14169394342144
-outlet_s=-30.024907595747138
+outlet_h=419.0529973220411
+outlet_s=-30.025211558471355
 outlet_z=methane:1.0
 
 cooler_manual_100_step_1
@@ -46,12 +46,12 @@ in_cooling_valve_opening_percent=50.0
 in_outlet_temperature_K=308.15
 out_cooling_valve_opening_percent=64.28571428571428
 out_outlet_temperature_K=307.33237524079044
-out_duty_W_java=-328929.8734058788
+out_duty_W_java=-328901.1640734672
 outlet_n=173.14578182246325
 outlet_P=50.0
 outlet_T=307.33237524079044
-outlet_h=350.77967690114195
-outlet_s=-30.246749071156977
+outlet_h=350.6958115228517
+outlet_s=-30.247037356137096
 outlet_z=methane:1.0
 
 cooler_manual_100_step_2
@@ -60,12 +60,12 @@ in_cooling_valve_opening_percent=64.28571428571428
 in_outlet_temperature_K=307.33237524079044
 out_cooling_valve_opening_percent=74.48979591836734
 out_outlet_temperature_K=306.2364540177012
-out_duty_W_java=-336789.9670992062
+out_duty_W_java=-336760.709877876
 outlet_n=173.14578182246325
 outlet_P=50.0
 outlet_T=306.2364540177012
-outlet_h=305.38386297720365
-outlet_s=-30.394722254370237
+outlet_h=305.3031619204049
+outlet_s=-30.395000224893014
 outlet_z=methane:1.0
 
 cooler_manual_100
@@ -74,12 +74,12 @@ in_cooling_valve_opening_percent=50.0
 in_outlet_temperature_K=308.15
 out_cooling_valve_opening_percent=64.28571428571428
 out_outlet_temperature_K=307.33237524079044
-out_duty_W_java=-328929.8734058788
+out_duty_W_java=-328901.1640734672
 outlet_n=173.14578182246325
 outlet_P=50.0
 outlet_T=307.33237524079044
-outlet_h=350.77967690114195
-outlet_s=-30.246749071156977
+outlet_h=350.6958115228517
+outlet_s=-30.247037356137096
 outlet_z=methane:1.0
 
 cooler_manual_0
@@ -88,12 +88,12 @@ in_cooling_valve_opening_percent=50.0
 in_outlet_temperature_K=308.15
 out_cooling_valve_opening_percent=35.714285714285715
 out_outlet_temperature_K=309.36498572284233
-out_duty_W_java=-314357.67138525937
+out_duty_W_java=-314329.993856539
 outlet_n=173.14578182246325
 outlet_P=50.0
 outlet_T=309.36498572284233
-outlet_h=434.9411382271892
-outlet_s=-29.973805503475926
+outlet_h=434.8513136873161
+outlet_s=-29.974113114364666
 outlet_z=methane:1.0
 
 cooler_cold_feed_zero_taus
@@ -106,8 +106,8 @@ out_duty_W_java=0.0
 outlet_n=173.14578182246325
 outlet_P=50.0
 outlet_T=283.15
-outlet_h=-656.9218315245427
-outlet_s=-33.66216549681345
+outlet_h=-656.9433582268603
+outlet_s=-33.66224287256926
 outlet_z=methane:1.0
 
 cooler_manual_150_clamped
@@ -116,12 +116,12 @@ in_cooling_valve_opening_percent=50.0
 in_outlet_temperature_K=308.15
 out_cooling_valve_opening_percent=64.28571428571428
 out_outlet_temperature_K=307.33237524079044
-out_duty_W_java=-328929.8734058788
+out_duty_W_java=-328901.1640734672
 outlet_n=173.14578182246325
 outlet_P=50.0
 outlet_T=307.33237524079044
-outlet_h=350.77967690114195
-outlet_s=-30.246749071156977
+outlet_h=350.6958115228517
+outlet_s=-30.247037356137096
 outlet_z=methane:1.0
 
 cooler_manual_negative_clamped
@@ -130,12 +130,12 @@ in_cooling_valve_opening_percent=50.0
 in_outlet_temperature_K=308.15
 out_cooling_valve_opening_percent=35.714285714285715
 out_outlet_temperature_K=309.36498572284233
-out_duty_W_java=-314357.67138525937
+out_duty_W_java=-314329.993856539
 outlet_n=173.14578182246325
 outlet_P=50.0
 outlet_T=309.36498572284233
-outlet_h=434.9411382271892
-outlet_s=-29.973805503475926
+outlet_h=434.8513136873161
+outlet_s=-29.974113114364666
 outlet_z=methane:1.0
 
 cooler_ntu_clamp_low_flow
@@ -144,12 +144,12 @@ in_cooling_valve_opening_percent=100.0
 in_outlet_temperature_K=308.15
 out_cooling_valve_opening_percent=100.0
 out_outlet_temperature_K=305.6500000206115
-out_duty_W_java=-3409.9713051879057
+out_duty_W_java=-3409.6758251460647
 outlet_n=1.7314578182246327
 outlet_P=50.0
 outlet_T=305.6500000206115
-outlet_h=281.0854747906628
-outlet_s=-30.47414351353035
+outlet_h=281.00645314442164
+outlet_s=-30.47441599476824
 outlet_z=methane:1.0
 
 cooler_same_uuid_first

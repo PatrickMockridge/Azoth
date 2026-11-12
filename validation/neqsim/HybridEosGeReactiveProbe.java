@@ -15,8 +15,8 @@
 // element and the net charge are conserved, and that the calcite scale potential is finite,
 // positive and repeatable.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar HybridEosGeReactiveProbe.java
-//     java -cp .:neqsim-f0c7436.jar HybridEosGeReactiveProbe > captures/hybrid_eos_ge_reactive_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar HybridEosGeReactiveProbe.java
+//     java -cp .:neqsim-118d9af.jar HybridEosGeReactiveProbe > captures/hybrid_eos_ge_reactive_probe.tsv
 
 import neqsim.chemicalreactions.ChemicalReactionOperations;
 import neqsim.thermo.component.ComponentInterface;

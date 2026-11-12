@@ -26,8 +26,8 @@
 // viscous than pure water - `8.4026e-4` against `8.5510e-4` - which is the wrong direction.
 // That is why `eos.aqueous_viscosity` refuses a phase carrying an ion.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar AqueousViscProbe.java
-//     java -cp .:neqsim-f0c7436.jar AqueousViscProbe > captures/aqueous_viscosity_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar AqueousViscProbe.java
+//     java -cp .:neqsim-118d9af.jar AqueousViscProbe > captures/aqueous_viscosity_probe.tsv
 
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPrEos;

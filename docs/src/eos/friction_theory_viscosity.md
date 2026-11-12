@@ -96,4 +96,4 @@ declared checks *that call* could not evaluate.
 - Quinones-Cisneros, S. E.; Firoozabadi, A. (2000). "Friction theory for viscosity modeling: generalization of the corresponding states principle." AIChE Journal 46(4), 16-23.
 - Chung, T.-H.; Ajlan, M.; Lee, L. L.; Starling, K. E. (1988). "Generalized multiparameter correlation for nonpolar and polar fluid transport properties." Industrial & Engineering Chemistry Research 27(4), 671-679.
 - Wilke, C. R. (1950). "A viscosity equation for gas mixtures." The Journal of Chemical Physics 18(4), 517-519.
-- NeqSim master, `physicalproperties/methods/commonphasephysicalproperties/viscosity/FrictionTheoryViscosityMethod.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `physicalproperties/methods/commonphasephysicalproperties/viscosity/FrictionTheoryViscosityMethod.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.

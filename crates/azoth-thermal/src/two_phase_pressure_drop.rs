@@ -1,7 +1,7 @@
 //! `thermal.two_phase_pressure_drop` - Friedel and Muller-Steinhagen-Heck.
 //!
 //! Transcribed from `process/mechanicaldesign/heatexchanger/TwoPhasePressureDrop.java` at
-//! NeqSim `f0c7436c69`: the Friedel frictional gradient and its total and quality-averaged
+//! NeqSim `118d9aff`: the Friedel frictional gradient and its total and quality-averaged
 //! drops, the Muller-Steinhagen-Heck gradient, and the gravitational and acceleration terms
 //! of a homogeneous two-phase mixture.
 //!

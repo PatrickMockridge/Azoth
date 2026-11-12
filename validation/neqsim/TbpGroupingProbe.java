@@ -10,8 +10,8 @@
 // are worse: `PlusCharacterize`'s returns `true` and computes nothing, and `TBPCharacterize`'s
 // is reachable only from inside its own package, where nothing calls it.
 //
-//   javac -proc:none -cp /path/to/neqsim-f0c7436.jar TbpGroupingProbe.java
-//   java -cp .:/path/to/neqsim-f0c7436.jar TbpGroupingProbe > captures/tbp_grouping_probe.tsv
+//   javac -proc:none -cp /path/to/neqsim-118d9af.jar TbpGroupingProbe.java
+//   java -cp .:/path/to/neqsim-118d9af.jar TbpGroupingProbe > captures/tbp_grouping_probe.tsv
 
 import neqsim.thermo.phase.Phase;
 import neqsim.thermo.system.SystemInterface;

@@ -4,7 +4,7 @@
 
 `hydraulics.crane_k_factors`
 
-Total fitting resistance coefficient from a list of fittings and their equivalent lengths. Use it to add valve and fitting losses to a line pressure-drop calculation.
+Total fitting resistance coefficient from a list of fittings and their equivalent lengths. The coefficients are equivalent-length engineering defaults, cited but not verified against Crane TP-410.
 
 ## Equation
 
@@ -22,7 +22,7 @@ K = f_t * sum(n_ld for each fitting)
 
 **Crane TP-410**
 
-2013
+2013 method; the coefficient set is NeqSim's equivalent-length default, not a verified Crane transcription
 
 ## Inputs
 
@@ -60,6 +60,7 @@ satisfy for the result to mean what it says.
 - fittings are separated by enough straight pipe that their losses do not interact
 - the fitting and the pipe are the same nominal size
 - single-phase, incompressible flow
+- the coefficients are NeqSim's equivalent-length defaults, not a verified transcription of Crane TP-410; design use requires a licensed copy of the standard or manufacturer data
 
 
 
@@ -78,7 +79,7 @@ Source: derived from the equation above
 
 Relative tolerance: `1e-09`
 
-A 90 degree standard elbow plus a fully open gate valve, with f_t = 0.018. n_ld(90_elbow) = 30 <- ESTIMATED DUMMY COEFFICIENT n_ld(gate_valve_open) = 8 <- ESTIMATED DUMMY COEFFICIENT sum(n_ld) = 38 K = f_t * sum(n_ld) = 0.018 * 38 = 0.684
+A 90 degree standard elbow plus a fully open gate valve, with f_t = 0.018. n_ld(90_elbow) = 30 <- NeqSim default, unverified n_ld(gate_valve_open) = 8 <- NeqSim default, unverified sum(n_ld) = 38 K = f_t * sum(n_ld) = 0.018 * 38 = 0.684
 
 
 ## Tests
@@ -87,13 +88,14 @@ A 90 degree standard elbow plus a fully open gate valve, with f_t = 0.018. n_ld(
 |---|---|---|
 | `elbow_and_gate_valve_worked_example` | `worked_example` | the example above; active |
 | `single_fitting_matches_coefficient` | `reference` | an independent value; active |
+| `expanded_catalogue_tee_branch` | `reference` | an independent value; active |
 | `scaling_is_linear_in_f_t` | `property` | symmetry; active |
 
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 3 declared, every one run
+- Tests: 4 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`
@@ -116,7 +118,7 @@ declared checks *that call* could not evaluate.
 ## References
 
 - Crane Technical Paper No. 410, "Flow of Fluids Through Valves, Fittings and Pipe" (2013).
-- The coefficients in data/fittings/crane_k_factors.csv are estimated dummy values for software testing, with no source.
+- NeqSim master (118d9aff), `process/equipment/pipeline/Fittings.java` `STANDARD_LD_VALUES`, Apache-2.0: equivalent-length defaults, not a verified Crane TP-410 transcription. The one azoth-only row, `plug_valve_straightway`, remains an estimated dummy.
 
 
 ---

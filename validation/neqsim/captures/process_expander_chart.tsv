@@ -14,11 +14,11 @@ head_04_10=32.0
 head_095_10=34.25
 
 chart_with_reference
-reference_sound_speed=415.419842626026
-reference_system_sound_speed=830.839685252052
-reference_phase_sound_speed=415.419842626026
-process_sound_speed=459.52905504799423
-process_phase_sound_speed=229.764527523997
-head_ref_fluid=148.00000000000003
-head_co2_fluid=45.27445202145469
+reference_sound_speed=415.4258356875085
+reference_system_sound_speed=830.851671375017
+reference_phase_sound_speed=415.4258356875085
+process_sound_speed=459.53969898876096
+process_phase_sound_speed=229.76984949438037
+head_ref_fluid=148.0
+head_co2_fluid=45.27524306668459
 

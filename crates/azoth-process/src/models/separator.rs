@@ -343,7 +343,7 @@ pub fn separator(
         let load_factor = match design_gas_load_factor {
             Some(value) => value.value,
             // The shipped design database's `GasLoadFactor` midpoint, which `autoSize` reads.
-            None if auto => 0.107,
+            None if auto => 0.137,
             None => {
                 return Err(AzothError::invalid_input(
                     "design_gas_load_factor",
@@ -354,23 +354,28 @@ pub fn separator(
         let inputs = DesignInputs {
             gas_load_factor: load_factor,
             // The database's `Fg` midpoint for the same standard.
-            fg: fg.unwrap_or(if auto { 0.5 } else { 0.8 }),
+            fg: fg.unwrap_or(0.8),
             // `autoSize(safetyFactor)` sets the volume factor; its no-argument form is 1.2.
             volume_safety_factor: if auto {
                 safety_factor.unwrap_or(1.2)
             } else {
                 volume_safety_factor.unwrap_or(1.0)
             },
-            // `readDesignSpecifications` hard-sets `120` s in the `autoSize` path.
-            retention_time_s: retention_time
-                .map_or(if auto { 120.0 } else { 60.0 }, |value| value.value),
+            // The database's `LiquidRetentionTime` is 150 s; `autoSize` keeps 120 s until
+            // `sizeForLiquidHoldup` floors it by the minimum.
+            retention_time_s: retention_time.map_or(150.0, |value| value.value),
             max_operation_pressure: max_operation_pressure.unwrap_or(pascals(100.0e5)),
             // The spec declares pascals; the ASME formula is written in MPa.
-            allowable_stress: allowable_stress.unwrap_or(425.0e6) / 1.0e6,
+            allowable_stress: allowable_stress.unwrap_or(95.147650602e6) / 1.0e6,
             joint_efficiency: joint_efficiency.unwrap_or(1.0),
             // The spec declares millimetres; the kernel's field is millimetres too, so a
             // converted value arrives in metres and is scaled back.
             corrosion_allowance_mm: corrosion_allowance.unwrap_or(0.0) * 1000.0,
+            max_gas_velocity: 3.0,
+            foam_allowance_factor: 1.35,
+            min_oil_retention_s: 120.0,
+            min_water_retention_s: 180.0,
+            aqueous: false,
         };
         Some(design_vessel(
             &vapour,

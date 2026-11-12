@@ -1,13 +1,13 @@
 # Probe captures
 
 A **capture** is a probe's standard output, committed verbatim. The probes live one
-directory up, are compiled and run by hand against the pinned `neqsim-f0c7436.jar`, and what
+directory up, are compiled and run by hand against the pinned `neqsim-118d9af.jar`, and what
 they print is what lands here.
 
 ```bash
 cd validation/neqsim
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar CpaSweep.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar CpaSweep > captures/cpa_sweep.tsv
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar CpaSweep.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar CpaSweep > captures/cpa_sweep.tsv
 ```
 
 **Eight captures are run against the pin plus the fixes that moved them.**
@@ -40,8 +40,8 @@ header why - the last one for `TPmultiflash.multiPhaseTest`, which is the flag i
 chain of seeding hinges on and which no probe outside the package can read.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar -d . PcsaftCompositionProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar neqsim.thermo.component.PcsaftCompositionProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar -d . PcsaftCompositionProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar neqsim.thermo.component.PcsaftCompositionProbe \
   > captures/pcsaft_composition_probe.tsv
 ```
 
@@ -55,8 +55,8 @@ builds a new fluid**, because `setMultiPhaseCheck(true)` is a system flag and a 
 makes the next `TPflash` a multiflash rather than the two-phase seed the probe starts from.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar -d . TpMultiflashSeedProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar neqsim.thermodynamicoperations.flashops.TpMultiflashSeedProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar -d . TpMultiflashSeedProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar neqsim.thermodynamicoperations.flashops.TpMultiflashSeedProbe \
   > captures/tp_multiflash_seed_probe.tsv
 ```
 
@@ -73,7 +73,7 @@ takes no argument needs one too**, because the recipe is also what names the cap
 writes - `IapwsIf97Probe` prints its whole state grid and reads nothing.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar IapwsIf97Probe > captures/iapws_if97_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar IapwsIf97Probe > captures/iapws_if97_probe.tsv
 ```
 
 **`SurfaceTensionProbe` records model 0 and the two calculators it installs.** With no
@@ -88,10 +88,10 @@ number alone would hide.
 
 ```bash
 cd validation/neqsim
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar SurfaceTensionProbe.java TransportMethodsProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar SurfaceTensionProbe > captures/surface_tension_probe.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar SurfaceTensionProbe solvers > captures/surface_tension_solvers_probe.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TransportMethodsProbe > captures/transport_methods_probe.tsv
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar SurfaceTensionProbe.java TransportMethodsProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar SurfaceTensionProbe > captures/surface_tension_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar SurfaceTensionProbe solvers > captures/surface_tension_solvers_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar TransportMethodsProbe > captures/transport_methods_probe.tsv
 ```
 
 **`LgtProfileProbe` records the gradient-theory profile behind model 2, not only its final
@@ -106,9 +106,9 @@ it is why the profile does not stop at the loop.
 
 ```bash
 cd validation/neqsim
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar LgtProfileProbe.java LgtLocalProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar LgtProfileProbe > captures/lgt_profile_probe.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar LgtLocalProbe > captures/lgt_local_probe.tsv
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar LgtProfileProbe.java LgtLocalProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar LgtProfileProbe > captures/lgt_profile_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar LgtLocalProbe > captures/lgt_local_probe.tsv
 ```
 
 **`GtSimpleProfileProbe` records the profile `GTSurfaceTensionSimple`'s inner Newton
@@ -119,9 +119,9 @@ refuses that state.
 
 ```bash
 cd validation/neqsim
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar GtSimpleProfileProbe.java GtSimpleInitialProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar GtSimpleProfileProbe > captures/gt_simple_profile_probe.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar GtSimpleInitialProbe > captures/gt_simple_initial_probe.tsv
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar GtSimpleProfileProbe.java GtSimpleInitialProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar GtSimpleProfileProbe > captures/gt_simple_profile_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar GtSimpleInitialProbe > captures/gt_simple_initial_probe.tsv
 ```
 
 **`GeHenryProbe` measures `ComponentGE.fugcoef`'s two reference states.** It reads nothing and
@@ -135,8 +135,8 @@ so the raw path can be checked against the intended one.
 
 ```bash
 cd validation/neqsim
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar GeHenryProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar GeHenryProbe > captures/ge_henry_probe.tsv
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar GeHenryProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar GeHenryProbe > captures/ge_henry_probe.tsv
 ```
 
 **`BrineProbe` prints the electrolyte-CPA phase's layers and then runs the four brine
@@ -150,7 +150,7 @@ count of the moment, so the other order throws `Index 4 out of bounds for length
 `calcWij`.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar BrineProbe > captures/brine_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar BrineProbe > captures/brine_probe.tsv
 ```
 
 **`ReactiveBrineProbe` carries what that capture does not: the nine species and the residuals.**
@@ -162,13 +162,13 @@ from the pass *before*, and on the first pass that accessor answers `NaN` - whic
 that has solved nothing cannot be accepted.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ReactiveBrineProbe > captures/reactive_brine_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ReactiveBrineProbe > captures/reactive_brine_probe.tsv
 ```
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PcsaftProbe 150 50 methane 1 > captures/pcsaft_probe_methane_150_50.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PcsaftProbe 300 100 propane 1 > captures/pcsaft_probe_propane_300_100.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PcsaftProbe 400 50 methane 1 > captures/pcsaft_probe_methane_400_50.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar PcsaftProbe 150 50 methane 1 > captures/pcsaft_probe_methane_150_50.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar PcsaftProbe 300 100 propane 1 > captures/pcsaft_probe_propane_300_100.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar PcsaftProbe 400 50 methane 1 > captures/pcsaft_probe_methane_400_50.tsv
 ```
 
 **`ProcessProbe` takes a unit operation's name and prints that unit operation's inlet and
@@ -176,22 +176,22 @@ outlet on the palette's record**, so one recipe per unit operation and one captu
 is the only probe here that drives `neqsim.process` rather than `neqsim.thermo`.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pump > captures/process_pump.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe splitter > captures/process_splitter.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe splitter_capacity \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe pump > captures/process_pump.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe splitter > captures/process_splitter.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe splitter_capacity \
   > captures/process_splitter_capacity.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe splitter_mechanical_design \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe splitter_mechanical_design \
   > captures/process_splitter_mechanical_design.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe mixer > captures/process_mixer.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator > captures/process_separator.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve > captures/process_throttling_valve.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger > captures/process_heat_exchanger.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe stream > captures/process_stream_properties.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe column_solvers > captures/process_column_solvers.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe column_efficiency \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe mixer > captures/process_mixer.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe separator > captures/process_separator.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe throttling_valve > captures/process_throttling_valve.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe heat_exchanger > captures/process_heat_exchanger.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe stream > captures/process_stream_properties.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe column > captures/process_column.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe column_solvers > captures/process_column_solvers.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe column_efficiency \
   > captures/process_column_efficiency.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe column_divergence \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe column_divergence \
   > captures/process_column_divergence.tsv
 ```
 
@@ -202,8 +202,8 @@ the class perturbs each side by `delta_t`, estimates its capacity from the entha
 sets the side with the larger swing and closes the other by `PHflash`.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger_delta_t \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe heat_exchanger_delta_t \
   > captures/process_heat_exchanger_delta_t.tsv
 ```
 
@@ -225,8 +225,8 @@ class's own: a multiphase feed, a capacity clone across a phase transition, and 
 configuration checks.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger_rating \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe heat_exchanger_rating \
   > captures/process_heat_exchanger_rating.tsv
 ```
 
@@ -241,8 +241,8 @@ and `calculateStrict()` are printed where they disagree: the permissive path lea
 the strict one throws.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ThermalRatingProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ThermalRatingProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ThermalRatingProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ThermalRatingProbe \
   > captures/thermal_rating_probe.tsv
 ```
 
@@ -257,8 +257,8 @@ state for each of the three critical mechanisms. The degenerate rows print the c
 states at the boundary instead.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TubeVibrationProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TubeVibrationProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar TubeVibrationProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar TubeVibrationProbe \
   > captures/tube_vibration_probe.tsv
 ```
 
@@ -273,8 +273,8 @@ a per-shell P1**, and an undefined conversion answers 1.0 rather than zero — w
 the cross row reads 1.0 at two passes.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar LmtdCorrectionProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar LmtdCorrectionProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar LmtdCorrectionProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar LmtdCorrectionProbe \
   > captures/lmtd_correction_probe.tsv
 ```
 
@@ -288,8 +288,8 @@ zero** — the clamp sends `x` to one and both terms vanish — and a quality be
 to zero and answers the liquid-only coefficient.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ShahCondensationProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ShahCondensationProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ShahCondensationProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ShahCondensationProbe \
   > captures/shah_condensation_probe.tsv
 ```
 
@@ -303,8 +303,8 @@ each case pins. **The boiling quality clamp is `[0.001, 0.999]`**, unlike the co
 correlation's `[0, 1]`.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar BoilingHeatTransferProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar BoilingHeatTransferProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar BoilingHeatTransferProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar BoilingHeatTransferProbe \
   > captures/boiling_heat_transfer_probe.tsv
 ```
 
@@ -322,8 +322,8 @@ direction-symmetric because the class takes the absolute value of the Simpson su
 span. A zero flux answers zero for every flow term and leaves the gravitational gradient.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TwoPhasePressureDropProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TwoPhasePressureDropProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar TwoPhasePressureDropProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar TwoPhasePressureDropProbe \
   > captures/two_phase_pressure_drop_probe.tsv
 ```
 
@@ -340,8 +340,8 @@ inside the bracket. The three-hour Euler row pins the stateful `advanceTime` pat
 analytical one.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar FoulingModelProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar FoulingModelProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar FoulingModelProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar FoulingModelProbe \
   > captures/fouling_model_probe.tsv
 ```
 
@@ -356,8 +356,8 @@ so both parameters are carried and unread; the laminar branches read neither Rey
 Prandtl number.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TubeInsertProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TubeInsertProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar TubeInsertProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar TubeInsertProbe \
   > captures/tube_insert_probe.tsv
 ```
 
@@ -374,8 +374,8 @@ the recommendation itself can return - makes `getConfiguration` answer null, so 
 builds `AJW` instead.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar TemaStandardProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TemaStandardProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar TemaStandardProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar TemaStandardProbe \
   > captures/tema_standard_probe.tsv
 ```
 
@@ -401,8 +401,8 @@ the capture marks them as the class's own unanswered answers. The strict entry p
 for all eight refusal states, and the messages are in the `strict_refusals.*` keys.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ZoneAnalysisProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ZoneAnalysisProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ZoneAnalysisProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ZoneAnalysisProbe \
   > captures/zone_analysis_probe.tsv
 ```
 
@@ -429,8 +429,8 @@ The LMTD falls back to `max(|dt1|,|dt2|)` when either endpoint difference is non
 and to the arithmetic mean when the two differ by less than 0.01 K.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar IncrementalZoneAnalysisProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar IncrementalZoneAnalysisProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar IncrementalZoneAnalysisProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar IncrementalZoneAnalysisProbe \
   > captures/incremental_zone_analysis_probe.tsv
 ```
 
@@ -460,8 +460,8 @@ estimate rather than the reported UHX thickness, and `calculate()` twice duplica
 `appliedStandards`.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ShellAndTubeDesignProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ShellAndTubeDesignProbe \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ShellAndTubeDesignProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ShellAndTubeDesignProbe \
   > captures/shell_and_tube_design_probe.tsv
 ```
 
@@ -476,8 +476,8 @@ clone-and-flash lands its enthalpy elsewhere; the class's `duty` field stays zer
 which is what the estimate reads.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger_mechanical \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe heat_exchanger_mechanical \
   > captures/process_heat_exchanger_mechanical_design.tsv
 ```
 
@@ -497,8 +497,8 @@ side answers, a two-phase side answers, and `calculateSteadyState=false` throws 
 `NullPointerException` because `Heater.runTransient` reads its single-stream `outStream`.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger_transient \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe heat_exchanger_transient \
   > captures/process_heat_exchanger_transient.tsv
 ```
 
@@ -513,8 +513,8 @@ steps pin the state contract, and the same-UUID row is evidence of the class's p
 which a one-step id keeps outside. `cooler_invalid_design` is the class's own refusal.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe cooler_transient \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe cooler_transient \
   > captures/process_cooler_transient.tsv
 ```
 
@@ -524,12 +524,12 @@ Three captures on `CompressorDepositTest`'s machine: the polytropic branch, the
 compression-ratio and fixed-power modes, and the deposit model with its run-time effect.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_polytropic \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe compressor_polytropic \
   > captures/process_compressor_polytropic.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_modes \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe compressor_modes \
   > captures/process_compressor_modes.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_deposit \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe compressor_deposit \
   > captures/process_compressor_deposit.tsv
 ```
 
@@ -550,7 +550,7 @@ What it does pin to its own numbers is the resolution the override reads, printe
 `tray_murphree_efficiency=` and `component_murphree_efficiency=`.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe absorber_efficiency \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe absorber_efficiency \
   > captures/process_absorber_efficiency.tsv
 ```
 
@@ -565,7 +565,7 @@ This capture is the *measurement* behind this port's refusal to carry the pair, 
 a state.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe column_tear \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe column_tear \
   > captures/process_column_tear.tsv
 ```
 
@@ -601,7 +601,7 @@ vapour's and the liquid's density, the liquid's viscosity, and the interphase su
 plus the calculator's own verdicts beside the column's.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe packed_column \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe packed_column \
   > captures/process_packed_column.tsv
 ```
 
@@ -628,7 +628,7 @@ reads - the two mass flows, the four transport properties, the two diffusivities
 packing geometry - so this probe states them and prints both sides.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PackingProbe > captures/packing_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar PackingProbe > captures/packing_probe.tsv
 ```
 
 **`PackingProbe size` is the second capture it writes, and the one the sizing path needs.** The
@@ -643,7 +643,7 @@ untouched - and **the light and high-liquid rows share a flooding velocity to th
 which is the Eckert fit's `FLV` clamped at its ceiling of `5` on both.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PackingProbe size \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar PackingProbe size \
   > captures/packing_sizing_probe.tsv
 ```
 
@@ -671,7 +671,7 @@ at that same state, a load above flood and a load where weeping trips, the weepi
 are not all one diameter's.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TrayHydraulicsProbe > captures/tray_hydraulics_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar TrayHydraulicsProbe > captures/tray_hydraulics_probe.tsv
 ```
 
 **Two behaviours the rows carry that a single state would not show.** A `bubble-cap` tray's minimum
@@ -696,7 +696,7 @@ three rows whose *outlet* is reflashed - because the outlet is what both familie
 on a solved `PackedColumn`, whose two diameters are not one.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe capacity > captures/process_column_capacity.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe capacity > captures/process_column_capacity.tsv
 ```
 
 **Five things the rows carry that one row would not.** `getPhase(0)` of an outlet is not the phase
@@ -753,7 +753,7 @@ class `DistillationColumn.updatePressureProfileFromHydraulics` builds inside its
 `hydraulics.tray_hydraulics` is its arithmetic rather than its report.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe designer > captures/process_internals_designer.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe designer > captures/process_internals_designer.tsv
 ```
 
 Seven rows: the binary column at the designer's own defaults, at the other two tray types, at a
@@ -782,7 +782,7 @@ profile. Six rows: the captured binary column with the coupling off and on, on a
 tolerance and under another internals type, and the lean-oil absorber with it off and on.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe coupling > captures/process_hydraulic_coupling.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe coupling > captures/process_hydraulic_coupling.tsv
 ```
 
 **The flag does not gate the coupling alone.** `hasActiveColumnTearVariables` is
@@ -814,60 +814,60 @@ lean-oil absorber. **No capture in this directory held the class**, which is 1,3
 public surface of forty-odd getters.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe mechanical > captures/process_column_mechanical_design.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe reactor_mechanical \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe mechanical > captures/process_column_mechanical_design.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe reactor_mechanical \
   > captures/process_reactor_mechanical_design.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe gibbs_algorithms \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe gibbs_algorithms \
   > captures/process_gibbs_algorithms.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe valve_sizing \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe valve_sizing \
   > captures/process_valve_sizing.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe filter_models \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe filter_models \
   > captures/process_filter_models.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe filter_loading \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe filter_loading \
   > captures/process_filter_loading.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe filter_dynamic \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe filter_dynamic \
   > captures/process_filter_dynamic.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe filter_mechanical_design \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe filter_mechanical_design \
   > captures/process_filter_mechanical_design.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_instruments \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe heater_instruments \
   > captures/process_heater_instruments.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_electrical \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe heater_electrical \
   > captures/process_heater_electrical.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_vfd \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe heater_vfd \
   > captures/process_heater_vfd.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_utility \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe heater_utility \
   > captures/process_heater_utility.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe heater_mechanical \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe heater_mechanical \
   > captures/process_heater_mechanical_design.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pipe_modes \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe pipe_modes \
   > captures/process_pipe_modes.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_curve \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe compressor_curve \
   > captures/process_compressor_curve.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_map_lookup \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe compressor_map_lookup \
   > captures/process_compressor_map_lookup.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_khader \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe compressor_khader \
   > captures/process_compressor_khader.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe compressor_speed_solve \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe compressor_speed_solve \
   > captures/process_compressor_speed_solve.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_steps \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe expander_steps \
   > captures/process_expander_steps.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_capacity \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe expander_capacity \
   > captures/process_expander_capacity.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_power_modes \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe expander_power_modes \
   > captures/process_expander_power_modes.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe expander_chart \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe expander_chart \
   > captures/process_expander_chart.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe turbo_expander \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe turbo_expander \
   > captures/process_turbo_expander.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe map_turbo_expander \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe map_turbo_expander \
   > captures/process_map_turbo_expander.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe equilibrium_sound_speed \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe equilibrium_sound_speed \
   > captures/process_equilibrium_sound_speed.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe anti_surge \
   > captures/process_anti_surge.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe sound_speed \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe sound_speed \
   > captures/process_sound_speed.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe pump_curve \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe pump_curve \
   > captures/process_pump_curve.tsv
 ```
 
@@ -1212,7 +1212,7 @@ would be evidence of nothing. It parses the `NAME` column quote-aware, since nam
 inside them, and its capture is the sorted list of the names that match.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar WaterCpSentinel > captures/water_cp_sentinel.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar WaterCpSentinel > captures/water_cp_sentinel.tsv
 ```
 
 **`ProcessProbe rate_based` runs every state on two cubics.** The probe states an iteration cap
@@ -1224,7 +1224,7 @@ and `teg_circulation` are `SystemSrkCPAstatoil` with mixing rule 10, which PR ca
 represent, so they are evidence for a refusal rather than an oracle for a state.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe rate_based \
   > captures/process_rate_based_packed_column.tsv
 ```
 
@@ -1238,7 +1238,7 @@ liquid one is `0.6978956` rather than `0.698` because the base `kLa` moved `1.49
 two converged states.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based_billet \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe rate_based_billet \
   > captures/process_rate_based_billet.tsv
 ```
 
@@ -1256,7 +1256,7 @@ the norm is `30.5` against `1e-5`. **That test asserts finiteness and never conv
 the Newton at two iterations and removes the homotopy - and its companion caps them at one.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based_solvers \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe rate_based_solvers \
   > captures/process_rate_based_solvers.tsv
 ```
 
@@ -1298,9 +1298,9 @@ last two compose the first, and both inert pH arguments are proven inert by runn
 state twice.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ScalePredictionProbe > captures/scale_prediction_probe.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PitzerScaleActivityProbe > captures/pitzer_scale_activity_probe.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ScaleFamilyProbe > captures/scale_family_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ScalePredictionProbe > captures/scale_prediction_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar PitzerScaleActivityProbe > captures/pitzer_scale_activity_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ScaleFamilyProbe > captures/scale_family_probe.tsv
 ```
 
 **The hydrate group's two probes** record the Pitzer-brine saturation the hybrid EoS/GE
@@ -1312,8 +1312,8 @@ the same three salts. The fluid is the upstream test's one-kilogram water basis,
 PHREEQC CO2-chloride parameters at its zero zeta map.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PitzerHydrateProbe > captures/pitzer_hydrate_probe.tsv
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PitzerHydrateSalinityProbe > captures/pitzer_hydrate_salinity_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar PitzerHydrateProbe > captures/pitzer_hydrate_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar PitzerHydrateSalinityProbe > captures/pitzer_hydrate_salinity_probe.tsv
 ```
 
 **The process-scale group's probe** records the five process-chemistry scale calculators:
@@ -1327,7 +1327,7 @@ the `ScaleControlAssessor` over the RCA and skill states, the absent-scale NaN, 
 identity and the 0.999 efficiency cap.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessScaleProbe > captures/process_scale_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessScaleProbe > captures/process_scale_probe.tsv
 ```
 
 **The stream analyser probe** records `StreamScaleAnalyzer` on the equilibrium capture's own
@@ -1338,7 +1338,7 @@ row rather than moving it. Every row prints the per-mineral initial and final in
 precipitated mg/L and the kg/day rate, with the total and the dominant mineral.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar StreamScaleAnalyzerProbe > captures/stream_scale_analyzer_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar StreamScaleAnalyzerProbe > captures/stream_scale_analyzer_probe.tsv
 ```
 
 **The valve drift probe** records `ValveScaleDrift`: a uniform radial deposit on a trim
@@ -1350,7 +1350,7 @@ clean opening already at 100 percent, a negative advance the class ignores, a re
 growth rate taken from the evaluated `ScaleKinetics`.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ValveScaleDriftProbe > captures/valve_scale_drift_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ValveScaleDriftProbe > captures/valve_scale_drift_probe.tsv
 ```
 
 **The deposition probe** records `ScaleDepositionAccumulator` over a real Beggs-and-Brills
@@ -1362,7 +1362,7 @@ segment over the whole length, and a cooled one with eleven segments - across th
 five-year service, doubled base rate and no-calcite corners.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ScaleDepositionProbe > captures/scale_deposition_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ScaleDepositionProbe > captures/scale_deposition_probe.tsv
 ```
 
 **The treatment-scenario probe** records `ProductionChemicalScaleScenario`: caustic, MDEA and
@@ -1373,7 +1373,7 @@ bicarbonate, the dose equivalents, the scavenger capacity and residual H2S, the 
 treated indices and their change, and the warning map with its messages.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProductionChemicalScenarioProbe > captures/production_chemical_scenario_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProductionChemicalScenarioProbe > captures/production_chemical_scenario_probe.tsv
 ```
 
 **The Beggs-and-Brills probe** records the pipe's per-segment state: the pressure, the flow
@@ -1386,7 +1386,7 @@ DISTRIBUTED branches the others do not; one high-flow state is refused upstream 
 negative outlet pressure and is recorded as such.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar PipeBeggsAndBrillsProbe > captures/pipe_beggs_and_brills_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar PipeBeggsAndBrillsProbe > captures/pipe_beggs_and_brills_probe.tsv
 ```
 
 **The closed-loop deposition probe** records `ClosedLoopDepositionSolver` over the same pipe:
@@ -1397,7 +1397,7 @@ iteration cap reached before convergence, a blocked line, a brine that deposits 
 inhibited line, a tolerance wider than the step, and a Peng-Robinson fluid.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ClosedLoopDepositionProbe > captures/closed_loop_deposition_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ClosedLoopDepositionProbe > captures/closed_loop_deposition_probe.tsv
 ```
 
 **The flow-assurance remainder probe** records the six reachable calculators of
@@ -1410,7 +1410,7 @@ bands, an operating-temperature override, a seabed above the hydrate temperature
 no-water refusal).
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar FlowAssuranceRemainderProbe > captures/flow_assurance_remainder_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar FlowAssuranceRemainderProbe > captures/flow_assurance_remainder_probe.tsv
 ```
 
 **The characterization fluid-rebuild probe** records `PseudoComponentCombiner`'s two fluid
@@ -1425,7 +1425,7 @@ source is a real TBP fraction, so the properties are finite and the TBP model's 
 cannot leak into a row.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar CharacterizationFluidRebuildProbe > captures/characterization_fluid_rebuild_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar CharacterizationFluidRebuildProbe > captures/characterization_fluid_rebuild_probe.tsv
 ```
 
 **The TBP fraction component probe** records what `SystemThermo.addTBPfraction` makes of one
@@ -1436,7 +1436,7 @@ boiling-point switch at 540 g/mol and the heavy coefficient switch at 1120, and 
 pins the class's clamp on a fitted `m` whose root runs past -0.99.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar TbpFractionComponentProbe > captures/tbp_fraction_component_probe.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar TbpFractionComponentProbe > captures/tbp_fraction_component_probe.tsv
 ```
 
 ## Which captures a layer diff can read
@@ -1465,8 +1465,8 @@ that meets it.
 the states those tests only reach through a builder or a flag.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe hem_release \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe hem_release \
   > captures/process_hem_release.tsv
 ```
 
@@ -1495,8 +1495,8 @@ states, re-cased on PR, plus the propane, subsonic, no-forward-flow, mixture and
 over-depletion rows. The SRK rows are the tests' own EOS and evidence beside the oracle.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe leak_blowdown \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe leak_blowdown \
   > captures/process_leak_blowdown.tsv
 ```
 
@@ -1524,8 +1524,8 @@ methane/n-butane fluid as `process_separator.tsv`, swept over the vessel, the or
 the design liquid level, plus the pin's `SeparatorTest` states re-cased on SRK.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe separator_capacity \
   > captures/process_separator_capacity.tsv
 ```
 
@@ -1550,8 +1550,8 @@ densities instead.
 orientation, the operating level and the safety factor.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_sizing \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe separator_sizing \
   > captures/process_separator_sizing.tsv
 ```
 
@@ -1578,8 +1578,8 @@ class's own `SeparatorMechanicalDesignTest` fixture, in two rows: the test's SRK
 same composition on PR, which is the cubic this port's separator carries.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_mechanical \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe separator_mechanical \
   > captures/process_separator_mechanical_design.tsv
 ```
 
@@ -1600,8 +1600,8 @@ though it were m3/hr, which is the row's `394 159` s.
 the class's no-argument `1.2` and at an overridden `1.5`.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_autosize \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe separator_autosize \
   > captures/process_separator_autosize.tsv
 ```
 
@@ -1617,8 +1617,8 @@ zero and `volumeTotal` at the class's `2.0`.
 same two-cubic fixture, through a `GasScrubber` rather than a `Separator`.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe gas_scrubber_mechanical \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe gas_scrubber_mechanical \
   > captures/process_gas_scrubber_mechanical_design.tsv
 ```
 
@@ -1636,8 +1636,8 @@ defaults; the third configures a pad on the sized vessel (`setMeshPad` and
 capacity capture's states plus the pin's #3154 state, swept over the status branches.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_capacity_assessment \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe separator_capacity_assessment \
   > captures/process_separator_capacity_assessment.tsv
 ```
 
@@ -1666,7 +1666,7 @@ diameter and 3 m tan-tan length, a stated pair of levels, a negative pair, and t
 the same vessel.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe three_phase_separator \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe three_phase_separator \
   > captures/process_three_phase_separator.tsv
 ```
 
@@ -1686,8 +1686,8 @@ the stated-level row carries the same two times as the bare-vessel row.
 vessels - 1 m x 3 m and 1.2 m x 4 m - with the same feed.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe three_phase_settling \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe three_phase_settling \
   > captures/process_three_phase_settling.tsv
 ```
 
@@ -1709,8 +1709,8 @@ gravity-section-off state and a log-normal distribution with custom lookup table
 internals and coalescer.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_performance \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe separator_performance \
   > captures/process_separator_performance.tsv
 ```
 
@@ -1724,8 +1724,8 @@ weir-position setters, the vane-pack and axial-cyclone design-K records, and the
 inlet-device overrides.
 
 ```bash
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar ProcessProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe separator_performance_enhanced \
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe separator_performance_enhanced \
   > captures/process_separator_performance_enhanced.tsv
 ```
 
@@ -1749,7 +1749,7 @@ m3/hr over `{80, 72, 70, 65}` kJ/kg. **Three states**: 0.30 MSm3/day at a 0.05 c
 the one above it.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe anti_surge_recycle \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe anti_surge_recycle \
   > captures/process_anti_surge_recycle.tsv
 ```
 
@@ -1777,7 +1777,7 @@ the point-source radiation flux at a stated ground distance and its inverse for 
 threshold, the tip's dispersion surrogate, and the three-axis capacity check.
 
 ```bash
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar ProcessProbe flare \
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe flare \
   > captures/process_flare.tsv
 ```
 

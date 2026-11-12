@@ -11,8 +11,8 @@
 // that is a *caloric rebuild* are different defects, and only the second one is a fix rather
 // than a workaround.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar StaleStateProbe.java
-//     java -cp .:neqsim-f0c7436.jar StaleStateProbe > captures/stale_state.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar StaleStateProbe.java
+//     java -cp .:neqsim-118d9af.jar StaleStateProbe > captures/stale_state.tsv
 
 import neqsim.process.equipment.splitter.ComponentSplitter;
 import neqsim.process.equipment.stream.Stream;

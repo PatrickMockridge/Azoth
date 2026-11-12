@@ -441,12 +441,14 @@ contributions inconsistent with each other.
 
 ## Not for design work yet
 
-The fitting coefficients in `data/fittings/crane_k_factors.csv` are **estimated
-dummy values** - plausible magnitudes chosen so the software has something to run
-against. They are not from Crane TP-410 or any other standard, and a pressure
-drop computed from them can be wrong by a factor of two while looking entirely
-reasonable. The `verify_status` column records that, and the
+The fitting coefficients in `data/fittings/crane_k_factors.csv` are **NeqSim's
+equivalent-length defaults**, cited but not verified against Crane TP-410; one
+azoth-only row is still an estimated dummy. NeqSim itself states that its values
+are engineering defaults, not a verified transcription of the standard. A
+pressure drop computed from them can be wrong by a factor of two while looking
+entirely reasonable. The `verify_status` column records that, and the
 [`crane_k_factors`](./hydraulics/crane_k_factors.md) page says so at the top.
+Design use still requires a licensed copy of TP-410 or manufacturer data.
 
 Water and air properties are a different case: real published values, marked
 `unverified` because they have not been checked against a primary formulation.

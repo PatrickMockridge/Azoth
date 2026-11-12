@@ -118,5 +118,5 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `pvtsimulation/flowassurance/SurfCooldownAnalyzer.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `pvtsimulation/flowassurance/SurfCooldownAnalyzer.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/flow_assurance_remainder_probe.tsv` - the eighteen states: three supplied U values, the layer value, the requirement bands, the operating override, a warm seabed, a dry fluid, the required-water guard, a low-pressure line, two margins and a longer step.

@@ -25,24 +25,18 @@ narrower matrix, so what is ranked is integers. See :mod:`._linalg`.
 **The row order is part of the answer**, because both the reduction and the column choice
 are greedy over the order the rows arrive in.
 
-# The two branches that answer from the databank
+# The one branch that answers from the databank
 
-``calcReferencePotentials`` has two ways to answer from a component's Gibbs energy of
-formation rather than from the reaction set, and both are reproduced:
+When the component rank falls below the reaction count, ``calcReferencePotentials`` returns
+null and ``ChemicalReactionOperations.calcChemRefPot`` reads that null as *every* component's
+Gibbs energy of formation (``ChemicalReactionOperations.java:510-528``). The number is
+:func:`_tables.formation_properties`'s, out of ``GIBBSENERGYOFFORMATION``, and it is taken
+**raw and not negated**. Nothing is marked independent there, because nothing was solved
+for; ``independent`` reports only the columns the basis solved.
 
-* when the component rank falls below the reaction count it returns null, and
-  ``ChemicalReactionOperations.calcChemRefPot`` reads that null as *every* component's
-  Gibbs energy of formation (``ChemicalReactionOperations.java:513-519``);
-* when the propagation deadlocks it seeds the first uncomputed dependent component with
-  that same number and carries on, and a final sweep seeds whatever is left
-  (``ChemicalReactionList.java:526-557``).
-
-The number is :func:`_tables.formation_properties`'s, out of ``GIBBSENERGYOFFORMATION``,
-and it is taken **raw and not negated**, so a seeded potential is not on the same footing
-as a solved one - which is why ``independent`` is reported. **The fallback is not an edge
-case**: of the 14,333 subsets of the species the three tables' loaded reactions name, 11,837
-answer - 3,320 of them seeding at least one component - and 2,496 are refused by the pitzer
-source's evidence gate, which the Rust twin's sweep test asserts.
+The dependent components of a full-rank basis stay at the zero gauge. NeqSim does not
+propagate them: assigning a dependent potential after the solve would break the reaction
+equations the independent solution already satisfies.
 """
 
 from __future__ import annotations
@@ -58,10 +52,6 @@ from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.reactions.reference import _linalg, _tables
 from azoth.reactions.reference.equilibrium_constant import GAS_CONSTANT
-
-#: The magnitude below which a stoichiometric coefficient counts as absent, from
-#: `calcReferencePotentials`.
-_COEFFICIENT_FLOOR = 1e-10
 
 
 def side_is_present(
@@ -214,7 +204,6 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
     n_rows = len(independent_rows)
     current: list[list[float]] = []
     independent_columns: list[int] = []
-    dependent_columns: list[int] = []
 
     for column in range(width):
         candidate = [
@@ -226,10 +215,7 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
             current = candidate
             independent_columns.append(column)
             if len(independent_columns) == n_rows:
-                dependent_columns.extend(range(column + 1, width))
                 break
-        else:
-            dependent_columns.append(column)
 
     # **A rank-deficient basis is an answer and not an error.** `calcReferencePotentials`
     # returns null when the component rank falls below the reaction count, and
@@ -238,57 +224,18 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
     # solved for; `rank` still reports the rank it fell short of.
     rank = len(independent_columns)
     potentials = [0.0] * width
-    computed = [False] * width
     independent_mask = [0.0] * width
 
     if rank < n_rows:
         for column in range(width):
             potentials[column] = _formation_seed(components, column)
-            computed[column] = True
     elif n_rows > 0:
-        solved = _linalg.solve_lu(current, [-value for value in independent_rhs])
+        # The target's solve: `A_indep x = -RT ln K`. Dependent components stay at the
+        # zero gauge and are not propagated.
+        solved = _linalg.solve_lu(current, independent_rhs)
         for i, column in enumerate(independent_columns):
             potentials[column] = solved[i]
-            computed[column] = True
             independent_mask[column] = 1.0
-
-        # The propagation: a dependent component is computable once a surviving reaction
-        # exists in which every *other* component it names is known.
-        for _ in range(len(dependent_columns) * 2 + 1):
-            progress = False
-            for column in dependent_columns:
-                if computed[column]:
-                    continue
-                for r, row in enumerate(independent_rows):
-                    nu = row[column]
-                    if abs(nu) < _COEFFICIENT_FLOOR:
-                        continue
-                    if not all(
-                        j == column or abs(row[j]) <= _COEFFICIENT_FLOOR or computed[j]
-                        for j in range(width)
-                    ):
-                        continue
-                    sum_others = sum(row[j] * potentials[j] for j in range(width) if j != column)
-                    potentials[column] = (independent_rhs[r] - sum_others) / nu
-                    computed[column] = True
-                    progress = True
-                    break
-            if progress:
-                continue
-            # **The deadlock fallback, reproduced.** NeqSim seeds the first uncomputed
-            # dependent component with its Gibbs energy of formation and carries on, one
-            # per round that made no progress (`ChemicalReactionList.java:526-541`).
-            seed = next((column for column in dependent_columns if not computed[column]), None)
-            if seed is None:
-                break
-            potentials[seed] = _formation_seed(components, seed)
-            computed[seed] = True
-
-        # The final sweep (`:546-557`): whatever the rounds above left uncomputed takes
-        # the same seed.
-        for column in dependent_columns:
-            if not computed[column]:
-                potentials[column] = _formation_seed(components, column)
 
     return ReferencePotentialsResult(
         potentials=tuple(from_si(value, "J/mol") for value in potentials),
@@ -300,13 +247,12 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
 
 
 def _formation_seed(components: Sequence[str], column: int) -> float:
-    """NeqSim's seed for a component the propagation cannot reach.
+    """NeqSim's rank-deficient fallback for every component.
 
-    **The component's Gibbs energy of formation, raw and not negated**
-    (``ChemicalReactionList.java:531``). A component with no databank row is refused
-    rather than seeded with zero: NeqSim's ``Component`` field defaults to zero when the
-    row is absent, and a component with no row cannot be built there at all, while here
-    the name is a caller's string.
+    **The component's Gibbs energy of formation, raw and not negated.** A component with no
+    databank row is refused rather than seeded with zero: NeqSim's ``Component`` field
+    defaults to zero when the row is absent, and a component with no row cannot be built
+    there at all, while here the name is a caller's string.
     """
     name = components[column]
     row = _tables.formation_properties(name)

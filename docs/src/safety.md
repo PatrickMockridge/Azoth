@@ -206,6 +206,8 @@ normative.
   paper, so a port never upgrades a verification status.
 - **The oracle does not gate the build.** It is a second opinion, not a source of truth,
   and a divergence from it is a finding to explain.
-- **Some shipped data is placeholder.** A pressure drop computed from the Crane fitting
-  coefficients can be wrong by a factor of two while looking entirely reasonable, and the
-  library says so rather than rounding the difference away.
+- **Some shipped data is cited but unverified.** The fitting coefficients are NeqSim
+  equivalent-length defaults, not a verified Crane TP-410 transcription, and one row is
+  still an estimated dummy. A pressure drop computed from them can be wrong by a factor
+  of two while looking entirely reasonable, and the library says so rather than rounding
+  the difference away.

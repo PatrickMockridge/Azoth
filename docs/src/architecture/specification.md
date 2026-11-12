@@ -142,9 +142,9 @@ implements something is evidence it can be implemented, not evidence it is right
 `CriticalPointFlash` is correct by inspection and validated nowhere.
 
 **NeqSim runs as a differential oracle, and it does not gate the build.** The checkout at
-`/tmp/neqsim-check/neqsim` is built (Java 21) to `target/neqsim-3.21.0.jar`, which is copied
-beside the probes as `neqsim-f0c7436.jar` - the pom's version names both the release tag and
-master, fifty commits apart, so the commit is what the copy is named for. The probes under
+`/tmp/neqsim-check/neqsim` is built (Java 21) to `target/neqsim-3.28.0.jar`, which is copied
+beside the probes as `neqsim-118d9af.jar` - the pom's version names both the release tag and
+master, eighty-four commits apart, so the commit is what the copy is named for. The probes under
 `validation/neqsim/` drive it and `validation/eos/` holds 47 paired cases against it plus
 literature benchmarks. A divergence from NeqSim is a
 finding, never a failure: the oracle is a second opinion, not a source of truth.

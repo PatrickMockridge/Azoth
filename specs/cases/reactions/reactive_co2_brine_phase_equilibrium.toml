@@ -10,8 +10,8 @@ T = 283.15
 P = 5000000.0
 [cases.expected]
 phase_count = 2.0
-phase_fractions = [0.119700156811226, 0.880299843188774]
-minimum_trial_distance = -0.793097484269184
+phase_fractions = [0.127635036803297, 0.872364963196703]
+minimum_trial_distance = -0.917598834987758
 [[cases]]
 id = "the_40_bara_brine_at_ninety_percent_salt"
 tolerance = 5e-07
@@ -23,5 +23,5 @@ T = 283.15
 P = 4000000.0
 [cases.expected]
 phase_count = 2.0
-phase_fractions = [0.123229841485858, 0.876770158514142]
-minimum_trial_distance = -0.880785051453328
+phase_fractions = [0.129581524453422, 0.870418475546579]
+minimum_trial_distance = -0.992797941086293

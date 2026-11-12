@@ -2,8 +2,8 @@
 // FullGT number (model 1's gas-oil slot on methane/n-butane); this gives the port more than
 // one state to be wrong about.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar FullGtProbe.java
-//     java -cp .:neqsim-f0c7436.jar FullGtProbe > captures/full_gt_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar FullGtProbe.java
+//     java -cp .:neqsim-118d9af.jar FullGtProbe > captures/full_gt_probe.tsv
 //
 // The class exposes no intermediate state - runcase is the whole surface - so this records
 // the bulk phases, the influence parameters and the answer.

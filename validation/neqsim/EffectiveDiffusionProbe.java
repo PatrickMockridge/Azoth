@@ -18,8 +18,8 @@
 // prints the matrix, the vector the class computes from it and the vector recomputed from
 // the matrix here - after re-running the assembly, so that both come from the same fill.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar EffectiveDiffusionProbe.java
-//     java -cp .:neqsim-f0c7436.jar EffectiveDiffusionProbe > captures/effective_diffusion_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar EffectiveDiffusionProbe.java
+//     java -cp .:neqsim-118d9af.jar EffectiveDiffusionProbe > captures/effective_diffusion_probe.tsv
 
 import neqsim.physicalproperties.methods.methodinterface.DiffusivityInterface;
 import neqsim.thermo.phase.PhaseInterface;

@@ -32,21 +32,21 @@ machine that has none; it needs a JDK and network, and nothing else. Measured on
 ```bash
 git clone https://github.com/equinor/neqsim /tmp/neqsim-check/neqsim
 cd /tmp/neqsim-check/neqsim
-git checkout f0c7436c69                 # the commit the jar is named after
-./mvnw -q -DskipTests package           # → target/neqsim-3.21.0.jar
-cp target/neqsim-3.21.0.jar /path/to/azoth/validation/neqsim/neqsim-f0c7436.jar
+git checkout 118d9aff                 # the commit the jar is named after
+./mvnw -q -DskipTests package           # → target/neqsim-3.28.0.jar
+cp target/neqsim-3.28.0.jar /path/to/azoth/validation/neqsim/neqsim-118d9af.jar
 ```
 
-**The name is the commit.** Every driver header says `-cp neqsim-f0c7436.jar`, which is
-`neqsim-3.21.0.jar` built at `f0c7436c69` and renamed for the commit it came from — so
+**The name is the commit.** Every driver header says `-cp neqsim-118d9af.jar`, which is
+`neqsim-3.28.0.jar` built at `118d9aff` and renamed for the commit it came from — so
 the captures belong to that revision, and moving to a newer NeqSim is a rename that
 rewrites every driver header with it. The checkout lives in `/tmp` and is disposable:
 rebuilding it is this recipe.
 
 ```bash
 cd validation/neqsim
-../../tools/gated.sh javac -proc:none -cp neqsim-f0c7436.jar HybridEosGeReactiveProbe.java
-../../tools/gated.sh java -cp .:neqsim-f0c7436.jar HybridEosGeReactiveProbe > captures/hybrid_eos_ge_reactive_probe.tsv
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar HybridEosGeReactiveProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar HybridEosGeReactiveProbe > captures/hybrid_eos_ge_reactive_probe.tsv
 ```
 
 The captures are committed and CI reads them, so a new one is a capture file plus the

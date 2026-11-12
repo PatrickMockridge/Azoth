@@ -5,8 +5,8 @@
 // mixtures from TPflash. The class catches every exception and falls back to Parachor
 // silently, so the parachor answer is printed beside it: equal values mean the fallback fired.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar CdftProbe.java
-//     java -cp .:neqsim-f0c7436.jar CdftProbe > captures/cdft_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar CdftProbe.java
+//     java -cp .:neqsim-118d9af.jar CdftProbe > captures/cdft_probe.tsv
 
 import neqsim.physicalproperties.interfaceproperties.surfacetension.CDFTSurfaceTension;
 import neqsim.physicalproperties.interfaceproperties.surfacetension.ParachorSurfaceTension;

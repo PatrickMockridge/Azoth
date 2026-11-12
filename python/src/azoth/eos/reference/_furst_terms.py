@@ -53,6 +53,7 @@ class FurstState:
     ionic_packing: float
     solvent_dielectric: float
     solvent_dielectric_dt: float
+    solvent_dielectric_dtdt: float
     dielectric: float
     dielectric_dt: float
     dielectric_dtdt: float
@@ -63,6 +64,8 @@ class FurstState:
     shielding_dt: float
     xlr: float
     xlr_dt: float
+    xlr_dgamma: float
+    shielding_curvature: float
     born_x: float
     w: float
     w_dt: float
@@ -80,14 +83,17 @@ class FurstState:
         "moles",
         "packing",
         "shielding",
+        "shielding_curvature",
         "shielding_dt",
         "solvent_dielectric",
         "solvent_dielectric_dt",
+        "solvent_dielectric_dtdt",
         "temperature",
         "w",
         "w_dt",
         "w_dtdt",
         "xlr",
+        "xlr_dgamma",
         "xlr_dt",
     )
 
@@ -256,19 +262,8 @@ def flr(state: FurstState) -> float:
 
 
 def t_d_flr_dt(state: FurstState) -> float:
-    """``T dFLR/dT``."""
-    alpha = alpha_lr2(state.dielectric, state.temperature)
-    alpha_dt = alpha_lr2_dt(state)
-    term1 = -1.0 / (4.0 * NEQSIM_PI) * (alpha_dt * state.xlr + alpha * state.xlr_dt)
-    term2 = (
-        state.moles
-        * state.molar_volume
-        / (3.0 * NEQSIM_PI * NEQSIM_AVOGADRO)
-        * 3.0
-        * state.shielding**2
-        * state.shielding_dt
-    )
-    return (term1 + term2) * state.temperature
+    """``T dFLR/dT``: the envelope derivative ``dFdAlphaLR * alphaLRdT``."""
+    return -state.xlr / (4.0 * NEQSIM_PI) * alpha_lr2_dt(state) * state.temperature
 
 
 def flr_dv(state: FurstState) -> float:
@@ -297,7 +292,10 @@ def flr_dvdv(state: FurstState) -> float:
         / (VACUUM_PERMITTIVITY * eps * eps * R * t)
         * state.dielectric_dvdv
     )
-    return d_f_d_alpha * alpha_dvdv * 1.0e-10
+    mixed = -alpha_lr2_dv(state) * state.xlr_dgamma / (4.0 * NEQSIM_PI) + state.shielding**2 / (
+        NEQSIM_PI * NEQSIM_AVOGADRO
+    )
+    return (d_f_d_alpha * alpha_dvdv + mixed * gamma_lr_dv(state)) * 1.0e-10
 
 
 def flr_dtdv(state: FurstState) -> float:
@@ -324,21 +322,17 @@ def flr_dtdv(state: FurstState) -> float:
         / (VACUUM_PERMITTIVITY * eps * eps * R * t)
         * state.dielectric_dtdv
     )
-    return d_f_d_alpha * alpha_dtdv * 1.0e-5
+    alpha_dt = alpha_lr2_dt(state)
+    return (
+        d_f_d_alpha * alpha_dtdv
+        - alpha_dt * state.xlr_dgamma / (4.0 * NEQSIM_PI) * gamma_lr_dv(state)
+    ) * 1.0e-5
 
 
 def t2_d2_flr_dt2(state: FurstState) -> float:
-    """``T^2 d^2FLR/dT^2``.
-
-    **NeqSim's own simplification**, not the second derivative: its ``dFLRdTdT`` keeps
-    ``-1/(4 pi)(alphaLR'' XLR + 2 alphaLR' XLR')`` and the whole of the ``gamma`` chain is
-    missing, which the source says. Reproduced, because completing it would be a different
-    model with a divergence nothing would catch.
-    """
+    """``T^2 d^2FLR/dT^2``: the target's stationary long-range temperature curvature."""
     e, e0, na = ELECTRON_CHARGE, VACUUM_PERMITTIVITY, NEQSIM_AVOGADRO
     t, eps = state.temperature, state.dielectric
-    # NeqSim's `alphaLRdTdT`. Its `2 scale eps'/(eps^2 T^2)` term is written upstream as two
-    # identical lines in a row; this is the analytic form, which is the same expression.
     scale = e * e * na / (e0 * R)
     alpha_dtdt = (
         2.0 * scale / (eps * t**3)
@@ -346,10 +340,16 @@ def t2_d2_flr_dt2(state: FurstState) -> float:
         - scale * state.dielectric_dtdt / (eps * eps * t)
         + 2.0 * scale * state.dielectric_dt**2 / (eps**3 * t)
     )
+    d_f_d_alpha = -state.xlr / (4.0 * NEQSIM_PI)
     alpha_dt = alpha_lr2_dt(state)
-    term1 = -1.0 / (4.0 * NEQSIM_PI) * alpha_dtdt * state.xlr
-    cross = -2.0 / (4.0 * NEQSIM_PI) * alpha_dt * state.xlr_dt
-    return (term1 + cross) * t * t
+    return (
+        (
+            d_f_d_alpha * alpha_dtdt
+            - alpha_dt * state.xlr_dgamma / (4.0 * NEQSIM_PI) * state.shielding_dt
+        )
+        * t
+        * t
+    )
 
 
 def fborn(state: FurstState) -> float:
@@ -367,17 +367,24 @@ def t_d_fborn_dt(state: FurstState) -> float:
 
 
 def t2_d2_fborn_dt2(state: FurstState) -> float:
-    """``T^2 d^2FBorn/dT^2``.
-
-    **Also simplified upstream**: NeqSim keeps ``FBornTT + FBornTD eps'`` and drops both the
-    ``eps''`` and the ``(eps')^2`` terms, so this is not the second derivative of the
-    expression above it.
-    """
+    """``T^2 d^2FBorn/dT^2``, including the target's dielectric-curvature terms."""
     k, t = born_scale(state.temperature), state.temperature
     d = 1.0 / state.solvent_dielectric - 1.0
+    eps = state.solvent_dielectric
     f_born_tt = 2.0 * k / (t * t) * d * state.born_x
-    f_born_td = k / t / state.solvent_dielectric**2 * state.born_x
-    return (f_born_tt + f_born_td * state.solvent_dielectric_dt) * t * t
+    f_born_td = k / t / eps**2 * state.born_x
+    f_born_d = -k / eps**2 * state.born_x
+    f_born_dd = 2.0 * k / eps**3 * state.born_x
+    return (
+        (
+            f_born_tt
+            + 2.0 * f_born_td * state.solvent_dielectric_dt
+            + f_born_dd * state.solvent_dielectric_dt**2
+            + f_born_d * state.solvent_dielectric_dtdt
+        )
+        * t
+        * t
+    )
 
 
 class FurstSolution(NamedTuple):
@@ -499,6 +506,9 @@ def ln_phi_contributions(
         # zero. NeqSim's issue 3862 is that observation and its fix is the one term, so both
         # models read `FBornX XBorni + FBornD solventdiElectricdn` here.
         born = f_born_x * born_i + f_born_d * solvent_dn
+        # **No shielding chain in the first derivative.** At the solved gamma,
+        # ``dFLR/dgamma = 0``, so ``dFLR/dN_i`` is the partial at fixed gamma; NeqSim leaves
+        # the chain commented out in ``dFLRdN`` and carries it only in the second derivatives.
         out.append(
             CompositionContribution(
                 short_range=fsr2_eps * scale + fsr2_w * component.w_i,
@@ -510,48 +520,96 @@ def ln_phi_contributions(
 
 
 def shielding_parameter(
-    state: FurstState, components: Sequence[ComponentState], mole_numbers: Sequence[float]
+    state: FurstState,
+    components: Sequence[ComponentState],
+    mole_numbers: Sequence[float],
+    mod2004: bool = False,
 ) -> float:
-    """``calcShieldingParameter``: a damped Newton solve for ``gamma``.
+    """``calcShieldingParameter``: the target's damped Newton solve for ``gamma``.
 
-    From ``1e10``, ``gamma -= 0.8 f/f'``, with a 1000-iteration cap and a **three-iteration
-    floor**. The floor matters: a phase carrying no ion returns exactly zero, and one
-    carrying ions at ``1e-43`` mol returns a residue of the solve rather than a number.
-
-    **Its two divisors are total by construction.** ``v_total`` is the phase's volume, which
-    ``packing_fraction`` has already refused when it was not positive, and ``f'`` is a
-    sum of positive terms for every ``gamma > 0`` - where the iteration starts and where the
-    probe's own states leave it. The damping and the floor are NeqSim's, reproduced as they
-    stand rather than augmented with a clamp this model would not have.
+    The initial value is the positive root's upper bound with the finite ion diameters
+    omitted, ``sqrt(N_A alphaLR2 sum n_i z_i^2 / (4 V))``; the iteration is
+    ``gamma -= 0.8 residual/derivative`` for 1000 steps and stops on a **relative**
+    residual, ``|residual| <= 1e-12 max(repulsive, attractive)``. A non-converged solve is
+    refused rather than returned as a plausible number. The old port started at ``1e10``,
+    stopped on an absolute ``1e-10`` and always took three iterations; that left gamma in
+    the seventh digit and is what the 118d9af probe measures.
     """
+    if mod2004:
+        # ``PhaseModifiedFurstElectrolyteEosMod2004`` has its own old solve: ``1e10`` start,
+        # absolute ``1e-10`` stop, three-iteration floor. The target carries both, and the
+        # Mod2004 gas phase's ``gamma = 1692665.9444736`` is the floor's residue.
+        alpha = alpha_lr2(state.dielectric, state.temperature)
+        v_total = state.molar_volume * state.moles
+        gamma = 1.0e10
+        iterations = 0
+        while True:
+            iterations += 1
+            gamma_old = gamma
+            f = 4.0 * gamma * gamma / NEQSIM_AVOGADRO
+            df = 8.0 * gamma / NEQSIM_AVOGADRO
+            ion_count = 0
+            for component, moles in zip(components, mole_numbers, strict=True):
+                if component.charge == 0.0:
+                    continue
+                ion_count += 1
+                sigma = component.diameter_m
+                denominator = 1.0 + gamma * sigma
+                f -= (
+                    alpha
+                    * moles
+                    / v_total
+                    * (component.charge / denominator)
+                    * (component.charge / denominator)
+                )
+                df += 2.0 * alpha * moles / v_total * component.charge**2 * sigma / denominator**3
+            gamma = gamma_old - 0.8 * f / df if ion_count > 0 else 0.0
+            if not ((abs(f) > 1.0e-10 and iterations < 1000) or iterations < 3):
+                break
+        return gamma
+    ions = [
+        (component, moles)
+        for component, moles in zip(components, mole_numbers, strict=True)
+        if component.charge != 0.0 and moles > 0.0
+    ]
+    if not ions:
+        return 0.0
+    if not math.isfinite(state.dielectric) or state.dielectric <= 0.0:
+        raise OutOfRangeError(
+            "dielectric",
+            state.dielectric,
+            "electrolyte shielding requires a finite positive dielectric constant",
+        )
     alpha = alpha_lr2(state.dielectric, state.temperature)
-    v_total = state.molar_volume * state.moles
-    gamma = 1.0e10
-    iterations = 0
-    while True:
-        iterations += 1
-        gamma_old = gamma
-        f = 4.0 * gamma * gamma / NEQSIM_AVOGADRO
-        df = 8.0 * gamma / NEQSIM_AVOGADRO
-        ions = 0
-        for component, moles in zip(components, mole_numbers, strict=True):
-            if component.charge == 0.0:
-                continue
-            ions += 1
+    volume = state.molar_volume * state.moles
+    ionic_square_charge = sum(moles * component.charge**2 for component, moles in ions)
+    upper = (
+        math.sqrt(NEQSIM_AVOGADRO * alpha * ionic_square_charge / (4.0 * volume))
+        if volume > 0.0
+        else 0.0
+    )
+    gamma = upper if upper > 0.0 and math.isfinite(upper) else 1.0e10
+    for _ in range(1000):
+        repulsive = 4.0 * gamma * gamma / NEQSIM_AVOGADRO
+        attractive = 0.0
+        derivative = 8.0 * gamma / NEQSIM_AVOGADRO
+        for component, moles in ions:
             sigma = component.diameter_m
+            coefficient = alpha * moles / volume * component.charge**2
             denominator = 1.0 + gamma * sigma
-            f -= (
-                alpha
-                * moles
-                / v_total
-                * (component.charge / denominator)
-                * (component.charge / denominator)
-            )
-            df += 2.0 * alpha * moles / v_total * component.charge**2 * sigma / denominator**3
-        gamma = gamma_old - 0.8 * f / df if ions > 0 else 0.0
-        if not ((abs(f) > 1.0e-10 and iterations < 1000) or iterations < 3):
+            attractive += coefficient / (denominator * denominator)
+            derivative += 2.0 * coefficient * sigma / denominator**3
+        residual = repulsive - attractive
+        if math.isfinite(residual) and abs(residual) <= 1.0e-12 * max(repulsive, attractive):
+            return gamma
+        gamma -= 0.8 * residual / derivative
+        if not (gamma > 0.0) or not math.isfinite(gamma):
             break
-    return gamma
+    raise OutOfRangeError(
+        "shielding_parameter",
+        gamma,
+        "the electrolyte shielding parameter did not converge in 1000 iterations",
+    )
 
 
 def shielding_parameter_dt(
@@ -576,6 +634,47 @@ def shielding_parameter_dt(
     if abs(dfdgamma) < 1.0e-50:
         return 0.0
     return -dfdt / dfdgamma
+
+
+def xlr_dgamma(
+    state: FurstState, components: Sequence[ComponentState], mole_numbers: Sequence[float]
+) -> float:
+    """``XLRdGammaLR = sum n_i z_i^2/(1 + gamma sigma_i)^2`` over the ions."""
+    total = 0.0
+    for component, moles in zip(components, mole_numbers, strict=True):
+        if component.charge == 0.0:
+            continue
+        denominator = 1.0 + state.shielding * component.diameter_m
+        total += moles * component.charge**2 / denominator**2
+    return total
+
+
+def shielding_curvature(
+    state: FurstState, components: Sequence[ComponentState], mole_numbers: Sequence[float]
+) -> float:
+    """``dFLRdGammaLRdGammaLR`` at the stationary point."""
+    alpha = alpha_lr2(state.dielectric, state.temperature)
+    v_total = state.molar_volume * state.moles
+    total = 0.0
+    for component, moles in zip(components, mole_numbers, strict=True):
+        if component.charge == 0.0:
+            continue
+        sigma = component.diameter_m
+        denominator = 1.0 + state.shielding * sigma
+        total += moles * component.charge**2 * sigma / denominator**3
+    return alpha * total / (2.0 * NEQSIM_PI) + 2.0 * v_total * state.shielding / (
+        NEQSIM_PI * NEQSIM_AVOGADRO
+    )
+
+
+def gamma_lr_dv(state: FurstState) -> float:
+    """``calcGammaLRdV``: the stationary shielding response to a volume change."""
+    if state.shielding == 0.0 or state.shielding_curvature == 0.0:
+        return 0.0
+    mixed = -alpha_lr2_dv(state) * state.xlr_dgamma / (4.0 * NEQSIM_PI) + state.shielding**2 / (
+        NEQSIM_PI * NEQSIM_AVOGADRO
+    )
+    return -mixed / state.shielding_curvature
 
 
 def xlr(
@@ -623,6 +722,7 @@ def build_state(
     short_range_w: float,
     short_range_w_dt: float,
     short_range_w_dtdt: float,
+    mod2004: bool = False,
 ) -> FurstState:
     """Build the state, in ``volInit``'s own order.
 
@@ -673,6 +773,7 @@ def build_state(
     state.ionic_packing = ionic_packing
     state.solvent_dielectric = solvent
     state.solvent_dielectric_dt = solvent_dt
+    state.solvent_dielectric_dtdt = solvent_dtdt
     state.dielectric = 1.0 + y * x
     state.dielectric_dt = solvent_dt * x
     state.dielectric_dtdt = solvent_dtdt * x
@@ -683,12 +784,16 @@ def build_state(
     state.shielding_dt = 0.0
     state.xlr = 0.0
     state.xlr_dt = 0.0
+    state.xlr_dgamma = 0.0
+    state.shielding_curvature = 0.0
     state.born_x = 0.0
     state.w = short_range_w
     state.w_dt = short_range_w_dt
     state.w_dtdt = short_range_w_dtdt
 
-    state.shielding = shielding_parameter(state, components, mole_numbers)
+    state.shielding = shielding_parameter(state, components, mole_numbers, mod2004)
+    state.xlr_dgamma = xlr_dgamma(state, components, mole_numbers)
+    state.shielding_curvature = shielding_curvature(state, components, mole_numbers)
     state.shielding_dt = shielding_parameter_dt(state, components, mole_numbers)
     state.xlr = xlr(state, components, mole_numbers)
     state.xlr_dt = xlr_dt(state, components, mole_numbers)

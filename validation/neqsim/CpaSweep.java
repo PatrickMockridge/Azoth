@@ -83,8 +83,8 @@ import neqsim.thermodynamicoperations.ThermodynamicOperations;
  * Usage:
  *
  * <pre>
- * javac -proc:none -cp neqsim-f0c7436.jar CpaSweep.java
- * java -cp .:neqsim-f0c7436.jar CpaSweep [T_K P_bara n_water]...
+ * javac -proc:none -cp neqsim-118d9af.jar CpaSweep.java
+ * java -cp .:neqsim-118d9af.jar CpaSweep [T_K P_bara n_water]...
  * </pre>
  *
  * With no arguments it sweeps a default grid: the states this tranche has measured, plus a

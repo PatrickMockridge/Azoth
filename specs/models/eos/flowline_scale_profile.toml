@@ -10,7 +10,7 @@ assumptions = [
     "the class's Gson report and its index accessor are not calculations; the result's own segment list is the data.\n",
 ]
 references = [
-    "NeqSim master, `pvtsimulation/flowassurance/FlowlineScaleProfile.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
+    "NeqSim master, `pvtsimulation/flowassurance/FlowlineScaleProfile.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.",
     "`validation/neqsim/captures/scale_family_probe.tsv` - the `flowline_scale_profile` rows: an 11-point produced-water profile, the one-segment clamp, the inert pH argument and a high-sulphate water whose barite and celestite ions are absent.",
 ]
 [source]

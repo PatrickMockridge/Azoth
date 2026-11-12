@@ -99,5 +99,5 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `process/chemistry/scale/StreamScaleAnalyzer.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `process/chemistry/scale/StreamScaleAnalyzer.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/stream_scale_analyzer_probe.tsv` - the equilibrium's own brines in Davies and B-dot, the co-precipitating water, the zero-flow, no-mineral, absent-barium and auto-pH corners, with each mineral's indices, mass and rate.

@@ -33,8 +33,8 @@ import neqsim.thermo.system.SystemSAFTVRMie;
  * the algorithm's answer, so the numbers a port is checked against are the second column's.
  *
  * <pre>
- * javac -proc:none -cp neqsim-f0c7436.jar SaftVrMieFlashProbe.java
- * java -cp .:neqsim-f0c7436.jar SaftVrMieFlashProbe [T_K P_bara name z ...]
+ * javac -proc:none -cp neqsim-118d9af.jar SaftVrMieFlashProbe.java
+ * java -cp .:neqsim-118d9af.jar SaftVrMieFlashProbe [T_K P_bara name z ...]
  * </pre>
  */
 public final class SaftVrMieFlashProbe {

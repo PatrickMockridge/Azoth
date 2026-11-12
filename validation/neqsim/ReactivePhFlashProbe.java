@@ -11,8 +11,8 @@
 // PH flash asked to find its way back. The round trip is the oracle - a temperature that comes
 // back is a temperature the loop found rather than a number it reported.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ReactivePhFlashProbe.java
-//     java -cp .:neqsim-f0c7436.jar ReactivePhFlashProbe > captures/reactive_ph_flash_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar ReactivePhFlashProbe.java
+//     java -cp .:neqsim-118d9af.jar ReactivePhFlashProbe > captures/reactive_ph_flash_probe.tsv
 
 import neqsim.thermo.component.ComponentInterface;
 import neqsim.thermo.system.SystemInterface;

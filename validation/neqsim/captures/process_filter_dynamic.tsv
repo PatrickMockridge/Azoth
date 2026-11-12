@@ -19,14 +19,14 @@ holdup_residence_time_s=0.0
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.9
 outlet_T=298.15
-outlet_h=506.1705327905712
-outlet_s=-22.525137876331375
+outlet_h=506.11215152038505
+outlet_s=-22.525341996345933
 outlet_z=methane:1.0
 
 dynamic_first_step_3600
@@ -50,14 +50,14 @@ holdup_residence_time_s=48.47531506255213
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.4
 outlet_T=298.15
-outlet_h=529.0159060666894
-outlet_s=-22.287438568345582
+outlet_h=528.9575247965032
+outlet_s=-22.287642688360137
 outlet_z=methane:1.0
 
 dynamic_second_step_1800
@@ -81,14 +81,14 @@ holdup_residence_time_s=48.47531506255213
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.15
 outlet_T=298.15
-outlet_h=533.591560841867
-outlet_s=-22.16871705226875
+outlet_h=533.533179571681
+outlet_s=-22.168921172283305
 outlet_z=methane:1.0
 
 backwash_before_step
@@ -112,14 +112,14 @@ holdup_residence_time_s=0.0
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.8
 outlet_T=298.15
-outlet_h=494.3077335021105
-outlet_s=-22.483251328801686
+outlet_h=494.2493522319244
+outlet_s=-22.483455448816247
 outlet_z=methane:1.0
 
 backwash_after_step
@@ -143,14 +143,14 @@ holdup_residence_time_s=0.0
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.2
 outlet_T=298.15
-outlet_h=532.6764502203005
-outlet_s=-22.192573309933994
+outlet_h=532.6180689501143
+outlet_s=-22.192777429948556
 outlet_z=methane:1.0
 
 concentration_before_step
@@ -174,14 +174,14 @@ holdup_residence_time_s=0.0
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.9
 outlet_T=298.15
-outlet_h=506.1705327905712
-outlet_s=-22.525137876331375
+outlet_h=506.11215152038505
+outlet_s=-22.525341996345933
 outlet_z=methane:1.0
 
 concentration_after_8h
@@ -205,14 +205,14 @@ holdup_residence_time_s=0.0
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.076736
 outlet_T=298.15
-outlet_h=534.9324355250758
-outlet_s=-22.13365870975508
+outlet_h=534.8740542548898
+outlet_s=-22.133862829769633
 outlet_z=methane:1.0
 
 dynamic_bypass_before_step
@@ -236,14 +236,14 @@ holdup_residence_time_s=0.0
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.8
 outlet_T=298.15
-outlet_h=494.3077335021105
-outlet_s=-22.483251328801686
+outlet_h=494.2493522319244
+outlet_s=-22.483455448816247
 outlet_z=methane:1.0
 
 dynamic_bypass_after_step
@@ -267,14 +267,14 @@ holdup_residence_time_s=0.0
 inlet_n=17.314578182246326
 inlet_P=20.0
 inlet_T=298.15
-inlet_h=518.0333320790322
-inlet_s=-22.566814465347896
+inlet_h=517.9749508088461
+inlet_s=-22.567018585362455
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=19.5
 outlet_T=298.15
-outlet_h=527.1855738746241
-outlet_s=-22.33453937206386
+outlet_h=527.1271926044379
+outlet_s=-22.33474349207842
 outlet_z=methane:1.0
 
 zero_flow_residence_uncased
@@ -304,7 +304,7 @@ inlet_z=methane:1.0
 outlet_n=1.0E-50
 outlet_P=19.9
 outlet_T=298.15
-outlet_h=519.8638561838803
-outlet_s=-22.520782723218844
+outlet_h=519.8054749136943
+outlet_s=-22.5209868432334
 outlet_z=methane:1.0
 

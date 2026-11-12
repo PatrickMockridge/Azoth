@@ -297,9 +297,14 @@ pub fn gas_scrubber(
             volume_safety_factor: volume_safety_factor.unwrap_or(1.1),
             retention_time_s: 60.0,
             max_operation_pressure: max_operation_pressure.unwrap_or(pascals(100.0e5)),
-            allowable_stress: allowable_stress.unwrap_or(425.0e6) / 1.0e6,
+            allowable_stress: allowable_stress.unwrap_or(95.147650602e6) / 1.0e6,
             joint_efficiency: joint_efficiency.unwrap_or(1.0),
             corrosion_allowance_mm: corrosion_allowance.unwrap_or(0.0) * 1000.0,
+            max_gas_velocity: 3.0,
+            foam_allowance_factor: 1.35,
+            min_oil_retention_s: 120.0,
+            min_water_retention_s: 180.0,
+            aqueous: true,
         };
         Some(design_vessel(
             &vapour,

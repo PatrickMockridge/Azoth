@@ -20,10 +20,11 @@ multiplication is `process.expander`'s - dividing there would beat the reversibl
 
 # A curve selects the fixed-speed chart branch
 
-``CompressorChart``'s reduced head and polytropic efficiency, the ideal-gas kappa, the
-polytropic pressure ratio, and the head's shaft work. **The chart's head crosses in metres**
-and the branch converts it with ``9.81`` - the class's own ``polytropicHeadMeter`` factor - and
-**the pressure is solved**, so a stated outlet pressure is the isentropic branch's.
+``CompressorChart``'s reduced head and polytropic efficiency, then the target's
+``chartPressureForHead``: the historical kappa ratio brackets the pressure and the selected
+polytropic reference - Schultz by default - is inverted to the chart head. **The chart's head
+crosses in metres** and the branch converts it with ``9.81`` - the class's own
+``polytropicHeadMeter`` factor.
 """
 
 from __future__ import annotations
@@ -39,6 +40,7 @@ from azoth.core.result import CompressorResult
 from azoth.core.units import Q, from_si, input_records_to_si, input_to_si, quantity
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
+from azoth.eos.reference._heat_capacity import phase_capacity, volume_derivatives
 from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
 from azoth.eos.reference.molar_enthalpy_entropy import molar_enthalpy_entropy
 from azoth.eos.reference.ph_flash import enthalpy_at
@@ -62,8 +64,6 @@ DEFAULT_SPEED = 3000.0
 SPEED_SOLVE_ITERATIONS = 200
 #: The numerical derivative's speed increment, ``deltaSpeed``, rpm.
 SPEED_SOLVE_DELTA_RPM = 100.0
-#: ``1e-3`` bar, in pascals.
-SPEED_SOLVE_TOLERANCE_PA = 100.0
 #: The derivative floor, ``1e-6`` bar/rpm, in pascals per rpm.
 SPEED_SOLVE_DERIVATIVE_FLOOR_PA = 1.0e-4
 #: The fallback slope, ``0.01`` bar/rpm, in pascals per rpm.
@@ -535,6 +535,210 @@ def _feed_state(
     return single(list(z), flash.phase != "all_vapour")
 
 
+def _feed_volume_derivatives(
+    mixture: Any, ideal_gas: Any, t: float, p: float, z: list[float]
+) -> tuple[float, float]:
+    """``getdVdTpn`` and ``getdVdPtn`` at the feed's own root, m3/(mol K) and m3/Pa."""
+    flash = pt_flash_solve(mixture, quantity(t, "K"), quantity(p, "Pa"), list(z))
+    reduced = reduced_parameters(mixture, t, p)
+    kij = mixture.effective_kij(reduced.t_kelvin)
+
+    def single(composition: list[float], liquid: bool) -> tuple[float, float]:
+        state = phase_state(reduced, kij, list(composition), liquid=liquid)
+        capacity = phase_capacity(
+            mixture,
+            ideal_gas,
+            reduced,
+            kij,
+            t,
+            p,
+            list(composition),
+            float(state.z),
+        )
+        return volume_derivatives(capacity)
+
+    if flash.phase == "two_phase":
+        beta = flash.vapour_fraction if flash.vapour_fraction is not None else 1.0
+        vapour = single(list(flash.y), False)
+        liquid = single(list(flash.x), True)
+        return (
+            beta * vapour[0] + (1.0 - beta) * liquid[0],
+            beta * vapour[1] + (1.0 - beta) * liquid[1],
+        )
+    return single(list(z), flash.phase != "all_vapour")
+
+
+@dataclass(frozen=True, slots=True)
+class _SchultzHead:
+    """``createSchultzHeadFunction``'s four state numbers, evaluated at an efficiency."""
+
+    schultz_x: float
+    schultz_y: float
+    isentropic_exponent: float
+    head_factor: float
+    pressure_ratio: float
+
+    def head_j_per_kg(self, efficiency: float) -> float:
+        inverse = 1.0 / efficiency
+        exponent = (1.0 + self.schultz_x) / (
+            (inverse + self.schultz_x) / self.isentropic_exponent - self.schultz_y * (inverse - 1.0)
+        )
+        term = exponent / (exponent - 1.0)
+        return float(term * self.head_factor * (self.pressure_ratio ** (1.0 / term) - 1.0) * 1000.0)
+
+
+def _schultz_head(
+    mixture: Any,
+    ideal_gas: Any,
+    t: float,
+    p: float,
+    inlet_z: list[float],
+    n: float,
+    molar_mass: float,
+    inlet_density: float,
+    molar_volume: float,
+    d_v_d_t: float,
+    d_v_d_p: float,
+    outlet_p: float,
+) -> _SchultzHead:
+    """Target ``createSchultzHeadFunction`` at ``outlet_p``."""
+    if outlet_p <= p:
+        raise InvalidInputError(
+            "outlet_pressure",
+            f"the Schultz reference compresses, and it is given {outlet_p} Pa against {p} Pa",
+        )
+    entropy = float(entropy_at(mixture, ideal_gas, t, p, list(inlet_z))[0])
+    isentropic = ps_flash_solve(
+        mixture,
+        ideal_gas,
+        quantity(outlet_p, "Pa"),
+        from_si(entropy, "J/(mol*K)"),
+        list(inlet_z),
+    )
+    isentropic_t = float(isentropic.T.to("K").magnitude)
+    density_volume = _feed_state(mixture, ideal_gas, isentropic_t, outlet_p, list(inlet_z))[2]
+    isentropic_density = molar_mass / density_volume
+    h_isentropic = enthalpy_at(
+        mixture,
+        ideal_gas,
+        isentropic_t,
+        outlet_p,
+        list(inlet_z),
+    )[0]
+    h_in = enthalpy_at(mixture, ideal_gas, t, p, list(inlet_z))[0]
+    pressure_ratio = outlet_p / p
+    density_ratio = isentropic_density / inlet_density
+    if pressure_ratio <= 1.0 or density_ratio <= 1.0:
+        raise InvalidInputError(
+            "outlet_pressure",
+            f"the Schultz reference has pressure ratio {pressure_ratio} and density ratio "
+            f"{density_ratio}, which the isentropic exponent cannot divide",
+        )
+    isentropic_exponent = math.log(pressure_ratio) / math.log(density_ratio)
+    correction_factor = (
+        (h_isentropic - h_in)
+        * n
+        / (
+            1.0e5
+            * (outlet_p / isentropic_density - p / inlet_density)
+            * isentropic_exponent
+            / (isentropic_exponent - 1.0)
+        )
+    )
+    head_factor = correction_factor * 1.0e5 * p / inlet_density / (n * molar_mass) / 1000.0
+    return _SchultzHead(
+        schultz_x=t / molar_volume * d_v_d_t - 1.0,
+        schultz_y=-p / molar_volume * d_v_d_p,
+        isentropic_exponent=isentropic_exponent,
+        head_factor=head_factor,
+        pressure_ratio=pressure_ratio,
+    )
+
+
+def _chart_pressure_for_head(
+    components: list[str],
+    inlet_z: list[float],
+    t: float,
+    p: float,
+    head_j: float,
+    efficiency: float,
+    molar_mass: float,
+    n: float,
+) -> float:
+    """``chartPressureForHead``: the discharge pressure whose Schultz head is the chart's.
+
+    The target's chart branch brackets the historical kappa-ratio pressure and inverts the
+    selected polytropic reference's head; its default method is Schultz. The reference's
+    residual is ``getPolytropicHead("kJ/kg") - head``, which is the function below.
+    """
+    if head_j == 0.0:
+        return p
+    if not 0.0 < efficiency <= 1.0:
+        raise InvalidInputError(
+            "curve", f"the chart head's efficiency is in (0, 1], and {efficiency} is not"
+        )
+    mixture, ideal_gas = _components.mixture_of(components, eos="pr")
+    z, cp, molar_volume = _feed_state(mixture, ideal_gas, t, p, list(inlet_z))
+    inlet_density = molar_mass / molar_volume
+    d_v_d_t, d_v_d_p = _feed_volume_derivatives(mixture, ideal_gas, t, p, list(inlet_z))
+    kappa = cp / (cp - R)
+    ideal_pressure = p * _polytropic_ratio(head_j, z, t, molar_mass, kappa, efficiency)
+
+    def head_at(outlet_p: float) -> float:
+        return _schultz_head(
+            mixture,
+            ideal_gas,
+            t,
+            p,
+            list(inlet_z),
+            n,
+            molar_mass,
+            inlet_density,
+            molar_volume,
+            d_v_d_t,
+            d_v_d_p,
+            outlet_p,
+        ).head_j_per_kg(efficiency)
+
+    lower = 0.0
+    lower_residual = -head_j
+    upper = math.log(ideal_pressure / p) if ideal_pressure > p else math.log(2.0)
+    upper_residual = head_at(p * math.exp(upper)) - head_j
+    for _ in range(12):
+        if upper_residual >= 0.0:
+            break
+        lower = upper
+        lower_residual = upper_residual
+        upper *= 2.0
+        upper_residual = head_at(p * math.exp(upper)) - head_j
+    if upper_residual < 0.0:
+        raise InvalidInputError(
+            "outlet_pressure",
+            f"the chart head {head_j} J/kg cannot be bracketed above {p} Pa",
+        )
+    tolerance = max(1.0e-12, 1.0e-8 * head_j)
+    for iteration in range(72):
+        trial = upper - upper_residual * (upper - lower) / (upper_residual - lower_residual)
+        if (
+            iteration >= 12
+            or not math.isfinite(trial)
+            or trial <= lower
+            or trial >= upper
+            or iteration % 5 == 4
+        ):
+            trial = 0.5 * (lower + upper)
+        residual = head_at(p * math.exp(trial)) - head_j
+        if abs(residual) <= tolerance:
+            return p * math.exp(trial)
+        if residual < 0.0:
+            lower = trial
+            lower_residual = residual
+        else:
+            upper = trial
+            upper_residual = residual
+    raise InvalidInputError("outlet_pressure", "the chart head-pressure solve did not converge")
+
+
 def _chart_states(
     components: list[str],
     n: float,
@@ -550,7 +754,7 @@ def _chart_states(
     molar_mass = capacity._molar_mass(mixture, list(inlet_z))
     # **The feed's own root, at the feed's composition** - `getZ()` and `getCP()/n` on the one
     # phase the class holds, and the molar volume behind `getFlowRate("m3/sec")`.
-    z, cp, molar_volume = _feed_state(mixture, ideal_gas, t, p, list(inlet_z))
+    z, _cp, molar_volume = _feed_state(mixture, ideal_gas, t, p, list(inlet_z))
     fresh_flow = n * molar_volume * 3600.0
     if not n > 0.0 or not fresh_flow > 0.0 or not math.isfinite(n):
         raise InvalidInputError(
@@ -558,7 +762,6 @@ def _chart_states(
             f"the chart branch needs a positive flow to scale, and {n} mol/s gives "
             f"{fresh_flow} m3/hr",
         )
-    kappa = cp / (cp - R)
     # ``getZvolcorr`` = ``P v/(R T)`` at the Peneloux-shifted molar volume.
     zvolcorr = z - p * mixture.volume_shift(list(inlet_z)) / (R * t)
 
@@ -569,15 +772,6 @@ def _chart_states(
         efficiency = min(1.0, max(MIN_EFFICIENCY, chart.polytropic_efficiency(flow_m3hr, speed)))
         head = chart.polytropic_head(flow_m3hr, speed)
         head_j = head * METRE_TO_JOULE_PER_KG
-        exponent = 1.0 / (1.0 - (kappa - 1.0) / kappa / efficiency)
-        flow_work = exponent / (exponent - 1.0) * z * R * t / molar_mass
-        if not flow_work > 0.0 or not math.isfinite(flow_work):
-            raise InvalidInputError(
-                "curve",
-                f"the chart's head and the inlet's state give no polytropic ratio: n={exponent}, "
-                f"flow work={flow_work}",
-            )
-        pressure_ratio = ((head_j + flow_work) / flow_work) ** (exponent / (exponent - 1.0))
 
         if settings.active and chart.is_surge(head, flow_m3hr):
             target = chart.surge_flow(head)
@@ -588,7 +782,16 @@ def _chart_states(
                     continue
         break
 
-    out_p = p * pressure_ratio
+    out_p = _chart_pressure_for_head(
+        components,
+        inlet_z,
+        t,
+        p,
+        head_j,
+        efficiency,
+        molar_mass,
+        boosted,
+    )
     h_in, _ = enthalpy_at(mixture, ideal_gas, t, p, inlet_z)
     dh = head_j * molar_mass / efficiency
     h_out = h_in + dh
@@ -692,7 +895,7 @@ def _speed_solve(
     """``Compressor.run``'s ``solveSpeed`` branch: the speed that reaches a stated pressure."""
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
     molar_mass = capacity._molar_mass(mixture, list(inlet_z))
-    z, cp, molar_volume = _feed_state(mixture, ideal_gas, t, p, list(inlet_z))
+    z, _cp, molar_volume = _feed_state(mixture, ideal_gas, t, p, list(inlet_z))
     fresh_flow = n * molar_volume * 3600.0
     if not n > 0.0 or not fresh_flow > 0.0 or not math.isfinite(n):
         raise InvalidInputError(
@@ -700,8 +903,23 @@ def _speed_solve(
             f"the chart branch needs a positive flow to scale, and {n} mol/s gives "
             f"{fresh_flow} m3/hr",
         )
-    kappa = cp / (cp - R)
     zvolcorr = z - p * mixture.volume_shift(list(inlet_z)) / (R * t)
+    inlet_density = molar_mass / molar_volume
+    d_v_d_t, d_v_d_p = _feed_volume_derivatives(mixture, ideal_gas, t, p, list(inlet_z))
+    schultz = _schultz_head(
+        mixture,
+        ideal_gas,
+        t,
+        p,
+        list(inlet_z),
+        n,
+        molar_mass,
+        inlet_density,
+        molar_volume,
+        d_v_d_t,
+        d_v_d_p,
+        target,
+    )
 
     if not initial_speed > 0.0 or not math.isfinite(initial_speed):
         raise InvalidInputError(
@@ -739,12 +957,13 @@ def _speed_solve(
         head_j = head * METRE_TO_JOULE_PER_KG
         if head_j <= 0.0:
             head_j = MIN_POLYTROPIC_HEAD_J_PER_KG
-        current = p * _polytropic_ratio(head_j, z, t, molar_mass, kappa, formula)
+        current_residual = head_j - schultz.head_j_per_kg(formula)
+        residual_tolerance = 1.0e-8 * max(1.0, head_j)
         # The derivative's read is never clamped, as the class's second read is not.
         percent_delta = chart.polytropic_efficiency(fresh_flow, speed + delta) * 100.0
         head_delta = chart.polytropic_head(fresh_flow, speed + delta) * METRE_TO_JOULE_PER_KG
-        ratio_delta = _polytropic_ratio(head_delta, z, t, molar_mass, kappa, percent_delta / 100.0)
-        derivative = (p * ratio_delta - current) / delta
+        delta_residual = head_delta - schultz.head_j_per_kg(percent_delta / 100.0)
+        derivative = (delta_residual - current_residual) / delta
         if not math.isfinite(derivative):
             raise InvalidInputError(
                 "curve",
@@ -755,7 +974,7 @@ def _speed_solve(
             derivative = SPEED_SOLVE_DERIVATIVE_FALLBACK_PA
         relaxation = min(0.8, iteration / (iteration + 3.0))
         cap = max(500.0, 0.2 * speed)
-        update = (target - current) / derivative
+        update = -current_residual / derivative
         if abs(update) > cap:
             update = math.copysign(cap, update)
         speed += relaxation * update
@@ -768,7 +987,7 @@ def _speed_solve(
         if (speed < min_speed or speed > max_speed) and limit_speed:
             limited = max_speed if speed > max_speed else min_speed
             break
-        if abs(current - target) <= SPEED_SOLVE_TOLERANCE_PA:
+        if abs(current_residual) <= residual_tolerance:
             converged = speed
             break
 

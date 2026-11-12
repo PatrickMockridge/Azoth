@@ -20,8 +20,8 @@
 // the lower of its two structures.
 //
 // A capture, not a test: run it against the pinned jar and commit what it prints.
-//   javac -proc:none -cp neqsim-f0c7436.jar HydrateGFProbe.java
-//   java -cp .:neqsim-f0c7436.jar HydrateGFProbe > captures/hydrate_gf_probe.tsv
+//   javac -proc:none -cp neqsim-118d9af.jar HydrateGFProbe.java
+//   java -cp .:neqsim-118d9af.jar HydrateGFProbe > captures/hydrate_gf_probe.tsv
 
 import neqsim.thermo.component.ComponentHydrate;
 import neqsim.thermo.phase.PhaseHydrate;

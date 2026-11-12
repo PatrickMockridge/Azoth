@@ -16,8 +16,8 @@
 // `(|error| > 1e-3 && iter < 100) || iter < 3`, so three iterations always run.
 //
 // A capture, not a test: run it against the pinned jar and commit what it prints.
-//   javac -proc:none -cp neqsim-f0c7436.jar HydrateInhibitorProbe.java
-//   java -cp .:neqsim-f0c7436.jar HydrateInhibitorProbe > captures/hydrate_inhibitor_probe.tsv
+//   javac -proc:none -cp neqsim-118d9af.jar HydrateInhibitorProbe.java
+//   java -cp .:neqsim-118d9af.jar HydrateInhibitorProbe > captures/hydrate_inhibitor_probe.tsv
 
 import neqsim.thermo.phase.PhaseInterface;
 import neqsim.thermo.system.SystemInterface;

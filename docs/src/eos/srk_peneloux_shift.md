@@ -33,7 +33,7 @@ Implementation detail: where this port departs from its source, which branches a
 
 - `Z_RA` is the Rackett compressibility: the caller's when `z_ra` is given and non-zero, else `0.29056 - 0.08775*omega`. **That is NeqSim's own rule** - `ComponentSrk.getVolumeCorrection()` reads the databank's `RACKETZ` field and falls back to the correlation only where it is below `1e-10`.
 
-- **the fallback is the wrong answer for 132 of the 348 rows**, which carry a `RACKETZ` the correlation does not reproduce - for water the shift is 0.584 against 0.338 in NeqSim's molar-volume units, a 10% density difference on the aqueous phase.
+- **the fallback is the wrong answer for 144 of the 349 rows**, which carry a `RACKETZ` the correlation does not reproduce - for water the shift is 0.584 against 0.338 in NeqSim's molar-volume units, a 10% density difference on the aqueous phase.
 
 - `R` is the exact molar gas constant from the 2019 SI definition, not NeqSim's truncated `8.3144621` - the same value `eos.pr_molar_volume` uses, and the shift is subtracted from that calc's volume.
 

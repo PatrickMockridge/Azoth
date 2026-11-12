@@ -691,7 +691,7 @@ fn the_baseline_card_resolves_to_the_table_it_was_generated_from() {
 
     let mut names = card.overlay().component_names();
     names.sort_unstable();
-    assert_eq!(names.len(), 348, "the table's own count");
+    assert_eq!(names.len(), 349, "the table's own count");
 
     let mut compared = 0;
     for name in names {

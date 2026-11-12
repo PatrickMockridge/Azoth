@@ -1,13 +1,13 @@
 id = "hydraulics.crane_k_factors"
 name = "Fitting resistance coefficients by the equivalent-length method"
-summary = "Total fitting resistance coefficient from a list of fittings and their equivalent lengths. Use it to add valve and fitting losses to a line pressure-drop calculation."
+summary = "Total fitting resistance coefficient from a list of fittings and their equivalent lengths. The coefficients are equivalent-length engineering defaults, cited but not verified against Crane TP-410."
 equation = "K = f_t * sum(n_ld for each fitting)"
 latex = '''K = f_t \sum_{i} n_{L/D,i}'''
-assumptions = ["fully turbulent flow in the fittings, which is what the tabulated coefficients describe", "valves are fully open; a throttled or partly open valve has a much higher coefficient and should be sized by its flow coefficient instead", "fittings are separated by enough straight pipe that their losses do not interact", "the fitting and the pipe are the same nominal size", "single-phase, incompressible flow"]
-references = ["Crane Technical Paper No. 410, \"Flow of Fluids Through Valves, Fittings and Pipe\" (2013).", "The coefficients in data/fittings/crane_k_factors.csv are estimated dummy values for software testing, with no source."]
+assumptions = ["fully turbulent flow in the fittings, which is what the tabulated coefficients describe", "valves are fully open; a throttled or partly open valve has a much higher coefficient and should be sized by its flow coefficient instead", "fittings are separated by enough straight pipe that their losses do not interact", "the fitting and the pipe are the same nominal size", "single-phase, incompressible flow", "the coefficients are NeqSim's equivalent-length defaults, not a verified transcription of Crane TP-410; design use requires a licensed copy of the standard or manufacturer data"]
+references = ["Crane Technical Paper No. 410, \"Flow of Fluids Through Valves, Fittings and Pipe\" (2013).", "NeqSim master (118d9aff), `process/equipment/pipeline/Fittings.java` `STANDARD_LD_VALUES`, Apache-2.0: equivalent-length defaults, not a verified Crane TP-410 transcription. The one azoth-only row, `plug_valve_straightway`, remains an estimated dummy."]
 [source]
 standard = "Crane TP-410"
-edition = "2013"
+edition = "2013 method; the coefficient set is NeqSim's equivalent-length default, not a verified Crane transcription"
 [inputs]
 [inputs.fittings]
 type = "fitting_list"
@@ -55,7 +55,7 @@ rationale = """\
 fittings = "data/fittings/crane_k_factors.csv"
 [worked_example]
 source = "derived from the equation above"
-derivation = "A 90 degree standard elbow plus a fully open gate valve, with f_t = 0.018.\n  n_ld(90_elbow)        = 30      <- ESTIMATED DUMMY COEFFICIENT\n  n_ld(gate_valve_open) = 8       <- ESTIMATED DUMMY COEFFICIENT\n  sum(n_ld)             = 38\n  K = f_t * sum(n_ld)   = 0.018 * 38 = 0.684"
+derivation = "A 90 degree standard elbow plus a fully open gate valve, with f_t = 0.018.\n  n_ld(90_elbow)        = 30      <- NeqSim default, unverified\n  n_ld(gate_valve_open) = 8       <- NeqSim default, unverified\n  sum(n_ld)             = 38\n  K = f_t * sum(n_ld)   = 0.018 * 38 = 0.684"
 tolerance = 1e-09
 [worked_example.inputs]
 f_t = 0.018
@@ -73,13 +73,24 @@ status = "active"
 id = "single_fitting_matches_coefficient"
 type = "reference"
 status = "active"
-source = "Derived: a single 90 degree standard elbow at f_t = 0.019 must give exactly K = 0.019 * 30 = 0.57."
+source = "Derived from the equation above, with NeqSim's unverified default for `elbow_90_standard`: K = 0.019 * 30 = 0.57."
 tolerance = 1e-09
 [tests.inputs]
 f_t = 0.019
 fittings = ["90_elbow"]
 [tests.expected]
 k_total = 0.57
+[[tests]]
+id = "expanded_catalogue_tee_branch"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, with NeqSim's unverified default for `tee_branch`: K = 0.018 * 60 = 1.08."
+tolerance = 1e-09
+[tests.inputs]
+f_t = 0.018
+fittings = ["tee_branch"]
+[tests.expected]
+k_total = 1.08
 [[tests]]
 id = "scaling_is_linear_in_f_t"
 type = "property"

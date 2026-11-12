@@ -17,12 +17,14 @@
 // are read at whichever state the iteration abandoned - printed for completeness, not as a
 // property of the mode at a physical composition.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar ChemEqJacobianProbe.java
-//     java -Xmx2g -cp .:neqsim-f0c7436.jar ChemEqJacobianProbe > captures/chem_eq_jacobian_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar ChemEqJacobianProbe.java
+//     java -Xmx2g -cp .:neqsim-118d9af.jar ChemEqJacobianProbe > captures/chem_eq_jacobian_probe.tsv
 
 import java.lang.reflect.Field;
 import neqsim.chemicalreactions.ChemicalReactionOperations;
 import neqsim.chemicalreactions.chemicalequilibrium.ChemicalEquilibrium;
+import neqsim.mathlib.linearalgebra.EjmlLinearAlgebra;
+import neqsim.mathlib.linearalgebra.LinearAlgebraOperations;
 import neqsim.thermo.ThermodynamicConstantsInterface;
 import neqsim.thermo.component.Component;
 import neqsim.thermo.component.ComponentInterface;
@@ -30,6 +32,7 @@ import neqsim.thermo.phase.PhaseInterface;
 import neqsim.thermo.system.SystemSrkEos;
 
 public class ChemEqJacobianProbe {
+  static final LinearAlgebraOperations ALGEBRA = new EjmlLinearAlgebra();
 
   static double readDouble(Object o, String name) throws Exception {
     Field f = o.getClass().getDeclaredField(name);
@@ -127,13 +130,12 @@ public class ChemEqJacobianProbe {
     // **The rank, because the claim is that the matrix collapses to rank one.** Singular
     // values are printed beside it: a matrix that is *nearly* rank one has a second value
     // far below its first rather than exactly zero, and the ratio is what separates the
-    // two cases. Jama is on the classpath because NeqSim uses it.
-    Jama.Matrix jm = new Jama.Matrix(m);
-    System.out.println("matrix_rank=" + jm.rank());
-    double[][] svdS = jm.svd().getS().getArrayCopy();
+    // two cases. The linear algebra is NeqSim's own; at the target pin it is EJML.
+    System.out.println("matrix_rank=" + ALGEBRA.rank(m));
+    double[] singular = ALGEBRA.singularValueDecomposition(m).getSingularValues();
     StringBuilder svs = new StringBuilder("singular_values=");
-    for (int i = 0; i < svdS.length; i++) {
-      svs.append(String.format("%.6g", svdS[i][i])).append(i + 1 < svdS.length ? " " : "");
+    for (int i = 0; i < singular.length; i++) {
+      svs.append(String.format("%.6g", singular[i])).append(i + 1 < singular.length ? " " : "");
     }
     System.out.println(svs);
     printVector("next_moles", solver.getMoles());

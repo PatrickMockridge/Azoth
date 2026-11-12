@@ -3,8 +3,8 @@
 //
 // Compile and run from this directory:
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar TransportMethodsProbe.java
-//     java -cp .:neqsim-f0c7436.jar TransportMethodsProbe > captures/transport_methods_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar TransportMethodsProbe.java
+//     java -cp .:neqsim-118d9af.jar TransportMethodsProbe > captures/transport_methods_probe.tsv
 //
 // The model strings are `PhysicalProperties.setConductivityModel("Filippov")` and
 // `setViscosityModel("friction theory")` (`PhysicalProperties.java:185-240`). Both are per phase,

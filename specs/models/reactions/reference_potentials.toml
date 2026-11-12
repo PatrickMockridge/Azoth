@@ -8,8 +8,8 @@ assumptions = [
     "**the rank tests see only the stoichiometry.** The matrix is one column wider than the coefficients, the extra column holding `-R T ln K`, and the rank calls are on the narrower matrix. Every coefficient in the source is an integer, so the rank is exact.",
     "NeqSim's rank is a singular-value count against `max(m, n) * s[0] * 2**-52`. On the three captured fluids the smallest singular value it keeps is 0.2461 and the cutoff is 4.8e-15, so the tolerance cannot change a decision here.",
     "**the potentials come back in the caller's component order.** NeqSim's own order is `getAllComponents`'s, which is a `HashSet` iteration order - a property of Java's hash table and not of the chemistry. The capture records what that order happened to be.",
-    "the propagation is bounded by `2 * dependent + 1` passes, and a component it cannot reach takes NeqSim's seed - the component's Gibbs energy of formation, raw and not negated - after which the propagation continues from it. A component with no databank row is refused rather than seeded with zero.",
-    "**a basis narrower than the reaction count is an answer, not an error.** `calcReferencePotentials` returns null there and `calcChemRefPot` reads that as every component's Gibbs energy of formation; `rank` reports the rank it fell short of and `independent` is all zeros.",
+    "**the dependent components take the zero gauge; nothing is propagated.** `calcReferencePotentials` solves the independent columns for `sum(nu_i mu_i) = -RT ln K` and leaves the rest at zero. Reassigning a dependent would break those equations.",
+    "**a basis narrower than the reaction count is an answer, not an error.** `calcReferencePotentials` returns null there and `calcChemRefPot` reads that as every component's Gibbs energy of formation - the raw, non-negated value. `rank` reports the rank it fell short of and `independent` is all zeros.",
     "the rank test is exact only over integers. A non-integral coefficient is refused rather than rounded, because a rounded rank is an approximation the caller cannot tell from the answer.",
     "**where a name is duplicated, the `usereaction` row answers.** `MDEAprot` has an `Austgen1989` row and a `Huttenhuis2005` row; this id keeps the enabled one, and `reactions.equilibrium_constant` keeps the first - 2.76 apart in `ln K` at 298.15 K.",
 ]
@@ -20,7 +20,7 @@ references = [
 ]
 [source]
 standard = "NeqSim master `ChemicalReactionList`"
-edition = "Three passes over the reaction set: `removeJunkReactions`, then `removeDependentReactions`, then `calcReferencePotentials`'s independent-column solve and its propagation, with the Gibbs-energy-of-formation seed where the propagation cannot reach a component."
+edition = "Three passes over the reaction set: `removeJunkReactions`, then `removeDependentReactions`, then `calcReferencePotentials`'s independent-column solve with the dependent components at the zero gauge, and the Gibbs-energy-of-formation fallback only for a rank-deficient basis."
 [inputs]
 [inputs.components]
 type = "components"
@@ -37,12 +37,12 @@ description = "absolute temperature the constants are evaluated at.\n"
 type = "vector"
 unit = "J/mol"
 length = "one per component, in the caller's order"
-description = "the standard-state reference potentials. A potential the basis solved for directly and one propagated from the stoichiometry are the same quantity; `independent` says which is which.\n"
+description = "the standard-state reference potentials. A potential the basis solved for directly is solved against `-RT ln K`; a dependent one is the zero gauge. `independent` says which is which.\n"
 [outputs.independent]
 type = "vector"
 unit = "dimensionless"
 length = "one per component, in the caller's order"
-description = "**a mask over the components**: 1 where the basis solved for the potential directly, 0 where it was propagated from the stoichiometry. A mask rather than a name list because the names are the caller's own input and the positions are what the basis chose over.\n"
+description = "**a mask over the components**: 1 where the basis solved for the potential directly, 0 for the zero gauge (or the rank-deficient formation-Gibbs fallback). A mask rather than names because the positions are what the basis chose over.\n"
 [outputs.survivors]
 type = "vector"
 unit = "dimensionless"

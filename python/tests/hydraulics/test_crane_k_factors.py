@@ -2,14 +2,14 @@
 
 # What these tests can and cannot check
 
-The coefficients in ``data/fittings/crane_k_factors.csv`` are estimated dummy
-values, not engineering data. There is therefore no correct answer for this calc
-to be checked against, and nothing here can detect a wrong coefficient.
+The coefficients in ``data/fittings/crane_k_factors.csv`` are NeqSim's
+equivalent-length defaults, cited but not verified against Crane TP-410, with one
+estimated dummy. There is therefore no authoritative answer for this calc to be
+checked against, and nothing here can detect a wrong coefficient.
 
 These tests validate the arithmetic, the registry lookup and the error handling.
-They are honest about the gap: the numerical assertions compare against values
-derived from the same dummy coefficients, so they would all still pass if the
-coefficients were nonsense.
+The numerical assertions compare against values derived from the same coefficients,
+so they would all still pass if the coefficients were nonsense.
 """
 
 from __future__ import annotations
@@ -124,21 +124,11 @@ def test_components_echo_the_registry_coefficients() -> None:
     h.assert_close(result.k_total, sum(c.k for c in result.components), 1e-15, "k_total is the sum")
 
 
-def test_the_registry_is_entirely_estimated_dummy_data_right_now() -> None:
-    """Fail loudly the day someone populates the registry from a real source.
-
-    At that point this assertion breaks, and whoever did the work is forced to
-    update the spec's verification notes and the docs rather than leaving them
-    claiming the data is placeholder. Deleting this test is the correct response
-    to that failure, not updating the expected number.
-    """
+def test_only_the_plug_valve_is_estimated_dummy() -> None:
+    """The NeqSim defaults are cited but unverified; the plug valve is the placeholder."""
     rows = registry()
     estimated = [row.id for row in rows if row.is_estimated]
-    assert len(estimated) == len(rows), (
-        f"some rows are no longer estimated_dummy ({estimated} of {len(rows)}). If the "
-        f"coefficients have now been verified against the primary standard, delete this "
-        f"test and update the spec's verification block."
-    )
+    assert estimated == ["plug_valve_straightway"]
 
 
 def test_an_estimated_row_says_so_in_its_citation() -> None:

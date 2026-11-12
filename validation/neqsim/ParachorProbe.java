@@ -5,7 +5,7 @@
 // Compile and run from this directory:
 //
 //     javac -cp .:neqf0c7436.jar -d . ParachorProbe.java
-//     java -cp .:neqsim-f0c7436.jar ParachorProbe > captures/parachor_probe.tsv
+//     java -cp .:neqsim-118d9af.jar ParachorProbe > captures/parachor_probe.tsv
 //
 // **The pair form is not the pure component form.** `eos.parachor_surface_tension` ports
 // `calcPureComponentSurfaceTension`, where the mole fractions divide out; the interface form sums

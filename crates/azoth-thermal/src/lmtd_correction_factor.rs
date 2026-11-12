@@ -1,7 +1,7 @@
 //! `thermal.lmtd_correction_factor` - the Bowman-Mueller-Nagle correction.
 //!
 //! Transcribed from `process/mechanicaldesign/heatexchanger/LMTDcorrectionFactor.java` at
-//! NeqSim `f0c7436c69`. The four temperatures enter as differences; `R`, `P` and `F_t` are
+//! NeqSim `118d9aff`. The four temperatures enter as differences; `R`, `P` and `F_t` are
 //! the class's own intermediates.
 //!
 //! Spec: `specs/calcs/thermal/lmtd_correction_factor.toml`.

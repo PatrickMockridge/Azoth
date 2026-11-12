@@ -97,4 +97,4 @@ declared checks *that call* could not evaluate.
 
 - Lafitte, T.; Apostolakou, A.; Avendano, C.; Galindo, A.; Adjiman, C. S.; Muller, E. A.; Jackson, G. (2013). "Accurate statistical associating fluid theory for chain molecules formed from Mie segments." The Journal of Chemical Physics 139(15), 154504. DOI 10.1063/1.4819786
 - Wilson, G. M. (1969). "A Modified Redlich-Kwong Equation of State, Application to General Physical Data Calculations." Paper 15C, AIChE 65th National Meeting.
-- NeqSim master, `TPflashSAFT.java` / `SystemSAFTVRMie.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `TPflashSAFT.java` / `SystemSAFTVRMie.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.

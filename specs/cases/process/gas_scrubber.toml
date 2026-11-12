@@ -98,7 +98,7 @@ capacity_utilization = 0.0033609430039118087
 [[cases]]
 id = "the_mechanical_design_sizes_the_vertical_scrubber"
 tolerance = 0.0002
-source = "The scrubber mechanical capture's PR row: the class's own fixture at 10,000 kg/hr on the cubic this port carries, through `GasScrubberMechanicalDesign.calcDesign`. **The scrubber standard's `1.1` volume factor is the difference from the separator**: the base pass runs first with `1.0`, then this subclass re-sizes vertical (`Fg = 1`) at `1.1`, with a `5 d` length and a module `2 d` high.\n"
+source = "The scrubber mechanical capture's PR row: the class's own fixture at 10,000 kg/hr on the cubic this port carries, through `GasScrubberMechanicalDesign.calcDesign`. **The scrubber standard's `1.1` volume factor is the difference from the separator**: the base pass runs first with `1.0`, then this subclass re-sizes vertical (`Fg = 1`) at `1.1`, with a `5 d` length and a module `2 d` high. **`vessel_volume` is the port's 0.537565, not the capture's 0.222138**: `calcDesign` calls `super.calcDesign()` (which sets `volumeTotal` from the base separator's geometry) and then resizes `innerDiameter`/`tantanLength` without writing `volumeTotal` again, so the capture's number is the stale base-pass volume. The port computes it from the sized scrubber; the divergence is recorded here and filed upstream.\n"
 [cases.inputs]
 components = ["methane", "ethane", "propane", "n-pentane"]
 feed_n = 107.40852445606174
@@ -113,19 +113,19 @@ orientation = "vertical"
 [cases.expected]
 design_inner_diameter = 0.5153753093296343
 design_tantan_length = 2.5768765466481716
-design_outer_diameter = 0.5276754360439454
-design_wall_thickness = 0.00615006335715554
+design_outer_diameter = 0.5731867385540037
+design_wall_thickness = 0.028905714612184743
 max_design_gas_volume_flow = 437.0199728065295
-vessel_shell_weight = 261.3646146595328
-piping_weight = 104.54584586381311
-structural_weight = 26.13646146595328
-electrical_weight = 20.909169172762624
+vessel_shell_weight = 1228.431403439446
+piping_weight = 491.37256137577845
+structural_weight = 122.84314034394461
+electrical_weight = 98.27451227515569
 internals_weight = 0.0
-total_weight = 412.9560911620618
+total_weight = 1940.9216174343248
 module_width = 1.0307506186592685
 module_length = 3.8653148199722573
 module_height = 1.0307506186592685
-vessel_volume = 0.537564660701708
+vessel_volume = 0.5375646603949427
 hhll = 0.4123002474637074
 hll = 0.360762716530744
 nll = 0.25768765466481713

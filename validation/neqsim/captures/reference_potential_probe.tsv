@@ -15,18 +15,18 @@ gmatrix=3x7
   G[1]=0.0 -2.0 1.0 1.0 0.0 0.0 99816.09158088938
   G[2]=0.0 -1.0 0.0 1.0 -1.0 1.0 86061.16003668531
   step[col=0] current_rank=0 next_rank=1 tolerance=6.661338147750939E-16 smallest_sv=1.0 largest_sv=1.0
-  step[col=1] current_rank=1 next_rank=2 tolerance=2.0501490752890558E-15 smallest_sv=0.726542528005361 largest_sv=3.077683537175253
-  step[col=2] current_rank=2 next_rank=3 tolerance=2.095833087040403E-15 smallest_sv=0.3178372451957824 largest_sv=3.1462643699419717
+  step[col=1] current_rank=1 next_rank=2 tolerance=2.050149075289056E-15 smallest_sv=0.7265425280053606 largest_sv=3.0776835371752536
+  step[col=2] current_rank=2 next_rank=3 tolerance=2.0958330870404043E-15 smallest_sv=0.31783724519578227 largest_sv=3.146264369941974
 independent_columns=0 1 2
 dependent_columns=3 4 5
 basis_rank_too_low=false
 potentials=6
-  potential[0]=-135846.03262887645
-  potential[1]=86061.16003668531
-  potential[2]=72306.22849248124
-  potential[3]=199632.18316177875
-  potential[4]=-127079.60827279043
-  potential[5]=-154589.47136119858
+  potential[0]=135846.03262887645
+  potential[1]=-86061.16003668531
+  potential[2]=-72306.22849248124
+  potential[3]=0.0
+  potential[4]=0.0
+  potential[5]=0.0
 fluid=co2-h2s-water
 components=9
   component[0]=CO2
@@ -52,22 +52,22 @@ gmatrix=5x10
   G[4]=0.0 0.0 -1.0 -1.0 0.0 1.0 0.0 1.0 0.0 107080.29449348
   step[col=0] current_rank=0 next_rank=1 tolerance=1.1102230246251565E-15 smallest_sv=1.0 largest_sv=1.0
   step[col=1] current_rank=1 next_rank=2 tolerance=1.1102230246251565E-15 smallest_sv=1.0 largest_sv=1.0
-  step[col=2] current_rank=2 next_rank=3 tolerance=3.7612195820806E-15 smallest_sv=0.7230314135280285 largest_sv=3.387805421663361
-  step[col=3] current_rank=3 next_rank=4 tolerance=3.7613717111293304E-15 smallest_sv=0.4962070071502847 largest_sv=3.387942447328795
-  step[col=4] current_rank=4 next_rank=5 tolerance=3.818871025653021E-15 smallest_sv=0.2535556543203376 largest_sv=3.439733225621386
+  step[col=2] current_rank=2 next_rank=3 tolerance=3.761219582080602E-15 smallest_sv=0.7230314135280287 largest_sv=3.387805421663362
+  step[col=3] current_rank=3 next_rank=4 tolerance=3.7613717111293336E-15 smallest_sv=0.4962070071502846 largest_sv=3.3879424473287982
+  step[col=4] current_rank=4 next_rank=5 tolerance=3.818871025653025E-15 smallest_sv=0.2535556543203376 largest_sv=3.439733225621389
 independent_columns=0 1 2 3 4
 dependent_columns=5 6 7 8
 basis_rank_too_low=false
 potentials=9
-  potential[0]=-135846.03262887645
-  potential[1]=-15109.3096192815
-  potential[2]=86061.16003668531
-  potential[3]=21019.134456794694
-  potential[4]=72306.22849248124
-  potential[5]=199632.18316177875
-  potential[6]=-127079.60827279043
-  potential[7]=14528.405825181253
-  potential[8]=-154589.47136119858
+  potential[0]=135846.03262887645
+  potential[1]=15109.3096192815
+  potential[2]=-86061.16003668531
+  potential[3]=-21019.134456794694
+  potential[4]=-72306.22849248124
+  potential[5]=0.0
+  potential[6]=0.0
+  potential[7]=0.0
+  potential[8]=0.0
 fluid=co2-h2s-mdea-water
 components=11
   component[0]=CO2
@@ -98,21 +98,21 @@ gmatrix=6x12
   step[col=0] current_rank=0 next_rank=1 tolerance=1.3322676295501878E-15 smallest_sv=1.0 largest_sv=1.0
   step[col=1] current_rank=1 next_rank=2 tolerance=1.3322676295501878E-15 smallest_sv=1.0 largest_sv=1.0
   step[col=2] current_rank=2 next_rank=3 tolerance=1.3322676295501878E-15 smallest_sv=1.0 largest_sv=1.0
-  step[col=3] current_rank=3 next_rank=4 tolerance=4.714194187616177E-15 smallest_sv=0.6922446898343477 largest_sv=3.538473864450062
-  step[col=4] current_rank=4 next_rank=5 tolerance=4.714324217241256E-15 smallest_sv=0.48917349479431893 largest_sv=3.538571464678571
-  step[col=5] current_rank=5 next_rank=6 tolerance=4.774819504517419E-15 smallest_sv=0.24606855268449948 largest_sv=3.583979223551004
+  step[col=3] current_rank=3 next_rank=4 tolerance=4.714194187616175E-15 smallest_sv=0.6922446898343476 largest_sv=3.538473864450061
+  step[col=4] current_rank=4 next_rank=5 tolerance=4.714324217241255E-15 smallest_sv=0.48917349479431904 largest_sv=3.5385714646785704
+  step[col=5] current_rank=5 next_rank=6 tolerance=4.7748195045174205E-15 smallest_sv=0.24606855268449931 largest_sv=3.583979223551005
 independent_columns=0 1 2 3 4 5
 dependent_columns=6 7 8 9 10
 basis_rank_too_low=false
 potentials=11
-  potential[0]=-135846.03262887645
-  potential[1]=-15109.3096192815
-  potential[2]=44289.36733828517
-  potential[3]=86061.16003668531
-  potential[4]=21019.134456794694
-  potential[5]=72306.22849248124
-  potential[6]=199632.18316177875
-  potential[7]=-127079.60827279043
-  potential[8]=14528.405825181253
-  potential[9]=-154589.47136119858
-  potential[10]=116088.59776497849
+  potential[0]=135846.03262887645
+  potential[1]=15109.3096192815
+  potential[2]=-44289.36733828517
+  potential[3]=-86061.16003668531
+  potential[4]=-21019.134456794694
+  potential[5]=-72306.22849248124
+  potential[6]=0.0
+  potential[7]=0.0
+  potential[8]=0.0
+  potential[9]=0.0
+  potential[10]=0.0

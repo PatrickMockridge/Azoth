@@ -181,7 +181,7 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `pvtsimulation/flowassurance/EmulsionViscosityCalculator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `pvtsimulation/flowassurance/EmulsionViscosityCalculator.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/flow_assurance_remainder_probe.tsv` - the nineteen states: all six models, the jammed packing fraction, Woelflin's three bands, both inversion clamps, the two water-cut ends, both tightness multipliers and two demulsifier efficiencies.
 - Arirachakaran, S.; Ogbe, D. O.; Economides, M. J. (1989). An analysis of oil/water flow phenomena in horizontal pipes. SPE 18836.
 

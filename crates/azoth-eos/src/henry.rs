@@ -18,7 +18,7 @@
 //!
 //! # The data behind it is sourced, and its history is worth keeping
 //!
-//! Of the 348 compiled rows, 269 carry no correlation and the other 79 carry 75 distinct
+//! Of the 349 compiled rows, 270 carry no correlation and the other 79 carry 75 distinct
 //! two-term sets, `exp(h0 + h1/T) * 1.802` bar. **Upstream PR #4045 replaced the four
 //! placeholder sets this module used to describe** - forty rows of `900`, the constant
 //! `2.92`, the `0.059565` quartet and the one CO2 set copied onto `co` and `cos` - with
@@ -75,7 +75,7 @@ impl Insoluble {
 /// The four coefficients of NeqSim's Henry correlation, dimensionless, in bar.
 ///
 /// `HenryCoef1`..`HenryCoef4` of `COMP.csv`, which `Component.java:2210` reads as
-/// `henryCoefParameter[0..3]`. **All four are zero on 269 of the 348 rows**, which is the
+/// `henryCoefParameter[0..3]`. **All four are zero on 270 of the 349 rows**, which is the
 /// table's marker for a substance it fits no correlation for - and a zero set evaluated as
 /// a polynomial gives `1.802 bar` for every one of them, so a caller must refuse rather
 /// than evaluate. [`coefficient`] is that refusal.

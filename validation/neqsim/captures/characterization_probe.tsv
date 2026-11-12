@@ -110,159 +110,47 @@ cut[9].critical_viscosity = 4.40226475180056e-05
 cut[9].watson_k = 12.3088534124109
 
 # cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
-cut[10].tc = 994.658850370848
-cut[10].pc = 15.4016795450655
-cut[10].tb = 1006.34005439028
-cut[10].acentric = -44.6358323245519
-cut[10].calcm = -7177.99524606000
-cut[10].critical_volume = 23808.7408707686
-cut[10].parachor = 2682.44000000000
-cut[10].critical_viscosity = 5.21406875668607e-05
-cut[10].watson_k = 12.1900575133568
+# cut[10] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRK, molecular weight 1121.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
-cut[11].tc = 1090.85859361806
-cut[11].pc = 14.8606945509713
-cut[11].tb = 1222.55863129697
-cut[11].acentric = -5.64008208774161
-cut[11].calcm = -22945.2300325000
-cut[11].critical_volume = 4975.39396362750
-cut[11].parachor = 4739.30000000000
-cut[11].critical_viscosity = 6.69659309669646e-05
-cut[11].watson_k = 12.3877215474042
+# cut[11] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRK, molecular weight 2000.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # model = PedersenSRKHeavyOil
 # cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
-cut[0].tc = 535.169104844647
-cut[0].pc = 27.5604011071500
-cut[0].tb = 378.770000000000
-cut[0].acentric = 0.488969986466721
-cut[0].calcm = 1.19390549000000
-cut[0].critical_volume = 397.852351959720
-cut[0].parachor = 293.300000000000
-cut[0].critical_viscosity = 2.54516592972896e-05
-cut[0].watson_k = 12.5733591092666
+# cut[0] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRKHeavyOil, molecular weight 100.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[1] MW = 150.000000000000 g/mol, density = 0.750000000000000 g/cm3
-cut[1].tc = 606.211688327571
-cut[1].pc = 19.4552984032327
-cut[1].tb = 459.785000000000
-cut[1].acentric = 0.727003311666610
-cut[1].calcm = 1.38851902500000
-cut[1].critical_volume = 581.186940414803
-cut[1].parachor = 410.300000000000
-cut[1].critical_viscosity = 2.42051489900621e-05
-cut[1].watson_k = 12.5183715634023
+# cut[1] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRKHeavyOil, molecular weight 150.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[2] MW = 200.000000000000 g/mol, density = 0.800000000000000 g/cm3
-cut[2].tc = 663.989806026192
-cut[2].pc = 16.8324740537767
-cut[2].tb = 527.800000000000
-cut[2].acentric = 1.02703548418577
-cut[2].calcm = 1.56454056000000
-cut[2].critical_volume = 644.451910806595
-cut[2].parachor = 527.300000000000
-cut[2].critical_viscosity = 2.49954512947566e-05
-cut[2].watson_k = 12.2882671182104
+# cut[2] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRKHeavyOil, molecular weight 200.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[3] MW = 300.000000000000 g/mol, density = 0.850000000000000 g/cm3
-cut[3].tc = 753.640889509115
-cut[3].pc = 14.2441948454205
-cut[3].tb = 630.830000000000
-cut[3].acentric = 1.52703227245165
-cut[3].calcm = 1.86032409500000
-cut[3].critical_volume = 660.262343665686
-cut[3].parachor = 761.300000000000
-cut[3].critical_viscosity = 2.68163340097647e-05
-cut[3].watson_k = 12.2737146496259
+# cut[3] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRKHeavyOil, molecular weight 300.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[4] MW = 500.000000000000 g/mol, density = 0.880000000000000 g/cm3
-cut[4].tc = 891.945256085426
-cut[4].pc = 11.9629359599742
-cut[4].tb = 746.890000000000
-cut[4].acentric = 1.36586663262266
-cut[4].calcm = 2.22811021600000
-cut[4].critical_volume = 1023.16042062022
-cut[4].parachor = 1229.30000000000
-cut[4].critical_viscosity = 2.99636515612832e-05
-cut[4].watson_k = 12.5418146375894
+# cut[4] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRKHeavyOil, molecular weight 500.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[5] MW = 539.000000000000 g/mol, density = 0.890000000000000 g/cm3
-cut[5].tc = 917.266537424744
-cut[5].pc = 11.9280162245329
-cut[5].tb = 761.859838000000
-cut[5].acentric = 1.24987220957008
-cut[5].calcm = 2.26520943660000
-cut[5].critical_volume = 1124.11217921457
-cut[5].parachor = 1320.56000000000
-cut[5].critical_viscosity = 3.09051974334586e-05
-cut[5].watson_k = 12.4831978854065
+# cut[5] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRKHeavyOil, molecular weight 539.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[6] MW = 541.000000000000 g/mol, density = 0.900000000000000 g/cm3
-cut[6].tc = 920.098825487549
-cut[6].pc = 12.2139708968457
-cut[6].tb = 786.128067244078
-cut[6].acentric = 1.71887064048366
-cut[6].calcm = 2.26689879960000
-cut[6].critical_volume = 828.580761625236
-cut[6].parachor = 1325.24000000000
-cut[6].critical_viscosity = 3.14392172269506e-05
-cut[6].watson_k = 12.4742016319706
+# cut[6] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRKHeavyOil, molecular weight 541.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[7] MW = 600.000000000000 g/mol, density = 0.900000000000000 g/cm3
-cut[7].tc = 954.997590690660
-cut[7].pc = 11.7898356866090
-cut[7].tb = 813.638539448401
-cut[7].acentric = 1.62907642095268
-cut[7].calcm = 2.30049963000000
-cut[7].critical_volume = 947.067755343089
-cut[7].parachor = 1463.30000000000
-cut[7].critical_viscosity = 3.21381839014961e-05
-cut[7].watson_k = 12.6180476401022
+# cut[7] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRKHeavyOil, molecular weight 600.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[8] MW = 900.000000000000 g/mol, density = 0.950000000000000 g/cm3
-cut[8].tc = 1129.51267417358
-cut[8].pc = 11.9732471055350
-cut[8].tb = 933.316364373987
-cut[8].acentric = 1.18653619987072
-cut[8].calcm = 2.07136316500000
-cut[8].critical_volume = 1425.09234993863
-cut[8].parachor = 2165.30000000000
-cut[8].critical_viscosity = 3.86712565999909e-05
-cut[8].watson_k = 12.5134440638763
+# cut[8] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRKHeavyOil, molecular weight 900.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[9] MW = 1119.00000000000 g/mol, density = 0.990000000000000 g/cm3
-cut[9].tc = 1250.39775284238
-cut[9].pc = 12.6690001503336
-cut[9].tb = 1005.27730396894
-cut[9].acentric = 0.928174621647348
-cut[9].calcm = 1.48149033060000
-cut[9].critical_volume = 1687.72321968125
-cut[9].parachor = 2677.76000000000
-cut[9].critical_viscosity = 4.40226475180056e-05
-cut[9].watson_k = 12.3088534124109
+# cut[9] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRKHeavyOil, molecular weight 1119.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
-cut[10].tc = 994.658850370848
-cut[10].pc = 15.4016795450655
-cut[10].tb = 1006.34005439028
-cut[10].acentric = -44.6358323245519
-cut[10].calcm = -7177.99524606000
-cut[10].critical_volume = 23808.7408707686
-cut[10].parachor = 2682.44000000000
-cut[10].critical_viscosity = 5.21406875668607e-05
-cut[10].watson_k = 12.1900575133568
+# cut[10] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRKHeavyOil, molecular weight 1121.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
-cut[11].tc = 1090.85859361806
-cut[11].pc = 14.8606945509713
-cut[11].tb = 1222.55863129697
-cut[11].acentric = -5.64008208774161
-cut[11].calcm = -22945.2300325000
-cut[11].critical_volume = 4975.39396362750
-cut[11].parachor = 4739.30000000000
-cut[11].critical_viscosity = 6.69659309669646e-05
-cut[11].watson_k = 12.3877215474042
+# cut[11] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenSRKHeavyOil, molecular weight 2000.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # model = PedersenPR
 # cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
@@ -376,26 +264,10 @@ cut[9].critical_viscosity = 3.94727011961997e-05
 cut[9].watson_k = 12.3088534124109
 
 # cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
-cut[10].tc = 1023.03277556798
-cut[10].pc = 14.9663093048200
-cut[10].tb = 1006.34005439028
-cut[10].acentric = 29.2136517828680
-cut[10].calcm = -8124.65868077000
-cut[10].critical_volume = 1130.99859570516
-cut[10].parachor = 2682.44000000000
-cut[10].critical_viscosity = 5.09141631659985e-05
-cut[10].watson_k = 12.1900575133568
+# cut[10] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPR, molecular weight 1121.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
-cut[11].tc = 1119.79936693433
-cut[11].pc = 14.3001989063645
-cut[11].tb = 1222.55863129697
-cut[11].acentric = -6.86176360035257
-cut[11].calcm = -25959.4993155000
-cut[11].critical_volume = 6045.71573653161
-cut[11].parachor = 4739.30000000000
-cut[11].critical_viscosity = 6.49871160287592e-05
-cut[11].watson_k = 12.3877215474042
+# cut[11] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPR, molecular weight 2000.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # model = PedersenPR2
 # cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
@@ -509,159 +381,47 @@ cut[9].critical_viscosity = 3.94727011961997e-05
 cut[9].watson_k = 12.0884585802470
 
 # cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
-cut[10].tc = 1023.03277556798
-cut[10].pc = 14.9663093048200
-cut[10].tb = 949.725124249377
-cut[10].acentric = 5.49283283526632
-cut[10].calcm = -8124.65868077000
-cut[10].critical_volume = 1130.99859570516
-cut[10].parachor = 2682.44000000000
-cut[10].critical_viscosity = 5.09141631659985e-05
-cut[10].watson_k = 11.9570343641535
+# cut[10] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPR2, molecular weight 1121.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
-cut[11].tc = 1119.79936693433
-cut[11].pc = 14.3001989063645
-cut[11].tb = 1028.16836218618
-cut[11].acentric = 4.52842443104012
-cut[11].calcm = -25959.4993155000
-cut[11].critical_volume = 1295.64306198238
-cut[11].parachor = 4739.30000000000
-cut[11].critical_viscosity = 6.49871160287592e-05
-cut[11].watson_k = 11.6929191820448
+# cut[11] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPR2, molecular weight 2000.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # model = PedersenPRHeavyOil
 # cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
-cut[0].tc = 554.501268158972
-cut[0].pc = 27.5464053189620
-cut[0].tb = 378.770000000000
-cut[0].acentric = 0.324964904589123
-cut[0].calcm = -58.4171670000000
-cut[0].critical_volume = 437.906422495475
-cut[0].parachor = 293.300000000000
-cut[0].critical_viscosity = 2.52930061168675e-05
-cut[0].watson_k = 12.5733591092666
+# cut[0] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPRHeavyOil, molecular weight 100.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[1] MW = 150.000000000000 g/mol, density = 0.750000000000000 g/cm3
-cut[1].tc = 651.823968983313
-cut[1].pc = 25.2576151991969
-cut[1].tb = 459.785000000000
-cut[1].acentric = 0.433125535353738
-cut[1].calcm = -136.808632500000
-cut[1].critical_volume = 539.874791814223
-cut[1].parachor = 410.300000000000
-cut[1].critical_viscosity = 2.84594424466940e-05
-cut[1].watson_k = 12.5183715634023
+# cut[1] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPRHeavyOil, molecular weight 150.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[2] MW = 200.000000000000 g/mol, density = 0.800000000000000 g/cm3
-cut[2].tc = 725.310482854847
-cut[2].pc = 22.8134150433470
-cut[2].tb = 527.800000000000
-cut[2].acentric = 0.548928158562523
-cut[2].calcm = -247.803448000000
-cut[2].critical_volume = 636.695135019310
-cut[2].parachor = 527.300000000000
-cut[2].critical_viscosity = 3.01644532088809e-05
-cut[2].watson_k = 12.2882671182104
+# cut[2] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPRHeavyOil, molecular weight 200.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[3] MW = 300.000000000000 g/mol, density = 0.850000000000000 g/cm3
-cut[3].tc = 802.259153679188
-cut[3].pc = 19.6815314718167
-cut[3].tb = 630.830000000000
-cut[3].acentric = 1.03180549490990
-cut[3].calcm = -567.669303500000
-cut[3].critical_volume = 664.436318480686
-cut[3].parachor = 761.300000000000
-cut[3].critical_viscosity = 3.29221627301096e-05
-cut[3].watson_k = 12.2737146496259
+# cut[3] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPRHeavyOil, molecular weight 300.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[4] MW = 500.000000000000 g/mol, density = 0.880000000000000 g/cm3
-cut[4].tc = 862.021877542583
-cut[4].pc = 16.8624792785472
-cut[4].tb = 746.890000000000
-cut[4].acentric = 2.39525799802058
-cut[4].calcm = -1598.73385880000
-cut[4].critical_volume = 295.488879709028
-cut[4].parachor = 1229.30000000000
-cut[4].critical_viscosity = 3.78838252129041e-05
-cut[4].watson_k = 12.5418146375894
+# cut[4] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPRHeavyOil, molecular weight 500.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[5] MW = 539.000000000000 g/mol, density = 0.890000000000000 g/cm3
-cut[5].tc = 875.651253847039
-cut[5].pc = 16.5917218741933
-cut[5].tb = 761.859838000000
-cut[5].acentric = 2.48393485101155
-cut[5].calcm = -1860.56511967000
-cut[5].critical_volume = 268.948723631628
-cut[5].parachor = 1320.56000000000
-cut[5].critical_viscosity = 3.88097707215089e-05
-cut[5].watson_k = 12.4831978854065
+# cut[5] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPRHeavyOil, molecular weight 539.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[6] MW = 541.000000000000 g/mol, density = 0.900000000000000 g/cm3
-cut[6].tc = 885.004959346886
-cut[6].pc = 16.6333486562955
-cut[6].tb = 786.128067244078
-cut[6].acentric = 3.14087397613807
-cut[6].calcm = -1874.51450257000
-cut[6].critical_volume = 1.44613377191553
-cut[6].parachor = 1325.24000000000
-cut[6].critical_viscosity = 3.88778040510318e-05
-cut[6].watson_k = 12.4742016319706
+# cut[6] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPRHeavyOil, molecular weight 541.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[7] MW = 600.000000000000 g/mol, density = 0.900000000000000 g/cm3
-cut[7].tc = 891.201148375063
-cut[7].pc = 16.2194690899411
-cut[7].tb = 813.638539448401
-cut[7].acentric = 4.41432379010695
-cut[7].calcm = -2309.87961900000
-cut[7].critical_volume = 909.130729236403
-cut[7].parachor = 1463.30000000000
-cut[7].critical_viscosity = 4.02140989868351e-05
-cut[7].watson_k = 12.6180476401022
+# cut[7] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPRHeavyOil, molecular weight 600.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[8] MW = 900.000000000000 g/mol, density = 0.950000000000000 g/cm3
-cut[8].tc = 962.137032532737
-cut[8].pc = 15.2212168783674
-cut[8].tb = 933.316364373987
-cut[8].acentric = 15.3314932312773
-cut[8].calcm = -5225.81053450000
-cut[8].critical_volume = 1045.86298140884
-cut[8].parachor = 2165.30000000000
-cut[8].critical_viscosity = 4.66110550055752e-05
-cut[8].watson_k = 12.5134440638763
+# cut[8] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPRHeavyOil, molecular weight 900.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[9] MW = 1119.00000000000 g/mol, density = 0.990000000000000 g/cm3
-cut[9].tc = 1013.76999415663
-cut[9].pc = 14.9223797584093
-cut[9].tb = 1005.27730396894
-cut[9].acentric = 58.2586590107643
-cut[9].calcm = -8095.58134347000
-cut[9].critical_volume = 1124.05763280935
-cut[9].parachor = 2677.76000000000
-cut[9].critical_viscosity = 5.08461546387058e-05
-cut[9].watson_k = 12.3088534124109
+# cut[9] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPRHeavyOil, molecular weight 1119.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
-cut[10].tc = 1023.03277556798
-cut[10].pc = 14.9663093048200
-cut[10].tb = 1006.34005439028
-cut[10].acentric = 29.2136517828680
-cut[10].calcm = -8124.65868077000
-cut[10].critical_volume = 1130.99859570516
-cut[10].parachor = 2682.44000000000
-cut[10].critical_viscosity = 5.09141631659985e-05
-cut[10].watson_k = 12.1900575133568
+# cut[10] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPRHeavyOil, molecular weight 1121.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
-cut[11].tc = 1119.79936693433
-cut[11].pc = 14.3001989063645
-cut[11].tb = 1222.55863129697
-cut[11].acentric = -6.86176360035257
-cut[11].calcm = -25959.4993155000
-cut[11].critical_volume = 6045.71573653161
-cut[11].parachor = 4739.30000000000
-cut[11].critical_viscosity = 6.49871160287592e-05
-cut[11].watson_k = 12.3877215474042
+# cut[11] refused: The Pedersen heavy-oil TBP correlation is unsupported (model PedersenPRHeavyOil, molecular weight 2000.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # model = RiaziDaubert
 # cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
@@ -775,26 +535,10 @@ cut[9].critical_viscosity = 4.40226475180056e-05
 cut[9].watson_k = 12.3088534124109
 
 # cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
-cut[10].tc = 994.658850370848
-cut[10].pc = 15.4016795450655
-cut[10].tb = 1006.34005439028
-cut[10].acentric = 2.44473563528752
-cut[10].calcm = # not applicable (isCalcm false)
-cut[10].critical_volume = 348.638879482536
-cut[10].parachor = 2682.44000000000
-cut[10].critical_viscosity = 5.21406875668607e-05
-cut[10].watson_k = 12.1900575133568
+# cut[10] refused: The Pedersen heavy-oil TBP correlation is unsupported (model RiaziDaubert, molecular weight 1121.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
-cut[11].tc = 1090.85859361806
-cut[11].pc = 14.8606945509713
-cut[11].tb = 1222.55863129697
-cut[11].acentric = 3.22658037266551
-cut[11].calcm = # not applicable (isCalcm false)
-cut[11].critical_volume = 1214.55331579254
-cut[11].parachor = 4739.30000000000
-cut[11].critical_viscosity = 6.69659309669646e-05
-cut[11].watson_k = 12.3877215474042
+# cut[11] refused: The Pedersen heavy-oil TBP correlation is unsupported (model RiaziDaubert, molecular weight 2000.0 g/mol): its critical properties and EOS parameter are inconsistent. Use addTBPfraction with independently validated Tc, Pc and acentric factor.
 
 # model = Lee-Kesler
 # cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3

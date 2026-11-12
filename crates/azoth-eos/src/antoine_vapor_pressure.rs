@@ -84,7 +84,7 @@ impl std::str::FromStr for AntoineForm {
 ///
 /// **`none` is not a form, and it is `None` here rather than a fall-through.** It is the
 /// marker upstream added in `83b64e5` (PR #3775) for a row whose correlation is
-/// *unavailable*: 313 of its 389 rows now carry it, with all five coefficients zero. Sent
+/// *unavailable*: 332 of its 390 rows now carry it, with all five coefficients zero. Sent
 /// to Wagner those coefficients give `exp(0) * Pc = Pc`, so an unavailable correlation
 /// would come back as the component's **critical pressure** - measured, `1.82e6 Pa` for
 /// `nc12`, whose vapour pressure there is about `42 Pa`. A plausible number wrong by four

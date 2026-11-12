@@ -79,7 +79,7 @@ NeqSim
 --------------------------------------------------------------------------------
 
   Project:   NeqSim - https://github.com/equinor/neqsim
-  Version:   master (commit f0c7436c6923766b1e22957b7075f650600457a7)
+  Version:   master (commit 118d9aff9206504c136a08e1348b86cdd6cff669)
   Licence:   Apache License, Version 2.0
              http://www.apache.org/licenses/LICENSE-2.0
   Copyright: Copyright 2018 neqsim
@@ -95,18 +95,25 @@ here.
 
 **The component databank. `data/components/`** is generated from NeqSim's
 `data/COMP.csv` and `data/INTER.csv` by `tools/gen_databank.py`, which converts the
-columns to SI once and records the conversions. 348 substances - NeqSim's
+columns to SI once and records the conversions. 349 substances - NeqSim's
 `COMP.csv` filtered to the component types a model here reads - and 957 binary
 interaction pairs.
 
-Neither file is redistributed as it stands. **The 62 ion rows are carried, and a cubic
+Neither file is redistributed as it stands. **The 63 ion rows are carried, and a cubic
 is refused over one.** They are included for the columns an electrolyte model reads -
 `IONICCHARGE`, `DeshMatIonicDiameter`, `MOLARMASS` and `DIELECTRICPARAMETER1..5` - and
-never for their critical constants, which are filler: one shared default set on 27 of
-the 62 rows, a neutral parent's numbers on most of the rest (`MDEA+` carries MDEA's
+never for their critical constants, which are filler: one shared default set on 28 of
+the 63 rows, a neutral parent's numbers on most of the rest (`MDEA+` carries MDEA's
 unchanged), and no stated source for the remainder. So `mixture_of` refuses a cubic over
 anything NeqSim files under `COMPTYPE = 'ion'` rather than computing with those numbers.
 `COMP_EXT.csv` is not used at all.
+
+**The fitting defaults. `data/fittings/crane_k_factors.csv`** carries twenty-three
+rows from NeqSim's `Fittings.STANDARD_LD_VALUES` at the pin. NeqSim states that those
+values are equivalent-length defaults, not a verified transcription of Crane TP-410;
+the file says the same, and one azoth-only row remains an estimated dummy. The
+compiled table is offered under CC-BY-4.0 and the values are attributed here under
+Apache-2.0.
 
 **Algorithms.** `eos.critical_point`, `eos.stability_test` and the models built on
 the same machinery. Each spec's notes record how its implementation differs from

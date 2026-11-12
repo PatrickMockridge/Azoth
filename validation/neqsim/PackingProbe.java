@@ -2,8 +2,8 @@
 //
 // Compile and run from this directory:
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar PackingProbe.java
-//     java -cp .:neqsim-f0c7436.jar PackingProbe > captures/packing_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar PackingProbe.java
+//     java -cp .:neqsim-118d9af.jar PackingProbe > captures/packing_probe.tsv
 //
 // **This is the rate-based column's hydraulics, and the equilibrium packed column's capture already
 // holds its output** - `process_packed_column.tsv` prints `kga`, `kla`, the wetted area, the

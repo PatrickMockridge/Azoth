@@ -2,8 +2,8 @@
 //
 // Compile and run from this directory:
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar TubeInsertProbe.java
-//     java -cp .:neqsim-f0c7436.jar TubeInsertProbe > captures/tube_insert_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar TubeInsertProbe.java
+//     java -cp .:neqsim-118d9af.jar TubeInsertProbe > captures/tube_insert_probe.tsv
 //
 // **The twisted tape's blockage factor cancels the tape thickness** (`t / (t / 0.05)` is
 // `0.05` for any non-zero thickness), and the coiled wire's pitch cancels the same way, so

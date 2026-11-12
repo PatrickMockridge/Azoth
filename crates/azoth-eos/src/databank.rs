@@ -192,7 +192,7 @@ pub const SOLUTE: &str = "solute";
 
 /// The `COMPTYPE` value whose rows carry no critical constants of their own.
 ///
-/// `COMP.csv` files 62 rows under it, and for 27 of them the four critical columns hold
+/// `COMP.csv` files 63 rows under it, and for 28 of them the four critical columns hold
 /// one default set - `Tc = 444.15` as the file states it, which the generator's 273.15
 /// makes `717.3 K`, then `Pc = 290.89 bar`, `omega = 0.344` and `Vc = 99 cm3/mol`. The
 /// remaining 35 inherit a neutral parent's numbers (`MDEA+` carries MDEA's) or carry
@@ -255,8 +255,8 @@ pub struct Entry {
     /// `ComponentPR.getVolumeCorrection()` builds from it: the shift is
     /// `0.50033*(0.25969 - Z_RA)*R*Tc/Pc`, and NeqSim falls back to
     /// `Z_RA = 0.29056 - 0.08775*omega` only where this column is zero. The fallback is
-    /// the whole of the correlation for 216 of the 348 rows and **the wrong answer for
-    /// the other 132**, water among them - where it gives a shift of the wrong sign.
+    /// the whole of the correlation for 205 of the 349 rows and **the wrong answer for
+    /// the other 144**, water among them - where it gives a shift of the wrong sign.
     pub rackett_z: f64,
     /// The four liquid-viscosity parameters `LIQVISC1`-`LIQVISC4`, whose meaning is
     /// [`Self::liqvisc_model`]. Read by `eos.aqueous_viscosity`.
@@ -295,12 +295,12 @@ pub struct Entry {
     pub formula: String,
     /// The association parameters, or `None` for a component the table gives no scheme.
     ///
-    /// 181 of the 348 compiled rows carry `0` in the scheme column and are non-associating;
+    /// 182 of the 349 compiled rows carry `0` in the scheme column and are non-associating;
     /// the rest name `1A`, `2A`, `2B` or `4C`.
     pub association: Option<AssociationRecord>,
     /// PC-SAFT's segment number `m`, dimensionless.
     ///
-    /// **Zero means the table carries no PC-SAFT set**, which is how 106 of the 348 rows
+    /// **Zero means the table carries no PC-SAFT set**, which is how 107 of the 349 rows
     /// spell absence - the column is never blank. A model must refuse a zero rather than
     /// compute with it, the rule `ComponentSrkCPA`'s `|aCPA| > 1e-6` guard already follows.
     pub m_saft: f64,
@@ -317,7 +317,7 @@ pub struct Entry {
     /// **Every component may carry these, associating or not.** NeqSim reads them in
     /// `Component.createComponent` (line 404) before any attractive term is chosen, and
     /// `ComponentUMRCPA.setAttractiveTerm` installs term 22 for a component whose set
-    /// has them - a hydrocarbon as readily as a glycol. 23 of the 348 rows carry one.
+    /// has them - a hydrocarbon as readily as a glycol. 23 of the 349 rows carry one.
     pub umrcpa_mc: [f64; 5],
     /// The cubic alpha function's parameters, as **a card** states them: a contiguous
     /// prefix of the five `alpha_param_*` names, and empty for every shipped row.
@@ -356,7 +356,7 @@ pub struct Entry {
     ///
     /// **It is the flag that decides whether a substance can be in a wax phase at all** -
     /// `ComponentWax.fugcoef` returns its `1e50` marker for one that is not - so a model
-    /// reading it and a model ignoring it are answers about different fluids. 16 of the 348
+    /// reading it and a model ignoring it are answers about different fluids. 16 of the 349
     /// compiled rows carry it, and they are the n-alkanes from n-hexane up.
     pub wax_former: bool,
     /// The parachor, in NeqSim's mixed unit `(mN/m)**(1/4) * cm**3/mol`: NeqSim's `PARACHOR`.
@@ -408,7 +408,7 @@ pub struct Entry {
     /// SAFT-VR-Mie's repulsive exponent `lambda_r`, dimensionless.
     ///
     /// **This one is an absence marker too, on exactly the rows `m_mie` is.** The table
-    /// carries the standard `12` on 336 of its 348 rows and a fitted exponent on the 12
+    /// carries the standard `12` on 337 of its 349 rows and a fitted exponent on the 12
     /// that have a set, so `lambda_r_mie == 12.0` and `m_mie == 0.0` hold on the same 336
     /// rows. Two markers for one fact, which is why `m_mie` is the one read.
     pub lambda_r_mie: f64,
@@ -418,7 +418,7 @@ pub struct Entry {
     pub lambda_a_mie: f64,
     /// SAFT-VR-Mie's segment number `m`, dimensionless.
     ///
-    /// **Zero means the table carries no SAFT-VR-Mie set**, which is how 336 of the 348
+    /// **Zero means the table carries no SAFT-VR-Mie set**, which is how 337 of the 349
     /// rows spell absence - 12 carry one, the light alkanes with `co2`, nitrogen and
     /// water. `sigma_mie` and `epsik_mie` are zero on exactly those rows.
     pub m_mie: f64,
@@ -434,7 +434,7 @@ pub struct Entry {
     pub ionic_charge: f64,
     /// The Deshmukh-Mather ion diameter, in ångström.
     ///
-    /// **The table's absence marker is `0.0`, not a blank**, which is what 18 of the 62
+    /// **The table's absence marker is `0.0`, not a blank**, which is what 18 of the 63
     /// [`ION`] rows carry. A model that needs one must refuse a zero: a zero diameter is
     /// the infinite-dilution limit of the term it belongs to, so a plausible number would
     /// come out of it.
@@ -462,7 +462,7 @@ pub struct Entry {
     pub liquid_density_kg_per_m3: f64,
     /// The four coefficients of NeqSim's Henry correlation.
     ///
-    /// **All four are zero on 269 of the 348 rows**, which is how the table spells "no
+    /// **All four are zero on 270 of the 349 rows**, which is how the table spells "no
     /// correlation", so a caller must refuse rather than evaluate - see
     /// [`crate::henry`], which is the surface a model takes them through.
     pub henry: crate::henry::HenryRecord,
@@ -1420,7 +1420,7 @@ fn parse_association(
 /// One row's `UMRCPA_*` set, or `None` where the row does not carry one.
 ///
 /// NeqSim's guard is two-part (`Component.java:534`): `UMRCPA_associating` is one **and**
-/// `|UMRCPA_a0| > 1e-20`. Seven of the 348 rows pass it - water, methanol, ethanol and
+/// `|UMRCPA_a0| > 1e-20`. Seven of the 349 rows pass it - water, methanol, ethanol and
 /// the four glycols - and a row that fails it keeps the PR family's fitted values, which
 /// is what `ComponentUMRCPA` reads first for being a `ComponentPR`.
 fn parse_umr_cpa(
@@ -4358,7 +4358,7 @@ pub fn mixture_of(
             "components",
             format!(
                 "{} {} an ion, and a cubic has no notion of one. NeqSim's table fills its \
-                 ion rows' critical columns with a default - one shared set on 27 of the 62, \
+                 ion rows' critical columns with a default - one shared set on 28 of the 63, \
                  a neutral parent's numbers on most of the rest - so a cubic built from them \
                  returns plausible-looking wrong numbers, and a card that adds an ion has no \
                  better constants to give. An ion belongs to the electrolyte models, which \

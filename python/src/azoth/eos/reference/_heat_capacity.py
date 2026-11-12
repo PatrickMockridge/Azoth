@@ -29,6 +29,20 @@ class PhaseCapacity(NamedTuple):
     cp: float
     cv: float
     d_p_d_v: float
+    d_p_d_t: float
+
+
+def volume_derivatives(capacity: PhaseCapacity) -> tuple[float, float]:
+    """``(dV/dT)_P`` and ``(dV/dP)_T`` from the cubic's pressure derivatives.
+
+    ``SystemThermo.getdVdTpn`` is ``-(dP/dT)_V/(dP/dV)_T`` and ``getdVdPtn`` is
+    ``1/(dP/dV)_T``. The molar and total ratios agree, so these are used directly by the
+    Schultz compressor head.
+    """
+    return (
+        -capacity.d_p_d_t / capacity.d_p_d_v,
+        1.0 / capacity.d_p_d_v,
+    )
 
 
 def phase_capacity(
@@ -79,4 +93,4 @@ def phase_capacity(
         raise InvalidInputError(
             "state", f"the phase's heat capacities are cp={cp}, cv={cv}, and both must be positive"
         )
-    return PhaseCapacity(cp=cp, cv=cv, d_p_d_v=d_p_d_v)
+    return PhaseCapacity(cp=cp, cv=cv, d_p_d_v=d_p_d_v, d_p_d_t=d_p_d_t)

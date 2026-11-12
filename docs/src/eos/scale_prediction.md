@@ -212,7 +212,7 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim master, `pvtsimulation/flowassurance/ScalePredictionCalculator.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `pvtsimulation/flowassurance/ScalePredictionCalculator.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
 - `validation/neqsim/captures/scale_prediction_probe.tsv` - the upstream tests' brines, both pH paths, the pressure-correction boundary and every intermediate.
 - Plummer, L. N.; Busenberg, E. (1982). Geochim. Cosmochim. Acta 46(6), 1011-1040. Monnin, C. (1999). Chem. Geol. 157, 193-203. Greenberg, J.; Tomson, M. (1992). Appl. Geochem. 7(2), 185-190. Garrels, R. M.; Thompson, M. E. (1962). Am. J. Sci. 260, 57-66.
 

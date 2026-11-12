@@ -1,7 +1,7 @@
 //! `thermal.zone_rating` - the shell-and-tube rating run zone by zone.
 //!
 //! Transcribed from `ThermalDesignCalculator.calculateZones(ZoneDefinition[])` at NeqSim
-//! `f0c7436c69`. Each zone overrides the eight transport properties and reruns the class's
+//! `118d9aff`. Each zone overrides the eight transport properties and reruns the class's
 //! permissive `calculate()`; mass flows, fouling, the deposit, the method and every geometry
 //! stay the base request's. The required area is
 //! `duty_fraction * total_duty / (U * lmtd)`, zero when either denominator is not positive.

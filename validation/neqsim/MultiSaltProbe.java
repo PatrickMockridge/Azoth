@@ -6,9 +6,9 @@
 // `CalcSaltSatauration` is the per-mineral half - `precipitate()` and `dissolve()` - and the
 // loop refuses rather than returns when it stalls or when its ledger does not close.
 //
-//   javac -proc:none -cp neqsim-f0c7436.jar MultiSaltProbe.java
-//   java -cp .:neqsim-f0c7436.jar MultiSaltProbe > captures/multi_salt_pitzer_probe.tsv
-//   java -cp .:neqsim-f0c7436.jar MultiSaltProbe three-salts
+//   javac -proc:none -cp neqsim-118d9af.jar MultiSaltProbe.java
+//   java -cp .:neqsim-118d9af.jar MultiSaltProbe > captures/multi_salt_pitzer_probe.tsv
+//   java -cp .:neqsim-118d9af.jar MultiSaltProbe three-salts
 //
 // **`three-salts` refuses on every revision pinned so far**, so it is run to see the refusal
 // and not to reproduce a capture. `multi_salt_probe.tsv` is the same brine from before

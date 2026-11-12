@@ -1,7 +1,7 @@
 // `ComponentGE.fugcoef`'s two reference states, measured component by component.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar GeHenryProbe.java
-//     java -cp .:neqsim-f0c7436.jar GeHenryProbe > captures/ge_henry_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar GeHenryProbe.java
+//     java -cp .:neqsim-118d9af.jar GeHenryProbe > captures/ge_henry_probe.tsv
 //
 // The four solvent-branch drivers (`GeNrtlPhi`, `GeWilsonPhi`, `GeUnifacPhi`) chose
 // solvent-tagged components on purpose: `ComponentGE.fugcoef` gives anything else a

@@ -18,8 +18,8 @@
 //     fluid can run. So CO2/water is the fluid where the gate fires on nothing, and the
 //     other fluids here are the ones where it fires.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar PitzerStrictnessProbe.java
-//     java -cp .:neqsim-f0c7436.jar PitzerStrictnessProbe > captures/pitzer_strictness_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar PitzerStrictnessProbe.java
+//     java -cp .:neqsim-118d9af.jar PitzerStrictnessProbe > captures/pitzer_strictness_probe.tsv
 
 import java.util.ArrayList;
 

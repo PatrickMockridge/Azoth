@@ -29,23 +29,23 @@ fluid=co2-water-298K-kinetics
 phases=2
   phase[0]=gas
   phase[1]=aqueous
-effective_diffusion=1.3273085673495432E-9 1.2949443034517625E-9 1.873193606363133E-9 1.7615254560250475E-9 9.308800234111773E-10 9.395402172459193E-10
-binary_diffusion=7.18809576600793E-11 0.0 0.0 0.0 0.0 0.0 0.0 2.052849625989371E-9 0.0 0.0 0.0 0.0 0.0 0.0 3.3448915589881442E-9 0.0 0.0 0.0 0.0 0.0 0.0 3.1456384522345468E-9 0.0 0.0 0.0 0.0 0.0 0.0 1.6623011289821816E-9 0.0 0.0 0.0 0.0 0.0 0.0 1.6776828179651821E-9
+effective_diffusion=1.3264521910759003E-9 1.2940012014165289E-9 1.8715042911423727E-9 1.7600230922578317E-9 9.300951184964653E-10 9.387007791799915E-10
+binary_diffusion=7.18809576600793E-11 0.0 0.0 0.0 0.0 0.0 0.0 2.0517588528466796E-9 0.0 0.0 0.0 0.0 0.0 0.0 3.3448915589881442E-9 0.0 0.0 0.0 0.0 0.0 0.0 3.1456384522345468E-9 0.0 0.0 0.0 0.0 0.0 0.0 1.6623011289821816E-9 0.0 0.0 0.0 0.0 0.0 0.0 1.6776828179651821E-9
 effective_recomputed=0.0 0.0 0.0 0.0 0.0 0.0
 density[0]=0.0
-  component[0][CO2]_x=0.9765102141001941 molar_mass=0.04401
-  component[0][water]_x=0.02348978589980592 molar_mass=0.018015
-  component[0][OH-]_x=1.000009665115536E-51 molar_mass=0.017001000000000002
-  component[0][H3O+]_x=1.000009665115536E-51 molar_mass=0.01902
-  component[0][HCO3-]_x=1.000009665115536E-51 molar_mass=0.061
-  component[0][CO3--]_x=1.000009665115536E-51 molar_mass=0.059982
-density[1]=1001.7345003123514
-  component[1][CO2]_x=1.1772872314229393E-5 molar_mass=0.04401
-  component[1][water]_x=0.9999836689077933 molar_mass=0.018015
-  component[1][OH-]_x=1.4298146909556775E-12 molar_mass=0.017001000000000002
-  component[1][H3O+]_x=2.2790899484670708E-6 molar_mass=0.01902
-  component[1][HCO3-]_x=2.2791285133966227E-6 molar_mass=0.061
-  component[1][CO3--]_x=8.374388127330817E-16 molar_mass=0.059982
+  component[0][CO2]_x=0.9765102141001947 molar_mass=0.04401
+  component[0][water]_x=0.02348978589980537 molar_mass=0.018015
+  component[0][OH-]_x=1.0000096651155144E-51 molar_mass=0.017001000000000002
+  component[0][H3O+]_x=1.0000096651155144E-51 molar_mass=0.01902
+  component[0][HCO3-]_x=1.0000096651155144E-51 molar_mass=0.061
+  component[0][CO3--]_x=1.0000096651155144E-51 molar_mass=0.059982
+density[1]=1001.7345002584867
+  component[1][CO2]_x=1.177287232845211E-5 molar_mass=0.04401
+  component[1][water]_x=0.9999836689077509 molar_mass=0.018015
+  component[1][OH-]_x=1.4298021428369346E-12 molar_mass=0.017001000000000002
+  component[1][H3O+]_x=2.279109953090673E-6 molar_mass=0.01902
+  component[1][HCO3-]_x=2.27910853693524E-6 molar_mass=0.061
+  component[1][CO3--]_x=8.374241229496E-16 molar_mass=0.059982
 reaction_k[water_CO2_HCO3-_H3O+]=4.412340363006617E-7
 reaction_rate_factor[water_CO2_HCO3-_H3O+]=0.004327147905576517
 reaction_k[water_OH-_H3O+]=3.2581887406912058E-18
@@ -54,40 +54,40 @@ reaction_k[H3O+_CO3--_HCO3-_water]=8.370205822785757E-16
 reaction_rate_factor[H3O+_CO3--_HCO3-_water]=0.004327147905576517
 reac_matrix[CO2]=0.012981443716729553
   phi_infinite=0.0
-reac_matrix[water]=0.006729079680068898
-  phi_infinite=1.1794482752412865
-reac_matrix[OH-]=0.009173699852615236
-  phi_infinite=1381653.4253719337
-reac_matrix[H3O+]=1.6195498812433516E-4
-  phi_infinite=1.3692626894193294
-reac_matrix[HCO3-]=0.009173699852615236
-  phi_infinite=5.138683056155029
-reac_matrix[CO3--]=0.009173699852615236
-  phi_infinite=1.1751832282985014E10
+reac_matrix[water]=0.006729078261827849
+  phi_infinite=1.1795160840769956
+reac_matrix[OH-]=0.00917370441163613
+  phi_infinite=1381711.532240095
+reac_matrix[H3O+]=1.6195356858725985E-4
+  phi_infinite=1.3692904961009087
+reac_matrix[HCO3-]=0.00917370441163613
+  phi_infinite=5.138742579878477
+reac_matrix[CO3--]=0.00917370441163613
+  phi_infinite=1.1752380242203676E10
 
 fluid=co2-water-298K-fresh-kinetics
-shared_phi_infinite[CO2]=1.1751832282985014E10
+shared_phi_infinite[CO2]=1.1752380242203676E10
 shared_irreversible[CO2]=false
-shared_phi_infinite[water]=1.1751832282985014E10
+shared_phi_infinite[water]=1.1752380242203676E10
 shared_irreversible[water]=false
-shared_phi_infinite[OH-]=1.1751832282985014E10
+shared_phi_infinite[OH-]=1.1752380242203676E10
 shared_irreversible[OH-]=false
-shared_phi_infinite[H3O+]=1.1751832282985014E10
+shared_phi_infinite[H3O+]=1.1752380242203676E10
 shared_irreversible[H3O+]=false
-shared_phi_infinite[HCO3-]=1.1751832282985014E10
+shared_phi_infinite[HCO3-]=1.1752380242203676E10
 shared_irreversible[HCO3-]=false
-shared_phi_infinite[CO3--]=1.1751832282985014E10
+shared_phi_infinite[CO3--]=1.1752380242203676E10
 shared_irreversible[CO3--]=false
 fresh_phi_infinite[CO2]=0.0
 fresh_irreversible[CO2]=false
-fresh_phi_infinite[water]=1.1794482752412865
+fresh_phi_infinite[water]=1.1795160840769956
 fresh_irreversible[water]=false
-fresh_phi_infinite[OH-]=1381653.4253719337
+fresh_phi_infinite[OH-]=1381711.532240095
 fresh_irreversible[OH-]=false
-fresh_phi_infinite[H3O+]=1.3692626894193294
+fresh_phi_infinite[H3O+]=1.3692904961009087
 fresh_irreversible[H3O+]=false
-fresh_phi_infinite[HCO3-]=5.138683056155029
+fresh_phi_infinite[HCO3-]=5.138742579878477
 fresh_irreversible[HCO3-]=false
-fresh_phi_infinite[CO3--]=1.1751832282985014E10
+fresh_phi_infinite[CO3--]=1.1752380242203676E10
 fresh_irreversible[CO3--]=false
 

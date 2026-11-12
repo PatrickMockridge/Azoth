@@ -30,14 +30,14 @@ design_warning_count=0
 inlet_n=173.14578182246325
 inlet_P=50.0
 inlet_T=303.15
-inlet_h=177.45086384082012
-inlet_s=-30.814600987136362
+inlet_h=177.37889369083987
+inlet_s=-30.814850303403848
 inlet_z=methane:1.0
 outlet_n=173.14578182246325
 outlet_P=49.85
 outlet_T=303.15
-outlet_h=180.07560152756372
-outlet_s=-30.783318639016926
+outlet_h=180.00363137758347
+outlet_s=-30.78356795528441
 outlet_z=methane:1.0
 
 basket_strainer_warnings
@@ -76,14 +76,14 @@ design_warning=No particle-size efficiency or beta-ratio test data have been con
 inlet_n=173.14578182246325
 inlet_P=50.0
 inlet_T=303.15
-inlet_h=177.45086384082012
-inlet_s=-30.814600987136362
+inlet_h=177.37889369083987
+inlet_s=-30.814850303403848
 inlet_z=methane:1.0
 outlet_n=173.14578182246325
 outlet_P=48.0
 outlet_T=303.15
-outlet_h=212.48081815588102
-outlet_s=-30.391135728536117
+outlet_h=212.40884800590078
+outlet_s=-30.391385044803602
 outlet_z=methane:1.0
 
 activated_carbon_granular
@@ -118,14 +118,14 @@ design_warning_count=0
 inlet_n=173.14578182246325
 inlet_P=50.0
 inlet_T=303.15
-inlet_h=177.45086384082012
-inlet_s=-30.814600987136362
+inlet_h=177.37889369083987
+inlet_s=-30.814850303403848
 inlet_z=methane:1.0
 outlet_n=173.14578182246325
 outlet_P=49.95523741734446
 outlet_T=303.15
-outlet_h=178.2340870457737
-outlet_s=-30.80527369452972
+outlet_h=178.16211689579345
+outlet_s=-30.80552301079721
 outlet_z=methane:1.0
 
 cartridge_high_flow
@@ -161,14 +161,14 @@ design_warning=No particle-size efficiency or beta-ratio test data have been con
 inlet_n=865.7289091123163
 inlet_P=50.0
 inlet_T=303.15
-inlet_h=177.45086384081944
-inlet_s=-30.81460098713637
+inlet_h=177.37889369083933
+inlet_s=-30.81485030340385
 inlet_z=methane:1.0
 outlet_n=865.7289091123163
 outlet_P=49.9
 outlet_T=303.15
-outlet_h=179.20064260185023
-outlet_s=-30.793754478212204
+outlet_h=179.12867245187013
+outlet_s=-30.794003794479686
 outlet_z=methane:1.0
 
 y_strainer_low_flow
@@ -204,14 +204,14 @@ design_warning=No particle-size efficiency or beta-ratio test data have been con
 inlet_n=17.314578182246326
 inlet_P=50.0
 inlet_T=303.15
-inlet_h=177.45086384081986
-inlet_s=-30.814600987136373
+inlet_h=177.3788936908397
+inlet_s=-30.81485030340385
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=49.99
 outlet_T=303.15
-outlet_h=177.6258333560684
-outlet_s=-30.8125178436522
+outlet_h=177.55386320608824
+outlet_s=-30.812767159919684
 outlet_z=methane:1.0
 
 two_initial_elements
@@ -247,14 +247,14 @@ design_warning=No particle-size efficiency or beta-ratio test data have been con
 inlet_n=17.314578182246326
 inlet_P=50.0
 inlet_T=303.15
-inlet_h=177.45086384081986
-inlet_s=-30.814600987136373
+inlet_h=177.3788936908397
+inlet_s=-30.81485030340385
 inlet_z=methane:1.0
 outlet_n=17.314578182246326
 outlet_P=49.99
 outlet_T=303.15
-outlet_h=177.6258333560684
-outlet_s=-30.8125178436522
+outlet_h=177.55386320608824
+outlet_s=-30.812767159919684
 outlet_z=methane:1.0
 
 overrides
@@ -290,14 +290,14 @@ design_warning=No particle-size efficiency or beta-ratio test data have been con
 inlet_n=173.14578182246325
 inlet_P=50.0
 inlet_T=303.15
-inlet_h=177.45086384082012
-inlet_s=-30.814600987136362
+inlet_h=177.37889369083987
+inlet_s=-30.814850303403848
 inlet_z=methane:1.0
 outlet_n=173.14578182246325
 outlet_P=49.99
 outlet_T=303.15
-outlet_h=177.62583335606874
-outlet_s=-30.812517843652195
+outlet_h=177.5538632060885
+outlet_s=-30.81276715991968
 outlet_z=methane:1.0
 
 granular_long_bed
@@ -333,14 +333,14 @@ design_warning=No particle-size efficiency or beta-ratio test data have been con
 inlet_n=8.657289091123163
 inlet_P=50.0
 inlet_T=303.15
-inlet_h=177.45086384081986
-inlet_s=-30.814600987136373
+inlet_h=177.3788936908397
+inlet_s=-30.81485030340385
 inlet_z=methane:1.0
 outlet_n=8.657289091123163
 outlet_P=49.99940105543857
 outlet_T=303.15
-outlet_h=177.46134349240089
-outlet_s=-30.81447622780895
+outlet_h=177.38937334242073
+outlet_s=-30.814725544076435
 outlet_z=methane:1.0
 
 liquid_bag_nozzle_density
@@ -376,13 +376,13 @@ design_warning=No particle-size efficiency or beta-ratio test data have been con
 inlet_n=23.895684821652168
 inlet_P=5.0
 inlet_T=300.0
-inlet_h=-18946.048420324656
-inlet_s=-69.98186300771162
+inlet_h=-18946.111750580745
+inlet_s=-69.98208367526222
 inlet_z=n-butane:1.0
 outlet_n=23.895684821652168
 outlet_P=4.99
 outlet_T=300.0
-outlet_h=-18946.07793765921
-outlet_s=-69.98163845197469
+outlet_h=-18946.1412679153
+outlet_s=-69.98185911952528
 outlet_z=n-butane:1.0
 

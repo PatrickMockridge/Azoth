@@ -1,7 +1,7 @@
 //! `thermal.shell_and_tube_vibration` - the tube-vibration screen.
 //!
 //! Transcribed from `process/mechanicaldesign/heatexchanger/VibrationAnalysis.java` at
-//! NeqSim `f0c7436c69`. The screen fixes the natural frequency's end condition at
+//! NeqSim `118d9aff`. The screen fixes the natural frequency's end condition at
 //! `pinned`, as `performScreening` does; the `fixed` and `clamped-pinned` branches are the
 //! helper's and are measured as evidence rather than carried as inputs.
 //!

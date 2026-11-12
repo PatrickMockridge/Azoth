@@ -2,9 +2,9 @@
 //
 // Compile and run from this directory:
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar SurfaceTensionProbe.java
-//     java -cp .:neqsim-f0c7436.jar SurfaceTensionProbe > captures/surface_tension_probe.tsv
-//     java -cp .:neqsim-f0c7436.jar SurfaceTensionProbe solvers > captures/surface_tension_solvers_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar SurfaceTensionProbe.java
+//     java -cp .:neqsim-118d9af.jar SurfaceTensionProbe > captures/surface_tension_probe.tsv
+//     java -cp .:neqsim-118d9af.jar SurfaceTensionProbe solvers > captures/surface_tension_solvers_probe.tsv
 //
 // With no argument the probe records model 0 - the field's initial value and the only default -
 // and the two calculators it installs, Parachor and Firozabadi-Ramley, called directly. Model 0

@@ -4,8 +4,8 @@
 // system outside the class and prints the potentials, so a port knows what to reproduce
 // rather than guessing at NeqSim's entropy convention.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar LgtLocalProbe.java
-//     java -cp .:neqsim-f0c7436.jar LgtLocalProbe > captures/lgt_local_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar LgtLocalProbe.java
+//     java -cp .:neqsim-118d9af.jar LgtLocalProbe > captures/lgt_local_probe.tsv
 
 import neqsim.physicalproperties.interfaceproperties.surfacetension.LGTSurfaceTension;
 import neqsim.thermo.system.SystemInterface;

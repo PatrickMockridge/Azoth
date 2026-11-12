@@ -13,8 +13,8 @@
 // that would catch a `0.0` sentinel for "no temperature specification" - 0 degC is a
 // legitimate setpoint and 273.15 K is not a value a guard should refuse.
 //
-//     javac -proc:none -cp neqsim-f0c7436.jar HeaterSpecProbe.java
-//     java -Xmx2g -cp .:neqsim-f0c7436.jar HeaterSpecProbe > captures/heater_spec_probe.tsv
+//     javac -proc:none -cp neqsim-118d9af.jar HeaterSpecProbe.java
+//     java -Xmx2g -cp .:neqsim-118d9af.jar HeaterSpecProbe > captures/heater_spec_probe.tsv
 
 import neqsim.process.equipment.heatexchanger.Heater;
 import neqsim.process.equipment.stream.Stream;

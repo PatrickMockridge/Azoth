@@ -8644,10 +8644,10 @@ class ReferencePotentialsResult(_HasWarnings):
 
     CALC_ID: ClassVar[str] = "reactions.reference_potentials"
 
-    #: the standard-state reference potentials. A potential the basis solved for directly and one propagated from the stoichiometry are the same quantity; `independent` says which is which.
+    #: the standard-state reference potentials. A potential the basis solved for directly is solved against `-RT ln K`; a dependent one is the zero gauge. `independent` says which is which.
     potentials: tuple[Q, ...]
 
-    #: **a mask over the components**: 1 where the basis solved for the potential directly, 0 where it was propagated from the stoichiometry. A mask rather than a name list because the names are the caller's own input and the positions are what the basis chose over.
+    #: **a mask over the components**: 1 where the basis solved for the potential directly, 0 for the zero gauge (or the rank-deficient formation-Gibbs fallback). A mask rather than names because the positions are what the basis chose over.
     independent: tuple[float, ...]
 
     #: **a mask over the source's loaded reactions** - the rows whose `USEREACTION` is 1, in table order - 1 where the reaction survived the dependency test and 0 where it was dropped. Its length is the table's rather than the caller's.

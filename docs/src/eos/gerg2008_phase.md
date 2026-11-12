@@ -79,4 +79,4 @@ declared checks *that call* could not evaluate.
 ## References
 
 - Kunz, O.; Wagner, W. (2012). "The GERG-2008 wide-range equation of state for natural gases and other mixtures: An expansion of GERG-2004." Journal of Chemical & Engineering Data 57(11), 3032-3091.
-- NeqSim master, `thermo/util/gerg/GERG2008.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
+- NeqSim master, `thermo/util/gerg/GERG2008.java`, Apache-2.0, commit 118d9aff9206504c136a08e1348b86cdd6cff669.
