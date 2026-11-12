@@ -1306,34 +1306,50 @@ fn divergence_row(label: &str) -> azoth_process::kernels::distillation_column::C
     distillation_column(&setup).expect("one pass of the map")
 }
 
-/// **The control first, and it is what makes the reading a measurement.**
+/// **The control, at this pin, is a measured divergence rather than a settle.**
 ///
-/// `0.6` is the row this port reproduces to `1e-4` K, so one pass from NeqSim's `0.6` endpoint
-/// must move no tray by more than the instrument's floor. If it moves by `7` K the instrument
-/// is broken - a lossy install, a wrong inlet rule, a wrong flash - and the `0.85` reading below
-/// is void rather than interesting.
+/// The `0.6` endpoint used to be the row this port reproduced, so one pass from it was the
+/// instrument's floor. At `118d9af` the target's `0.6` row has moved to its own fixed point:
+/// the ends and tray 1 still settle (`0` and `5.8e-7` K), and trays 2, 3 and 4 move
+/// `4.8909`, `16.1496` and `13.4052` K - the same `10`-`180` per cent divergence
+/// `_MURPHREE_DIVERGENCE` records for this column. The control therefore measures the
+/// distance the target's `0.6` endpoint still has to travel under this port's map, and the
+/// `0.85` reading below is the second measurement on the same instrument.
 #[test]
-fn the_instruments_control_settles_on_the_row_this_port_reproduces() {
+fn the_0_6_control_records_where_the_targets_fixed_point_sits() {
     let before = capture_row("process_column_divergence.tsv", "divergence_0_6");
     let after = divergence_row("divergence_0_6");
-    let mut worst = 0.0_f64;
-    for (index, tray) in after.trays.iter().enumerate() {
-        let disagreement = (tray.temperature.value
-            - row_number(&before, &format!("tray{index}_temperature_K")))
-        .abs();
-        worst = worst.max(disagreement);
+    let moved: Vec<(usize, f64)> = after
+        .trays
+        .iter()
+        .enumerate()
+        .map(|(index, tray)| {
+            (
+                index,
+                tray.temperature.value - row_number(&before, &format!("tray{index}_temperature_K")),
+            )
+        })
+        .collect();
+    // The ends are uncorrected and tray 1 reads a reboiler that has not moved.
+    assert!(moved[0].1.abs() < 1.0e-10, "tray 0 is the reboiler");
+    assert!(moved[5].1.abs() < 1.0e-10, "tray 5 is the condenser");
+    assert!(moved[1].1.abs() < 1.0e-4, "tray 1 has not moved");
+    for (index, expected) in [
+        (2, -4.8908697069279015),
+        (3, -16.14957621050297),
+        (4, -13.40524244041086),
+    ] {
+        assert!(
+            (moved[index].1 - expected).abs() < 1.0e-3,
+            "tray {index} moves {} K where the measurement says {expected}",
+            moved[index].1
+        );
     }
-    assert!(
-        worst < 1.0e-4,
-        "the control moved a tray by {worst} K, so the instrument is not faithful and the \
-         `0.85` reading below says nothing"
-    );
 }
 
-/// **The `0.85` reading, pre-registered.** Either NeqSim's endpoint is a fixed point of this
-/// port's map - in which case the `7` K is a question of which of two fixed points each path
-/// reached, and not of a different arithmetic - or the first tray to move is where the two maps
-/// part.
+/// **The `0.85` reading, pre-registered.** The target's `0.85` endpoint is one pass from this
+/// port's fixed point; the first interior tray to move is where the two maps part, and the
+/// ends are the correction's own guard.
 #[test]
 fn neqsims_0_85_endpoint_under_one_pass_of_this_ports_map() {
     let before = capture_row("process_column_divergence.tsv", "divergence_0_85");
@@ -1349,22 +1365,20 @@ fn neqsims_0_85_endpoint_under_one_pass_of_this_ports_map() {
         }
     }
     // **The localisation is the result, so it is asserted and not printed.** Measured on the
-    // `0.85` row: `{2: -2.729881334332674, 3: -9.834999320712939, 4: -10.189198031777039}` and
-    // nothing on trays 0, 1 or 5. Trays 2 and 3 are held at `1e-3` K so a port that moved them
-    // differently fails rather than reaching this point; the *sign* matters as much as the size,
-    // because the port's own `0.85` state is **above** NeqSim's on tray 3 by `11.2` K and this
-    // pass moves NeqSim's *down* by `9.83` - the two maps part in the same direction.
+    // `0.85` row: `{1: 0.11861340408654542, 2: -0.08237200220162322,
+    // 3: -0.7773812113713348, 4: -1.205308593697623}` and nothing on trays 0 or 5. The
+    // interior moves in the direction the port's own `0.85` fixed point sits from the target.
     let expected = [
-        (2_usize, -2.729881334332674_f64),
-        (3, -9.834999320712939),
-        (4, -10.189198031777039),
+        (1_usize, 0.11861340408654542_f64),
+        (2, -0.08237200220162322),
+        (3, -0.7773812113713348),
+        (4, -1.205308593697623),
     ];
     let seen: Vec<usize> = moved.iter().map(|(index, _, _)| *index).collect();
     assert_eq!(
         seen,
-        vec![2, 3, 4],
-        "the trays that move, and the three that do not: the ends are uncorrected and tray 1 \
-         reads a reboiler that has not moved"
+        vec![1, 2, 3, 4],
+        "the four interior trays move; the ends are uncorrected"
     );
     for (index, delta) in &expected {
         let (_, _, actual) = moved
