@@ -21,7 +21,9 @@ use crate::models::ejector::EjectorResult;
 use crate::models::expander::ExpanderResult;
 use crate::models::filter::FilterResult;
 use crate::models::flare::FlareResult;
+use crate::models::gas_dispersion::GasDispersionResult;
 use crate::models::gas_scrubber::GasScrubberResult;
+use crate::models::gaussian_plume::GaussianPlumeResult;
 use crate::models::gibbs_reactor::GibbsReactorResult;
 use crate::models::heat_exchanger::HeatExchangerResult;
 use crate::models::heater::HeaterResult;
@@ -33,6 +35,7 @@ use crate::models::mixer::MixerResult;
 use crate::models::packed_column::PackedColumnResult;
 use crate::models::pipe::PipeResult;
 use crate::models::plug_flow_reactor::PlugFlowReactorResult;
+use crate::models::probit::ProbitResult;
 use crate::models::pump::PumpResult;
 use crate::models::rate_based_packed_column::RateBasedPackedColumnResult;
 use crate::models::separator::SeparatorResult;
@@ -457,6 +460,38 @@ impl CalcResult for FlareResult {
     }
 }
 
+impl CalcResult for GasDispersionResult {
+    const CALC_ID: &'static str = "process.gas_dispersion";
+    const FIELDS: &'static [&'static str] = &[
+        "selected_model",
+        "mass_release_rate",
+        "flammable_mass_release_rate",
+        "source_density",
+        "air_density",
+        "fuel_mole_fraction",
+        "fuel_mass_fraction",
+        "lower_flammable_limit",
+        "flammable_endpoint_fraction",
+        "distance_to_flammable_endpoint",
+        "distance_to_half_lfl",
+        "distance_to_lfl",
+        "flammable_cloud_volume",
+        "toxic_component",
+        "toxic_threshold",
+        "toxic_distance",
+        "wind_speed",
+        "stability_class",
+        "screening_basis",
+        "has_flammable_cloud",
+        "has_toxic_endpoint",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 impl CalcResult for GasScrubberResult {
     const CALC_ID: &'static str = "process.gas_scrubber";
     const FIELDS: &'static [&'static str] = &[
@@ -508,6 +543,22 @@ impl CalcResult for GasScrubberResult {
         "surge_volume",
         "surge_time",
         "liquid_retention_time",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for GaussianPlumeResult {
+    const CALC_ID: &'static str = "process.gaussian_plume";
+    const FIELDS: &'static [&'static str] = &[
+        "sigma_y",
+        "sigma_z",
+        "concentration",
+        "centerline_ground_concentration",
+        "distance_to_threshold",
         "warnings",
     ];
 
@@ -890,6 +941,15 @@ impl CalcResult for PlugFlowReactorResult {
         "residence_time",
         "warnings",
     ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for ProbitResult {
+    const CALC_ID: &'static str = "process.probit";
+    const FIELDS: &'static [&'static str] = &["probit", "probability", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

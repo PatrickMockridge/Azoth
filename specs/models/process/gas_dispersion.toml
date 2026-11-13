@@ -1,0 +1,193 @@
+id = "process.gas_dispersion"
+name = "Gas dispersion screening"
+kind = "procedure"
+assumptions = [
+    "**the ambient flash is the model's state.** The input fluid's own T and P are discarded; its composition is flashed at `ambient_temperature` and `atmospheric_pressure`, and the gas phase supplies the density, molar mass and fractions.",
+    "**there is no gas-phase fallback beyond phase zero**: when the flash yields no gas, the first phase is read, as the class's `gasPhase` does. The port flashes PR classic; the class's tests are SRK, and their rows are evidence.",
+    "**the air density is `P / (287.05 T)`.**",
+    "**the fuel data is the gas phase's flammable components.** The LFL table, by volume fraction: methane `0.044`, ethane `0.030`, propane `0.021`, n-butane and i-butane `0.018`, n-pentane and i-pentane `0.014`, n-hexane `0.012`.",
+    "**...and hydrogen `0.040`, H2S `0.040`, CO `0.125`, methanol `0.060`, benzene `0.012`.** A name is matched after lowercasing and stripping `-`, `_` and spaces; Le Chatelier gives `LFL = sum x / sum (x / LFL)`.",
+    "**a manual LFL override makes the whole flow fuel**: mole and mass fractions `1.0` and the phase's molar mass, as `calculateFuelData` answers a stated limit.",
+    "**the model is selected by `source_density / air_density > 1.2`**: `heavy_gas` above, `gaussian_plume` below, unless `model_selection` forces one.",
+    "**the Gaussian endpoint is `process.gaussian_plume`'s scan** at `LFL`, `0.5 LFL` and `endpoint_fraction * LFL`, with `LFL` in kg/m3 as `y M_fuel P / (8.314462618 T)` and the fuel rate `mass_release_rate * fuel_mass_fraction`.",
+    "**the cloud volume is the class's 200-slab integral**: from `1` m to the LFL distance a half-ellipse of semi-axes `sigma sqrt(2 ln(C / c))` contributes `0.5 pi w h dx`.",
+    "**the dense model is Britter-McQuaid's internal arithmetic**, not an id: `g0 = 9.81 (rho_s - rho_a) / rho_a`, `alpha = (g0^2 q / U^5)^0.2` with `q = mdot / max(rho_s, 1e-9)`, `L = sqrt(q / U)`.",
+    "**the dense fit is `log10(D / L) = -0.85 log10(C / Co) - 0.25 log10(max(alpha, 0.01))`**; a ratio outside `(0, 1)` is an absent distance, and the cloud volume is `0.5 d w h` with `w = max(1, 0.25 d)` and `h = max(1, min(5, 0.05 d))`.",
+    "**the toxic endpoint reads the named component's phase fraction.** The Gaussian arm uses `mdot * component_mass_fraction` and `ppmToKgPerM3 = ppm/1e6 M (P_bar 1e5) / (8.314 T)`; the dense arm the ratio `(ppm/1e6) / x`.",
+    "**a component absent from the phase is an absent distance** with its name and threshold still reported; no fuel or no toxin is an absent distance, not a zero, and the predicates are finite and above zero.",
+    "**the boundary conditions are the read fields only**: ambient T, pressure, wind speed, Pasquill class, roughness and offshore. Wind direction, humidity, solar radiation and sea-water temperature are read by no arithmetic and are stated.",
+    "**the read defaults are the class's**: `288.15` K, `101325` Pa, `5.0` m/s, `D`, `0.1` m and not offshore.",
+    "**the class's silent fallbacks are refused or stated**: a non-positive rate is a range error, an unknown stability letter or model word is refused, a stated LFL at or below zero is refused, and the ideal-gas density fallback is unreached.",
+    "**`screening_basis` is this port's word for the class's sentence**: `gaussian_plume_briggs` and `heavy_gas_britter_mcquaid`.",
+    "**the DTO's scenario name and JSON are session surface**, and `sourceTerm` and `analyzeStream` are callers': the release rate is an input.",
+    "**the gas-phase density differs from the class's in the eighth digit.** On the methane state the port answers `0.6800586448` against the class's `0.6800586872`, `6.2e-8` relative; the distances carry at most `4.6e-8`, and the cases are held at `1e-6`.",
+]
+references = [
+    "Briggs, G. A. (1973). \"Diffusion estimation for small emissions.\" ATDL Contribution File No. 79, Oak Ridge.",
+    "Britter, R. E.; McQuaid, J. (1988). Workbook on the Dispersion of Dense Gases. HSE 17/1988.",
+    "CCPS (1996). Guidelines for Use of Vapor Cloud Dispersion Models, 2nd Ed.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/safety/dispersion/GasDispersionAnalyzer.java` is the port source, with `GaussianPlume`, `HeavyGasDispersion` and `ToxicLibrary.ppmToKgPerM3`.",
+    "`validation/neqsim/captures/process_gas_dispersion.tsv` - the class's own `GasDispersionAnalyzerTest` and `DispersionBenchmarkValidationTest` states re-cased on PR, plus the source-term, manual-LFL and forced-model states, the SRK evidence and the class's zero-rate refusal.",
+]
+[source]
+standard = "NeqSim process/safety/dispersion/GasDispersionAnalyzer.java"
+edition = "Its `analyze`: the ambient flash, the gas-phase fuel data, the model selection, the flammable and toxic endpoints with both arms, and the two cloud-volume estimates."
+[algorithm]
+scheme = "pasquill_gifford_or_britter_mcquaid_screening"
+initialisation = "ambient_tp_flash"
+convergence = "absolute"
+tolerance = 0.5
+max_iterations = 60
+[inputs]
+[inputs.components]
+type = "components"
+description = "the released fluid's substances, by name, resolved against the component databank.\n"
+[inputs.composition]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the released fluid's overall mole fractions, which the ambient flash takes unchanged.\n"
+[inputs.mass_release_rate]
+unit = "kg/s"
+description = "the continuous release rate, `mdot`. The class's `sourceTerm` convenience passes a leak's peak rate here; the source term is the caller's.\n"
+[inputs.ambient_temperature]
+unit = "K"
+optional = true
+description = "the boundary conditions' ambient temperature, at which the clone is flashed. **Absent is the class's `288.15`.**\n"
+[inputs.atmospheric_pressure]
+unit = "Pa"
+optional = true
+description = "the boundary conditions' atmospheric pressure, which is both the flash pressure and the air-density pressure. **Absent is the class's `101325`.**\n"
+[inputs.wind_speed]
+unit = "m/s"
+optional = true
+description = "the wind speed at the 10 m reference. **Absent is the class's `5.0`**, and it must be positive.\n"
+[inputs.pasquill_stability_class]
+type = "enum"
+values = ["A", "B", "C", "D", "E", "F"]
+optional = true
+description = "the Pasquill class. **Absent is `D`**; the other letters select the plume's coefficient row.\n"
+[inputs.surface_roughness]
+unit = "m"
+optional = true
+description = "the boundary conditions' surface roughness. **Absent is the class's `0.1`.** Below `0.5` m, or offshore, the terrain is rural; otherwise urban.\n"
+[inputs.offshore]
+type = "boolean"
+optional = true
+description = "whether the release is offshore, which selects rural terrain whatever the roughness. **Absent is false.**\n"
+[inputs.release_height]
+unit = "m"
+optional = true
+description = "`setReleaseHeight`: the plume's effective release height. **Absent is `0.0`**, and the class's builder clamps a negative value to zero.\n"
+[inputs.model_selection]
+type = "enum"
+values = ["auto", "gaussian_plume", "heavy_gas"]
+optional = true
+description = "which arm runs. **Absent is `auto`**, the density-ratio selection.\n"
+[inputs.lower_flammable_limit]
+unit = "dimensionless"
+optional = true
+description = "a manual LFL override by volume fraction, which makes the whole release fuel. A stated value at or below zero is refused; the class would ignore it and fall back to the table.\n"
+[inputs.flammable_endpoint_fraction_of_lfl]
+unit = "dimensionless"
+optional = true
+description = "the endpoint fraction of the LFL the first distance is asked at. **Absent is `0.5`**, in `(0, 1]`; the class's STS-0131 presets are `0.20` and `0.50`.\n"
+[inputs.toxic_component]
+type = "string"
+optional = true
+description = "the component whose toxic endpoint is screened, by name. Absent, blank, or without a positive threshold means no toxic endpoint.\n"
+[inputs.toxic_threshold]
+unit = "dimensionless"
+optional = true
+description = "the toxic threshold as a **volume fraction**, so 100 ppm is `1.0e-4`; the class's `toxicEndpoint` takes ppm and its `ppmToKgPerM3` divides by `1e6`. Unread without `toxic_component`.\n"
+[outputs]
+[outputs.selected_model]
+type = "string"
+description = "`gaussian_plume` or `heavy_gas`, this port's words for the class's `GAUSSIAN_PLUME` and `HEAVY_GAS`.\n"
+[outputs.mass_release_rate]
+unit = "kg/s"
+description = "the release rate the screen used, which the source-term convenience resolves before the call.\n"
+[outputs.flammable_mass_release_rate]
+unit = "kg/s"
+description = "`mass_release_rate * fuel_mass_fraction`, the class's `flammableMassReleaseRateKgPerS`.\n"
+[outputs.source_density]
+unit = "kg/m**3"
+description = "the gas phase's density at the ambient flash.\n"
+[outputs.air_density]
+unit = "kg/m**3"
+description = "`P / (287.05 T)`.\n"
+[outputs.fuel_mole_fraction]
+unit = "dimensionless"
+description = "the flammable components' summed phase mole fraction, or `1.0` under a manual LFL.\n"
+[outputs.fuel_mass_fraction]
+unit = "dimensionless"
+description = "the flammable components' mass share of the phase, or `1.0` under a manual LFL.\n"
+[outputs.lower_flammable_limit]
+unit = "dimensionless"
+optional = true
+description = "the mixture's Le Chatelier LFL by volume fraction, or the stated override; **absent when the phase has no flammable component**, where the class's DTO carries `NaN`.\n"
+[outputs.flammable_endpoint_fraction]
+unit = "dimensionless"
+description = "the endpoint fraction the first distance was asked at, echoed.\n"
+[outputs.distance_to_flammable_endpoint]
+unit = "m"
+optional = true
+description = "the distance at `endpoint_fraction * LFL`; absent when there is no fuel or the arm answers none.\n"
+[outputs.distance_to_half_lfl]
+unit = "m"
+optional = true
+description = "the distance at half the LFL; absent when there is no fuel or the arm answers none.\n"
+[outputs.distance_to_lfl]
+unit = "m"
+optional = true
+description = "the distance at the LFL; absent when there is no fuel.\n"
+[outputs.flammable_cloud_volume]
+unit = "m**3"
+description = "the cloud volume above the LFL, zero when no fuel is screened.\n"
+[outputs.toxic_component]
+type = "string"
+description = "the screened component's name, empty when none was stated.\n"
+[outputs.toxic_threshold]
+unit = "dimensionless"
+optional = true
+description = "the toxic threshold by volume fraction, absent when no toxic endpoint was asked.\n"
+[outputs.toxic_distance]
+unit = "m"
+optional = true
+description = "the distance at the toxic threshold; absent when no endpoint was asked or the component is not in the phase.\n"
+[outputs.wind_speed]
+unit = "m/s"
+description = "the wind speed the screen ran at, echoed.\n"
+[outputs.stability_class]
+type = "string"
+description = "the Pasquill class the screen ran at, echoed.\n"
+[outputs.screening_basis]
+type = "string"
+description = "`gaussian_plume_briggs` or `heavy_gas_britter_mcquaid`, this port's words for the class's two basis sentences.\n"
+[outputs.has_flammable_cloud]
+type = "boolean"
+description = "whether the LFL distance exists and is above zero.\n"
+[outputs.has_toxic_endpoint]
+type = "boolean"
+description = "whether the toxic distance exists and is above zero.\n"
+[[valid_range]]
+quantity = "mass_release_rate"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class's analyze refuses a non-positive release rate at construction"
+[[valid_range]]
+quantity = "wind_speed"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the plume divides by the wind speed, and the class's constructor refuses a non-positive one"
+[[valid_range]]
+quantity = "lower_flammable_limit"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a stated zero or negative limit is ignored by the class; the port refuses what it would silently discard"
+[implementations]
+python = "azoth.process.gas_dispersion"
+rust = "azoth_process::gas_dispersion"

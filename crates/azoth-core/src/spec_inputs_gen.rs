@@ -232,7 +232,9 @@
 //!   - specs/models/process/expander.toml
 //!   - specs/models/process/filter.toml
 //!   - specs/models/process/flare.toml
+//!   - specs/models/process/gas_dispersion.toml
 //!   - specs/models/process/gas_scrubber.toml
+//!   - specs/models/process/gaussian_plume.toml
 //!   - specs/models/process/gibbs_reactor.toml
 //!   - specs/models/process/heat_exchanger.toml
 //!   - specs/models/process/heater.toml
@@ -244,6 +246,7 @@
 //!   - specs/models/process/packed_column.toml
 //!   - specs/models/process/pipe.toml
 //!   - specs/models/process/plug_flow_reactor.toml
+//!   - specs/models/process/probit.toml
 //!   - specs/models/process/pump.toml
 //!   - specs/models/process/rate_based_packed_column.toml
 //!   - specs/models/process/separator.toml
@@ -3068,6 +3071,28 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("process.flare", "design_heat_duty_capacity", "power"),
     ("process.flare", "design_mass_flow_capacity", "mass_rate"),
     ("process.flare", "design_molar_flow_capacity", "molar_flow"),
+    ("process.gas_dispersion", "composition", "dimensionless"),
+    ("process.gas_dispersion", "mass_release_rate", "mass_rate"),
+    (
+        "process.gas_dispersion",
+        "ambient_temperature",
+        "thermodynamic_temperature",
+    ),
+    ("process.gas_dispersion", "atmospheric_pressure", "pressure"),
+    ("process.gas_dispersion", "wind_speed", "velocity"),
+    ("process.gas_dispersion", "surface_roughness", "length"),
+    ("process.gas_dispersion", "release_height", "length"),
+    (
+        "process.gas_dispersion",
+        "lower_flammable_limit",
+        "dimensionless",
+    ),
+    (
+        "process.gas_dispersion",
+        "flammable_endpoint_fraction_of_lfl",
+        "dimensionless",
+    ),
+    ("process.gas_dispersion", "toxic_threshold", "dimensionless"),
     ("process.gas_scrubber", "feed_n", "molar_flow"),
     ("process.gas_scrubber", "feed_z", "dimensionless"),
     ("process.gas_scrubber", "feed_p", "pressure"),
@@ -3099,6 +3124,13 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("process.gas_scrubber", "allowable_stress", "pressure"),
     ("process.gas_scrubber", "joint_efficiency", "dimensionless"),
     ("process.gas_scrubber", "corrosion_allowance", "length"),
+    ("process.gaussian_plume", "emission_rate", "mass_rate"),
+    ("process.gaussian_plume", "effective_stack_height", "length"),
+    ("process.gaussian_plume", "wind_speed", "velocity"),
+    ("process.gaussian_plume", "distance", "length"),
+    ("process.gaussian_plume", "crosswind", "length"),
+    ("process.gaussian_plume", "height", "length"),
+    ("process.gaussian_plume", "threshold", "mass_density"),
     ("process.gibbs_reactor", "feed_n", "molar_flow"),
     ("process.gibbs_reactor", "feed_z", "dimensionless"),
     ("process.gibbs_reactor", "feed_p", "pressure"),
@@ -3740,6 +3772,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "catalyst_molecular_diffusivity",
         "diffusion_coefficient",
     ),
+    ("process.probit", "a", "dimensionless"),
+    ("process.probit", "b", "dimensionless"),
+    ("process.probit", "n", "dimensionless"),
+    ("process.probit", "dose", "dimensionless"),
+    ("process.probit", "probit_value", "dimensionless"),
     ("process.pump", "inlet_n", "molar_flow"),
     ("process.pump", "inlet_z", "dimensionless"),
     ("process.pump", "inlet_p", "pressure"),

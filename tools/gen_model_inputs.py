@@ -434,6 +434,9 @@ NON_UNIT_MODELS = {
     "process.separator_capacity_assessment": "a capacity report over a vessel, not a unit",
     "process.anti_surge_recycle": "a recycle converged around a charted machine, not a unit",
     "process.separator_performance": "a vessel performance report, not a unit",
+    "process.gas_dispersion": "a dispersion screen over a fluid, not a unit",
+    "process.gaussian_plume": "the plume arithmetic over scalars, not a unit",
+    "process.probit": "a dose-response over scalars, not a unit",
 }
 
 

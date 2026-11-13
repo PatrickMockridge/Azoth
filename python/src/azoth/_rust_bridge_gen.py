@@ -98,7 +98,9 @@ from azoth.core.result import (
     FullerSchettlerGiddingsDiffusivityResult,
     FurstElectrolyteMod2004PhaseResult,
     FurstElectrolytePhaseResult,
+    GasDispersionResult,
     GasScrubberResult,
+    GaussianPlumeResult,
     GeFlashResult,
     GeNrtlFlashResult,
     GeNrtlPhaseResult,
@@ -202,6 +204,7 @@ from azoth.core.result import (
     PrLeeKeslerAlphaResult,
     PrMassDensityResult,
     PrMolarVolumeResult,
+    ProbitResult,
     ProductionChemicalScaleScenarioResult,
     PrPenelouxShiftResult,
     PrsvKappaResult,
@@ -441,7 +444,9 @@ __all__ = [
     "fuller_schettler_giddings_diffusivity",
     "furst_electrolyte_mod2004_phase",
     "furst_electrolyte_phase",
+    "gas_dispersion",
     "gas_scrubber",
+    "gaussian_plume",
     "ge_flash",
     "ge_nrtl_flash",
     "ge_nrtl_phase",
@@ -531,6 +536,7 @@ __all__ = [
     "pr_molar_volume",
     "pr_peneloux_shift",
     "pr_z_factor",
+    "probit",
     "production_chemical_scale_scenario",
     "prsv_kappa",
     "ps_flash",
@@ -6120,6 +6126,52 @@ def flare(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, i
     )
 
 
+def gas_dispersion(components: list[str], composition: list[float], mass_release_rate: Q, ambient_temperature: Q | None=None, atmospheric_pressure: Q | None=None, wind_speed: Q | None=None, pasquill_stability_class: str | None=None, surface_roughness: Q | None=None, offshore: bool | None=None, release_height: Q | None=None, model_selection: str | None=None, lower_flammable_limit: float | None=None, flammable_endpoint_fraction_of_lfl: float | None=None, toxic_component: str | None=None, toxic_threshold: float | None=None) -> GasDispersionResult:
+    """``process.gas_dispersion``, computed in Rust."""
+    spec = _models_gen.model("process.gas_dispersion")
+    result = _core.gas_dispersion(
+        list(components),
+        list(composition),
+        input_to_si(spec, "mass_release_rate", mass_release_rate),
+        None if ambient_temperature is None else input_to_si(spec, "ambient_temperature", ambient_temperature),
+        None if atmospheric_pressure is None else input_to_si(spec, "atmospheric_pressure", atmospheric_pressure),
+        None if wind_speed is None else input_to_si(spec, "wind_speed", wind_speed),
+        pasquill_stability_class,
+        None if surface_roughness is None else input_to_si(spec, "surface_roughness", surface_roughness),
+        offshore,
+        None if release_height is None else input_to_si(spec, "release_height", release_height),
+        model_selection,
+        None if lower_flammable_limit is None else lower_flammable_limit,
+        None if flammable_endpoint_fraction_of_lfl is None else flammable_endpoint_fraction_of_lfl,
+        toxic_component,
+        None if toxic_threshold is None else toxic_threshold,
+    )
+    return GasDispersionResult(
+        selected_model=result.selected_model,
+        mass_release_rate=from_si(result.mass_release_rate.magnitude_si, result.mass_release_rate.unit),
+        flammable_mass_release_rate=from_si(result.flammable_mass_release_rate.magnitude_si, result.flammable_mass_release_rate.unit),
+        source_density=from_si(result.source_density.magnitude_si, result.source_density.unit),
+        air_density=from_si(result.air_density.magnitude_si, result.air_density.unit),
+        fuel_mole_fraction=result.fuel_mole_fraction,
+        fuel_mass_fraction=result.fuel_mass_fraction,
+        lower_flammable_limit=result.lower_flammable_limit,
+        flammable_endpoint_fraction=result.flammable_endpoint_fraction,
+        distance_to_flammable_endpoint=None if result.distance_to_flammable_endpoint is None else from_si(result.distance_to_flammable_endpoint.magnitude_si, result.distance_to_flammable_endpoint.unit),
+        distance_to_half_lfl=None if result.distance_to_half_lfl is None else from_si(result.distance_to_half_lfl.magnitude_si, result.distance_to_half_lfl.unit),
+        distance_to_lfl=None if result.distance_to_lfl is None else from_si(result.distance_to_lfl.magnitude_si, result.distance_to_lfl.unit),
+        flammable_cloud_volume=from_si(result.flammable_cloud_volume.magnitude_si, result.flammable_cloud_volume.unit),
+        toxic_component=result.toxic_component,
+        toxic_threshold=result.toxic_threshold,
+        toxic_distance=None if result.toxic_distance is None else from_si(result.toxic_distance.magnitude_si, result.toxic_distance.unit),
+        wind_speed=from_si(result.wind_speed.magnitude_si, result.wind_speed.unit),
+        stability_class=result.stability_class,
+        screening_basis=result.screening_basis,
+        has_flammable_cloud=result.has_flammable_cloud,
+        has_toxic_endpoint=result.has_toxic_endpoint,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, heat_input: Q | None=None, mechanical_design: bool | None=None, orientation: str | None=None, volume_safety_factor: float | None=None, design_liquid_level_fraction: float | None=None, max_operation_pressure: Q | None=None, allowable_stress: Q | None=None, joint_efficiency: float | None=None, corrosion_allowance: Q | None=None, safety_factor: float | None=None, mesh_pad_area: float | None=None, mesh_pad_thickness: Q | None=None, mesh_pad_elevation: Q | None=None) -> GasScrubberResult:
     """``process.gas_scrubber``, computed in Rust."""
     spec = _models_gen.model("process.gas_scrubber")
@@ -6196,6 +6248,30 @@ def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: 
         surge_volume=None if result.surge_volume is None else from_si(result.surge_volume.magnitude_si, result.surge_volume.unit),
         surge_time=None if result.surge_time is None else from_si(result.surge_time.magnitude_si, result.surge_time.unit),
         liquid_retention_time=None if result.liquid_retention_time is None else from_si(result.liquid_retention_time.magnitude_si, result.liquid_retention_time.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def gaussian_plume(emission_rate: Q, effective_stack_height: Q, wind_speed: Q, stability: str, terrain: str, distance: Q, crosswind: Q, height: Q, threshold: Q) -> GaussianPlumeResult:
+    """``process.gaussian_plume``, computed in Rust."""
+    spec = _models_gen.model("process.gaussian_plume")
+    result = _core.gaussian_plume(
+        input_to_si(spec, "emission_rate", emission_rate),
+        input_to_si(spec, "effective_stack_height", effective_stack_height),
+        input_to_si(spec, "wind_speed", wind_speed),
+        stability,
+        terrain,
+        input_to_si(spec, "distance", distance),
+        input_to_si(spec, "crosswind", crosswind),
+        input_to_si(spec, "height", height),
+        input_to_si(spec, "threshold", threshold),
+    )
+    return GaussianPlumeResult(
+        sigma_y=from_si(result.sigma_y.magnitude_si, result.sigma_y.unit),
+        sigma_z=from_si(result.sigma_z.magnitude_si, result.sigma_z.unit),
+        concentration=from_si(result.concentration.magnitude_si, result.concentration.unit),
+        centerline_ground_concentration=from_si(result.centerline_ground_concentration.magnitude_si, result.centerline_ground_concentration.unit),
+        distance_to_threshold=None if result.distance_to_threshold is None else from_si(result.distance_to_threshold.magnitude_si, result.distance_to_threshold.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -6830,6 +6906,23 @@ def plug_flow_reactor(components: list[str], feed_n: Q, feed_z: list[float], fee
         reaction_rate_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.reaction_rate_profile),
         molar_flow_profile=tuple(tuple(from_si(v.magnitude_si, v.unit) for v in row) for row in result.molar_flow_profile),
         residence_time=from_si(result.residence_time.magnitude_si, result.residence_time.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def probit(a: float, b: float, n: float, dose: Q | None=None, probit_value: Q | None=None) -> ProbitResult:
+    """``process.probit``, computed in Rust."""
+    spec = _models_gen.model("process.probit")
+    result = _core.probit(
+        a,
+        b,
+        n,
+        None if dose is None else _si(spec, "dose", dose),
+        None if probit_value is None else _si(spec, "probit_value", probit_value),
+    )
+    return ProbitResult(
+        probit=result.probit,
+        probability=result.probability,
         warnings=_warnings(result.warnings),
     )
 

@@ -16152,6 +16152,172 @@ impl From<&azoth_process::models::flare::FlareResult> for PyFlareResult {
         }
     }
 }
+/// Result of `process.gas_dispersion`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "GasDispersionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyGasDispersionResult {
+    /// `gaussian_plume` or `heavy_gas`, this port's words for the class's `GAUSSIAN_PLUME` and `HEAVY_GAS`.
+    #[pyo3(get)]
+    pub selected_model: String,
+    /// the release rate the screen used, which the source-term convenience resolves before the call.
+    #[pyo3(get)]
+    pub mass_release_rate: PyQty,
+    /// `mass_release_rate * fuel_mass_fraction`, the class's `flammableMassReleaseRateKgPerS`.
+    #[pyo3(get)]
+    pub flammable_mass_release_rate: PyQty,
+    /// the gas phase's density at the ambient flash.
+    #[pyo3(get)]
+    pub source_density: PyQty,
+    /// `P / (287.05 T)`.
+    #[pyo3(get)]
+    pub air_density: PyQty,
+    /// the flammable components' summed phase mole fraction, or `1.0` under a manual LFL.
+    #[pyo3(get)]
+    pub fuel_mole_fraction: f64,
+    /// the flammable components' mass share of the phase, or `1.0` under a manual LFL.
+    #[pyo3(get)]
+    pub fuel_mass_fraction: f64,
+    /// the mixture's Le Chatelier LFL by volume fraction, or the stated override; **absent when the phase has no flammable component**, where the class's DTO carries `NaN`.
+    #[pyo3(get)]
+    pub lower_flammable_limit: Option<f64>,
+    /// the endpoint fraction the first distance was asked at, echoed.
+    #[pyo3(get)]
+    pub flammable_endpoint_fraction: f64,
+    /// the distance at `endpoint_fraction * LFL`; absent when there is no fuel or the arm answers none.
+    #[pyo3(get)]
+    pub distance_to_flammable_endpoint: Option<PyQty>,
+    /// the distance at half the LFL; absent when there is no fuel or the arm answers none.
+    #[pyo3(get)]
+    pub distance_to_half_lfl: Option<PyQty>,
+    /// the distance at the LFL; absent when there is no fuel.
+    #[pyo3(get)]
+    pub distance_to_lfl: Option<PyQty>,
+    /// the cloud volume above the LFL, zero when no fuel is screened.
+    #[pyo3(get)]
+    pub flammable_cloud_volume: PyQty,
+    /// the screened component's name, empty when none was stated.
+    #[pyo3(get)]
+    pub toxic_component: String,
+    /// the toxic threshold by volume fraction, absent when no toxic endpoint was asked.
+    #[pyo3(get)]
+    pub toxic_threshold: Option<f64>,
+    /// the distance at the toxic threshold; absent when no endpoint was asked or the component is not in the phase.
+    #[pyo3(get)]
+    pub toxic_distance: Option<PyQty>,
+    /// the wind speed the screen ran at, echoed.
+    #[pyo3(get)]
+    pub wind_speed: PyQty,
+    /// the Pasquill class the screen ran at, echoed.
+    #[pyo3(get)]
+    pub stability_class: String,
+    /// `gaussian_plume_briggs` or `heavy_gas_britter_mcquaid`, this port's words for the class's two basis sentences.
+    #[pyo3(get)]
+    pub screening_basis: String,
+    /// whether the LFL distance exists and is above zero.
+    #[pyo3(get)]
+    pub has_flammable_cloud: bool,
+    /// whether the toxic distance exists and is above zero.
+    #[pyo3(get)]
+    pub has_toxic_endpoint: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyGasDispersionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "GasDispersionResult(selected_model={:?}, mass_release_rate={:?}, flammable_mass_release_rate={:?}, source_density={:?}, air_density={:?}, fuel_mole_fraction={:?}, fuel_mass_fraction={:?}, lower_flammable_limit={:?}, flammable_endpoint_fraction={:?}, distance_to_flammable_endpoint={:?}, distance_to_half_lfl={:?}, distance_to_lfl={:?}, flammable_cloud_volume={:?}, toxic_component={:?}, toxic_threshold={:?}, toxic_distance={:?}, wind_speed={:?}, stability_class={:?}, screening_basis={:?}, has_flammable_cloud={:?}, has_toxic_endpoint={:?}, {} warning(s))",
+            self.selected_model,
+            self.mass_release_rate,
+            self.flammable_mass_release_rate,
+            self.source_density,
+            self.air_density,
+            self.fuel_mole_fraction,
+            self.fuel_mass_fraction,
+            self.lower_flammable_limit,
+            self.flammable_endpoint_fraction,
+            self.distance_to_flammable_endpoint,
+            self.distance_to_half_lfl,
+            self.distance_to_lfl,
+            self.flammable_cloud_volume,
+            self.toxic_component,
+            self.toxic_threshold,
+            self.toxic_distance,
+            self.wind_speed,
+            self.stability_class,
+            self.screening_basis,
+            self.has_flammable_cloud,
+            self.has_toxic_endpoint,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::gas_dispersion::GasDispersionResult> for PyGasDispersionResult {
+    fn from(r: &azoth_process::models::gas_dispersion::GasDispersionResult) -> Self {
+        Self {
+            selected_model: r.selected_model.clone(),
+            mass_release_rate: PyQty {
+                magnitude_si: r.mass_release_rate.value,
+                unit: "kg/s".to_string(),
+            },
+            flammable_mass_release_rate: PyQty {
+                magnitude_si: r.flammable_mass_release_rate.value,
+                unit: "kg/s".to_string(),
+            },
+            source_density: PyQty {
+                magnitude_si: r.source_density.value,
+                unit: "kg/m**3".to_string(),
+            },
+            air_density: PyQty {
+                magnitude_si: r.air_density.value,
+                unit: "kg/m**3".to_string(),
+            },
+            fuel_mole_fraction: r.fuel_mole_fraction,
+            fuel_mass_fraction: r.fuel_mass_fraction,
+            lower_flammable_limit: r.lower_flammable_limit,
+            flammable_endpoint_fraction: r.flammable_endpoint_fraction,
+            distance_to_flammable_endpoint: r.distance_to_flammable_endpoint.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            distance_to_half_lfl: r.distance_to_half_lfl.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            distance_to_lfl: r.distance_to_lfl.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            flammable_cloud_volume: PyQty {
+                magnitude_si: r.flammable_cloud_volume.value,
+                unit: "m**3".to_string(),
+            },
+            toxic_component: r.toxic_component.clone(),
+            toxic_threshold: r.toxic_threshold,
+            toxic_distance: r.toxic_distance.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            wind_speed: PyQty {
+                magnitude_si: r.wind_speed.value,
+                unit: "m/s".to_string(),
+            },
+            stability_class: r.stability_class.clone(),
+            screening_basis: r.screening_basis.clone(),
+            has_flammable_cloud: r.has_flammable_cloud,
+            has_toxic_endpoint: r.has_toxic_endpoint,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.gas_scrubber`, transported.
 #[pyclass(
     frozen,
@@ -16544,6 +16710,77 @@ impl From<&azoth_process::models::gas_scrubber::GasScrubberResult> for PyGasScru
             liquid_retention_time: r.liquid_retention_time.map(|v| PyQty {
                 magnitude_si: v.value,
                 unit: "s".to_string(),
+            }),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `process.gaussian_plume`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "GaussianPlumeResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyGaussianPlumeResult {
+    /// the horizontal dispersion coefficient at `distance`.
+    #[pyo3(get)]
+    pub sigma_y: PyQty,
+    /// the vertical dispersion coefficient at `distance`.
+    #[pyo3(get)]
+    pub sigma_z: PyQty,
+    /// the concentration at (`distance`, `crosswind`, `height`); zero on a non-positive distance or a zero emission.
+    #[pyo3(get)]
+    pub concentration: PyQty,
+    /// the concentration at (`distance`, `0`, `0`), the profile the scan follows.
+    #[pyo3(get)]
+    pub centerline_ground_concentration: PyQty,
+    /// the downwind distance at which the ground centreline concentration falls to `threshold`. **Absent when the scan's profile never reaches it**, and `100000.0` when the profile never falls below it, which is the scan's end rather than a physical distance.
+    #[pyo3(get)]
+    pub distance_to_threshold: Option<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyGaussianPlumeResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "GaussianPlumeResult(sigma_y={:?}, sigma_z={:?}, concentration={:?}, centerline_ground_concentration={:?}, distance_to_threshold={:?}, {} warning(s))",
+            self.sigma_y,
+            self.sigma_z,
+            self.concentration,
+            self.centerline_ground_concentration,
+            self.distance_to_threshold,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::gaussian_plume::GaussianPlumeResult> for PyGaussianPlumeResult {
+    fn from(r: &azoth_process::models::gaussian_plume::GaussianPlumeResult) -> Self {
+        Self {
+            sigma_y: PyQty {
+                magnitude_si: r.sigma_y.value,
+                unit: "m".to_string(),
+            },
+            sigma_z: PyQty {
+                magnitude_si: r.sigma_z.value,
+                unit: "m".to_string(),
+            },
+            concentration: PyQty {
+                magnitude_si: r.concentration.value,
+                unit: "kg/m**3".to_string(),
+            },
+            centerline_ground_concentration: PyQty {
+                magnitude_si: r.centerline_ground_concentration.value,
+                unit: "kg/m**3".to_string(),
+            },
+            distance_to_threshold: r.distance_to_threshold.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
             }),
             warnings: transport(&r.warnings),
         }
@@ -18720,6 +18957,47 @@ impl From<&azoth_process::models::plug_flow_reactor::PlugFlowReactorResult>
                 magnitude_si: r.residence_time.value,
                 unit: "s".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `process.probit`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ProbitResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyProbitResult {
+    /// `Y = a + b n ln(dose)`; absent when no dose was stated.
+    #[pyo3(get)]
+    pub probit: Option<f64>,
+    /// `0.5 (1 + erf((Y - 5) / sqrt(2)))` at the stated `probit_value` or the computed probit.
+    #[pyo3(get)]
+    pub probability: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyProbitResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ProbitResult(probit={:?}, probability={:?}, {} warning(s))",
+            self.probit,
+            self.probability,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::probit::ProbitResult> for PyProbitResult {
+    fn from(r: &azoth_process::models::probit::ProbitResult) -> Self {
+        Self {
+            probit: r.probit,
+            probability: r.probability,
             warnings: transport(&r.warnings),
         }
     }

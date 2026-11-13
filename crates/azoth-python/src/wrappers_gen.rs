@@ -5811,6 +5811,54 @@ pub fn flare(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Gas dispersion screening.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, composition, mass_release_rate, ambient_temperature, atmospheric_pressure, wind_speed, pasquill_stability_class, surface_roughness, offshore, release_height, model_selection, lower_flammable_limit, flammable_endpoint_fraction_of_lfl, toxic_component, toxic_threshold))]
+#[pyo3(
+    text_signature = "(components, composition, mass_release_rate, ambient_temperature, atmospheric_pressure, wind_speed, pasquill_stability_class, surface_roughness, offshore, release_height, model_selection, lower_flammable_limit, flammable_endpoint_fraction_of_lfl, toxic_component, toxic_threshold)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn gas_dispersion(
+    py: Python<'_>,
+    components: Vec<String>,
+    composition: Vec<f64>,
+    mass_release_rate: f64,
+    ambient_temperature: Option<f64>,
+    atmospheric_pressure: Option<f64>,
+    wind_speed: Option<f64>,
+    pasquill_stability_class: Option<&str>,
+    surface_roughness: Option<f64>,
+    offshore: Option<bool>,
+    release_height: Option<f64>,
+    model_selection: Option<&str>,
+    lower_flammable_limit: Option<f64>,
+    flammable_endpoint_fraction_of_lfl: Option<f64>,
+    toxic_component: Option<&str>,
+    toxic_threshold: Option<f64>,
+) -> PyResult<crate::transport_gen::PyGasDispersionResult> {
+    azoth_process::models::gas_dispersion::gas_dispersion(
+        &components,
+        &composition,
+        kilograms_per_second(mass_release_rate),
+        ambient_temperature.map(kelvins),
+        atmospheric_pressure.map(pascals),
+        wind_speed.map(meters_per_second),
+        pasquill_stability_class,
+        surface_roughness.map(meters),
+        offshore,
+        release_height.map(meters),
+        model_selection,
+        lower_flammable_limit,
+        flammable_endpoint_fraction_of_lfl,
+        toxic_component,
+        toxic_threshold,
+    )
+    .map(|r| crate::transport_gen::PyGasDispersionResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Gas scrubber.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -5870,6 +5918,42 @@ pub fn gas_scrubber(
         mesh_pad_elevation.map(meters),
     )
     .map(|r| crate::transport_gen::PyGasScrubberResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Gaussian plume dispersion.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (emission_rate, effective_stack_height, wind_speed, stability, terrain, distance, crosswind, height, threshold))]
+#[pyo3(
+    text_signature = "(emission_rate, effective_stack_height, wind_speed, stability, terrain, distance, crosswind, height, threshold)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn gaussian_plume(
+    py: Python<'_>,
+    emission_rate: f64,
+    effective_stack_height: f64,
+    wind_speed: f64,
+    stability: &str,
+    terrain: &str,
+    distance: f64,
+    crosswind: f64,
+    height: f64,
+    threshold: f64,
+) -> PyResult<crate::transport_gen::PyGaussianPlumeResult> {
+    azoth_process::models::gaussian_plume::gaussian_plume(
+        kilograms_per_second(emission_rate),
+        meters(effective_stack_height),
+        meters_per_second(wind_speed),
+        stability,
+        terrain,
+        meters(distance),
+        meters(crosswind),
+        meters(height),
+        kilograms_per_cubic_meter(threshold),
+    )
+    .map(|r| crate::transport_gen::PyGaussianPlumeResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -6271,6 +6355,25 @@ pub fn packed_column(
     )
     .map(|r| crate::transport_gen::PyPackedColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
+}
+
+/// Probit dose-response.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (a, b, n, dose, probit_value))]
+#[pyo3(text_signature = "(a, b, n, dose, probit_value)")]
+pub fn probit(
+    py: Python<'_>,
+    a: f64,
+    b: f64,
+    n: f64,
+    dose: Option<f64>,
+    probit_value: Option<f64>,
+) -> PyResult<crate::transport_gen::PyProbitResult> {
+    azoth_process::models::probit::probit(a, b, n, dose, probit_value)
+        .map(|r| crate::transport_gen::PyProbitResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
 }
 
 /// Separator.

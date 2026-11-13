@@ -336,7 +336,9 @@ Five sections, and the difference between them is the point:
 - [`process.expander`](./process/expander.md) — Expander
 - [`process.filter`](./process/filter.md) — Filter
 - [`process.flare`](./process/flare.md) — Flare
+- [`process.gas_dispersion`](./process/gas_dispersion.md) — Gas dispersion screening
 - [`process.gas_scrubber`](./process/gas_scrubber.md) — Gas scrubber
+- [`process.gaussian_plume`](./process/gaussian_plume.md) — Gaussian plume dispersion
 - [`process.gibbs_reactor`](./process/gibbs_reactor.md) — Gibbs reactor
 - [`process.heat_exchanger`](./process/heat_exchanger.md) — Heat exchanger
 - [`process.heater`](./process/heater.md) — Heater
@@ -348,6 +350,7 @@ Five sections, and the difference between them is the point:
 - [`process.packed_column`](./process/packed_column.md) — Packed column
 - [`process.pipe`](./process/pipe.md) — Pipe
 - [`process.plug_flow_reactor`](./process/plug_flow_reactor.md) — Plug-flow reactor
+- [`process.probit`](./process/probit.md) — Probit dose-response
 - [`process.pump`](./process/pump.md) — Pump
 - [`process.rate_based_packed_column`](./process/rate_based_packed_column.md) — Rate-based packed column
 - [`process.separator`](./process/separator.md) — Separator
