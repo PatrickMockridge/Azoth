@@ -385,7 +385,10 @@ def compressor(
         elif use_polytropic_calc:
             density = capacity.system_mass_density(components, t, p, inlet_z, from_feed=True)
             volume = capacity.system_volumetric_flow(components, t, p, inlet_z, n, from_feed=True)
-            fluid_head = head_from_power(shaft_power, density * volume, efficiency)
+            mass_flow = density * volume
+            fluid_head = (
+                head_from_power(shaft_power, mass_flow, efficiency) if mass_flow > 0.0 else 0.0
+            )
         else:
             fluid_head = 0.0
         if not (math.isfinite(fluid_head) and fluid_head > 0.0):
