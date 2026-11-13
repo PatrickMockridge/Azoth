@@ -5667,6 +5667,13 @@ static ALL: &[ModelInputs] = &[
                 optional: true,
                 dimension: None,
             },
+            ModelInput {
+                name: "mechanical_design",
+                kind: "boolean",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
         ],
     },
 ];

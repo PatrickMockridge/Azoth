@@ -95,6 +95,7 @@ fn with_bearing(bearing_loss: Option<f64>) -> TurboExpanderResult {
         Some(&qn_head_curve()),
         None,
         None,
+        None,
     )
     .expect("the captured state balances")
 }
@@ -165,5 +166,120 @@ fn the_bearing_loss_is_the_only_imbalance() {
         lossy.power_compressor.value + bearing,
         1.0e-9,
         "the shaft balance with the class's 10 W bearing loss",
+    );
+}
+
+fn with_design() -> TurboExpanderResult {
+    let components: Vec<String> = COMPONENTS.iter().map(|name| (*name).to_string()).collect();
+    turbo_expander_compressor(
+        &components,
+        6721.52342728258,
+        &Z,
+        pascals(6_095_000.0),
+        kelvins(250.15),
+        &components,
+        6241.700991745513,
+        &Z,
+        pascals(4_200_000.0),
+        kelvins(290.15),
+        pascals(4_200_000.0),
+        meters(0.424),
+        6850.0,
+        0.7,
+        0.033_28,
+        None,
+        None,
+        Some(square_meters(0.016_37)),
+        None,
+        None,
+        Some(0.88),
+        Some(0.81),
+        Some(meters(20.47 * 1000.0 / 9.81)),
+        None,
+        Some(&uc_curve()),
+        Some(&qn_efficiency_curve()),
+        Some(&qn_head_curve()),
+        None,
+        None,
+        Some(true),
+    )
+    .expect("the captured state balances")
+}
+
+#[test]
+fn the_captured_mechanical_design_is_reproduced() {
+    let result = with_design();
+    close(
+        result
+            .design_expander_wheel_diameter
+            .expect("a wheel")
+            .value,
+        0.439_293_769_689_643_1,
+        0.05,
+        "expander wheel",
+    );
+    close(
+        result.design_expander_tip_speed.expect("a tip").value,
+        149.380_100_362_313_84,
+        0.05,
+        "expander tip",
+    );
+    assert_eq!(
+        result.design_expander_type.as_deref(),
+        Some("RADIAL_INFLOW")
+    );
+    close(
+        result
+            .design_compressor_impeller_diameter
+            .expect("an impeller")
+            .value,
+        0.573_895_507_524_172_8,
+        0.05,
+        "compressor impeller",
+    );
+    close(
+        result.design_compressor_tip_speed.expect("a tip").value,
+        195.150_886_323_765_52,
+        0.05,
+        "compressor tip",
+    );
+    assert_eq!(
+        result.design_compressor_casing_type.as_deref(),
+        Some("HORIZONTALLY_SPLIT")
+    );
+    close(
+        result.design_shaft_diameter.expect("a shaft").value,
+        0.145,
+        0.05,
+        "shaft",
+    );
+    close(
+        result.design_bearing_span.expect("a span").value,
+        1.804_093_814_140_047,
+        0.05,
+        "bearing span",
+    );
+    close(
+        result
+            .design_expander_casing_pressure
+            .expect("a pressure")
+            .value,
+        6_704_500.0,
+        0.05,
+        "expander casing pressure",
+    );
+    assert_eq!(result.design_bearing_type.as_deref(), Some("Sleeve"));
+    assert_eq!(result.design_expander_seal_type.as_deref(), Some("Dry Gas"));
+    close(
+        result.design_weight_total.expect("a weight").value,
+        4_003.596_731_763_368_6,
+        0.05,
+        "total weight",
+    );
+    close(
+        result.design_module_length.expect("a length").value,
+        5.786_909_033_253_115_5,
+        0.05,
+        "module length",
     );
 }

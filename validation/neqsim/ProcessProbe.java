@@ -273,6 +273,9 @@ public class ProcessProbe {
       case "turbo_expander":
         turboExpanderRows();
         break;
+      case "turbo_expander_mechanical":
+        turboExpanderMechanicalRows();
+        break;
       case "anti_surge":
         antiSurgeRows();
         break;
@@ -2073,6 +2076,100 @@ public class ProcessProbe {
   }
 
   /// `TurboExpanderCompressor`, the coupled expander-compressor.
+  /// `TurboExpanderCompressorMechanicalDesign.calcDesign`, on the coupled machine's states.
+  ///
+  /// The design reads **both** ends: the expander's inlet and outlet fix its wheel and
+  /// casing, and the compressor's suction and discharge fix its impeller and casing. The
+  /// third state raises the expander inlet pressure, which moves the expander casing and the
+  /// coupled power balance. **The compressor's barrel branch is not reached on these states**:
+  /// its discharge is set by the machine's own chart, not by the expander's power, so the
+  /// design's `BARREL` arm is stated rather than cased.
+  static void turboExpanderMechanicalRows() {
+    turboExpanderMechanicalRow("tec_run", 456000.0, 60.95, -23.0, 423448.0, 42.0, 17.0);
+    turboExpanderMechanicalRow("tec_low_expander_pressure", 426000.0, 55.95, -23.0, 423448.0,
+        42.0, 17.0);
+    turboExpanderMechanicalRow("tec_high_expander_pressure", 456000.0, 120.0, -23.0, 423448.0, 42.0, 17.0);
+  }
+
+  static void turboExpanderMechanicalRow(String label, double expanderKgHr,
+      double expanderBara, double expanderC, double compressorKgHr, double compressorBara,
+      double compressorC) {
+    Stream expanderFeed = turboFeed(expanderKgHr, expanderBara, expanderC);
+    Stream compressorFeed = turboFeed(compressorKgHr, compressorBara, compressorC);
+    neqsim.process.equipment.expander.TurboExpanderCompressor machine =
+        turboMachine(expanderFeed, compressorFeed);
+    machine.run();
+    machine.initTECMechanicalDesign();
+    neqsim.process.mechanicaldesign.expander.TurboExpanderCompressorMechanicalDesign design =
+        machine.getTECMechanicalDesign();
+    design.calcDesign();
+    System.out.println(label);
+    System.out.println("speed_rpm=" + machine.getSpeed());
+    System.out.println("gear_ratio=" + machine.getGearRatio());
+    System.out.println("expander_power_kW=" + machine.getPowerExpander("kW"));
+    System.out.println("compressor_power_kW=" + machine.getPowerCompressor("kW"));
+    System.out.println("compressor_polytropic_head_kj_per_kg="
+        + machine.getCompressorPolytropicHead());
+    System.out.println("expander_wheel_diameter_mm=" + design.getExpanderWheelDiameter());
+    System.out.println("expander_tip_speed_m_per_s=" + design.getExpanderTipSpeed());
+    System.out.println("expander_type=" + design.getExpanderType());
+    System.out.println("expander_stages=" + design.getExpanderStages());
+    System.out.println("expander_design_inlet_p_bara=" + design.getExpanderDesignInletPressure());
+    System.out.println("expander_design_outlet_p_bara=" + design.getExpanderDesignOutletPressure());
+    System.out.println("expander_casing_p_bara=" + design.getExpanderCasingDesignPressure());
+    System.out.println("expander_casing_t_C=" + design.getExpanderCasingDesignTemperature());
+    System.out.println("expander_power_design_kW=" + design.getExpanderPowerKW());
+    System.out.println("expander_enthalpy_drop_kj_per_kg=" + design.getExpanderEnthalpyDropKJkg());
+    System.out.println("compressor_impeller_diameter_mm="
+        + design.getCompressorImpellerDiameter());
+    System.out.println("compressor_tip_speed_m_per_s=" + design.getCompressorTipSpeed());
+    System.out.println("compressor_stages=" + design.getCompressorStages());
+    System.out.println("compressor_polytropic_head_design=" + design.getCompressorPolytropicHead());
+    System.out.println("compressor_head_per_stage_kj_per_kg=" + design.getCompressorHeadPerStage());
+    System.out.println("compressor_casing_type=" + design.getCompressorCasingType());
+    System.out.println("compressor_design_suction_p_bara="
+        + design.getCompressorDesignSuctionPressure());
+    System.out.println("compressor_design_discharge_p_bara="
+        + design.getCompressorDesignDischargePressure());
+    System.out.println("compressor_casing_p_bara=" + design.getCompressorCasingDesignPressure());
+    System.out.println("compressor_casing_t_C=" + design.getCompressorCasingDesignTemperature());
+    System.out.println("compressor_power_design_kW=" + design.getCompressorPowerKW());
+    System.out.println("shaft_diameter_mm=" + design.getShaftDiameter());
+    System.out.println("shaft_weight_kg=" + design.getShaftWeight());
+    System.out.println("operating_speed_rpm=" + design.getOperatingSpeed());
+    System.out.println("max_continuous_speed_rpm=" + design.getMaxContinuousSpeed());
+    System.out.println("trip_speed_rpm=" + design.getTripSpeed());
+    System.out.println("first_critical_speed_rpm=" + design.getFirstCriticalSpeed());
+    System.out.println("second_critical_speed_rpm=" + design.getSecondCriticalSpeed());
+    System.out.println("bearing_span_mm=" + design.getBearingSpan());
+    System.out.println("bearing_type=" + design.getBearingType());
+    System.out.println("expander_seal_type=" + design.getExpanderSealType());
+    System.out.println("compressor_seal_type=" + design.getCompressorSealType());
+    System.out.println("design_torque_nm=" + design.getDesignTorqueNm());
+    System.out.println("design_shaft_stress_mpa=" + design.getDesignShaftStressMPa());
+    System.out.println("design_surge_flow_m3_per_hr=" + design.getDesignSurgeFlowM3hr());
+    System.out.println("design_stonewall_flow_m3_per_hr=" + design.getDesignStonewallFlowM3hr());
+    System.out.println("expander_nozzle_throat_area_m2=" + design.getExpanderNozzleThroatArea());
+    System.out.println("expander_wheel_weight_kg=" + design.getExpanderWheelWeight());
+    System.out.println("expander_casing_weight_kg=" + design.getExpanderCasingWeight());
+    System.out.println("compressor_impeller_weight_kg=" + design.getCompressorImpellerWeight());
+    System.out.println("compressor_casing_weight_kg=" + design.getCompressorCasingWeight());
+    System.out.println("weight_vessel_kg=" + design.getWeightVessel());
+    System.out.println("weight_internals_kg=" + design.getWeigthInternals());
+    System.out.println("weight_piping_kg=" + design.getWeightPiping());
+    System.out.println("weight_electro_instrument_kg=" + design.getWeightElectroInstrument());
+    System.out.println("weight_structural_steel_kg=" + design.getWeightStructualSteel());
+    System.out.println("weight_total_kg=" + design.getWeightTotal());
+    System.out.println("module_length_m=" + design.getModuleLength());
+    System.out.println("module_width_m=" + design.getModuleWidth());
+    System.out.println("module_height_m=" + design.getModuleHeight());
+    System.out.println("expander_inlet_m3_per_hr=" + expanderFeed.getFlowRate("m3/hr"));
+    System.out.println("compressor_inlet_m3_per_hr=" + compressorFeed.getFlowRate("m3/hr"));
+    print("expander_inlet", expanderFeed);
+    print("compressor_inlet", compressorFeed);
+    System.out.println();
+  }
+
   static void turboExpanderRows() {
     turboExpanderRow("turbo_expander_run", 456000.0, 60.95, -23.0, 423448.0, 42.0, 17.0);
     turboExpanderRow("turbo_expander_low_expander_pressure", 426000.0, 55.95, -23.0, 423448.0,

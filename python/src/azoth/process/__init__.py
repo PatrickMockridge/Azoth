@@ -1406,6 +1406,7 @@ def turbo_expander_compressor(
     qn_head_curve: list[dict[str, float]] | None = None,
     chart: list[dict[str, float]] | None = None,
     igv_penalty_curve: list[dict[str, float]] | None = None,
+    mechanical_design: bool | None = None,
 ) -> TurboExpanderResult:
     """Balance a turbo-expander and a boost compressor on one shaft.
 
@@ -1457,6 +1458,7 @@ def turbo_expander_compressor(
         qn_head_curve=qn_head_curve,
         chart=chart,
         igv_penalty_curve=igv_penalty_curve,
+        mechanical_design=mechanical_design,
     )
 
 

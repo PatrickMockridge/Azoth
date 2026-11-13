@@ -7,3 +7,4 @@
 pub mod compressor;
 pub mod expander;
 pub mod pump;
+pub mod turbo_expander_compressor;

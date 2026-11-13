@@ -7561,7 +7561,7 @@ def throttling_valve(components: list[str], inlet_n: Q, inlet_z: list[float], in
     )
 
 
-def turbo_expander_compressor(expander_components: list[str], compressor_components: list[str], expander_n: Q, expander_z: list[float], expander_p: Q, expander_t: Q, compressor_n: Q, compressor_z: list[float], compressor_p: Q, compressor_t: Q, expander_out_pressure: Q, impeller_diameter: Q, design_speed: float, design_uc: float, design_qn: float, igv_opening: float | None=None, igv_control_mode: bool | None=None, maximum_igv_area: Q | None=None, igv_area_increase_factor: float | None=None, bearing_loss: Q | None=None, expander_design_isentropic_efficiency: float | None=None, compressor_design_polytropic_efficiency: float | None=None, compressor_design_polytropic_head: Q | None=None, expander_out_temperature: Q | None=None, uc_curve: list[dict[str, float]] | None=None, qn_efficiency_curve: list[dict[str, float]] | None=None, qn_head_curve: list[dict[str, float]] | None=None, chart: list[dict[str, float]] | None=None, igv_penalty_curve: list[dict[str, float]] | None=None) -> TurboExpanderResult:
+def turbo_expander_compressor(expander_components: list[str], compressor_components: list[str], expander_n: Q, expander_z: list[float], expander_p: Q, expander_t: Q, compressor_n: Q, compressor_z: list[float], compressor_p: Q, compressor_t: Q, expander_out_pressure: Q, impeller_diameter: Q, design_speed: float, design_uc: float, design_qn: float, igv_opening: float | None=None, igv_control_mode: bool | None=None, maximum_igv_area: Q | None=None, igv_area_increase_factor: float | None=None, bearing_loss: Q | None=None, expander_design_isentropic_efficiency: float | None=None, compressor_design_polytropic_efficiency: float | None=None, compressor_design_polytropic_head: Q | None=None, expander_out_temperature: Q | None=None, uc_curve: list[dict[str, float]] | None=None, qn_efficiency_curve: list[dict[str, float]] | None=None, qn_head_curve: list[dict[str, float]] | None=None, chart: list[dict[str, float]] | None=None, igv_penalty_curve: list[dict[str, float]] | None=None, mechanical_design: bool | None=None) -> TurboExpanderResult:
     """``process.turbo_expander_compressor``, computed in Rust."""
     spec = _models_gen.model("process.turbo_expander_compressor")
     result = _core.turbo_expander_compressor(
@@ -7594,6 +7594,7 @@ def turbo_expander_compressor(expander_components: list[str], compressor_compone
         None if qn_head_curve is None else input_records_to_si(spec, "qn_head_curve", qn_head_curve),
         None if chart is None else input_records_to_si(spec, "chart", chart),
         None if igv_penalty_curve is None else input_records_to_si(spec, "igv_penalty_curve", igv_penalty_curve),
+        mechanical_design,
     )
     return TurboExpanderResult(
         expander_outlet_n=from_si(result.expander_outlet_n.magnitude_si, result.expander_outlet_n.unit),
@@ -7616,6 +7617,57 @@ def turbo_expander_compressor(expander_components: list[str], compressor_compone
         uc_ratio_expander=result.uc_ratio_expander,
         qn_ratio_compressor=result.qn_ratio_compressor,
         igv_opening=result.igv_opening,
+        design_expander_wheel_diameter=None if result.design_expander_wheel_diameter is None else from_si(result.design_expander_wheel_diameter.magnitude_si, result.design_expander_wheel_diameter.unit),
+        design_expander_tip_speed=None if result.design_expander_tip_speed is None else from_si(result.design_expander_tip_speed.magnitude_si, result.design_expander_tip_speed.unit),
+        design_expander_type=result.design_expander_type,
+        design_expander_stages=result.design_expander_stages,
+        design_expander_design_inlet_pressure=None if result.design_expander_design_inlet_pressure is None else from_si(result.design_expander_design_inlet_pressure.magnitude_si, result.design_expander_design_inlet_pressure.unit),
+        design_expander_design_outlet_pressure=None if result.design_expander_design_outlet_pressure is None else from_si(result.design_expander_design_outlet_pressure.magnitude_si, result.design_expander_design_outlet_pressure.unit),
+        design_expander_casing_pressure=None if result.design_expander_casing_pressure is None else from_si(result.design_expander_casing_pressure.magnitude_si, result.design_expander_casing_pressure.unit),
+        design_expander_casing_temperature=None if result.design_expander_casing_temperature is None else from_si(result.design_expander_casing_temperature.magnitude_si, result.design_expander_casing_temperature.unit),
+        design_expander_power=None if result.design_expander_power is None else from_si(result.design_expander_power.magnitude_si, result.design_expander_power.unit),
+        design_expander_enthalpy_drop=result.design_expander_enthalpy_drop,
+        design_compressor_impeller_diameter=None if result.design_compressor_impeller_diameter is None else from_si(result.design_compressor_impeller_diameter.magnitude_si, result.design_compressor_impeller_diameter.unit),
+        design_compressor_tip_speed=None if result.design_compressor_tip_speed is None else from_si(result.design_compressor_tip_speed.magnitude_si, result.design_compressor_tip_speed.unit),
+        design_compressor_stages=result.design_compressor_stages,
+        design_compressor_polytropic_head_design=result.design_compressor_polytropic_head_design,
+        design_compressor_head_per_stage=result.design_compressor_head_per_stage,
+        design_compressor_casing_type=result.design_compressor_casing_type,
+        design_compressor_design_suction_pressure=None if result.design_compressor_design_suction_pressure is None else from_si(result.design_compressor_design_suction_pressure.magnitude_si, result.design_compressor_design_suction_pressure.unit),
+        design_compressor_design_discharge_pressure=None if result.design_compressor_design_discharge_pressure is None else from_si(result.design_compressor_design_discharge_pressure.magnitude_si, result.design_compressor_design_discharge_pressure.unit),
+        design_compressor_casing_pressure=None if result.design_compressor_casing_pressure is None else from_si(result.design_compressor_casing_pressure.magnitude_si, result.design_compressor_casing_pressure.unit),
+        design_compressor_casing_temperature=None if result.design_compressor_casing_temperature is None else from_si(result.design_compressor_casing_temperature.magnitude_si, result.design_compressor_casing_temperature.unit),
+        design_compressor_power=None if result.design_compressor_power is None else from_si(result.design_compressor_power.magnitude_si, result.design_compressor_power.unit),
+        design_shaft_diameter=None if result.design_shaft_diameter is None else from_si(result.design_shaft_diameter.magnitude_si, result.design_shaft_diameter.unit),
+        design_shaft_weight=None if result.design_shaft_weight is None else from_si(result.design_shaft_weight.magnitude_si, result.design_shaft_weight.unit),
+        design_operating_speed=result.design_operating_speed,
+        design_max_continuous_speed=result.design_max_continuous_speed,
+        design_trip_speed=result.design_trip_speed,
+        design_first_critical_speed=result.design_first_critical_speed,
+        design_second_critical_speed=result.design_second_critical_speed,
+        design_bearing_span=None if result.design_bearing_span is None else from_si(result.design_bearing_span.magnitude_si, result.design_bearing_span.unit),
+        design_bearing_type=result.design_bearing_type,
+        design_expander_seal_type=result.design_expander_seal_type,
+        design_compressor_seal_type=result.design_compressor_seal_type,
+        design_gear_ratio=result.design_gear_ratio,
+        design_torque=result.design_torque,
+        design_shaft_stress=None if result.design_shaft_stress is None else from_si(result.design_shaft_stress.magnitude_si, result.design_shaft_stress.unit),
+        design_surge_flow=None if result.design_surge_flow is None else from_si(result.design_surge_flow.magnitude_si, result.design_surge_flow.unit),
+        design_stonewall_flow=None if result.design_stonewall_flow is None else from_si(result.design_stonewall_flow.magnitude_si, result.design_stonewall_flow.unit),
+        design_expander_nozzle_throat_area=None if result.design_expander_nozzle_throat_area is None else from_si(result.design_expander_nozzle_throat_area.magnitude_si, result.design_expander_nozzle_throat_area.unit),
+        design_expander_wheel_weight=None if result.design_expander_wheel_weight is None else from_si(result.design_expander_wheel_weight.magnitude_si, result.design_expander_wheel_weight.unit),
+        design_expander_casing_weight=None if result.design_expander_casing_weight is None else from_si(result.design_expander_casing_weight.magnitude_si, result.design_expander_casing_weight.unit),
+        design_compressor_impeller_weight=None if result.design_compressor_impeller_weight is None else from_si(result.design_compressor_impeller_weight.magnitude_si, result.design_compressor_impeller_weight.unit),
+        design_compressor_casing_weight=None if result.design_compressor_casing_weight is None else from_si(result.design_compressor_casing_weight.magnitude_si, result.design_compressor_casing_weight.unit),
+        design_weight_vessel=None if result.design_weight_vessel is None else from_si(result.design_weight_vessel.magnitude_si, result.design_weight_vessel.unit),
+        design_weight_internals=None if result.design_weight_internals is None else from_si(result.design_weight_internals.magnitude_si, result.design_weight_internals.unit),
+        design_weight_piping=None if result.design_weight_piping is None else from_si(result.design_weight_piping.magnitude_si, result.design_weight_piping.unit),
+        design_weight_electro_instrument=None if result.design_weight_electro_instrument is None else from_si(result.design_weight_electro_instrument.magnitude_si, result.design_weight_electro_instrument.unit),
+        design_weight_structural_steel=None if result.design_weight_structural_steel is None else from_si(result.design_weight_structural_steel.magnitude_si, result.design_weight_structural_steel.unit),
+        design_weight_total=None if result.design_weight_total is None else from_si(result.design_weight_total.magnitude_si, result.design_weight_total.unit),
+        design_module_length=None if result.design_module_length is None else from_si(result.design_module_length.magnitude_si, result.design_module_length.unit),
+        design_module_width=None if result.design_module_width is None else from_si(result.design_module_width.magnitude_si, result.design_module_width.unit),
+        design_module_height=None if result.design_module_height is None else from_si(result.design_module_height.magnitude_si, result.design_module_height.unit),
         warnings=_warnings(result.warnings),
     )
 

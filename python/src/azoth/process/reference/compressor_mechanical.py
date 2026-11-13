@@ -16,6 +16,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from azoth.core.errors import InvalidInputError
 from azoth.process.reference import capacity
 
 #: The stage head cap, kJ/kg.
@@ -128,7 +129,9 @@ def design(
         max_stages_per_casing,
     )
     if not math.isfinite(impeller.diameter):
-        raise ValueError("the impeller screen could not size the machine")
+        raise InvalidInputError(
+            "mechanical_design", "the impeller screen could not size the machine"
+        )
 
     power_kw = power / 1000.0
     shaft_diameter = _shaft_diameter(power_kw, speed)
