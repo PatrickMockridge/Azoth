@@ -2328,7 +2328,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'hydraulics.crane_k_factors': {
         "calc_id": 'hydraulics.crane_k_factors',
         "name": 'Fitting resistance coefficients by the equivalent-length method',
-        "spec": {'path': 'specs/calcs/hydraulics/crane_k_factors.toml', 'sha256': '5ab796a84ab22a48e2ad5246c439caee9eaed38e6472aabd9b5a8ab022ace0b0'},
+        "spec": {'path': 'specs/calcs/hydraulics/crane_k_factors.toml', 'sha256': '9188690463c60aed45443ff0f2a6c8b5956af484137d6ca908a3c69cc8234479'},
         "code": [{'path': 'python/src/azoth/hydraulics/reference/crane_k_factors.py', 'sha256': 'da3c2817aac4a8a31485f7e9e18375a74067d3663b649782da08e61f93da1ab7'}, {'path': 'crates/azoth-hydraulics/src/crane_k_factors.rs', 'sha256': '67500619b58a96c6098b0cbed9e1312c0a2a917b6de56008ebe5b6a8016a7613'}],
         "source": 'Crane TP-410',
         "verification": 'partially_verified',
@@ -2911,8 +2911,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'reactions.reactive_phase_equilibrium': {
         "calc_id": 'reactions.reactive_phase_equilibrium',
         "name": 'Reactive equilibrium as an operation on one phase',
-        "spec": {'path': 'specs/models/reactions/reactive_phase_equilibrium.toml', 'sha256': '9d786732a2fe6232bbbc7078733f64c3f98ee3956ec626804917d242ce07ec07'},
-        "code": [{'path': 'python/src/azoth/reactions/reference/reactive_phase_equilibrium.py', 'sha256': '5b56ee171ac868a94d45cee450fe34ed8f805a17b9b65db43ae5a4aa57fc6628'}, {'path': 'crates/azoth-reactions/src/reactive_phase_equilibrium.rs', 'sha256': 'f3ad36180a725e5764b30b3dc3672a7538b126660f808a2176ab1591c0753d28'}],
+        "spec": {'path': 'specs/models/reactions/reactive_phase_equilibrium.toml', 'sha256': 'fa17ada338cb176bbfda68888f970ed90e72ecea357883a122e54166aebade59'},
+        "code": [{'path': 'python/src/azoth/reactions/reference/reactive_phase_equilibrium.py', 'sha256': '82570568f1238358385d5191d3017093b7518552e510be3b9ef25868c86a4350'}, {'path': 'crates/azoth-reactions/src/reactive_phase_equilibrium.rs', 'sha256': '353ed585ee7d2dad9a9e8e3910301abbdc6d171acf7d8d4e18b3209ef189b5e4'}],
         "source": 'NeqSim master `ChemicalReactionOperations`',
         "verification": 'partially_verified',
         "validation_cases": 0,

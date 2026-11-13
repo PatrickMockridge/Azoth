@@ -169,6 +169,7 @@ def reactive_phase_equilibrium(
             "T": temperature,
             "tolerance": tolerance,
             "max_iterations": max_iterations,
+            "phase_moles": input_to_si(spec, "phase_moles", phase_moles),
         }.get,
         warnings,
     )
