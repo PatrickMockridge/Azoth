@@ -2834,7 +2834,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'reactions.chemical_equilibrium': {
         "calc_id": 'reactions.chemical_equilibrium',
         "name": 'Reactive chemical equilibrium by the Smith-Missen method',
-        "spec": {'path': 'specs/models/reactions/chemical_equilibrium.toml', 'sha256': 'b6eb36ac7e6b3d34d1e79d37ca381cd96f1195a2ef429250a0c01a7bdd936f10'},
+        "spec": {'path': 'specs/models/reactions/chemical_equilibrium.toml', 'sha256': '1a78cfac1e8b4f5a73f3ec8568300fd9564a3b5cdf0b397be701dd9674b63e14'},
         "code": [{'path': 'python/src/azoth/reactions/reference/chemical_equilibrium.py', 'sha256': 'a957f50ab7a3f04d3940073af511541684db78b51c72f394f174ed7e010d1778'}, {'path': 'crates/azoth-reactions/src/chemical_equilibrium.rs', 'sha256': 'edf1c98bb653456940392a9e9ff57bbb330bdb99ea6a8cbcc0be5cc2bca9d5b8'}],
         "source": 'NeqSim master `ChemicalEquilibrium`',
         "verification": 'partially_verified',
