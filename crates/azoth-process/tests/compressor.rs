@@ -941,7 +941,7 @@ fn the_captured_polytropic_design_is_reproduced() {
     );
     close_mechanical(
         result.design_temperature.expect("a temperature").value,
-        428.418_688_223_012_53,
+        428.418_688_223_012_5,
         1e-2,
         "design temperature",
     );
@@ -983,13 +983,13 @@ fn the_captured_polytropic_design_is_reproduced() {
     );
     close_mechanical(
         result.design_bundle_weight.expect("a weight").value,
-        5503.578_227_574_426,
+        5_503.578_227_574_426,
         1e-2,
         "bundle weight",
     );
     close_mechanical(
         result.design_rotor_weight.expect("a weight").value,
-        3333.896_668_661_581_3,
+        3_333.896_668_661_581_3,
         1e-2,
         "rotor weight",
     );
