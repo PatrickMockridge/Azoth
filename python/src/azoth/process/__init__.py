@@ -182,6 +182,18 @@ def pump(
     use_viscosity_correction: bool | None = None,
     check_npsh: bool | None = None,
     npsh_margin: float | None = None,
+    mechanical_design: bool | None = None,
+    api610_pump_type: str | None = None,
+    seal_type: str | None = None,
+    maximum_suction_pressure: Q | None = None,
+    furnished_casing_mawp: Q | None = None,
+    shutoff_head: Q | None = None,
+    npsh_margin_factor: float | None = None,
+    minimum_npsh_margin: Q | None = None,
+    por_low_fraction: float | None = None,
+    por_high_fraction: float | None = None,
+    aor_low_fraction: float | None = None,
+    aor_high_fraction: float | None = None,
 ) -> PumpResult:
     """Raise a stream's pressure, adding the pump's work as enthalpy.
 
@@ -218,6 +230,18 @@ def pump(
         use_viscosity_correction=use_viscosity_correction,
         check_npsh=check_npsh,
         npsh_margin=npsh_margin,
+        mechanical_design=mechanical_design,
+        api610_pump_type=api610_pump_type,
+        seal_type=seal_type,
+        maximum_suction_pressure=maximum_suction_pressure,
+        furnished_casing_mawp=furnished_casing_mawp,
+        shutoff_head=shutoff_head,
+        npsh_margin_factor=npsh_margin_factor,
+        minimum_npsh_margin=minimum_npsh_margin,
+        por_low_fraction=por_low_fraction,
+        por_high_fraction=por_high_fraction,
+        aor_low_fraction=aor_low_fraction,
+        aor_high_fraction=aor_high_fraction,
     )
 
 
@@ -1243,6 +1267,7 @@ def expander(
     rated_recovered_power: Q | None = None,
     shaft_power: Q | None = None,
     outlet_temperature: Q | None = None,
+    mechanical_design: bool | None = None,
 ) -> ExpanderResult:
     """Drop a stream's pressure along an isentrope, multiplying the step by the efficiency.
 
@@ -1279,6 +1304,7 @@ def expander(
         rated_recovered_power=rated_recovered_power,
         shaft_power=shaft_power,
         outlet_temperature=outlet_temperature,
+        mechanical_design=mechanical_design,
     )
 
 

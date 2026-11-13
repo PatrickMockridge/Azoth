@@ -2526,12 +2526,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.expander': {
         "calc_id": 'process.expander',
         "name": 'Expander',
-        "spec": {'path': 'specs/models/process/expander.toml', 'sha256': 'd1e5699971ca2a6a1d020730a31c941666828006227d0f7320711ea1bbc893ae'},
-        "code": [{'path': 'python/src/azoth/process/reference/expander.py', 'sha256': 'ab7a6698e45bfc51fa187ab4ee0b58b0063fecbd53c78ffd73276b56f493d528'}, {'path': 'crates/azoth-process/src/models/expander.rs', 'sha256': '7d94277113f90042fcaf11957f910c6582717b49751a906656a15a40e131b81d'}],
+        "spec": {'path': 'specs/models/process/expander.toml', 'sha256': '619402d9d57ec819b4a70dfbc9c3667a9af56e9c3f65952804fc8d5208118320'},
+        "code": [{'path': 'python/src/azoth/process/reference/expander.py', 'sha256': '50450933b7b3a85f860662dd871f63416257f536ef1d4edc9a7cc8758a1eac03'}, {'path': 'crates/azoth-process/src/models/expander.rs', 'sha256': '68572af89c9b50b02766ebbd78cac409162bec0c32ffe9698edf36909c095c4a'}],
         "source": 'NeqSim process/equipment/compressor/Compressor.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 18,
+        "tests_active": 20,
         "tests_skipped": 0,
     },
     'process.filter': {
@@ -2691,12 +2691,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.pump': {
         "calc_id": 'process.pump',
         "name": 'Pump',
-        "spec": {'path': 'specs/models/process/pump.toml', 'sha256': 'a7fac0ba1b85947a1ff1cce14ba7dec9c967e5c62a7f664d49e9158f249a2d9a'},
-        "code": [{'path': 'python/src/azoth/process/reference/pump.py', 'sha256': 'cd531d060e4b387abac9b35e7764f777f65d99db5bbb2aa26a13e8bac2188269'}, {'path': 'crates/azoth-process/src/models/pump.rs', 'sha256': '7f72ddacf1f6591db58bbc0c47a248240d8fcb0583312aea683156b1551ce376'}],
+        "spec": {'path': 'specs/models/process/pump.toml', 'sha256': '74caf77d01f43bd46e3876ca6d6633160ef4c759f939906408ab151d9a5001be'},
+        "code": [{'path': 'python/src/azoth/process/reference/pump.py', 'sha256': '1db61a8f8cea134858b0fdacb254beea2d303005415473afbd35f524e325fcb8'}, {'path': 'crates/azoth-process/src/models/pump.rs', 'sha256': '0a98fe791dc98d2004e0921a1b29effbb8a8f585d9a1b011e4dc1ce4fb09d857'}],
         "source": 'NeqSim process/equipment/pump/Pump.java and process/equipment/pump/PumpChart.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 5,
+        "tests_active": 8,
         "tests_skipped": 0,
     },
     'process.rate_based_packed_column': {

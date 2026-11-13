@@ -129,6 +129,9 @@ public class ProcessProbe {
       case "pump":
         pump();
         break;
+      case "pump_mechanical":
+        pumpMechanicalRows();
+        break;
       case "splitter":
         splitter();
         break;
@@ -287,6 +290,9 @@ public class ProcessProbe {
         break;
       case "expander":
         isentropicRows("Expander");
+        break;
+      case "expander_mechanical":
+        expanderMechanicalRows();
         break;
       case "expander_capacity":
         expanderCapacityRows();
@@ -475,6 +481,205 @@ public class ProcessProbe {
           "entropy_production_kJ_per_molK=" + pump.getEntropyProduction("kJ/molK"));
       System.out.println();
     }
+  }
+
+  /// `PumpMechanicalDesign.calcDesign`, with the API 610 assessment it runs.
+  ///
+  /// **The rows are the states the class distinguishes**: the plain isentropic branch at two
+  /// efficiencies, the chart branch where the vendor BEP and NPSHr are read, a purchaser-fixed
+  /// API 610 type with a stated suction pressure, casing MAWP and shutoff head, and a zero-flow
+  /// row. The last is evidence only - the port's model refuses a zero `inlet_n`, so the class's
+  /// guard is stated rather than cased.
+  ///
+  /// **The base class's fields are not one unit.** `getInnerDiameter`, `getOuterDiameter` and
+  /// `getTantanLength` are metres here, `getWallThickness` is millimetres, the weights are
+  /// kilograms and the module dimensions are metres - the row prints the getters as the class
+  /// returns them, and the spec converts each at its own boundary.
+  static void pumpMechanicalRows() {
+    pumpMechanicalRow("plain_eta_0_75", new String[] {"n-butane"}, new double[] {1.0},
+        250.0, 5.0, 1.0, 20.0, 0.75, 1000.0, false, false);
+    pumpMechanicalRow("plain_eta_1_0", new String[] {"n-butane"}, new double[] {1.0},
+        250.0, 5.0, 1.0, 20.0, 1.0, 1000.0, false, false);
+    // The 1 -> 60 bar water state puts the head over the class's 250 m threshold, so
+    // `selectPumpType` reaches BETWEEN_BEARINGS and the multi-stage head division.
+    pumpMechanicalRow("multistage", new String[] {"water"}, new double[] {1.0},
+        293.15, 1.0, 2775.9, 60.0, 0.75, 3000.0, false, false);
+    pumpMechanicalRow("purchaser", new String[] {"n-butane"}, new double[] {1.0},
+        250.0, 5.0, 1.0, 20.0, 0.75, 1000.0, true, false);
+    pumpMechanicalRow("sealless", new String[] {"n-butane"}, new double[] {1.0},
+        250.0, 5.0, 1.0, 20.0, 0.75, 1000.0, false, true);
+    pumpMechanicalRow("zero_flow", new String[] {"n-butane"}, new double[] {1.0},
+        250.0, 5.0, 0.0, 20.0, 0.75, 1000.0, false, false);
+    pumpMechanicalChartRow("chart", false);
+    pumpMechanicalNpshRow();
+  }
+
+  static void pumpMechanicalRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, double molPerSecond, double outletBara, double efficiency,
+      double speed, boolean purchaser, boolean sealless) {
+    Stream inlet = feed(names, z, temperatureK, pressureBara, molPerSecond);
+    neqsim.process.equipment.pump.Pump pump =
+        new neqsim.process.equipment.pump.Pump(label, inlet);
+    pump.setOutletPressure(outletBara);
+    pump.setIsentropicEfficiency(efficiency);
+    pump.setSpeed(speed);
+    neqsim.process.mechanicaldesign.pump.PumpMechanicalDesign design = pump.getMechanicalDesign();
+    if (purchaser) {
+      design.setApi610PumpType(
+          neqsim.process.mechanicaldesign.pump.PumpApi610DesignCalculator.Api610PumpType.OH2);
+      design.setMaximumSuctionPressure(6.0);
+      design.setFurnishedCasingMawp(25.0);
+      design.setShutoffHead(400.0);
+    }
+    if (sealless) {
+      design.setSealType(neqsim.process.mechanicaldesign.pump.PumpMechanicalDesign.SealType.MAGNETIC_DRIVE);
+    }
+    pump.run();
+    design.calcDesign();
+    printPumpDesign(label, inlet, pump, design);
+  }
+
+  static void pumpMechanicalChartRow(String label, boolean npshCurve) {
+    Stream inlet = feedMass("inlet", new String[] {"water"}, new double[] {1.0}, 293.15, 1.0, 4.0e6);
+    neqsim.process.equipment.pump.Pump pump =
+        new neqsim.process.equipment.pump.Pump(label, inlet);
+    setChartTest((neqsim.process.equipment.pump.PumpChart) pump.getPumpChart(),
+        new double[] {0.3, 1.0, 1.0, 1.0});
+    pump.setSpeed(12913.0);
+    pump.run();
+    neqsim.process.mechanicaldesign.pump.PumpMechanicalDesign design = pump.getMechanicalDesign();
+    design.calcDesign();
+    printPumpDesign(label, inlet, pump, design);
+  }
+
+  /// The two-speed chart with a vendor NPSH curve, so `npshrDataSource` is `VENDOR_CURVE`
+  /// rather than the screening estimate. The NPSH table is the one the pump's own NPSH row
+  /// uses; its outer dimension is one row per speed, which is why it cannot ride the
+  /// eight-speed performance chart.
+  static void pumpMechanicalNpshRow() {
+    Stream inlet = feedMass("inlet", new String[] {"water"}, new double[] {1.0}, 298.15, 2.0,
+        39900.0);
+    neqsim.process.equipment.pump.Pump pump =
+        new neqsim.process.equipment.pump.Pump("chart_npsh", inlet);
+    pump.getPumpChart().setCurves(new double[] {}, new double[] {1000.0, 1500.0},
+        new double[][] {{10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0},
+            {15.0, 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0}},
+        new double[][] {{120.0, 118.0, 115.0, 110.0, 103.0, 94.0, 83.0, 70.0},
+            {270.0, 265.5, 258.8, 247.5, 231.8, 211.5, 186.8, 157.5}},
+        new double[][] {{60.0, 70.0, 78.0, 82.0, 81.0, 76.0, 68.0, 55.0},
+            {62.0, 71.0, 79.0, 83.0, 82.0, 77.0, 69.0, 56.0}});
+    pump.getPumpChart().setHeadUnit("meter");
+    pump.getPumpChart().setNPSHCurve(new double[][] {
+        {2.0, 2.2, 2.5, 3.0, 3.8, 4.8, 6.2, 8.0},
+        {4.5, 4.95, 5.625, 6.75, 8.55, 10.8, 13.95, 18.0}});
+    pump.setSpeed(1000.0);
+    pump.setCheckNPSH(true);
+    pump.setNPSHMargin(1.3);
+    pump.run();
+    neqsim.process.mechanicaldesign.pump.PumpMechanicalDesign design = pump.getMechanicalDesign();
+    design.calcDesign();
+    printPumpDesign("chart_npsh", inlet, pump, design);
+  }
+
+  static void printPumpDesign(String label, Stream inlet,
+      neqsim.process.equipment.pump.Pump pump,
+      neqsim.process.mechanicaldesign.pump.PumpMechanicalDesign design) {
+    System.out.println(label);
+    System.out.println("pump_type=" + design.getPumpType());
+    System.out.println("seal_type=" + design.getSealType());
+    System.out.println("api610_pump_type=" + design.getApi610PumpType());
+    System.out.println("rated_flow_m3_per_hr=" + design.getRatedFlow());
+    System.out.println("rated_head_m=" + design.getRatedHead());
+    System.out.println("pump_efficiency=" + design.getPumpEfficiency());
+    System.out.println("hydraulic_power_kW=" + design.getHydraulicPower());
+    System.out.println("absorbed_power_kW=" + design.getAbsorbedPower());
+    System.out.println("rated_speed_rpm=" + design.getRatedSpeed());
+    System.out.println("specific_speed=" + design.getSpecificSpeed());
+    System.out.println("suction_specific_speed=" + design.getSuctionSpecificSpeed());
+    System.out.println("number_of_stages=" + design.getNumberOfStages());
+    System.out.println("bep_flow_m3_per_hr=" + design.getBepFlow());
+    System.out.println("bep_head_m=" + design.getBepHead());
+    System.out.println("npsh_required_m=" + design.getNpshRequired());
+    System.out.println("npsh_available_m=" + design.getNpshAvailable());
+    System.out.println("design_npsh_margin_m=" + design.getNpshMargin());
+    System.out.println("design_npsh_margin_ratio=" + design.getNpshMarginRatio());
+    System.out.println("driver_power_kW=" + design.getDriverPower());
+    System.out.println("driver_margin=" + design.getDriverMargin());
+    System.out.println("design_pressure_bara=" + design.getDesignPressure());
+    System.out.println("design_temperature_C=" + design.getDesignTemperature());
+    System.out.println("impeller_diameter_mm=" + design.getImpellerDiameter());
+    System.out.println("impeller_width_mm=" + design.getImpellerWidth());
+    System.out.println("shaft_diameter_mm=" + design.getShaftDiameter());
+    System.out.println("casing_wall_thickness_mm=" + design.getCasingWallThickness());
+    System.out.println("casing_mawp_bara=" + design.getMaxAllowableWorkingPressure());
+    System.out.println("suction_nozzle_size_in=" + design.getSuctionNozzleSize());
+    System.out.println("discharge_nozzle_size_in=" + design.getDischargeNozzleSize());
+    System.out.println("minimum_flow_m3_per_hr=" + design.getMinimumFlow());
+    System.out.println("maximum_flow_m3_per_hr=" + design.getMaximumFlow());
+    System.out.println("shutoff_head_m=" + privateDouble(design, "shutoffHead"));
+    System.out.println("effective_isentropic_efficiency=" + pump.getIsentropicEfficiency());
+    System.out.println("npsh_margin_factor=" + design.getNpshMarginFactor());
+    System.out.println("minimum_npsh_margin_m=" + design.getMinimumNpshMarginM());
+    System.out.println("por_low_fraction=" + design.getPorLowFraction());
+    System.out.println("por_high_fraction=" + design.getPorHighFraction());
+    System.out.println("aor_low_fraction=" + design.getAorLowFraction());
+    System.out.println("aor_high_fraction=" + design.getAorHighFraction());
+    System.out.println(
+        "rated_point_low_fraction=" + privateDouble(design, "ratedPointLowFraction"));
+    System.out.println(
+        "rated_point_high_fraction=" + privateDouble(design, "ratedPointHighFraction"));
+    System.out.println(
+        "min_continuous_flow_fraction=" + privateDouble(design, "minContinuousFlowFraction"));
+    System.out.println(
+        "max_continuous_flow_fraction=" + privateDouble(design, "maxContinuousFlowFraction"));
+    System.out.println("max_suction_specific_speed=" + design.getMaxSuctionSpecificSpeed());
+    System.out.println("hydraulic_power_margin=" + design.getHydraulicPowerMargin());
+    System.out.println("head_margin_factor=" + design.getHeadMarginFactor());
+    System.out.println("casing_weight_kg=" + design.getCasingWeight());
+    System.out.println("motor_weight_kg=" + design.getMotorWeight());
+    System.out.println("baseplate_weight_kg=" + design.getBaseplateWeight());
+    System.out.println("inner_diameter_m=" + design.getInnerDiameter());
+    System.out.println("outer_diameter_m=" + design.getOuterDiameter());
+    System.out.println("wall_thickness_mm=" + design.getWallThickness());
+    System.out.println("tantan_length_m=" + design.getTantanLength());
+    System.out.println("weight_piping_kg=" + design.getWeightPiping());
+    System.out.println("weight_electro_instrument_kg=" + design.getWeightElectroInstrument());
+    System.out.println("weight_structural_steel_kg=" + design.getWeightStructualSteel());
+    System.out.println("weight_total_kg=" + design.getWeightTotal());
+    System.out.println("module_length_m=" + design.getModuleLength());
+    System.out.println("module_width_m=" + design.getModuleWidth());
+    System.out.println("module_height_m=" + design.getModuleHeight());
+
+    neqsim.process.mechanicaldesign.pump.PumpApi610DesignCalculator assessment =
+        design.getApi610Assessment();
+    System.out.println("assessment_status=" + assessment.getAssessmentStatus());
+    System.out.println("selected_driver_power_kW=" + assessment.getSelectedDriverPowerKw());
+    System.out.println("required_driver_power_kW=" + assessment.getRequiredDriverPowerKw());
+    System.out.println("operating_region=" + assessment.getOperatingRegion());
+    System.out.println("operating_flow_ratio=" + assessment.getOperatingFlowRatio());
+    System.out.println("assessment_npsh_margin_ratio=" + assessment.getNpshMarginRatio());
+    System.out.println("required_casing_pressure_bara=" + assessment.getRequiredCasingPressureBara());
+    System.out.println("hydrostatic_test_pressure_bara=" + assessment.getHydrostaticTestPressureBara());
+    System.out.println("head_rise_to_shutoff_fraction=" + assessment.getHeadRiseToShutoffFraction());
+    System.out.println("bearing_l10_life_hours=" + assessment.getBearingL10LifeHours());
+    System.out.println("critical_speed_ratio=" + assessment.getCriticalSpeedRatio());
+    System.out.println("assessment_basis=" + assessment.getAssessmentBasis());
+    for (neqsim.process.mechanicaldesign.pump.PumpApi610DesignCalculator.Check check :
+        assessment.getChecks()) {
+      System.out.println("check " + check.getId() + " status=" + check.getStatus()
+          + " actual=" + check.getActualValue() + " limit=" + check.getLimitValue()
+          + " unit=" + check.getUnit() + " requirement=" + check.getRequirement()
+          + " message=" + check.getMessage());
+    }
+
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3=" + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("mass_flow_kg_per_hr=" + inlet.getFlowRate("kg/hr"));
+    System.out.println("inlet_number_of_phases=" + inlet.getThermoSystem().getNumberOfPhases());
+    print("inlet", inlet);
+    print("outlet", pump.getOutletStream());
+    System.out.println("power_kW=" + pump.getPower("kW"));
+    System.out.println();
   }
 
   /// `Heater` and `Cooler` on the **same rows**, because this is where `Cooler extends
@@ -3387,6 +3592,83 @@ public class ProcessProbe {
       System.out.println("entropy_production_kJ_per_molK=" + unit.getEntropyProduction("kJ/molK"));
       System.out.println();
     }
+  }
+
+  /// `ExpanderMechanicalDesign.calcDesign`, on the states its branches divide.
+  ///
+  /// **The small gas state reaches the radial branch and the oil-brake load** (recovered power
+  /// below the class's 100 kW threshold); the large-flow state reaches `AXIAL`, the multi-stage
+  /// head division and the generator. The two temperature states reach the casing's 0.85 and 0.9
+  /// allowable-stress derates. `MIXED_FLOW` and `LoadType.COMPRESSOR` are never selected and are
+  /// stated rather than cased.
+  ///
+  /// **The base fields are millimetres here**, unlike the pump's metres: the row prints them in
+  /// the class's own units and the spec converts each at its boundary.
+  static void expanderMechanicalRows() {
+    expanderMechanicalRow("radial_brake", 320.0, 60.0, 1.0, 30.0, 0.75);
+    expanderMechanicalRow("radial_eta_1_0", 320.0, 60.0, 1.0, 30.0, 1.0);
+    expanderMechanicalRow("axial_multistage", 320.0, 60.0, 250000.0, 30.0, 0.75);
+    expanderMechanicalRow("hot_casing", 500.0, 30.0, 10.0, 5.0, 0.8);
+    expanderMechanicalRow("cold_casing", 190.0, 30.0, 10.0, 5.0, 0.8);
+  }
+
+  static void expanderMechanicalRow(String label, double temperatureK, double inletBara,
+      double molPerSecond, double outletBara, double efficiency) {
+    Stream inlet = feed(new String[] {"methane", "n-butane"}, new double[] {0.9, 0.1},
+        temperatureK, inletBara, molPerSecond);
+    neqsim.process.equipment.expander.Expander expander =
+        new neqsim.process.equipment.expander.Expander(label, inlet);
+    expander.setOutletPressure(outletBara);
+    expander.setIsentropicEfficiency(efficiency);
+    expander.run();
+    neqsim.process.mechanicaldesign.expander.ExpanderMechanicalDesign design =
+        expander.getExpanderMechanicalDesign();
+    design.calcDesign();
+
+    System.out.println(label);
+    System.out.println("expander_type=" + design.getExpanderType());
+    System.out.println("load_type=" + design.getLoadType());
+    System.out.println("number_of_stages=" + design.getNumberOfStages());
+    System.out.println("wheel_diameter_mm=" + design.getWheelDiameter());
+    System.out.println("tip_speed_m_per_s=" + design.getTipSpeed());
+    System.out.println("shaft_diameter_mm=" + design.getShaftDiameter());
+    System.out.println("rated_speed_rpm=" + design.getRatedSpeed());
+    System.out.println("max_continuous_speed_rpm=" + privateDouble(design, "maxContinuousSpeed"));
+    System.out.println("trip_speed_rpm=" + privateDouble(design, "tripSpeed"));
+    System.out.println("first_critical_speed_rpm=" + design.getFirstCriticalSpeed());
+    System.out.println("effective_isentropic_efficiency=" + expander.getIsentropicEfficiency());
+    System.out.println("casing_pressure_bara=" + design.getCasingDesignPressure());
+    System.out.println("casing_temperature_C=" + design.getCasingDesignTemperature());
+    System.out.println("casing_wall_thickness_mm=" + privateDouble(design, "casingWallThickness"));
+    System.out.println("bearing_span_mm=" + privateDouble(design, "bearingSpan"));
+    System.out.println("wheel_weight_kg=" + privateDouble(design, "wheelWeight"));
+    System.out.println("shaft_weight_kg=" + privateDouble(design, "shaftWeight"));
+    System.out.println("casing_weight_kg=" + privateDouble(design, "casingWeight"));
+    System.out.println("generator_weight_kg=" + privateDouble(design, "generatorWeight"));
+    System.out.println("seal_type=" + design.getSealType());
+    System.out.println("bearing_type=" + design.getBearingType());
+    System.out.println("inner_diameter_mm=" + design.getInnerDiameter());
+    System.out.println("outer_diameter_mm=" + design.getOuterDiameter());
+    System.out.println("wall_thickness_mm=" + design.getWallThickness());
+    System.out.println("tantan_length_mm=" + design.getTantanLength());
+    System.out.println("weight_vessel_kg=" + design.getWeightVessel());
+    System.out.println("weight_internals_kg=" + design.getWeigthInternals());
+    System.out.println("weight_piping_kg=" + design.getWeightPiping());
+    System.out.println("weight_electro_instrument_kg=" + design.getWeightElectroInstrument());
+    System.out.println("weight_structural_steel_kg=" + design.getWeightStructualSteel());
+    System.out.println("weight_total_kg=" + design.getWeightTotal());
+    System.out.println("module_length_m=" + design.getModuleLength());
+    System.out.println("module_width_m=" + design.getModuleWidth());
+    System.out.println("module_height_m=" + design.getModuleHeight());
+
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3=" + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("mass_flow_kg_per_hr=" + inlet.getFlowRate("kg/hr"));
+    System.out.println("inlet_number_of_phases=" + inlet.getThermoSystem().getNumberOfPhases());
+    print("inlet", inlet);
+    print("outlet", expander.getOutletStream());
+    System.out.println("power_kW=" + expander.getPower("kW"));
+    System.out.println();
   }
 
   /// **`Expander`'s recovered-power constraint**, the one capacity limit the expander adds.

@@ -378,6 +378,7 @@ pub(crate) fn expander(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOu
         power,
         p.optional_si("rated_recovered_power")?.map(watts),
         None,
+        None,
         Vec::new(),
     );
     KernelOutcome::publishing(vec![out], &result)

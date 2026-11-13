@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/compressor/Compressor.java**
 
-Its `run`: the isentropic branch, the stepped polytropic branch, the `recoveredPower` capacity constraint, the stated power's back-computed efficiency and `solveEfficiency`'s outlet-temperature secant.
+Its `run`: the isentropic branch, the stepped polytropic branch, the `recoveredPower` constraint, the stated power's back-computed efficiency and the outlet-temperature secant; and `ExpanderMechanicalDesign.calcDesign` behind `mechanical_design`.
 
 
 ## What this model is
@@ -32,6 +32,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `number_of_steps` | dimensionless | *Optional.* the stepped branch's pressure increments. Absent takes `Expander.DEFAULT_EXPANDER_CALC_STEPS`' `5`; a value below one is one, as the class's `Math.max(1, ...)` makes it. |
 | `shaft_power` | W | *Optional.* the total shaft power the run applies instead of an efficiency, **negative for an expansion**. Stating it back-computes `reported_isentropic_efficiency`; refused with `outlet_temperature` and with `use_polytropic_calc`. |
 | `outlet_temperature` | K | *Optional.* the outlet temperature the efficiency is solved for. **The class's `solveEfficiency` is a method, not a run mode**; refused with `shaft_power` and the stepped branch. |
+| `mechanical_design` | - | *Optional.* run `ExpanderMechanicalDesign.calcDesign` and publish its API 617 design. **Absent is false**, and every design output is absent then. There are no design parameters: the class exposes no setter. |
 
 
 ## Outputs
@@ -50,6 +51,37 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `hard_limit_exceeded` | - | `isHardLimitExceeded`: `|power|` above `1.1 x` the rating, the constraint's `maxValue` - narrower than the utilization's own 1.0. |
 | `bottleneck_constraint` | - | *Optional.* `getBottleneckConstraint`'s name: `recoveredPower` when its utilization is above zero, and absent otherwise. |
 | `reported_isentropic_efficiency` | dimensionless | *Optional.* the efficiency the mode produced: `dH/(h_isentropic - h_in)` for a stated power (above one or negative allowed), or the solved one. Absent in the ordinary branch and where the isentropic step is zero. |
+| `design_expander_type` | - | *Optional.* `getExpanderType`: `radial_inflow` below the class's `100000` m3/hr inlet-volume-flow threshold, `axial` above it. **`mixed_flow` is never selected** and is listed for completeness. |
+| `design_load_type` | - | *Optional.* `getLoadType`: `generator` above `100` kW recovered, `brake` below. **`compressor` is never selected**. |
+| `design_number_of_stages` | dimensionless | *Optional.* `getNumberOfStages`: one for a radial machine, `ceil(dH/50 kJ/kg)` for an axial one. |
+| `design_wheel_diameter` | m | *Optional.* `getWheelDiameter`, from the tip speed and the rated speed, clamped to `100-1000` mm; the `300` mm default where the drop or the volume flow is non-positive. |
+| `design_tip_speed` | m/s | *Optional.* `getTipSpeed`: `0.7 sqrt(2 dH)` capped at `450` m/s. |
+| `design_shaft_diameter` | m | *Optional.* `getShaftDiameter`: the torque's shear-stress diameter at `50` MPa, times `1.5`, rounded up to 5 mm and floored at `30` mm. |
+| `design_rated_speed` | dimensionless | *Optional.* `getRatedSpeed`, in revolutions per minute. |
+| `design_max_continuous_speed` | dimensionless | *Optional.* `maxContinuousSpeed`, in revolutions per minute: `1.05` times the rated speed, or the class's `21000` where the wheel sizing takes its default. |
+| `design_trip_speed` | dimensionless | *Optional.* `tripSpeed`, in revolutions per minute: `1.10` times the rated speed, or the class's `23100` where the wheel sizing takes its default. |
+| `design_first_critical_speed` | dimensionless | *Optional.* `getFirstCriticalSpeed`, in revolutions per minute: the Rayleigh-Ritz estimate floored at half the rated speed. |
+| `design_casing_pressure` | Pa | *Optional.* `getCasingDesignPressure`: the inlet pressure times `1.10`. |
+| `design_casing_temperature` | K | *Optional.* `getCasingDesignTemperature`: the hotter of the inlet and outlet, plus `30` degC. |
+| `design_casing_wall_thickness` | m | *Optional.* `casingWallThickness`: the ASME shell formula at `137.9` MPa with the temperature derate, plus `3` mm and floored at `10` mm. |
+| `design_bearing_span` | m | *Optional.* `bearingSpan`: `2.5` wheel diameters. |
+| `design_wheel_weight` | kg | *Optional.* `wheelWeight`: the hollowed wheel's disc volume at 70 % of the steel density. |
+| `design_shaft_weight` | kg | *Optional.* `shaftWeight`: the shaft cylinder at the steel density. |
+| `design_generator_weight` | kg | *Optional.* `generatorWeight`: a banded empirical function of the recovered power, zero for a brake load. |
+| `design_seal_type` | - | *Optional.* `getSealType`: `dry_gas` above `50` bara casing pressure, `labyrinth` otherwise. |
+| `design_bearing_type` | - | *Optional.* `getBearingType`, by rated speed: active magnetic above `50000`, tilting pad above `20000`, sleeve otherwise. |
+| `design_inner_diameter` | m | *Optional.* the casing's inner diameter, `1.3` wheel diameters. |
+| `design_outer_diameter` | m | *Optional.* the casing's outer diameter: the inner one plus twice the wall thickness. |
+| `design_tantan_length` | m | *Optional.* `tantanLength`: `2.0` bearing spans. |
+| `design_weight_vessel` | kg | *Optional.* the base class's `weightVessel`: the casing weight, at `1.5` times the steel volume. |
+| `design_weight_internals` | kg | *Optional.* the base class's `weigthInternals`: the wheel, the shaft and 30 % of the wheel. |
+| `design_weight_piping` | kg | *Optional.* the base class's `weightPiping`: 15 % of the equipment weight plus the lube and seal systems. |
+| `design_weight_electro_instrument` | kg | *Optional.* the base class's `weightElectroInstrument`: `0.3` times the recovered power for a generator, `50` kg for a brake. |
+| `design_weight_structural_steel` | kg | *Optional.* the base class's `weightStructualSteel`: 10 % of the equipment weight plus the baseplate's 20 %. |
+| `design_weight_total` | kg | *Optional.* `getWeightTotal`: the equipment, lube, seal, baseplate, piping, electrical and structural weights summed. |
+| `design_module_length` | m | *Optional.* `getModuleLength`. |
+| `design_module_width` | m | *Optional.* `getModuleWidth`. |
+| `design_module_height` | m | *Optional.* `getModuleHeight`. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -73,6 +105,13 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **Both modes are the isentropic branch's.** `use_polytropic_calc` with either is refused, and so is stating both; a zero isentropic step leaves the reported efficiency absent, the class's `NaN`.
 - **the recovered-power constraint is the only enabled one.** The parent's `speed`, `surgeMargin` and `stonewallMargin` constraints are disabled without a chart, and the summaries skip them. A positive rating adds HARD `recoveredPower`: design = the rating, max = 1.1 x it, value = `|power|`.
 - **two thresholds, not one.** `capacity_exceeded` is `|power|` above the rating (utilization above 1), while `hard_limit_exceeded` is `|power|` above `1.1 x` the rating - the constraint's `maxValue`. A non-positive rating creates no constraint at all.
+- **`mechanical_design` is an explicit `calcDesign` call, not part of `run`**, and it has no parameters: `ExpanderMechanicalDesign` exposes no setter, so the design is the run state and the class's constants alone.
+- **the design stores the run's isentropic efficiency and no sizing arithmetic reads it**, so the effective efficiency - stated, back-computed or solved - is not a design input and not a design output.
+- **the API 617 constants are the class's**: `450` m/s tip, `1.10` pressure and `30` degC margins, `0.7` velocity ratio, `70` specific speed, `50` MPa shaft shear with the `1.5` factor, `946` rotor dynamics, `137.9` MPa casing with `0.85`/`0.9` derates, `0.85` joint, `+3` mm and a `10` mm floor.
+- **the base class's geometry is millimetres in this class**, unlike the pump's metres. The outputs are SI and the conversion is at the boundary.
+- **`mixed_flow` and the compressor load are never selected.** `selectExpanderType` writes only `radial_inflow`/`axial` and `generator`/`brake`, so the other two enum members are stated rather than reachable.
+- **the design's max-continuous and trip speeds and its wheel, shaft and generator weights have no public getter.** The capture reads the class's fields, and the model publishes the same stored values rather than dropping them.
+- cost estimation (`ExpanderCostEstimate`) is out: the unit system carries no currency.
 
 ## Cases
 
@@ -96,11 +135,13 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `the_outlet_temperature_solve_finds_two_hundred_and_fifty` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 0.8, outlet_temperature = 250.0 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 250.00000266550109, outlet_h = -2779.1438208338673, power = -783067.9455467018, reported_isentropic_efficiency = 0.6354905789224377 |
 | `an_unreachable_hot_target_lands_low` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 0.8, outlet_temperature = 280.0 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 263.30701273851537, outlet_h = -1645.2807533505197, reported_isentropic_efficiency = 1e-06 |
 | `an_unreachable_cold_target_lands_high` | components = ['methane', 'ethane', 'propane', 'n-butane'], inlet_n = 690.6184184064726, inlet_z = [0.82, 0.1, 0.05, 0.03], inlet_p = 9000000.0, inlet_t = 298.15, outlet_pressure = 3000000.0, isentropic_efficiency = 0.8, outlet_temperature = 240.0 | outlet_n = 690.6184184064726, outlet_z = [0.82, 0.1, 0.05, 0.03], outlet_p = 3000000.0, outlet_t = 242.26684001928, outlet_h = -3429.5144813861116, power = -1232225.9025152659, reported_isentropic_efficiency = 1.0 |
+| `the_radial_design_is_the_capture` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 6000000.0, inlet_t = 320.0, outlet_pressure = 3000000.0, isentropic_efficiency = 0.75, mechanical_design = True | design_expander_type = radial_inflow, design_load_type = brake, design_number_of_stages = 1, design_wheel_diameter = 0.4756427716569044, design_tip_speed = 231.2999611334798, design_shaft_diameter = 0.03, design_rated_speed = 9287.440325802469, design_max_continuous_speed = 9751.812342092593, design_trip_speed = 10216.184358382716, design_first_critical_speed = 4643.720162901234, design_casing_pressure = 6600000.0, design_casing_temperature = 350.00000000000006, design_casing_wall_thickness = 0.020707358792104134, design_bearing_span = 1.189106929142261, design_wheel_weight = 154.8028766908511, design_shaft_weight = 9.897242615258442, design_generator_weight = 0.0, design_seal_type = dry_gas, design_bearing_type = sleeve, design_inner_diameter = 0.6183356031539757, design_outer_diameter = 0.659750320738184, design_tantan_length = 2.378213858284522, design_weight_vessel = 1164.1701475733614, design_weight_internals = 211.14098231336487, design_weight_piping = 906.5177759846588, design_weight_electro_instrument = 50.0, design_weight_structural_steel = 412.59333896601794, design_weight_total = 2744.422244837403, design_module_length = 5.472767322855653, design_module_width = 2.3195006414763677, design_module_height = 1.6597503207381838 |
+| `the_axial_design_selects_the_generator` | components = ['methane', 'n-butane'], inlet_n = 250000.0, inlet_z = [0.9, 0.1], inlet_p = 6000000.0, inlet_t = 320.0, outlet_pressure = 3000000.0, isentropic_efficiency = 0.75, mechanical_design = True | design_expander_type = axial, design_load_type = generator, design_number_of_stages = 2, design_wheel_diameter = 1.0, design_shaft_diameter = 0.595, design_generator_weight = 278783.1270622657, design_weight_total = 572166.9400020677, design_module_length = 25.021645898765264 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 18 declared, every one run
+- Tests: 20 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`
@@ -114,3 +155,5 @@ declared checks *that call* could not evaluate.
 - `validation/neqsim/captures/process_expander.tsv` - the isentropic limit at an efficiency of one, and a real machine at 0.75.
 - `validation/neqsim/captures/process_expander_steps.tsv` - the stepped branch at five and forty increments, and the isentropic row.
 - `validation/neqsim/captures/process_expander_power_modes.tsv` - the stated power at four fractions and a negative one, and the outlet-temperature solve at 280, 250 and 240 K.
+- `validation/neqsim/captures/process_expander_mechanical_design.tsv` - the radial/brake, axial/generator and the two casing-stress-derate states, with every design field.
+- NeqSim master, `process/mechanicaldesign/expander/ExpanderMechanicalDesign.java`, Apache-2.0: `calcDesign`, its wheel, shaft, rotor, casing and generator sizing, and its weights and module.
