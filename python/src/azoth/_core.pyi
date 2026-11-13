@@ -2858,6 +2858,42 @@ class CompressorResult:
     required_recycle_fraction: float | None
     anti_surge_recycle_power: Qty | None
     recycle_fraction: float | None
+    design_number_of_stages: float | None
+    design_impeller_diameter: Qty | None
+    design_shaft_diameter: Qty | None
+    design_tip_speed: Qty | None
+    design_flow_coefficient: float | None
+    design_impeller_sizing_speed: float | None
+    design_impeller_sizing_flow: Qty | None
+    design_impeller_sizing_head: float | None
+    design_impeller_sizing_ok: bool | None
+    design_driver_power: Qty | None
+    design_driver_margin: float | None
+    design_pressure: Qty | None
+    design_temperature: Qty | None
+    design_max_continuous_speed: float | None
+    design_trip_speed: float | None
+    design_first_critical_speed: float | None
+    design_casing_type: str | None
+    design_head_per_stage: float | None
+    design_bearing_span: Qty | None
+    design_casing_weight: Qty | None
+    design_bundle_weight: Qty | None
+    design_rotor_weight: Qty | None
+    design_outer_diameter: Qty | None
+    design_inner_diameter: Qty | None
+    design_wall_thickness: Qty | None
+    design_tantan_length: Qty | None
+    design_weight_vessel_shell: Qty | None
+    design_weight_internals: Qty | None
+    design_weight_nozzle: Qty | None
+    design_weight_piping: Qty | None
+    design_weight_electro_instrument: Qty | None
+    design_weight_structural_steel: Qty | None
+    design_weight_total: Qty | None
+    design_module_length: Qty | None
+    design_module_width: Qty | None
+    design_module_height: Qty | None
     warnings: list[Warning]
 
 @final
@@ -6155,6 +6191,8 @@ def compressor(
     surge_control_margin: float | None = None,
     anti_surge_active: bool | None = None,
     surge_control_factor: float | None = None,
+    mechanical_design: bool | None = None,
+    max_stages_per_casing: float | None = None,
 ) -> CompressorResult: ...
 def cooler(
     components: list[str],

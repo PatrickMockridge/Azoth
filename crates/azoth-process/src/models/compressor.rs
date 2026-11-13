@@ -7,8 +7,8 @@
 //! **A delegation, because the route is `Pump.run`'s.** `Pump` takes it on `calculateAsCompressor` defaulting to true, and `Compressor.run`'s no-chart branch is the same three lines - so the kernel is `kernels::pump`'s and this adds nothing to it. **A stated curve selects the chart branch**, which is the compressor's own.
 
 use azoth_core::units::{
-    Length, Mass, MolarEnergy, Power, Pressure, ThermodynamicTemperature, VolumeRate,
-    cubic_meter_per_hour, joules_per_mole, kelvins, meter, meters, pascals,
+    Length, Mass, MolarEnergy, Power, Pressure, ThermodynamicTemperature, Velocity, VolumeRate,
+    cubic_meter_per_hour, cubic_meters_per_hour, joules_per_mole, kelvins, meter, meters, pascals,
 };
 use azoth_core::{AzothError, Result, Warning, apply_checks};
 use azoth_eos::Cubic;
@@ -20,6 +20,10 @@ use crate::kernels::compressor::{
     compressor_with_chart, compressor_with_power,
 };
 use crate::model_gen;
+use crate::rotating_design::compressor::{
+    CompressorDesignInputs, design as design_compressor, head_from_metres, head_from_power,
+};
+use crate::segment::phase::molar_mass_of;
 use crate::stream::Stream;
 use crate::surge_curve::SurgeCurve;
 use crate::unported;
@@ -112,6 +116,78 @@ pub struct CompressorResult {
     pub anti_surge_recycle_power: Option<f64>,
     /// `AntiSurge.getCurrentSurgeFraction()`, present only when the block was active.
     pub recycle_fraction: Option<f64>,
+    /// The stage count the impeller screen settled on.
+    pub design_number_of_stages: Option<f64>,
+    /// The impeller's outer diameter.
+    pub design_impeller_diameter: Option<Length>,
+    /// The shaft diameter.
+    pub design_shaft_diameter: Option<Length>,
+    /// The tip speed.
+    pub design_tip_speed: Option<Velocity>,
+    /// The inlet flow coefficient.
+    pub design_flow_coefficient: Option<f64>,
+    /// The speed the impeller screen used, rpm.
+    pub design_impeller_sizing_speed: Option<f64>,
+    /// The runner's inlet volume flow.
+    pub design_impeller_sizing_flow: Option<VolumeRate>,
+    /// The head the screen divided, kJ/kg.
+    pub design_impeller_sizing_head: Option<f64>,
+    /// Whether the screen's diameter and flow-coefficient limits are met.
+    pub design_impeller_sizing_ok: Option<bool>,
+    /// The driver power.
+    pub design_driver_power: Option<Power>,
+    /// The driver margin.
+    pub design_driver_margin: Option<f64>,
+    /// The casing design pressure.
+    pub design_pressure: Option<Pressure>,
+    /// The casing design temperature.
+    pub design_temperature: Option<ThermodynamicTemperature>,
+    /// The maximum continuous speed, rpm.
+    pub design_max_continuous_speed: Option<f64>,
+    /// The trip speed, rpm.
+    pub design_trip_speed: Option<f64>,
+    /// The first critical speed, rpm.
+    pub design_first_critical_speed: Option<f64>,
+    /// The casing type, by design pressure.
+    pub design_casing_type: Option<String>,
+    /// The head per stage, kJ/kg.
+    pub design_head_per_stage: Option<f64>,
+    /// The bearing span.
+    pub design_bearing_span: Option<Length>,
+    /// The casing weight.
+    pub design_casing_weight: Option<Mass>,
+    /// The rotor bundle weight.
+    pub design_bundle_weight: Option<Mass>,
+    /// The rotor weight.
+    pub design_rotor_weight: Option<Mass>,
+    /// The casing's outer diameter.
+    pub design_outer_diameter: Option<Length>,
+    /// The casing's inner diameter.
+    pub design_inner_diameter: Option<Length>,
+    /// The casing's wall thickness.
+    pub design_wall_thickness: Option<Length>,
+    /// The tangent-to-tangent length.
+    pub design_tantan_length: Option<Length>,
+    /// The base class's vessel-shell weight.
+    pub design_weight_vessel_shell: Option<Mass>,
+    /// The base class's internals weight.
+    pub design_weight_internals: Option<Mass>,
+    /// The base class's nozzle weight, zero by the class's comment.
+    pub design_weight_nozzle: Option<Mass>,
+    /// The piping weight.
+    pub design_weight_piping: Option<Mass>,
+    /// The electrical and instrument weight.
+    pub design_weight_electro_instrument: Option<Mass>,
+    /// The structural steel weight.
+    pub design_weight_structural_steel: Option<Mass>,
+    /// The total weight.
+    pub design_weight_total: Option<Mass>,
+    /// The module length.
+    pub design_module_length: Option<Length>,
+    /// The module width.
+    pub design_module_width: Option<Length>,
+    /// The module height.
+    pub design_module_height: Option<Length>,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
@@ -153,6 +229,8 @@ pub fn compressor(
     surge_control_margin: Option<f64>,
     anti_surge_active: Option<bool>,
     surge_control_factor: Option<f64>,
+    mechanical_design: Option<bool>,
+    max_stages_per_casing: Option<f64>,
 ) -> Result<CompressorResult> {
     let spec = &model_gen::COMPRESSOR_SPEC;
     let mut warnings = Vec::new();
@@ -347,6 +425,39 @@ pub fn compressor(
         )
     };
 
+    let design = if mechanical_design.unwrap_or(false) {
+        let (mixture, _) = feed.mixture()?;
+        let molar_mass = molar_mass_of(&mixture, &feed.z)?;
+        let mass_flow_kg_s = feed.n * molar_mass;
+        let polytropic_fluid_head = if !points.is_empty() {
+            head_from_metres(head)
+        } else if use_polytropic_calc.unwrap_or(false) {
+            head_from_power(power.value, mass_flow_kg_s, efficiency)
+        } else {
+            0.0
+        };
+        if !(polytropic_fluid_head.is_finite() && polytropic_fluid_head > 0.0) {
+            return Err(AzothError::invalid_input(
+                "mechanical_design",
+                "the class's polytropic fluid head is zero on this branch, and `calcDesign` \
+                 returns before it sizes anything",
+            ));
+        }
+        Some(design_compressor(
+            &feed,
+            &out,
+            power,
+            polytropic_fluid_head,
+            shaft_speed,
+            &CompressorDesignInputs {
+                max_stages_per_casing: max_stages_per_casing.unwrap_or(10.0) as u32,
+            },
+        )?)
+    } else {
+        None
+    };
+    let d = design.as_ref();
+
     Ok(CompressorResult {
         outlet_n: out.n,
         outlet_z: out.z,
@@ -375,6 +486,43 @@ pub fn compressor(
         required_recycle_fraction: read_outs[6],
         anti_surge_recycle_power: read_outs[7],
         recycle_fraction: read_outs[8],
+        design_number_of_stages: d.map(|value| f64::from(value.number_of_stages)),
+        design_impeller_diameter: d.map(|value| value.impeller_diameter),
+        design_shaft_diameter: d.map(|value| value.shaft_diameter),
+        design_tip_speed: d.map(|value| value.tip_speed),
+        design_flow_coefficient: d.map(|value| value.flow_coefficient),
+        design_impeller_sizing_speed: d.map(|value| value.impeller_sizing_speed),
+        design_impeller_sizing_flow: d
+            .map(|value| cubic_meters_per_hour(value.impeller_sizing_flow)),
+        design_impeller_sizing_head: d.map(|value| value.impeller_sizing_head),
+        design_impeller_sizing_ok: d.map(|value| value.impeller_sizing_ok),
+        design_driver_power: d.map(|value| value.driver_power),
+        design_driver_margin: d.map(|value| value.driver_margin),
+        design_pressure: d.map(|value| value.design_pressure),
+        design_temperature: d.map(|value| value.design_temperature),
+        design_max_continuous_speed: d.map(|value| value.max_continuous_speed),
+        design_trip_speed: d.map(|value| value.trip_speed),
+        design_first_critical_speed: d.map(|value| value.first_critical_speed),
+        design_casing_type: d.map(|value| value.casing_type.as_str().to_owned()),
+        design_head_per_stage: d.map(|value| value.head_per_stage),
+        design_bearing_span: d.map(|value| value.bearing_span),
+        design_casing_weight: d.map(|value| value.casing_weight),
+        design_bundle_weight: d.map(|value| value.bundle_weight),
+        design_rotor_weight: d.map(|value| value.rotor_weight),
+        design_outer_diameter: d.map(|value| value.outer_diameter),
+        design_inner_diameter: d.map(|value| value.inner_diameter),
+        design_wall_thickness: d.map(|value| value.wall_thickness),
+        design_tantan_length: d.map(|value| value.tantan_length),
+        design_weight_vessel_shell: d.map(|value| value.weight_vessel_shell),
+        design_weight_internals: d.map(|value| value.weight_internals),
+        design_weight_nozzle: d.map(|value| value.weight_nozzle),
+        design_weight_piping: d.map(|value| value.weight_piping),
+        design_weight_electro_instrument: d.map(|value| value.weight_electro_instrument),
+        design_weight_structural_steel: d.map(|value| value.weight_structural_steel),
+        design_weight_total: d.map(|value| value.weight_total),
+        design_module_length: d.map(|value| value.module_length),
+        design_module_width: d.map(|value| value.module_width),
+        design_module_height: d.map(|value| value.module_height),
         warnings,
     })
 }

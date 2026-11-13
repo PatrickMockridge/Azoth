@@ -32310,6 +32310,330 @@
           "optional": false,
           "unit": "dimensionless",
           "values": []
+        },
+        {
+          "description": "`getNumberOfStages`: `ceil(head / 30 kJ/kg)`, at least one, refined by the impeller screen.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_number_of_stages",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getImpellerDiameter`: `sqrt(head_per_stage * 1000 / 0.5) * 60 / (pi N)`, **unclipped**; the `100-1500` mm band is a check, not a clamp.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_impeller_diameter",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "`getShaftDiameter`: the torque's shear-stress diameter at `50` MPa, times `1.5`, clamped to `30-300` mm.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_shaft_diameter",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "`getTipSpeed`: `pi D N / 60`.\n",
+          "dimension": "velocity",
+          "kind": "quantity",
+          "name": "design_tip_speed",
+          "optional": true,
+          "unit": "m/s",
+          "values": []
+        },
+        {
+          "description": "`getFlowCoefficient`: `Q / (D^2 U)` over the inlet volume flow and the impeller's own tip speed.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_flow_coefficient",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getImpellerSizingSpeedRPM`, the speed the screen used.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_impeller_sizing_speed",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the inlet volume flow the screen divided.\n",
+          "dimension": "volume_rate",
+          "kind": "quantity",
+          "name": "design_impeller_sizing_flow",
+          "optional": true,
+          "unit": "m**3/h",
+          "values": []
+        },
+        {
+          "description": "the head the screen divided, in kJ/kg on the class's convention.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_impeller_sizing_head",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getImpellerSizingIssues().isEmpty()`: whether the diameter and flow coefficient are inside `100-1500` mm and `0.01-0.15`. The issue prose itself is a report.\n",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "design_impeller_sizing_ok",
+          "optional": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "`getDriverPower`: the shaft power times the API 617 margin.\n",
+          "dimension": "power",
+          "kind": "quantity",
+          "name": "design_driver_power",
+          "optional": true,
+          "unit": "W",
+          "values": []
+        },
+        {
+          "description": "`getDriverMargin`: `1.25` below `150` kW, `1.15` below `750`, `1.10` above.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_driver_margin",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getDesignPressure`: the discharge pressure times `1.10`.\n",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "design_pressure",
+          "optional": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "`getDesignTemperature`: the discharge temperature plus `30` degC.\n",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "design_temperature",
+          "optional": true,
+          "unit": "K",
+          "values": []
+        },
+        {
+          "description": "`getMaxContinuousSpeed`: `1.05` times the run's speed, rpm.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_max_continuous_speed",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getTripSpeed`: `1.05` times the maximum continuous speed, rpm.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_trip_speed",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getFirstCriticalSpeed`, rpm: the Rayleigh-Ritz estimate on the bearing span.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_first_critical_speed",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getCasingType`: `barrel` above `100` bara design pressure, `horizontally_split` above `40`, `vertically_split` otherwise.\n",
+          "dimension": null,
+          "kind": "string",
+          "name": "design_casing_type",
+          "optional": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "`getHeadPerStage`, kJ/kg.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_head_per_stage",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getBearingSpan`: the stages times `0.8 D` plus `D`.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_bearing_span",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "`getCasingWeight`, with the `1.2` end-cap factor and the `1.3` barrel factor.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_casing_weight",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "`getBundleWeight`: the rotor plus the stage internals.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_bundle_weight",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "`getRotorWeight`: the impellers plus the shaft.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_rotor_weight",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "the casing's outer diameter, `1.5 D`.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_outer_diameter",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "the casing's inner diameter, `D`.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_inner_diameter",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "the base class's wall thickness, `(D_outer - D_inner) / 2`.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_wall_thickness",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "the tangent-to-tangent length, `1.3` bearing spans.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_tantan_length",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "the base class's vessel-shell weight: the casing.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_weight_vessel_shell",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "the base class's internals weight: the bundle.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_weight_internals",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "the base class's nozzle weight. **Zero by the class's own comment** - nozzles are in the casing.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_weight_nozzle",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "`0.2` times the empty vessel weight.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_weight_piping",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "`0.5` times the driver power.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_weight_electro_instrument",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "`0.15` times the empty vessel weight.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_weight_structural_steel",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "`getWeightTotal`: the empty weight, bundle, seal and lube systems, piping, electrical and structural steel summed.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_weight_total",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "`getModuleLength`, floored at `4` m.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_module_length",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "`getModuleWidth`, floored at `3` m.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_module_width",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "`getModuleHeight`, floored at `3` m.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_module_height",
+          "optional": true,
+          "unit": "m",
+          "values": []
         }
       ],
       "parameters": [

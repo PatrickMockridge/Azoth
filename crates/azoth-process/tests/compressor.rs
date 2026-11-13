@@ -39,6 +39,8 @@ fn the_isentropic_power_is_the_enthalpy_step() {
         None,
         None,
         None,
+        None,
+        None,
     )
     .expect("the captured state compresses");
 
@@ -108,6 +110,8 @@ fn the_khader_chart_needs_its_conditions() {
         None,
         None,
         None,
+        None,
+        None,
     )
     .expect_err("the Khader chart needs chart_conditions");
     assert_eq!(error.field(), Some("chart_conditions"));
@@ -138,6 +142,8 @@ fn the_khader_chart_needs_its_conditions() {
                 None,
                 None,
                 Some(chart_type),
+                None,
+                None,
                 None,
                 None,
                 None,
@@ -236,6 +242,8 @@ mod anti_surge {
             margin,
             Some(active),
             factor,
+            None,
+            None,
         )
         .expect("the captured machine runs")
     }
@@ -759,6 +767,8 @@ mod anti_surge {
             Some(-0.1),
             None,
             None,
+            None,
+            None,
         )
         .expect_err("the spec refuses a negative margin");
         assert_eq!(error.field(), Some("surge_control_margin"));
@@ -824,6 +834,8 @@ fn the_power_branch_needs_a_positive_flow() {
             None,
             None,
             None,
+            None,
+            None,
         )
         .expect_err("a fixed power over a non-positive flow is refused");
         assert!(
@@ -832,4 +844,189 @@ fn the_power_branch_needs_a_positive_flow() {
         );
         assert_eq!(error.field(), Some("inlet_n"), "inlet_n={inlet_n}");
     }
+}
+
+fn close_mechanical(actual: f64, expected: f64, tolerance: f64, what: &str) {
+    let error = (actual - expected).abs() / expected.abs().max(f64::MIN_POSITIVE);
+    assert!(
+        error <= tolerance,
+        "{what}: {actual} against {expected}, relative error {error:.3e} > {tolerance:.3e}"
+    );
+}
+
+#[test]
+fn the_captured_polytropic_design_is_reproduced() {
+    let result = compressor(
+        &[
+            "methane".to_string(),
+            "ethane".to_string(),
+            "propane".to_string(),
+            "CO2".to_string(),
+            "nitrogen".to_string(),
+        ],
+        1488.2073851517619,
+        &[0.86, 0.07, 0.03, 0.02, 0.02],
+        pascals(1_880_000.0),
+        kelvins(303.15),
+        Some(pascals(4_200_000.0)),
+        0.75,
+        Some(true),
+        Some(0.60),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(true),
+        None,
+    )
+    .expect("the design computes");
+
+    assert_eq!(result.design_number_of_stages, Some(9.0));
+    assert_eq!(
+        result.design_casing_type.as_deref(),
+        Some("horizontally_split")
+    );
+    assert_eq!(result.design_impeller_sizing_ok, Some(true));
+    close_mechanical(
+        result.design_impeller_diameter.expect("a diameter").value,
+        1.041_556_901_689_208,
+        1e-2,
+        "impeller",
+    );
+    close_mechanical(
+        result.design_shaft_diameter.expect("a shaft").value,
+        0.182_738_270_223_179_26,
+        1e-2,
+        "shaft",
+    );
+    close_mechanical(
+        result.design_tip_speed.expect("a tip").value,
+        163.607_375_532_128_1,
+        1e-2,
+        "tip",
+    );
+    close_mechanical(
+        result.design_flow_coefficient.expect("a coefficient"),
+        0.010_742_739_596_557_648,
+        1e-2,
+        "flow coefficient",
+    );
+    close_mechanical(
+        result.design_driver_power.expect("a driver").value,
+        6_134_189.721_117_056,
+        1e-2,
+        "driver",
+    );
+    close_mechanical(
+        result.design_pressure.expect("a pressure").value,
+        4_620_000.0,
+        1e-2,
+        "design pressure",
+    );
+    close_mechanical(
+        result.design_temperature.expect("a temperature").value,
+        428.418_688_223_012_53,
+        1e-2,
+        "design temperature",
+    );
+    close_mechanical(
+        result.design_max_continuous_speed.expect("a speed"),
+        3150.0,
+        1e-2,
+        "maximum continuous speed",
+    );
+    close_mechanical(
+        result.design_trip_speed.expect("a speed"),
+        3307.5,
+        1e-2,
+        "trip speed",
+    );
+    close_mechanical(
+        result.design_first_critical_speed.expect("a speed"),
+        148_122.898_880_109_25,
+        1e-2,
+        "first critical speed",
+    );
+    close_mechanical(
+        result.design_head_per_stage.expect("a head"),
+        13.383_686_664_255_393,
+        1e-2,
+        "head per stage",
+    );
+    close_mechanical(
+        result.design_bearing_span.expect("a span").value,
+        8.540_766_593_851_506,
+        1e-2,
+        "bearing span",
+    );
+    close_mechanical(
+        result.design_casing_weight.expect("a weight").value,
+        82_341.535_831_707_3,
+        1e-2,
+        "casing weight",
+    );
+    close_mechanical(
+        result.design_bundle_weight.expect("a weight").value,
+        5503.578_227_574_426,
+        1e-2,
+        "bundle weight",
+    );
+    close_mechanical(
+        result.design_rotor_weight.expect("a weight").value,
+        3333.896_668_661_581_3,
+        1e-2,
+        "rotor weight",
+    );
+    close_mechanical(
+        result.design_outer_diameter.expect("a diameter").value,
+        1.562_335_352_533_812,
+        1e-2,
+        "outer diameter",
+    );
+    close_mechanical(
+        result.design_wall_thickness.expect("a wall").value,
+        0.260_389_225_422_302_03,
+        1e-2,
+        "wall",
+    );
+    close_mechanical(
+        result.design_tantan_length.expect("a length").value,
+        11.102_996_572_006_958,
+        1e-2,
+        "tantan",
+    );
+    close_mechanical(
+        result.design_weight_nozzle.expect("a weight").value,
+        0.0,
+        1e-2,
+        "nozzle weight",
+    );
+    close_mechanical(
+        result.design_weight_total.expect("a weight").value,
+        154_076.225_715_114_12,
+        1e-2,
+        "total weight",
+    );
+    close_mechanical(
+        result.design_module_length.expect("a length").value,
+        21.945_339_611_894_315,
+        1e-2,
+        "module length",
+    );
 }

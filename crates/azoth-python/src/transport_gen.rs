@@ -14283,6 +14283,114 @@ pub struct PyCompressorResult {
     /// `AntiSurge.getCurrentSurgeFraction()`: the run-time recycle the block settled on, zero when it fired and found no surge. **Null unless `anti_surge_active`.**
     #[pyo3(get)]
     pub recycle_fraction: Option<f64>,
+    /// `getNumberOfStages`: `ceil(head / 30 kJ/kg)`, at least one, refined by the impeller screen.
+    #[pyo3(get)]
+    pub design_number_of_stages: Option<f64>,
+    /// `getImpellerDiameter`: `sqrt(head_per_stage * 1000 / 0.5) * 60 / (pi N)`, **unclipped**; the `100-1500` mm band is a check, not a clamp.
+    #[pyo3(get)]
+    pub design_impeller_diameter: Option<PyQty>,
+    /// `getShaftDiameter`: the torque's shear-stress diameter at `50` MPa, times `1.5`, clamped to `30-300` mm.
+    #[pyo3(get)]
+    pub design_shaft_diameter: Option<PyQty>,
+    /// `getTipSpeed`: `pi D N / 60`.
+    #[pyo3(get)]
+    pub design_tip_speed: Option<PyQty>,
+    /// `getFlowCoefficient`: `Q / (D^2 U)` over the inlet volume flow and the impeller's own tip speed.
+    #[pyo3(get)]
+    pub design_flow_coefficient: Option<f64>,
+    /// `getImpellerSizingSpeedRPM`, the speed the screen used.
+    #[pyo3(get)]
+    pub design_impeller_sizing_speed: Option<f64>,
+    /// the inlet volume flow the screen divided.
+    #[pyo3(get)]
+    pub design_impeller_sizing_flow: Option<PyQty>,
+    /// the head the screen divided, in kJ/kg on the class's convention.
+    #[pyo3(get)]
+    pub design_impeller_sizing_head: Option<f64>,
+    /// `getImpellerSizingIssues().isEmpty()`: whether the diameter and flow coefficient are inside `100-1500` mm and `0.01-0.15`. The issue prose itself is a report.
+    #[pyo3(get)]
+    pub design_impeller_sizing_ok: Option<bool>,
+    /// `getDriverPower`: the shaft power times the API 617 margin.
+    #[pyo3(get)]
+    pub design_driver_power: Option<PyQty>,
+    /// `getDriverMargin`: `1.25` below `150` kW, `1.15` below `750`, `1.10` above.
+    #[pyo3(get)]
+    pub design_driver_margin: Option<f64>,
+    /// `getDesignPressure`: the discharge pressure times `1.10`.
+    #[pyo3(get)]
+    pub design_pressure: Option<PyQty>,
+    /// `getDesignTemperature`: the discharge temperature plus `30` degC.
+    #[pyo3(get)]
+    pub design_temperature: Option<PyQty>,
+    /// `getMaxContinuousSpeed`: `1.05` times the run's speed, rpm.
+    #[pyo3(get)]
+    pub design_max_continuous_speed: Option<f64>,
+    /// `getTripSpeed`: `1.05` times the maximum continuous speed, rpm.
+    #[pyo3(get)]
+    pub design_trip_speed: Option<f64>,
+    /// `getFirstCriticalSpeed`, rpm: the Rayleigh-Ritz estimate on the bearing span.
+    #[pyo3(get)]
+    pub design_first_critical_speed: Option<f64>,
+    /// `getCasingType`: `barrel` above `100` bara design pressure, `horizontally_split` above `40`, `vertically_split` otherwise.
+    #[pyo3(get)]
+    pub design_casing_type: Option<String>,
+    /// `getHeadPerStage`, kJ/kg.
+    #[pyo3(get)]
+    pub design_head_per_stage: Option<f64>,
+    /// `getBearingSpan`: the stages times `0.8 D` plus `D`.
+    #[pyo3(get)]
+    pub design_bearing_span: Option<PyQty>,
+    /// `getCasingWeight`, with the `1.2` end-cap factor and the `1.3` barrel factor.
+    #[pyo3(get)]
+    pub design_casing_weight: Option<PyQty>,
+    /// `getBundleWeight`: the rotor plus the stage internals.
+    #[pyo3(get)]
+    pub design_bundle_weight: Option<PyQty>,
+    /// `getRotorWeight`: the impellers plus the shaft.
+    #[pyo3(get)]
+    pub design_rotor_weight: Option<PyQty>,
+    /// the casing's outer diameter, `1.5 D`.
+    #[pyo3(get)]
+    pub design_outer_diameter: Option<PyQty>,
+    /// the casing's inner diameter, `D`.
+    #[pyo3(get)]
+    pub design_inner_diameter: Option<PyQty>,
+    /// the base class's wall thickness, `(D_outer - D_inner) / 2`.
+    #[pyo3(get)]
+    pub design_wall_thickness: Option<PyQty>,
+    /// the tangent-to-tangent length, `1.3` bearing spans.
+    #[pyo3(get)]
+    pub design_tantan_length: Option<PyQty>,
+    /// the base class's vessel-shell weight: the casing.
+    #[pyo3(get)]
+    pub design_weight_vessel_shell: Option<PyQty>,
+    /// the base class's internals weight: the bundle.
+    #[pyo3(get)]
+    pub design_weight_internals: Option<PyQty>,
+    /// the base class's nozzle weight. **Zero by the class's own comment** - nozzles are in the casing.
+    #[pyo3(get)]
+    pub design_weight_nozzle: Option<PyQty>,
+    /// `0.2` times the empty vessel weight.
+    #[pyo3(get)]
+    pub design_weight_piping: Option<PyQty>,
+    /// `0.5` times the driver power.
+    #[pyo3(get)]
+    pub design_weight_electro_instrument: Option<PyQty>,
+    /// `0.15` times the empty vessel weight.
+    #[pyo3(get)]
+    pub design_weight_structural_steel: Option<PyQty>,
+    /// `getWeightTotal`: the empty weight, bundle, seal and lube systems, piping, electrical and structural steel summed.
+    #[pyo3(get)]
+    pub design_weight_total: Option<PyQty>,
+    /// `getModuleLength`, floored at `4` m.
+    #[pyo3(get)]
+    pub design_module_length: Option<PyQty>,
+    /// `getModuleWidth`, floored at `3` m.
+    #[pyo3(get)]
+    pub design_module_width: Option<PyQty>,
+    /// `getModuleHeight`, floored at `3` m.
+    #[pyo3(get)]
+    pub design_module_height: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -14292,7 +14400,7 @@ pub struct PyCompressorResult {
 impl PyCompressorResult {
     fn __repr__(&self) -> String {
         format!(
-            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, polytropic_head={:?}, polytropic_efficiency={:?}, polytropic_exponent={:?}, total_deposit_mass={:?}, deposit_volume={:?}, film_thickness={:?}, area_blockage_fraction={:?}, efficiency_multiplier={:?}, head_multiplier={:?}, degradation_factor={:?}, fouling_factor={:?}, power={:?}, shaft_speed={:?}, surge_flow_rate={:?}, surge_flow_rate_margin={:?}, surge_flow_rate_std={:?}, distance_to_surge={:?}, control_line_flow={:?}, distance_to_control_line={:?}, required_recycle_fraction={:?}, anti_surge_recycle_power={:?}, recycle_fraction={:?}, {} warning(s))",
+            "CompressorResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, polytropic_head={:?}, polytropic_efficiency={:?}, polytropic_exponent={:?}, total_deposit_mass={:?}, deposit_volume={:?}, film_thickness={:?}, area_blockage_fraction={:?}, efficiency_multiplier={:?}, head_multiplier={:?}, degradation_factor={:?}, fouling_factor={:?}, power={:?}, shaft_speed={:?}, surge_flow_rate={:?}, surge_flow_rate_margin={:?}, surge_flow_rate_std={:?}, distance_to_surge={:?}, control_line_flow={:?}, distance_to_control_line={:?}, required_recycle_fraction={:?}, anti_surge_recycle_power={:?}, recycle_fraction={:?}, design_number_of_stages={:?}, design_impeller_diameter={:?}, design_shaft_diameter={:?}, design_tip_speed={:?}, design_flow_coefficient={:?}, design_impeller_sizing_speed={:?}, design_impeller_sizing_flow={:?}, design_impeller_sizing_head={:?}, design_impeller_sizing_ok={:?}, design_driver_power={:?}, design_driver_margin={:?}, design_pressure={:?}, design_temperature={:?}, design_max_continuous_speed={:?}, design_trip_speed={:?}, design_first_critical_speed={:?}, design_casing_type={:?}, design_head_per_stage={:?}, design_bearing_span={:?}, design_casing_weight={:?}, design_bundle_weight={:?}, design_rotor_weight={:?}, design_outer_diameter={:?}, design_inner_diameter={:?}, design_wall_thickness={:?}, design_tantan_length={:?}, design_weight_vessel_shell={:?}, design_weight_internals={:?}, design_weight_nozzle={:?}, design_weight_piping={:?}, design_weight_electro_instrument={:?}, design_weight_structural_steel={:?}, design_weight_total={:?}, design_module_length={:?}, design_module_width={:?}, design_module_height={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -14320,6 +14428,42 @@ impl PyCompressorResult {
             self.required_recycle_fraction,
             self.anti_surge_recycle_power,
             self.recycle_fraction,
+            self.design_number_of_stages,
+            self.design_impeller_diameter,
+            self.design_shaft_diameter,
+            self.design_tip_speed,
+            self.design_flow_coefficient,
+            self.design_impeller_sizing_speed,
+            self.design_impeller_sizing_flow,
+            self.design_impeller_sizing_head,
+            self.design_impeller_sizing_ok,
+            self.design_driver_power,
+            self.design_driver_margin,
+            self.design_pressure,
+            self.design_temperature,
+            self.design_max_continuous_speed,
+            self.design_trip_speed,
+            self.design_first_critical_speed,
+            self.design_casing_type,
+            self.design_head_per_stage,
+            self.design_bearing_span,
+            self.design_casing_weight,
+            self.design_bundle_weight,
+            self.design_rotor_weight,
+            self.design_outer_diameter,
+            self.design_inner_diameter,
+            self.design_wall_thickness,
+            self.design_tantan_length,
+            self.design_weight_vessel_shell,
+            self.design_weight_internals,
+            self.design_weight_nozzle,
+            self.design_weight_piping,
+            self.design_weight_electro_instrument,
+            self.design_weight_structural_steel,
+            self.design_weight_total,
+            self.design_module_length,
+            self.design_module_width,
+            self.design_module_height,
             self.warnings.len()
         )
     }
@@ -14397,6 +14541,117 @@ impl From<&azoth_process::models::compressor::CompressorResult> for PyCompressor
                 unit: "W".to_string(),
             }),
             recycle_fraction: r.recycle_fraction,
+            design_number_of_stages: r.design_number_of_stages,
+            design_impeller_diameter: r.design_impeller_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_shaft_diameter: r.design_shaft_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_tip_speed: r.design_tip_speed.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            design_flow_coefficient: r.design_flow_coefficient,
+            design_impeller_sizing_speed: r.design_impeller_sizing_speed,
+            design_impeller_sizing_flow: r.design_impeller_sizing_flow.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3/h".to_string(),
+            }),
+            design_impeller_sizing_head: r.design_impeller_sizing_head,
+            design_impeller_sizing_ok: r.design_impeller_sizing_ok,
+            design_driver_power: r.design_driver_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            design_driver_margin: r.design_driver_margin,
+            design_pressure: r.design_pressure.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            design_temperature: r.design_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            design_max_continuous_speed: r.design_max_continuous_speed,
+            design_trip_speed: r.design_trip_speed,
+            design_first_critical_speed: r.design_first_critical_speed,
+            design_casing_type: r.design_casing_type.clone(),
+            design_head_per_stage: r.design_head_per_stage,
+            design_bearing_span: r.design_bearing_span.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_casing_weight: r.design_casing_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_bundle_weight: r.design_bundle_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_rotor_weight: r.design_rotor_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_outer_diameter: r.design_outer_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_inner_diameter: r.design_inner_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_wall_thickness: r.design_wall_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_tantan_length: r.design_tantan_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_weight_vessel_shell: r.design_weight_vessel_shell.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_internals: r.design_weight_internals.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_nozzle: r.design_weight_nozzle.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_piping: r.design_weight_piping.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_electro_instrument: r.design_weight_electro_instrument.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_structural_steel: r.design_weight_structural_steel.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_total: r.design_weight_total.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_module_length: r.design_module_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_module_width: r.design_module_width.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_module_height: r.design_module_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }
