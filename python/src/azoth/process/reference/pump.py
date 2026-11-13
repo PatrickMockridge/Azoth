@@ -50,15 +50,17 @@ from azoth.eos.reference.ps_flash import entropy_at
 from azoth.eos.reference.ps_flash import ps_flash as ps_flash_solve
 from azoth.eos.reference.pure_saturation import pure_saturation
 from azoth.process.reference import capacity
-from azoth.process.reference.pump_mechanical import (
-    API610_PUMP_TYPES,
-    SEAL_TYPES,
-    design as design_pump,
-)
 from azoth.process.reference.pump_chart import (
     GRAVITY,
     CurvePoint,
     PumpChart,
+)
+from azoth.process.reference.pump_mechanical import (
+    API610_PUMP_TYPES,
+    SEAL_TYPES,
+)
+from azoth.process.reference.pump_mechanical import (
+    design as design_pump,
 )
 
 #: `Pump.speed`'s initialiser, rpm.
@@ -170,9 +172,7 @@ def pump(
         if furnished_casing_mawp is None
         else input_to_si(spec, "furnished_casing_mawp", furnished_casing_mawp)
     )
-    shutoff_si = (
-        None if shutoff_head is None else input_to_si(spec, "shutoff_head", shutoff_head)
-    )
+    shutoff_si = None if shutoff_head is None else input_to_si(spec, "shutoff_head", shutoff_head)
     min_npsh_margin_si = (
         None
         if minimum_npsh_margin is None
@@ -371,9 +371,7 @@ def pump(
         design_bep_flow=(
             None if d is None or d.bep_flow is None else from_si(d.bep_flow / 3600.0, "m**3/h")
         ),
-        design_bep_head=(
-            None if d is None or d.bep_head is None else from_si(d.bep_head, "m")
-        ),
+        design_bep_head=(None if d is None or d.bep_head is None else from_si(d.bep_head, "m")),
         design_bep_source=None if d is None else d.bep_source,
         design_npshr_source=None if d is None else d.npshr_source,
         design_shutoff_source=None if d is None else d.shutoff_source,
@@ -382,32 +380,22 @@ def pump(
         ),
         design_pressure=None if d is None else from_si(d.design_pressure, "Pa"),
         design_temperature=None if d is None else from_si(d.design_temperature, "K"),
-        design_impeller_diameter=(
-            None if d is None else from_si(d.impeller_diameter, "m")
-        ),
+        design_impeller_diameter=(None if d is None else from_si(d.impeller_diameter, "m")),
         design_impeller_width=None if d is None else from_si(d.impeller_width, "m"),
         design_shaft_diameter=None if d is None else from_si(d.shaft_diameter, "m"),
-        design_casing_wall_thickness=(
-            None if d is None else from_si(d.casing_wall_thickness, "m")
-        ),
+        design_casing_wall_thickness=(None if d is None else from_si(d.casing_wall_thickness, "m")),
         design_max_allowable_working_pressure=(
             None if d is None else from_si(d.max_allowable_working_pressure, "Pa")
         ),
         design_driver_power=None if d is None else from_si(d.driver_power, "W"),
         design_driver_margin=None if d is None else d.driver_margin,
-        design_suction_nozzle_size=(
-            None if d is None else from_si(d.suction_nozzle_size, "m")
-        ),
-        design_discharge_nozzle_size=(
-            None if d is None else from_si(d.discharge_nozzle_size, "m")
-        ),
+        design_suction_nozzle_size=(None if d is None else from_si(d.suction_nozzle_size, "m")),
+        design_discharge_nozzle_size=(None if d is None else from_si(d.discharge_nozzle_size, "m")),
         design_minimum_flow=None if d is None else from_si(d.minimum_flow / 3600.0, "m**3/h"),
         design_maximum_flow=None if d is None else from_si(d.maximum_flow / 3600.0, "m**3/h"),
         design_casing_weight=None if d is None else from_si(d.casing_weight, "kg"),
         design_motor_weight=None if d is None else from_si(d.motor_weight, "kg"),
-        design_baseplate_weight=(
-            None if d is None else from_si(d.baseplate_weight, "kg")
-        ),
+        design_baseplate_weight=(None if d is None else from_si(d.baseplate_weight, "kg")),
         design_inner_diameter=None if d is None else from_si(d.inner_diameter, "m"),
         design_outer_diameter=None if d is None else from_si(d.outer_diameter, "m"),
         design_tantan_length=None if d is None else from_si(d.tantan_length, "m"),
@@ -449,9 +437,7 @@ def pump(
             if d is None or not math.isfinite(d.head_rise_to_shutoff)
             else d.head_rise_to_shutoff
         ),
-        design_required_driver_power=(
-            None if d is None else from_si(d.required_driver_power, "W")
-        ),
+        design_required_driver_power=(None if d is None else from_si(d.required_driver_power, "W")),
         design_pump_type_source=None if d is None else d.pump_type_source,
         warnings=tuple(warnings),
     )

@@ -181,9 +181,7 @@ def design(
     discharge_temperature_c = outlet_t - 273.15
 
     differential_pressure = discharge_pressure_bara - suction_pressure_bara
-    pump_head = (
-        differential_pressure * 1.0e5 / (density * GRAVITY) if density > 0.0 else math.nan
-    )
+    pump_head = differential_pressure * 1.0e5 / (density * GRAVITY) if density > 0.0 else math.nan
     hydraulic_power_kw = (
         density * GRAVITY * volume_flow_m3_hr / 3600.0 * pump_head / 1000.0
         if density > 0.0 and volume_flow_m3_hr > 0.0 and pump_head > 0.0
@@ -306,9 +304,15 @@ def design(
     )
     preliminary_hydrostatic_test_pressure_bara = hydrostatic_basis_bara * 1.50
 
-    if shutoff is not None and shutoff > 0.0 and pump_head > 0.0 and shutoff_source in (
-        "vendor_curve",
-        "purchaser_input",
+    if (
+        shutoff is not None
+        and shutoff > 0.0
+        and pump_head > 0.0
+        and shutoff_source
+        in (
+            "vendor_curve",
+            "purchaser_input",
+        )
     ):
         head_rise_to_shutoff = shutoff / pump_head - 1.0
         head_rise_status = _PASS if head_rise_to_shutoff >= 0.10 else _FAIL
@@ -528,7 +532,9 @@ def _casing_design(
         allowable_stress *= 0.85
     joint_efficiency = 1.0
     wall_thickness = max(
-        pressure_mpa * inner_diameter / (2.0 * allowable_stress * joint_efficiency - 0.6 * pressure_mpa)
+        pressure_mpa
+        * inner_diameter
+        / (2.0 * allowable_stress * joint_efficiency - 0.6 * pressure_mpa)
         + 3.0,
         6.0,
     )
@@ -559,15 +565,74 @@ def _driver_margin(absorbed_power_kw: float) -> float:
 
 #: ``calculateDriverSizing``'s own 25-rating IEC list.
 IEC_RATINGS = (
-    0.75, 1.1, 1.5, 2.2, 3.0, 4.0, 5.5, 7.5, 11.0, 15.0, 18.5, 22.0, 30.0, 37.0, 45.0, 55.0,
-    75.0, 90.0, 110.0, 132.0, 160.0, 200.0, 250.0, 315.0, 400.0,
+    0.75,
+    1.1,
+    1.5,
+    2.2,
+    3.0,
+    4.0,
+    5.5,
+    7.5,
+    11.0,
+    15.0,
+    18.5,
+    22.0,
+    30.0,
+    37.0,
+    45.0,
+    55.0,
+    75.0,
+    90.0,
+    110.0,
+    132.0,
+    160.0,
+    200.0,
+    250.0,
+    315.0,
+    400.0,
 )
 
 #: The API 610 assessment's longer candidate list.
 API610_RATINGS = (
-    0.75, 1.1, 1.5, 2.2, 3.0, 4.0, 5.5, 7.5, 11.0, 15.0, 18.5, 22.0, 30.0, 37.0, 45.0, 55.0,
-    75.0, 90.0, 110.0, 132.0, 160.0, 200.0, 250.0, 315.0, 400.0, 500.0, 630.0, 800.0, 1000.0,
-    1250.0, 1600.0, 2000.0, 2500.0, 3150.0, 4000.0, 5000.0, 6300.0, 8000.0, 10000.0,
+    0.75,
+    1.1,
+    1.5,
+    2.2,
+    3.0,
+    4.0,
+    5.5,
+    7.5,
+    11.0,
+    15.0,
+    18.5,
+    22.0,
+    30.0,
+    37.0,
+    45.0,
+    55.0,
+    75.0,
+    90.0,
+    110.0,
+    132.0,
+    160.0,
+    200.0,
+    250.0,
+    315.0,
+    400.0,
+    500.0,
+    630.0,
+    800.0,
+    1000.0,
+    1250.0,
+    1600.0,
+    2000.0,
+    2500.0,
+    3150.0,
+    4000.0,
+    5000.0,
+    6300.0,
+    8000.0,
+    10000.0,
 )
 
 
@@ -637,15 +702,11 @@ def _weights(
     driver_power_kw: float,
 ) -> _Weights:
     """``calculateWeights``, in kilograms."""
-    impeller_volume = (
-        math.pi * (impeller_diameter / 2000.0) ** 2 * (impeller_width / 1000.0) * 0.3
-    )
+    impeller_volume = math.pi * (impeller_diameter / 2000.0) ** 2 * (impeller_width / 1000.0) * 0.3
     impeller_weight = impeller_volume * STEEL_DENSITY
 
     shaft_length = 500.0 if pump_type == "overhung" else 1000.0
-    shaft_volume = (
-        math.pi * (shaft_diameter / 2000.0) ** 2 * (shaft_length / 1000.0)
-    )
+    shaft_volume = math.pi * (shaft_diameter / 2000.0) ** 2 * (shaft_length / 1000.0)
     shaft_weight = shaft_volume * STEEL_DENSITY
 
     casing_od = (impeller_diameter * 1.15 + 2.0 * casing_wall_thickness) / 1000.0
@@ -689,7 +750,9 @@ def _weights(
     )
 
 
-def _module_dimensions(impeller_diameter: float, driver_power_kw: float) -> tuple[float, float, float]:
+def _module_dimensions(
+    impeller_diameter: float, driver_power_kw: float
+) -> tuple[float, float, float]:
     """``calculateModuleDimensions``, in metres."""
     module_width = max(1.0, impeller_diameter / 500.0 + 0.5)
     pump_length = impeller_diameter / 1000.0 * 2.0
