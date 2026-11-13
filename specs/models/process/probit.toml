@@ -1,0 +1,63 @@
+id = "process.probit"
+name = "Probit dose-response"
+kind = "procedure"
+assumptions = [
+    "**the probit is `Y = a + b n ln(D)`.** The dose's units are the hazard's and are not converted: a toxic dose is `C^n t` in ppm-min, thermal `t I^(4/3) / 1e4` in W/m2-s, and blast the overpressure in Pa.",
+    "**a non-positive dose is refused.** The class answers `-Infinity` and a probability of zero, and that row is evidence rather than a case.",
+    "**the probability is the standard normal CDF**: `P = 0.5 (1 + erf((Y - 5) / sqrt(2)))`.",
+    "**the erf is Abramowitz & Stegun 7.1.26**: `t = 1 / (1 + 0.3275911 |x|)`, `erf(x) = sign(x) [1 - (((((1.061405429 t - 1.453152027) t + 1.421413741) t - 0.284496736) t + 0.254829592) t exp(-x^2))]`.",
+    "**at `x = 0` it answers `1e-9`, not zero**, which is why `Y = 5` is `0.5000000005` and not exactly one half; its largest absolute error is `1.5e-7`.",
+    "**the five factory triples are stated, not inputs**: H2S `(-31.42, 3.008, 1.43)`, chlorine `(-17.10, 1.69, 2.75)`, ammonia `(-35.9, 1.85, 2.0)`, thermal `(-14.9, 2.56, 1.0)`, blast `(-77.1, 6.91, 1.0)`.",
+    "**a NaN constant or a NaN stated probit value is refused**; the class would carry it into the probability.",
+    "**`probability(Y)` and `probit(D)` are both reachable**: `probit` is published from a stated `dose`, and `probability` from a stated `probit_value` or the computed probit; at least one must be stated.",
+]
+references = [
+    "Eisenberg, N. A.; Lynch, C. J.; Breeding, R. J. (1975). \"Vulnerability Model: A Simulation System for Assessing Damage Resulting from Marine Spills.\" NTIS AD-015, 245.",
+    "Abramowitz, M.; Stegun, I. A. (1964). Handbook of Mathematical Functions, equation 7.1.26.",
+    "TNO (2005). Yellow Book, 3rd Ed.; CCPS (1996). Guidelines for Consequence Analysis of Chemical Releases.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/safety/dispersion/ProbitModel.java` is the port source.",
+    "`validation/neqsim/captures/process_probit.tsv` - the class's two monotonic test pairs, the five factory triples, a stated `Y` and the non-positive-dose guard.",
+]
+[source]
+standard = "NeqSim process/safety/dispersion/ProbitModel.java"
+edition = "Its `probit`, `probability`, `probabilityFromDose`, the Abramowitz-Stegun `erf` and the five static factory triples."
+[algorithm]
+scheme = "closed_form_probit"
+convergence = "absolute"
+tolerance = 1.0e-12
+max_iterations = 1
+[inputs]
+[inputs.a]
+unit = "dimensionless"
+description = "the probit intercept.\n"
+[inputs.b]
+unit = "dimensionless"
+description = "the probit slope.\n"
+[inputs.n]
+unit = "dimensionless"
+description = "the dose exponent, `1.0` where the published `(a, b)` already absorb it.\n"
+[inputs.dose]
+unit = "dimensionless"
+optional = true
+description = "the hazard's dose `D`, whose own units the hazard defines. It must be positive when stated; `probit` is published from it.\n"
+[inputs.probit_value]
+unit = "dimensionless"
+optional = true
+description = "a probit `Y` stated directly, the class's `probability(Y)` argument. When stated, `probability` is evaluated at it; otherwise at the `probit` the dose gives. At least one of `dose` and `probit_value` must be stated.\n"
+[outputs]
+[outputs.probit]
+unit = "dimensionless"
+optional = true
+description = "`Y = a + b n ln(dose)`; absent when no dose was stated.\n"
+[outputs.probability]
+unit = "dimensionless"
+description = "`0.5 (1 + erf((Y - 5) / sqrt(2)))` at the stated `probit_value` or the computed probit.\n"
+[[valid_range]]
+quantity = "dose"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class answers a non-positive dose with -Infinity, which is not a probit this port publishes"
+[implementations]
+python = "azoth.process.probit"
+rust = "azoth_process::probit"

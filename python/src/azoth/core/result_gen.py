@@ -6475,6 +6475,79 @@ class FlareResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class GasDispersionResult(_HasWarnings):
+    """Result of ``process.gas_dispersion``."""
+
+    CALC_ID: ClassVar[str] = "process.gas_dispersion"
+
+    #: `gaussian_plume` or `heavy_gas`, this port's words for the class's `GAUSSIAN_PLUME` and `HEAVY_GAS`.
+    selected_model: str
+
+    #: the release rate the screen used, which the source-term convenience resolves before the call.
+    mass_release_rate: Q
+
+    #: `mass_release_rate * fuel_mass_fraction`, the class's `flammableMassReleaseRateKgPerS`.
+    flammable_mass_release_rate: Q
+
+    #: the gas phase's density at the ambient flash.
+    source_density: Q
+
+    #: `P / (287.05 T)`.
+    air_density: Q
+
+    #: the flammable components' summed phase mole fraction, or `1.0` under a manual LFL.
+    fuel_mole_fraction: float
+
+    #: the flammable components' mass share of the phase, or `1.0` under a manual LFL.
+    fuel_mass_fraction: float
+
+    #: the mixture's Le Chatelier LFL by volume fraction, or the stated override; **absent when the phase has no flammable component**, where the class's DTO carries `NaN`.
+    lower_flammable_limit: float | None
+
+    #: the endpoint fraction the first distance was asked at, echoed.
+    flammable_endpoint_fraction: float
+
+    #: the distance at `endpoint_fraction * LFL`; absent when there is no fuel or the arm answers none.
+    distance_to_flammable_endpoint: Q | None
+
+    #: the distance at half the LFL; absent when there is no fuel or the arm answers none.
+    distance_to_half_lfl: Q | None
+
+    #: the distance at the LFL; absent when there is no fuel.
+    distance_to_lfl: Q | None
+
+    #: the cloud volume above the LFL, zero when no fuel is screened.
+    flammable_cloud_volume: Q
+
+    #: the screened component's name, empty when none was stated.
+    toxic_component: str
+
+    #: the toxic threshold by volume fraction, absent when no toxic endpoint was asked.
+    toxic_threshold: float | None
+
+    #: the distance at the toxic threshold; absent when no endpoint was asked or the component is not in the phase.
+    toxic_distance: Q | None
+
+    #: the wind speed the screen ran at, echoed.
+    wind_speed: Q
+
+    #: the Pasquill class the screen ran at, echoed.
+    stability_class: str
+
+    #: `gaussian_plume_briggs` or `heavy_gas_britter_mcquaid`, this port's words for the class's two basis sentences.
+    screening_basis: str
+
+    #: whether the LFL distance exists and is above zero.
+    has_flammable_cloud: bool
+
+    #: whether the toxic distance exists and is above zero.
+    has_toxic_endpoint: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class GasScrubberResult(_HasWarnings):
     """Result of ``process.gas_scrubber``."""
 
@@ -6623,6 +6696,31 @@ class GasScrubberResult(_HasWarnings):
 
     #: the volume at NLL over the same flow, again as though m3/hr.
     liquid_retention_time: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class GaussianPlumeResult(_HasWarnings):
+    """Result of ``process.gaussian_plume``."""
+
+    CALC_ID: ClassVar[str] = "process.gaussian_plume"
+
+    #: the horizontal dispersion coefficient at `distance`.
+    sigma_y: Q
+
+    #: the vertical dispersion coefficient at `distance`.
+    sigma_z: Q
+
+    #: the concentration at (`distance`, `crosswind`, `height`); zero on a non-positive distance or a zero emission.
+    concentration: Q
+
+    #: the concentration at (`distance`, `0`, `0`), the profile the scan follows.
+    centerline_ground_concentration: Q
+
+    #: the downwind distance at which the ground centreline concentration falls to `threshold`. **Absent when the scan's profile never reaches it**, and `100000.0` when the profile never falls below it, which is the scan's end rather than a physical distance.
+    distance_to_threshold: Q | None
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -7510,6 +7608,22 @@ class PlugFlowReactorResult(_HasWarnings):
 
     #: `getResidenceTime()`: the tube's volume over the feed's volumetric flow, which the kernel already computes and this id dropped.
     residence_time: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ProbitResult(_HasWarnings):
+    """Result of ``process.probit``."""
+
+    CALC_ID: ClassVar[str] = "process.probit"
+
+    #: `Y = a + b n ln(dose)`; absent when no dose was stated.
+    probit: float | None
+
+    #: `0.5 (1 + erf((Y - 5) / sqrt(2)))` at the stated `probit_value` or the computed probit.
+    probability: float
 
     #: Caveats.
     warnings: tuple[Warning, ...]

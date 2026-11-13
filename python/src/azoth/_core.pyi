@@ -3103,6 +3103,31 @@ class FlareResult:
     warnings: list[Warning]
 
 @final
+class GasDispersionResult:
+    selected_model: str
+    mass_release_rate: Qty
+    flammable_mass_release_rate: Qty
+    source_density: Qty
+    air_density: Qty
+    fuel_mole_fraction: float
+    fuel_mass_fraction: float
+    lower_flammable_limit: float | None
+    flammable_endpoint_fraction: float
+    distance_to_flammable_endpoint: Qty | None
+    distance_to_half_lfl: Qty | None
+    distance_to_lfl: Qty | None
+    flammable_cloud_volume: Qty
+    toxic_component: str
+    toxic_threshold: float | None
+    toxic_distance: Qty | None
+    wind_speed: Qty
+    stability_class: str
+    screening_basis: str
+    has_flammable_cloud: bool
+    has_toxic_endpoint: bool
+    warnings: list[Warning]
+
+@final
 class GasScrubberResult:
     vapour_n: Qty
     vapour_z: list[float]
@@ -3152,6 +3177,15 @@ class GasScrubberResult:
     surge_volume: Qty | None
     surge_time: Qty | None
     liquid_retention_time: Qty | None
+    warnings: list[Warning]
+
+@final
+class GaussianPlumeResult:
+    sigma_y: Qty
+    sigma_z: Qty
+    concentration: Qty
+    centerline_ground_concentration: Qty
+    distance_to_threshold: Qty | None
     warnings: list[Warning]
 
 @final
@@ -3455,6 +3489,12 @@ class PlugFlowReactorResult:
     reaction_rate_profile: list[Qty]
     molar_flow_profile: list[list[Qty]]
     residence_time: Qty
+    warnings: list[Warning]
+
+@final
+class ProbitResult:
+    probit: float | None
+    probability: float
     warnings: list[Warning]
 
 @final
@@ -6426,6 +6466,23 @@ def flare(
     design_mass_flow_capacity: float | None = None,
     design_molar_flow_capacity: float | None = None,
 ) -> FlareResult: ...
+def gas_dispersion(
+    components: list[str],
+    composition: list[float],
+    mass_release_rate: float,
+    ambient_temperature: float | None = None,
+    atmospheric_pressure: float | None = None,
+    wind_speed: float | None = None,
+    pasquill_stability_class: str | None = None,
+    surface_roughness: float | None = None,
+    offshore: bool | None = None,
+    release_height: float | None = None,
+    model_selection: str | None = None,
+    lower_flammable_limit: float | None = None,
+    flammable_endpoint_fraction_of_lfl: float | None = None,
+    toxic_component: str | None = None,
+    toxic_threshold: float | None = None,
+) -> GasDispersionResult: ...
 def gas_scrubber(
     components: list[str],
     feed_n: float,
@@ -6450,6 +6507,17 @@ def gas_scrubber(
     joint_efficiency: float | None = None,
     corrosion_allowance: float | None = None,
 ) -> GasScrubberResult: ...
+def gaussian_plume(
+    emission_rate: float,
+    effective_stack_height: float,
+    wind_speed: float,
+    stability: str,
+    terrain: str,
+    distance: float,
+    crosswind: float,
+    height: float,
+    threshold: float,
+) -> GaussianPlumeResult: ...
 def gibbs_reactor(
     components: list[str],
     feed_n: float,
@@ -6737,6 +6805,13 @@ def plug_flow_reactor(
     catalyst_effectiveness_enabled: bool | None = None,
     key_component: str | None = None,
 ) -> PlugFlowReactorResult: ...
+def probit(
+    a: float,
+    b: float,
+    n: float,
+    dose: float | None = None,
+    probit_value: float | None = None,
+) -> ProbitResult: ...
 def pump(
     components: list[str],
     inlet_n: float,

@@ -1,0 +1,176 @@
+model = "process.gaussian_plume"
+[[cases]]
+id = "rural_d_at_100_metres"
+tolerance = 1.0e-9
+source = "`GaussianPlumeTest.groundConcentrationDecreasesWithDistance`: a 1 kg/s source at an effective 10 m in D-class rural weather, evaluated at 100 m. The 1e-3 threshold is never reached on this state, so the distance is absent - the class answers NaN. From `validation/neqsim/captures/process_gaussian_plume.tsv` (`rural_d_100m`).\n"
+[cases.inputs]
+emission_rate = 1.0
+effective_stack_height = 10.0
+wind_speed = 5.0
+stability = "D"
+terrain = "rural"
+distance = 100.0
+crosswind = 0.0
+height = 0.0
+threshold = 0.001
+[cases.expected]
+sigma_y = 7.960297521679914
+sigma_z = 5.595028849441882
+concentration = 2.8939011685993784e-4
+centerline_ground_concentration = 2.8939011685993784e-4
+[[cases]]
+id = "rural_d_at_500_metres"
+tolerance = 1.0e-9
+source = "The same plume at 500 m (`rural_d_500m`); the concentration falls with distance, as the class's own test asserts.\n"
+[cases.inputs]
+emission_rate = 1.0
+effective_stack_height = 10.0
+wind_speed = 5.0
+stability = "D"
+terrain = "rural"
+distance = 500.0
+crosswind = 0.0
+height = 0.0
+threshold = 0.001
+[cases.expected]
+sigma_y = 39.036002917941325
+sigma_z = 22.677868380553633
+concentration = 6.525134622135576e-5
+centerline_ground_concentration = 6.525134622135576e-5
+[[cases]]
+id = "rural_d_at_1000_metres"
+tolerance = 1.0e-9
+source = "The same plume at 1000 m (`rural_d_1000m`).\n"
+[cases.inputs]
+emission_rate = 1.0
+effective_stack_height = 10.0
+wind_speed = 5.0
+stability = "D"
+terrain = "rural"
+distance = 1000.0
+crosswind = 0.0
+height = 0.0
+threshold = 0.001
+[cases.expected]
+sigma_y = 76.27700713964738
+sigma_z = 37.94733192202055
+concentration = 2.1243475148855702e-5
+centerline_ground_concentration = 2.1243475148855702e-5
+[[cases]]
+id = "urban_b_distance_to_threshold"
+tolerance = 1.0e-9
+source = "`GaussianPlumeTest.sigmasArePositive`: 1 kg/s at 5 m in B-class urban weather, read at 500 m with a 1e-4 threshold, which the scan reaches at 121.27 m. From (`urban_b_500m`).\n"
+[cases.inputs]
+emission_rate = 1.0
+effective_stack_height = 5.0
+wind_speed = 3.0
+stability = "B"
+terrain = "urban"
+distance = 500.0
+crosswind = 0.0
+height = 0.0
+threshold = 1.0e-4
+[cases.expected]
+sigma_y = 146.0593486680443
+sigma_z = 97.97958971132714
+concentration = 7.40454554561347e-6
+centerline_ground_concentration = 7.40454554561347e-6
+distance_to_threshold = 121.2710197059788
+[[cases]]
+id = "off_centre_and_elevated_receptor"
+tolerance = 1.0e-9
+source = "The rural-D plume read 25 m off the centreline and 2 m above the ground at 500 m (`rural_d_offcentre`): the two image terms differ, and the concentration sits below the centreline's.\n"
+[cases.inputs]
+emission_rate = 1.0
+effective_stack_height = 10.0
+wind_speed = 5.0
+stability = "D"
+terrain = "rural"
+distance = 500.0
+crosswind = 25.0
+height = 2.0
+threshold = 1.0e-4
+[cases.expected]
+sigma_y = 39.036002917941325
+sigma_z = 22.677868380553633
+concentration = 5.298641956857312e-5
+centerline_ground_concentration = 6.525134622135576e-5
+distance_to_threshold = 381.92679350154475
+[[cases]]
+id = "ground_level_source_crossing"
+tolerance = 1.0e-9
+source = "`GaussianPlumeTest.distanceToConcentrationConsistentWithDirectEvaluation`: 10 kg/s at the ground in D-class rural weather, 4 m/s, with a 1e-3 threshold the scan reaches at 470.88 m (`rural_d_crossing`).\n"
+[cases.inputs]
+emission_rate = 10.0
+effective_stack_height = 0.0
+wind_speed = 4.0
+stability = "D"
+terrain = "rural"
+distance = 100.0
+crosswind = 0.0
+height = 0.0
+threshold = 0.001
+[cases.expected]
+sigma_y = 7.960297521679914
+sigma_z = 5.595028849441882
+concentration = 0.01786728256458939
+centerline_ground_concentration = 0.01786728256458939
+distance_to_threshold = 470.87669384495183
+[[cases]]
+id = "threshold_never_reached"
+tolerance = 1.0e-9
+source = "A 1e6 kg/m3 threshold on a 1 kg/s ground source, which no sampled point reaches: the class answers NaN and the distance is absent (`rural_d_never_above`).\n"
+[cases.inputs]
+emission_rate = 1.0
+effective_stack_height = 0.0
+wind_speed = 5.0
+stability = "D"
+terrain = "rural"
+distance = 100.0
+crosswind = 0.0
+height = 0.0
+threshold = 1.0e6
+[cases.expected]
+sigma_y = 7.960297521679914
+sigma_z = 5.595028849441882
+concentration = 0.0014293826051671513
+centerline_ground_concentration = 0.0014293826051671513
+[[cases]]
+id = "threshold_never_fallen_below"
+tolerance = 1.0e-9
+source = "A 1e-30 kg/m3 threshold on the 10 kg/s ground source: every sample is above it, so the class answers the scan's own end, 100000 m (`rural_d_never_below`).\n"
+[cases.inputs]
+emission_rate = 10.0
+effective_stack_height = 0.0
+wind_speed = 4.0
+stability = "D"
+terrain = "rural"
+distance = 100.0
+crosswind = 0.0
+height = 0.0
+threshold = 1.0e-30
+[cases.expected]
+sigma_y = 7.960297521679914
+sigma_z = 5.595028849441882
+concentration = 0.01786728256458939
+centerline_ground_concentration = 0.01786728256458939
+distance_to_threshold = 100000.0
+[[cases]]
+id = "zero_emission_answers_zero"
+tolerance = 1.0e-9
+source = "The class's own zero-emission guard: no source, zero concentration, and a threshold the profile never reaches (`zero_emission`).\n"
+[cases.inputs]
+emission_rate = 0.0
+effective_stack_height = 0.0
+wind_speed = 5.0
+stability = "D"
+terrain = "rural"
+distance = 100.0
+crosswind = 0.0
+height = 0.0
+threshold = 1.0e-6
+[cases.expected]
+sigma_y = 7.960297521679914
+sigma_z = 5.595028849441882
+concentration = 0.0
+centerline_ground_concentration = 0.0

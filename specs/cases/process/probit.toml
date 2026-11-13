@@ -1,0 +1,110 @@
+model = "process.probit"
+[[cases]]
+id = "custom_triple_at_dose_one"
+tolerance = 1.0e-9
+source = "A probit of `(5, 0, 1)` at dose one, whose `Y` is exactly five. The class's Abramowitz-Stegun `erf` answers `1e-9` at zero, so the probability is `0.5000000005`. From `validation/neqsim/captures/process_probit.tsv` (`custom_five_at_dose_one`)."
+[cases.inputs]
+a = 5.0
+b = 0.0
+n = 1.0
+dose = 1.0
+[cases.expected]
+probit = 5.0
+probability = 0.5000000005
+[[cases]]
+id = "probability_at_a_stated_probit"
+tolerance = 1.0e-9
+source = "The class's `probability(Y)` at a stated `Y = 5`, the same half-probability. From (`custom_five_from_probit`)."
+[cases.inputs]
+a = 5.0
+b = 0.0
+n = 1.0
+dose = 1.0
+probit_value = 5.0
+[cases.expected]
+probit = 5.0
+probability = 0.5000000005
+[[cases]]
+id = "h2s_low_dose"
+tolerance = 1.0e-9
+source = "`ProbitModelTest.h2sProbitMonotonicInDose`'s lower dose, `100^1.43 * 10` ppm-min. From (`h2s_low`)."
+[cases.inputs]
+a = -31.42
+b = 3.008
+n = 1.43
+dose = 7244.359600749899
+[cases.expected]
+probit = 6.811106062496066
+probability = 0.9649378366849848
+[[cases]]
+id = "h2s_high_dose"
+tolerance = 1.0e-9
+source = "The same test's higher dose, `500^1.43 * 30`; the probability saturates at one. From (`h2s_high`)."
+[cases.inputs]
+a = -31.42
+b = 3.008
+n = 1.43
+dose = 217094.2700553436
+[cases.expected]
+probit = 21.436468783571186
+probability = 1.0
+[[cases]]
+id = "thermal_low_dose"
+tolerance = 1.0e-9
+source = "`thermalProbitMonotonicInDose`'s lower dose, `60 * 5000^(4/3) / 1e4`. From (`thermal_low`)."
+[cases.inputs]
+a = -14.9
+b = 2.56
+n = 1.0
+dose = 512.9927840030089
+[cases.expected]
+probit = 1.0750701537303051
+probability = 4.339551543125486e-05
+[[cases]]
+id = "thermal_high_dose"
+tolerance = 1.0e-9
+source = "The same test's higher dose, `60 * 35000^(4/3) / 1e4`. From (`thermal_high`)."
+[cases.inputs]
+a = -14.9
+b = 2.56
+n = 1.0
+dose = 6869.239251396033
+[cases.expected]
+probit = 7.7171101291724415
+probability = 0.9967072138512403
+[[cases]]
+id = "chlorine_sample_dose"
+tolerance = 1.0e-9
+source = "The chlorine factory's triple on a `10^2.75` ppm-min dose; the chance is effectively one. From (`chlorine_sample`)."
+[cases.inputs]
+a = -17.1
+b = 1.69
+n = 2.75
+dose = 562.341325190349
+[cases.expected]
+probit = 12.32847660414702
+probability = 0.9999999999998828
+[[cases]]
+id = "ammonia_sample_dose"
+tolerance = 1.0e-9
+source = "The ammonia factory's triple on a `100^2 * 5` ppm-min dose. From (`ammonia_sample`)."
+[cases.inputs]
+a = -35.9
+b = 1.85
+n = 2.0
+dose = 50000.0
+[cases.expected]
+probit = 4.133179652318049
+probability = 0.193020184687537
+[[cases]]
+id = "blast_sample_dose"
+tolerance = 1.0e-9
+source = "The blast factory's triple on a 20 kPa overpressure. From (`blast_sample`)."
+[cases.inputs]
+a = -77.1
+b = 6.91
+n = 1.0
+dose = 20000.0
+[cases.expected]
+probit = -8.666901011975355
+probability = 0.0

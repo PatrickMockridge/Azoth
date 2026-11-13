@@ -107,6 +107,11 @@
 //       > captures/process_flowsheet.tsv
 //     java -cp .:neqsim-118d9af.jar ProcessProbe flowsheet_accelerated \
 //       > captures/process_flowsheet_accelerated.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe gas_dispersion \
+//       > captures/process_gas_dispersion.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe gaussian_plume \
+//       > captures/process_gaussian_plume.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe probit > captures/process_probit.tsv
 
 import neqsim.process.equipment.stream.Stream;
 import neqsim.process.equipment.util.AccelerationMethod;
@@ -114,6 +119,12 @@ import neqsim.process.equipment.stream.StreamInterface;
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPrEos;
 import neqsim.thermo.system.SystemSrkEos;
+import neqsim.process.safety.BoundaryConditions;
+import neqsim.process.safety.dispersion.GasDispersionAnalyzer;
+import neqsim.process.safety.dispersion.GasDispersionResult;
+import neqsim.process.safety.dispersion.GaussianPlume;
+import neqsim.process.safety.dispersion.HeavyGasDispersion;
+import neqsim.process.safety.dispersion.ProbitModel;
 import neqsim.process.safety.release.HomogeneousEquilibriumReleaseModel;
 import neqsim.process.safety.release.LeakModel;
 import neqsim.process.safety.release.ReleaseFlowRequest;
@@ -263,6 +274,15 @@ public class ProcessProbe {
         break;
       case "leak_blowdown":
         leakBlowdownRows();
+        break;
+      case "gas_dispersion":
+        gasDispersionRows();
+        break;
+      case "gaussian_plume":
+        gaussianPlumeRows();
+        break;
+      case "probit":
+        probitRows();
         break;
       case "expander_steps":
         expanderStepRows();
@@ -12245,6 +12265,256 @@ public class ProcessProbe {
       double implied = velocity[i] > 0.0 ? rate[i] / (velocity[i] * area * coefficient) : Double.NaN;
       System.out.println(prefix + "implied_velocity_density_kg_m3=" + implied);
     }
+    System.out.println();
+  }
+
+  // === process.gas_dispersion, process.gaussian_plume, process.probit =========
+
+  static BoundaryConditions dispersionWeather(double ambientC, double wind, char stability,
+      boolean offshore, double roughness) {
+    return BoundaryConditions.builder().ambientTemperature(ambientC, "C").windSpeed(wind)
+        .pasquillStabilityClass(stability).isOffshore(offshore).surfaceRoughness(roughness)
+        .build();
+  }
+
+  static void gasDispersionRows() {
+    // PR rows are the oracle: azoth's databank route resolves Peng-Robinson. The class's own
+    // tests (`GasDispersionAnalyzerTest`), re-cased on PR.
+    dispersionRow("pr_methane_gaussian", false, new String[] {"methane"}, new double[] {1.0},
+        293.15, 20.0, 1.0, 0.0, null, null, 0.5, null, 0.0, null,
+        dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+    dispersionRow("pr_methane_sts0131_integral", false, new String[] {"methane"},
+        new double[] {1.0}, 293.15, 20.0, 1.0, 0.0, null, null, 0.20, null, 0.0, null,
+        dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+    dispersionRow("pr_methane_sts0131_cfd", false, new String[] {"methane"}, new double[] {1.0},
+        293.15, 20.0, 1.0, 0.0, null, null, 0.50, null, 0.0, null,
+        dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+    dispersionRow("pr_co2_dense", false, new String[] {"CO2"}, new double[] {1.0}, 293.15, 20.0,
+        5.0, 0.0, null, null, 0.5, null, 0.0, null,
+        dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+    dispersionRow("pr_h2s_toxic_gaussian", false, new String[] {"methane", "H2S"},
+        new double[] {0.98, 0.02}, 293.15, 20.0, 2.0, 0.0, null, null, 0.5, "H2S", 100.0, null,
+        dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+    dispersionRow("pr_methane_manual_lfl", false, new String[] {"methane"}, new double[] {1.0},
+        293.15, 20.0, 1.0, 0.0, null, 0.05, 0.5, null, 0.0, null,
+        dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+    dispersionRow("pr_methane_forced_heavy", false, new String[] {"methane"},
+        new double[] {1.0}, 293.15, 20.0, 1.0, 0.0,
+        GasDispersionAnalyzer.ModelSelection.HEAVY_GAS, null, 0.5, null, 0.0, null,
+        dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+    dispersionRow("pr_co2_forced_gaussian", false, new String[] {"CO2"}, new double[] {1.0},
+        293.15, 20.0, 5.0, 0.0, GasDispersionAnalyzer.ModelSelection.GAUSSIAN_PLUME, null, 0.5,
+        null, 0.0, null, dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+
+    // `DispersionBenchmarkValidationTest`, re-cased on PR.
+    dispersionRow("pr_benchmark_methane", false, new String[] {"methane"}, new double[] {1.0},
+        288.15, 10.0, 1.0, 0.0, GasDispersionAnalyzer.ModelSelection.GAUSSIAN_PLUME, null, 0.5,
+        null, 0.0, null, dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+    dispersionRow("pr_benchmark_co2_toxic", false, new String[] {"CO2"}, new double[] {1.0},
+        288.15, 10.0, 10.0, 0.0, null, null, 0.5, "CO2", 50000.0, null,
+        dispersionWeather(10.0, 2.0, 'F', false, 0.1));
+    dispersionRow("pr_benchmark_propane", false, new String[] {"propane"}, new double[] {1.0},
+        288.15, 10.0, 1.0, 0.0, null, null, 0.5, null, 0.0, null,
+        dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+    dispersionRow("pr_benchmark_h2s_forced_gaussian", false, new String[] {"methane", "H2S"},
+        new double[] {0.90, 0.10}, 288.15, 10.0, 1.0, 0.0,
+        GasDispersionAnalyzer.ModelSelection.GAUSSIAN_PLUME, null, 0.5, "H2S", 100.0, null,
+        dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+
+    // The source-term row: the builder consumes the leak's peak rate.
+    SystemInterface sourceFluid = hemFluid(false, new String[] {"methane"}, new double[] {1.0},
+        293.15, 50.0);
+    LeakModel leak = LeakModel.builder().fluid(sourceFluid).holeDiameter(0.01).vesselVolume(1.0)
+        .dischargeCoefficient(0.62).backPressure(101325.0).scenarioName("source").build();
+    SourceTermResult sourceTerm = leak.calculateSourceTerm(5.0, 1.0);
+    dispersionRow("pr_source_term_rate", false, new String[] {"methane"}, new double[] {1.0},
+        293.15, 50.0, Double.NaN, 0.0, null, null, 0.5, null, 0.0, sourceTerm,
+        dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+
+    // SRK rows are the pinned tests' own EOS, and evidence beside the PR oracle.
+    dispersionRow("srk_methane_gaussian", true, new String[] {"methane"}, new double[] {1.0},
+        293.15, 20.0, 1.0, 0.0, null, null, 0.5, null, 0.0, null,
+        dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+    dispersionRow("srk_co2_dense", true, new String[] {"CO2"}, new double[] {1.0}, 293.15, 20.0,
+        5.0, 0.0, null, null, 0.5, null, 0.0, null,
+        dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+    dispersionRow("srk_h2s_toxic_gaussian", true, new String[] {"methane", "H2S"},
+        new double[] {0.98, 0.02}, 293.15, 20.0, 2.0, 0.0, null, null, 0.5, "H2S", 100.0, null,
+        dispersionWeather(15.0, 5.0, 'D', false, 0.1));
+    dispersionRow("srk_benchmark_co2_toxic", true, new String[] {"CO2"}, new double[] {1.0},
+        288.15, 10.0, 10.0, 0.0, null, null, 0.5, "CO2", 50000.0, null,
+        dispersionWeather(10.0, 2.0, 'F', false, 0.1));
+
+    // The state the class refuses at construction, printed as evidence.
+    System.out.println("pr_zero_rate_refused");
+    System.out.println("eos=pr");
+    System.out.println("rate_input_kg_s=0.0");
+    try {
+      GasDispersionAnalyzer.builder().scenarioName("zero").fluid(sourceFluid).massReleaseRate(0.0)
+          .boundaryConditions(dispersionWeather(15.0, 5.0, 'D', false, 0.1)).build().analyze();
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  @SuppressWarnings({"checkstyle:MethodLength", "checkstyle:ParameterNumber"})
+  static void dispersionRow(String label, boolean srk, String[] names, double[] amounts,
+      double temperature, double pressureBar, double rate, double releaseHeight,
+      GasDispersionAnalyzer.ModelSelection selection, Double manualLfl, double endpointFraction,
+      String toxicComponent, double toxicThresholdPpm, SourceTermResult sourceTerm,
+      BoundaryConditions conditions) {
+    SystemInterface fluid = hemFluid(srk, names, amounts, temperature, pressureBar);
+    GasDispersionAnalyzer.Builder builder = GasDispersionAnalyzer.builder().scenarioName(label)
+        .fluid(fluid).boundaryConditions(conditions).releaseHeight(releaseHeight)
+        .flammableEndpointFraction(endpointFraction);
+    if (!Double.isNaN(rate)) {
+      builder.massReleaseRate(rate);
+    }
+    if (selection != null) {
+      builder.modelSelection(selection);
+    }
+    if (manualLfl != null) {
+      builder.lowerFlammableLimit(manualLfl);
+    }
+    if (toxicComponent != null) {
+      builder.toxicEndpoint(toxicComponent, toxicThresholdPpm);
+    }
+    if (sourceTerm != null) {
+      builder.sourceTerm(sourceTerm);
+    }
+    GasDispersionResult result = builder.build().analyze();
+    System.out.println(label);
+    System.out.println("eos=" + (srk ? "srk" : "pr"));
+    System.out.println("source_t_k=" + fluid.getTemperature());
+    System.out.println("source_p_bara=" + fluid.getPressure());
+    double[] overall = fluid.getMolarComposition();
+    StringBuilder z = new StringBuilder();
+    for (int i = 0; i < overall.length; i++) {
+      z.append(i == 0 ? "" : ",")
+          .append(fluid.getPhase(0).getComponent(i).getName()).append(":").append(overall[i]);
+    }
+    System.out.println("source_z=" + z);
+    System.out.println("rate_input_kg_s=" + (Double.isNaN(rate) ? "" : rate));
+    if (sourceTerm != null) {
+      System.out.println("source_term_peak_kg_s=" + sourceTerm.getPeakMassFlowRate());
+    }
+    System.out.println("release_height_m=" + releaseHeight);
+    System.out.println("model_selection=" + (selection == null ? "auto" : selection.name()));
+    System.out.println("manual_lfl=" + (manualLfl == null ? "" : manualLfl));
+    System.out.println("flammable_endpoint_fraction=" + endpointFraction);
+    System.out.println("toxic_component=" + (toxicComponent == null ? "" : toxicComponent));
+    System.out.println("toxic_threshold_ppm=" + (toxicComponent == null ? "" : toxicThresholdPpm));
+    System.out.println("ambient_t_k=" + conditions.getAmbientTemperature());
+    System.out.println("ambient_p_pa=" + conditions.getAtmosphericPressure());
+    System.out.println("conditions_wind_m_per_s=" + conditions.getWindSpeed());
+    System.out.println("conditions_stability=" + conditions.getPasquillStabilityClass());
+    System.out.println("conditions_offshore=" + conditions.isOffshore());
+    System.out.println("conditions_roughness_m=" + conditions.getSurfaceRoughness());
+    System.out.println("selected_model=" + result.getSelectedModel());
+    System.out.println("result_mass_release_rate_kg_s=" + result.getMassReleaseRateKgPerS());
+    System.out.println(
+        "flammable_mass_release_rate_kg_s=" + result.getFlammableMassReleaseRateKgPerS());
+    System.out.println("source_density_kg_m3=" + result.getSourceDensityKgPerM3());
+    System.out.println("air_density_kg_m3=" + result.getAirDensityKgPerM3());
+    System.out.println("fuel_mole_fraction=" + result.getFuelMoleFraction());
+    System.out.println("fuel_mass_fraction=" + result.getFuelMassFraction());
+    System.out.println(
+        "lfl_volume_fraction=" + result.getLowerFlammableLimitVolumeFraction());
+    System.out.println(
+        "endpoint_fraction_of_lfl=" + result.getFlammableEndpointFractionOfLfl());
+    System.out.println(
+        "distance_to_flammable_endpoint_m=" + result.getDistanceToFlammableEndpointM());
+    System.out.println("distance_to_half_lfl_m=" + result.getDistanceToHalfLflM());
+    System.out.println("distance_to_lfl_m=" + result.getDistanceToLflM());
+    System.out.println("flammable_cloud_volume_m3=" + result.getFlammableCloudVolumeM3());
+    System.out.println("toxic_component_name=" + result.getToxicComponentName());
+    System.out.println("result_toxic_threshold_ppm=" + result.getToxicThresholdPpm());
+    System.out.println("toxic_distance_m=" + result.getToxicDistanceM());
+    System.out.println("result_wind_speed_m_per_s=" + result.getWindSpeedMPerS());
+    System.out.println("result_stability_class=" + result.getStabilityClass());
+    System.out.println("screening_basis=" + result.getScreeningBasis());
+    System.out.println("has_flammable_cloud=" + result.hasFlammableCloud());
+    System.out.println("has_toxic_endpoint=" + result.hasToxicEndpoint());
+    System.out.println();
+  }
+
+  static void gaussianPlumeRows() {
+    plumeRow("rural_d_100m", 1.0, 10.0, 5.0, GaussianPlume.Stability.D, GaussianPlume.Terrain.RURAL,
+        100.0, 0.0, 0.0, 1.0e-3);
+    plumeRow("rural_d_500m", 1.0, 10.0, 5.0, GaussianPlume.Stability.D, GaussianPlume.Terrain.RURAL,
+        500.0, 0.0, 0.0, 1.0e-3);
+    plumeRow("rural_d_1000m", 1.0, 10.0, 5.0, GaussianPlume.Stability.D,
+        GaussianPlume.Terrain.RURAL, 1000.0, 0.0, 0.0, 1.0e-3);
+    plumeRow("urban_b_500m", 1.0, 5.0, 3.0, GaussianPlume.Stability.B,
+        GaussianPlume.Terrain.URBAN, 500.0, 0.0, 0.0, 1.0e-4);
+    plumeRow("rural_d_offcentre", 1.0, 10.0, 5.0, GaussianPlume.Stability.D,
+        GaussianPlume.Terrain.RURAL, 500.0, 25.0, 2.0, 1.0e-4);
+    // The upstream factor-of-ten pair: ground-level source, 1e-3 threshold.
+    plumeRow("rural_d_crossing", 10.0, 0.0, 4.0, GaussianPlume.Stability.D,
+        GaussianPlume.Terrain.RURAL, 100.0, 0.0, 0.0, 1.0e-3);
+    // The scan's two ends: never reached, and never fallen below (the 100000 m cap).
+    plumeRow("rural_d_never_above", 1.0, 0.0, 5.0, GaussianPlume.Stability.D,
+        GaussianPlume.Terrain.RURAL, 100.0, 0.0, 0.0, 1.0e6);
+    plumeRow("rural_d_never_below", 10.0, 0.0, 4.0, GaussianPlume.Stability.D,
+        GaussianPlume.Terrain.RURAL, 100.0, 0.0, 0.0, 1.0e-30);
+    plumeRow("zero_emission", 0.0, 0.0, 5.0, GaussianPlume.Stability.D,
+        GaussianPlume.Terrain.RURAL, 100.0, 0.0, 0.0, 1.0e-6);
+  }
+
+  static void plumeRow(String label, double emission, double stackHeight, double wind,
+      GaussianPlume.Stability stability, GaussianPlume.Terrain terrain, double distance,
+      double crosswind, double height, double threshold) {
+    GaussianPlume plume =
+        new GaussianPlume(emission, stackHeight, wind, stability, terrain);
+    System.out.println(label);
+    System.out.println("emission_rate_kg_s=" + emission);
+    System.out.println("stack_height_m=" + stackHeight);
+    System.out.println("wind_speed_m_per_s=" + wind);
+    System.out.println("stability=" + stability.name());
+    System.out.println("terrain=" + terrain.name());
+    System.out.println("distance_m=" + distance);
+    System.out.println("crosswind_m=" + crosswind);
+    System.out.println("height_m=" + height);
+    System.out.println("threshold_kg_m3=" + threshold);
+    System.out.println("sigma_y_m=" + plume.sigmaY(distance));
+    System.out.println("sigma_z_m=" + plume.sigmaZ(distance));
+    System.out.println("concentration_kg_m3=" + plume.concentration(distance, crosswind, height));
+    System.out.println(
+        "centerline_ground_concentration_kg_m3=" + plume.centerlineGroundConcentration(distance));
+    System.out.println("distance_to_threshold_m=" + plume.distanceToConcentration(threshold));
+    System.out.println();
+  }
+
+  static void probitRows() {
+    probitRow("custom_five_at_dose_one", 5.0, 0.0, 1.0, 1.0, Double.NaN);
+    probitRow("custom_five_from_probit", 5.0, 0.0, 1.0, 1.0, 5.0);
+    probitRow("h2s_low", -31.42, 3.008, 1.43, Math.pow(100.0, 1.43) * 10.0, Double.NaN);
+    probitRow("h2s_high", -31.42, 3.008, 1.43, Math.pow(500.0, 1.43) * 30.0, Double.NaN);
+    probitRow("thermal_low", -14.9, 2.56, 1.0, 60.0 * Math.pow(5000.0, 4.0 / 3.0) / 1.0e4,
+        Double.NaN);
+    probitRow("thermal_high", -14.9, 2.56, 1.0, 60.0 * Math.pow(35000.0, 4.0 / 3.0) / 1.0e4,
+        Double.NaN);
+    probitRow("chlorine_sample", -17.10, 1.69, 2.75, Math.pow(10.0, 2.75), Double.NaN);
+    probitRow("ammonia_sample", -35.9, 1.85, 2.0, Math.pow(100.0, 2.0) * 5.0, Double.NaN);
+    probitRow("blast_sample", -77.1, 6.91, 1.0, 20000.0, Double.NaN);
+    // The class's non-positive-dose branch, printed as evidence.
+    probitRow("zero_dose_evidence", 5.0, 0.0, 1.0, 0.0, Double.NaN);
+  }
+
+  static void probitRow(String label, double a, double b, double n, double dose, double y) {
+    ProbitModel model = new ProbitModel(a, b, n);
+    System.out.println(label);
+    System.out.println("a=" + a);
+    System.out.println("b=" + b);
+    System.out.println("n=" + n);
+    System.out.println("dose=" + (Double.isNaN(dose) ? "" : dose));
+    System.out.println("probit=" + (Double.isNaN(dose) ? "" : model.probit(dose)));
+    System.out.println(
+        "probability_from_dose=" + (Double.isNaN(dose) ? "" : model.probabilityFromDose(dose)));
+    System.out.println("probit_value=" + (Double.isNaN(y) ? "" : y));
+    System.out.println("probability=" + (Double.isNaN(y) ? "" : model.probability(y)));
     System.out.println();
   }
 }

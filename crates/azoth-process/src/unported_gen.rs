@@ -11,7 +11,9 @@
 //!   - specs/models/process/expander.toml
 //!   - specs/models/process/filter.toml
 //!   - specs/models/process/flare.toml
+//!   - specs/models/process/gas_dispersion.toml
 //!   - specs/models/process/gas_scrubber.toml
+//!   - specs/models/process/gaussian_plume.toml
 //!   - specs/models/process/gibbs_reactor.toml
 //!   - specs/models/process/heat_exchanger.toml
 //!   - specs/models/process/heater.toml
@@ -23,6 +25,7 @@
 //!   - specs/models/process/packed_column.toml
 //!   - specs/models/process/pipe.toml
 //!   - specs/models/process/plug_flow_reactor.toml
+//!   - specs/models/process/probit.toml
 //!   - specs/models/process/pump.toml
 //!   - specs/models/process/rate_based_packed_column.toml
 //!   - specs/models/process/separator.toml

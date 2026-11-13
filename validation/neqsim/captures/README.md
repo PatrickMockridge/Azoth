@@ -1852,3 +1852,52 @@ not reached on these states, because its discharge is set by the machine's own c
 than by the expander's power; it is stated rather than cased. The seal-gas envelope, shear
 pins, thrust balance and anti-surge report are the class's configured auxiliary surfaces and
 are not in this capture.
+
+## The gas-dispersion screening
+
+`process_gas_dispersion.tsv` is `GasDispersionAnalyzer.analyze` on the states its own
+`GasDispersionAnalyzerTest` and `DispersionBenchmarkValidationTest` use, re-cased on PR,
+plus the source-term, manual-LFL and forced-model states those tests leave implicit.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe gas_dispersion \
+  > captures/process_gas_dispersion.tsv
+```
+
+**The `pr` rows are the oracle** because this library's databank route resolves
+Peng-Robinson and no other fluid. The tests build `SystemSrkEos`; their `srk` rows are
+evidence beside the oracle. **The input fluid's own temperature and pressure are discarded**:
+`prepareExpandedGas` sets the clone to the boundary conditions' ambient temperature and
+pressure and flashes it there, so only the composition enters. Every row prints the result
+getters, the conditions and the builder flags it was built from. The last row is the class's
+own refusal of a non-positive rate, printed as evidence.
+
+## The Gaussian plume
+
+`process_gaussian_plume.tsv` is `GaussianPlume`'s sigma-y, sigma-z, concentration, ground
+centreline and distance-to-threshold on the states its test uses and on the scan's two ends.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe gaussian_plume \
+  > captures/process_gaussian_plume.tsv
+```
+
+**`distance_to_threshold_m` is `NaN` when the scan never reaches the threshold and
+`100000.0` when it never falls below it**: the second is the scan's end, not a physical
+distance, and both are printed as the class answers them. The `zero_emission` row is the
+constructor's own zero.
+
+## The probit
+
+`process_probit.tsv` is `ProbitModel`'s `probit`, `probabilityFromDose` and `probability(Y)`
+on the five factory triples and the class's two monotonic test pairs.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe probit \
+  > captures/process_probit.tsv
+```
+
+**The `zero_dose_evidence` row prints `-Infinity`**: `probit(0)` is the class's guard, and
+`probability` of it is `0.0`. Neither is a published number; the row is the measurement the
+refusal rests on.

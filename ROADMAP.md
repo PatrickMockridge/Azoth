@@ -809,6 +809,24 @@ a claim nothing holds.
   JSON envelope if byte-compatible output is ever required. The package's `ReleaseInventory`,
   `ReleaseModelEvidence`, `ReleaseSolidRiskAssessment` and `CoupledReleaseSource` are named here
   as neither ported nor refused: they are a later scoping, not silently dropped.
+- **The dispersion family** — `process/safety/dispersion/` is three ids.
+  **`process.gas_dispersion` is `GasDispersionAnalyzer.analyze`**: the ambient TP flash of the
+  released composition, the gas phase's Le Chatelier LFL and fuel data, the density-ratio model
+  selection, and the flammable and toxic endpoints over the passive Briggs plume or the dense
+  Britter-McQuaid fit, held to `process_gas_dispersion.tsv`'s thirteen PR rows, four SRK
+  evidence rows and the class's zero-rate refusal. **`process.gaussian_plume` is
+  `GaussianPlume`'s sigma curves, two-image concentration and log-scan distance to a
+  threshold**, its own id because `ConsequenceAnalysisEngine` in `src/main` calls it, and its
+  arithmetic is the analyzer's Gaussian arm. **`process.probit` is `ProbitModel`**: the probit,
+  the standard normal CDF over the class's Abramowitz-Stegun `erf`, and the five factory
+  triples, the other direct `ConsequenceAnalysisEngine` caller. **`HazardousAreaCalculator` is
+  a measured non-port**: `git grep` over the pin's `src/main` answers one file for it, the class
+  itself, so only its own test and a documentation example read it - and it is IEC 60079-10-1
+  area classification rather than plume dispersion. **`ToxicLibrary`'s threshold table is not
+  read by the analyze path** (the threshold is an input), and its `ppmToKgPerM3` is internal
+  arithmetic. The DTO's scenario name, `toJson` and the `analyzeStream`/`sourceTerm`
+  conveniences are session surface; the unported callers are named with their classes: QRA
+  `ConsequenceAnalysisEngine`, `ReleaseDispersionScenarioGenerator` and `CfdSourceTermCase`.
 - **The reactions family's**: the **ionic branch** of `reactions.reactive_tp_flash` and
   `reactions.reactive_ph_flash`, which is why a charged substance is refused at all;
   `reactions.reactive_ph_flash`'s **entropy-specified variant** and its `NR = 0` delegation to

@@ -29,7 +29,9 @@ from azoth.core.result import (
     ExpanderResult,
     FilterResult,
     FlareResult,
+    GasDispersionResult,
     GasScrubberResult,
+    GaussianPlumeResult,
     GibbsReactorResult,
     HeaterResult,
     HeatExchangerResult,
@@ -41,6 +43,7 @@ from azoth.core.result import (
     PackedColumnResult,
     PipeResult,
     PlugFlowReactorResult,
+    ProbitResult,
     PumpResult,
     RateBasedPackedColumnResult,
     SeparatorCapacityAssessmentResult,
@@ -88,7 +91,9 @@ __all__ = [
     "filter",
     "flare",
     "forms",
+    "gas_dispersion",
     "gas_scrubber",
+    "gaussian_plume",
     "gibbs_reactor",
     "heat_exchanger",
     "heater",
@@ -101,6 +106,7 @@ __all__ = [
     "packed_column",
     "pipe",
     "plug_flow_reactor",
+    "probit",
     "pump",
     "rate_based_packed_column",
     "run_flowsheet",
@@ -139,6 +145,9 @@ _FLARE = "process.flare"
 _HEATER = "process.heater"
 _HEM_RELEASE = "process.hem_release"
 _LEAK_BLOWDOWN = "process.leak_blowdown"
+_GAS_DISPERSION = "process.gas_dispersion"
+_GAUSSIAN_PLUME = "process.gaussian_plume"
+_PROBIT = "process.probit"
 _SEPARATOR = "process.separator"
 _SEPARATOR_CAPACITY_ASSESSMENT = "process.separator_capacity_assessment"
 _SEPARATOR_PERFORMANCE = "process.separator_performance"
@@ -2142,6 +2151,126 @@ def leak_blowdown(
         back_pressure=back_pressure,
         time_step=time_step,
         scenario_name=scenario_name,
+    )
+
+
+def gaussian_plume(
+    emission_rate: Q,
+    effective_stack_height: Q,
+    wind_speed: Q,
+    stability: str,
+    terrain: str,
+    distance: Q,
+    crosswind: Q,
+    height: Q,
+    threshold: Q,
+) -> GaussianPlumeResult:
+    """The concentration of a continuous Gaussian plume at one point.
+
+    The Briggs sigma curves for the six Pasquill classes over rural or urban terrain, the
+    two-image concentration, and the class's log scan and bisection for the ground
+    centreline distance to ``threshold``.
+
+    **The distance is absent when the scan never reaches the threshold**, and ``100000.0`` m
+    when it never falls below it, which is the scan's end rather than a physical distance.
+
+    Raises:
+        InvalidInputError: for a negative emission rate, a non-positive wind speed or
+            threshold, a negative distance, or an unknown stability or terrain word.
+
+    See :func:`azoth.process.reference.gaussian_plume`.
+    """
+    return resolve(_GAUSSIAN_PLUME)(  # type: ignore[no-any-return]
+        emission_rate=emission_rate,
+        effective_stack_height=effective_stack_height,
+        wind_speed=wind_speed,
+        stability=stability,
+        terrain=terrain,
+        distance=distance,
+        crosswind=crosswind,
+        height=height,
+        threshold=threshold,
+    )
+
+
+def gas_dispersion(
+    components: list[str],
+    composition: list[float],
+    mass_release_rate: Q,
+    ambient_temperature: Q | None = None,
+    atmospheric_pressure: Q | None = None,
+    wind_speed: Q | None = None,
+    pasquill_stability_class: str | None = None,
+    surface_roughness: Q | None = None,
+    offshore: bool | None = None,
+    release_height: Q | None = None,
+    model_selection: str | None = None,
+    lower_flammable_limit: float | None = None,
+    flammable_endpoint_fraction_of_lfl: float | None = None,
+    toxic_component: str | None = None,
+    toxic_threshold: float | None = None,
+) -> GasDispersionResult:
+    """Screen a continuous gas release for its flammable and toxic endpoints.
+
+    The ambient TP flash of the released composition, the gas phase's Le Chatelier LFL and
+    fuel data, and the passive Gaussian plume or dense-gas Britter-McQuaid arm selected by
+    the source-to-air density ratio (or stated). **A distance the arm does not reach is
+    absent**, never a NaN.
+
+    ``toxic_threshold`` is a **volume fraction**, so 100 ppm is ``1.0e-4``.
+
+    Raises:
+        InvalidInputError: for a non-positive release rate, wind speed or stated manual LFL,
+            an unknown stability or model word, an endpoint fraction outside ``(0, 1]``, a
+            composition that is not one entry per component and sums to one, or whatever the
+            databank or the ambient flash refuses.
+
+    See :func:`azoth.process.reference.gas_dispersion`.
+    """
+    return resolve(_GAS_DISPERSION)(  # type: ignore[no-any-return]
+        components=components,
+        composition=composition,
+        mass_release_rate=mass_release_rate,
+        ambient_temperature=ambient_temperature,
+        atmospheric_pressure=atmospheric_pressure,
+        wind_speed=wind_speed,
+        pasquill_stability_class=pasquill_stability_class,
+        surface_roughness=surface_roughness,
+        offshore=offshore,
+        release_height=release_height,
+        model_selection=model_selection,
+        lower_flammable_limit=lower_flammable_limit,
+        flammable_endpoint_fraction_of_lfl=flammable_endpoint_fraction_of_lfl,
+        toxic_component=toxic_component,
+        toxic_threshold=toxic_threshold,
+    )
+
+
+def probit(
+    a: float,
+    b: float,
+    n: float,
+    dose: Q | None = None,
+    probit_value: Q | None = None,
+) -> ProbitResult:
+    """The probit of a hazard dose, and the probability a probit value implies.
+
+    ``Y = a + b n ln(dose)`` and ``P = 0.5 (1 + erf((Y - 5) / sqrt(2)))`` over the class's
+    Abramowitz-Stegun ``erf``. **A non-positive dose is refused**: the class answers it with
+    ``-Infinity``, which the port does not publish.
+
+    Raises:
+        InvalidInputError: when neither a dose nor a probit value is stated, or when the
+            stated dose is not positive.
+
+    See :func:`azoth.process.reference.probit`.
+    """
+    return resolve(_PROBIT)(  # type: ignore[no-any-return]
+        a=a,
+        b=b,
+        n=n,
+        dose=dose,
+        probit_value=probit_value,
     )
 
 

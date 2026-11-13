@@ -1211,6 +1211,130 @@ def _hem_release(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dumped
 
 
+def _gaussian_plume(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.gaussian_plume`'s layers, from the reference's own arithmetic.
+
+    **The distance is dumped only when it exists.** The capture prints the class's `NaN`
+    when the scan never reaches the threshold, and a comparison against `NaN` fails at any
+    tolerance, so the absent answer is absent here too.
+    """
+    from azoth.process.reference.gaussian_plume import (
+        _sigma_y,
+        _sigma_z,
+        _stable,
+        _terrain,
+        concentration,
+        distance_to_threshold,
+    )
+
+    stability = _stable(str(inputs["stability"]))
+    terrain = _terrain(str(inputs["terrain"]))
+    emission = float(inputs["emission_rate"])
+    stack = float(inputs["effective_stack_height"])
+    wind = float(inputs["wind_speed"])
+    x = float(inputs["distance"])
+    y = float(inputs["crosswind"])
+    z = float(inputs["height"])
+    threshold = float(inputs["threshold"])
+    dumped: dict[str, float] = {
+        "sigma_y_m": _sigma_y(x, stability, terrain),
+        "sigma_z_m": _sigma_z(x, stability, terrain),
+        "concentration_kg_m3": concentration(emission, stack, wind, stability, terrain, x, y, z),
+        "centerline_ground_concentration_kg_m3": concentration(
+            emission, stack, wind, stability, terrain, x, 0.0, 0.0
+        ),
+    }
+    distance = distance_to_threshold(emission, stack, wind, stability, terrain, threshold)
+    if distance is not None:
+        dumped["distance_to_threshold_m"] = distance
+    return dumped
+
+
+def _gas_dispersion(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.gas_dispersion`'s layers, from the reference's own arithmetic.
+
+    **The capture's threshold key is ppm and the model's is a volume fraction**, so the
+    dump converts it back to the class's unit; the strings and booleans are the cases'
+    and have no float to compare.
+    """
+    from azoth.core.units import quantity
+    from azoth.process.reference.gas_dispersion import gas_dispersion
+
+    result = gas_dispersion(
+        [str(name) for name in inputs["components"]],
+        [float(value) for value in inputs["composition"]],
+        quantity(float(inputs["mass_release_rate"]), "kg/s"),
+        ambient_temperature=quantity(float(inputs["ambient_temperature"]), "K"),
+        atmospheric_pressure=quantity(float(inputs["atmospheric_pressure"]), "Pa"),
+        wind_speed=quantity(float(inputs["wind_speed"]), "m/s"),
+        pasquill_stability_class=str(inputs["pasquill_stability_class"]),
+        surface_roughness=quantity(float(inputs["surface_roughness"]), "m"),
+        offshore=bool(inputs["offshore"]),
+        release_height=quantity(float(inputs["release_height"]), "m"),
+        model_selection=str(inputs["model_selection"]),
+        lower_flammable_limit=(
+            None
+            if inputs.get("lower_flammable_limit") is None
+            else float(inputs["lower_flammable_limit"])
+        ),
+        flammable_endpoint_fraction_of_lfl=float(inputs["flammable_endpoint_fraction_of_lfl"]),
+        toxic_component=inputs.get("toxic_component"),
+        toxic_threshold=inputs.get("toxic_threshold"),
+    )
+    dumped: dict[str, float] = {
+        "result_mass_release_rate_kg_s": result.mass_release_rate.to("kg/s").magnitude,
+        "flammable_mass_release_rate_kg_s": result.flammable_mass_release_rate.to("kg/s").magnitude,
+        "source_density_kg_m3": result.source_density.to("kg/m**3").magnitude,
+        "air_density_kg_m3": result.air_density.to("kg/m**3").magnitude,
+        "fuel_mole_fraction": result.fuel_mole_fraction,
+        "fuel_mass_fraction": result.fuel_mass_fraction,
+        "endpoint_fraction_of_lfl": result.flammable_endpoint_fraction,
+        "flammable_cloud_volume_m3": result.flammable_cloud_volume.to("m**3").magnitude,
+        "result_wind_speed_m_per_s": result.wind_speed.to("m/s").magnitude,
+    }
+    if result.lower_flammable_limit is not None:
+        dumped["lfl_volume_fraction"] = result.lower_flammable_limit
+    for field, key in (
+        ("distance_to_flammable_endpoint", "distance_to_flammable_endpoint_m"),
+        ("distance_to_half_lfl", "distance_to_half_lfl_m"),
+        ("distance_to_lfl", "distance_to_lfl_m"),
+        ("toxic_distance", "toxic_distance_m"),
+    ):
+        value = getattr(result, field)
+        if value is not None:
+            dumped[key] = value.to("m").magnitude
+    if result.toxic_threshold is not None:
+        dumped["result_toxic_threshold_ppm"] = result.toxic_threshold * 1.0e6
+    return dumped
+
+
+def _probit(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.probit`'s layers, from the reference's own arithmetic.
+
+    The capture prints `probability_from_dose` and `probability` as separate methods; the
+    model publishes `probit` and one `probability`, so the two calls reconstruct both.
+    """
+    from azoth.process.reference.probit import probit as probit_model
+
+    a = float(inputs["a"])
+    b = float(inputs["b"])
+    n = float(inputs["n"])
+    dose = inputs.get("dose")
+    stated = inputs.get("probit_value")
+    dumped: dict[str, float] = {"a": a, "b": b, "n": n}
+    if dose is not None:
+        from_dose = probit_model(a, b, n, dose=float(dose))
+        dumped["dose"] = float(dose)
+        if from_dose.probit is not None:
+            dumped["probit"] = from_dose.probit
+        dumped["probability_from_dose"] = from_dose.probability
+    if stated is not None:
+        from_probit = probit_model(a, b, n, probit_value=float(stated))
+        dumped["probit_value"] = float(stated)
+        dumped["probability"] = from_probit.probability
+    return dumped
+
+
 def _leak_blowdown(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.leak_blowdown`'s series, from the reference's own arithmetic.
 
@@ -1549,6 +1673,9 @@ DUMPERS: dict[str, Dumper] = {
     "process.separator": _separator,
     "process.hem_release": _hem_release,
     "process.leak_blowdown": _leak_blowdown,
+    "process.gaussian_plume": _gaussian_plume,
+    "process.gas_dispersion": _gas_dispersion,
+    "process.probit": _probit,
     "process.rate_based_packed_column": _rate_based_packed_column,
     "process.absorption_column": _absorption_column,
     "process.packed_column": _packed_column,
@@ -1938,6 +2065,228 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_leak_blowdown.tsv",
         block=0,
         identified_by=("#label", "pr_methane_50bara_10s_1s"),
+    ),
+    # The plume's nine: every block is a state the port reproduces, so all nine are cased.
+    LayerCase(
+        model="process.gaussian_plume",
+        case="rural_d_at_100_metres",
+        capture="process_gaussian_plume.tsv",
+        block=0,
+        identified_by=("#label", "rural_d_100m"),
+    ),
+    LayerCase(
+        model="process.gaussian_plume",
+        case="rural_d_at_500_metres",
+        capture="process_gaussian_plume.tsv",
+        block=1,
+        identified_by=("#label", "rural_d_500m"),
+    ),
+    LayerCase(
+        model="process.gaussian_plume",
+        case="rural_d_at_1000_metres",
+        capture="process_gaussian_plume.tsv",
+        block=2,
+        identified_by=("#label", "rural_d_1000m"),
+    ),
+    LayerCase(
+        model="process.gaussian_plume",
+        case="urban_b_distance_to_threshold",
+        capture="process_gaussian_plume.tsv",
+        block=3,
+        identified_by=("#label", "urban_b_500m"),
+    ),
+    LayerCase(
+        model="process.gaussian_plume",
+        case="off_centre_and_elevated_receptor",
+        capture="process_gaussian_plume.tsv",
+        block=4,
+        identified_by=("#label", "rural_d_offcentre"),
+    ),
+    LayerCase(
+        model="process.gaussian_plume",
+        case="ground_level_source_crossing",
+        capture="process_gaussian_plume.tsv",
+        block=5,
+        identified_by=("#label", "rural_d_crossing"),
+    ),
+    LayerCase(
+        model="process.gaussian_plume",
+        case="threshold_never_reached",
+        capture="process_gaussian_plume.tsv",
+        block=6,
+        identified_by=("#label", "rural_d_never_above"),
+    ),
+    LayerCase(
+        model="process.gaussian_plume",
+        case="threshold_never_fallen_below",
+        capture="process_gaussian_plume.tsv",
+        block=7,
+        identified_by=("#label", "rural_d_never_below"),
+    ),
+    LayerCase(
+        model="process.gaussian_plume",
+        case="zero_emission_answers_zero",
+        capture="process_gaussian_plume.tsv",
+        block=8,
+        identified_by=("#label", "zero_emission"),
+    ),
+    # The dispersion screen's thirteen PR rows; its four SRK evidence rows and the
+    # class's zero-rate refusal are declared uncased.
+    LayerCase(
+        model="process.gas_dispersion",
+        case="methane_gaussian_plume",
+        capture="process_gas_dispersion.tsv",
+        block=0,
+        identified_by=("#label", "pr_methane_gaussian"),
+    ),
+    LayerCase(
+        model="process.gas_dispersion",
+        case="methane_sts0131_integral_endpoint",
+        capture="process_gas_dispersion.tsv",
+        block=1,
+        identified_by=("#label", "pr_methane_sts0131_integral"),
+    ),
+    LayerCase(
+        model="process.gas_dispersion",
+        case="methane_sts0131_cfd_endpoint",
+        capture="process_gas_dispersion.tsv",
+        block=2,
+        identified_by=("#label", "pr_methane_sts0131_cfd"),
+    ),
+    LayerCase(
+        model="process.gas_dispersion",
+        case="carbon_dioxide_dense_and_no_fuel",
+        capture="process_gas_dispersion.tsv",
+        block=3,
+        identified_by=("#label", "pr_co2_dense"),
+    ),
+    LayerCase(
+        model="process.gas_dispersion",
+        case="sour_gas_toxic_endpoint",
+        capture="process_gas_dispersion.tsv",
+        block=4,
+        identified_by=("#label", "pr_h2s_toxic_gaussian"),
+    ),
+    LayerCase(
+        model="process.gas_dispersion",
+        case="manual_lfl_override",
+        capture="process_gas_dispersion.tsv",
+        block=5,
+        identified_by=("#label", "pr_methane_manual_lfl"),
+    ),
+    LayerCase(
+        model="process.gas_dispersion",
+        case="forced_heavy_on_methane",
+        capture="process_gas_dispersion.tsv",
+        block=6,
+        identified_by=("#label", "pr_methane_forced_heavy"),
+    ),
+    LayerCase(
+        model="process.gas_dispersion",
+        case="forced_gaussian_on_carbon_dioxide",
+        capture="process_gas_dispersion.tsv",
+        block=7,
+        identified_by=("#label", "pr_co2_forced_gaussian"),
+    ),
+    LayerCase(
+        model="process.gas_dispersion",
+        case="benchmark_methane",
+        capture="process_gas_dispersion.tsv",
+        block=8,
+        identified_by=("#label", "pr_benchmark_methane"),
+    ),
+    LayerCase(
+        model="process.gas_dispersion",
+        case="benchmark_carbon_dioxide_toxic",
+        capture="process_gas_dispersion.tsv",
+        block=9,
+        identified_by=("#label", "pr_benchmark_co2_toxic"),
+    ),
+    LayerCase(
+        model="process.gas_dispersion",
+        case="benchmark_propane_dense",
+        capture="process_gas_dispersion.tsv",
+        block=10,
+        identified_by=("#label", "pr_benchmark_propane"),
+    ),
+    LayerCase(
+        model="process.gas_dispersion",
+        case="benchmark_sour_gas_toxic",
+        capture="process_gas_dispersion.tsv",
+        block=11,
+        identified_by=("#label", "pr_benchmark_h2s_forced_gaussian"),
+    ),
+    LayerCase(
+        model="process.gas_dispersion",
+        case="source_term_peak_rate",
+        capture="process_gas_dispersion.tsv",
+        block=12,
+        identified_by=("#label", "pr_source_term_rate"),
+    ),
+    # The probit's nine factory and stated-probit rows; the non-positive-dose guard is
+    # uncased because the port refuses it.
+    LayerCase(
+        model="process.probit",
+        case="custom_triple_at_dose_one",
+        capture="process_probit.tsv",
+        block=0,
+        identified_by=("#label", "custom_five_at_dose_one"),
+    ),
+    LayerCase(
+        model="process.probit",
+        case="probability_at_a_stated_probit",
+        capture="process_probit.tsv",
+        block=1,
+        identified_by=("#label", "custom_five_from_probit"),
+    ),
+    LayerCase(
+        model="process.probit",
+        case="h2s_low_dose",
+        capture="process_probit.tsv",
+        block=2,
+        identified_by=("#label", "h2s_low"),
+    ),
+    LayerCase(
+        model="process.probit",
+        case="h2s_high_dose",
+        capture="process_probit.tsv",
+        block=3,
+        identified_by=("#label", "h2s_high"),
+    ),
+    LayerCase(
+        model="process.probit",
+        case="thermal_low_dose",
+        capture="process_probit.tsv",
+        block=4,
+        identified_by=("#label", "thermal_low"),
+    ),
+    LayerCase(
+        model="process.probit",
+        case="thermal_high_dose",
+        capture="process_probit.tsv",
+        block=5,
+        identified_by=("#label", "thermal_high"),
+    ),
+    LayerCase(
+        model="process.probit",
+        case="chlorine_sample_dose",
+        capture="process_probit.tsv",
+        block=6,
+        identified_by=("#label", "chlorine_sample"),
+    ),
+    LayerCase(
+        model="process.probit",
+        case="ammonia_sample_dose",
+        capture="process_probit.tsv",
+        block=7,
+        identified_by=("#label", "ammonia_sample"),
+    ),
+    LayerCase(
+        model="process.probit",
+        case="blast_sample_dose",
+        capture="process_probit.tsv",
+        block=8,
+        identified_by=("#label", "blast_sample"),
     ),
     # The separator's capacity surface. **Seven of the capture's fifteen blocks are these
     # cases**, and the other eight are declared uncased: three PR rows the cases already
@@ -2887,6 +3236,13 @@ LAYER_CASES: tuple[LayerCase, ...] = (
 #: held to the `reference_pin_*` rows instead. Counting them here rather than leaving the
 #: block count open keeps the check exact: a probe row added without a case still fails.
 UNCASED_ROWS: dict[str, int] = {
+    # The dispersion capture's five: four SRK rows, the class's own tests' cubic kept as
+    # evidence beside the PR oracle, and the zero-rate refusal the port raises rather than
+    # reproduces.
+    "process_gas_dispersion.tsv": 5,
+    # The probit's one: the non-positive-dose guard, whose `-Infinity` is the measurement
+    # the refusal rests on.
+    "process_probit.tsv": 1,
     # The separator capacity capture's eight. **Three are the cases' own states under another
     # stated setting** - the vertical vessel at the default `0.8`, and the horizontal one at
     # `0.2` - kept as the measurement the design-liquid fraction moves a horizontal area by a

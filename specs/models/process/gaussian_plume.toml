@@ -1,0 +1,105 @@
+id = "process.gaussian_plume"
+name = "Gaussian plume dispersion"
+kind = "procedure"
+assumptions = [
+    "**the coefficients are Briggs's**: `sigma_y = a x / sqrt(1 + b x)` and `sigma_z = a x / (1 + b x)^c`, with the class's table selected on stability and terrain.",
+    "**`sigma_y`'s `{a, b}` are, rural then urban**: A `0.22/0.0001` and `0.32/0.0004`, B `0.16/0.0001` and `0.32/0.0004`, C `0.11/0.0001` and `0.22/0.0004`, D `0.08/0.0001` and `0.16/0.0004`.",
+    "**...and E `0.06/0.0001` and `0.11/0.0004`, F `0.04/0.0001` and `0.11/0.0004`.**",
+    "**`sigma_z`'s `{a, b, c}` are, rural then urban**: A `0.20/0/1` and `0.24/0.001/0.5`, B `0.12/0/1` and `0.24/0.001/0.5`, C `0.08/0.0002/0.5` and `0.20/0/1`.",
+    "**...D `0.06/0.0015/0.5` and `0.14/0.0003/0.5`, E `0.03/0.0003/1` and `0.08/0.00015/0.5`, F `0.016/0.0003/1` and `0.08/0.00015/0.5`.**",
+    "**the concentration is the two-image Gaussian**: `C = Q / (2 pi U sy sz) exp(-y^2 / 2 sy^2) [exp(-(z - H)^2 / 2 sz^2) + exp(-(z + H)^2 / 2 sz^2)]`, with `H` the effective stack height as stated.",
+    "**the class applies no plume rise, buoyancy, deposition or wind-direction rotation**, and a negative `z` is the second image's.",
+    "**the distance is a scan, not an inverse.** 200 log-spaced samples from `1` m to `100000` m, then 60 bisections with a `0.5` m break; `NaN` when the profile never reaches the target, `100000` when it never falls below.",
+    "**a non-positive distance or a zero emission answers zero**, the class's own guard, and the coefficients at that point are the formula's.",
+    "**the range block is the constructor's guards**: emission at least zero and wind above zero. A negative stack height is computed as given.",
+    "**a threshold must be positive.** The class answers `NaN` for it, which is an absence rather than a distance, and the port refuses.",
+]
+references = [
+    "Briggs, G. A. (1973). \"Diffusion estimation for small emissions.\" ATDL Contribution File No. 79, Oak Ridge.",
+    "US EPA (1995). User's Guide for the Industrial Source Complex (ISC3) Dispersion Models, Vol. II. EPA-454/R-99-005.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/safety/dispersion/GaussianPlume.java` is the port source.",
+    "`validation/neqsim/captures/process_gaussian_plume.tsv` - the class's own test states, the off-centre and elevated receptor, and the scan's two ends.",
+]
+[source]
+standard = "NeqSim process/safety/dispersion/GaussianPlume.java"
+edition = "Its `sigmaY`, `sigmaZ`, `concentration`, `centerlineGroundConcentration` and `distanceToConcentration`."
+[algorithm]
+scheme = "briggs_pasquill_gifford_two_image_gaussian"
+initialisation = "log_spaced_scan_from_one_metre"
+convergence = "absolute"
+tolerance = 0.5
+max_iterations = 60
+[inputs]
+[inputs.emission_rate]
+unit = "kg/s"
+description = "the continuous source strength, `Q`.\n"
+[inputs.effective_stack_height]
+unit = "m"
+description = "the effective release height, stack plus the buoyancy rise the caller has already assessed; the class applies none.\n"
+[inputs.wind_speed]
+unit = "m/s"
+description = "the wind speed at the 10 m reference, `U`. It must be positive.\n"
+[inputs.stability]
+type = "enum"
+values = ["A", "B", "C", "D", "E", "F"]
+description = "the Pasquill stability class, which selects the coefficient row.\n"
+[inputs.terrain]
+type = "enum"
+values = ["rural", "urban"]
+description = "the terrain category, which selects the coefficient table.\n"
+[inputs.distance]
+unit = "m"
+description = "the downwind distance `x` at which the concentration is asked, and the scan's target when the distance to the threshold is asked.\n"
+[inputs.crosswind]
+unit = "m"
+description = "the crosswind offset `y` of the receptor from the centreline.\n"
+[inputs.height]
+unit = "m"
+description = "the receptor height `z` above the ground.\n"
+[inputs.threshold]
+unit = "kg/m**3"
+description = "the concentration whose downwind distance is asked, for example an LFL or a toxic threshold in mass concentration. It must be positive.\n"
+[outputs]
+[outputs.sigma_y]
+unit = "m"
+description = "the horizontal dispersion coefficient at `distance`.\n"
+[outputs.sigma_z]
+unit = "m"
+description = "the vertical dispersion coefficient at `distance`.\n"
+[outputs.concentration]
+unit = "kg/m**3"
+description = "the concentration at (`distance`, `crosswind`, `height`); zero on a non-positive distance or a zero emission.\n"
+[outputs.centerline_ground_concentration]
+unit = "kg/m**3"
+description = "the concentration at (`distance`, `0`, `0`), the profile the scan follows.\n"
+[outputs.distance_to_threshold]
+unit = "m"
+optional = true
+description = "the downwind distance at which the ground centreline concentration falls to `threshold`. **Absent when the scan's profile never reaches it**, and `100000.0` when the profile never falls below it, which is the scan's end rather than a physical distance.\n"
+[[valid_range]]
+quantity = "emission_rate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "the class's constructor refuses a negative emission rate; a zero emission answers zero concentration"
+[[valid_range]]
+quantity = "wind_speed"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class's constructor refuses a non-positive wind speed, and the concentration divides by it"
+[[valid_range]]
+quantity = "distance"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a downwind distance cannot be negative"
+[[valid_range]]
+quantity = "threshold"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class answers NaN for a non-positive threshold, which is a refusal rather than a distance"
+[implementations]
+python = "azoth.process.gaussian_plume"
+rust = "azoth_process::gaussian_plume"
