@@ -1,0 +1,110 @@
+id = "process.jet_fire"
+name = "Jet fire radiation"
+kind = "procedure"
+assumptions = [
+    "**the source is a point at the flame centre**: `Q = eta m_dot dHc` and the incident flux is `Q tau / (4 pi d^2)`, the class's API 521 / Mudan-Croce model. Flame length, tilt and shape do not enter.",
+    "**the transmissivity is Wayne's simplified correlation**: `pw = rh 1700`, `xpw = pw max(d, 1)`, `tau = 1.006 - 0.01171 log10(xpw) - 0.02368 log10(xpw)^2`, clamped to `[0, 1]`.",
+    "**the inverse is a fixed point, not a closed form**: an inverse-square first guess, then at most 25 iterations of `r = sqrt(Q tau(r) / (4 pi target))` with a `0.01` m break. The class's 25th iterate is published when the break is not reached.",
+    "**a distance below one metre evaluates the transmissivity at one metre**, the correlation's own `max(d, 1)`; the flux's `1/d^2` still applies at the stated distance.",
+    "**heat of combustion is in J/kg and crosses unconverted.** Neither the vocabulary nor `uom` carries a mass-specific energy unit, so it is declared dimensionless here, as the thermal calculations declare latent heat.",
+    "**a non-positive distance is refused**: the class answers `Infinity` there. **A non-positive target flux is refused**: the class throws `IllegalArgumentException`.",
+    "**relative humidity is the class's setter, which clamps to `[0, 1]`.** The port refuses a stated value outside `(0, 1]`: the clamp's zero makes the correlation `NaN`, which the class admits and the port does not publish. Absent is `0.5`.",
+    "**the constructor's guards are the ranges**: mass flow at least zero, heat of combustion above zero, and the radiative fraction in `[0, 1]`.",
+]
+references = [
+    "API STD 521 (2021). Pressure-relieving and Depressuring Systems, section 4.6, radiation.",
+    "Mudan, K. S.; Croce, P. A. (1988). \"Fire Hazard Calculations for Large Open Hydrocarbon Fires.\" SFPE Handbook of Fire Protection Engineering.",
+    "Wayne, F. D. (1991). \"An Economical Formula for Calculating Atmospheric Infrared Transmissivities.\" Journal of Loss Prevention in the Process Industries 4, 86-89.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/safety/fire/JetFireModel.java` is the port source.",
+    "`validation/neqsim/captures/process_jet_fire.tsv` - the class's own test state, the humidity range, the sub-metre floor, the small target and the zero-distance and zero-target guards.",
+]
+[source]
+standard = "NeqSim process/safety/fire/JetFireModel.java"
+edition = "Its `totalRadiativePowerW`, `transmissivity`, `incidentHeatFlux` and `distanceToFlux`."
+[algorithm]
+scheme = "api521_point_source_wayne_transmissivity"
+initialisation = "inverse_square_first_guess"
+convergence = "absolute"
+tolerance = 0.01
+max_iterations = 25
+[inputs]
+[inputs.mass_flow]
+unit = "kg/s"
+description = "the fuel mass flow burning at the jet, at least zero.\n"
+[inputs.heat_of_combustion]
+unit = "dimensionless"
+description = "the lower heating value in J/kg, above zero. Declared dimensionless because no vocabulary unit expresses a mass-specific energy.\n"
+[inputs.radiative_fraction]
+unit = "dimensionless"
+description = "the fraction of the combustion heat radiated, in `[0, 1]`; 0.20 is the class's natural-gas example.\n"
+[inputs.relative_humidity]
+unit = "dimensionless"
+optional = true
+description = "the ambient relative humidity in `(0, 1]`, which the transmissivity reads. **Absent is `0.5`.** A stated zero is refused: the class clamps it to zero and answers `NaN`.\n"
+[inputs.distance]
+unit = "m"
+optional = true
+description = "the distance from the flame centre at which the flux is asked. **Absent leaves `transmissivity` and `incident_heat_flux` absent**; a non-positive value is refused.\n"
+[inputs.target_flux]
+unit = "W/m**2"
+optional = true
+description = "the flux whose distance is solved for, e.g. 4000, 12500 or 37500. **Absent leaves `distance_to_flux` absent**; a non-positive target is refused.\n"
+[outputs]
+[outputs.total_radiative_power]
+unit = "W"
+description = "`eta m_dot dHc`, the total heat the jet radiates.\n"
+[outputs.transmissivity]
+unit = "dimensionless"
+optional = true
+description = "Wayne's `tau` at `distance`. Present only with `distance`.\n"
+[outputs.incident_heat_flux]
+unit = "W/m**2"
+optional = true
+description = "`Q tau / (4 pi d^2)` at `distance`. Present only with `distance`.\n"
+[outputs.distance_to_flux]
+unit = "m"
+optional = true
+description = "the fixed point of `Q tau(r) / (4 pi r^2) = target`, at the class's 25-iteration cap. Present only with `target_flux`.\n"
+[[valid_range]]
+quantity = "mass_flow"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "the class's constructor refuses a negative mass flow; a zero flow radiates nothing"
+[[valid_range]]
+quantity = "heat_of_combustion"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class's constructor refuses a non-positive heating value"
+[[valid_range]]
+quantity = "radiative_fraction"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "the class's constructor refuses a fraction outside [0, 1]"
+[[valid_range]]
+quantity = "relative_humidity"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "the class clamps to [0, 1] and answers NaN at zero, so the port refuses both the clamp and the NaN"
+[[valid_range]]
+quantity = "distance"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class answers an infinite flux at zero distance, which is not a published number"
+[[valid_range]]
+quantity = "target_flux"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class throws IllegalArgumentException for a non-positive target"
+[implementations]
+python = "azoth.process.jet_fire"
+rust = "azoth_process::jet_fire"

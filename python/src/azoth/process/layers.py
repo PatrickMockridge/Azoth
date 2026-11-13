@@ -1308,6 +1308,38 @@ def _gas_dispersion(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dumped
 
 
+def _jet_fire(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.jet_fire`'s layers, from the reference's own arithmetic.
+
+    The capture prints the default humidity as the string `default_0.5`; the model's own
+    absence is the same state, so the dumper states nothing for it.
+    """
+    from azoth.core.units import quantity
+    from azoth.process.reference.jet_fire import jet_fire as jet_fire_model
+
+    humidity = inputs.get("relative_humidity")
+    distance = inputs.get("distance")
+    target = inputs.get("target_flux")
+    result = jet_fire_model(
+        quantity(float(inputs["mass_flow"]), "kg/s"),
+        float(inputs["heat_of_combustion"]),
+        float(inputs["radiative_fraction"]),
+        relative_humidity=None if humidity is None else float(humidity),
+        distance=None if distance is None else quantity(float(distance), "m"),
+        target_flux=None if target is None else quantity(float(target), "W/m**2"),
+    )
+    dumped: dict[str, float] = {
+        "total_radiative_power_w": result.total_radiative_power.to("W").magnitude,
+    }
+    if result.transmissivity is not None:
+        dumped["transmissivity"] = result.transmissivity
+    if result.incident_heat_flux is not None:
+        dumped["incident_heat_flux_w_m2"] = result.incident_heat_flux.to("W/m**2").magnitude
+    if result.distance_to_flux is not None:
+        dumped["distance_to_flux_m"] = result.distance_to_flux.to("m").magnitude
+    return dumped
+
+
 def _probit(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.probit`'s layers, from the reference's own arithmetic.
 
@@ -1675,6 +1707,7 @@ DUMPERS: dict[str, Dumper] = {
     "process.leak_blowdown": _leak_blowdown,
     "process.gaussian_plume": _gaussian_plume,
     "process.gas_dispersion": _gas_dispersion,
+    "process.jet_fire": _jet_fire,
     "process.probit": _probit,
     "process.rate_based_packed_column": _rate_based_packed_column,
     "process.absorption_column": _absorption_column,
@@ -2222,6 +2255,58 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_gas_dispersion.tsv",
         block=12,
         identified_by=("#label", "pr_source_term_rate"),
+    ),
+    # The jet fire's seven reachable states; the zero-humidity NaN, the infinite
+    # zero-distance flux and the zero-target refusal are uncased because the port refuses
+    # each of them.
+    LayerCase(
+        model="process.jet_fire",
+        case="test_state_at_twenty_metres",
+        capture="process_jet_fire.tsv",
+        block=0,
+        identified_by=("#label", "jet_fire_test_20m"),
+    ),
+    LayerCase(
+        model="process.jet_fire",
+        case="test_state_at_eighty_metres",
+        capture="process_jet_fire.tsv",
+        block=1,
+        identified_by=("#label", "jet_fire_test_80m"),
+    ),
+    LayerCase(
+        model="process.jet_fire",
+        case="distance_to_twelve_point_five_kw",
+        capture="process_jet_fire.tsv",
+        block=2,
+        identified_by=("#label", "jet_fire_distance_12500"),
+    ),
+    LayerCase(
+        model="process.jet_fire",
+        case="humidity_half_at_fifty_metres",
+        capture="process_jet_fire.tsv",
+        block=4,
+        identified_by=("#label", "jet_fire_humidity_05"),
+    ),
+    LayerCase(
+        model="process.jet_fire",
+        case="saturated_at_fifty_metres",
+        capture="process_jet_fire.tsv",
+        block=5,
+        identified_by=("#label", "jet_fire_humidity_1"),
+    ),
+    LayerCase(
+        model="process.jet_fire",
+        case="inside_one_metre",
+        capture="process_jet_fire.tsv",
+        block=6,
+        identified_by=("#label", "jet_fire_inside_one_metre"),
+    ),
+    LayerCase(
+        model="process.jet_fire",
+        case="small_target_reaches_the_cap",
+        capture="process_jet_fire.tsv",
+        block=7,
+        identified_by=("#label", "jet_fire_small_target"),
     ),
     # The probit's nine factory and stated-probit rows; the non-positive-dose guard is
     # uncased because the port refuses it.
@@ -3240,6 +3325,9 @@ UNCASED_ROWS: dict[str, int] = {
     # evidence beside the PR oracle, and the zero-rate refusal the port raises rather than
     # reproduces.
     "process_gas_dispersion.tsv": 5,
+    # The jet fire's three: the zero-humidity `NaN`, the infinite zero-distance flux and the
+    # zero-target refusal, each the measurement its guard rests on.
+    "process_jet_fire.tsv": 3,
     # The probit's one: the non-positive-dose guard, whose `-Infinity` is the measurement
     # the refusal rests on.
     "process_probit.tsv": 1,

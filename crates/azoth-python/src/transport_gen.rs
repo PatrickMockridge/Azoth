@@ -17917,6 +17917,66 @@ impl From<&azoth_process::models::hem_release::HemReleaseResult> for PyHemReleas
         }
     }
 }
+/// Result of `process.jet_fire`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "JetFireResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyJetFireResult {
+    /// `eta m_dot dHc`, the total heat the jet radiates.
+    #[pyo3(get)]
+    pub total_radiative_power: PyQty,
+    /// Wayne's `tau` at `distance`. Present only with `distance`.
+    #[pyo3(get)]
+    pub transmissivity: Option<f64>,
+    /// `Q tau / (4 pi d^2)` at `distance`. Present only with `distance`.
+    #[pyo3(get)]
+    pub incident_heat_flux: Option<PyQty>,
+    /// the fixed point of `Q tau(r) / (4 pi r^2) = target`, at the class's 25-iteration cap. Present only with `target_flux`.
+    #[pyo3(get)]
+    pub distance_to_flux: Option<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyJetFireResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "JetFireResult(total_radiative_power={:?}, transmissivity={:?}, incident_heat_flux={:?}, distance_to_flux={:?}, {} warning(s))",
+            self.total_radiative_power,
+            self.transmissivity,
+            self.incident_heat_flux,
+            self.distance_to_flux,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::jet_fire::JetFireResult> for PyJetFireResult {
+    fn from(r: &azoth_process::models::jet_fire::JetFireResult) -> Self {
+        Self {
+            total_radiative_power: PyQty {
+                magnitude_si: r.total_radiative_power.value,
+                unit: "W".to_string(),
+            },
+            transmissivity: r.transmissivity,
+            incident_heat_flux: r.incident_heat_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/m**2".to_string(),
+            }),
+            distance_to_flux: r.distance_to_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.leak_blowdown`, transported.
 #[pyclass(
     frozen,

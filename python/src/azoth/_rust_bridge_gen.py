@@ -142,6 +142,7 @@ from azoth.core.result import (
     IncrementalZoneRow,
     InterfacePropertiesResult,
     Iso6976Result,
+    JetFireResult,
     KComponent,
     KentEisenbergPhaseResult,
     KFactorsResult,
@@ -478,6 +479,7 @@ __all__ = [
     "incremental_zone_analysis",
     "interface_properties",
     "iso6976",
+    "jet_fire",
     "kent_eisenberg_phase",
     "kinetic_rate_law",
     "kinetics",
@@ -6594,6 +6596,26 @@ def hem_release(components: list[str], upstream_z: list[float], upstream_t: Q, u
         stations=tuple(HemReleaseStation(station=c.station, pressure=from_si(c.pressure.magnitude_si, c.pressure.unit), temperature=from_si(c.temperature.magnitude_si, c.temperature.unit), density=from_si(c.density.magnitude_si, c.density.unit), molar_enthalpy=from_si(c.molar_enthalpy.magnitude_si, c.molar_enthalpy.unit), molar_entropy=from_si(c.molar_entropy.magnitude_si, c.molar_entropy.unit), velocity=from_si(c.velocity.magnitude_si, c.velocity.unit), mass_flux=from_si(c.mass_flux.magnitude_si, c.mass_flux.unit), phase=c.phase, gas_mass_fraction=c.gas_mass_fraction) for c in result.stations),
         diagnostics=tuple(HemReleaseDiagnostic(code=c.code, message=c.message) for c in result.diagnostics),
         diagnostic_codes=tuple(result.diagnostic_codes),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def jet_fire(mass_flow: Q, heat_of_combustion: float, radiative_fraction: float, relative_humidity: float | None=None, distance: Q | None=None, target_flux: Q | None=None) -> JetFireResult:
+    """``process.jet_fire``, computed in Rust."""
+    spec = _models_gen.model("process.jet_fire")
+    result = _core.jet_fire(
+        input_to_si(spec, "mass_flow", mass_flow),
+        heat_of_combustion,
+        radiative_fraction,
+        None if relative_humidity is None else relative_humidity,
+        None if distance is None else input_to_si(spec, "distance", distance),
+        None if target_flux is None else input_to_si(spec, "target_flux", target_flux),
+    )
+    return JetFireResult(
+        total_radiative_power=from_si(result.total_radiative_power.magnitude_si, result.total_radiative_power.unit),
+        transmissivity=result.transmissivity,
+        incident_heat_flux=None if result.incident_heat_flux is None else from_si(result.incident_heat_flux.magnitude_si, result.incident_heat_flux.unit),
+        distance_to_flux=None if result.distance_to_flux is None else from_si(result.distance_to_flux.magnitude_si, result.distance_to_flux.unit),
         warnings=_warnings(result.warnings),
     )
 

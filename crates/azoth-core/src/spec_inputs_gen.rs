@@ -239,6 +239,7 @@
 //!   - specs/models/process/heat_exchanger.toml
 //!   - specs/models/process/heater.toml
 //!   - specs/models/process/hem_release.toml
+//!   - specs/models/process/jet_fire.toml
 //!   - specs/models/process/leak_blowdown.toml
 //!   - specs/models/process/manifold.toml
 //!   - specs/models/process/map_turbo_expander_compressor.toml
@@ -3416,6 +3417,12 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "dimensionless",
     ),
     ("process.hem_release", "back_pressure", "pressure"),
+    ("process.jet_fire", "mass_flow", "mass_rate"),
+    ("process.jet_fire", "heat_of_combustion", "dimensionless"),
+    ("process.jet_fire", "radiative_fraction", "dimensionless"),
+    ("process.jet_fire", "relative_humidity", "dimensionless"),
+    ("process.jet_fire", "distance", "length"),
+    ("process.jet_fire", "target_flux", "heat_flux_density"),
     ("process.leak_blowdown", "initial_z", "dimensionless"),
     (
         "process.leak_blowdown",

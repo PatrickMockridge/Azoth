@@ -6151,6 +6151,35 @@ pub fn hem_release(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Jet fire radiation.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (mass_flow, heat_of_combustion, radiative_fraction, relative_humidity, distance, target_flux))]
+#[pyo3(
+    text_signature = "(mass_flow, heat_of_combustion, radiative_fraction, relative_humidity, distance, target_flux)"
+)]
+pub fn jet_fire(
+    py: Python<'_>,
+    mass_flow: f64,
+    heat_of_combustion: f64,
+    radiative_fraction: f64,
+    relative_humidity: Option<f64>,
+    distance: Option<f64>,
+    target_flux: Option<f64>,
+) -> PyResult<crate::transport_gen::PyJetFireResult> {
+    azoth_process::models::jet_fire::jet_fire(
+        kilograms_per_second(mass_flow),
+        heat_of_combustion,
+        radiative_fraction,
+        relative_humidity,
+        distance.map(meters),
+        target_flux.map(watts_per_square_meter),
+    )
+    .map(|r| crate::transport_gen::PyJetFireResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Vessel leak blowdown.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

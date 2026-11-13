@@ -343,6 +343,7 @@ Five sections, and the difference between them is the point:
 - [`process.heat_exchanger`](./process/heat_exchanger.md) — Heat exchanger
 - [`process.heater`](./process/heater.md) — Heater
 - [`process.hem_release`](./process/hem_release.md) — Homogeneous-equilibrium orifice release
+- [`process.jet_fire`](./process/jet_fire.md) — Jet fire radiation
 - [`process.leak_blowdown`](./process/leak_blowdown.md) — Vessel leak blowdown
 - [`process.manifold`](./process/manifold.md) — Manifold
 - [`process.map_turbo_expander_compressor`](./process/map_turbo_expander_compressor.md) — Map turbo-expander compressor

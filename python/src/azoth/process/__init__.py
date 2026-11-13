@@ -36,6 +36,7 @@ from azoth.core.result import (
     HeaterResult,
     HeatExchangerResult,
     HemReleaseResult,
+    JetFireResult,
     LeakBlowdownResult,
     ManifoldResult,
     MapTurboExpanderResult,
@@ -98,6 +99,7 @@ __all__ = [
     "heat_exchanger",
     "heater",
     "hem_release",
+    "jet_fire",
     "leak_blowdown",
     "load_flowsheet",
     "manifold",
@@ -144,6 +146,7 @@ _FILTER = "process.filter"
 _FLARE = "process.flare"
 _HEATER = "process.heater"
 _HEM_RELEASE = "process.hem_release"
+_JET_FIRE = "process.jet_fire"
 _LEAK_BLOWDOWN = "process.leak_blowdown"
 _GAS_DISPERSION = "process.gas_dispersion"
 _GAUSSIAN_PLUME = "process.gaussian_plume"
@@ -2103,6 +2106,33 @@ def hem_release(
         diameter=diameter,
         discharge_coefficient=discharge_coefficient,
         back_pressure=back_pressure,
+    )
+
+
+def jet_fire(
+    mass_flow: Q,
+    heat_of_combustion: float,
+    radiative_fraction: float,
+    relative_humidity: float | None = None,
+    distance: Q | None = None,
+    target_flux: Q | None = None,
+) -> JetFireResult:
+    """The point-source jet-fire radiation at one distance, or the distance to a target flux.
+
+    ``Q = eta m_dot dHc`` and the incident flux ``Q tau / (4 pi d^2)`` over Wayne's
+    transmissivity. **A non-positive distance, target or humidity is refused**: the class
+    answers ``Infinity`` at zero distance, throws on a zero target, and answers ``NaN`` at
+    zero humidity.
+
+    See :func:`azoth.process.reference.jet_fire`.
+    """
+    return resolve(_JET_FIRE)(  # type: ignore[no-any-return]
+        mass_flow=mass_flow,
+        heat_of_combustion=heat_of_combustion,
+        radiative_fraction=radiative_fraction,
+        relative_humidity=relative_humidity,
+        distance=distance,
+        target_flux=target_flux,
     )
 
 

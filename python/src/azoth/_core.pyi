@@ -3358,6 +3358,14 @@ class HemReleaseResult:
     warnings: list[Warning]
 
 @final
+class JetFireResult:
+    total_radiative_power: Qty
+    transmissivity: float | None
+    incident_heat_flux: Qty | None
+    distance_to_flux: Qty | None
+    warnings: list[Warning]
+
+@final
 class LeakBlowdownResult:
     status: str
     scenario_name: str
@@ -6655,6 +6663,14 @@ def hem_release(
     discharge_coefficient: float,
     back_pressure: float,
 ) -> HemReleaseResult: ...
+def jet_fire(
+    mass_flow: float,
+    heat_of_combustion: float,
+    radiative_fraction: float,
+    relative_humidity: float | None = None,
+    distance: float | None = None,
+    target_flux: float | None = None,
+) -> JetFireResult: ...
 def leak_blowdown(
     components: list[str],
     initial_z: list[float],

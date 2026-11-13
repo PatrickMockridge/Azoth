@@ -7226,6 +7226,28 @@ class HemReleaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class JetFireResult(_HasWarnings):
+    """Result of ``process.jet_fire``."""
+
+    CALC_ID: ClassVar[str] = "process.jet_fire"
+
+    #: `eta m_dot dHc`, the total heat the jet radiates.
+    total_radiative_power: Q
+
+    #: Wayne's `tau` at `distance`. Present only with `distance`.
+    transmissivity: float | None
+
+    #: `Q tau / (4 pi d^2)` at `distance`. Present only with `distance`.
+    incident_heat_flux: Q | None
+
+    #: the fixed point of `Q tau(r) / (4 pi r^2) = target`, at the class's 25-iteration cap. Present only with `target_flux`.
+    distance_to_flux: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class LeakBlowdownResult(_HasWarnings):
     """Result of ``process.leak_blowdown``."""
 

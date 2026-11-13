@@ -2633,6 +2633,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 10,
         "tests_skipped": 0,
     },
+    'process.jet_fire': {
+        "calc_id": 'process.jet_fire',
+        "name": 'Jet fire radiation',
+        "spec": {'path': 'specs/models/process/jet_fire.toml', 'sha256': 'a4bd2b0451ce5b67615cfc94884bcc722f70bd795f0df38753349160487f8697'},
+        "code": [{'path': 'python/src/azoth/process/reference/jet_fire.py', 'sha256': '175e271291163ff78f968e755ebe8030c39c6dec1fa256a69ef015322a309ac7'}, {'path': 'crates/azoth-process/src/models/jet_fire.rs', 'sha256': '74e7e3bc60b6635e641050e7a7126dcf2e39cb38593a7d81e105126c47cba509'}],
+        "source": 'NeqSim process/safety/fire/JetFireModel.java',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 7,
+        "tests_skipped": 0,
+    },
     'process.leak_blowdown': {
         "calc_id": 'process.leak_blowdown',
         "name": 'Vessel leak blowdown',

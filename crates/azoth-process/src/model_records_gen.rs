@@ -28,6 +28,7 @@ use crate::models::gibbs_reactor::GibbsReactorResult;
 use crate::models::heat_exchanger::HeatExchangerResult;
 use crate::models::heater::HeaterResult;
 use crate::models::hem_release::HemReleaseResult;
+use crate::models::jet_fire::JetFireResult;
 use crate::models::leak_blowdown::LeakBlowdownResult;
 use crate::models::manifold::ManifoldResult;
 use crate::models::map_turbo_expander_compressor::MapTurboExpanderResult;
@@ -756,6 +757,21 @@ impl CalcResult for HemReleaseResult {
         "stations",
         "diagnostics",
         "diagnostic_codes",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for JetFireResult {
+    const CALC_ID: &'static str = "process.jet_fire";
+    const FIELDS: &'static [&'static str] = &[
+        "total_radiative_power",
+        "transmissivity",
+        "incident_heat_flux",
+        "distance_to_flux",
         "warnings",
     ];
 
