@@ -672,6 +672,10 @@ public class ProcessProbe {
           + " message=" + check.getMessage());
     }
 
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3=" + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("mass_flow_kg_per_hr=" + inlet.getFlowRate("kg/hr"));
+    System.out.println("inlet_number_of_phases=" + inlet.getThermoSystem().getNumberOfPhases());
     print("inlet", inlet);
     print("outlet", pump.getOutletStream());
     System.out.println("power_kW=" + pump.getPower("kW"));
@@ -3657,6 +3661,10 @@ public class ProcessProbe {
     System.out.println("module_width_m=" + design.getModuleWidth());
     System.out.println("module_height_m=" + design.getModuleHeight());
 
+    System.out.println("inlet_m3_per_hr=" + inlet.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3=" + inlet.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("mass_flow_kg_per_hr=" + inlet.getFlowRate("kg/hr"));
+    System.out.println("inlet_number_of_phases=" + inlet.getThermoSystem().getNumberOfPhases());
     print("inlet", inlet);
     print("outlet", expander.getOutletStream());
     System.out.println("power_kW=" + expander.getPower("kW"));

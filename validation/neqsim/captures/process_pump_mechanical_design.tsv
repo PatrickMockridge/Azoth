@@ -83,6 +83,10 @@ check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement
 check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
 check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
 check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type OH2 requires purchaser selection
+inlet_m3_per_hr=0.3397720841943109
+inlet_density_kg_per_m3=615.8328177436053
+mass_flow_kg_per_hr=209.2428
+inlet_number_of_phases=1
 inlet_n=1.0
 inlet_P=5.0
 inlet_T=250.0
@@ -182,6 +186,10 @@ check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement
 check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
 check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
 check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type OH2 requires purchaser selection
+inlet_m3_per_hr=0.3397720841943109
+inlet_density_kg_per_m3=615.8328177436053
+mass_flow_kg_per_hr=209.2428
+inlet_number_of_phases=1
 inlet_n=1.0
 inlet_P=5.0
 inlet_T=250.0
@@ -281,6 +289,10 @@ check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement
 check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
 check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
 check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type BB3 requires purchaser selection
+inlet_m3_per_hr=182.02577425673505
+inlet_density_kg_per_m3=989.025973574942
+mass_flow_kg_per_hr=180028.2186
+inlet_number_of_phases=1
 inlet_n=2775.9
 inlet_P=1.0
 inlet_T=293.15
@@ -380,6 +392,10 @@ check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement
 check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
 check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
 check pump-type status=PASS actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Selected construction type OH2
+inlet_m3_per_hr=0.3397720841943109
+inlet_density_kg_per_m3=615.8328177436053
+mass_flow_kg_per_hr=209.2428
+inlet_number_of_phases=1
 inlet_n=1.0
 inlet_P=5.0
 inlet_T=250.0
@@ -480,6 +496,10 @@ check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=C
 check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
 check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type OH2 requires purchaser selection
 check standard-scope status=WARNING actual=NaN limit=NaN unit= requirement=Sealless pump construction requires the applicable sealless-pump standard message=Magnetic-drive and canned-motor pumps are outside API 610 scope
+inlet_m3_per_hr=0.3397720841943109
+inlet_density_kg_per_m3=615.8328177436053
+mass_flow_kg_per_hr=209.2428
+inlet_number_of_phases=1
 inlet_n=1.0
 inlet_P=5.0
 inlet_T=250.0
@@ -579,6 +599,10 @@ check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement
 check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
 check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
 check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type OH2 requires purchaser selection
+inlet_m3_per_hr=NaN
+inlet_density_kg_per_m3=0.0
+mass_flow_kg_per_hr=0.0
+inlet_number_of_phases=2
 inlet_n=0.0
 inlet_P=5.0
 inlet_T=250.0
@@ -678,6 +702,10 @@ check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement
 check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
 check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
 check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type OH2 requires purchaser selection
+inlet_m3_per_hr=4044.3831677560142
+inlet_density_kg_per_m3=989.0259735749422
+mass_flow_kg_per_hr=4000000.000000001
+inlet_number_of_phases=1
 inlet_n=61676.9975637586
 inlet_P=1.0
 inlet_T=293.15
@@ -777,6 +805,10 @@ check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement
 check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
 check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
 check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type OH2 requires purchaser selection
+inlet_m3_per_hr=40.4939714727463
+inlet_density_kg_per_m3=985.3318543194492
+mass_flow_kg_per_hr=39899.99999999999
+inlet_number_of_phases=1
 inlet_n=615.228050698492
 inlet_P=2.0
 inlet_T=298.15
