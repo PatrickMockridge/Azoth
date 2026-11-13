@@ -262,20 +262,22 @@ def test_the_template_can_be_generated_once_the_fluids_are_registered() -> None:
     assert rows[0]["n_ld"] == "30.0", "the template's own value was reformatted"
 
 
-def test_the_shipped_registry_is_still_all_placeholders() -> None:
+def test_the_shipped_registry_has_no_verified_rows() -> None:
     """The generator must not have quietly upgraded the repository's own data.
 
+    The installed registry is the pin's 23 cited NeqSim defaults plus one dummy;
+    a `verified` row would mean a licensed standard was transcribed into the tree.
     Nothing in this file writes to `data/` - every test works on rendered text -
-    but the failure this guards is the one the generator makes *possible*: run it
-    against a real data file and the placeholders are gone. A test asserting they
-    are still there is cheap, and it fails at the moment that matters.
+    but the failure this guards is the one the generator makes *possible*.
     """
-    statuses = {row["verify_status"] for row in data_rows(FITTINGS_CSV)}
-    assert statuses == {"estimated_dummy"}, (
-        f"data/fittings/crane_k_factors.csv is no longer all placeholders ({statuses}). "
+    rows = data_rows(FITTINGS_CSV)
+    statuses = {row["verify_status"] for row in rows}
+    assert statuses == {"estimated_dummy", "unverified"}, (
+        f"data/fittings/crane_k_factors.csv statuses changed ({statuses}). "
         f"If you generated licensed data into it, restore it with "
         f"`git checkout -- data/` puts the shipped placeholders back."
     )
+    assert sum(row["verify_status"] == "verified" for row in rows) == 0
 
     for fluid in ("water", "air"):
         statuses = {

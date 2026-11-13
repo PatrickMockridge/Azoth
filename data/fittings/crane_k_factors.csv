@@ -3,12 +3,14 @@
 # ============================================================================
 #  WARNING: NOT EVERY VALUE IN THIS FILE IS A PLACEHOLDER.
 #
-#  23 rows are NeqSim equivalent-length defaults, cited but not independently
-#  confirmed. One row (`plug_valve_straightway`) is an estimated dummy with no
-#  NeqSim counterpart. None is a verified transcription of Crane TP-410: NeqSim
-#  itself states that its built-in values are engineering defaults, not a
-#  verified Crane table. Design use requires a licensed copy of TP-410 or
-#  manufacturer data and a named reviewer.
+#  Rows marked `verified` are checked against an authoritative copy. Rows marked
+#  `unverified` are cited but not independently confirmed. Rows marked
+#  `estimated_dummy` are placeholders. Which is which is in the verify_status
+#  column, and it is the column to read before trusting anything here.
+#
+#  IF YOU RAN tools/gen_user_data.py TO MAKE THIS FILE: do not commit it. Values
+#  that came from a standard you licensed are redistributed by committing them.
+#  `git checkout -- data/` brings the shipped placeholders back.
 # ============================================================================
 #
 # Numbers in these rows are rendered from their values, not from the text written in
@@ -24,7 +26,7 @@
 # verify_status: estimated_dummy (placeholder) | unverified (cited, unconfirmed) |
 # verified (confirmed against an authoritative copy).
 #
-# Rows in this file: 23 unverified, 1 estimated_dummy.
+# Rows in this file: 1 estimated_dummy, 23 unverified.
 #
 # Licence: CC-BY-4.0. This data is deliberately not AGPL: the reference
 # values are meant to be reusable and citable without a copyleft
