@@ -64,13 +64,13 @@ def test_a_stale_capture_is_reported(tmp_path: Path) -> None:
     tool: Any = generator()
     original = tool.CAPTURES
     # The value the first case records for `z_factor`, moved in the last digit.
-    moved = "0.105050962879418"
+    moved = "0.105050962879376"
     try:
         tool.CAPTURES = tmp_path
         for case in tool.CASES:
             text = (original / case.capture).read_text(encoding="utf-8")
             if case is tool.CASES[0]:
-                text = text.replace(moved, "0.105050962879419", 1)
+                text = text.replace(moved, "0.105050962879377", 1)
             (tmp_path / case.capture).write_text(text, encoding="utf-8")
         rendered = tool.render()
     finally:
