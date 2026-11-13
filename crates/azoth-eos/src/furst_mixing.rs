@@ -682,8 +682,8 @@ mod tests {
     ///
     /// The phase's own MSA and Born terms see the diameter derived from the fitted covolume
     /// - 4.3437 Å for Na+ against the table's 5.68. Feeding that here gives
-    /// `-6.156880962313295e-07` against the correct `-8.01997340082786e-07`, so this is the
-    /// sabotage check the model's cases are read against.
+    ///   `-6.156880962313295e-07` against the correct `-8.01997340082786e-07`, so this is the
+    ///   sabotage check the model's cases are read against.
     #[test]
     fn the_derived_diameter_is_the_wrong_one_for_this_correlation() {
         let mut wrong = components();
