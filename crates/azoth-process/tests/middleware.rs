@@ -722,8 +722,11 @@ fn the_generated_input_table_is_the_models_own() {
     // the two film coefficients and the area - 714 + 13 = 727. **And the cooler's twelve** -
     // the time step, the gate, the design mass flow and three temperatures, the design and
     // carried openings, the requested opening, the two time constants and the carried outlet -
-    // 727 + 12 = 739.
-    assert_eq!(walked, 739, "the inputs this test walked");
+    // 727 + 12 = 739. **And the rotating design's thirteen** - the expander's
+    // `mechanical_design` and the pump's twelve: the flag, the API 610 type, the seal type,
+    // the suction pressure, the furnished MAWP, the shutoff head, the NPSH factor, the
+    // minimum NPSH margin and the four operating-region fractions - 739 + 13 = 752.
+    assert_eq!(walked, 752, "the inputs this test walked");
 }
 
 /// **The generated output table is the spec files' own, read a second time.**
