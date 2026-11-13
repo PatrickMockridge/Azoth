@@ -104,7 +104,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **a component the database does not carry is still a variable**: a composition row, no element entry, an objective reading as zero, and a skipped update. That is `testComponentNotInDatabaseMolesUnchanged`.
 - **`elementNames` has seven entries for an eight-column table and the shift is reproduced.** The class's `Ar` balance is the file's `Na` column; its `Z` balance is the file's `Ar` column.
 - **the eighth column is a charge and no loop reaches it: the solve does not balance charge.** `OH-` is -1 and `SO4--` is -2 in the file, and `elements[7]` is read by nothing.
-- **the class's `Z` balance is zero on every row**, so `findActiveElements` never activates it and its Lagrange multiplier is never solved for.
+- **the class's `Z` balance reads the file's `Ar` column**, which at this pin carries argon's count - so a feed containing argon activates that row, under the class's `Z` name. The eighth column is still the charge and is still unread.
 - **the convergence test is on the undamped step.** `deltaXNorm` is the norm of `-J^-1 F` before `damping_composition` is applied, so the test and the step disagree about scale.
 - **`min_iterations` is a floor and it bites.** Three of the capture's six rows stop at exactly 100, the first pass where `iteration >= min_iterations` holds.
 - **reaching `max_iterations` returns success.** `converged` is set from the tolerance, so a capped run reports false while the method returns true; both are carried.

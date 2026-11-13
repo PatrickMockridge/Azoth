@@ -324,6 +324,7 @@ pub fn reactive_phase_equilibrium(
             "T" => Some(temperature),
             "tolerance" => Some(tolerance),
             "max_iterations" => Some(f64::from(max_iterations)),
+            "phase_moles" => Some(phase_moles),
             _ => None,
         },
         &mut warnings,

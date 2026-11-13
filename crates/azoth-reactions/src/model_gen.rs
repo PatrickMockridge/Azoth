@@ -1125,6 +1125,21 @@ static REACTIVE_PHASE_EQUILIBRIUM_CHECKS: &[SpecCheck] = &[
             rationale: "the solve runs at least two passes whatever the error, so a cap below two is not a cap this honours",
         },
     },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "phase_moles",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the phase's total moles; a phase holding material cannot have zero as its total",
+        },
+    },
 ];
 
 static REACTIVE_PHASE_EQUILIBRIUM_CASES: &[TestCase] = &[

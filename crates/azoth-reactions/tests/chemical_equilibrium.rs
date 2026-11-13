@@ -235,15 +235,12 @@ fn a_matrix_with_the_wrong_width_is_refused() {
 ///   on this state, and a one-ulp change to an input moves the answer `6.9e-10`, so an
 ///   amplification of about `4e6` is what the matrix does - three to five orders of
 ///   magnitude below the `4.2e-5` the port is away from NeqSim by;
-/// * the **largest single contributor is the fixed activity vector**, which
-///   `specs/models/reactions/chemical_equilibrium.toml` already records as a divergence:
+/// * the **whole gap is the fixed activity vector**, which
+///   `specs/models/reactions/chemical_equilibrium.toml` records as a divergence:
 ///   `ChemicalEquilibrium.solve` refreshes `logactivityVec` on every accepted step and this
 ///   port holds the caller's for the whole solve. Substituting the vector NeqSim has at its
-///   answer - which `PitzerReactionBasisProbe` now prints beside the initial one - cuts the
-///   gap `8.3x` on CO2 and `7.5x` worst case;
-/// * **a residue of `5.0e-6 .. 7.7e-3` is left and conditioning does not explain it.** The
-///   next measurement that would split it is the activity vector at *this port's* answer,
-///   which is one probe round trip away.
+///   answer - which `PitzerReactionBasisProbe` prints beside the initial one - brings CO2 to
+///   `2.6e-11`, the conditioning floor itself.
 #[test]
 fn the_residue_is_the_fixed_activity_vector_and_not_the_conditioning() {
     let spec = model_gen::model(MODEL_ID).expect("the model is in its own table");
@@ -309,12 +306,12 @@ fn the_residue_is_the_fixed_activity_vector_and_not_the_conditioning() {
     let factor = initial[1] / fixed[1];
     assert!(factor > 5.0, "and that is an improvement of {factor}");
 
-    // **And the residue does not go to the kernels' own agreement**, so the vector is not
-    // the whole of it.
+    // **And the residue reaches the kernels' own agreement**, so the vector is the whole of
+    // it. This is the guard the previous version left: at the old pin a `5.0e-6` residue
+    // remained; at 118d9af substituting the converged vector lands on the floor.
     assert!(
-        fixed[1] > 1.0e-9,
-        "a residue remains: {} - if this ever reaches the conditioning's floor, the reason \
-         in the case file has been superseded and this test is the one that says so",
+        fixed[1] < 1.0e-9,
+        "the converged vector should leave no residue above the conditioning's floor: {}",
         fixed[1]
     );
 }

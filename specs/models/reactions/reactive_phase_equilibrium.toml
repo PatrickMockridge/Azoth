@@ -155,6 +155,12 @@ min = 2
 min_inclusive = true
 severity = "error"
 rationale = "the solve runs at least two passes whatever the error, so a cap below two is not a cap this honours\n"
+[[valid_range]]
+quantity = "phase_moles"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the phase's total moles; a phase holding material cannot have zero as its total\n"
 [implementations]
 python = "azoth.reactions.reactive_phase_equilibrium"
 rust = "azoth_reactions::reactive_phase_equilibrium"

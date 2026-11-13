@@ -17,10 +17,10 @@
 //!   `OH-` is `-1` and `SO4--` is `-2`.
 //! * The class names only seven of them. `elementNames` is
 //!   `{"O","N","C","H","S","Ar","Z"}`, so its `Ar` balance reads the file's **`Na`**
-//!   column and its `Z` balance reads the file's **`Ar`** column - which is zero on all 79
-//!   rows, so that balance row is never active and its Lagrange multiplier is never solved
-//!   for. The charge is read into `elements[7]` and no loop reaches it: **the solve does
-//!   not balance charge**.
+//!   column and its `Z` balance reads the file's **`Ar`** column. At this pin the `Ar`
+//!   column carries argon's atom count (`1` on the argon row and `0` everywhere else), so
+//!   the class's `Z` row is active for a feed containing argon. The charge is read into
+//!   `elements[7]` and no loop reaches it: **the solve does not balance charge**.
 //! * `calculateJ`'s javadoc and its code disagree on the sign of three terms. The code is
 //!   what is ported; see [`GibbsSpecies::j_term`].
 
@@ -92,7 +92,7 @@ pub struct GibbsSpecies {
     pub gf298: f64,
     /// The standard molar entropy at 298.15 K, J/(mol·K).
     pub sf298: f64,
-    /// The two polynomials, or `None` for the 34 of the 49 species the coefficient file
+    /// The two polynomials, or `None` for the 35 of the 50 species the coefficient file
     /// does not carry - which is the class's `Double.isNaN` test for its fallback branch.
     pub polynomials: Option<Polynomials>,
 }
@@ -384,7 +384,7 @@ mod tests {
     #[test]
     fn the_shipped_table_is_the_size_the_manifest_records() {
         let database = GibbsDatabase::shipped().expect("the shipped tables load");
-        assert_eq!(database.len(), 49, "the compiled species table");
+        assert_eq!(database.len(), 50, "the compiled species table");
         let with_polynomials = database
             .species()
             .iter()
@@ -397,36 +397,39 @@ mod tests {
     }
 
     /// **The two things the source table gets wrong are reproduced, and this is where
-    /// they are pinned.** `argon` carries its atom count in the column the file labels
-    /// `Na`; `OH-` carries a charge of `-1` in the eighth; and the class's names for the
-    /// last two balances are shifted by one against the file's columns.
+    /// they are pinned.** `argon` carries its atom count in the file's `Ar` column, which
+    /// the class names `Z`; `OH-` carries a charge of `-1` in the eighth; and the class's
+    /// names for the last two balances are shifted by one against the file's columns.
     #[test]
     fn the_element_columns_say_what_the_class_reads_them_as() {
         let database = GibbsDatabase::shipped().expect("the shipped tables load");
 
         let argon = database.get("argon").expect("argon is a row");
-        assert_eq!(argon.elements, [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]);
-        // The class's `Ar` balance - index 5 - is the file's `Na` column, and that is
+        assert_eq!(argon.elements, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]);
+        // The class's `Ar` balance - index 5 - is the file's `Na` column, which is zero
+        // on the argon row.
+        assert_eq!(argon.balance_elements()[5], 0.0);
+        // The class's `Z` balance - index 6 - is the file's `Ar` column, and that is
         // where argon's count is.
-        assert_eq!(argon.balance_elements()[5], 1.0);
-        // The class's `Z` balance - index 6 - is the file's `Ar` column, which is zero
-        // on every row, so that balance row is never an active element.
-        assert_eq!(argon.balance_elements()[6], 0.0);
+        assert_eq!(argon.balance_elements()[6], 1.0);
 
         let hydroxide = database.get("OH-").expect("OH- is a row");
         assert_eq!(hydroxide.elements[7], -1.0, "the eighth column is a charge");
-        assert!(
-            database.species().iter().all(|s| s.elements[6] == 0.0),
-            "the file's `Ar` column is zero on every row"
-        );
+        let argon_rows: Vec<&str> = database
+            .species()
+            .iter()
+            .filter(|s| s.elements[6] != 0.0)
+            .map(|s| s.name.as_str())
+            .collect();
+        assert_eq!(argon_rows, ["argon"], "only argon fills the `Ar` column");
         assert_eq!(
             database
                 .species()
                 .iter()
                 .filter(|s| s.elements[7] != 0.0)
                 .count(),
-            9,
-            "the nine ions are the only rows carrying a charge"
+            10,
+            "the ten ions are the only rows carrying a charge"
         );
     }
 

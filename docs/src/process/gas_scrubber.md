@@ -38,7 +38,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `volume_safety_factor` | dimensionless | *Optional.* `getVolumetricDesignFactor` from the scrubber standard. **Absent is the class default's `1.1`** - not the separator's `1.0`. |
 | `design_liquid_level_fraction` | dimensionless | *Optional.* the horizontal gas area's derating, `1 - f`; a vertical vessel ignores it. **Absent is `0.8`**, which is what the base class leaves after its own `calcDesign`. |
 | `max_operation_pressure` | Pa | *Optional.* `getMaxOperationPressure`, the pressure the ASME wall-thickness formula divides by. **Absent is `100` bara.** |
-| `allowable_stress` | Pa | *Optional.* the material plate standard's allowable stress. **Absent is `425` MPa.** |
+| `allowable_stress` | Pa | *Optional.* the material plate standard's allowable stress. **Absent is `95.147650602` MPa.** |
 | `joint_efficiency` | dimensionless | *Optional.* the plate joint-efficiency factor. **Absent is `1.0`.** |
 | `corrosion_allowance` | mm | *Optional.* the corrosion allowance the wall thickness adds. **Absent is `0`.** |
 
@@ -119,7 +119,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)`, so accepting one would let a case hand over a state that does not exist.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
 - **the mechanical design is a second sizing machine**: the separator's `calcDesign` runs first on the separator standard's `1.0` safety, then this subclass re-sizes at the scrubber standard's `1.1`, `Fg = 1`, `length = 5 d` and a module `2 d` high.
-- **the design basis is declared as inputs at the standards' own values**: volume safety `1.1`, the `100` bara maximum operation pressure, `425` MPa allowable stress, joint efficiency `1.0` and no corrosion allowance. The levels and nozzle formulas are the separator's.
+- **the design basis is declared as inputs at the standards' own values**: volume safety `1.1`, the `100` bara maximum operation pressure, `95.147650602` MPa allowable stress, joint efficiency `1.0` and no corrosion allowance. The levels and nozzle formulas are the separator's.
 - NeqSim's `GasScrubber` also carries a mesh pad, vane pack and cyclone surface, and a `runTransient`. **None is here**: `calcDesign` sets none of them, and the capture prints them at their absent defaults.
 
 ## Cases

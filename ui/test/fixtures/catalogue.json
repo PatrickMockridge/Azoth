@@ -348,7 +348,7 @@
       ],
       "provenance": {
         "python_sha256": "191c4adf63171ce844a85801e420a7f89c45ff7547737cc6d647cebbdd1b1103",
-        "rust_sha256": "2fa3874e023d336589617fdd998ce644bd717cd8c38da0e9834dd7a48767caf4",
+        "rust_sha256": "d1eb7f4acb1e4dcd4cbb9ef578c75ee67485ab741343a957df9f1ff3c21612b3",
         "spec_sha256": "54515faa5785f9ae483f44471e23dda67a65927781fc236f90c46424c5929290",
         "tests_active": 5,
         "tests_skipped": 0,
@@ -776,7 +776,7 @@
       "provenance": {
         "python_sha256": "577d1a0845bb250b11fa95e5d62a762c0f805784fb108e9c810c34e4b6d42df2",
         "rust_sha256": "5874b8b22a30f758db9cf5654a71bccdf557b6dbac385bce1829f0ed2aed30bf",
-        "spec_sha256": "31b9a3c881116378bd725f15bfc288ef2b46b2cb584d47353e35d8c2a521ee23",
+        "spec_sha256": "48c4b4fc8d57cee51ccdc904071f30c0eefcaf9c18ca0360d31e663ecf712045",
         "tests_active": 8,
         "tests_skipped": 0,
         "validation_cases": 0,
@@ -1869,7 +1869,7 @@
       "provenance": {
         "python_sha256": "8a7e3676204ee9cb6021c76c799b19644472216854aa0b04586c6485aae39f26",
         "rust_sha256": "aaee715f2336acdeb70eb2a9457708776683864a5175b3b3cc1d1fb0eb36ef29",
-        "spec_sha256": "63ae03237d9936928fa7a6709376acf453007a6af3f679b4a0b6c35c31e06263",
+        "spec_sha256": "3655e83efe30fbfa581fab855162d92ddb1d5ab1c0eb950207e00c537888c526",
         "tests_active": 16,
         "tests_skipped": 0,
         "validation_cases": 0,
@@ -2320,7 +2320,7 @@
       "provenance": {
         "python_sha256": "887f227fb5c4b7fef5104ce5763a752af3cd348c2c1016978ebdbc473713c13f",
         "rust_sha256": "bc4e233a3cda2f7e60b1e7088cbd3f2b9bc8c4d0a5ce60b9993f5dc6232a85b1",
-        "spec_sha256": "396dfb48afb66893107006c19d3af4cf4881de0f754c3c41683103aa0b4d7d36",
+        "spec_sha256": "f61b872c74d3e6b007bab16a60259e31dbd5cf3252c52442ae515f043fac3154",
         "tests_active": 8,
         "tests_skipped": 0,
         "validation_cases": 0,
@@ -2610,7 +2610,7 @@
       "provenance": {
         "python_sha256": "0d4d5d669850e72327db539f9a078c3c4ae7067539d48879c11acb1bdfcc30a4",
         "rust_sha256": "19546d7abfa89c58c14730c132e8309a468c4857caea5580e84927e68b0a601e",
-        "spec_sha256": "4c79a5f29c91d57ffd53866aa13dca019f666180c9c5c404f9ecb442db324595",
+        "spec_sha256": "8c4b1659b36678ef90dabef9576a2add2efabac3e9b8388fa2ce3a97a0ec5d09",
         "tests_active": 20,
         "tests_skipped": 0,
         "validation_cases": 0,
@@ -3041,7 +3041,7 @@
       "provenance": {
         "python_sha256": "b1969b3d3e93432587ed910c557eec2ebb22fc40908bc8d4f32d4a5d37daafd8",
         "rust_sha256": "bdd1c7f268a5825f545e9bdfa4e576c9526b8717837e91e17fbdc55282aa5c50",
-        "spec_sha256": "b43a85e04898f8ce4cec7a0337d7caafe5e7fc9aa1993cd99fe01254e1401354",
+        "spec_sha256": "ec821ae7c67b197fc6520a5680ba5888a7963577544dc9ad1a64c88536b70202",
         "tests_active": 19,
         "tests_skipped": 0,
         "validation_cases": 0,
@@ -3186,7 +3186,7 @@
       "provenance": {
         "python_sha256": "0b6478df00a00c60ee6f33f5903d98993d9dbe3d7e0737ff56e18de3bf4a787a",
         "rust_sha256": "42f3f193c34fc308fecddb1add64a53ce7ebc0071ef1e187475840e5bbdc1c32",
-        "spec_sha256": "f39adea183dc265ac6f7d2c1cd6134ca86936da2179d3e77ed366b6e8c369a41",
+        "spec_sha256": "37bb5bdd301aa3d986b5fbe960307208e397135b9827dfdff76042743309bca7",
         "tests_active": 4,
         "tests_skipped": 0,
         "validation_cases": 0,
@@ -5432,7 +5432,7 @@
       "provenance": {
         "python_sha256": "7c04967eae7a074eebc4351c022e045bae36773cb11f1332caef496f58ae776c",
         "rust_sha256": "1b2f2cdf4f1891eabf97538f83be32ced9a1225258ea67870e803c81a5ea450d",
-        "spec_sha256": "2fa8751d567144f0d1ec8a8867f99ab74bb61789a45948a6b2ea0df15d4b7eb6",
+        "spec_sha256": "bf084043c2bc56511cfc38153d0aeb8a1d3232dc8f6fc3c364bc652ac37e2039",
         "tests_active": 6,
         "tests_skipped": 0,
         "validation_cases": 0,
@@ -6429,7 +6429,7 @@
       "provenance": {
         "python_sha256": "aa9364c60f514ee60259c2fbf443a173d53658987248ac68bffc81b65e5d6646",
         "rust_sha256": "8a130b4461ce2abc9b5806655acd6563d0184f30ccfe7ca665700fa5ce835c54",
-        "spec_sha256": "d62c381f1e61b178d914cb976866c1d59afc7a1cb7a4421d45a584126591fe5a",
+        "spec_sha256": "9ca932388b6783abc5b988d4436c29a1dea6e8fa7e6fc4301c1846aa7468ec72",
         "tests_active": 4,
         "tests_skipped": 0,
         "validation_cases": 1,
@@ -7401,7 +7401,7 @@
       "provenance": {
         "python_sha256": "5d1cff7e925986342964e6b954ddd0c0d4cefe3ab503e47eeba79f27bb9af0db",
         "rust_sha256": "f6b843dac0f00bd244e009fc6c5f56587aac217bda3533e7258d55c6ac7da2e4",
-        "spec_sha256": "8906925a49b83b983a044ab6e69fd29d6f9b4e4e6ade7cb3ad2e8bb629d0b65a",
+        "spec_sha256": "cfb5543a5aa825ea530ca2e356fcf060cb6b7ffdec904b864600f56ec4ca4b2d",
         "tests_active": 12,
         "tests_skipped": 0,
         "validation_cases": 0,
@@ -7641,7 +7641,7 @@
       "provenance": {
         "python_sha256": "9dda4caf0e105196ecaa7153a530c8ed6cb1b7f160423e2e8560efc4eb459e7a",
         "rust_sha256": "b7f8e1a912ebd7d9e102a7e241540e93d3b75664eb3e4ea2b88a0aa8fc326a14",
-        "spec_sha256": "1c2b0cf36470e0597ab14cfa1fe6702c1bede3fcea1a53cd183cd30335b169b8",
+        "spec_sha256": "d9efc8328875528c90c4675df9c274eee883d97ba67a4cdb65e85bee0a3ead0d",
         "tests_active": 9,
         "tests_skipped": 0,
         "validation_cases": 0,
@@ -7787,7 +7787,7 @@
       "provenance": {
         "python_sha256": "d7fc4504c05d0a31b665a89e43309870ba5f1bec405f9ab299980fa0f0b123b3",
         "rust_sha256": "108903f16b0b442a662344d75d996519c5d6bd4c94e2df7d44f6630a816d05f8",
-        "spec_sha256": "f8a8b7b6d10b29c0edda746d4e3cf08dbf9b014a4a091939df98a3788da99876",
+        "spec_sha256": "8748ae63febceddd9cb3d61f677dc322f127a4e69ead3b6e2b3289e5c031d836",
         "tests_active": 4,
         "tests_skipped": 0,
         "validation_cases": 0,
@@ -8413,7 +8413,7 @@
       "provenance": {
         "python_sha256": "2c5ee948642c391a66e004093aa31cb9692a55747cb0ea537a095c53e062bb65",
         "rust_sha256": "fea4252e864721b4c16e3186cec6788305b387cdf66a56a83fb4238c0a935dca",
-        "spec_sha256": "a6eb5bcd19e3135e4aeccb22558a0a97738297b312bbf7bee77acdf1f0c8dfa3",
+        "spec_sha256": "0ad6cc19f3d94dc36d0c967d398f310eabcb45e8170e0ec86decef730ef34b4d",
         "tests_active": 5,
         "tests_skipped": 0,
         "validation_cases": 0,
@@ -9584,7 +9584,7 @@
       "provenance": {
         "python_sha256": "f6a57825d2df6ca6fd7b1b7cdb327aad1216b573e29621438953097b3331ebf0",
         "rust_sha256": "ec2a7e25e907f9334e9de0a1ef3757680d25f771c7c24441ddaff74a96963126",
-        "spec_sha256": "e4ecd5220f4d064cffe84c46c6aa03558689a65b0b207e67bc2d63486932cd42",
+        "spec_sha256": "89c58d20548352029381cec13599ee666b868243336556c02e7cafcffe17aa2f",
         "tests_active": 3,
         "tests_skipped": 0,
         "validation_cases": 1,
@@ -11135,7 +11135,8 @@
         "valves are fully open; a throttled or partly open valve has a much higher coefficient and should be sized by its flow coefficient instead",
         "fittings are separated by enough straight pipe that their losses do not interact",
         "the fitting and the pipe are the same nominal size",
-        "single-phase, incompressible flow"
+        "single-phase, incompressible flow",
+        "the coefficients are equivalent-length defaults, not a verified transcription of Crane TP-410; design use requires a licensed copy of the standard or manufacturer data"
       ],
       "available": false,
       "equation": "K = f_t * sum(n_ld for each fitting)",
@@ -11208,20 +11209,19 @@
         }
       ],
       "provenance": {
-        "python_sha256": "d0e8009240ccc7d674384cf590bd5f03896b65b59c5caea6577f9d2514701c57",
-        "rust_sha256": "8e22807784a93e274f2d895d58b574f560c6792914ed5ece7575b068f50e3987",
-        "spec_sha256": "50d442974f159eb129a28e325972cded8d1eda9a4f0d0b1cfb31deb1c72e58e8",
-        "tests_active": 3,
+        "python_sha256": "da3c2817aac4a8a31485f7e9e18375a74067d3663b649782da08e61f93da1ab7",
+        "rust_sha256": "67500619b58a96c6098b0cbed9e1312c0a2a917b6de56008ebe5b6a8016a7613",
+        "spec_sha256": "9188690463c60aed45443ff0f2a6c8b5956af484137d6ca908a3c69cc8234479",
+        "tests_active": 4,
         "tests_skipped": 0,
         "validation_cases": 0,
         "verification": "partially_verified"
       },
       "references": [
-        "Crane Technical Paper No. 410, \"Flow of Fluids Through Valves, Fittings and Pipe\" (2013).",
-        "The coefficients in data/fittings/crane_k_factors.csv are estimated dummy values for software testing, with no source."
+        "Crane Technical Paper No. 410, \"Flow of Fluids Through Valves, Fittings and Pipe\" (2013)."
       ],
       "refusal": "this calculation takes a table of rows as input, which the sheet editor does not yet provide",
-      "summary": "Total fitting resistance coefficient from a list of fittings and their equivalent lengths. Use it to add valve and fitting losses to a line pressure-drop calculation.",
+      "summary": "Total fitting resistance coefficient from a list of fittings and their equivalent lengths. The coefficients are equivalent-length engineering defaults, cited but not verified against Crane TP-410.",
       "worked_example": {
         "f_t": 0.018
       }
@@ -14257,7 +14257,7 @@
       ],
       "provenance": {
         "python_sha256": "9a08df5df6bc77f0af17a5df6da7ef8b6ef30ef9cd2149bd4bb6406584ff829b",
-        "rust_sha256": "7147695faae58e38f203e23c1012b261230252f1e258078dbd252ad7487afda9",
+        "rust_sha256": "29804a29da81ab99f36c496dc3097273b4b3f7dac8e472b87cd13c116935b92f",
         "spec_sha256": "c4f4287e6c62806b160f7bd4b6e1379708ab445ee74794596fa2b6e04453c602",
         "tests_active": 8,
         "tests_skipped": 0,
@@ -14899,7 +14899,7 @@
       ],
       "provenance": {
         "python_sha256": "4dd2f2004b91d582036b41a246b37aa5c653a20722b747311badbf88c6fe8c54",
-        "rust_sha256": "beecadea8137243a058efada3892d2c3775087e8f674bc54686c878b00ff12b5",
+        "rust_sha256": "b62ca43b26e7b65b203986cdd5368f2351232e55156009ee9eb613c9ec35ac17",
         "spec_sha256": "b51f17bb81d3c983e8e82550443fbd84bb1bc1fe392fb6296f67da8d258576dd",
         "tests_active": 13,
         "tests_skipped": 0,
@@ -15294,7 +15294,7 @@
       ],
       "provenance": {
         "python_sha256": "569615cc5aa9a1e86c381e2015e4b7825ca37a54ff9e99ce6de29fb6b2f71e85",
-        "rust_sha256": "d3d21d3b89420a0251f2f0adbe1bb97d27807690c5a9070fdca99e8a46015d88",
+        "rust_sha256": "135dddcca64fc60861a2a67d031d0825be244f64baa6fe89f732ed12f761cf5e",
         "spec_sha256": "41f4f367fee09b8c020e61ae785d9a32eb2b28fb2281cb10a15f559444fd80ab",
         "tests_active": 6,
         "tests_skipped": 0,
@@ -15496,7 +15496,7 @@
       ],
       "provenance": {
         "python_sha256": "489b4371f3447a6839858ec436645b043e4f943f791eddb51c1640f7227666e3",
-        "rust_sha256": "cbb52feea690b2e4c08ccc922f11224c2b30553df3f2c5db6dd8c3a4bdeb8fb5",
+        "rust_sha256": "47e477d10404548e80300be98ec6395e3bc38499ee4b300f76f5387936e00285",
         "spec_sha256": "b8c6279478f73924daeb1e41f13c3d46c6c3b69ca3a44e1f600c72d7cc67f56b",
         "tests_active": 6,
         "tests_skipped": 0,
@@ -15815,7 +15815,7 @@
       ],
       "provenance": {
         "python_sha256": "3b4f858ecc659310aa9958b764e6bdb485daa80532c08638011d30702caba9d4",
-        "rust_sha256": "4edac23d9824a442aae7b31a76aae14198eb94dc120d99526391af53a741a3b8",
+        "rust_sha256": "9d6e688f9b0410531cec758b9cf1e6ef171d6cc60e0fce1f2e20389aed3cfdec",
         "spec_sha256": "d77b1c34f0743e04a465a6706254b3a8144d7a5578fb34fdce5d8a07c3bdc285",
         "tests_active": 10,
         "tests_skipped": 0,
@@ -17065,7 +17065,7 @@
       ],
       "provenance": {
         "python_sha256": "3726c45286bfb04bd65fc47a32ece51ad0ae21a32c0db2655fe1abdef97cd7a2",
-        "rust_sha256": "5d36f0727ab9c2fd79187481d8da517147720033ef1ecd66919c6d896c7b6f3c",
+        "rust_sha256": "c8f3240b1490c4c9fac5791a0075d5320c7c5241880fac873ff65ac2fc63d498",
         "spec_sha256": "5f5a64d92cb82d44e8a172962ba919cca2149db65650a33152380cae9912be13",
         "tests_active": 9,
         "tests_skipped": 0,
@@ -17955,7 +17955,7 @@
       ],
       "provenance": {
         "python_sha256": "da2765520c9b37e8f83a0fde36b54982234b78210d4cb26bf6776384844105e2",
-        "rust_sha256": "68ffb0f47229380341f1a99798deed207b253e91201c07a8176af1d130bfdce8",
+        "rust_sha256": "ad65ae30240220ec31be70901cd913afb093efb658ec4c087bdbdffd6b771ba9",
         "spec_sha256": "dc49ecba102956ea9c5d85353d85e794eadcb391d983b77d1e1eb273c3d38b78",
         "tests_active": 9,
         "tests_skipped": 0,
@@ -18399,7 +18399,7 @@
       ],
       "provenance": {
         "python_sha256": "92770f1afbb0d5db1cbc27f46abb49370765d90cdd932dad5ef2097d302b1f11",
-        "rust_sha256": "20313c3807dd31741986da60ca25adcf03194fe5ef1d866f31117370b7eba6d2",
+        "rust_sha256": "0aeb3c76f2c692ecbccfd21fdd4b9ad429b34b5933cb18b7b795a6aa920705ac",
         "spec_sha256": "a515bb3054b8e3e0c63226f50d01ac0eaa051b7059770c539fd5e168a7709b53",
         "tests_active": 4,
         "tests_skipped": 0,
@@ -18870,7 +18870,7 @@
       ],
       "provenance": {
         "python_sha256": "edb318b20057505fd2f1c8f1e446c879e3cec2066f12fd4c294fbd96a5476851",
-        "rust_sha256": "2bc080677c35700e03d1b7bfef9993ce6e8a0da50f061c6025e7a809cd08631a",
+        "rust_sha256": "4caec8c9f1153f01aec41033d9fe3d46f5ebbe746ccff5c8c5381a11e8d273b5",
         "spec_sha256": "8fed6eea8049db0628c0bc34d4d582f28723059f492d33d70e76d73c6ca30425",
         "tests_active": 13,
         "tests_skipped": 0,
@@ -19252,7 +19252,7 @@
       ],
       "provenance": {
         "python_sha256": "a2e8a8b40bbed86297f2655fec0cc274c653e0fa3fa8df0ed97d2d7f161628ef",
-        "rust_sha256": "4652c5879ec4beb2f586143d7624e8488725e68569931b5bce9505cef56467c3",
+        "rust_sha256": "a8262170d90e2dc7f59d6eeea4dbd0407b8f6f648dcbdb723d0121f161301243",
         "spec_sha256": "30c50c5537b980dc26c644188b866c88402fdf8c7e6f41035fd6e5a176e53b0f",
         "tests_active": 10,
         "tests_skipped": 0,
@@ -19573,7 +19573,7 @@
       ],
       "provenance": {
         "python_sha256": "318882f36cce8c89393c2685e69f36a52df1b53365529ee049a41a403b5887ca",
-        "rust_sha256": "ac72dc6431809ca7e4b5d23b3a1d2cb854c7f02bd82f44151a853641845359fc",
+        "rust_sha256": "dfe027d1ac9dc88d5d1b30d50953270afe977d16888951eda76fbd48a54b134a",
         "spec_sha256": "d70307c3f25578d9aa1fa97cd98e85cd4509fa15250282d36a05658936cf6766",
         "tests_active": 9,
         "tests_skipped": 0,
@@ -20152,7 +20152,7 @@
       ],
       "provenance": {
         "python_sha256": "95eeb7129070485ae8716809a496a04e977c983b69d163718307713b744234ce",
-        "rust_sha256": "b82ae2e2d220bf588038877d2183de70a466726922e17b6d40c2fd765c97e979",
+        "rust_sha256": "9f6b34eae6ed3dfc555b1013c2c91508b0e38c69e6ef8d3ccf98a6db29a84008",
         "spec_sha256": "15c408a3d7e209aad00896d92d8da116fc5954280b6c55a6f6f3c7d9c7b57f90",
         "tests_active": 5,
         "tests_skipped": 0,
@@ -21003,6 +21003,10 @@
     {
       "molar_mass": 0.03308,
       "name": "hs-"
+    },
+    {
+      "molar_mass": 0.097078,
+      "name": "hso4-"
     },
     {
       "molar_mass": 0.036460940000000004,

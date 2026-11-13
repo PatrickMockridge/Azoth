@@ -60,7 +60,7 @@ satisfy for the result to mean what it says.
 - fittings are separated by enough straight pipe that their losses do not interact
 - the fitting and the pipe are the same nominal size
 - single-phase, incompressible flow
-- the coefficients are NeqSim's equivalent-length defaults, not a verified transcription of Crane TP-410; design use requires a licensed copy of the standard or manufacturer data
+- the coefficients are equivalent-length defaults, not a verified transcription of Crane TP-410; design use requires a licensed copy of the standard or manufacturer data
 
 
 

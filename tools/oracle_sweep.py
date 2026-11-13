@@ -172,7 +172,10 @@ def is_stale(value: float, key: tuple[str, float, float]) -> bool:
     """Whether a number in a test is the value the probe printed before, and not the one
     it prints now - which is the whole definition, since the capture *is* the before."""
     _, was, is_now = key
-    return relative(value, was) <= 1e-12 and relative(value, is_now) > 1e-12
+    # **A zero old value cannot be "held" by a literal.** `relative` is absolute when its
+    # reference is zero, so the equality half is true for every near-zero constant in a
+    # test; only a nonzero old value is a transcription this can identify.
+    return was != 0.0 and relative(value, was) <= 1e-12 and relative(value, is_now) > 1e-12
 
 
 def rust_literals() -> list[tuple[str, int, str, float]]:

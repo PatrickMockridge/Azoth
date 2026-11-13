@@ -68,6 +68,7 @@ not an equation, and both implementations read it from here.
 | `T > 0` | raises | an absolute temperature, and the potentials are reduced against it |
 | `tolerance > 0` | raises | an error bound; zero could never be reached |
 | `max_iterations >= 2` | raises | the solve runs at least two passes whatever the error, so a cap below two is not a cap this honours |
+| `phase_moles > 0` | raises | the phase's total moles; a phase holding material cannot have zero as its total |
 
 ## Assumptions
 

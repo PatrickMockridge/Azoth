@@ -2328,7 +2328,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'hydraulics.crane_k_factors': {
         "calc_id": 'hydraulics.crane_k_factors',
         "name": 'Fitting resistance coefficients by the equivalent-length method',
-        "spec": {'path': 'specs/calcs/hydraulics/crane_k_factors.toml', 'sha256': '5ab796a84ab22a48e2ad5246c439caee9eaed38e6472aabd9b5a8ab022ace0b0'},
+        "spec": {'path': 'specs/calcs/hydraulics/crane_k_factors.toml', 'sha256': '9188690463c60aed45443ff0f2a6c8b5956af484137d6ca908a3c69cc8234479'},
         "code": [{'path': 'python/src/azoth/hydraulics/reference/crane_k_factors.py', 'sha256': 'da3c2817aac4a8a31485f7e9e18375a74067d3663b649782da08e61f93da1ab7'}, {'path': 'crates/azoth-hydraulics/src/crane_k_factors.rs', 'sha256': '67500619b58a96c6098b0cbed9e1312c0a2a917b6de56008ebe5b6a8016a7613'}],
         "source": 'Crane TP-410',
         "verification": 'partially_verified',
@@ -2559,8 +2559,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.gas_scrubber': {
         "calc_id": 'process.gas_scrubber',
         "name": 'Gas scrubber',
-        "spec": {'path': 'specs/models/process/gas_scrubber.toml', 'sha256': 'c2c6a4a82687c4a7602095e105382823adae083a2ebd54e1064a47de83a6ccea'},
-        "code": [{'path': 'python/src/azoth/process/reference/gas_scrubber.py', 'sha256': '49f29940541f828b8b3a867cab065fb15b98ddf17b9493e846457fba4c30cb72'}, {'path': 'crates/azoth-process/src/models/gas_scrubber.rs', 'sha256': '5affef0bd3c8d9fa0de39df26d204eb31c035be40db65b107eacefa9a7f2c016'}],
+        "spec": {'path': 'specs/models/process/gas_scrubber.toml', 'sha256': 'aeaa38b46f4b10227d49df879d70826d3e7f2e51557ea34f698fe9ae29b24d82'},
+        "code": [{'path': 'python/src/azoth/process/reference/gas_scrubber.py', 'sha256': '6ff5bc1743ecddea18bf6ad216808211a19714490fd80d549cb46329a6d4be33'}, {'path': 'crates/azoth-process/src/models/gas_scrubber.rs', 'sha256': '5affef0bd3c8d9fa0de39df26d204eb31c035be40db65b107eacefa9a7f2c016'}],
         "source": 'NeqSim process/equipment/separator/GasScrubber.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
@@ -2570,7 +2570,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.gibbs_reactor': {
         "calc_id": 'process.gibbs_reactor',
         "name": 'Gibbs reactor',
-        "spec": {'path': 'specs/models/process/gibbs_reactor.toml', 'sha256': 'fd215c8e43b5d432f8dd019519b566b90011ea74fc2b26f5146736398cc90fd3'},
+        "spec": {'path': 'specs/models/process/gibbs_reactor.toml', 'sha256': 'b995febbb98c0d0d02c482d61de8b98233d5cfacf8e5e6892de26d3a824c0dc7'},
         "code": [{'path': 'python/src/azoth/process/reference/gibbs_reactor.py', 'sha256': '778d1deab7a7447287031c596105de8da4ba067dc7aa07f4518855dfce75cf00'}, {'path': 'crates/azoth-process/src/models/gibbs_reactor.rs', 'sha256': 'dd4ebc822aee627477d67042040c9b2b1f44c41d7b22dc264730a1ff7219c75b'}],
         "source": 'NeqSim process/equipment/reactor/GibbsReactor.java',
         "verification": 'partially_verified',
@@ -2834,7 +2834,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'reactions.chemical_equilibrium': {
         "calc_id": 'reactions.chemical_equilibrium',
         "name": 'Reactive chemical equilibrium by the Smith-Missen method',
-        "spec": {'path': 'specs/models/reactions/chemical_equilibrium.toml', 'sha256': 'b6eb36ac7e6b3d34d1e79d37ca381cd96f1195a2ef429250a0c01a7bdd936f10'},
+        "spec": {'path': 'specs/models/reactions/chemical_equilibrium.toml', 'sha256': '6696bb414a6a9bee14d51adb3130774653225ce44ff94b7c59c5e9c17eff86d6'},
         "code": [{'path': 'python/src/azoth/reactions/reference/chemical_equilibrium.py', 'sha256': 'a957f50ab7a3f04d3940073af511541684db78b51c72f394f174ed7e010d1778'}, {'path': 'crates/azoth-reactions/src/chemical_equilibrium.rs', 'sha256': 'edf1c98bb653456940392a9e9ff57bbb330bdb99ea6a8cbcc0be5cc2bca9d5b8'}],
         "source": 'NeqSim master `ChemicalEquilibrium`',
         "verification": 'partially_verified',
@@ -2911,8 +2911,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'reactions.reactive_phase_equilibrium': {
         "calc_id": 'reactions.reactive_phase_equilibrium',
         "name": 'Reactive equilibrium as an operation on one phase',
-        "spec": {'path': 'specs/models/reactions/reactive_phase_equilibrium.toml', 'sha256': '9d786732a2fe6232bbbc7078733f64c3f98ee3956ec626804917d242ce07ec07'},
-        "code": [{'path': 'python/src/azoth/reactions/reference/reactive_phase_equilibrium.py', 'sha256': '5b56ee171ac868a94d45cee450fe34ed8f805a17b9b65db43ae5a4aa57fc6628'}, {'path': 'crates/azoth-reactions/src/reactive_phase_equilibrium.rs', 'sha256': 'f3ad36180a725e5764b30b3dc3672a7538b126660f808a2176ab1591c0753d28'}],
+        "spec": {'path': 'specs/models/reactions/reactive_phase_equilibrium.toml', 'sha256': 'fa17ada338cb176bbfda68888f970ed90e72ecea357883a122e54166aebade59'},
+        "code": [{'path': 'python/src/azoth/reactions/reference/reactive_phase_equilibrium.py', 'sha256': '82570568f1238358385d5191d3017093b7518552e510be3b9ef25868c86a4350'}, {'path': 'crates/azoth-reactions/src/reactive_phase_equilibrium.rs', 'sha256': '353ed585ee7d2dad9a9e8e3910301abbdc6d171acf7d8d4e18b3209ef189b5e4'}],
         "source": 'NeqSim master `ChemicalReactionOperations`',
         "verification": 'partially_verified',
         "validation_cases": 0,
@@ -2934,7 +2934,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "calc_id": 'reactions.reference_potentials',
         "name": 'Reference potentials from an independent reaction basis',
         "spec": {'path': 'specs/models/reactions/reference_potentials.toml', 'sha256': '67d930536aaf0d36b9a5c1c310e3008e408704f296ef2526a2fa4b10c836e81b'},
-        "code": [{'path': 'python/src/azoth/reactions/reference/reference_potentials.py', 'sha256': '6489faf190ca620a1dfd0458f2037178af007c214bd9a5252737f0f055d7993b'}, {'path': 'crates/azoth-reactions/src/reference_potentials.rs', 'sha256': '47196f681600092b0974233177dbee80731b35300d1211294870f5339da2e090'}],
+        "code": [{'path': 'python/src/azoth/reactions/reference/reference_potentials.py', 'sha256': '6489faf190ca620a1dfd0458f2037178af007c214bd9a5252737f0f055d7993b'}, {'path': 'crates/azoth-reactions/src/reference_potentials.rs', 'sha256': 'd0c115012f3dee52dd1b930e25a9d0e08a178cb42a3593d2d5f56f4eb2d880f8'}],
         "source": 'NeqSim master `ChemicalReactionList`',
         "verification": 'partially_verified',
         "validation_cases": 0,

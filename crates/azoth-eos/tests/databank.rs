@@ -1228,8 +1228,8 @@ fn the_pcsaft_columns_are_read_and_zero_means_absent() {
         })
         .count();
     assert_eq!(
-        absent, 106,
-        "rows with no PC-SAFT set; the vendored table has 106"
+        absent, 107,
+        "rows with no PC-SAFT set; the vendored table has 107"
     );
 }
 

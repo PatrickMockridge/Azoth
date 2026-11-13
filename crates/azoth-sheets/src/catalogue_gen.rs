@@ -11909,6 +11909,7 @@ pub static CALCS: &[CalcForm] = &[
             "fittings are separated by enough straight pipe that their losses do not interact",
             "the fitting and the pipe are the same nominal size",
             "single-phase, incompressible flow",
+            "the coefficients are equivalent-length defaults, not a verified transcription of Crane TP-410; design use requires a licensed copy of the standard or manufacturer data",
         ],
         references: &[
             "Crane Technical Paper No. 410, \"Flow of Fluids Through Valves, Fittings and Pipe\" (2013).",

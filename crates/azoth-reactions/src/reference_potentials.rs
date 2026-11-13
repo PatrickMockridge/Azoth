@@ -347,8 +347,8 @@ pub fn reference_potentials(
     let mut independent_mask = vec![0.0; width];
 
     if rank < n_rows {
-        for column in 0..width {
-            potentials[column] = formation_seed(components, column)?;
+        for (column, potential) in potentials.iter_mut().enumerate() {
+            *potential = formation_seed(components, column)?;
         }
     } else if n_rows > 0 {
         // The target's solve: `A_indep x = -RT ln K`. Dependent components stay at the

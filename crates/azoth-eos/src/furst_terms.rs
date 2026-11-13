@@ -882,7 +882,7 @@ fn shielding_parameter(
             return Ok(gamma);
         }
         gamma -= 0.8 * residual / derivative;
-        if !(gamma > 0.0) || !gamma.is_finite() {
+        if !gamma.is_finite() || gamma <= 0.0 {
             break;
         }
     }
