@@ -2295,7 +2295,7 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         model="process.expander",
         case="the_axial_design_selects_the_generator",
         capture="process_expander_mechanical_design.tsv",
-        block=1,
+        block=2,
         identified_by=(LABEL_KEY, "axial_multistage"),
     ),
     # The recovered-power constraint's five states.
@@ -3045,6 +3045,10 @@ UNCASED_ROWS: dict[str, int] = {
     # spelling on the plain design), the zero-flow state the model refuses, and the two chart
     # blocks, whose state is the chart branch rather than the dumper's isentropic one.
     "process_pump_mechanical_design.tsv": 5,
+    # The expander design's three: the reversible-efficiency repeat and the two casing
+    # temperature-derate states, which are the same radial machine under a hotter and a
+    # colder inlet.
+    "process_expander_mechanical_design.tsv": 3,
 }
 
 
