@@ -458,7 +458,7 @@ fn the_captured_multistage_design_is_reproduced() {
     );
     close(
         result.design_weight_total.expect("a weight").value,
-        2617.792_198_958_328,
+        2_617.792_198_958_328,
         1e-6,
         "total weight",
     );
@@ -515,7 +515,7 @@ fn the_captured_purchaser_design_is_reproduced() {
     );
     close(
         result.design_casing_wall_thickness.expect("a wall").value,
-        0.015_661_068_359_330_123,
+        0.015_661_068_359_330_12,
         1e-6,
         "wall",
     );

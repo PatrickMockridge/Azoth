@@ -215,7 +215,7 @@ fn the_captured_radial_design_is_reproduced() {
     let design = result;
     close(
         design.design_wheel_diameter.unwrap().value,
-        0.475_642_771_656_904_36,
+        0.475_642_771_656_904_4,
         1e-6,
         "wheel",
     );
@@ -233,13 +233,13 @@ fn the_captured_radial_design_is_reproduced() {
     );
     close(
         design.design_rated_speed.unwrap(),
-        9287.440_325_802_469,
+        9_287.440_325_802_469,
         1e-6,
         "rated",
     );
     close(
         design.design_max_continuous_speed.unwrap(),
-        9751.812_342_092_593,
+        9_751.812_342_092_593,
         1e-6,
         "mcs",
     );
@@ -251,7 +251,7 @@ fn the_captured_radial_design_is_reproduced() {
     );
     close(
         design.design_first_critical_speed.unwrap(),
-        4643.720_162_901_234,
+        4_643.720_162_901_234,
         1e-6,
         "critical",
     );
@@ -319,7 +319,7 @@ fn the_captured_radial_design_is_reproduced() {
     );
     close(
         design.design_weight_vessel.unwrap().value,
-        1164.170_147_573_361_4,
+        1_164.170_147_573_361_4,
         1e-6,
         "vessel kg",
     );
@@ -349,7 +349,7 @@ fn the_captured_radial_design_is_reproduced() {
     );
     close(
         design.design_weight_total.unwrap().value,
-        2744.422_244_837_403,
+        2_744.422_244_837_403,
         1e-6,
         "total kg",
     );

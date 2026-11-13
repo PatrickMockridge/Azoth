@@ -390,7 +390,10 @@ pub fn design(
         }
     };
     let mut absorbed_power_kw = power.value / 1000.0;
-    if !(absorbed_power_kw > 0.0) && hydraulic_power_kw > 0.0 && pump_efficiency > 0.0 {
+    if (!absorbed_power_kw.is_finite() || absorbed_power_kw <= 0.0)
+        && hydraulic_power_kw > 0.0
+        && pump_efficiency > 0.0
+    {
         absorbed_power_kw = hydraulic_power_kw / pump_efficiency;
     }
 
@@ -678,16 +681,16 @@ fn vendor_bep(
     let Some(chart) = chart else {
         return (None, None, "not_available");
     };
-    if !(speed > 0.0) {
+    if !speed.is_finite() || speed <= 0.0 {
         return (None, None, "not_available");
     }
     let flow = chart.best_efficiency_flow_rate(speed);
-    if !(flow > 0.0) {
+    if !flow.is_finite() || flow <= 0.0 {
         return (None, None, "not_available");
     }
     // The class's converter returns a metre head unchanged; the model's curve is metres.
     let head = chart.head(flow, speed);
-    if !(head > 0.0) {
+    if !head.is_finite() || head <= 0.0 {
         return (None, None, "not_available");
     }
     (
@@ -710,7 +713,7 @@ fn vendor_shutoff(
     let Some(chart) = chart else {
         return (None, "not_available");
     };
-    if !(speed > 0.0) {
+    if !speed.is_finite() || speed <= 0.0 {
         return (None, "not_available");
     }
     let head = chart.head(0.0, speed);
