@@ -112,6 +112,12 @@
 //     java -cp .:neqsim-118d9af.jar ProcessProbe gaussian_plume \
 //       > captures/process_gaussian_plume.tsv
 //     java -cp .:neqsim-118d9af.jar ProcessProbe probit > captures/process_probit.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe jet_fire \
+//       > captures/process_jet_fire.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe pool_fire \
+//       > captures/process_pool_fire.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe vce > captures/process_vce.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe bleve > captures/process_bleve.tsv
 
 import neqsim.process.equipment.stream.Stream;
 import neqsim.process.equipment.util.AccelerationMethod;
@@ -125,6 +131,10 @@ import neqsim.process.safety.dispersion.GasDispersionResult;
 import neqsim.process.safety.dispersion.GaussianPlume;
 import neqsim.process.safety.dispersion.HeavyGasDispersion;
 import neqsim.process.safety.dispersion.ProbitModel;
+import neqsim.process.safety.fire.BLEVECalculator;
+import neqsim.process.safety.fire.JetFireModel;
+import neqsim.process.safety.fire.PoolFireModel;
+import neqsim.process.safety.fire.VCEModel;
 import neqsim.process.safety.release.HomogeneousEquilibriumReleaseModel;
 import neqsim.process.safety.release.LeakModel;
 import neqsim.process.safety.release.ReleaseFlowRequest;
@@ -283,6 +293,18 @@ public class ProcessProbe {
         break;
       case "probit":
         probitRows();
+        break;
+      case "jet_fire":
+        jetFireRows();
+        break;
+      case "pool_fire":
+        poolFireRows();
+        break;
+      case "vce":
+        vceRows();
+        break;
+      case "bleve":
+        bleveRows();
         break;
       case "expander_steps":
         expanderStepRows();
@@ -12515,6 +12537,194 @@ public class ProcessProbe {
         "probability_from_dose=" + (Double.isNaN(dose) ? "" : model.probabilityFromDose(dose)));
     System.out.println("probit_value=" + (Double.isNaN(y) ? "" : y));
     System.out.println("probability=" + (Double.isNaN(y) ? "" : model.probability(y)));
+    System.out.println();
+  }
+
+  // === process.jet_fire, process.pool_fire, process.vce, process.bleve =======
+
+  static void jetFireRows() {
+    // The class's own test state (`FireModelsTest`): 2 kg/s, 50 MJ/kg, eta 0.20.
+    jetFireRow("jet_fire_test_20m", 2.0, 50.0e6, 0.20, Double.NaN, 20.0, Double.NaN);
+    jetFireRow("jet_fire_test_80m", 2.0, 50.0e6, 0.20, Double.NaN, 80.0, Double.NaN);
+    jetFireRow("jet_fire_distance_12500", 2.0, 50.0e6, 0.20, Double.NaN, Double.NaN, 12500.0);
+    // The transmissivity's humidity input, at one distance.
+    jetFireRow("jet_fire_humidity_0", 2.0, 50.0e6, 0.20, 0.0, 50.0, Double.NaN);
+    jetFireRow("jet_fire_humidity_05", 2.0, 50.0e6, 0.20, 0.5, 50.0, Double.NaN);
+    jetFireRow("jet_fire_humidity_1", 2.0, 50.0e6, 0.20, 1.0, 50.0, Double.NaN);
+    // Inside one metre the class evaluates tau at max(d, 1).
+    jetFireRow("jet_fire_inside_one_metre", 2.0, 50.0e6, 0.20, 0.5, 0.5, Double.NaN);
+    // A target small enough to test the 25-iteration cap.
+    jetFireRow("jet_fire_small_target", 2.0, 50.0e6, 0.20, Double.NaN, Double.NaN, 10.0);
+    // The class's zero-distance branch and its zero-target refusal, as evidence.
+    jetFireRow("jet_fire_zero_distance_evidence", 2.0, 50.0e6, 0.20, Double.NaN, 0.0, Double.NaN);
+    jetFireRow("jet_fire_zero_target_evidence", 2.0, 50.0e6, 0.20, Double.NaN, Double.NaN, 0.0);
+  }
+
+  static void jetFireRow(String label, double mass, double hoc, double eta, double humidity,
+      double distance, double targetFlux) {
+    JetFireModel model = new JetFireModel(mass, hoc, eta);
+    if (!Double.isNaN(humidity)) {
+      model.setHumidity(humidity);
+    }
+    System.out.println(label);
+    System.out.println("mass_flow_kg_s=" + mass);
+    System.out.println("heat_of_combustion_j_kg=" + hoc);
+    System.out.println("radiative_fraction=" + eta);
+    System.out.println("relative_humidity=" + (Double.isNaN(humidity) ? "default_0.5" : humidity));
+    System.out.println("distance_m=" + (Double.isNaN(distance) ? "" : distance));
+    System.out.println("target_flux_w_m2=" + (Double.isNaN(targetFlux) ? "" : targetFlux));
+    System.out.println("total_radiative_power_w=" + model.totalRadiativePowerW());
+    if (!Double.isNaN(distance)) {
+      System.out.println("transmissivity=" + model.transmissivity(distance));
+      System.out.println("incident_heat_flux_w_m2=" + model.incidentHeatFlux(distance));
+    }
+    if (!Double.isNaN(targetFlux)) {
+      try {
+        double solved = model.distanceToFlux(targetFlux);
+        System.out.println("distance_to_flux_m=" + solved);
+        System.out.println("flux_at_distance_w_m2=" + model.incidentHeatFlux(solved));
+      } catch (RuntimeException ex) {
+        System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+      }
+    }
+    System.out.println();
+  }
+
+  static void poolFireRows() {
+    // The class's own test state (`FireModelsTest`): 10 m, 0.06 kg/(m2 s), 45 MJ/kg,
+    // 800 kg/m3, eta 0.30.
+    poolFireRow("pool_fire_test_5m1", 10.0, 0.06, 45.0e6, 800.0, 0.30, 5.1, Double.NaN);
+    poolFireRow("pool_fire_test_10m", 10.0, 0.06, 45.0e6, 800.0, 0.30, 10.0, Double.NaN);
+    poolFireRow("pool_fire_test_20m", 10.0, 0.06, 45.0e6, 800.0, 0.30, 20.0, Double.NaN);
+    poolFireRow("pool_fire_test_50m", 10.0, 0.06, 45.0e6, 800.0, 0.30, 50.0, Double.NaN);
+    // 12.5 kW/m2 is above this pool's near-field flux; 10 kW/m2 is reachable.
+    poolFireRow("pool_fire_distance_12500", 10.0, 0.06, 45.0e6, 800.0, 0.30, Double.NaN,
+        12500.0);
+    poolFireRow("pool_fire_distance_10000", 10.0, 0.06, 45.0e6, 800.0, 0.30, Double.NaN,
+        10000.0);
+    poolFireRow("pool_fire_zero_distance", 10.0, 0.06, 45.0e6, 800.0, 0.30, 0.0, Double.NaN);
+    // A target above the model's near-field flux: the class answers its near bound.
+    poolFireRow("pool_fire_unreachable_1mw", 10.0, 0.06, 45.0e6, 800.0, 0.30, Double.NaN,
+        1.0e6);
+    poolFireRow("pool_fire_zero_target_evidence", 10.0, 0.06, 45.0e6, 800.0, 0.30, Double.NaN,
+        0.0);
+    // The same geometry with heat of combustion, liquid density and radiative fraction
+    // changed: the class reads none of them.
+    poolFireRow("pool_fire_dead_parameters", 10.0, 0.06, 10.0e6, 500.0, 0.90, 20.0, Double.NaN);
+  }
+
+  static void poolFireRow(String label, double diameter, double burnRate, double hoc,
+      double liquidDensity, double eta, double distance, double targetFlux) {
+    PoolFireModel model = new PoolFireModel(diameter, burnRate, hoc, liquidDensity, eta);
+    System.out.println(label);
+    System.out.println("pool_diameter_m=" + diameter);
+    System.out.println("burn_rate_kg_m2_s=" + burnRate);
+    System.out.println("heat_of_combustion_j_kg=" + hoc);
+    System.out.println("liquid_density_kg_m3=" + liquidDensity);
+    System.out.println("radiative_fraction=" + eta);
+    System.out.println("distance_m=" + (Double.isNaN(distance) ? "" : distance));
+    System.out.println("target_flux_w_m2=" + (Double.isNaN(targetFlux) ? "" : targetFlux));
+    System.out.println("total_burn_rate_kg_s=" + model.totalBurnRateKgPerS());
+    System.out.println("flame_height_m=" + model.flameHeightM());
+    System.out.println("surface_emissive_power_w_m2=" + model.surfaceEmissivePowerWPerM2());
+    if (!Double.isNaN(distance)) {
+      System.out.println("view_factor=" + model.viewFactorVertical(distance));
+      System.out.println("incident_heat_flux_w_m2=" + model.incidentHeatFlux(distance));
+    }
+    if (!Double.isNaN(targetFlux)) {
+      double solved = model.distanceToFlux(targetFlux);
+      System.out.println("distance_to_flux_m=" + solved);
+      System.out.println("flux_at_distance_w_m2=" + model.incidentHeatFlux(solved));
+    }
+    System.out.println();
+  }
+
+  static void vceRows() {
+    // The class's own test state (`FireModelsTest`): 1000 kg, 46 MJ/kg, class 4.
+    vceRow("vce_test_20m", 1000.0, 46.0e6, 4, 20.0, Double.NaN);
+    vceRow("vce_test_200m", 1000.0, 46.0e6, 4, 200.0, Double.NaN);
+    // A class-4 plateau is 10.1 kPa, so 20.7 kPa is unreachable and 5 kPa is reachable.
+    vceRow("vce_distance_20700", 1000.0, 46.0e6, 4, Double.NaN, 20700.0);
+    vceRow("vce_distance_5000", 1000.0, 46.0e6, 4, Double.NaN, 5000.0);
+    for (int strength = 1; strength <= 10; strength++) {
+      vceRow("vce_class_" + strength, 1000.0, 46.0e6, strength, 20.0, Double.NaN);
+    }
+    // A class-1 cloud cannot reach 1 MPa; the class answers its near bound.
+    vceRow("vce_unreachable_1mpa_class1", 1000.0, 46.0e6, 1, Double.NaN, 1.0e6);
+    vceRow("vce_zero_target_evidence", 1000.0, 46.0e6, 4, Double.NaN, 0.0);
+  }
+
+  static void vceRow(String label, double mass, double hoc, int strength, double distance,
+      double targetOverpressure) {
+    VCEModel model = new VCEModel(mass, hoc, strength);
+    System.out.println(label);
+    System.out.println("cloud_fuel_mass_kg=" + mass);
+    System.out.println("heat_of_combustion_j_kg=" + hoc);
+    System.out.println("strength_class=" + strength);
+    System.out.println("distance_m=" + (Double.isNaN(distance) ? "" : distance));
+    System.out.println(
+        "target_overpressure_pa=" + (Double.isNaN(targetOverpressure) ? "" : targetOverpressure));
+    System.out.println("combustion_energy_j=" + model.combustionEnergyJ());
+    if (!Double.isNaN(distance)) {
+      System.out.println("scaled_distance=" + model.scaledDistance(distance));
+      System.out.println(
+          "dimensionless_overpressure=" + model.dimensionlessOverpressure(distance));
+      System.out.println("overpressure_pa=" + model.overpressurePa(distance));
+    }
+    if (!Double.isNaN(targetOverpressure)) {
+      try {
+        double solved = model.distanceToOverpressure(targetOverpressure);
+        System.out.println("distance_to_overpressure_m=" + solved);
+        System.out.println("overpressure_at_distance_pa=" + model.overpressurePa(solved));
+      } catch (RuntimeException ex) {
+        System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+      }
+    }
+    System.out.println();
+  }
+
+  static void bleveRows() {
+    // The class's own test state (`FireModelsTest`): 1000 kg, 46 MJ/kg, eta 0.30.
+    bleveRow("bleve_test_geometry", 1000.0, 46.0e6, 0.30, Double.NaN, Double.NaN, Double.NaN);
+    bleveRow("bleve_flux_100m", 1000.0, 46.0e6, 0.30, Double.NaN, 100.0, Double.NaN);
+    // The same distance and humidity as the jet fire's tau rows: the helper is shared.
+    bleveRow("bleve_humidity_05_50m", 1000.0, 46.0e6, 0.30, 0.5, 50.0, Double.NaN);
+    bleveRow("bleve_humidity_0", 1000.0, 46.0e6, 0.30, 0.0, 50.0, Double.NaN);
+    bleveRow("bleve_distance_12500", 1000.0, 46.0e6, 0.30, Double.NaN, Double.NaN, 12500.0);
+    bleveRow("bleve_small_target", 1000.0, 46.0e6, 0.30, Double.NaN, Double.NaN, 10.0);
+    // A target above the fireball's near-field flux: the class answers its near bound.
+    bleveRow("bleve_unreachable_1mw", 1000.0, 46.0e6, 0.30, Double.NaN, Double.NaN, 1.0e6);
+    // The class accepts a negative radiative fraction and answers a negative flux.
+    bleveRow("bleve_negative_fraction", 1000.0, 46.0e6, -0.30, Double.NaN, 100.0, 12500.0);
+    bleveRow("bleve_zero_distance_evidence", 1000.0, 46.0e6, 0.30, Double.NaN, 0.0, Double.NaN);
+    bleveRow("bleve_zero_target_evidence", 1000.0, 46.0e6, 0.30, Double.NaN, Double.NaN, 0.0);
+  }
+
+  static void bleveRow(String label, double mass, double hoc, double eta, double humidity,
+      double distance, double targetFlux) {
+    BLEVECalculator model = new BLEVECalculator(mass, hoc, eta);
+    if (!Double.isNaN(humidity)) {
+      model.setHumidity(humidity);
+    }
+    System.out.println(label);
+    System.out.println("fuel_mass_kg=" + mass);
+    System.out.println("heat_of_combustion_j_kg=" + hoc);
+    System.out.println("radiative_fraction=" + eta);
+    System.out.println("relative_humidity=" + (Double.isNaN(humidity) ? "default_0.5" : humidity));
+    System.out.println("distance_m=" + (Double.isNaN(distance) ? "" : distance));
+    System.out.println("target_flux_w_m2=" + (Double.isNaN(targetFlux) ? "" : targetFlux));
+    System.out.println("fireball_diameter_m=" + model.fireballDiameterM());
+    System.out.println("fireball_duration_s=" + model.fireballDurationS());
+    System.out.println("surface_emissive_power_w_m2=" + model.surfaceEmissivePowerWPerM2());
+    if (!Double.isNaN(distance)) {
+      System.out.println("transmissivity=" + model.transmissivity(distance));
+      System.out.println("incident_heat_flux_w_m2=" + model.incidentHeatFlux(distance));
+    }
+    if (!Double.isNaN(targetFlux)) {
+      double solved = model.distanceToFlux(targetFlux);
+      System.out.println("distance_to_flux_m=" + solved);
+      System.out.println("flux_at_distance_w_m2=" + model.incidentHeatFlux(solved));
+    }
     System.out.println();
   }
 }
