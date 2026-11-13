@@ -1790,3 +1790,26 @@ capacity check divides the operating point by three optional design limits; the 
 each as a multiple of the state it checks, so the printed design value is the oracle rather
 than a typed number. **`performance_clamped_fields` pins the setters' clamps**: a negative
 height is zero, a fraction above one is one, and a zero tip diameter is `1e-4` m.
+
+## The expander's and the pump's mechanical designs
+
+`process_expander_mechanical_design.tsv` and `process_pump_mechanical_design.tsv` are
+`ExpanderMechanicalDesign.calcDesign` and `PumpMechanicalDesign.calcDesign` on the states
+their branches divide: radial/axial and brake/generator for the expander; the plain,
+multistage, chart, purchaser, sealless, zero-flow and vendor-NPSH states for the pump.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe expander_mechanical \
+  > captures/process_expander_mechanical_design.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe pump_mechanical \
+  > captures/process_pump_mechanical_design.tsv
+```
+
+**The pump's effective defaults are the database's midpoints, not the field
+initialisers.** `super.calcDesign()` loads `TechnicalRequirements_Process.csv`, so the
+captured `npsh_margin_factor` is `1.20`, the AOR `0.65/1.25` and the rated-point band
+`0.80/1.10`; the probe prints them so the port declares the oracle's values.
+**The base fields are not one unit**: the expander stores them in millimetres, while the
+pump stores `innerDiameter`, `outerDiameter` and `tantanLength` in metres and
+`wallThickness` in millimetres. The pump's `zero_flow` block is evidence only - the model
+refuses `inlet_n = 0`.

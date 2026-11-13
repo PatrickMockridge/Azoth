@@ -1,0 +1,793 @@
+plain_eta_0_75
+pump_type=OVERHUNG
+seal_type=SINGLE_MECHANICAL
+api610_pump_type=OH2
+rated_flow_m3_per_hr=0.3397720841943109
+rated_head_m=248.29011116523293
+pump_efficiency=0.75
+hydraulic_power_kW=0.14157170174762954
+absorbed_power_kW=0.17615920898858894
+rated_speed_rpm=1000.0
+specific_speed=0.1553184434416767
+suction_specific_speed=298.3323473493966
+number_of_stages=1
+bep_flow_m3_per_hr=NaN
+bep_head_m=NaN
+npsh_required_m=2.0
+npsh_available_m=76.25948694972546
+design_npsh_margin_m=74.25948694972546
+design_npsh_margin_ratio=38.12974347486273
+driver_power_kW=0.75
+driver_margin=1.25
+design_pressure_bara=21.5
+design_temperature_C=7.61215146761208
+impeller_diameter_mm=1000.0
+impeller_width_mm=10.0
+shaft_diameter_mm=20.0
+casing_wall_thickness_mm=12.006957852172963
+casing_mawp_bara=21.500000000000004
+suction_nozzle_size_in=1.0
+discharge_nozzle_size_in=1.0
+minimum_flow_m3_per_hr=0.22085185472630203
+maximum_flow_m3_per_hr=0.3907378968234575
+shutoff_head_m=NaN
+effective_isentropic_efficiency=0.75
+npsh_margin_factor=1.2000000000000002
+minimum_npsh_margin_m=1.0
+por_low_fraction=0.7
+por_high_fraction=1.2
+aor_low_fraction=0.6499999999999999
+aor_high_fraction=1.25
+rated_point_low_fraction=0.8
+rated_point_high_fraction=1.1
+min_continuous_flow_fraction=0.6499999999999999
+max_continuous_flow_fraction=1.15
+max_suction_specific_speed=12000.0
+hydraulic_power_margin=1.0750000000000002
+head_margin_factor=1.05
+casing_weight_kg=75.69791627853941
+motor_weight_kg=22.25
+baseplate_weight_kg=58.768749767123644
+inner_diameter_m=1.15
+outer_diameter_m=1.1740139157043459
+wall_thickness_mm=12.006957852172963
+tantan_length_m=0.01
+weight_piping_kg=30.22813018653104
+weight_electro_instrument_kg=20.152086791020693
+weight_structural_steel_kg=10.076043395510347
+weight_total_kg=261.977128283269
+module_length_m=3.343301270189222
+module_width_m=2.5
+module_height_m=1.3
+assessment_status=PASS_WITH_WARNINGS
+selected_driver_power_kW=0.75
+required_driver_power_kW=0.22019901123573618
+operating_region=NOT_EVALUATED
+operating_flow_ratio=NaN
+assessment_npsh_margin_ratio=38.12974347486273
+required_casing_pressure_bara=21.494365443425075
+hydrostatic_test_pressure_bara=NaN
+head_rise_to_shutoff_fraction=NaN
+bearing_l10_life_hours=NaN
+critical_speed_ratio=NaN
+assessment_basis=API 610 screening; vendor and purchaser verification required
+check operating-region status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Rated flow shall be evaluated relative to vendor BEP message=Vendor BEP flow is not available
+check npsh-margin status=PASS actual=74.25948694972546 limit=1.0 unit=m requirement=NPSHa shall exceed NPSHr by configured head and ratio margins message=NPSH margin ratio=38.130, required ratio=1.200
+check pressure-casing status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Furnished casing MAWP shall cover the required casing pressure message=Required pressure calculated; furnished casing MAWP is not available
+check hydrostatic-test status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Casing hydrostatic test pressure shall meet the configured pressure factor message=Required test pressure calculated; vendor test pressure is not available
+check head-rise status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Head rise from rated flow to shutoff shall meet the configured minimum message=A vendor or purchaser shutoff head is not available
+check driver-rating status=PASS actual=0.75 limit=0.22019901123573618 unit=kW requirement=Driver rating shall cover absorbed power with configured margin message=Selected next configured driver rating
+check bearing-life status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Bearing L10 life shall meet the configured minimum message=Bearing dynamic rating, equivalent load or rated speed is not available
+check shaft-deflection status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Shaft deflection at the seal shall not exceed the configured limit message=Vendor shaft analysis is not available
+check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Critical-speed separation shall be verified message=Vendor rotor-dynamic analysis is not available
+check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
+check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
+check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type OH2 requires purchaser selection
+inlet_n=1.0
+inlet_P=5.0
+inlet_T=250.0
+inlet_h=-25558.81196269646
+inlet_s=-94.04537587823086
+inlet_z=n-butane:1.0
+outlet_n=1.0
+outlet_P=20.0
+outlet_T=250.76215146761206
+outlet_h=-25382.652753707873
+outlet_s=-93.8696271173196
+outlet_z=n-butane:1.0
+power_kW=0.17615920898858894
+
+plain_eta_1_0
+pump_type=OVERHUNG
+seal_type=SINGLE_MECHANICAL
+api610_pump_type=OH2
+rated_flow_m3_per_hr=0.3397720841943109
+rated_head_m=248.29011116523293
+pump_efficiency=1.0
+hydraulic_power_kW=0.14157170174762954
+absorbed_power_kW=0.1321194067414908
+rated_speed_rpm=1000.0
+specific_speed=0.1553184434416767
+suction_specific_speed=298.3323473493966
+number_of_stages=1
+bep_flow_m3_per_hr=NaN
+bep_head_m=NaN
+npsh_required_m=2.0
+npsh_available_m=76.25948694972546
+design_npsh_margin_m=74.25948694972546
+design_npsh_margin_ratio=38.12974347486273
+driver_power_kW=0.75
+driver_margin=1.25
+design_pressure_bara=21.5
+design_temperature_C=7.25559428570017
+impeller_diameter_mm=1000.0
+impeller_width_mm=10.0
+shaft_diameter_mm=20.0
+casing_wall_thickness_mm=12.006957852172963
+casing_mawp_bara=21.500000000000004
+suction_nozzle_size_in=1.0
+discharge_nozzle_size_in=1.0
+minimum_flow_m3_per_hr=0.22085185472630203
+maximum_flow_m3_per_hr=0.3907378968234575
+shutoff_head_m=NaN
+effective_isentropic_efficiency=1.0
+npsh_margin_factor=1.2000000000000002
+minimum_npsh_margin_m=1.0
+por_low_fraction=0.7
+por_high_fraction=1.2
+aor_low_fraction=0.6499999999999999
+aor_high_fraction=1.25
+rated_point_low_fraction=0.8
+rated_point_high_fraction=1.1
+min_continuous_flow_fraction=0.6499999999999999
+max_continuous_flow_fraction=1.15
+max_suction_specific_speed=12000.0
+hydraulic_power_margin=1.0750000000000002
+head_margin_factor=1.05
+casing_weight_kg=75.69791627853941
+motor_weight_kg=22.25
+baseplate_weight_kg=58.768749767123644
+inner_diameter_m=1.15
+outer_diameter_m=1.1740139157043459
+wall_thickness_mm=12.006957852172963
+tantan_length_m=0.01
+weight_piping_kg=30.22813018653104
+weight_electro_instrument_kg=20.152086791020693
+weight_structural_steel_kg=10.076043395510347
+weight_total_kg=261.977128283269
+module_length_m=3.343301270189222
+module_width_m=2.5
+module_height_m=1.3
+assessment_status=PASS_WITH_WARNINGS
+selected_driver_power_kW=0.75
+required_driver_power_kW=0.1651492584268635
+operating_region=NOT_EVALUATED
+operating_flow_ratio=NaN
+assessment_npsh_margin_ratio=38.12974347486273
+required_casing_pressure_bara=21.494365443425075
+hydrostatic_test_pressure_bara=NaN
+head_rise_to_shutoff_fraction=NaN
+bearing_l10_life_hours=NaN
+critical_speed_ratio=NaN
+assessment_basis=API 610 screening; vendor and purchaser verification required
+check operating-region status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Rated flow shall be evaluated relative to vendor BEP message=Vendor BEP flow is not available
+check npsh-margin status=PASS actual=74.25948694972546 limit=1.0 unit=m requirement=NPSHa shall exceed NPSHr by configured head and ratio margins message=NPSH margin ratio=38.130, required ratio=1.200
+check pressure-casing status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Furnished casing MAWP shall cover the required casing pressure message=Required pressure calculated; furnished casing MAWP is not available
+check hydrostatic-test status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Casing hydrostatic test pressure shall meet the configured pressure factor message=Required test pressure calculated; vendor test pressure is not available
+check head-rise status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Head rise from rated flow to shutoff shall meet the configured minimum message=A vendor or purchaser shutoff head is not available
+check driver-rating status=PASS actual=0.75 limit=0.1651492584268635 unit=kW requirement=Driver rating shall cover absorbed power with configured margin message=Selected next configured driver rating
+check bearing-life status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Bearing L10 life shall meet the configured minimum message=Bearing dynamic rating, equivalent load or rated speed is not available
+check shaft-deflection status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Shaft deflection at the seal shall not exceed the configured limit message=Vendor shaft analysis is not available
+check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Critical-speed separation shall be verified message=Vendor rotor-dynamic analysis is not available
+check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
+check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
+check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type OH2 requires purchaser selection
+inlet_n=1.0
+inlet_P=5.0
+inlet_T=250.0
+inlet_h=-25558.81196269646
+inlet_s=-94.04537587823086
+inlet_z=n-butane:1.0
+outlet_n=1.0
+outlet_P=20.0
+outlet_T=250.40559428570015
+outlet_h=-25426.69255595497
+outlet_s=-94.04537587823725
+outlet_z=n-butane:1.0
+power_kW=0.1321194067414908
+
+multistage
+pump_type=BETWEEN_BEARINGS
+seal_type=SINGLE_MECHANICAL
+api610_pump_type=BB3
+rated_flow_m3_per_hr=182.02577425673505
+rated_head_m=608.1004253251907
+pump_efficiency=0.75
+hydraulic_power_kW=298.3200189207602
+absorbed_power_kW=461.6081951968968
+rated_speed_rpm=3000.0
+specific_speed=5.508774150455123
+suction_specific_speed=7324.014625760338
+number_of_stages=4
+bep_flow_m3_per_hr=NaN
+bep_head_m=NaN
+npsh_required_m=8.0
+npsh_available_m=10.108979985907162
+design_npsh_margin_m=2.108979985907162
+design_npsh_margin_ratio=1.2636224982383952
+driver_power_kW=630.0
+driver_margin=1.1
+design_pressure_bara=65.9
+design_temperature_C=50.8011749118138
+impeller_diameter_mm=347.6860630651668
+impeller_width_mm=10.0
+shaft_diameter_mm=70.0
+casing_wall_thickness_mm=12.692762920695419
+casing_mawp_bara=65.9
+suction_nozzle_size_in=8.0
+discharge_nozzle_size_in=6.0
+minimum_flow_m3_per_hr=118.31675326687777
+maximum_flow_m3_per_hr=209.3296403952453
+shutoff_head_m=NaN
+effective_isentropic_efficiency=0.75
+npsh_margin_factor=1.2000000000000002
+minimum_npsh_margin_m=1.0
+por_low_fraction=0.7
+por_high_fraction=1.2
+aor_low_fraction=0.6499999999999999
+aor_high_fraction=1.25
+rated_point_low_fraction=0.8
+rated_point_high_fraction=1.1
+min_continuous_flow_fraction=0.6499999999999999
+max_continuous_flow_fraction=1.15
+max_suction_specific_speed=12000.0
+hydraulic_power_margin=1.0750000000000002
+head_margin_factor=1.05
+casing_weight_kg=113.63594649596018
+motor_weight_kg=1061.6535220748797
+baseplate_weight_kg=705.1736811425038
+inner_diameter_m=0.3998389725249418
+outer_diameter_m=0.4252244983663327
+wall_thickness_mm=12.692762920695419
+tantan_length_m=0.04
+weight_piping_kg=302.05294603365314
+weight_electro_instrument_kg=201.36863068910213
+weight_structural_steel_kg=100.68431534455107
+weight_total_kg=2617.792198958328
+module_length_m=3.1220586560895174
+module_width_m=1.1953721261303336
+module_height_m=0.6476860630651669
+assessment_status=PASS_WITH_WARNINGS
+selected_driver_power_kW=630.0
+required_driver_power_kW=507.7690147165865
+operating_region=NOT_EVALUATED
+operating_flow_ratio=NaN
+assessment_npsh_margin_ratio=1.2636224982383952
+required_casing_pressure_bara=65.8778374108053
+hydrostatic_test_pressure_bara=NaN
+head_rise_to_shutoff_fraction=NaN
+bearing_l10_life_hours=NaN
+critical_speed_ratio=NaN
+assessment_basis=API 610 screening; vendor and purchaser verification required
+check operating-region status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Rated flow shall be evaluated relative to vendor BEP message=Vendor BEP flow is not available
+check npsh-margin status=PASS actual=2.108979985907162 limit=1.0 unit=m requirement=NPSHa shall exceed NPSHr by configured head and ratio margins message=NPSH margin ratio=1.264, required ratio=1.200
+check pressure-casing status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Furnished casing MAWP shall cover the required casing pressure message=Required pressure calculated; furnished casing MAWP is not available
+check hydrostatic-test status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Casing hydrostatic test pressure shall meet the configured pressure factor message=Required test pressure calculated; vendor test pressure is not available
+check head-rise status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Head rise from rated flow to shutoff shall meet the configured minimum message=A vendor or purchaser shutoff head is not available
+check driver-rating status=PASS actual=630.0 limit=507.7690147165865 unit=kW requirement=Driver rating shall cover absorbed power with configured margin message=Selected next configured driver rating
+check bearing-life status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Bearing L10 life shall meet the configured minimum message=Bearing dynamic rating, equivalent load or rated speed is not available
+check shaft-deflection status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Shaft deflection at the seal shall not exceed the configured limit message=Vendor shaft analysis is not available
+check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Critical-speed separation shall be verified message=Vendor rotor-dynamic analysis is not available
+check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
+check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
+check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type BB3 requires purchaser selection
+inlet_n=2775.9
+inlet_P=1.0
+inlet_T=293.15
+inlet_h=-45290.32774260621
+inlet_s=-121.58350415972896
+inlet_z=water:1.0
+outlet_n=2775.9
+outlet_P=60.0
+outlet_T=293.9511749118138
+outlet_h=-45124.036379373785
+outlet_s=-121.44195281007691
+outlet_z=water:1.0
+power_kW=461.6081951968968
+
+purchaser
+pump_type=OVERHUNG
+seal_type=SINGLE_MECHANICAL
+api610_pump_type=OH2
+rated_flow_m3_per_hr=0.3397720841943109
+rated_head_m=248.29011116523293
+pump_efficiency=0.75
+hydraulic_power_kW=0.14157170174762954
+absorbed_power_kW=0.17615920898858894
+rated_speed_rpm=1000.0
+specific_speed=0.1553184434416767
+suction_specific_speed=298.3323473493966
+number_of_stages=1
+bep_flow_m3_per_hr=NaN
+bep_head_m=NaN
+npsh_required_m=2.0
+npsh_available_m=76.25948694972546
+design_npsh_margin_m=74.25948694972546
+design_npsh_margin_ratio=38.12974347486273
+driver_power_kW=0.75
+driver_margin=1.25
+design_pressure_bara=30.165279768259072
+design_temperature_C=7.61215146761208
+impeller_diameter_mm=1000.0
+impeller_width_mm=10.0
+shaft_diameter_mm=20.0
+casing_wall_thickness_mm=15.661068359330123
+casing_mawp_bara=30.16527976825907
+suction_nozzle_size_in=1.0
+discharge_nozzle_size_in=1.0
+minimum_flow_m3_per_hr=0.22085185472630203
+maximum_flow_m3_per_hr=0.3907378968234575
+shutoff_head_m=400.0
+effective_isentropic_efficiency=0.75
+npsh_margin_factor=1.2000000000000002
+minimum_npsh_margin_m=1.0
+por_low_fraction=0.7
+por_high_fraction=1.2
+aor_low_fraction=0.6499999999999999
+aor_high_fraction=1.25
+rated_point_low_fraction=0.8
+rated_point_high_fraction=1.1
+min_continuous_flow_fraction=0.6499999999999999
+max_continuous_flow_fraction=1.15
+max_suction_specific_speed=12000.0
+hydraulic_power_margin=1.0750000000000002
+head_margin_factor=1.05
+casing_weight_kg=99.0457596632316
+motor_weight_kg=22.25
+baseplate_weight_kg=72.77745579793896
+inner_diameter_m=1.15
+outer_diameter_m=1.1813221367186602
+wall_thickness_mm=15.661068359330123
+tantan_length_m=0.01
+weight_piping_kg=35.83161259885716
+weight_electro_instrument_kg=23.887741732571445
+weight_structural_steel_kg=11.943870866285723
+weight_total_kg=310.5406425234288
+module_length_m=3.343301270189222
+module_width_m=2.5
+module_height_m=1.3
+assessment_status=FAIL
+selected_driver_power_kW=0.75
+required_driver_power_kW=0.22019901123573618
+operating_region=NOT_EVALUATED
+operating_flow_ratio=NaN
+assessment_npsh_margin_ratio=38.12974347486273
+required_casing_pressure_bara=30.157027608501306
+hydrostatic_test_pressure_bara=NaN
+head_rise_to_shutoff_fraction=0.6110186512172717
+bearing_l10_life_hours=NaN
+critical_speed_ratio=NaN
+assessment_basis=API 610 screening; vendor and purchaser verification required
+check operating-region status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Rated flow shall be evaluated relative to vendor BEP message=Vendor BEP flow is not available
+check npsh-margin status=PASS actual=74.25948694972546 limit=1.0 unit=m requirement=NPSHa shall exceed NPSHr by configured head and ratio margins message=NPSH margin ratio=38.130, required ratio=1.200
+check pressure-casing status=FAIL actual=25.0 limit=30.157027608501306 unit=bara requirement=Furnished casing MAWP shall cover maximum suction plus shutoff head message=Required casing pressure uses shutoff-head source PURCHASER_INPUT
+check hydrostatic-test status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Casing hydrostatic test pressure shall meet the configured pressure factor message=Required test pressure calculated; vendor test pressure is not available
+check head-rise status=PASS actual=0.6110186512172717 limit=0.1 unit=fraction requirement=Head rise from rated flow to shutoff shall meet the configured minimum message=Endpoint screening does not replace verification of a continuously rising H-Q curve
+check driver-rating status=PASS actual=0.75 limit=0.22019901123573618 unit=kW requirement=Driver rating shall cover absorbed power with configured margin message=Selected next configured driver rating
+check bearing-life status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Bearing L10 life shall meet the configured minimum message=Bearing dynamic rating, equivalent load or rated speed is not available
+check shaft-deflection status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Shaft deflection at the seal shall not exceed the configured limit message=Vendor shaft analysis is not available
+check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Critical-speed separation shall be verified message=Vendor rotor-dynamic analysis is not available
+check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
+check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
+check pump-type status=PASS actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Selected construction type OH2
+inlet_n=1.0
+inlet_P=5.0
+inlet_T=250.0
+inlet_h=-25558.81196269646
+inlet_s=-94.04537587823086
+inlet_z=n-butane:1.0
+outlet_n=1.0
+outlet_P=20.0
+outlet_T=250.76215146761206
+outlet_h=-25382.652753707873
+outlet_s=-93.8696271173196
+outlet_z=n-butane:1.0
+power_kW=0.17615920898858894
+
+sealless
+pump_type=OVERHUNG
+seal_type=MAGNETIC_DRIVE
+api610_pump_type=OH2
+rated_flow_m3_per_hr=0.3397720841943109
+rated_head_m=248.29011116523293
+pump_efficiency=0.75
+hydraulic_power_kW=0.14157170174762954
+absorbed_power_kW=0.17615920898858894
+rated_speed_rpm=1000.0
+specific_speed=0.1553184434416767
+suction_specific_speed=298.3323473493966
+number_of_stages=1
+bep_flow_m3_per_hr=NaN
+bep_head_m=NaN
+npsh_required_m=2.0
+npsh_available_m=76.25948694972546
+design_npsh_margin_m=74.25948694972546
+design_npsh_margin_ratio=38.12974347486273
+driver_power_kW=0.75
+driver_margin=1.25
+design_pressure_bara=21.5
+design_temperature_C=7.61215146761208
+impeller_diameter_mm=1000.0
+impeller_width_mm=10.0
+shaft_diameter_mm=20.0
+casing_wall_thickness_mm=12.006957852172963
+casing_mawp_bara=21.500000000000004
+suction_nozzle_size_in=1.0
+discharge_nozzle_size_in=1.0
+minimum_flow_m3_per_hr=0.22085185472630203
+maximum_flow_m3_per_hr=0.3907378968234575
+shutoff_head_m=NaN
+effective_isentropic_efficiency=0.75
+npsh_margin_factor=1.2000000000000002
+minimum_npsh_margin_m=1.0
+por_low_fraction=0.7
+por_high_fraction=1.2
+aor_low_fraction=0.6499999999999999
+aor_high_fraction=1.25
+rated_point_low_fraction=0.8
+rated_point_high_fraction=1.1
+min_continuous_flow_fraction=0.6499999999999999
+max_continuous_flow_fraction=1.15
+max_suction_specific_speed=12000.0
+hydraulic_power_margin=1.0750000000000002
+head_margin_factor=1.05
+casing_weight_kg=75.69791627853941
+motor_weight_kg=22.25
+baseplate_weight_kg=58.768749767123644
+inner_diameter_m=1.15
+outer_diameter_m=1.1740139157043459
+wall_thickness_mm=12.006957852172963
+tantan_length_m=0.01
+weight_piping_kg=30.22813018653104
+weight_electro_instrument_kg=20.152086791020693
+weight_structural_steel_kg=10.076043395510347
+weight_total_kg=261.977128283269
+module_length_m=3.343301270189222
+module_width_m=2.5
+module_height_m=1.3
+assessment_status=PASS_WITH_WARNINGS
+selected_driver_power_kW=0.75
+required_driver_power_kW=0.22019901123573618
+operating_region=NOT_EVALUATED
+operating_flow_ratio=NaN
+assessment_npsh_margin_ratio=38.12974347486273
+required_casing_pressure_bara=21.494365443425075
+hydrostatic_test_pressure_bara=NaN
+head_rise_to_shutoff_fraction=NaN
+bearing_l10_life_hours=NaN
+critical_speed_ratio=NaN
+assessment_basis=API 610 screening; vendor and purchaser verification required
+check operating-region status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Rated flow shall be evaluated relative to vendor BEP message=Vendor BEP flow is not available
+check npsh-margin status=PASS actual=74.25948694972546 limit=1.0 unit=m requirement=NPSHa shall exceed NPSHr by configured head and ratio margins message=NPSH margin ratio=38.130, required ratio=1.200
+check pressure-casing status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Furnished casing MAWP shall cover the required casing pressure message=Required pressure calculated; furnished casing MAWP is not available
+check hydrostatic-test status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Casing hydrostatic test pressure shall meet the configured pressure factor message=Required test pressure calculated; vendor test pressure is not available
+check head-rise status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Head rise from rated flow to shutoff shall meet the configured minimum message=A vendor or purchaser shutoff head is not available
+check driver-rating status=PASS actual=0.75 limit=0.22019901123573618 unit=kW requirement=Driver rating shall cover absorbed power with configured margin message=Selected next configured driver rating
+check bearing-life status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Bearing L10 life shall meet the configured minimum message=Bearing dynamic rating, equivalent load or rated speed is not available
+check shaft-deflection status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Shaft deflection at the seal shall not exceed the configured limit message=Vendor shaft analysis is not available
+check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Critical-speed separation shall be verified message=Vendor rotor-dynamic analysis is not available
+check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
+check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
+check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type OH2 requires purchaser selection
+check standard-scope status=WARNING actual=NaN limit=NaN unit= requirement=Sealless pump construction requires the applicable sealless-pump standard message=Magnetic-drive and canned-motor pumps are outside API 610 scope
+inlet_n=1.0
+inlet_P=5.0
+inlet_T=250.0
+inlet_h=-25558.81196269646
+inlet_s=-94.04537587823086
+inlet_z=n-butane:1.0
+outlet_n=1.0
+outlet_P=20.0
+outlet_T=250.76215146761206
+outlet_h=-25382.652753707873
+outlet_s=-93.8696271173196
+outlet_z=n-butane:1.0
+power_kW=0.17615920898858894
+
+zero_flow
+pump_type=OVERHUNG
+seal_type=SINGLE_MECHANICAL
+api610_pump_type=OH2
+rated_flow_m3_per_hr=NaN
+rated_head_m=NaN
+pump_efficiency=0.75
+hydraulic_power_kW=NaN
+absorbed_power_kW=0.0
+rated_speed_rpm=1000.0
+specific_speed=0.0
+suction_specific_speed=0.0
+number_of_stages=1
+bep_flow_m3_per_hr=NaN
+bep_head_m=NaN
+npsh_required_m=8.0
+npsh_available_m=NaN
+design_npsh_margin_m=NaN
+design_npsh_margin_ratio=NaN
+driver_power_kW=0.0
+driver_margin=1.25
+design_pressure_bara=NaN
+design_temperature_C=6.850000000000023
+impeller_diameter_mm=NaN
+impeller_width_mm=NaN
+shaft_diameter_mm=20.0
+casing_wall_thickness_mm=NaN
+casing_mawp_bara=NaN
+suction_nozzle_size_in=4.0
+discharge_nozzle_size_in=3.0
+minimum_flow_m3_per_hr=NaN
+maximum_flow_m3_per_hr=NaN
+shutoff_head_m=NaN
+effective_isentropic_efficiency=0.75
+npsh_margin_factor=1.2000000000000002
+minimum_npsh_margin_m=1.0
+por_low_fraction=0.7
+por_high_fraction=1.2
+aor_low_fraction=0.6499999999999999
+aor_high_fraction=1.25
+rated_point_low_fraction=0.8
+rated_point_high_fraction=1.1
+min_continuous_flow_fraction=0.6499999999999999
+max_continuous_flow_fraction=1.15
+max_suction_specific_speed=12000.0
+hydraulic_power_margin=1.0750000000000002
+head_margin_factor=1.05
+casing_weight_kg=NaN
+motor_weight_kg=50.0
+baseplate_weight_kg=NaN
+inner_diameter_m=NaN
+outer_diameter_m=NaN
+wall_thickness_mm=NaN
+tantan_length_m=NaN
+weight_piping_kg=NaN
+weight_electro_instrument_kg=NaN
+weight_structural_steel_kg=NaN
+weight_total_kg=NaN
+module_length_m=NaN
+module_width_m=NaN
+module_height_m=NaN
+assessment_status=NOT_EVALUATED
+selected_driver_power_kW=NaN
+required_driver_power_kW=NaN
+operating_region=NOT_EVALUATED
+operating_flow_ratio=NaN
+assessment_npsh_margin_ratio=NaN
+required_casing_pressure_bara=NaN
+hydrostatic_test_pressure_bara=NaN
+head_rise_to_shutoff_fraction=NaN
+bearing_l10_life_hours=NaN
+critical_speed_ratio=NaN
+assessment_basis=API 610 screening; vendor and purchaser verification required
+check operating-region status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Rated flow shall be evaluated relative to vendor BEP message=Vendor BEP flow is not available
+check npsh-margin status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=NPSHa shall exceed NPSHr by the configured head and ratio margins message=Reliable NPSHa or vendor NPSHr is not available
+check pressure-casing status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Pressure casing MAWP shall cover maximum suction plus shutoff head message=Maximum suction pressure, rated head or liquid density is not available
+check hydrostatic-test status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Casing hydrostatic test pressure shall meet the configured pressure factor message=Casing pressure basis is not available
+check head-rise status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Head rise from rated flow to shutoff shall meet the configured minimum message=A vendor or purchaser shutoff head is not available
+check driver-rating status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Driver rating shall cover absorbed power with configured margin message=Maximum absorbed power is not available
+check bearing-life status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Bearing L10 life shall meet the configured minimum message=Bearing dynamic rating, equivalent load or rated speed is not available
+check shaft-deflection status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Shaft deflection at the seal shall not exceed the configured limit message=Vendor shaft analysis is not available
+check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Critical-speed separation shall be verified message=Vendor rotor-dynamic analysis is not available
+check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
+check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
+check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type OH2 requires purchaser selection
+inlet_n=0.0
+inlet_P=5.0
+inlet_T=250.0
+inlet_h=NaN
+inlet_s=NaN
+inlet_z=n-butane:1.0
+outlet_n=0.0
+outlet_P=20.0
+outlet_T=250.0
+outlet_h=NaN
+outlet_s=NaN
+outlet_z=n-butane:1.0
+power_kW=0.0
+
+chart
+pump_type=OVERHUNG
+seal_type=SINGLE_MECHANICAL
+api610_pump_type=OH2
+rated_flow_m3_per_hr=4044.3831677560142
+rated_head_m=70.44783747201852
+pump_efficiency=0.8044058596702989
+hydraulic_power_kW=767.8814284450019
+absorbed_power_kW=954.59452227211
+rated_speed_rpm=12913.0
+specific_speed=500.8171381700887
+suction_specific_speed=139392.556208812
+number_of_stages=1
+bep_flow_m3_per_hr=3558.7858351420873
+bep_head_m=75.58985753059034
+npsh_required_m=8.0
+npsh_available_m=10.108979985907162
+design_npsh_margin_m=2.108979985907162
+design_npsh_margin_ratio=1.2636224982383952
+driver_power_kW=1250.0
+driver_margin=1.1
+design_pressure_bara=8.697782919990097
+design_temperature_C=50.04609616964922
+impeller_diameter_mm=54.986687943765375
+impeller_width_mm=200.0
+shaft_diameter_mm=55.0
+casing_wall_thickness_mm=6.0
+casing_mawp_bara=127.22440678287684
+suction_nozzle_size_in=4.0
+discharge_nozzle_size_in=3.0
+minimum_flow_m3_per_hr=2313.2107928423566
+maximum_flow_m3_per_hr=4092.6037104134
+shutoff_head_m=79.33940792723672
+effective_isentropic_efficiency=80.44058596702989
+npsh_margin_factor=1.2000000000000002
+minimum_npsh_margin_m=1.0
+por_low_fraction=0.7
+por_high_fraction=1.2
+aor_low_fraction=0.6499999999999999
+aor_high_fraction=1.25
+rated_point_low_fraction=0.8
+rated_point_high_fraction=1.1
+min_continuous_flow_fraction=0.6499999999999999
+max_continuous_flow_fraction=1.15
+max_suction_specific_speed=12000.0
+hydraulic_power_margin=1.0750000000000002
+head_margin_factor=1.05
+casing_weight_kg=6.146753388472245
+motor_weight_kg=1875.0809617489817
+baseplate_weight_kg=1128.7366290824723
+inner_diameter_m=0.06323469113533017
+outer_diameter_m=0.07523469113533017
+wall_thickness_mm=6.0
+tantan_length_m=0.2
+weight_piping_kg=475.1870019427801
+weight_electro_instrument_kg=316.79133462852013
+weight_structural_steel_kg=158.39566731426007
+weight_total_kg=4118.287350170761
+module_length_m=3.030200192184651
+module_width_m=1.0
+module_height_m=0.5
+assessment_status=PASS_WITH_WARNINGS
+selected_driver_power_kW=1250.0
+required_driver_power_kW=1050.0539744993212
+operating_region=POR
+operating_flow_ratio=1.1364502825145528
+assessment_npsh_margin_ratio=1.2636224982383952
+required_casing_pressure_bara=8.695154217361967
+hydrostatic_test_pressure_bara=NaN
+head_rise_to_shutoff_fraction=0.12621495242845282
+bearing_l10_life_hours=NaN
+critical_speed_ratio=NaN
+assessment_basis=API 610 screening; vendor and purchaser verification required
+check operating-region status=WARNING actual=1.1364502825145528 limit=1.1 unit=Q/Qbep requirement=Rated flow within configured rated-point region message=Duty is inside POR but outside the configured rated-point region
+check npsh-margin status=PASS actual=2.108979985907162 limit=1.0 unit=m requirement=NPSHa shall exceed NPSHr by configured head and ratio margins message=NPSH margin ratio=1.264, required ratio=1.200
+check pressure-casing status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Furnished casing MAWP shall cover the required casing pressure message=Required pressure calculated; furnished casing MAWP is not available
+check hydrostatic-test status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Casing hydrostatic test pressure shall meet the configured pressure factor message=Required test pressure calculated; vendor test pressure is not available
+check head-rise status=PASS actual=0.12621495242845282 limit=0.1 unit=fraction requirement=Head rise from rated flow to shutoff shall meet the configured minimum message=Endpoint screening does not replace verification of a continuously rising H-Q curve
+check driver-rating status=PASS actual=1250.0 limit=1050.0539744993212 unit=kW requirement=Driver rating shall cover absorbed power with configured margin message=Selected next configured driver rating
+check bearing-life status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Bearing L10 life shall meet the configured minimum message=Bearing dynamic rating, equivalent load or rated speed is not available
+check shaft-deflection status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Shaft deflection at the seal shall not exceed the configured limit message=Vendor shaft analysis is not available
+check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Critical-speed separation shall be verified message=Vendor rotor-dynamic analysis is not available
+check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
+check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
+check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type OH2 requires purchaser selection
+inlet_n=61676.9975637586
+inlet_P=1.0
+inlet_T=293.15
+inlet_h=-45290.32774260622
+inlet_s=-121.583504159729
+inlet_z=water:1.0
+outlet_n=61676.9975637586
+outlet_P=7.835092096221417
+outlet_T=293.1960961696492
+outlet_h=-45274.85042431936
+outlet_s=-121.58000596047322
+outlet_z=water:1.0
+power_kW=954.59452227211
+
+chart_npsh
+pump_type=OVERHUNG
+seal_type=SINGLE_MECHANICAL
+api610_pump_type=OH2
+rated_flow_m3_per_hr=40.4939714727463
+rated_head_m=109.62231428510457
+pump_efficiency=0.8203890611901951
+hydraulic_power_kW=11.918960176433703
+absorbed_power_kW=14.52842406155169
+rated_speed_rpm=1000.0
+specific_speed=3.2932510782814703
+suction_specific_speed=2485.4670421331057
+number_of_stages=1
+bep_flow_m3_per_hr=43.60000000000001
+bep_head_m=107.63566592592589
+npsh_required_m=3.012675168303445
+npsh_available_m=20.420875957711484
+design_npsh_margin_m=17.40820078940804
+design_npsh_margin_ratio=6.778319870844647
+driver_power_kW=18.5
+driver_margin=1.25
+design_pressure_bara=13.571089030878456
+design_temperature_C=55.06808596103423
+impeller_diameter_mm=885.7279763985731
+impeller_width_mm=10.0
+shaft_diameter_mm=35.0
+casing_wall_thickness_mm=8.026928842602059
+casing_mawp_bara=13.571089030878458
+suction_nozzle_size_in=3.0
+discharge_nozzle_size_in=2.0
+minimum_flow_m3_per_hr=28.340000000000003
+maximum_flow_m3_per_hr=50.14000000000001
+shutoff_head_m=119.70787037037034
+effective_isentropic_efficiency=82.0389061190195
+npsh_margin_factor=1.2000000000000002
+minimum_npsh_margin_m=1.0
+por_low_fraction=0.7
+por_high_fraction=1.2
+aor_low_fraction=0.6499999999999999
+aor_high_fraction=1.25
+rated_point_low_fraction=0.8
+rated_point_high_fraction=1.1
+min_continuous_flow_fraction=0.6499999999999999
+max_continuous_flow_fraction=1.15
+max_suction_specific_speed=12000.0
+hydraulic_power_margin=1.0750000000000002
+head_margin_factor=1.05
+casing_weight_kg=44.70940073293752
+motor_weight_kg=96.25
+baseplate_weight_kg=84.57564043976251
+inner_diameter_m=1.0185871728583589
+outer_diameter_m=1.0346410305435632
+wall_thickness_mm=8.026928842602059
+tantan_length_m=0.01
+weight_piping_kg=41.725770748159
+weight_electro_instrument_kg=27.817180498772668
+weight_structural_steel_kg=13.908590249386334
+weight_total_kg=361.62334648404465
+module_length_m=3.286514084473212
+module_width_m=2.2714559527971465
+module_height_m=1.185727976398573
+assessment_status=FAIL
+selected_driver_power_kW=18.5
+required_driver_power_kW=18.16053007693961
+operating_region=POR
+operating_flow_ratio=0.9287608135950985
+assessment_npsh_margin_ratio=6.778319870844647
+required_casing_pressure_bara=13.567137639619185
+hydrostatic_test_pressure_bara=NaN
+head_rise_to_shutoff_fraction=0.09200276559602072
+bearing_l10_life_hours=NaN
+critical_speed_ratio=NaN
+assessment_basis=API 610 screening; vendor and purchaser verification required
+check operating-region status=PASS actual=0.9287608135950985 limit=1.1 unit=Q/Qbep requirement=Rated flow within configured rated-point region message=Rated point is within the configured rated region
+check npsh-margin status=PASS actual=17.40820078940804 limit=1.0 unit=m requirement=NPSHa shall exceed NPSHr by configured head and ratio margins message=NPSH margin ratio=6.778, required ratio=1.200
+check pressure-casing status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Furnished casing MAWP shall cover the required casing pressure message=Required pressure calculated; furnished casing MAWP is not available
+check hydrostatic-test status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Casing hydrostatic test pressure shall meet the configured pressure factor message=Required test pressure calculated; vendor test pressure is not available
+check head-rise status=FAIL actual=0.09200276559602072 limit=0.1 unit=fraction requirement=Head rise from rated flow to shutoff shall meet the configured minimum message=Endpoint screening does not replace verification of a continuously rising H-Q curve
+check driver-rating status=PASS actual=18.5 limit=18.16053007693961 unit=kW requirement=Driver rating shall cover absorbed power with configured margin message=Selected next configured driver rating
+check bearing-life status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Bearing L10 life shall meet the configured minimum message=Bearing dynamic rating, equivalent load or rated speed is not available
+check shaft-deflection status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Shaft deflection at the seal shall not exceed the configured limit message=Vendor shaft analysis is not available
+check critical-speed status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Critical-speed separation shall be verified message=Vendor rotor-dynamic analysis is not available
+check nozzle-loads status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Combined nozzle-load utilization shall not exceed unity message=Nozzle loads or allowables are not available
+check vibration status=NOT_EVALUATED actual=NaN limit=NaN unit= requirement=Vibration velocity shall not exceed the configured limit message=Vendor or measured vibration data are not available
+check pump-type status=WARNING actual=NaN limit=NaN unit= requirement=Exact API 610 construction type shall be selected message=Preliminary recommended construction type OH2 requires purchaser selection
+inlet_n=615.228050698492
+inlet_P=2.0
+inlet_T=298.15
+inlet_h=-44883.20203384986
+inlet_s=-120.21358100793799
+inlet_z=water:1.0
+outlet_n=615.228050698492
+outlet_P=12.596208540335423
+outlet_T=298.2180859610342
+outlet_h=-44859.58733675493
+outlet_s=-120.20976226636023
+outlet_z=water:1.0
+power_kW=14.52842406155169
+
