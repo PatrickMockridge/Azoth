@@ -2823,8 +2823,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.turbo_expander_compressor': {
         "calc_id": 'process.turbo_expander_compressor',
         "name": 'Turbo-expander compressor',
-        "spec": {'path': 'specs/models/process/turbo_expander_compressor.toml', 'sha256': '65963a2d3b77b0fda767f8de991b9df6fa3a70b43120204bc867edf2d93798ef'},
-        "code": [{'path': 'python/src/azoth/process/reference/turbo_expander_compressor.py', 'sha256': '2eba3ab8d45c16d2bc94002146a38dae9072ae0d04d8c88ec302d2ae251f5e7b'}, {'path': 'crates/azoth-process/src/models/turbo_expander_compressor.rs', 'sha256': '74a8b646738bb512c440df6756cffdb7728bf0dfc468a86865ebdc83343cc8f4'}],
+        "spec": {'path': 'specs/models/process/turbo_expander_compressor.toml', 'sha256': '49287cdc841f2a8c7dfa2e9e925d00174e3ce44bfa82679258616f5e64ef0813'},
+        "code": [{'path': 'python/src/azoth/process/reference/turbo_expander_compressor.py', 'sha256': '7a833d91fb9bc456aab93711e2ddfaa5299bbcaadc24545626579c12ea635de5'}, {'path': 'crates/azoth-process/src/models/turbo_expander_compressor.rs', 'sha256': 'da576b57f069a1b09a50947a13efac5406a485cff4f721569cc0d7e4169fe428'}],
         "source": 'NeqSim process/equipment/expander/TurboExpanderCompressor.java',
         "verification": 'partially_verified',
         "validation_cases": 0,

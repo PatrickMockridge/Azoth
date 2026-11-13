@@ -727,8 +727,8 @@ fn the_generated_input_table_is_the_models_own() {
     // the suction pressure, the furnished MAWP, the shutoff head, the NPSH factor, the
     // minimum NPSH margin and the four operating-region fractions - 739 + 13 = 752.
     // **And the compressor's two** - `mechanical_design` and `max_stages_per_casing` -
-    // 752 + 2 = 754.
-    assert_eq!(walked, 754, "the inputs this test walked");
+    // 752 + 2 = 754. **And the turbine-expander's `mechanical_design`** - 754 + 1 = 755.
+    assert_eq!(walked, 755, "the inputs this test walked");
 }
 
 /// **The generated output table is the spec files' own, read a second time.**

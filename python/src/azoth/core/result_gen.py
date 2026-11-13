@@ -8721,6 +8721,159 @@ class TurboExpanderResult(_HasWarnings):
     #: the IGV opening the machine reports - the held one, or the recomputed one.
     igv_opening: float
 
+    #: `getExpanderWheelDiameter`, clamped to `100-1500` mm; the `300` mm default on a non-positive state.
+    design_expander_wheel_diameter: Q | None
+
+    #: `getExpanderTipSpeed`: `min(0.7 sqrt(2 dh), 450)` then `pi D N / 60`.
+    design_expander_tip_speed: Q | None
+
+    #: `getExpanderType`: `RADIAL_INFLOW` below the `100000` m3/hr threshold, `AXIAL` above it. **The axial arm is not reached on the captured states** and is stated rather than exercised.
+    design_expander_type: str | None
+
+    #: `getExpanderStages`: one radial, `ceil(dh/50 kJ/kg)` axial.
+    design_expander_stages: float | None
+
+    #: `getExpanderDesignInletPressure`, the expander feed's pressure.
+    design_expander_design_inlet_pressure: Q | None
+
+    #: `getExpanderDesignOutletPressure`.
+    design_expander_design_outlet_pressure: Q | None
+
+    #: `getExpanderCasingDesignPressure`: the inlet times `1.10`.
+    design_expander_casing_pressure: Q | None
+
+    #: `getExpanderCasingDesignTemperature`: the hotter end plus `30` degC.
+    design_expander_casing_temperature: Q | None
+
+    #: `getExpanderPowerKW` as a magnitude.
+    design_expander_power: Q | None
+
+    #: `getExpanderEnthalpyDropKJkg`, in kJ/kg on the class's convention.
+    design_expander_enthalpy_drop: float | None
+
+    #: `getCompressorImpellerDiameter`, clamped to `100-1500` mm; the `300` mm default on a non-positive head.
+    design_compressor_impeller_diameter: Q | None
+
+    #: `getCompressorTipSpeed`: `sqrt(head_per_stage / 0.5)`, capped at `350` m/s.
+    design_compressor_tip_speed: Q | None
+
+    #: `getCompressorStages`: `ceil(head / 30 kJ/kg)`, at least one.
+    design_compressor_stages: float | None
+
+    #: `getCompressorPolytropicHead`, the head the balance used, kJ/kg.
+    design_compressor_polytropic_head_design: float | None
+
+    #: `getCompressorHeadPerStage`, kJ/kg.
+    design_compressor_head_per_stage: float | None
+
+    #: `getCompressorCasingType`: `BARREL` above `100` bara design pressure, `HORIZONTALLY_SPLIT` above `40`, else `VERTICALLY_SPLIT`. **The barrel arm is not reached on the captured states.**
+    design_compressor_casing_type: str | None
+
+    #: `getCompressorDesignSuctionPressure`.
+    design_compressor_design_suction_pressure: Q | None
+
+    #: `getCompressorDesignDischargePressure`.
+    design_compressor_design_discharge_pressure: Q | None
+
+    #: `getCompressorCasingDesignPressure`: the discharge times `1.10`.
+    design_compressor_casing_pressure: Q | None
+
+    #: `getCompressorCasingDesignTemperature`: the hotter end plus `30` degC.
+    design_compressor_casing_temperature: Q | None
+
+    #: `getCompressorPowerKW` as a magnitude.
+    design_compressor_power: Q | None
+
+    #: `getShaftDiameter`: the combined torque at `50` MPa, times `1.5`, rounded to 5 mm and floored at `30`.
+    design_shaft_diameter: Q | None
+
+    #: `getShaftWeight`.
+    design_shaft_weight: Q | None
+
+    #: `getOperatingSpeed`, rpm.
+    design_operating_speed: float | None
+
+    #: `getMaxContinuousSpeed`, rpm.
+    design_max_continuous_speed: float | None
+
+    #: `getTripSpeed`, rpm.
+    design_trip_speed: float | None
+
+    #: `getFirstCriticalSpeed`, rpm.
+    design_first_critical_speed: float | None
+
+    #: `getSecondCriticalSpeed`: four times the first.
+    design_second_critical_speed: float | None
+
+    #: `getBearingSpan`: the expander end plus the compressor end plus `200` mm. **This class stores it in millimetres.**
+    design_bearing_span: Q | None
+
+    #: `getBearingType`, by speed.
+    design_bearing_type: str | None
+
+    #: `getExpanderSealType`: dry gas above `50` bara casing pressure.
+    design_expander_seal_type: str | None
+
+    #: `getCompressorSealType`: dry gas above `20` bara casing pressure.
+    design_compressor_seal_type: str | None
+
+    #: `getGearRatio`. **The equipment's field defaults to `1.0` and the port's machine carries no gearbox input**, so this is the class's default.
+    design_gear_ratio: float | None
+
+    #: the design torque, in N*m on the class's convention.
+    design_torque: float | None
+
+    #: `getDesignShaftStressMPa`, converted from MPa.
+    design_shaft_stress: Q | None
+
+    #: `getDesignSurgeFlowM3hr`: `0.65` times the compressor's inlet volume flow.
+    design_surge_flow: Q | None
+
+    #: `getDesignStonewallFlowM3hr`: `1.25` times the same.
+    design_stonewall_flow: Q | None
+
+    #: `getExpanderNozzleThroatArea`: the inlet volume flow over `0.95 sqrt(2 dh)`, with a `1.2` margin.
+    design_expander_nozzle_throat_area: Q | None
+
+    #: `getExpanderWheelWeight`, a hollowed disc.
+    design_expander_wheel_weight: Q | None
+
+    #: `getExpanderCasingWeight`.
+    design_expander_casing_weight: Q | None
+
+    #: `getCompressorImpellerWeight`, all stages.
+    design_compressor_impeller_weight: Q | None
+
+    #: `getCompressorCasingWeight`.
+    design_compressor_casing_weight: Q | None
+
+    #: the two casings' weights summed.
+    design_weight_vessel: Q | None
+
+    #: the wheel, impellers and shaft, times `1.3`.
+    design_weight_internals: Q | None
+
+    #: the piping, lube and seal systems.
+    design_weight_piping: Q | None
+
+    #: the class's fixed `50` kg.
+    design_weight_electro_instrument: Q | None
+
+    #: the structural steel and baseplate.
+    design_weight_structural_steel: Q | None
+
+    #: `getWeightTotal`.
+    design_weight_total: Q | None
+
+    #: `getModuleLength`: the expander, compressor and access.
+    design_module_length: Q | None
+
+    #: `getModuleWidth`, floored at `2.5`.
+    design_module_width: Q | None
+
+    #: `getModuleHeight`, floored at `2.0`.
+    design_module_height: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

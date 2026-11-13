@@ -614,10 +614,10 @@ pub fn compressor(
 /// generator refuses; each row is built from the generated mapping here.
 #[pyfunction]
 #[pyo3(
-    signature = (expander_components, compressor_components, expander_n, expander_z, expander_p, expander_t, compressor_n, compressor_z, compressor_p, compressor_t, expander_out_pressure, impeller_diameter, design_speed, design_uc, design_qn, igv_opening = None, igv_control_mode = None, maximum_igv_area = None, igv_area_increase_factor = None, bearing_loss = None, expander_design_isentropic_efficiency = None, compressor_design_polytropic_efficiency = None, compressor_design_polytropic_head = None, expander_out_temperature = None, uc_curve = None, qn_efficiency_curve = None, qn_head_curve = None, chart = None, igv_penalty_curve = None)
+    signature = (expander_components, compressor_components, expander_n, expander_z, expander_p, expander_t, compressor_n, compressor_z, compressor_p, compressor_t, expander_out_pressure, impeller_diameter, design_speed, design_uc, design_qn, igv_opening = None, igv_control_mode = None, maximum_igv_area = None, igv_area_increase_factor = None, bearing_loss = None, expander_design_isentropic_efficiency = None, compressor_design_polytropic_efficiency = None, compressor_design_polytropic_head = None, expander_out_temperature = None, uc_curve = None, qn_efficiency_curve = None, qn_head_curve = None, chart = None, igv_penalty_curve = None, mechanical_design = None)
 )]
 #[pyo3(
-    text_signature = "(expander_components, compressor_components, expander_n, expander_z, expander_p, expander_t, compressor_n, compressor_z, compressor_p, compressor_t, expander_out_pressure, impeller_diameter, design_speed, design_uc, design_qn, igv_opening=None, igv_control_mode=None, maximum_igv_area=None, igv_area_increase_factor=None, bearing_loss=None, expander_design_isentropic_efficiency=None, compressor_design_polytropic_efficiency=None, compressor_design_polytropic_head=None, expander_out_temperature=None, uc_curve=None, qn_efficiency_curve=None, qn_head_curve=None, chart=None, igv_penalty_curve=None)"
+    text_signature = "(expander_components, compressor_components, expander_n, expander_z, expander_p, expander_t, compressor_n, compressor_z, compressor_p, compressor_t, expander_out_pressure, impeller_diameter, design_speed, design_uc, design_qn, igv_opening=None, igv_control_mode=None, maximum_igv_area=None, igv_area_increase_factor=None, bearing_loss=None, expander_design_isentropic_efficiency=None, compressor_design_polytropic_efficiency=None, compressor_design_polytropic_head=None, expander_out_temperature=None, uc_curve=None, qn_efficiency_curve=None, qn_head_curve=None, chart=None, igv_penalty_curve=None, mechanical_design=None)"
 )]
 #[allow(clippy::too_many_arguments)] // one argument per declared input
 pub fn turbo_expander_compressor(
@@ -651,6 +651,7 @@ pub fn turbo_expander_compressor(
     qn_head_curve: Option<Vec<crate::records_gen::TurboQnPoint>>,
     chart: Option<Vec<crate::records_gen::ExpanderMapPoint>>,
     igv_penalty_curve: Option<Vec<crate::records_gen::TurboIgvPenaltyPoint>>,
+    mechanical_design: Option<bool>,
 ) -> PyResult<crate::transport_gen::PyTurboExpanderResult> {
     use azoth_process::models::turbo_expander_compressor::{
         ExpanderMapPoint, TurboIgvPenaltyPoint, TurboQnPoint, TurboUcPoint,
@@ -728,6 +729,7 @@ pub fn turbo_expander_compressor(
         qn_head.as_deref(),
         map.as_deref(),
         penalty.as_deref(),
+        mechanical_design,
     )
     .map(|r| crate::transport_gen::PyTurboExpanderResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

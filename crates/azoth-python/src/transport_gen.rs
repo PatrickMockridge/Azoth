@@ -21716,6 +21716,159 @@ pub struct PyTurboExpanderResult {
     /// the IGV opening the machine reports - the held one, or the recomputed one.
     #[pyo3(get)]
     pub igv_opening: f64,
+    /// `getExpanderWheelDiameter`, clamped to `100-1500` mm; the `300` mm default on a non-positive state.
+    #[pyo3(get)]
+    pub design_expander_wheel_diameter: Option<PyQty>,
+    /// `getExpanderTipSpeed`: `min(0.7 sqrt(2 dh), 450)` then `pi D N / 60`.
+    #[pyo3(get)]
+    pub design_expander_tip_speed: Option<PyQty>,
+    /// `getExpanderType`: `RADIAL_INFLOW` below the `100000` m3/hr threshold, `AXIAL` above it. **The axial arm is not reached on the captured states** and is stated rather than exercised.
+    #[pyo3(get)]
+    pub design_expander_type: Option<String>,
+    /// `getExpanderStages`: one radial, `ceil(dh/50 kJ/kg)` axial.
+    #[pyo3(get)]
+    pub design_expander_stages: Option<f64>,
+    /// `getExpanderDesignInletPressure`, the expander feed's pressure.
+    #[pyo3(get)]
+    pub design_expander_design_inlet_pressure: Option<PyQty>,
+    /// `getExpanderDesignOutletPressure`.
+    #[pyo3(get)]
+    pub design_expander_design_outlet_pressure: Option<PyQty>,
+    /// `getExpanderCasingDesignPressure`: the inlet times `1.10`.
+    #[pyo3(get)]
+    pub design_expander_casing_pressure: Option<PyQty>,
+    /// `getExpanderCasingDesignTemperature`: the hotter end plus `30` degC.
+    #[pyo3(get)]
+    pub design_expander_casing_temperature: Option<PyQty>,
+    /// `getExpanderPowerKW` as a magnitude.
+    #[pyo3(get)]
+    pub design_expander_power: Option<PyQty>,
+    /// `getExpanderEnthalpyDropKJkg`, in kJ/kg on the class's convention.
+    #[pyo3(get)]
+    pub design_expander_enthalpy_drop: Option<f64>,
+    /// `getCompressorImpellerDiameter`, clamped to `100-1500` mm; the `300` mm default on a non-positive head.
+    #[pyo3(get)]
+    pub design_compressor_impeller_diameter: Option<PyQty>,
+    /// `getCompressorTipSpeed`: `sqrt(head_per_stage / 0.5)`, capped at `350` m/s.
+    #[pyo3(get)]
+    pub design_compressor_tip_speed: Option<PyQty>,
+    /// `getCompressorStages`: `ceil(head / 30 kJ/kg)`, at least one.
+    #[pyo3(get)]
+    pub design_compressor_stages: Option<f64>,
+    /// `getCompressorPolytropicHead`, the head the balance used, kJ/kg.
+    #[pyo3(get)]
+    pub design_compressor_polytropic_head_design: Option<f64>,
+    /// `getCompressorHeadPerStage`, kJ/kg.
+    #[pyo3(get)]
+    pub design_compressor_head_per_stage: Option<f64>,
+    /// `getCompressorCasingType`: `BARREL` above `100` bara design pressure, `HORIZONTALLY_SPLIT` above `40`, else `VERTICALLY_SPLIT`. **The barrel arm is not reached on the captured states.**
+    #[pyo3(get)]
+    pub design_compressor_casing_type: Option<String>,
+    /// `getCompressorDesignSuctionPressure`.
+    #[pyo3(get)]
+    pub design_compressor_design_suction_pressure: Option<PyQty>,
+    /// `getCompressorDesignDischargePressure`.
+    #[pyo3(get)]
+    pub design_compressor_design_discharge_pressure: Option<PyQty>,
+    /// `getCompressorCasingDesignPressure`: the discharge times `1.10`.
+    #[pyo3(get)]
+    pub design_compressor_casing_pressure: Option<PyQty>,
+    /// `getCompressorCasingDesignTemperature`: the hotter end plus `30` degC.
+    #[pyo3(get)]
+    pub design_compressor_casing_temperature: Option<PyQty>,
+    /// `getCompressorPowerKW` as a magnitude.
+    #[pyo3(get)]
+    pub design_compressor_power: Option<PyQty>,
+    /// `getShaftDiameter`: the combined torque at `50` MPa, times `1.5`, rounded to 5 mm and floored at `30`.
+    #[pyo3(get)]
+    pub design_shaft_diameter: Option<PyQty>,
+    /// `getShaftWeight`.
+    #[pyo3(get)]
+    pub design_shaft_weight: Option<PyQty>,
+    /// `getOperatingSpeed`, rpm.
+    #[pyo3(get)]
+    pub design_operating_speed: Option<f64>,
+    /// `getMaxContinuousSpeed`, rpm.
+    #[pyo3(get)]
+    pub design_max_continuous_speed: Option<f64>,
+    /// `getTripSpeed`, rpm.
+    #[pyo3(get)]
+    pub design_trip_speed: Option<f64>,
+    /// `getFirstCriticalSpeed`, rpm.
+    #[pyo3(get)]
+    pub design_first_critical_speed: Option<f64>,
+    /// `getSecondCriticalSpeed`: four times the first.
+    #[pyo3(get)]
+    pub design_second_critical_speed: Option<f64>,
+    /// `getBearingSpan`: the expander end plus the compressor end plus `200` mm. **This class stores it in millimetres.**
+    #[pyo3(get)]
+    pub design_bearing_span: Option<PyQty>,
+    /// `getBearingType`, by speed.
+    #[pyo3(get)]
+    pub design_bearing_type: Option<String>,
+    /// `getExpanderSealType`: dry gas above `50` bara casing pressure.
+    #[pyo3(get)]
+    pub design_expander_seal_type: Option<String>,
+    /// `getCompressorSealType`: dry gas above `20` bara casing pressure.
+    #[pyo3(get)]
+    pub design_compressor_seal_type: Option<String>,
+    /// `getGearRatio`. **The equipment's field defaults to `1.0` and the port's machine carries no gearbox input**, so this is the class's default.
+    #[pyo3(get)]
+    pub design_gear_ratio: Option<f64>,
+    /// the design torque, in N*m on the class's convention.
+    #[pyo3(get)]
+    pub design_torque: Option<f64>,
+    /// `getDesignShaftStressMPa`, converted from MPa.
+    #[pyo3(get)]
+    pub design_shaft_stress: Option<PyQty>,
+    /// `getDesignSurgeFlowM3hr`: `0.65` times the compressor's inlet volume flow.
+    #[pyo3(get)]
+    pub design_surge_flow: Option<PyQty>,
+    /// `getDesignStonewallFlowM3hr`: `1.25` times the same.
+    #[pyo3(get)]
+    pub design_stonewall_flow: Option<PyQty>,
+    /// `getExpanderNozzleThroatArea`: the inlet volume flow over `0.95 sqrt(2 dh)`, with a `1.2` margin.
+    #[pyo3(get)]
+    pub design_expander_nozzle_throat_area: Option<PyQty>,
+    /// `getExpanderWheelWeight`, a hollowed disc.
+    #[pyo3(get)]
+    pub design_expander_wheel_weight: Option<PyQty>,
+    /// `getExpanderCasingWeight`.
+    #[pyo3(get)]
+    pub design_expander_casing_weight: Option<PyQty>,
+    /// `getCompressorImpellerWeight`, all stages.
+    #[pyo3(get)]
+    pub design_compressor_impeller_weight: Option<PyQty>,
+    /// `getCompressorCasingWeight`.
+    #[pyo3(get)]
+    pub design_compressor_casing_weight: Option<PyQty>,
+    /// the two casings' weights summed.
+    #[pyo3(get)]
+    pub design_weight_vessel: Option<PyQty>,
+    /// the wheel, impellers and shaft, times `1.3`.
+    #[pyo3(get)]
+    pub design_weight_internals: Option<PyQty>,
+    /// the piping, lube and seal systems.
+    #[pyo3(get)]
+    pub design_weight_piping: Option<PyQty>,
+    /// the class's fixed `50` kg.
+    #[pyo3(get)]
+    pub design_weight_electro_instrument: Option<PyQty>,
+    /// the structural steel and baseplate.
+    #[pyo3(get)]
+    pub design_weight_structural_steel: Option<PyQty>,
+    /// `getWeightTotal`.
+    #[pyo3(get)]
+    pub design_weight_total: Option<PyQty>,
+    /// `getModuleLength`: the expander, compressor and access.
+    #[pyo3(get)]
+    pub design_module_length: Option<PyQty>,
+    /// `getModuleWidth`, floored at `2.5`.
+    #[pyo3(get)]
+    pub design_module_width: Option<PyQty>,
+    /// `getModuleHeight`, floored at `2.0`.
+    #[pyo3(get)]
+    pub design_module_height: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -21725,7 +21878,7 @@ pub struct PyTurboExpanderResult {
 impl PyTurboExpanderResult {
     fn __repr__(&self) -> String {
         format!(
-            "TurboExpanderResult(expander_outlet_n={:?}, expander_outlet_z={:?}, expander_outlet_p={:?}, expander_outlet_t={:?}, expander_outlet_h={:?}, compressor_outlet_n={:?}, compressor_outlet_z={:?}, compressor_outlet_p={:?}, compressor_outlet_t={:?}, compressor_outlet_h={:?}, speed={:?}, power_expander={:?}, power_compressor={:?}, expander_isentropic_efficiency={:?}, expander_design_isentropic_efficiency={:?}, compressor_polytropic_efficiency={:?}, compressor_polytropic_head={:?}, uc_ratio_expander={:?}, qn_ratio_compressor={:?}, igv_opening={:?}, {} warning(s))",
+            "TurboExpanderResult(expander_outlet_n={:?}, expander_outlet_z={:?}, expander_outlet_p={:?}, expander_outlet_t={:?}, expander_outlet_h={:?}, compressor_outlet_n={:?}, compressor_outlet_z={:?}, compressor_outlet_p={:?}, compressor_outlet_t={:?}, compressor_outlet_h={:?}, speed={:?}, power_expander={:?}, power_compressor={:?}, expander_isentropic_efficiency={:?}, expander_design_isentropic_efficiency={:?}, compressor_polytropic_efficiency={:?}, compressor_polytropic_head={:?}, uc_ratio_expander={:?}, qn_ratio_compressor={:?}, igv_opening={:?}, design_expander_wheel_diameter={:?}, design_expander_tip_speed={:?}, design_expander_type={:?}, design_expander_stages={:?}, design_expander_design_inlet_pressure={:?}, design_expander_design_outlet_pressure={:?}, design_expander_casing_pressure={:?}, design_expander_casing_temperature={:?}, design_expander_power={:?}, design_expander_enthalpy_drop={:?}, design_compressor_impeller_diameter={:?}, design_compressor_tip_speed={:?}, design_compressor_stages={:?}, design_compressor_polytropic_head_design={:?}, design_compressor_head_per_stage={:?}, design_compressor_casing_type={:?}, design_compressor_design_suction_pressure={:?}, design_compressor_design_discharge_pressure={:?}, design_compressor_casing_pressure={:?}, design_compressor_casing_temperature={:?}, design_compressor_power={:?}, design_shaft_diameter={:?}, design_shaft_weight={:?}, design_operating_speed={:?}, design_max_continuous_speed={:?}, design_trip_speed={:?}, design_first_critical_speed={:?}, design_second_critical_speed={:?}, design_bearing_span={:?}, design_bearing_type={:?}, design_expander_seal_type={:?}, design_compressor_seal_type={:?}, design_gear_ratio={:?}, design_torque={:?}, design_shaft_stress={:?}, design_surge_flow={:?}, design_stonewall_flow={:?}, design_expander_nozzle_throat_area={:?}, design_expander_wheel_weight={:?}, design_expander_casing_weight={:?}, design_compressor_impeller_weight={:?}, design_compressor_casing_weight={:?}, design_weight_vessel={:?}, design_weight_internals={:?}, design_weight_piping={:?}, design_weight_electro_instrument={:?}, design_weight_structural_steel={:?}, design_weight_total={:?}, design_module_length={:?}, design_module_width={:?}, design_module_height={:?}, {} warning(s))",
             self.expander_outlet_n,
             self.expander_outlet_z,
             self.expander_outlet_p,
@@ -21746,6 +21899,57 @@ impl PyTurboExpanderResult {
             self.uc_ratio_expander,
             self.qn_ratio_compressor,
             self.igv_opening,
+            self.design_expander_wheel_diameter,
+            self.design_expander_tip_speed,
+            self.design_expander_type,
+            self.design_expander_stages,
+            self.design_expander_design_inlet_pressure,
+            self.design_expander_design_outlet_pressure,
+            self.design_expander_casing_pressure,
+            self.design_expander_casing_temperature,
+            self.design_expander_power,
+            self.design_expander_enthalpy_drop,
+            self.design_compressor_impeller_diameter,
+            self.design_compressor_tip_speed,
+            self.design_compressor_stages,
+            self.design_compressor_polytropic_head_design,
+            self.design_compressor_head_per_stage,
+            self.design_compressor_casing_type,
+            self.design_compressor_design_suction_pressure,
+            self.design_compressor_design_discharge_pressure,
+            self.design_compressor_casing_pressure,
+            self.design_compressor_casing_temperature,
+            self.design_compressor_power,
+            self.design_shaft_diameter,
+            self.design_shaft_weight,
+            self.design_operating_speed,
+            self.design_max_continuous_speed,
+            self.design_trip_speed,
+            self.design_first_critical_speed,
+            self.design_second_critical_speed,
+            self.design_bearing_span,
+            self.design_bearing_type,
+            self.design_expander_seal_type,
+            self.design_compressor_seal_type,
+            self.design_gear_ratio,
+            self.design_torque,
+            self.design_shaft_stress,
+            self.design_surge_flow,
+            self.design_stonewall_flow,
+            self.design_expander_nozzle_throat_area,
+            self.design_expander_wheel_weight,
+            self.design_expander_casing_weight,
+            self.design_compressor_impeller_weight,
+            self.design_compressor_casing_weight,
+            self.design_weight_vessel,
+            self.design_weight_internals,
+            self.design_weight_piping,
+            self.design_weight_electro_instrument,
+            self.design_weight_structural_steel,
+            self.design_weight_total,
+            self.design_module_length,
+            self.design_module_width,
+            self.design_module_height,
             self.warnings.len()
         )
     }
@@ -21809,6 +22013,175 @@ impl From<&azoth_process::models::turbo_expander_compressor::TurboExpanderResult
             uc_ratio_expander: r.uc_ratio_expander,
             qn_ratio_compressor: r.qn_ratio_compressor,
             igv_opening: r.igv_opening,
+            design_expander_wheel_diameter: r.design_expander_wheel_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_expander_tip_speed: r.design_expander_tip_speed.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            design_expander_type: r.design_expander_type.clone(),
+            design_expander_stages: r.design_expander_stages,
+            design_expander_design_inlet_pressure: r.design_expander_design_inlet_pressure.map(
+                |v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "Pa".to_string(),
+                },
+            ),
+            design_expander_design_outlet_pressure: r.design_expander_design_outlet_pressure.map(
+                |v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "Pa".to_string(),
+                },
+            ),
+            design_expander_casing_pressure: r.design_expander_casing_pressure.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            design_expander_casing_temperature: r.design_expander_casing_temperature.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "K".to_string(),
+                }
+            }),
+            design_expander_power: r.design_expander_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            design_expander_enthalpy_drop: r.design_expander_enthalpy_drop,
+            design_compressor_impeller_diameter: r.design_compressor_impeller_diameter.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "m".to_string(),
+                }
+            }),
+            design_compressor_tip_speed: r.design_compressor_tip_speed.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            design_compressor_stages: r.design_compressor_stages,
+            design_compressor_polytropic_head_design: r.design_compressor_polytropic_head_design,
+            design_compressor_head_per_stage: r.design_compressor_head_per_stage,
+            design_compressor_casing_type: r.design_compressor_casing_type.clone(),
+            design_compressor_design_suction_pressure: r
+                .design_compressor_design_suction_pressure
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "Pa".to_string(),
+                }),
+            design_compressor_design_discharge_pressure: r
+                .design_compressor_design_discharge_pressure
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "Pa".to_string(),
+                }),
+            design_compressor_casing_pressure: r.design_compressor_casing_pressure.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            design_compressor_casing_temperature: r.design_compressor_casing_temperature.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "K".to_string(),
+                }
+            }),
+            design_compressor_power: r.design_compressor_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            design_shaft_diameter: r.design_shaft_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_shaft_weight: r.design_shaft_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_operating_speed: r.design_operating_speed,
+            design_max_continuous_speed: r.design_max_continuous_speed,
+            design_trip_speed: r.design_trip_speed,
+            design_first_critical_speed: r.design_first_critical_speed,
+            design_second_critical_speed: r.design_second_critical_speed,
+            design_bearing_span: r.design_bearing_span.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_bearing_type: r.design_bearing_type.clone(),
+            design_expander_seal_type: r.design_expander_seal_type.clone(),
+            design_compressor_seal_type: r.design_compressor_seal_type.clone(),
+            design_gear_ratio: r.design_gear_ratio,
+            design_torque: r.design_torque,
+            design_shaft_stress: r.design_shaft_stress.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            design_surge_flow: r.design_surge_flow.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3/h".to_string(),
+            }),
+            design_stonewall_flow: r.design_stonewall_flow.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3/h".to_string(),
+            }),
+            design_expander_nozzle_throat_area: r.design_expander_nozzle_throat_area.map(|v| {
+                PyQty {
+                    magnitude_si: v.value,
+                    unit: "m**2".to_string(),
+                }
+            }),
+            design_expander_wheel_weight: r.design_expander_wheel_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_expander_casing_weight: r.design_expander_casing_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_compressor_impeller_weight: r.design_compressor_impeller_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_compressor_casing_weight: r.design_compressor_casing_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_vessel: r.design_weight_vessel.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_internals: r.design_weight_internals.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_piping: r.design_weight_piping.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_electro_instrument: r.design_weight_electro_instrument.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_structural_steel: r.design_weight_structural_steel.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_total: r.design_weight_total.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_module_length: r.design_module_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_module_width: r.design_module_width.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_module_height: r.design_module_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }

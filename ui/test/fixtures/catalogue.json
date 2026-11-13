@@ -27999,6 +27999,465 @@
           "optional": false,
           "unit": "dimensionless",
           "values": []
+        },
+        {
+          "description": "`getExpanderWheelDiameter`, clamped to `100-1500` mm; the `300` mm default on a non-positive state.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_expander_wheel_diameter",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "`getExpanderTipSpeed`: `min(0.7 sqrt(2 dh), 450)` then `pi D N / 60`.\n",
+          "dimension": "velocity",
+          "kind": "quantity",
+          "name": "design_expander_tip_speed",
+          "optional": true,
+          "unit": "m/s",
+          "values": []
+        },
+        {
+          "description": "`getExpanderType`: `RADIAL_INFLOW` below the `100000` m3/hr threshold, `AXIAL` above it. **The axial arm is not reached on the captured states** and is stated rather than exercised.\n",
+          "dimension": null,
+          "kind": "string",
+          "name": "design_expander_type",
+          "optional": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "`getExpanderStages`: one radial, `ceil(dh/50 kJ/kg)` axial.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_expander_stages",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getExpanderDesignInletPressure`, the expander feed's pressure.\n",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "design_expander_design_inlet_pressure",
+          "optional": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "`getExpanderDesignOutletPressure`.\n",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "design_expander_design_outlet_pressure",
+          "optional": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "`getExpanderCasingDesignPressure`: the inlet times `1.10`.\n",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "design_expander_casing_pressure",
+          "optional": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "`getExpanderCasingDesignTemperature`: the hotter end plus `30` degC.\n",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "design_expander_casing_temperature",
+          "optional": true,
+          "unit": "K",
+          "values": []
+        },
+        {
+          "description": "`getExpanderPowerKW` as a magnitude.\n",
+          "dimension": "power",
+          "kind": "quantity",
+          "name": "design_expander_power",
+          "optional": true,
+          "unit": "W",
+          "values": []
+        },
+        {
+          "description": "`getExpanderEnthalpyDropKJkg`, in kJ/kg on the class's convention.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_expander_enthalpy_drop",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getCompressorImpellerDiameter`, clamped to `100-1500` mm; the `300` mm default on a non-positive head.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_compressor_impeller_diameter",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "`getCompressorTipSpeed`: `sqrt(head_per_stage / 0.5)`, capped at `350` m/s.\n",
+          "dimension": "velocity",
+          "kind": "quantity",
+          "name": "design_compressor_tip_speed",
+          "optional": true,
+          "unit": "m/s",
+          "values": []
+        },
+        {
+          "description": "`getCompressorStages`: `ceil(head / 30 kJ/kg)`, at least one.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_compressor_stages",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getCompressorPolytropicHead`, the head the balance used, kJ/kg.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_compressor_polytropic_head_design",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getCompressorHeadPerStage`, kJ/kg.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_compressor_head_per_stage",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getCompressorCasingType`: `BARREL` above `100` bara design pressure, `HORIZONTALLY_SPLIT` above `40`, else `VERTICALLY_SPLIT`. **The barrel arm is not reached on the captured states.**\n",
+          "dimension": null,
+          "kind": "string",
+          "name": "design_compressor_casing_type",
+          "optional": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "`getCompressorDesignSuctionPressure`.\n",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "design_compressor_design_suction_pressure",
+          "optional": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "`getCompressorDesignDischargePressure`.\n",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "design_compressor_design_discharge_pressure",
+          "optional": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "`getCompressorCasingDesignPressure`: the discharge times `1.10`.\n",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "design_compressor_casing_pressure",
+          "optional": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "`getCompressorCasingDesignTemperature`: the hotter end plus `30` degC.\n",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "design_compressor_casing_temperature",
+          "optional": true,
+          "unit": "K",
+          "values": []
+        },
+        {
+          "description": "`getCompressorPowerKW` as a magnitude.\n",
+          "dimension": "power",
+          "kind": "quantity",
+          "name": "design_compressor_power",
+          "optional": true,
+          "unit": "W",
+          "values": []
+        },
+        {
+          "description": "`getShaftDiameter`: the combined torque at `50` MPa, times `1.5`, rounded to 5 mm and floored at `30`.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_shaft_diameter",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "`getShaftWeight`.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_shaft_weight",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "`getOperatingSpeed`, rpm.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_operating_speed",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getMaxContinuousSpeed`, rpm.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_max_continuous_speed",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getTripSpeed`, rpm.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_trip_speed",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getFirstCriticalSpeed`, rpm.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_first_critical_speed",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getSecondCriticalSpeed`: four times the first.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_second_critical_speed",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getBearingSpan`: the expander end plus the compressor end plus `200` mm. **This class stores it in millimetres.**\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_bearing_span",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "`getBearingType`, by speed.\n",
+          "dimension": null,
+          "kind": "string",
+          "name": "design_bearing_type",
+          "optional": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "`getExpanderSealType`: dry gas above `50` bara casing pressure.\n",
+          "dimension": null,
+          "kind": "string",
+          "name": "design_expander_seal_type",
+          "optional": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "`getCompressorSealType`: dry gas above `20` bara casing pressure.\n",
+          "dimension": null,
+          "kind": "string",
+          "name": "design_compressor_seal_type",
+          "optional": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "`getGearRatio`. **The equipment's field defaults to `1.0` and the port's machine carries no gearbox input**, so this is the class's default.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_gear_ratio",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the design torque, in N*m on the class's convention.\n",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_torque",
+          "optional": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "`getDesignShaftStressMPa`, converted from MPa.\n",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "design_shaft_stress",
+          "optional": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "`getDesignSurgeFlowM3hr`: `0.65` times the compressor's inlet volume flow.\n",
+          "dimension": "volume_rate",
+          "kind": "quantity",
+          "name": "design_surge_flow",
+          "optional": true,
+          "unit": "m**3/h",
+          "values": []
+        },
+        {
+          "description": "`getDesignStonewallFlowM3hr`: `1.25` times the same.\n",
+          "dimension": "volume_rate",
+          "kind": "quantity",
+          "name": "design_stonewall_flow",
+          "optional": true,
+          "unit": "m**3/h",
+          "values": []
+        },
+        {
+          "description": "`getExpanderNozzleThroatArea`: the inlet volume flow over `0.95 sqrt(2 dh)`, with a `1.2` margin.\n",
+          "dimension": "area",
+          "kind": "quantity",
+          "name": "design_expander_nozzle_throat_area",
+          "optional": true,
+          "unit": "m**2",
+          "values": []
+        },
+        {
+          "description": "`getExpanderWheelWeight`, a hollowed disc.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_expander_wheel_weight",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "`getExpanderCasingWeight`.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_expander_casing_weight",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "`getCompressorImpellerWeight`, all stages.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_compressor_impeller_weight",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "`getCompressorCasingWeight`.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_compressor_casing_weight",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "the two casings' weights summed.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_weight_vessel",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "the wheel, impellers and shaft, times `1.3`.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_weight_internals",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "the piping, lube and seal systems.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_weight_piping",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "the class's fixed `50` kg.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_weight_electro_instrument",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "the structural steel and baseplate.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_weight_structural_steel",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "`getWeightTotal`.\n",
+          "dimension": "mass",
+          "kind": "quantity",
+          "name": "design_weight_total",
+          "optional": true,
+          "unit": "kg",
+          "values": []
+        },
+        {
+          "description": "`getModuleLength`: the expander, compressor and access.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_module_length",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "`getModuleWidth`, floored at `2.5`.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_module_width",
+          "optional": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "`getModuleHeight`, floored at `2.0`.\n",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "design_module_height",
+          "optional": true,
+          "unit": "m",
+          "values": []
         }
       ],
       "parameters": [

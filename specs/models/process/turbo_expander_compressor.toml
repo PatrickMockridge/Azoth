@@ -16,6 +16,7 @@ assumptions = [
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/expander/TurboExpanderCompressor.java` is the port source, through its `run`, and `ExpanderChartKhader.java` is the map.",
+    "`validation/neqsim/captures/process_turbo_expander_mechanical_design.tsv` - the design point, a lower expander inlet pressure and a `120` bara expander inlet, with every design field.",
     "`validation/neqsim/captures/process_turbo_expander.tsv` - the reference machine, the lower expander pressure, the mass-balance pair, the outlet-temperature inverse and the map/IGV row.",
     "`validation/neqsim/captures/process_expander_chart.tsv` - the map's interpolation, optimum and composition-aware head rows.",
 ]
@@ -166,6 +167,10 @@ description = "the IGV opening.\n"
 [inputs.igv_penalty_curve.fields.factor]
 unit = "dimensionless"
 description = "the multiplicative efficiency factor there.\n"
+[inputs.mechanical_design]
+type = "boolean"
+optional = true
+description = "run `TurboExpanderCompressorMechanicalDesign.calcDesign` and publish the coupled machine's sizing. **Absent is false**, and every design output is absent then. `initTECMechanicalDesign()` is the caller's separate call on the equipment; nothing in `run` constructs the design.\n"
 [outputs]
 [outputs.expander_outlet_n]
 unit = "mol/s"
@@ -231,6 +236,210 @@ description = "the compressor's Q/N ratio at the solved speed.\n"
 [outputs.igv_opening]
 unit = "dimensionless"
 description = "the IGV opening the machine reports - the held one, or the recomputed one.\n"
+[outputs.design_expander_wheel_diameter]
+unit = "m"
+optional = true
+description = "`getExpanderWheelDiameter`, clamped to `100-1500` mm; the `300` mm default on a non-positive state.\n"
+[outputs.design_expander_tip_speed]
+unit = "m/s"
+optional = true
+description = "`getExpanderTipSpeed`: `min(0.7 sqrt(2 dh), 450)` then `pi D N / 60`.\n"
+[outputs.design_expander_type]
+type = "string"
+optional = true
+description = "`getExpanderType`: `RADIAL_INFLOW` below the `100000` m3/hr threshold, `AXIAL` above it. **The axial arm is not reached on the captured states** and is stated rather than exercised.\n"
+[outputs.design_expander_stages]
+unit = "dimensionless"
+optional = true
+description = "`getExpanderStages`: one radial, `ceil(dh/50 kJ/kg)` axial.\n"
+[outputs.design_expander_design_inlet_pressure]
+unit = "Pa"
+optional = true
+description = "`getExpanderDesignInletPressure`, the expander feed's pressure.\n"
+[outputs.design_expander_design_outlet_pressure]
+unit = "Pa"
+optional = true
+description = "`getExpanderDesignOutletPressure`.\n"
+[outputs.design_expander_casing_pressure]
+unit = "Pa"
+optional = true
+description = "`getExpanderCasingDesignPressure`: the inlet times `1.10`.\n"
+[outputs.design_expander_casing_temperature]
+unit = "K"
+optional = true
+description = "`getExpanderCasingDesignTemperature`: the hotter end plus `30` degC.\n"
+[outputs.design_expander_power]
+unit = "W"
+optional = true
+description = "`getExpanderPowerKW` as a magnitude.\n"
+[outputs.design_expander_enthalpy_drop]
+unit = "dimensionless"
+optional = true
+description = "`getExpanderEnthalpyDropKJkg`, in kJ/kg on the class's convention.\n"
+[outputs.design_compressor_impeller_diameter]
+unit = "m"
+optional = true
+description = "`getCompressorImpellerDiameter`, clamped to `100-1500` mm; the `300` mm default on a non-positive head.\n"
+[outputs.design_compressor_tip_speed]
+unit = "m/s"
+optional = true
+description = "`getCompressorTipSpeed`: `sqrt(head_per_stage / 0.5)`, capped at `350` m/s.\n"
+[outputs.design_compressor_stages]
+unit = "dimensionless"
+optional = true
+description = "`getCompressorStages`: `ceil(head / 30 kJ/kg)`, at least one.\n"
+[outputs.design_compressor_polytropic_head_design]
+unit = "dimensionless"
+optional = true
+description = "`getCompressorPolytropicHead`, the head the balance used, kJ/kg.\n"
+[outputs.design_compressor_head_per_stage]
+unit = "dimensionless"
+optional = true
+description = "`getCompressorHeadPerStage`, kJ/kg.\n"
+[outputs.design_compressor_casing_type]
+type = "string"
+optional = true
+description = "`getCompressorCasingType`: `BARREL` above `100` bara design pressure, `HORIZONTALLY_SPLIT` above `40`, else `VERTICALLY_SPLIT`. **The barrel arm is not reached on the captured states.**\n"
+[outputs.design_compressor_design_suction_pressure]
+unit = "Pa"
+optional = true
+description = "`getCompressorDesignSuctionPressure`.\n"
+[outputs.design_compressor_design_discharge_pressure]
+unit = "Pa"
+optional = true
+description = "`getCompressorDesignDischargePressure`.\n"
+[outputs.design_compressor_casing_pressure]
+unit = "Pa"
+optional = true
+description = "`getCompressorCasingDesignPressure`: the discharge times `1.10`.\n"
+[outputs.design_compressor_casing_temperature]
+unit = "K"
+optional = true
+description = "`getCompressorCasingDesignTemperature`: the hotter end plus `30` degC.\n"
+[outputs.design_compressor_power]
+unit = "W"
+optional = true
+description = "`getCompressorPowerKW` as a magnitude.\n"
+[outputs.design_shaft_diameter]
+unit = "m"
+optional = true
+description = "`getShaftDiameter`: the combined torque at `50` MPa, times `1.5`, rounded to 5 mm and floored at `30`.\n"
+[outputs.design_shaft_weight]
+unit = "kg"
+optional = true
+description = "`getShaftWeight`.\n"
+[outputs.design_operating_speed]
+unit = "dimensionless"
+optional = true
+description = "`getOperatingSpeed`, rpm.\n"
+[outputs.design_max_continuous_speed]
+unit = "dimensionless"
+optional = true
+description = "`getMaxContinuousSpeed`, rpm.\n"
+[outputs.design_trip_speed]
+unit = "dimensionless"
+optional = true
+description = "`getTripSpeed`, rpm.\n"
+[outputs.design_first_critical_speed]
+unit = "dimensionless"
+optional = true
+description = "`getFirstCriticalSpeed`, rpm.\n"
+[outputs.design_second_critical_speed]
+unit = "dimensionless"
+optional = true
+description = "`getSecondCriticalSpeed`: four times the first.\n"
+[outputs.design_bearing_span]
+unit = "m"
+optional = true
+description = "`getBearingSpan`: the expander end plus the compressor end plus `200` mm. **This class stores it in millimetres.**\n"
+[outputs.design_bearing_type]
+type = "string"
+optional = true
+description = "`getBearingType`, by speed.\n"
+[outputs.design_expander_seal_type]
+type = "string"
+optional = true
+description = "`getExpanderSealType`: dry gas above `50` bara casing pressure.\n"
+[outputs.design_compressor_seal_type]
+type = "string"
+optional = true
+description = "`getCompressorSealType`: dry gas above `20` bara casing pressure.\n"
+[outputs.design_gear_ratio]
+unit = "dimensionless"
+optional = true
+description = "`getGearRatio`. **The equipment's field defaults to `1.0` and the port's machine carries no gearbox input**, so this is the class's default.\n"
+[outputs.design_torque]
+unit = "dimensionless"
+optional = true
+description = "the design torque, in N*m on the class's convention.\n"
+[outputs.design_shaft_stress]
+unit = "Pa"
+optional = true
+description = "`getDesignShaftStressMPa`, converted from MPa.\n"
+[outputs.design_surge_flow]
+unit = "m**3/h"
+optional = true
+description = "`getDesignSurgeFlowM3hr`: `0.65` times the compressor's inlet volume flow.\n"
+[outputs.design_stonewall_flow]
+unit = "m**3/h"
+optional = true
+description = "`getDesignStonewallFlowM3hr`: `1.25` times the same.\n"
+[outputs.design_expander_nozzle_throat_area]
+unit = "m**2"
+optional = true
+description = "`getExpanderNozzleThroatArea`: the inlet volume flow over `0.95 sqrt(2 dh)`, with a `1.2` margin.\n"
+[outputs.design_expander_wheel_weight]
+unit = "kg"
+optional = true
+description = "`getExpanderWheelWeight`, a hollowed disc.\n"
+[outputs.design_expander_casing_weight]
+unit = "kg"
+optional = true
+description = "`getExpanderCasingWeight`.\n"
+[outputs.design_compressor_impeller_weight]
+unit = "kg"
+optional = true
+description = "`getCompressorImpellerWeight`, all stages.\n"
+[outputs.design_compressor_casing_weight]
+unit = "kg"
+optional = true
+description = "`getCompressorCasingWeight`.\n"
+[outputs.design_weight_vessel]
+unit = "kg"
+optional = true
+description = "the two casings' weights summed.\n"
+[outputs.design_weight_internals]
+unit = "kg"
+optional = true
+description = "the wheel, impellers and shaft, times `1.3`.\n"
+[outputs.design_weight_piping]
+unit = "kg"
+optional = true
+description = "the piping, lube and seal systems.\n"
+[outputs.design_weight_electro_instrument]
+unit = "kg"
+optional = true
+description = "the class's fixed `50` kg.\n"
+[outputs.design_weight_structural_steel]
+unit = "kg"
+optional = true
+description = "the structural steel and baseplate.\n"
+[outputs.design_weight_total]
+unit = "kg"
+optional = true
+description = "`getWeightTotal`.\n"
+[outputs.design_module_length]
+unit = "m"
+optional = true
+description = "`getModuleLength`: the expander, compressor and access.\n"
+[outputs.design_module_width]
+unit = "m"
+optional = true
+description = "`getModuleWidth`, floored at `2.5`.\n"
+[outputs.design_module_height]
+unit = "m"
+optional = true
+description = "`getModuleHeight`, floored at `2.0`.\n"
 [[valid_range]]
 quantity = "design_speed"
 min = 0

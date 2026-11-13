@@ -687,7 +687,7 @@ a claim nothing holds.
   **`PlugFlowReactor` is not owed it**: the class overrides no `getMechanicalDesign`, so it
   answers the base `MechanicalDesign`, whose `calcDesign` only reads design specifications and
   computes no vessel.
-  **Three of the rotating machines' designs landed.** `ExpanderMechanicalDesign` is on
+  **The rotating machines' four designs landed.** `ExpanderMechanicalDesign` is on
   `process.expander` behind `mechanical_design`: no design parameters, because the class
   exposes no setter, and its API 617 wheel, shaft, rotor, casing, weights and module are held
   to `process_expander_mechanical_design.tsv`'s radial, axial and two casing-derate states.
@@ -698,8 +698,11 @@ a claim nothing holds.
   unclipped impeller screen, driver, rotor, weights and module, held to
   `process_compressor_mechanical_design.tsv`'s casing thresholds, NACE state and two chart
   machines; its `CompressorCasingDesignCalculator` audit is a separate report and is not
-  published. **`TurboExpanderCompressorMechanicalDesign` is the one still owed**: it is its
-  own tranche, with `TurboExpanderSealGasEnvelope` beside it.
+  published. **`TurboExpanderCompressorMechanicalDesign` landed too**, on
+  `process.turbo_expander_compressor`: both ends' sizing and the shared shaft, held to
+  `process_turbo_expander_mechanical_design.tsv`; the seal-gas envelope, shear pins, thrust
+  balance and anti-surge report are its configured auxiliary surfaces and are not published.
+  The rotating machines' mechanical-design family is closed.
   **`TrayHydraulicsCalculator` is no longer one of them**: its arithmetic is the registered
   `hydraulics.tray_hydraulics` id.
 - **`ColumnInternalsDesigner`** is two halves and both are in. Its **packing** side is done

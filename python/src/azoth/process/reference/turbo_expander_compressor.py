@@ -42,6 +42,9 @@ from azoth.eos.reference.ps_flash import entropy_at
 from azoth.eos.reference.ps_flash import ps_flash as ps_flash_solve
 from azoth.eos.reference.pt_flash import pt_flash as pt_flash_solve
 from azoth.process.reference import capacity, expander_chart
+from azoth.process.reference.turbo_expander_compressor_mechanical import (
+    design as design_tec,
+)
 
 #: ``ThermodynamicConstantsInterface.R``, J/(mol*K).
 R = 8.314
@@ -138,6 +141,7 @@ def turbo_expander_compressor(
     qn_head_curve: list[dict[str, float]] | None = None,
     chart: list[dict[str, float]] | None = None,
     igv_penalty_curve: list[dict[str, float]] | None = None,
+    mechanical_design: bool | None = None,
 ) -> TurboExpanderResult:
     """Balance an expander and a compressor on one shaft.
 
@@ -459,6 +463,31 @@ def turbo_expander_compressor(
         last.compressor_efficiency,
     )
 
+    design = None
+    if mechanical_design:
+        design = design_tec(
+            expander_components,
+            e_n,
+            list(expander_z),
+            e_t,
+            e_p,
+            expander_outlet_t.to("K").magnitude,
+            p_out,
+            compressor_components,
+            c_n,
+            list(compressor_z),
+            c_t,
+            c_p,
+            compressor_outlet_t.to("K").magnitude,
+            compressor_outlet_p_value,
+            last.power_expander,
+            last.power_compressor,
+            last.head / 1000.0,
+            speed,
+            1.0,
+        )
+    d = design
+
     return TurboExpanderResult(
         expander_outlet_n=from_si(e_n, "mol/s"),
         expander_outlet_z=tuple(expander_z),
@@ -480,6 +509,93 @@ def turbo_expander_compressor(
         uc_ratio_expander=last.uc_norm,
         qn_ratio_compressor=last.qn_ratio,
         igv_opening=report_opening,
+        design_expander_wheel_diameter=None
+        if d is None
+        else from_si(d.expander_wheel_diameter, "m"),
+        design_expander_tip_speed=None if d is None else from_si(d.expander_tip_speed, "m/s"),
+        design_expander_type=None if d is None else d.expander_type,
+        design_expander_stages=None if d is None else float(d.expander_stages),
+        design_expander_design_inlet_pressure=None
+        if d is None
+        else from_si(d.expander_design_inlet_pressure, "Pa"),
+        design_expander_design_outlet_pressure=None
+        if d is None
+        else from_si(d.expander_design_outlet_pressure, "Pa"),
+        design_expander_casing_pressure=None
+        if d is None
+        else from_si(d.expander_casing_pressure, "Pa"),
+        design_expander_casing_temperature=None
+        if d is None
+        else from_si(d.expander_casing_temperature, "K"),
+        design_expander_power=None if d is None else from_si(d.expander_power, "W"),
+        design_expander_enthalpy_drop=None if d is None else d.expander_enthalpy_drop,
+        design_compressor_impeller_diameter=None
+        if d is None
+        else from_si(d.compressor_impeller_diameter, "m"),
+        design_compressor_tip_speed=None if d is None else from_si(d.compressor_tip_speed, "m/s"),
+        design_compressor_stages=None if d is None else float(d.compressor_stages),
+        design_compressor_polytropic_head_design=None
+        if d is None
+        else d.compressor_polytropic_head,
+        design_compressor_head_per_stage=None if d is None else d.compressor_head_per_stage,
+        design_compressor_casing_type=None if d is None else d.compressor_casing_type,
+        design_compressor_design_suction_pressure=None
+        if d is None
+        else from_si(d.compressor_design_suction_pressure, "Pa"),
+        design_compressor_design_discharge_pressure=None
+        if d is None
+        else from_si(d.compressor_design_discharge_pressure, "Pa"),
+        design_compressor_casing_pressure=None
+        if d is None
+        else from_si(d.compressor_casing_pressure, "Pa"),
+        design_compressor_casing_temperature=None
+        if d is None
+        else from_si(d.compressor_casing_temperature, "K"),
+        design_compressor_power=None if d is None else from_si(d.compressor_power, "W"),
+        design_shaft_diameter=None if d is None else from_si(d.shaft_diameter, "m"),
+        design_shaft_weight=None if d is None else from_si(d.shaft_weight, "kg"),
+        design_operating_speed=None if d is None else d.operating_speed,
+        design_max_continuous_speed=None if d is None else d.max_continuous_speed,
+        design_trip_speed=None if d is None else d.trip_speed,
+        design_first_critical_speed=None if d is None else d.first_critical_speed,
+        design_second_critical_speed=None if d is None else d.second_critical_speed,
+        design_bearing_span=None if d is None else from_si(d.bearing_span, "m"),
+        design_bearing_type=None if d is None else d.bearing_type,
+        design_expander_seal_type=None if d is None else d.expander_seal_type,
+        design_compressor_seal_type=None if d is None else d.compressor_seal_type,
+        design_gear_ratio=None if d is None else d.gear_ratio,
+        design_torque=None if d is None else d.design_torque,
+        design_shaft_stress=None if d is None else from_si(d.design_shaft_stress * 1.0e6, "Pa"),
+        design_surge_flow=None if d is None else from_si(d.design_surge_flow / 3600.0, "m**3/h"),
+        design_stonewall_flow=None
+        if d is None
+        else from_si(d.design_stonewall_flow / 3600.0, "m**3/h"),
+        design_expander_nozzle_throat_area=(
+            None if d is None else from_si(d.expander_nozzle_throat_area, "m**2")
+        ),
+        design_expander_wheel_weight=None if d is None else from_si(d.expander_wheel_weight, "kg"),
+        design_expander_casing_weight=None
+        if d is None
+        else from_si(d.expander_casing_weight, "kg"),
+        design_compressor_impeller_weight=None
+        if d is None
+        else from_si(d.compressor_impeller_weight, "kg"),
+        design_compressor_casing_weight=None
+        if d is None
+        else from_si(d.compressor_casing_weight, "kg"),
+        design_weight_vessel=None if d is None else from_si(d.weight_vessel, "kg"),
+        design_weight_internals=None if d is None else from_si(d.weight_internals, "kg"),
+        design_weight_piping=None if d is None else from_si(d.weight_piping, "kg"),
+        design_weight_electro_instrument=None
+        if d is None
+        else from_si(d.weight_electro_instrument, "kg"),
+        design_weight_structural_steel=None
+        if d is None
+        else from_si(d.weight_structural_steel, "kg"),
+        design_weight_total=None if d is None else from_si(d.weight_total, "kg"),
+        design_module_length=None if d is None else from_si(d.module_length, "m"),
+        design_module_width=None if d is None else from_si(d.module_width, "m"),
+        design_module_height=None if d is None else from_si(d.module_height, "m"),
         warnings=tuple(warnings),
     )
 

@@ -3867,6 +3867,57 @@ class TurboExpanderResult:
     uc_ratio_expander: float
     qn_ratio_compressor: float
     igv_opening: float
+    design_expander_wheel_diameter: Qty | None
+    design_expander_tip_speed: Qty | None
+    design_expander_type: str | None
+    design_expander_stages: float | None
+    design_expander_design_inlet_pressure: Qty | None
+    design_expander_design_outlet_pressure: Qty | None
+    design_expander_casing_pressure: Qty | None
+    design_expander_casing_temperature: Qty | None
+    design_expander_power: Qty | None
+    design_expander_enthalpy_drop: float | None
+    design_compressor_impeller_diameter: Qty | None
+    design_compressor_tip_speed: Qty | None
+    design_compressor_stages: float | None
+    design_compressor_polytropic_head_design: float | None
+    design_compressor_head_per_stage: float | None
+    design_compressor_casing_type: str | None
+    design_compressor_design_suction_pressure: Qty | None
+    design_compressor_design_discharge_pressure: Qty | None
+    design_compressor_casing_pressure: Qty | None
+    design_compressor_casing_temperature: Qty | None
+    design_compressor_power: Qty | None
+    design_shaft_diameter: Qty | None
+    design_shaft_weight: Qty | None
+    design_operating_speed: float | None
+    design_max_continuous_speed: float | None
+    design_trip_speed: float | None
+    design_first_critical_speed: float | None
+    design_second_critical_speed: float | None
+    design_bearing_span: Qty | None
+    design_bearing_type: str | None
+    design_expander_seal_type: str | None
+    design_compressor_seal_type: str | None
+    design_gear_ratio: float | None
+    design_torque: float | None
+    design_shaft_stress: Qty | None
+    design_surge_flow: Qty | None
+    design_stonewall_flow: Qty | None
+    design_expander_nozzle_throat_area: Qty | None
+    design_expander_wheel_weight: Qty | None
+    design_expander_casing_weight: Qty | None
+    design_compressor_impeller_weight: Qty | None
+    design_compressor_casing_weight: Qty | None
+    design_weight_vessel: Qty | None
+    design_weight_internals: Qty | None
+    design_weight_piping: Qty | None
+    design_weight_electro_instrument: Qty | None
+    design_weight_structural_steel: Qty | None
+    design_weight_total: Qty | None
+    design_module_length: Qty | None
+    design_module_width: Qty | None
+    design_module_height: Qty | None
     warnings: list[Warning]
 
 @final
@@ -7007,6 +7058,7 @@ def turbo_expander_compressor(
     qn_head_curve: list[TurboQnPoint] | None = None,
     chart: list[ExpanderMapPoint] | None = None,
     igv_penalty_curve: list[TurboIgvPenaltyPoint] | None = None,
+    mechanical_design: bool | None = None,
 ) -> TurboExpanderResult: ...
 def chemical_equilibrium(
     a_matrix: list[list[float]],
