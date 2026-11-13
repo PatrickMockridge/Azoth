@@ -50,6 +50,13 @@ from azoth.eos.reference.ps_flash import ps_flash as ps_flash_solve
 from azoth.eos.reference.pt_flash import pt_flash as pt_flash_solve
 from azoth.eos.reference.sound_speed import sound_speed as _sound_speed
 from azoth.process.reference import _unported, capacity, compressor_chart
+from azoth.process.reference.compressor_mechanical import (
+    design as design_compressor,
+)
+from azoth.process.reference.compressor_mechanical import (
+    head_from_metres,
+    head_from_power,
+)
 from azoth.process.reference.surge_curve import SurgeCurve
 
 #: ``Compressor.R``, J/(mol*K).
@@ -102,6 +109,8 @@ def compressor(
     surge_control_margin: float | None = None,
     anti_surge_active: bool | None = None,
     surge_control_factor: float | None = None,
+    mechanical_design: bool | None = None,
+    max_stages_per_casing: float | None = None,
 ) -> CompressorResult:
     """Raise a stream's pressure along an isentrope or the machine's chart.
 
@@ -369,6 +378,37 @@ def compressor(
         head, efficiency, shaft_power = state.head, state.efficiency, state.power
         out_p, h_out, outlet_t = state.out_p, state.h_out, state.outlet_t
 
+    design = None
+    if mechanical_design:
+        if points:
+            fluid_head = head_from_metres(head)
+        elif use_polytropic_calc:
+            density = capacity.system_mass_density(components, t, p, inlet_z, from_feed=True)
+            volume = capacity.system_volumetric_flow(components, t, p, inlet_z, n, from_feed=True)
+            fluid_head = head_from_power(shaft_power, density * volume, efficiency)
+        else:
+            fluid_head = 0.0
+        if not (math.isfinite(fluid_head) and fluid_head > 0.0):
+            raise InvalidInputError(
+                "mechanical_design",
+                "the class's polytropic fluid head is zero on this branch, and `calcDesign` "
+                "returns before it sizes anything",
+            )
+        design = design_compressor(
+            components,
+            n,
+            list(inlet_z),
+            t,
+            p,
+            out_p,
+            outlet_t.to("K").magnitude,
+            shaft_power,
+            fluid_head,
+            state.speed,
+            10 if max_stages_per_casing is None else int(max_stages_per_casing),
+        )
+    d = design
+
     return CompressorResult(
         outlet_n=from_si(n, "mol/s"),
         outlet_z=tuple(inlet_z),
@@ -403,6 +443,48 @@ def compressor(
         required_recycle_fraction=_plain_or_none(state.read, "required_recycle_fraction"),
         anti_surge_recycle_power=_power_or_none(state.read, "anti_surge_recycle_power"),
         recycle_fraction=state.recycle_fraction,
+        design_number_of_stages=None if d is None else float(d.number_of_stages),
+        design_impeller_diameter=None if d is None else from_si(d.impeller_diameter, "m"),
+        design_shaft_diameter=None if d is None else from_si(d.shaft_diameter, "m"),
+        design_tip_speed=None if d is None else from_si(d.tip_speed, "m/s"),
+        design_flow_coefficient=None if d is None else d.flow_coefficient,
+        design_impeller_sizing_speed=None if d is None else d.impeller_sizing_speed,
+        design_impeller_sizing_flow=None
+        if d is None
+        else from_si(d.impeller_sizing_flow / 3600.0, "m**3/h"),
+        design_impeller_sizing_head=None if d is None else d.impeller_sizing_head,
+        design_impeller_sizing_ok=None if d is None else d.impeller_sizing_ok,
+        design_driver_power=None if d is None else from_si(d.driver_power, "W"),
+        design_driver_margin=None if d is None else d.driver_margin,
+        design_pressure=None if d is None else from_si(d.design_pressure, "Pa"),
+        design_temperature=None if d is None else from_si(d.design_temperature, "K"),
+        design_max_continuous_speed=None if d is None else d.max_continuous_speed,
+        design_trip_speed=None if d is None else d.trip_speed,
+        design_first_critical_speed=None if d is None else d.first_critical_speed,
+        design_casing_type=None if d is None else d.casing_type,
+        design_head_per_stage=None if d is None else d.head_per_stage,
+        design_bearing_span=None if d is None else from_si(d.bearing_span, "m"),
+        design_casing_weight=None if d is None else from_si(d.casing_weight, "kg"),
+        design_bundle_weight=None if d is None else from_si(d.bundle_weight, "kg"),
+        design_rotor_weight=None if d is None else from_si(d.rotor_weight, "kg"),
+        design_outer_diameter=None if d is None else from_si(d.outer_diameter, "m"),
+        design_inner_diameter=None if d is None else from_si(d.inner_diameter, "m"),
+        design_wall_thickness=None if d is None else from_si(d.wall_thickness, "m"),
+        design_tantan_length=None if d is None else from_si(d.tantan_length, "m"),
+        design_weight_vessel_shell=None if d is None else from_si(d.weight_vessel_shell, "kg"),
+        design_weight_internals=None if d is None else from_si(d.weight_internals, "kg"),
+        design_weight_nozzle=None if d is None else from_si(d.weight_nozzle, "kg"),
+        design_weight_piping=None if d is None else from_si(d.weight_piping, "kg"),
+        design_weight_electro_instrument=None
+        if d is None
+        else from_si(d.weight_electro_instrument, "kg"),
+        design_weight_structural_steel=None
+        if d is None
+        else from_si(d.weight_structural_steel, "kg"),
+        design_weight_total=None if d is None else from_si(d.weight_total, "kg"),
+        design_module_length=None if d is None else from_si(d.module_length, "m"),
+        design_module_width=None if d is None else from_si(d.module_width, "m"),
+        design_module_height=None if d is None else from_si(d.module_height, "m"),
         warnings=tuple(warnings),
     )
 

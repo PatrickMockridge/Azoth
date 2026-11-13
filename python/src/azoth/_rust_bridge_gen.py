@@ -5605,7 +5605,7 @@ def component_splitter(components: list[str], feed_n: Q, feed_z: list[float], fe
     )
 
 
-def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, use_polytropic_calc: bool | None=None, polytropic_efficiency: float | None=None, polytropic_method: str | None=None, compression_ratio: float | None=None, max_outlet_pressure: Q | None=None, power: Q | None=None, deposit: list[dict[str, Q]] | None=None, wetted_area: Q | None=None, passage_half_height: Q | None=None, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, solve_speed: bool | None=None, min_speed: float | None=None, max_speed: float | None=None, limit_speed: bool | None=None, chart_type: str | None=None, chart_conditions: list[float] | None=None, impeller_diameter: Q | None=None, surge_curve: list[dict[str, Q]] | None=None, surge_control_margin: float | None=None, anti_surge_active: bool | None=None, surge_control_factor: float | None=None) -> CompressorResult:
+def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, use_polytropic_calc: bool | None=None, polytropic_efficiency: float | None=None, polytropic_method: str | None=None, compression_ratio: float | None=None, max_outlet_pressure: Q | None=None, power: Q | None=None, deposit: list[dict[str, Q]] | None=None, wetted_area: Q | None=None, passage_half_height: Q | None=None, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, solve_speed: bool | None=None, min_speed: float | None=None, max_speed: float | None=None, limit_speed: bool | None=None, chart_type: str | None=None, chart_conditions: list[float] | None=None, impeller_diameter: Q | None=None, surge_curve: list[dict[str, Q]] | None=None, surge_control_margin: float | None=None, anti_surge_active: bool | None=None, surge_control_factor: float | None=None, mechanical_design: bool | None=None, max_stages_per_casing: float | None=None) -> CompressorResult:
     """``process.compressor``, computed in Rust."""
     spec = _models_gen.model("process.compressor")
     result = _core.compressor(
@@ -5638,6 +5638,8 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
         None if surge_control_margin is None else surge_control_margin,
         anti_surge_active,
         None if surge_control_factor is None else surge_control_factor,
+        mechanical_design,
+        None if max_stages_per_casing is None else max_stages_per_casing,
     )
     return CompressorResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5667,6 +5669,42 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
         required_recycle_fraction=result.required_recycle_fraction,
         anti_surge_recycle_power=None if result.anti_surge_recycle_power is None else from_si(result.anti_surge_recycle_power.magnitude_si, result.anti_surge_recycle_power.unit),
         recycle_fraction=result.recycle_fraction,
+        design_number_of_stages=result.design_number_of_stages,
+        design_impeller_diameter=None if result.design_impeller_diameter is None else from_si(result.design_impeller_diameter.magnitude_si, result.design_impeller_diameter.unit),
+        design_shaft_diameter=None if result.design_shaft_diameter is None else from_si(result.design_shaft_diameter.magnitude_si, result.design_shaft_diameter.unit),
+        design_tip_speed=None if result.design_tip_speed is None else from_si(result.design_tip_speed.magnitude_si, result.design_tip_speed.unit),
+        design_flow_coefficient=result.design_flow_coefficient,
+        design_impeller_sizing_speed=result.design_impeller_sizing_speed,
+        design_impeller_sizing_flow=None if result.design_impeller_sizing_flow is None else from_si(result.design_impeller_sizing_flow.magnitude_si, result.design_impeller_sizing_flow.unit),
+        design_impeller_sizing_head=result.design_impeller_sizing_head,
+        design_impeller_sizing_ok=result.design_impeller_sizing_ok,
+        design_driver_power=None if result.design_driver_power is None else from_si(result.design_driver_power.magnitude_si, result.design_driver_power.unit),
+        design_driver_margin=result.design_driver_margin,
+        design_pressure=None if result.design_pressure is None else from_si(result.design_pressure.magnitude_si, result.design_pressure.unit),
+        design_temperature=None if result.design_temperature is None else from_si(result.design_temperature.magnitude_si, result.design_temperature.unit),
+        design_max_continuous_speed=result.design_max_continuous_speed,
+        design_trip_speed=result.design_trip_speed,
+        design_first_critical_speed=result.design_first_critical_speed,
+        design_casing_type=result.design_casing_type,
+        design_head_per_stage=result.design_head_per_stage,
+        design_bearing_span=None if result.design_bearing_span is None else from_si(result.design_bearing_span.magnitude_si, result.design_bearing_span.unit),
+        design_casing_weight=None if result.design_casing_weight is None else from_si(result.design_casing_weight.magnitude_si, result.design_casing_weight.unit),
+        design_bundle_weight=None if result.design_bundle_weight is None else from_si(result.design_bundle_weight.magnitude_si, result.design_bundle_weight.unit),
+        design_rotor_weight=None if result.design_rotor_weight is None else from_si(result.design_rotor_weight.magnitude_si, result.design_rotor_weight.unit),
+        design_outer_diameter=None if result.design_outer_diameter is None else from_si(result.design_outer_diameter.magnitude_si, result.design_outer_diameter.unit),
+        design_inner_diameter=None if result.design_inner_diameter is None else from_si(result.design_inner_diameter.magnitude_si, result.design_inner_diameter.unit),
+        design_wall_thickness=None if result.design_wall_thickness is None else from_si(result.design_wall_thickness.magnitude_si, result.design_wall_thickness.unit),
+        design_tantan_length=None if result.design_tantan_length is None else from_si(result.design_tantan_length.magnitude_si, result.design_tantan_length.unit),
+        design_weight_vessel_shell=None if result.design_weight_vessel_shell is None else from_si(result.design_weight_vessel_shell.magnitude_si, result.design_weight_vessel_shell.unit),
+        design_weight_internals=None if result.design_weight_internals is None else from_si(result.design_weight_internals.magnitude_si, result.design_weight_internals.unit),
+        design_weight_nozzle=None if result.design_weight_nozzle is None else from_si(result.design_weight_nozzle.magnitude_si, result.design_weight_nozzle.unit),
+        design_weight_piping=None if result.design_weight_piping is None else from_si(result.design_weight_piping.magnitude_si, result.design_weight_piping.unit),
+        design_weight_electro_instrument=None if result.design_weight_electro_instrument is None else from_si(result.design_weight_electro_instrument.magnitude_si, result.design_weight_electro_instrument.unit),
+        design_weight_structural_steel=None if result.design_weight_structural_steel is None else from_si(result.design_weight_structural_steel.magnitude_si, result.design_weight_structural_steel.unit),
+        design_weight_total=None if result.design_weight_total is None else from_si(result.design_weight_total.magnitude_si, result.design_weight_total.unit),
+        design_module_length=None if result.design_module_length is None else from_si(result.design_module_length.magnitude_si, result.design_module_length.unit),
+        design_module_width=None if result.design_module_width is None else from_si(result.design_module_width.magnitude_si, result.design_module_width.unit),
+        design_module_height=None if result.design_module_height is None else from_si(result.design_module_height.magnitude_si, result.design_module_height.unit),
         warnings=_warnings(result.warnings),
     )
 

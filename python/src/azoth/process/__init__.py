@@ -1192,6 +1192,8 @@ def compressor(
     surge_control_margin: float | None = None,
     anti_surge_active: bool | None = None,
     surge_control_factor: float | None = None,
+    mechanical_design: bool | None = None,
+    max_stages_per_casing: float | None = None,
 ) -> CompressorResult:
     """Raise a stream's pressure along an isentrope or the machine's chart.
 
@@ -1250,6 +1252,8 @@ def compressor(
         surge_control_margin=surge_control_margin,
         anti_surge_active=anti_surge_active,
         surge_control_factor=surge_control_factor,
+        mechanical_design=mechanical_design,
+        max_stages_per_casing=max_stages_per_casing,
     )
 
 

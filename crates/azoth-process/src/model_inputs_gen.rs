@@ -670,6 +670,20 @@ static ALL: &[ModelInputs] = &[
                 optional: true,
                 dimension: Some("dimensionless"),
             },
+            ModelInput {
+                name: "mechanical_design",
+                kind: "boolean",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
+                name: "max_stages_per_casing",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
         ],
     },
     ModelInputs {

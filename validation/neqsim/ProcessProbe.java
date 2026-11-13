@@ -240,6 +240,9 @@ public class ProcessProbe {
       case "compressor_polytropic":
         compressorPolytropicRows();
         break;
+      case "compressor_mechanical":
+        compressorMechanicalRows();
+        break;
       case "compressor_modes":
         compressorModeRows();
         break;
@@ -3517,6 +3520,120 @@ public class ProcessProbe {
     compressorPolytropicRow("srk_eta_0_60", true, 0.60);
     compressorPolytropicRow("pr_eta_0_60", false, 0.60);
     compressorPolytropicRow("pr_eta_0_75", false, 0.75);
+  }
+
+  /// `CompressorMechanicalDesign.calcDesign`, on the state families it branches on.
+  ///
+  /// **The no-chart polytropic branch is the class's default method**, and its fluid head
+  /// is the value the stage count and the impeller screen read. The three outlet pressures
+  /// cross the class's casing thresholds - `20` bara stays vertical, `80` is horizontal and
+  /// `150` is a barrel - and the NACE row turns the sour-service checks on.
+  static void compressorMechanicalRows() {
+    compressorMechanicalRow("polytropic_pr_eta_0_60", 18.8, 42.0, 0.60, false);
+    compressorMechanicalRow("polytropic_pr_eta_0_75", 18.8, 42.0, 0.75, false);
+    compressorMechanicalRow("vertically_split", 10.0, 20.0, 0.75, false);
+    compressorMechanicalRow("horizontally_split", 50.0, 80.0, 0.75, false);
+    compressorMechanicalRow("barrel", 30.0, 150.0, 0.75, false);
+    compressorMechanicalRow("nace", 18.8, 42.0, 0.75, true);
+    compressorMechanicalChartRow("chart", 3.0);
+    compressorMechanicalChartRow("chart_1msm3", 1.0);
+  }
+
+  static void compressorMechanicalRow(String label, double inletBara, double outletBara,
+      double efficiency, boolean nace) {
+    SystemInterface gas = new SystemPrEos(273.15 + 30.0, inletBara);
+    gas.addComponent("methane", 0.86);
+    gas.addComponent("ethane", 0.07);
+    gas.addComponent("propane", 0.03);
+    gas.addComponent("CO2", 0.02);
+    gas.addComponent("nitrogen", 0.02);
+    gas.setMixingRule(2);
+    Stream feed = new Stream("suction", gas);
+    feed.setFlowRate(100000.0, "kg/hr");
+    feed.setTemperature(30.0, "C");
+    feed.setPressure(inletBara, "bara");
+    feed.run();
+    neqsim.process.equipment.compressor.Compressor compressor =
+        new neqsim.process.equipment.compressor.Compressor(label, feed);
+    compressor.setOutletPressure(outletBara);
+    compressor.setUsePolytropicCalc(true);
+    compressor.setPolytropicEfficiency(efficiency);
+    compressor.run();
+    neqsim.process.mechanicaldesign.compressor.CompressorMechanicalDesign design =
+        compressor.getMechanicalDesign();
+    if (nace) {
+      design.setNaceCompliance(true);
+      design.setH2sPartialPressureKPa(10.0);
+    }
+    design.calcDesign();
+    printCompressorDesign(label, feed, compressor, design);
+  }
+
+  static void compressorMechanicalChartRow(String label, double msm3PerDay) {
+    neqsim.process.equipment.compressor.Compressor compressor = antiSurgeMachine(msm3PerDay);
+    compressor.run();
+    neqsim.process.mechanicaldesign.compressor.CompressorMechanicalDesign design =
+        compressor.getMechanicalDesign();
+    design.calcDesign();
+    printCompressorDesign(label, compressor.getInletStream(), compressor, design);
+  }
+
+  static void printCompressorDesign(String label, StreamInterface feed,
+      neqsim.process.equipment.compressor.Compressor compressor,
+      neqsim.process.mechanicaldesign.compressor.CompressorMechanicalDesign design) {
+    System.out.println(label);
+    System.out.println("speed_rpm=" + compressor.getSpeed());
+    System.out.println("power_kW=" + compressor.getPower("kW"));
+    System.out.println("polytropic_fluid_head_kj_per_kg=" + compressor.getPolytropicFluidHead());
+    System.out.println("polytropic_efficiency=" + compressor.getPolytropicEfficiency());
+    System.out.println("number_of_stages=" + design.getNumberOfStages());
+    System.out.println("impeller_diameter_mm=" + design.getImpellerDiameter());
+    System.out.println("shaft_diameter_mm=" + design.getShaftDiameter());
+    System.out.println("tip_speed_m_per_s=" + design.getTipSpeed());
+    System.out.println("flow_coefficient=" + design.getFlowCoefficient());
+    System.out.println("impeller_sizing_speed_rpm=" + design.getImpellerSizingSpeedRPM());
+    System.out.println("driver_power_kW=" + design.getDriverPower());
+    System.out.println("driver_margin=" + design.getDriverMargin());
+    System.out.println("design_pressure_bara=" + design.getDesignPressure());
+    System.out.println("design_temperature_C=" + design.getDesignTemperature());
+    System.out.println("max_continuous_speed_rpm=" + design.getMaxContinuousSpeed());
+    System.out.println("trip_speed_rpm=" + design.getTripSpeed());
+    System.out.println("first_critical_speed_rpm=" + design.getFirstCriticalSpeed());
+    System.out.println("casing_type=" + design.getCasingType());
+    System.out.println("head_per_stage_kj_per_kg=" + design.getHeadPerStage());
+    System.out.println("bearing_span_mm=" + design.getBearingSpan());
+    System.out.println("casing_weight_kg=" + design.getCasingWeight());
+    System.out.println("bundle_weight_kg=" + design.getBundleWeight());
+    System.out.println("rotor_weight_kg=" + design.getRotorWeight());
+    System.out.println("outer_diameter_m=" + design.getOuterDiameter());
+    System.out.println("inner_diameter_m=" + design.getInnerDiameter());
+    System.out.println("wall_thickness_m=" + design.getWallThickness());
+    System.out.println("tantan_length_m=" + design.getTantanLength());
+    System.out.println("weight_vessel_shell_kg=" + design.getWeigthVesselShell());
+    System.out.println("weight_internals_kg=" + design.getWeigthInternals());
+    System.out.println("weight_nozzle_kg=" + design.getWeightNozzle());
+    System.out.println("weight_piping_kg=" + design.getWeightPiping());
+    System.out.println("weight_electro_instrument_kg=" + design.getWeightElectroInstrument());
+    System.out.println("weight_structural_steel_kg=" + design.getWeightStructualSteel());
+    System.out.println("weight_total_kg=" + design.getWeightTotal());
+    System.out.println("module_length_m=" + design.getModuleLength());
+    System.out.println("module_width_m=" + design.getModuleWidth());
+    System.out.println("module_height_m=" + design.getModuleHeight());
+    System.out.println("seal_type=" + design.getSealType());
+    System.out.println("bearing_type=" + design.getBearingType());
+    System.out.println("material_class=" + design.getMaterialClass());
+    System.out.println("casing_material_grade=" + design.getCasingMaterialGrade());
+    System.out.println("casing_corrosion_allowance_mm=" + design.getCasingCorrosionAllowanceMm());
+    System.out.println("h2s_partial_pressure_kpa=" + design.getH2sPartialPressureKPa());
+    System.out.println("max_stages_per_casing=" + design.getMaxStagesPerCasing());
+    System.out.println("impeller_sizing_issues=" + design.getImpellerSizingIssues());
+    System.out.println("inlet_m3_per_hr=" + feed.getFlowRate("m3/hr"));
+    System.out.println("inlet_density_kg_per_m3=" + feed.getThermoSystem().getDensity("kg/m3"));
+    System.out.println("mass_flow_kg_per_hr=" + feed.getFlowRate("kg/hr"));
+    System.out.println("inlet_number_of_phases=" + feed.getThermoSystem().getNumberOfPhases());
+    print("inlet", feed);
+    print("outlet", compressor.getOutletStream());
+    System.out.println();
   }
 
   static void compressorPolytropicRow(String label, boolean srk, double efficiency) {

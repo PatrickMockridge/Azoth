@@ -5756,6 +5756,114 @@ class CompressorResult(_HasWarnings):
     #: `AntiSurge.getCurrentSurgeFraction()`: the run-time recycle the block settled on, zero when it fired and found no surge. **Null unless `anti_surge_active`.**
     recycle_fraction: float | None
 
+    #: `getNumberOfStages`: `ceil(head / 30 kJ/kg)`, at least one, refined by the impeller screen.
+    design_number_of_stages: float | None
+
+    #: `getImpellerDiameter`: `sqrt(head_per_stage * 1000 / 0.5) * 60 / (pi N)`, **unclipped**; the `100-1500` mm band is a check, not a clamp.
+    design_impeller_diameter: Q | None
+
+    #: `getShaftDiameter`: the torque's shear-stress diameter at `50` MPa, times `1.5`, clamped to `30-300` mm.
+    design_shaft_diameter: Q | None
+
+    #: `getTipSpeed`: `pi D N / 60`.
+    design_tip_speed: Q | None
+
+    #: `getFlowCoefficient`: `Q / (D^2 U)` over the inlet volume flow and the impeller's own tip speed.
+    design_flow_coefficient: float | None
+
+    #: `getImpellerSizingSpeedRPM`, the speed the screen used.
+    design_impeller_sizing_speed: float | None
+
+    #: the inlet volume flow the screen divided.
+    design_impeller_sizing_flow: Q | None
+
+    #: the head the screen divided, in kJ/kg on the class's convention.
+    design_impeller_sizing_head: float | None
+
+    #: `getImpellerSizingIssues().isEmpty()`: whether the diameter and flow coefficient are inside `100-1500` mm and `0.01-0.15`. The issue prose itself is a report.
+    design_impeller_sizing_ok: bool | None
+
+    #: `getDriverPower`: the shaft power times the API 617 margin.
+    design_driver_power: Q | None
+
+    #: `getDriverMargin`: `1.25` below `150` kW, `1.15` below `750`, `1.10` above.
+    design_driver_margin: float | None
+
+    #: `getDesignPressure`: the discharge pressure times `1.10`.
+    design_pressure: Q | None
+
+    #: `getDesignTemperature`: the discharge temperature plus `30` degC.
+    design_temperature: Q | None
+
+    #: `getMaxContinuousSpeed`: `1.05` times the run's speed, rpm.
+    design_max_continuous_speed: float | None
+
+    #: `getTripSpeed`: `1.05` times the maximum continuous speed, rpm.
+    design_trip_speed: float | None
+
+    #: `getFirstCriticalSpeed`, rpm: the Rayleigh-Ritz estimate on the bearing span.
+    design_first_critical_speed: float | None
+
+    #: `getCasingType`: `barrel` above `100` bara design pressure, `horizontally_split` above `40`, `vertically_split` otherwise.
+    design_casing_type: str | None
+
+    #: `getHeadPerStage`, kJ/kg.
+    design_head_per_stage: float | None
+
+    #: `getBearingSpan`: the stages times `0.8 D` plus `D`.
+    design_bearing_span: Q | None
+
+    #: `getCasingWeight`, with the `1.2` end-cap factor and the `1.3` barrel factor.
+    design_casing_weight: Q | None
+
+    #: `getBundleWeight`: the rotor plus the stage internals.
+    design_bundle_weight: Q | None
+
+    #: `getRotorWeight`: the impellers plus the shaft.
+    design_rotor_weight: Q | None
+
+    #: the casing's outer diameter, `1.5 D`.
+    design_outer_diameter: Q | None
+
+    #: the casing's inner diameter, `D`.
+    design_inner_diameter: Q | None
+
+    #: the base class's wall thickness, `(D_outer - D_inner) / 2`.
+    design_wall_thickness: Q | None
+
+    #: the tangent-to-tangent length, `1.3` bearing spans.
+    design_tantan_length: Q | None
+
+    #: the base class's vessel-shell weight: the casing.
+    design_weight_vessel_shell: Q | None
+
+    #: the base class's internals weight: the bundle.
+    design_weight_internals: Q | None
+
+    #: the base class's nozzle weight. **Zero by the class's own comment** - nozzles are in the casing.
+    design_weight_nozzle: Q | None
+
+    #: `0.2` times the empty vessel weight.
+    design_weight_piping: Q | None
+
+    #: `0.5` times the driver power.
+    design_weight_electro_instrument: Q | None
+
+    #: `0.15` times the empty vessel weight.
+    design_weight_structural_steel: Q | None
+
+    #: `getWeightTotal`: the empty weight, bundle, seal and lube systems, piping, electrical and structural steel summed.
+    design_weight_total: Q | None
+
+    #: `getModuleLength`, floored at `4` m.
+    design_module_length: Q | None
+
+    #: `getModuleWidth`, floored at `3` m.
+    design_module_width: Q | None
+
+    #: `getModuleHeight`, floored at `3` m.
+    design_module_height: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

@@ -2735,6 +2735,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "surge_control_factor",
         "dimensionless",
     ),
+    (
+        "process.compressor",
+        "max_stages_per_casing",
+        "dimensionless",
+    ),
     ("process.cooler", "inlet_n", "molar_flow"),
     ("process.cooler", "inlet_z", "dimensionless"),
     ("process.cooler", "inlet_p", "pressure"),
