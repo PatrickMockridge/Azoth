@@ -4,7 +4,7 @@ Spec: ``specs/models/process/gaussian_plume.toml``
 
 The Python twin of ``crates/azoth-process/src/models/gaussian_plume.rs``: the rural/urban
 Briggs sigma tables, the two-image concentration, and the log scan with its bisection.
-``gas_dispersion`` imports :func:`sigma_y`, :func:`sigma_z` and :func:`concentration` so the
+``gas_dispersion`` imports the private coefficient and concentration helpers, so the
 analyzer's Gaussian arm is the same arithmetic as this id.
 """
 
