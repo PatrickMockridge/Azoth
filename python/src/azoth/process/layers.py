@@ -1314,7 +1314,6 @@ def _probit(inputs: Mapping[str, Any]) -> dict[str, float]:
     The capture prints `probability_from_dose` and `probability` as separate methods; the
     model publishes `probit` and one `probability`, so the two calls reconstruct both.
     """
-    from azoth.core.units import quantity
     from azoth.process.reference.probit import probit as probit_model
 
     a = float(inputs["a"])
@@ -1324,13 +1323,13 @@ def _probit(inputs: Mapping[str, Any]) -> dict[str, float]:
     stated = inputs.get("probit_value")
     dumped: dict[str, float] = {"a": a, "b": b, "n": n}
     if dose is not None:
-        from_dose = probit_model(a, b, n, dose=quantity(float(dose), "dimensionless"))
+        from_dose = probit_model(a, b, n, dose=float(dose))
         dumped["dose"] = float(dose)
         if from_dose.probit is not None:
             dumped["probit"] = from_dose.probit
         dumped["probability_from_dose"] = from_dose.probability
     if stated is not None:
-        from_probit = probit_model(a, b, n, probit_value=quantity(float(stated), "dimensionless"))
+        from_probit = probit_model(a, b, n, probit_value=float(stated))
         dumped["probit_value"] = float(stated)
         dumped["probability"] = from_probit.probability
     return dumped
