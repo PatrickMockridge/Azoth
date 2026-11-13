@@ -578,15 +578,13 @@ are a split of the tray's own outlet phase — `getGasOutStream` is the vapour s
 draw that same phase scaled by its own fraction — so a draw carries the tray's composition,
 temperature and pressure and a different flow. **Both of the column's closures count them**,
 which is what `columnReportsSideDrawAsOutletStream` asserts, and a fraction on an end is refused
-because this port's ends are kernels rather than stages. What is owed is not a split but a
-recycle: the draw's **flow-rate specification** (`ColumnSideDrawSpecification`,
-`DistillationColumn.addSideDrawFlowSpecification`), which moves the fraction until a target flow
-is met through the class's own tear loop, and the pumparound's **return** to another tray
-(`ColumnPumparound`, a return tray and a temperature drop). Both are iterated by the column's own
-solver and belong to P12's executor, and the capture carries the measurement that says so: on the
-liquid-and-pumparound row NeqSim's own balance does not close — it answers `RECONCILED_PRODUCTS`
-with a `2.4e-3` imbalance and products `0.02` mol/s above this port's — where this port closes
-to `1e-8`, because the class is reconciling against a return this port has no tray to return to.
+because this port's ends are kernels rather than stages. **The draw's flow specification and
+the pumparound's return have both landed**, in `580dc8c2` and `b2d3ccbd`, so what
+remains is the **coordinated pair** of a specified draw flow and a pumparound on one column,
+which is refused on a measurement: on the liquid-and-pumparound row NeqSim's own balance does
+not close — it answers `RECONCILED_PRODUCTS` with a `2.4e-3` imbalance and products `0.02` mol/s
+above this port's — where this port closes to `1e-8`, and the capture is
+`process_column_tear.tsv`.
 
 **P11's palette is closed.** The nine kernels the column's unparking deferred have all landed -
 `component_splitter`, `ejector`, `flare`, `gas_scrubber`, `plug_flow_reactor`,
@@ -656,8 +654,9 @@ sentence claiming the same fact in a spec is refused by that same tool, because 
 a claim nothing holds.
 
 - **The mechanical-design tree** — `process/mechanicaldesign/` and the `*MechanicalDesign`
-  class beside each equipment class — is where most of them are, and no entry declares a
-  parameter any of them read. **`DistillationColumnMechanicalDesign` is ported and wired** onto
+  class beside each equipment class — is where most of them are. **The entries that carry a
+  design declare the parameters it reads**, behind `mechanical_design` or on the entry's own
+  input list; the old sentence that none did is withdrawn. **`DistillationColumnMechanicalDesign` is ported and wired** onto
   `process.distillation_column`: `crates/azoth-process/src/column/mechanical.rs` is `calcDesign`,
   `python/src/azoth/process/reference/mechanical.py` its twin, and the id now declares the six
   inputs it reads — `tray_efficiency`, `max_flooding_factor`, `tray_type`,
@@ -688,6 +687,17 @@ a claim nothing holds.
   **`PlugFlowReactor` is not owed it**: the class overrides no `getMechanicalDesign`, so it
   answers the base `MechanicalDesign`, whose `calcDesign` only reads design specifications and
   computes no vessel.
+  **The rotating machines' first pair landed.** `ExpanderMechanicalDesign` is on
+  `process.expander` behind `mechanical_design`: no design parameters, because the class
+  exposes no setter, and its API 617 wheel, shaft, rotor, casing, weights and module are held
+  to `process_expander_mechanical_design.tsv`'s radial, axial and two casing-derate states.
+  `PumpMechanicalDesign` is on `process.pump` with its API 610 sizing and the assessment's
+  status and scalars - the per-check prose is not a result - held to
+  `process_pump_mechanical_design.tsv`'s plain, multistage, chart, vendor-NPSH, purchaser and
+  sealless states. **`CompressorMechanicalDesign` and
+  `TurboExpanderCompressorMechanicalDesign` are not in this tranche**: each is its own
+  tranche, with `CompressorCasingDesignCalculator` and `TurboExpanderSealGasEnvelope` beside
+  it.
   **`TrayHydraulicsCalculator` is no longer one of them**: its arithmetic is the registered
   `hydraulics.tray_hydraulics` id.
 - **`ColumnInternalsDesigner`** is two halves and both are in. Its **packing** side is done
