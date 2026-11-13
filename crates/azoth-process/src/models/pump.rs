@@ -5,7 +5,7 @@
 //! address, which is the same split every other namespace makes.
 
 use azoth_core::units::{
-    DiffusionCoefficient, Length, MassDensity, MolarEnergy, Power, Pressure,
+    DiffusionCoefficient, Length, Mass, MassDensity, MolarEnergy, Power, Pressure,
     ThermodynamicTemperature, VolumeRate, cubic_meter_per_hour, joules_per_mole, meter, meters,
 };
 use azoth_core::{AzothError, Result, Warning, apply_checks};
@@ -16,6 +16,9 @@ use crate::kernels::pump::{
 };
 use crate::model_gen;
 use crate::pump_chart::{CurvePoint, PumpChart};
+use crate::rotating_design::pump::{
+    Api610PumpType, PumpDesignInputs, SealType, design as design_pump,
+};
 use crate::segment::phase::system_volumetric_flow;
 use crate::stream::Stream;
 
@@ -59,6 +62,96 @@ pub struct PumpResult {
     pub cavitating: bool,
     /// The shaft power, W: the enthalpy rise times the molar flow.
     pub power: Power,
+    /// The legacy pump family: `overhung`, `between_bearings` or `vertically_suspended`.
+    pub design_pump_type: Option<String>,
+    /// The API 610 construction type.
+    pub design_api610_pump_type: Option<String>,
+    /// The seal type.
+    pub design_seal_type: Option<String>,
+    /// The rated volumetric flow, m3/h.
+    pub design_rated_flow: Option<VolumeRate>,
+    /// The design's head, m, over the class's own 9.81.
+    pub design_rated_head: Option<Length>,
+    /// The hydraulic power, W.
+    pub design_hydraulic_power: Option<Power>,
+    /// The rated speed, rpm.
+    pub design_rated_speed: Option<f64>,
+    /// The SI specific speed.
+    pub design_specific_speed: Option<f64>,
+    /// The US suction specific speed.
+    pub design_suction_specific_speed: Option<f64>,
+    /// The stage count.
+    pub design_number_of_stages: Option<f64>,
+    /// The vendor best-efficiency flow, m3/h.
+    pub design_bep_flow: Option<VolumeRate>,
+    /// The vendor best-efficiency head, m.
+    pub design_bep_head: Option<Length>,
+    /// The BEP's provenance.
+    pub design_bep_source: Option<String>,
+    /// The NPSHr provenance.
+    pub design_npshr_source: Option<String>,
+    /// The shutoff head's provenance.
+    pub design_shutoff_source: Option<String>,
+    /// The effective shutoff head, m.
+    pub design_shutoff_head: Option<Length>,
+    /// The casing design pressure, Pa.
+    pub design_pressure: Option<Pressure>,
+    /// The casing design temperature, K.
+    pub design_temperature: Option<ThermodynamicTemperature>,
+    /// The impeller diameter, m.
+    pub design_impeller_diameter: Option<Length>,
+    /// The impeller width, m.
+    pub design_impeller_width: Option<Length>,
+    /// The shaft diameter, m.
+    pub design_shaft_diameter: Option<Length>,
+    /// The casing wall thickness, m.
+    pub design_casing_wall_thickness: Option<Length>,
+    /// The maximum allowable working pressure, Pa.
+    pub design_max_allowable_working_pressure: Option<Pressure>,
+    /// The final driver power, W.
+    pub design_driver_power: Option<Power>,
+    /// The driver margin.
+    pub design_driver_margin: Option<f64>,
+    /// The suction nozzle size, m.
+    pub design_suction_nozzle_size: Option<Length>,
+    /// The discharge nozzle size, m.
+    pub design_discharge_nozzle_size: Option<Length>,
+    /// The minimum continuous flow, m3/h.
+    pub design_minimum_flow: Option<VolumeRate>,
+    /// The maximum continuous flow, m3/h.
+    pub design_maximum_flow: Option<VolumeRate>,
+    /// The casing weight, kg.
+    pub design_casing_weight: Option<Mass>,
+    /// The motor weight, kg.
+    pub design_motor_weight: Option<Mass>,
+    /// The baseplate weight, kg.
+    pub design_baseplate_weight: Option<Mass>,
+    /// The casing inner diameter, m.
+    pub design_inner_diameter: Option<Length>,
+    /// The casing outer diameter, m.
+    pub design_outer_diameter: Option<Length>,
+    /// The tangent-to-tangent length, m.
+    pub design_tantan_length: Option<Length>,
+    /// The base class's wall thickness, m.
+    pub design_wall_thickness: Option<Length>,
+    /// The piping weight, kg.
+    pub design_weight_piping: Option<Mass>,
+    /// The electrical and instrument weight, kg.
+    pub design_weight_electro_instrument: Option<Mass>,
+    /// The structural steel weight, kg.
+    pub design_weight_structural_steel: Option<Mass>,
+    /// The total weight, kg.
+    pub design_weight_total: Option<Mass>,
+    /// The module length, m.
+    pub design_module_length: Option<Length>,
+    /// The module width, m.
+    pub design_module_width: Option<Length>,
+    /// The module height, m.
+    pub design_module_height: Option<Length>,
+    /// The NPSH margin, m.
+    pub design_npsh_margin: Option<Length>,
+    /// The NPSH margin ratio.
+    pub design_npsh_margin_ratio: Option<f64>,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
@@ -85,6 +178,11 @@ pub fn pump(
     use_viscosity_correction: Option<bool>,
     check_npsh: Option<bool>,
     npsh_margin: Option<f64>,
+    mechanical_design: Option<bool>,
+    api610_pump_type: Option<String>,
+    seal_type: Option<String>,
+    maximum_suction_pressure: Option<Pressure>,
+    shutoff_head: Option<Length>,
 ) -> Result<PumpResult> {
     let spec = &model_gen::PUMP_SPEC;
     let mut warnings = Vec::new();
@@ -115,6 +213,41 @@ pub fn pump(
     let viscosity_cst = viscosity.map(|value| value.value * 1.0e6).unwrap_or(1.0);
     let check_npsh = check_npsh.unwrap_or(false);
     let npsh_margin = npsh_margin.unwrap_or(1.3);
+
+    let design_requested = mechanical_design.unwrap_or(false);
+    if !design_requested {
+        for (name, stated) in [
+            ("api610_pump_type", api610_pump_type.is_some()),
+            ("seal_type", seal_type.is_some()),
+            (
+                "maximum_suction_pressure",
+                maximum_suction_pressure.is_some(),
+            ),
+            ("shutoff_head", shutoff_head.is_some()),
+        ] {
+            if stated {
+                return Err(AzothError::invalid_input(
+                    name,
+                    format!("`{name}` is a `mechanical_design` input, and the design is off"),
+                ));
+            }
+        }
+    }
+    let api610 = match api610_pump_type.as_deref() {
+        None => None,
+        Some(value) => Some(Api610PumpType::parse(value).ok_or_else(|| {
+            AzothError::invalid_input(
+                "api610_pump_type",
+                format!("`{value}` is not an API 610 construction type"),
+            )
+        })?),
+    };
+    let seal = match seal_type.as_deref() {
+        None => SealType::SingleMechanical,
+        Some(value) => SealType::parse(value).ok_or_else(|| {
+            AzothError::invalid_input("seal_type", format!("`{value}` is not a seal type"))
+        })?,
+    };
 
     let points: Vec<CurvePoint> = curve
         .unwrap_or(&[])
@@ -180,6 +313,28 @@ pub fn pump(
         }
     };
     let power = shaft_power(&feed, &out);
+    let design = if design_requested {
+        let inputs = PumpDesignInputs {
+            api610_pump_type: api610,
+            seal_type: seal,
+            maximum_suction_pressure,
+            shutoff_head,
+            speed,
+            chart: chart.as_ref(),
+        };
+        Some(design_pump(
+            &feed,
+            &out,
+            power,
+            efficiency,
+            meters(required),
+            meters(available),
+            &inputs,
+        )?)
+    } else {
+        None
+    };
+    let d = design.as_ref();
 
     Ok(PumpResult {
         outlet_n: out.n,
@@ -193,6 +348,51 @@ pub fn pump(
         npsh_available: meters(available),
         cavitating: cavitation,
         power,
+        design_pump_type: d.map(|value| value.pump_type.to_owned()),
+        design_api610_pump_type: d.map(|value| value.api610_pump_type.to_owned()),
+        design_seal_type: d.map(|value| value.seal_type.to_owned()),
+        design_rated_flow: d.map(|value| value.rated_flow),
+        design_rated_head: d.map(|value| value.rated_head),
+        design_hydraulic_power: d.map(|value| value.hydraulic_power),
+        design_rated_speed: d.map(|value| value.rated_speed),
+        design_specific_speed: d.map(|value| value.specific_speed),
+        design_suction_specific_speed: d.map(|value| value.suction_specific_speed),
+        design_number_of_stages: d.map(|value| f64::from(value.number_of_stages)),
+        design_bep_flow: d.and_then(|value| value.bep_flow),
+        design_bep_head: d.and_then(|value| value.bep_head),
+        design_bep_source: d.map(|value| value.bep_source.to_owned()),
+        design_npshr_source: d.map(|value| value.npshr_source.to_owned()),
+        design_shutoff_source: d.map(|value| value.shutoff_source.to_owned()),
+        design_shutoff_head: d.and_then(|value| value.shutoff_head),
+        design_pressure: d.map(|value| value.design_pressure),
+        design_temperature: d.map(|value| value.design_temperature),
+        design_impeller_diameter: d.map(|value| value.impeller_diameter),
+        design_impeller_width: d.map(|value| value.impeller_width),
+        design_shaft_diameter: d.map(|value| value.shaft_diameter),
+        design_casing_wall_thickness: d.map(|value| value.casing_wall_thickness),
+        design_max_allowable_working_pressure: d.map(|value| value.max_allowable_working_pressure),
+        design_driver_power: d.map(|value| value.driver_power),
+        design_driver_margin: d.map(|value| value.driver_margin),
+        design_suction_nozzle_size: d.map(|value| value.suction_nozzle_size),
+        design_discharge_nozzle_size: d.map(|value| value.discharge_nozzle_size),
+        design_minimum_flow: d.map(|value| value.minimum_flow),
+        design_maximum_flow: d.map(|value| value.maximum_flow),
+        design_casing_weight: d.map(|value| value.casing_weight),
+        design_motor_weight: d.map(|value| value.motor_weight),
+        design_baseplate_weight: d.map(|value| value.baseplate_weight),
+        design_inner_diameter: d.map(|value| value.inner_diameter),
+        design_outer_diameter: d.map(|value| value.outer_diameter),
+        design_tantan_length: d.map(|value| value.tantan_length),
+        design_wall_thickness: d.map(|value| value.wall_thickness),
+        design_weight_piping: d.map(|value| value.weight_piping),
+        design_weight_electro_instrument: d.map(|value| value.weight_electro_instrument),
+        design_weight_structural_steel: d.map(|value| value.weight_structural_steel),
+        design_weight_total: d.map(|value| value.weight_total),
+        design_module_length: d.map(|value| value.module_length),
+        design_module_width: d.map(|value| value.module_width),
+        design_module_height: d.map(|value| value.module_height),
+        design_npsh_margin: d.map(|value| value.npsh_margin),
+        design_npsh_margin_ratio: d.map(|value| value.npsh_margin_ratio),
         warnings,
     })
 }

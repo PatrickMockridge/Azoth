@@ -63,7 +63,7 @@ def _pump(inputs: Mapping[str, Any]) -> dict[str, float]:
         float(inputs["isentropic_efficiency"]),
     )
     n = float(inputs["inlet_n"])
-    return {
+    dump = {
         "inlet_h": states.h_in,
         "inlet_s": states.s_in,
         "outlet_h": states.h_out,
@@ -74,6 +74,89 @@ def _pump(inputs: Mapping[str, Any]) -> dict[str, float]:
         "power_kW": n * states.dh_actual / 1000.0,
         "entropy_production_kJ_per_molK": (states.s_out - states.s_in) / 1000.0,
     }
+    if inputs.get("mechanical_design"):
+        from azoth.process.reference import capacity
+        from azoth.process.reference.pump import _npsh_available, _npsh_required
+        from azoth.process.reference.pump_mechanical import design as design_pump
+
+        components = [str(name) for name in inputs["components"]]
+        z = [float(value) for value in inputs["inlet_z"]]
+        t = float(inputs["inlet_t"])
+        p = float(inputs["inlet_p"])
+        p_out = float(inputs["outlet_pressure"])
+        speed = float(inputs.get("speed", 1000.0))
+        density = capacity.system_mass_density(components, t, p, z)
+        volume = capacity.system_volumetric_flow(components, t, p, z, n)
+        npsh_required = _npsh_required(None, volume * 3600.0, speed)
+        npsh_available = _npsh_available(components, t, p, z, density)
+        maximum_suction = inputs.get("maximum_suction_pressure")
+        shutoff = inputs.get("shutoff_head")
+        design = design_pump(
+            components,
+            n,
+            z,
+            t,
+            p,
+            p_out,
+            states.outlet_t.to("K").magnitude,
+            n * states.dh_actual,
+            float(inputs.get("isentropic_efficiency", 1.0)),
+            npsh_required,
+            npsh_available,
+            speed,
+            None,
+            inputs.get("api610_pump_type"),
+            inputs.get("seal_type"),
+            None if maximum_suction is None else float(maximum_suction),
+            None if shutoff is None else float(shutoff),
+        )
+        dump.update(
+            {
+                "rated_flow_m3_per_hr": design.rated_flow,
+                "rated_head_m": design.rated_head,
+                "hydraulic_power_kW": design.hydraulic_power / 1000.0,
+                "rated_speed_rpm": design.rated_speed,
+                "specific_speed": design.specific_speed,
+                "suction_specific_speed": design.suction_specific_speed,
+                "number_of_stages": float(design.number_of_stages),
+                "design_pressure_bara": design.design_pressure / 1.0e5,
+                "design_temperature_C": design.design_temperature - 273.15,
+                "impeller_diameter_mm": design.impeller_diameter * 1000.0,
+                "impeller_width_mm": design.impeller_width * 1000.0,
+                "shaft_diameter_mm": design.shaft_diameter * 1000.0,
+                "casing_wall_thickness_mm": design.casing_wall_thickness * 1000.0,
+                "casing_mawp_bara": design.max_allowable_working_pressure / 1.0e5,
+                "driver_power_kW": design.driver_power / 1000.0,
+                "driver_margin": design.driver_margin,
+                "suction_nozzle_size_in": design.suction_nozzle_size / 0.0254,
+                "discharge_nozzle_size_in": design.discharge_nozzle_size / 0.0254,
+                "minimum_flow_m3_per_hr": design.minimum_flow,
+                "maximum_flow_m3_per_hr": design.maximum_flow,
+                "casing_weight_kg": design.casing_weight,
+                "motor_weight_kg": design.motor_weight,
+                "baseplate_weight_kg": design.baseplate_weight,
+                "inner_diameter_m": design.inner_diameter,
+                "outer_diameter_m": design.outer_diameter,
+                "wall_thickness_mm": design.wall_thickness * 1000.0,
+                "tantan_length_m": design.tantan_length,
+                "weight_piping_kg": design.weight_piping,
+                "weight_electro_instrument_kg": design.weight_electro_instrument,
+                "weight_structural_steel_kg": design.weight_structural_steel,
+                "weight_total_kg": design.weight_total,
+                "module_length_m": design.module_length,
+                "module_width_m": design.module_width,
+                "module_height_m": design.module_height,
+                "design_npsh_margin_m": design.npsh_margin,
+                "design_npsh_margin_ratio": design.npsh_margin_ratio,
+                "effective_isentropic_efficiency": float(
+                    inputs.get("isentropic_efficiency", 1.0)
+                ),
+                "inlet_m3_per_hr": volume * 3600.0,
+                "inlet_density_kg_per_m3": density,
+                "mass_flow_kg_per_hr": density * volume * 3600.0,
+            }
+        )
+    return dump
 
 
 def _compressor(inputs: Mapping[str, Any]) -> dict[str, float]:
@@ -2323,6 +2406,30 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         # and four above the double-precision rounding of an enthalpy near 2.5e4 J/mol.
         diagnostic=(("entropy_production_kJ_per_molK", 1e-9),),
     ),
+    # The mechanical design's non-chart states. The chart and vendor-NPSH blocks are
+    # uncased here and held by their model cases instead: the dumper's state is the
+    # isentropic branch, and the chart's power is `Q dP / eta` rather than `n dh`.
+    LayerCase(
+        model="process.pump",
+        case="the_plain_design_is_the_capture",
+        capture="process_pump_mechanical_design.tsv",
+        block=0,
+        identified_by=(LABEL_KEY, "plain_eta_0_75"),
+    ),
+    LayerCase(
+        model="process.pump",
+        case="the_multistage_design_is_the_capture",
+        capture="process_pump_mechanical_design.tsv",
+        block=2,
+        identified_by=(LABEL_KEY, "multistage"),
+    ),
+    LayerCase(
+        model="process.pump",
+        case="the_purchaser_design_states_its_basis",
+        capture="process_pump_mechanical_design.tsv",
+        block=3,
+        identified_by=(LABEL_KEY, "purchaser"),
+    ),
     LayerCase(
         model="process.mixer",
         case="two_feeds_at_different_pressures",
@@ -2935,6 +3042,10 @@ UNCASED_ROWS: dict[str, int] = {
     # rest are the long horizons held to the capture as evidence, the SRK rows, the propane
     # row whose single-phase beta and cached density are class artefacts, and the refusals.
     "process_leak_blowdown.tsv": 10,
+    # The pump design's five: the reversible-efficiency repeat, the sealless state (a seal
+    # spelling on the plain design), the zero-flow state the model refuses, and the two chart
+    # blocks, whose state is the chart branch rather than the dumper's isentropic one.
+    "process_pump_mechanical_design.tsv": 5,
 }
 
 

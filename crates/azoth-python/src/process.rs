@@ -223,10 +223,10 @@ pub fn pump_stream(
 /// record field crosses by.
 #[pyfunction]
 #[pyo3(
-    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, curve = None, speed = None, reference_density = None, viscosity = None, use_viscosity_correction = None, check_npsh = None, npsh_margin = None)
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, curve = None, speed = None, reference_density = None, viscosity = None, use_viscosity_correction = None, check_npsh = None, npsh_margin = None, mechanical_design = None, api610_pump_type = None, seal_type = None, maximum_suction_pressure = None, shutoff_head = None)
 )]
 #[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, curve=None, speed=None, reference_density=None, viscosity=None, use_viscosity_correction=None, check_npsh=None, npsh_margin=None)"
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, curve=None, speed=None, reference_density=None, viscosity=None, use_viscosity_correction=None, check_npsh=None, npsh_margin=None, mechanical_design=None, api610_pump_type=None, seal_type=None, maximum_suction_pressure=None, shutoff_head=None)"
 )]
 #[allow(clippy::too_many_arguments)] // one argument per declared input
 pub fn pump(
@@ -245,6 +245,11 @@ pub fn pump(
     use_viscosity_correction: Option<bool>,
     check_npsh: Option<bool>,
     npsh_margin: Option<f64>,
+    mechanical_design: Option<bool>,
+    api610_pump_type: Option<String>,
+    seal_type: Option<String>,
+    maximum_suction_pressure: Option<f64>,
+    shutoff_head: Option<f64>,
 ) -> PyResult<crate::transport_gen::PyPumpResult> {
     let points: Option<Vec<azoth_process::models::pump::PumpCurvePoint>> = curve.map(|rows| {
         rows.into_iter()
@@ -272,6 +277,11 @@ pub fn pump(
         use_viscosity_correction,
         check_npsh,
         npsh_margin,
+        mechanical_design,
+        api610_pump_type,
+        seal_type,
+        maximum_suction_pressure.map(pascals),
+        shutoff_head.map(meters),
     )
     .map(|r| crate::transport_gen::PyPumpResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

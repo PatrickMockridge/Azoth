@@ -3434,6 +3434,51 @@ class PumpResult:
     npsh_available: Qty
     cavitating: bool
     power: Qty
+    design_pump_type: str | None
+    design_api610_pump_type: str | None
+    design_seal_type: str | None
+    design_rated_flow: Qty | None
+    design_rated_head: Qty | None
+    design_hydraulic_power: Qty | None
+    design_rated_speed: float | None
+    design_specific_speed: float | None
+    design_suction_specific_speed: float | None
+    design_number_of_stages: float | None
+    design_bep_flow: Qty | None
+    design_bep_head: Qty | None
+    design_bep_source: str | None
+    design_npshr_source: str | None
+    design_shutoff_source: str | None
+    design_shutoff_head: Qty | None
+    design_pressure: Qty | None
+    design_temperature: Qty | None
+    design_impeller_diameter: Qty | None
+    design_impeller_width: Qty | None
+    design_shaft_diameter: Qty | None
+    design_casing_wall_thickness: Qty | None
+    design_max_allowable_working_pressure: Qty | None
+    design_driver_power: Qty | None
+    design_driver_margin: float | None
+    design_suction_nozzle_size: Qty | None
+    design_discharge_nozzle_size: Qty | None
+    design_minimum_flow: Qty | None
+    design_maximum_flow: Qty | None
+    design_casing_weight: Qty | None
+    design_motor_weight: Qty | None
+    design_baseplate_weight: Qty | None
+    design_inner_diameter: Qty | None
+    design_outer_diameter: Qty | None
+    design_tantan_length: Qty | None
+    design_wall_thickness: Qty | None
+    design_weight_piping: Qty | None
+    design_weight_electro_instrument: Qty | None
+    design_weight_structural_steel: Qty | None
+    design_weight_total: Qty | None
+    design_module_length: Qty | None
+    design_module_width: Qty | None
+    design_module_height: Qty | None
+    design_npsh_margin: Qty | None
+    design_npsh_margin_ratio: float | None
     warnings: list[Warning]
 
 @final
@@ -6608,6 +6653,11 @@ def pump(
     use_viscosity_correction: bool | None = None,
     check_npsh: bool | None = None,
     npsh_margin: float | None = None,
+    mechanical_design: bool | None = None,
+    api610_pump_type: str | None = None,
+    seal_type: str | None = None,
+    maximum_suction_pressure: float | None = None,
+    shutoff_head: float | None = None,
 ) -> PumpResult: ...
 def rate_based_packed_column(
     gas_components: list[str],

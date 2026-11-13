@@ -18511,6 +18511,141 @@ pub struct PyPumpResult {
     /// the shaft power: the enthalpy rise across the machine times the molar flow, so it is the isentropic work in the isentropic branch and the chart's `Q dP/eta` in the chart branch.
     #[pyo3(get)]
     pub power: PyQty,
+    /// the legacy family: `overhung`, `between_bearings` or `vertically_suspended`. It is mapped from the API 610 type or selected by head, which is why it is an output.
+    #[pyo3(get)]
+    pub design_pump_type: Option<String>,
+    /// the API 610 construction type, from the purchaser or the screening selection.
+    #[pyo3(get)]
+    pub design_api610_pump_type: Option<String>,
+    /// `getSealType`.
+    #[pyo3(get)]
+    pub design_seal_type: Option<String>,
+    /// `getRatedFlow`: the inlet's volumetric flow, `n M / rho`.
+    #[pyo3(get)]
+    pub design_rated_flow: Option<PyQty>,
+    /// `getRatedHead`: the differential pressure over `rho * 9.81`. **The class's own gravity**, which is why this is not the model's `head`.
+    #[pyo3(get)]
+    pub design_rated_head: Option<PyQty>,
+    /// `getHydraulicPower`: `rho g Q H`, with no margin - the class's `hydraulicPowerMargin` is unread.
+    #[pyo3(get)]
+    pub design_hydraulic_power: Option<PyQty>,
+    /// `getRatedSpeed`, in revolutions per minute: the model's `speed`.
+    #[pyo3(get)]
+    pub design_rated_speed: Option<f64>,
+    /// `getSpecificSpeed`: `N sqrt(Q) / H^0.75` on the BEP where the curve states one, else the duty point.
+    #[pyo3(get)]
+    pub design_specific_speed: Option<f64>,
+    /// `getSuctionSpecificSpeed` in the US convention, the flow halved for `bb1`; absent where the NPSHr is non-positive.
+    #[pyo3(get)]
+    pub design_suction_specific_speed: Option<f64>,
+    /// `getNumberOfStages`: one for an overhung machine, `max(2, ceil(H/200))` for a between-bearings one.
+    #[pyo3(get)]
+    pub design_number_of_stages: Option<f64>,
+    /// `getBepFlow`: the vendor curve's best-efficiency flow; absent where no curve states one.
+    #[pyo3(get)]
+    pub design_bep_flow: Option<PyQty>,
+    /// `getBepHead`: the vendor curve's head at the BEP flow.
+    #[pyo3(get)]
+    pub design_bep_head: Option<PyQty>,
+    /// `vendor_curve` or `not_available`.
+    #[pyo3(get)]
+    pub design_bep_source: Option<String>,
+    /// `vendor_curve`, `screening_estimate` or `not_available`, from the class's NPSH-curve test.
+    #[pyo3(get)]
+    pub design_npshr_source: Option<String>,
+    /// `purchaser_input`, `vendor_curve` or `not_available`.
+    #[pyo3(get)]
+    pub design_shutoff_source: Option<String>,
+    /// the effective shutoff head. **The vendor value is `getHead(0)`, which the reduced fit clamps to the lowest measured flow**, not a zero-flow extrapolation.
+    #[pyo3(get)]
+    pub design_shutoff_head: Option<PyQty>,
+    /// `getDesignPressure`: the greater of the suction basis plus the governing shutoff head and the discharge pressure.
+    #[pyo3(get)]
+    pub design_pressure: Option<PyQty>,
+    /// `getDesignTemperature`: the hotter of the inlet and outlet plus `30` degC.
+    #[pyo3(get)]
+    pub design_temperature: Option<PyQty>,
+    /// `getImpellerDiameter`, clamped to `50-1000` mm; the `200` mm default on a non-positive state.
+    #[pyo3(get)]
+    pub design_impeller_diameter: Option<PyQty>,
+    /// `getImpellerWidth`, clamped to `10-200` mm; the `30` mm initialiser on a non-positive state.
+    #[pyo3(get)]
+    pub design_impeller_width: Option<PyQty>,
+    /// `getShaftDiameter`: the torque's shear-stress diameter at `40` MPa, times `1.2`, rounded to 5 mm and floored at `20` mm.
+    #[pyo3(get)]
+    pub design_shaft_diameter: Option<PyQty>,
+    /// `getCasingWallThickness`: the ASME shell formula at `137.9` MPa with its `0.85` derate above `200` degC, plus `3` mm and floored at `6` mm.
+    #[pyo3(get)]
+    pub design_casing_wall_thickness: Option<PyQty>,
+    /// `getMaxAllowableWorkingPressure`, from the wall thickness.
+    #[pyo3(get)]
+    pub design_max_allowable_working_pressure: Option<PyQty>,
+    /// `getDriverPower`, the final value: the API 610 assessment's selected rating overwrites `calculateDriverSizing`'s intermediate.
+    #[pyo3(get)]
+    pub design_driver_power: Option<PyQty>,
+    /// `getDriverMargin`: `1.25` below `22` kW, `1.15` to `55` kW, `1.10` above.
+    #[pyo3(get)]
+    pub design_driver_margin: Option<f64>,
+    /// `getSuctionNozzleSize`, from the standard inch table at `2.5` m/s.
+    #[pyo3(get)]
+    pub design_suction_nozzle_size: Option<PyQty>,
+    /// `getDischargeNozzleSize` at `5` m/s, one standard size below the suction where it would not be.
+    #[pyo3(get)]
+    pub design_discharge_nozzle_size: Option<PyQty>,
+    /// `getMinimumFlow`: `0.65` times the BEP flow or the duty flow.
+    #[pyo3(get)]
+    pub design_minimum_flow: Option<PyQty>,
+    /// `getMaximumFlow`: `1.15` times the same basis.
+    #[pyo3(get)]
+    pub design_maximum_flow: Option<PyQty>,
+    /// `getCasingWeight`, from the casing volume at twice the steel density.
+    #[pyo3(get)]
+    pub design_casing_weight: Option<PyQty>,
+    /// `getMotorWeight`, a banded function of the intermediate driver power.
+    #[pyo3(get)]
+    pub design_motor_weight: Option<PyQty>,
+    /// `getBaseplateWeight`, `0.6` times the casing and motor weights.
+    #[pyo3(get)]
+    pub design_baseplate_weight: Option<PyQty>,
+    /// the casing's inner diameter. **This class stores it in metres** where the expander stores millimetres.
+    #[pyo3(get)]
+    pub design_inner_diameter: Option<PyQty>,
+    /// the casing's outer diameter, metres.
+    #[pyo3(get)]
+    pub design_outer_diameter: Option<PyQty>,
+    /// `getTantanLength`: the impeller width times the stage count, metres.
+    #[pyo3(get)]
+    pub design_tantan_length: Option<PyQty>,
+    /// the base class's wall thickness, converted from this class's millimetres.
+    #[pyo3(get)]
+    pub design_wall_thickness: Option<PyQty>,
+    /// 15 % of the empty weight.
+    #[pyo3(get)]
+    pub design_weight_piping: Option<PyQty>,
+    /// 10 % of the empty weight.
+    #[pyo3(get)]
+    pub design_weight_electro_instrument: Option<PyQty>,
+    /// 5 % of the empty weight.
+    #[pyo3(get)]
+    pub design_weight_structural_steel: Option<PyQty>,
+    /// `getWeightTotal`: the empty weight plus those three.
+    #[pyo3(get)]
+    pub design_weight_total: Option<PyQty>,
+    /// `getModuleLength`: the pump plus the motor and access.
+    #[pyo3(get)]
+    pub design_module_length: Option<PyQty>,
+    /// `getModuleWidth`.
+    #[pyo3(get)]
+    pub design_module_width: Option<PyQty>,
+    /// `getModuleHeight`.
+    #[pyo3(get)]
+    pub design_module_height: Option<PyQty>,
+    /// `getNpshMargin`: available minus required.
+    #[pyo3(get)]
+    pub design_npsh_margin: Option<PyQty>,
+    /// `getNpshMarginRatio`: available over required.
+    #[pyo3(get)]
+    pub design_npsh_margin_ratio: Option<f64>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -18520,7 +18655,7 @@ pub struct PyPumpResult {
 impl PyPumpResult {
     fn __repr__(&self) -> String {
         format!(
-            "PumpResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, head={:?}, efficiency={:?}, npsh_required={:?}, npsh_available={:?}, cavitating={:?}, power={:?}, {} warning(s))",
+            "PumpResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, head={:?}, efficiency={:?}, npsh_required={:?}, npsh_available={:?}, cavitating={:?}, power={:?}, design_pump_type={:?}, design_api610_pump_type={:?}, design_seal_type={:?}, design_rated_flow={:?}, design_rated_head={:?}, design_hydraulic_power={:?}, design_rated_speed={:?}, design_specific_speed={:?}, design_suction_specific_speed={:?}, design_number_of_stages={:?}, design_bep_flow={:?}, design_bep_head={:?}, design_bep_source={:?}, design_npshr_source={:?}, design_shutoff_source={:?}, design_shutoff_head={:?}, design_pressure={:?}, design_temperature={:?}, design_impeller_diameter={:?}, design_impeller_width={:?}, design_shaft_diameter={:?}, design_casing_wall_thickness={:?}, design_max_allowable_working_pressure={:?}, design_driver_power={:?}, design_driver_margin={:?}, design_suction_nozzle_size={:?}, design_discharge_nozzle_size={:?}, design_minimum_flow={:?}, design_maximum_flow={:?}, design_casing_weight={:?}, design_motor_weight={:?}, design_baseplate_weight={:?}, design_inner_diameter={:?}, design_outer_diameter={:?}, design_tantan_length={:?}, design_wall_thickness={:?}, design_weight_piping={:?}, design_weight_electro_instrument={:?}, design_weight_structural_steel={:?}, design_weight_total={:?}, design_module_length={:?}, design_module_width={:?}, design_module_height={:?}, design_npsh_margin={:?}, design_npsh_margin_ratio={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -18532,6 +18667,51 @@ impl PyPumpResult {
             self.npsh_available,
             self.cavitating,
             self.power,
+            self.design_pump_type,
+            self.design_api610_pump_type,
+            self.design_seal_type,
+            self.design_rated_flow,
+            self.design_rated_head,
+            self.design_hydraulic_power,
+            self.design_rated_speed,
+            self.design_specific_speed,
+            self.design_suction_specific_speed,
+            self.design_number_of_stages,
+            self.design_bep_flow,
+            self.design_bep_head,
+            self.design_bep_source,
+            self.design_npshr_source,
+            self.design_shutoff_source,
+            self.design_shutoff_head,
+            self.design_pressure,
+            self.design_temperature,
+            self.design_impeller_diameter,
+            self.design_impeller_width,
+            self.design_shaft_diameter,
+            self.design_casing_wall_thickness,
+            self.design_max_allowable_working_pressure,
+            self.design_driver_power,
+            self.design_driver_margin,
+            self.design_suction_nozzle_size,
+            self.design_discharge_nozzle_size,
+            self.design_minimum_flow,
+            self.design_maximum_flow,
+            self.design_casing_weight,
+            self.design_motor_weight,
+            self.design_baseplate_weight,
+            self.design_inner_diameter,
+            self.design_outer_diameter,
+            self.design_tantan_length,
+            self.design_wall_thickness,
+            self.design_weight_piping,
+            self.design_weight_electro_instrument,
+            self.design_weight_structural_steel,
+            self.design_weight_total,
+            self.design_module_length,
+            self.design_module_width,
+            self.design_module_height,
+            self.design_npsh_margin,
+            self.design_npsh_margin_ratio,
             self.warnings.len()
         )
     }
@@ -18575,6 +18755,152 @@ impl From<&azoth_process::models::pump::PumpResult> for PyPumpResult {
                 magnitude_si: r.power.value,
                 unit: "W".to_string(),
             },
+            design_pump_type: r.design_pump_type.clone(),
+            design_api610_pump_type: r.design_api610_pump_type.clone(),
+            design_seal_type: r.design_seal_type.clone(),
+            design_rated_flow: r.design_rated_flow.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3/h".to_string(),
+            }),
+            design_rated_head: r.design_rated_head.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_hydraulic_power: r.design_hydraulic_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            design_rated_speed: r.design_rated_speed,
+            design_specific_speed: r.design_specific_speed,
+            design_suction_specific_speed: r.design_suction_specific_speed,
+            design_number_of_stages: r.design_number_of_stages,
+            design_bep_flow: r.design_bep_flow.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3/h".to_string(),
+            }),
+            design_bep_head: r.design_bep_head.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_bep_source: r.design_bep_source.clone(),
+            design_npshr_source: r.design_npshr_source.clone(),
+            design_shutoff_source: r.design_shutoff_source.clone(),
+            design_shutoff_head: r.design_shutoff_head.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_pressure: r.design_pressure.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            design_temperature: r.design_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            design_impeller_diameter: r.design_impeller_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_impeller_width: r.design_impeller_width.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_shaft_diameter: r.design_shaft_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_casing_wall_thickness: r.design_casing_wall_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_max_allowable_working_pressure: r.design_max_allowable_working_pressure.map(
+                |v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "Pa".to_string(),
+                },
+            ),
+            design_driver_power: r.design_driver_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            design_driver_margin: r.design_driver_margin,
+            design_suction_nozzle_size: r.design_suction_nozzle_size.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_discharge_nozzle_size: r.design_discharge_nozzle_size.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_minimum_flow: r.design_minimum_flow.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3/h".to_string(),
+            }),
+            design_maximum_flow: r.design_maximum_flow.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m**3/h".to_string(),
+            }),
+            design_casing_weight: r.design_casing_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_motor_weight: r.design_motor_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_baseplate_weight: r.design_baseplate_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_inner_diameter: r.design_inner_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_outer_diameter: r.design_outer_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_tantan_length: r.design_tantan_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_wall_thickness: r.design_wall_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_weight_piping: r.design_weight_piping.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_electro_instrument: r.design_weight_electro_instrument.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_structural_steel: r.design_weight_structural_steel.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_total: r.design_weight_total.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_module_length: r.design_module_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_module_width: r.design_module_width.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_module_height: r.design_module_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_npsh_margin: r.design_npsh_margin.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_npsh_margin_ratio: r.design_npsh_margin_ratio,
             warnings: transport(&r.warnings),
         }
     }

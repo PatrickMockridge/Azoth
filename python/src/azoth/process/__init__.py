@@ -182,6 +182,11 @@ def pump(
     use_viscosity_correction: bool | None = None,
     check_npsh: bool | None = None,
     npsh_margin: float | None = None,
+    mechanical_design: bool | None = None,
+    api610_pump_type: str | None = None,
+    seal_type: str | None = None,
+    maximum_suction_pressure: Q | None = None,
+    shutoff_head: Q | None = None,
 ) -> PumpResult:
     """Raise a stream's pressure, adding the pump's work as enthalpy.
 
@@ -218,6 +223,11 @@ def pump(
         use_viscosity_correction=use_viscosity_correction,
         check_npsh=check_npsh,
         npsh_margin=npsh_margin,
+        mechanical_design=mechanical_design,
+        api610_pump_type=api610_pump_type,
+        seal_type=seal_type,
+        maximum_suction_pressure=maximum_suction_pressure,
+        shutoff_head=shutoff_head,
     )
 
 

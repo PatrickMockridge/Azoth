@@ -5,3 +5,4 @@
 //! neither is part of `run`: a caller asks for the design.
 
 pub mod expander;
+pub mod pump;

@@ -7446,6 +7446,141 @@ class PumpResult(_HasWarnings):
     #: the shaft power: the enthalpy rise across the machine times the molar flow, so it is the isentropic work in the isentropic branch and the chart's `Q dP/eta` in the chart branch.
     power: Q
 
+    #: the legacy family: `overhung`, `between_bearings` or `vertically_suspended`. It is mapped from the API 610 type or selected by head, which is why it is an output.
+    design_pump_type: str | None
+
+    #: the API 610 construction type, from the purchaser or the screening selection.
+    design_api610_pump_type: str | None
+
+    #: `getSealType`.
+    design_seal_type: str | None
+
+    #: `getRatedFlow`: the inlet's volumetric flow, `n M / rho`.
+    design_rated_flow: Q | None
+
+    #: `getRatedHead`: the differential pressure over `rho * 9.81`. **The class's own gravity**, which is why this is not the model's `head`.
+    design_rated_head: Q | None
+
+    #: `getHydraulicPower`: `rho g Q H`, with no margin - the class's `hydraulicPowerMargin` is unread.
+    design_hydraulic_power: Q | None
+
+    #: `getRatedSpeed`, in revolutions per minute: the model's `speed`.
+    design_rated_speed: float | None
+
+    #: `getSpecificSpeed`: `N sqrt(Q) / H^0.75` on the BEP where the curve states one, else the duty point.
+    design_specific_speed: float | None
+
+    #: `getSuctionSpecificSpeed` in the US convention, the flow halved for `bb1`; absent where the NPSHr is non-positive.
+    design_suction_specific_speed: float | None
+
+    #: `getNumberOfStages`: one for an overhung machine, `max(2, ceil(H/200))` for a between-bearings one.
+    design_number_of_stages: float | None
+
+    #: `getBepFlow`: the vendor curve's best-efficiency flow; absent where no curve states one.
+    design_bep_flow: Q | None
+
+    #: `getBepHead`: the vendor curve's head at the BEP flow.
+    design_bep_head: Q | None
+
+    #: `vendor_curve` or `not_available`.
+    design_bep_source: str | None
+
+    #: `vendor_curve`, `screening_estimate` or `not_available`, from the class's NPSH-curve test.
+    design_npshr_source: str | None
+
+    #: `purchaser_input`, `vendor_curve` or `not_available`.
+    design_shutoff_source: str | None
+
+    #: the effective shutoff head. **The vendor value is `getHead(0)`, which the reduced fit clamps to the lowest measured flow**, not a zero-flow extrapolation.
+    design_shutoff_head: Q | None
+
+    #: `getDesignPressure`: the greater of the suction basis plus the governing shutoff head and the discharge pressure.
+    design_pressure: Q | None
+
+    #: `getDesignTemperature`: the hotter of the inlet and outlet plus `30` degC.
+    design_temperature: Q | None
+
+    #: `getImpellerDiameter`, clamped to `50-1000` mm; the `200` mm default on a non-positive state.
+    design_impeller_diameter: Q | None
+
+    #: `getImpellerWidth`, clamped to `10-200` mm; the `30` mm initialiser on a non-positive state.
+    design_impeller_width: Q | None
+
+    #: `getShaftDiameter`: the torque's shear-stress diameter at `40` MPa, times `1.2`, rounded to 5 mm and floored at `20` mm.
+    design_shaft_diameter: Q | None
+
+    #: `getCasingWallThickness`: the ASME shell formula at `137.9` MPa with its `0.85` derate above `200` degC, plus `3` mm and floored at `6` mm.
+    design_casing_wall_thickness: Q | None
+
+    #: `getMaxAllowableWorkingPressure`, from the wall thickness.
+    design_max_allowable_working_pressure: Q | None
+
+    #: `getDriverPower`, the final value: the API 610 assessment's selected rating overwrites `calculateDriverSizing`'s intermediate.
+    design_driver_power: Q | None
+
+    #: `getDriverMargin`: `1.25` below `22` kW, `1.15` to `55` kW, `1.10` above.
+    design_driver_margin: float | None
+
+    #: `getSuctionNozzleSize`, from the standard inch table at `2.5` m/s.
+    design_suction_nozzle_size: Q | None
+
+    #: `getDischargeNozzleSize` at `5` m/s, one standard size below the suction where it would not be.
+    design_discharge_nozzle_size: Q | None
+
+    #: `getMinimumFlow`: `0.65` times the BEP flow or the duty flow.
+    design_minimum_flow: Q | None
+
+    #: `getMaximumFlow`: `1.15` times the same basis.
+    design_maximum_flow: Q | None
+
+    #: `getCasingWeight`, from the casing volume at twice the steel density.
+    design_casing_weight: Q | None
+
+    #: `getMotorWeight`, a banded function of the intermediate driver power.
+    design_motor_weight: Q | None
+
+    #: `getBaseplateWeight`, `0.6` times the casing and motor weights.
+    design_baseplate_weight: Q | None
+
+    #: the casing's inner diameter. **This class stores it in metres** where the expander stores millimetres.
+    design_inner_diameter: Q | None
+
+    #: the casing's outer diameter, metres.
+    design_outer_diameter: Q | None
+
+    #: `getTantanLength`: the impeller width times the stage count, metres.
+    design_tantan_length: Q | None
+
+    #: the base class's wall thickness, converted from this class's millimetres.
+    design_wall_thickness: Q | None
+
+    #: 15 % of the empty weight.
+    design_weight_piping: Q | None
+
+    #: 10 % of the empty weight.
+    design_weight_electro_instrument: Q | None
+
+    #: 5 % of the empty weight.
+    design_weight_structural_steel: Q | None
+
+    #: `getWeightTotal`: the empty weight plus those three.
+    design_weight_total: Q | None
+
+    #: `getModuleLength`: the pump plus the motor and access.
+    design_module_length: Q | None
+
+    #: `getModuleWidth`.
+    design_module_width: Q | None
+
+    #: `getModuleHeight`.
+    design_module_height: Q | None
+
+    #: `getNpshMargin`: available minus required.
+    design_npsh_margin: Q | None
+
+    #: `getNpshMarginRatio`: available over required.
+    design_npsh_margin_ratio: float | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

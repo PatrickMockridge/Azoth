@@ -3745,6 +3745,8 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("process.pump", "reference_density", "mass_density"),
     ("process.pump", "viscosity", "diffusion_coefficient"),
     ("process.pump", "npsh_margin", "dimensionless"),
+    ("process.pump", "maximum_suction_pressure", "pressure"),
+    ("process.pump", "shutoff_head", "length"),
     ("process.rate_based_packed_column", "gas_n", "molar_flow"),
     ("process.rate_based_packed_column", "gas_z", "dimensionless"),
     ("process.rate_based_packed_column", "gas_p", "pressure"),

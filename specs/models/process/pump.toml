@@ -12,16 +12,29 @@ assumptions = [
     "**the density correction multiplies by `reference_density` over the inlet density**, and the viscosity correction is the Hydraulic Institute's three factors. `run` applies the latter only when it is enabled and the stated viscosity exceeds 4 cSt, and the model's inputs are that branch's.",
     "**NPSH available is `(P_in - P_bubble)/(rho g)` and NPSH required is the curve where the chart carries one**, else the class's 2/5/8 m flow bands. A bubble point that does not solve is `NaN`, and an unknown NPSH status counts as cavitating.",
     "**an absent `curve` is the isentropic branch, and a stated one overrides `outlet_pressure`.** The class's chart branch ignores the stated pressure and solves it from the head; the isentropic branch refuses a pump with no pressure to reach.",
+    "**`mechanical_design` is an explicit `calcDesign` call, not part of `run`.** `PumpMechanicalDesign` is built beside the equipment and asked for; the four design inputs are refused without the flag.",
+    "**the design's gravity is `9.81`**, neither the chart kernel's `9.80665` nor the API 610 calculator's, so `design_rated_head` and `design_hydraulic_power` are distinct from the model's `head` and `power`.",
+    "**the design reads the database's effective defaults**: NPSH margin `1.20`, POR `0.70`/`1.20`, AOR `0.65`/`1.25`, rated band `0.80`/`1.10` and continuous flow `0.65`/`1.15`, from `TechnicalRequirements_Process.csv` through `super.calcDesign()`.",
+    "**the final driver power is the API 610 selection from its 39-rating list**; the weights and module are built on `calculateDriverSizing`'s 25-rating intermediate, and the assessment overwrites the field after them.",
+    "**the vendor shutoff head is `getHead(0)`**, which the reduced fit clamps to the lowest measured flow - not a zero-flow extrapolation.",
+    "**`estimateOptimalSpeed` is unreachable**: the model refuses `speed <= 0`, so the rated speed is the model's.",
+    "**`hydraulicPowerMargin`, `headMarginFactor` and `maxSuctionSpecificSpeed` are stored and unread by `calcDesign`**; the last is read only by `validateDesign`.",
+    "**the chart head converter's `kJ/kg` and `bar` branches are unreachable**, because the model's curve record states metres.",
+    "**`pump_type` is an output, not an input**: it is mapped from the API 610 type or selected by head.",
+    "**the base fields are mixed units**: inner and outer diameters and the tangent length are metres, the wall thickness is millimetres.",
+    "cost estimation (`PumpCostEstimate`) is out: the unit system carries no currency.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/pump/Pump.java` is the port source, through its `run`, and `process/equipment/pump/PumpChart.java` is the curve.",
     "Smith, J. M.; Van Ness, H. C.; Abbott, M. M. (2005). \"Introduction to Chemical Engineering Thermodynamics.\", 7th ed., McGraw-Hill. The incompressible-liquid work `v(P2 - P1)` and the isentropic efficiency that divides it.",
     "ANSI/HI 9.6.7-2021, \"Effects of Liquid Viscosity on Rotodynamic Pump Performance\". The three correction factors and the parameter `B`.",
     "`validation/neqsim/captures/process_pump_curve.tsv` - the reduced curve, the density, NPSH and viscosity rows, and two `Pump.run` rows on PR water.",
+    "`validation/neqsim/captures/process_pump_mechanical_design.tsv` - the plain, multistage, chart, vendor-NPSH, purchaser and sealless states, with every design field and its effective database defaults.",
+    "NeqSim master, `process/mechanicaldesign/pump/PumpMechanicalDesign.java`, Apache-2.0: `calcDesign`, its impeller, shaft, casing, driver, nozzle, weight and module arithmetic, and `configureAndRunApi610Assessment`.",
 ]
 [source]
 standard = "NeqSim process/equipment/pump/Pump.java and process/equipment/pump/PumpChart.java"
-edition = "Its steady-state `run`: the isentropic flash to a stated outlet pressure, and the `isUsePumpChart` branch that solves the pressure from the reduced head, divides the hydraulic power by the chart efficiency, and flashes the inlet enthalpy plus the shaft work per mole."
+edition = "Its steady-state `run`: the isentropic flash to a stated outlet pressure, and the `isUsePumpChart` branch that solves the pressure from the reduced head; and `PumpMechanicalDesign.calcDesign`'s API 610 sizing behind `mechanical_design`."
 [inputs]
 [inputs.components]
 type = "components"
@@ -92,6 +105,28 @@ description = "whether cavitation is assessed. Absent is the class's `false`, wh
 unit = "dimensionless"
 optional = true
 description = "the factor NPSH available must exceed: cavitation is `NPSHa < margin * NPSHr`. Absent takes the class's 1.3.\n"
+[inputs.mechanical_design]
+type = "boolean"
+optional = true
+description = "run `PumpMechanicalDesign.calcDesign` and publish its API 610 sizing. **Absent is false**, and every design output is absent then; the four design inputs below are refused without it.\n"
+[inputs.api610_pump_type]
+type = "enum"
+values = ["unspecified", "oh1", "oh2", "oh3", "oh4", "oh5", "oh6", "bb1", "bb2", "bb3", "bb4", "bb5", "vs1", "vs2", "vs3", "vs4", "vs5", "vs6", "vs7"]
+optional = true
+description = "`setApi610PumpType`: the purchaser's construction type. **Absent is `unspecified`**, the head-driven screening selection. Refused without `mechanical_design`.\n"
+[inputs.seal_type]
+type = "enum"
+values = ["packed", "single_mechanical", "double_mechanical", "magnetic_drive", "canned_motor"]
+optional = true
+description = "`setSealType`. **Absent is `single_mechanical`**, the class's initialiser. Refused without `mechanical_design`.\n"
+[inputs.maximum_suction_pressure]
+unit = "Pa"
+optional = true
+description = "`setMaximumSuctionPressure`, the pressure the design basis starts from. **Absent is the inlet's.** Refused without `mechanical_design`.\n"
+[inputs.shutoff_head]
+unit = "m"
+optional = true
+description = "`setShutoffHead`, the purchaser's shutoff head. **Absent is the vendor curve's `getHead(0)` where one exists, else none**; a stated value makes the source `purchaser_input`. Refused without `mechanical_design`.\n"
 [outputs]
 [outputs.outlet_n]
 unit = "mol/s"
@@ -128,6 +163,186 @@ description = "`NPSHa < margin * NPSHr`, with an unknown NPSH status counting as
 [outputs.power]
 unit = "W"
 description = "the shaft power: the enthalpy rise across the machine times the molar flow, so it is the isentropic work in the isentropic branch and the chart's `Q dP/eta` in the chart branch.\n"
+[outputs.design_pump_type]
+type = "string"
+optional = true
+description = "the legacy family: `overhung`, `between_bearings` or `vertically_suspended`. It is mapped from the API 610 type or selected by head, which is why it is an output.\n"
+[outputs.design_api610_pump_type]
+type = "string"
+optional = true
+description = "the API 610 construction type, from the purchaser or the screening selection.\n"
+[outputs.design_seal_type]
+type = "string"
+optional = true
+description = "`getSealType`.\n"
+[outputs.design_rated_flow]
+unit = "m**3/h"
+optional = true
+description = "`getRatedFlow`: the inlet's volumetric flow, `n M / rho`.\n"
+[outputs.design_rated_head]
+unit = "m"
+optional = true
+description = "`getRatedHead`: the differential pressure over `rho * 9.81`. **The class's own gravity**, which is why this is not the model's `head`.\n"
+[outputs.design_hydraulic_power]
+unit = "W"
+optional = true
+description = "`getHydraulicPower`: `rho g Q H`, with no margin - the class's `hydraulicPowerMargin` is unread.\n"
+[outputs.design_rated_speed]
+unit = "dimensionless"
+optional = true
+description = "`getRatedSpeed`, in revolutions per minute: the model's `speed`.\n"
+[outputs.design_specific_speed]
+unit = "dimensionless"
+optional = true
+description = "`getSpecificSpeed`: `N sqrt(Q) / H^0.75` on the BEP where the curve states one, else the duty point.\n"
+[outputs.design_suction_specific_speed]
+unit = "dimensionless"
+optional = true
+description = "`getSuctionSpecificSpeed` in the US convention, the flow halved for `bb1`; absent where the NPSHr is non-positive.\n"
+[outputs.design_number_of_stages]
+unit = "dimensionless"
+optional = true
+description = "`getNumberOfStages`: one for an overhung machine, `max(2, ceil(H/200))` for a between-bearings one.\n"
+[outputs.design_bep_flow]
+unit = "m**3/h"
+optional = true
+description = "`getBepFlow`: the vendor curve's best-efficiency flow; absent where no curve states one.\n"
+[outputs.design_bep_head]
+unit = "m"
+optional = true
+description = "`getBepHead`: the vendor curve's head at the BEP flow.\n"
+[outputs.design_bep_source]
+type = "string"
+optional = true
+description = "`vendor_curve` or `not_available`.\n"
+[outputs.design_npshr_source]
+type = "string"
+optional = true
+description = "`vendor_curve`, `screening_estimate` or `not_available`, from the class's NPSH-curve test.\n"
+[outputs.design_shutoff_source]
+type = "string"
+optional = true
+description = "`purchaser_input`, `vendor_curve` or `not_available`.\n"
+[outputs.design_shutoff_head]
+unit = "m"
+optional = true
+description = "the effective shutoff head. **The vendor value is `getHead(0)`, which the reduced fit clamps to the lowest measured flow**, not a zero-flow extrapolation.\n"
+[outputs.design_pressure]
+unit = "Pa"
+optional = true
+description = "`getDesignPressure`: the greater of the suction basis plus the governing shutoff head and the discharge pressure.\n"
+[outputs.design_temperature]
+unit = "K"
+optional = true
+description = "`getDesignTemperature`: the hotter of the inlet and outlet plus `30` degC.\n"
+[outputs.design_impeller_diameter]
+unit = "m"
+optional = true
+description = "`getImpellerDiameter`, clamped to `50-1000` mm; the `200` mm default on a non-positive state.\n"
+[outputs.design_impeller_width]
+unit = "m"
+optional = true
+description = "`getImpellerWidth`, clamped to `10-200` mm; the `30` mm initialiser on a non-positive state.\n"
+[outputs.design_shaft_diameter]
+unit = "m"
+optional = true
+description = "`getShaftDiameter`: the torque's shear-stress diameter at `40` MPa, times `1.2`, rounded to 5 mm and floored at `20` mm.\n"
+[outputs.design_casing_wall_thickness]
+unit = "m"
+optional = true
+description = "`getCasingWallThickness`: the ASME shell formula at `137.9` MPa with its `0.85` derate above `200` degC, plus `3` mm and floored at `6` mm.\n"
+[outputs.design_max_allowable_working_pressure]
+unit = "Pa"
+optional = true
+description = "`getMaxAllowableWorkingPressure`, from the wall thickness.\n"
+[outputs.design_driver_power]
+unit = "W"
+optional = true
+description = "`getDriverPower`, the final value: the API 610 assessment's selected rating overwrites `calculateDriverSizing`'s intermediate.\n"
+[outputs.design_driver_margin]
+unit = "dimensionless"
+optional = true
+description = "`getDriverMargin`: `1.25` below `22` kW, `1.15` to `55` kW, `1.10` above.\n"
+[outputs.design_suction_nozzle_size]
+unit = "m"
+optional = true
+description = "`getSuctionNozzleSize`, from the standard inch table at `2.5` m/s.\n"
+[outputs.design_discharge_nozzle_size]
+unit = "m"
+optional = true
+description = "`getDischargeNozzleSize` at `5` m/s, one standard size below the suction where it would not be.\n"
+[outputs.design_minimum_flow]
+unit = "m**3/h"
+optional = true
+description = "`getMinimumFlow`: `0.65` times the BEP flow or the duty flow.\n"
+[outputs.design_maximum_flow]
+unit = "m**3/h"
+optional = true
+description = "`getMaximumFlow`: `1.15` times the same basis.\n"
+[outputs.design_casing_weight]
+unit = "kg"
+optional = true
+description = "`getCasingWeight`, from the casing volume at twice the steel density.\n"
+[outputs.design_motor_weight]
+unit = "kg"
+optional = true
+description = "`getMotorWeight`, a banded function of the intermediate driver power.\n"
+[outputs.design_baseplate_weight]
+unit = "kg"
+optional = true
+description = "`getBaseplateWeight`, `0.6` times the casing and motor weights.\n"
+[outputs.design_inner_diameter]
+unit = "m"
+optional = true
+description = "the casing's inner diameter. **This class stores it in metres** where the expander stores millimetres.\n"
+[outputs.design_outer_diameter]
+unit = "m"
+optional = true
+description = "the casing's outer diameter, metres.\n"
+[outputs.design_tantan_length]
+unit = "m"
+optional = true
+description = "`getTantanLength`: the impeller width times the stage count, metres.\n"
+[outputs.design_wall_thickness]
+unit = "m"
+optional = true
+description = "the base class's wall thickness, converted from this class's millimetres.\n"
+[outputs.design_weight_piping]
+unit = "kg"
+optional = true
+description = "15 % of the empty weight.\n"
+[outputs.design_weight_electro_instrument]
+unit = "kg"
+optional = true
+description = "10 % of the empty weight.\n"
+[outputs.design_weight_structural_steel]
+unit = "kg"
+optional = true
+description = "5 % of the empty weight.\n"
+[outputs.design_weight_total]
+unit = "kg"
+optional = true
+description = "`getWeightTotal`: the empty weight plus those three.\n"
+[outputs.design_module_length]
+unit = "m"
+optional = true
+description = "`getModuleLength`: the pump plus the motor and access.\n"
+[outputs.design_module_width]
+unit = "m"
+optional = true
+description = "`getModuleWidth`.\n"
+[outputs.design_module_height]
+unit = "m"
+optional = true
+description = "`getModuleHeight`.\n"
+[outputs.design_npsh_margin]
+unit = "m"
+optional = true
+description = "`getNpshMargin`: available minus required.\n"
+[outputs.design_npsh_margin_ratio]
+unit = "dimensionless"
+optional = true
+description = "`getNpshMarginRatio`: available over required.\n"
 [[valid_range]]
 quantity = "isentropic_efficiency"
 min = 0
