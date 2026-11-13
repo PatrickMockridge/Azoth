@@ -5725,9 +5725,9 @@ pub fn distillation_column(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency, use_polytropic_calc, polytropic_efficiency, rated_recovered_power, number_of_steps, shaft_power, outlet_temperature))]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency, use_polytropic_calc, polytropic_efficiency, rated_recovered_power, number_of_steps, shaft_power, outlet_temperature, mechanical_design))]
 #[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency, use_polytropic_calc, polytropic_efficiency, rated_recovered_power, number_of_steps, shaft_power, outlet_temperature)"
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency, use_polytropic_calc, polytropic_efficiency, rated_recovered_power, number_of_steps, shaft_power, outlet_temperature, mechanical_design)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn expander(
@@ -5745,6 +5745,7 @@ pub fn expander(
     number_of_steps: Option<usize>,
     shaft_power: Option<f64>,
     outlet_temperature: Option<f64>,
+    mechanical_design: Option<bool>,
 ) -> PyResult<crate::transport_gen::PyExpanderResult> {
     azoth_process::models::expander::expander(
         &components,
@@ -5760,6 +5761,7 @@ pub fn expander(
         rated_recovered_power.map(watts),
         shaft_power.map(watts),
         outlet_temperature.map(kelvins),
+        mechanical_design,
     )
     .map(|r| crate::transport_gen::PyExpanderResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

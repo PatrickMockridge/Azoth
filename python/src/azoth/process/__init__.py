@@ -1243,6 +1243,7 @@ def expander(
     rated_recovered_power: Q | None = None,
     shaft_power: Q | None = None,
     outlet_temperature: Q | None = None,
+    mechanical_design: bool | None = None,
 ) -> ExpanderResult:
     """Drop a stream's pressure along an isentrope, multiplying the step by the efficiency.
 
@@ -1279,6 +1280,7 @@ def expander(
         rated_recovered_power=rated_recovered_power,
         shaft_power=shaft_power,
         outlet_temperature=outlet_temperature,
+        mechanical_design=mechanical_design,
     )
 
 

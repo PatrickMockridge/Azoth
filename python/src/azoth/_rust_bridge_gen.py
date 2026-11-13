@@ -5881,7 +5881,7 @@ def ejector(motive_components: list[str], motive_n: Q, motive_z: list[float], mo
     )
 
 
-def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, isentropic_efficiency: float, use_polytropic_calc: bool | None=None, polytropic_efficiency: float | None=None, number_of_steps: int | None=None, rated_recovered_power: Q | None=None, shaft_power: Q | None=None, outlet_temperature: Q | None=None) -> ExpanderResult:
+def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, isentropic_efficiency: float, use_polytropic_calc: bool | None=None, polytropic_efficiency: float | None=None, number_of_steps: int | None=None, rated_recovered_power: Q | None=None, shaft_power: Q | None=None, outlet_temperature: Q | None=None, mechanical_design: bool | None=None) -> ExpanderResult:
     """``process.expander``, computed in Rust."""
     spec = _models_gen.model("process.expander")
     result = _core.expander(
@@ -5898,6 +5898,7 @@ def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q
         None if number_of_steps is None else _count("number_of_steps", number_of_steps),
         None if shaft_power is None else input_to_si(spec, "shaft_power", shaft_power),
         None if outlet_temperature is None else input_to_si(spec, "outlet_temperature", outlet_temperature),
+        mechanical_design,
     )
     return ExpanderResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -5912,6 +5913,37 @@ def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q
         hard_limit_exceeded=result.hard_limit_exceeded,
         bottleneck_constraint=result.bottleneck_constraint,
         reported_isentropic_efficiency=result.reported_isentropic_efficiency,
+        design_expander_type=result.design_expander_type,
+        design_load_type=result.design_load_type,
+        design_number_of_stages=result.design_number_of_stages,
+        design_wheel_diameter=None if result.design_wheel_diameter is None else from_si(result.design_wheel_diameter.magnitude_si, result.design_wheel_diameter.unit),
+        design_tip_speed=None if result.design_tip_speed is None else from_si(result.design_tip_speed.magnitude_si, result.design_tip_speed.unit),
+        design_shaft_diameter=None if result.design_shaft_diameter is None else from_si(result.design_shaft_diameter.magnitude_si, result.design_shaft_diameter.unit),
+        design_rated_speed=result.design_rated_speed,
+        design_max_continuous_speed=result.design_max_continuous_speed,
+        design_trip_speed=result.design_trip_speed,
+        design_first_critical_speed=result.design_first_critical_speed,
+        design_casing_pressure=None if result.design_casing_pressure is None else from_si(result.design_casing_pressure.magnitude_si, result.design_casing_pressure.unit),
+        design_casing_temperature=None if result.design_casing_temperature is None else from_si(result.design_casing_temperature.magnitude_si, result.design_casing_temperature.unit),
+        design_casing_wall_thickness=None if result.design_casing_wall_thickness is None else from_si(result.design_casing_wall_thickness.magnitude_si, result.design_casing_wall_thickness.unit),
+        design_bearing_span=None if result.design_bearing_span is None else from_si(result.design_bearing_span.magnitude_si, result.design_bearing_span.unit),
+        design_wheel_weight=None if result.design_wheel_weight is None else from_si(result.design_wheel_weight.magnitude_si, result.design_wheel_weight.unit),
+        design_shaft_weight=None if result.design_shaft_weight is None else from_si(result.design_shaft_weight.magnitude_si, result.design_shaft_weight.unit),
+        design_generator_weight=None if result.design_generator_weight is None else from_si(result.design_generator_weight.magnitude_si, result.design_generator_weight.unit),
+        design_seal_type=result.design_seal_type,
+        design_bearing_type=result.design_bearing_type,
+        design_inner_diameter=None if result.design_inner_diameter is None else from_si(result.design_inner_diameter.magnitude_si, result.design_inner_diameter.unit),
+        design_outer_diameter=None if result.design_outer_diameter is None else from_si(result.design_outer_diameter.magnitude_si, result.design_outer_diameter.unit),
+        design_tantan_length=None if result.design_tantan_length is None else from_si(result.design_tantan_length.magnitude_si, result.design_tantan_length.unit),
+        design_weight_vessel=None if result.design_weight_vessel is None else from_si(result.design_weight_vessel.magnitude_si, result.design_weight_vessel.unit),
+        design_weight_internals=None if result.design_weight_internals is None else from_si(result.design_weight_internals.magnitude_si, result.design_weight_internals.unit),
+        design_weight_piping=None if result.design_weight_piping is None else from_si(result.design_weight_piping.magnitude_si, result.design_weight_piping.unit),
+        design_weight_electro_instrument=None if result.design_weight_electro_instrument is None else from_si(result.design_weight_electro_instrument.magnitude_si, result.design_weight_electro_instrument.unit),
+        design_weight_structural_steel=None if result.design_weight_structural_steel is None else from_si(result.design_weight_structural_steel.magnitude_si, result.design_weight_structural_steel.unit),
+        design_weight_total=None if result.design_weight_total is None else from_si(result.design_weight_total.magnitude_si, result.design_weight_total.unit),
+        design_module_length=None if result.design_module_length is None else from_si(result.design_module_length.magnitude_si, result.design_module_length.unit),
+        design_module_width=None if result.design_module_width is None else from_si(result.design_module_width.magnitude_si, result.design_module_width.unit),
+        design_module_height=None if result.design_module_height is None else from_si(result.design_module_height.magnitude_si, result.design_module_height.unit),
         warnings=_warnings(result.warnings),
     )
 

@@ -145,6 +145,62 @@ def _expander(inputs: Mapping[str, Any]) -> dict[str, float]:
     if capacity.recovered_power_utilization is not None:
         dump["constraint_recoveredPower_utilization"] = capacity.recovered_power_utilization
     dump["max_utilization"] = capacity.max_utilization
+    if inputs.get("mechanical_design"):
+        from azoth.process.reference import capacity as _capacity
+        from azoth.process.reference.expander_mechanical import design as design_expander
+
+        components = [str(name) for name in inputs["components"]]
+        t = float(inputs["inlet_t"])
+        p = float(inputs["inlet_p"])
+        z = [float(value) for value in inputs["inlet_z"]]
+        design = design_expander(
+            components,
+            n,
+            z,
+            t,
+            p,
+            states.outlet_t.to("K").magnitude,
+            n * states.dh_actual,
+        )
+        density = _capacity.system_mass_density(components, t, p, z, from_feed=True)
+        volume = _capacity.system_volumetric_flow(components, t, p, z, n, from_feed=True)
+        dump.update(
+            {
+                "wheel_diameter_mm": design.wheel_diameter * 1000.0,
+                "tip_speed_m_per_s": design.tip_speed,
+                "shaft_diameter_mm": design.shaft_diameter * 1000.0,
+                "rated_speed_rpm": design.rated_speed,
+                "max_continuous_speed_rpm": design.max_continuous_speed,
+                "trip_speed_rpm": design.trip_speed,
+                "first_critical_speed_rpm": design.first_critical_speed,
+                "casing_pressure_bara": design.casing_pressure / 1.0e5,
+                "casing_temperature_C": design.casing_temperature - 273.15,
+                "casing_wall_thickness_mm": design.casing_wall_thickness * 1000.0,
+                "bearing_span_mm": design.bearing_span * 1000.0,
+                "wheel_weight_kg": design.wheel_weight,
+                "shaft_weight_kg": design.shaft_weight,
+                "casing_weight_kg": design.weight_vessel,
+                "generator_weight_kg": design.generator_weight,
+                "inner_diameter_mm": design.inner_diameter * 1000.0,
+                "outer_diameter_mm": design.outer_diameter * 1000.0,
+                "wall_thickness_mm": design.casing_wall_thickness * 1000.0,
+                "tantan_length_mm": design.tantan_length * 1000.0,
+                "weight_vessel_kg": design.weight_vessel,
+                "weight_internals_kg": design.weight_internals,
+                "weight_piping_kg": design.weight_piping,
+                "weight_electro_instrument_kg": design.weight_electro_instrument,
+                "weight_structural_steel_kg": design.weight_structural_steel,
+                "weight_total_kg": design.weight_total,
+                "module_length_m": design.module_length,
+                "module_width_m": design.module_width,
+                "module_height_m": design.module_height,
+                "effective_isentropic_efficiency": float(inputs["isentropic_efficiency"]),
+                "inlet_m3_per_hr": volume * 3600.0,
+                "inlet_density_kg_per_m3": density,
+                "mass_flow_kg_per_hr": density * volume * 3600.0,
+                "inlet_number_of_phases": 1.0,
+            }
+        )
     return dump
 
 
@@ -2144,6 +2200,21 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_expander.tsv",
         block=0,
         identified_by=("isentropic_efficiency", "0.75"),
+    ),
+    # The mechanical design's two branch states.
+    LayerCase(
+        model="process.expander",
+        case="the_radial_design_is_the_capture",
+        capture="process_expander_mechanical_design.tsv",
+        block=0,
+        identified_by=(LABEL_KEY, "radial_brake"),
+    ),
+    LayerCase(
+        model="process.expander",
+        case="the_axial_design_selects_the_generator",
+        capture="process_expander_mechanical_design.tsv",
+        block=1,
+        identified_by=(LABEL_KEY, "axial_multistage"),
     ),
     # The recovered-power constraint's five states.
     LayerCase(

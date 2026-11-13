@@ -15180,6 +15180,99 @@ pub struct PyExpanderResult {
     /// the efficiency the mode produced: `dH/(h_isentropic - h_in)` for a stated power (above one or negative allowed), or the solved one. Absent in the ordinary branch and where the isentropic step is zero.
     #[pyo3(get)]
     pub reported_isentropic_efficiency: Option<f64>,
+    /// `getExpanderType`: `radial_inflow` below the class's `100000` m3/hr inlet-volume-flow threshold, `axial` above it. **`mixed_flow` is never selected** and is listed for completeness.
+    #[pyo3(get)]
+    pub design_expander_type: Option<String>,
+    /// `getLoadType`: `generator` above `100` kW recovered, `brake` below. **`compressor` is never selected**.
+    #[pyo3(get)]
+    pub design_load_type: Option<String>,
+    /// `getNumberOfStages`: one for a radial machine, `ceil(dH/50 kJ/kg)` for an axial one.
+    #[pyo3(get)]
+    pub design_number_of_stages: Option<f64>,
+    /// `getWheelDiameter`, from the tip speed and the rated speed, clamped to `100-1000` mm; the `300` mm default where the drop or the volume flow is non-positive.
+    #[pyo3(get)]
+    pub design_wheel_diameter: Option<PyQty>,
+    /// `getTipSpeed`: `0.7 sqrt(2 dH)` capped at `450` m/s.
+    #[pyo3(get)]
+    pub design_tip_speed: Option<PyQty>,
+    /// `getShaftDiameter`: the torque's shear-stress diameter at `50` MPa, times `1.5`, rounded up to 5 mm and floored at `30` mm.
+    #[pyo3(get)]
+    pub design_shaft_diameter: Option<PyQty>,
+    /// `getRatedSpeed`, in revolutions per minute.
+    #[pyo3(get)]
+    pub design_rated_speed: Option<f64>,
+    /// `maxContinuousSpeed`, in revolutions per minute: `1.05` times the rated speed, or the class's `21000` where the wheel sizing takes its default.
+    #[pyo3(get)]
+    pub design_max_continuous_speed: Option<f64>,
+    /// `tripSpeed`, in revolutions per minute: `1.10` times the rated speed, or the class's `23100` where the wheel sizing takes its default.
+    #[pyo3(get)]
+    pub design_trip_speed: Option<f64>,
+    /// `getFirstCriticalSpeed`, in revolutions per minute: the Rayleigh-Ritz estimate floored at half the rated speed.
+    #[pyo3(get)]
+    pub design_first_critical_speed: Option<f64>,
+    /// `getCasingDesignPressure`: the inlet pressure times `1.10`.
+    #[pyo3(get)]
+    pub design_casing_pressure: Option<PyQty>,
+    /// `getCasingDesignTemperature`: the hotter of the inlet and outlet, plus `30` degC.
+    #[pyo3(get)]
+    pub design_casing_temperature: Option<PyQty>,
+    /// `casingWallThickness`: the ASME shell formula at `137.9` MPa with the temperature derate, plus `3` mm and floored at `10` mm.
+    #[pyo3(get)]
+    pub design_casing_wall_thickness: Option<PyQty>,
+    /// `bearingSpan`: `2.5` wheel diameters.
+    #[pyo3(get)]
+    pub design_bearing_span: Option<PyQty>,
+    /// `wheelWeight`: the hollowed wheel's disc volume at 70 % of the steel density.
+    #[pyo3(get)]
+    pub design_wheel_weight: Option<PyQty>,
+    /// `shaftWeight`: the shaft cylinder at the steel density.
+    #[pyo3(get)]
+    pub design_shaft_weight: Option<PyQty>,
+    /// `generatorWeight`: a banded empirical function of the recovered power, zero for a brake load.
+    #[pyo3(get)]
+    pub design_generator_weight: Option<PyQty>,
+    /// `getSealType`: `dry_gas` above `50` bara casing pressure, `labyrinth` otherwise.
+    #[pyo3(get)]
+    pub design_seal_type: Option<String>,
+    /// `getBearingType`, by rated speed: active magnetic above `50000`, tilting pad above `20000`, sleeve otherwise.
+    #[pyo3(get)]
+    pub design_bearing_type: Option<String>,
+    /// the casing's inner diameter, `1.3` wheel diameters.
+    #[pyo3(get)]
+    pub design_inner_diameter: Option<PyQty>,
+    /// the casing's outer diameter: the inner one plus twice the wall thickness.
+    #[pyo3(get)]
+    pub design_outer_diameter: Option<PyQty>,
+    /// `tantanLength`: `2.0` bearing spans.
+    #[pyo3(get)]
+    pub design_tantan_length: Option<PyQty>,
+    /// the base class's `weightVessel`: the casing weight, at `1.5` times the steel volume.
+    #[pyo3(get)]
+    pub design_weight_vessel: Option<PyQty>,
+    /// the base class's `weigthInternals`: the wheel, the shaft and 30 % of the wheel.
+    #[pyo3(get)]
+    pub design_weight_internals: Option<PyQty>,
+    /// the base class's `weightPiping`: 15 % of the equipment weight plus the lube and seal systems.
+    #[pyo3(get)]
+    pub design_weight_piping: Option<PyQty>,
+    /// the base class's `weightElectroInstrument`: `0.3` times the recovered power for a generator, `50` kg for a brake.
+    #[pyo3(get)]
+    pub design_weight_electro_instrument: Option<PyQty>,
+    /// the base class's `weightStructualSteel`: 10 % of the equipment weight plus the baseplate's 20 %.
+    #[pyo3(get)]
+    pub design_weight_structural_steel: Option<PyQty>,
+    /// `getWeightTotal`: the equipment, lube, seal, baseplate, piping, electrical and structural weights summed.
+    #[pyo3(get)]
+    pub design_weight_total: Option<PyQty>,
+    /// `getModuleLength`.
+    #[pyo3(get)]
+    pub design_module_length: Option<PyQty>,
+    /// `getModuleWidth`.
+    #[pyo3(get)]
+    pub design_module_width: Option<PyQty>,
+    /// `getModuleHeight`.
+    #[pyo3(get)]
+    pub design_module_height: Option<PyQty>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -15189,7 +15282,7 @@ pub struct PyExpanderResult {
 impl PyExpanderResult {
     fn __repr__(&self) -> String {
         format!(
-            "ExpanderResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, power={:?}, recovered_power_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, reported_isentropic_efficiency={:?}, {} warning(s))",
+            "ExpanderResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, power={:?}, recovered_power_utilization={:?}, max_utilization={:?}, capacity_exceeded={:?}, hard_limit_exceeded={:?}, bottleneck_constraint={:?}, reported_isentropic_efficiency={:?}, design_expander_type={:?}, design_load_type={:?}, design_number_of_stages={:?}, design_wheel_diameter={:?}, design_tip_speed={:?}, design_shaft_diameter={:?}, design_rated_speed={:?}, design_max_continuous_speed={:?}, design_trip_speed={:?}, design_first_critical_speed={:?}, design_casing_pressure={:?}, design_casing_temperature={:?}, design_casing_wall_thickness={:?}, design_bearing_span={:?}, design_wheel_weight={:?}, design_shaft_weight={:?}, design_generator_weight={:?}, design_seal_type={:?}, design_bearing_type={:?}, design_inner_diameter={:?}, design_outer_diameter={:?}, design_tantan_length={:?}, design_weight_vessel={:?}, design_weight_internals={:?}, design_weight_piping={:?}, design_weight_electro_instrument={:?}, design_weight_structural_steel={:?}, design_weight_total={:?}, design_module_length={:?}, design_module_width={:?}, design_module_height={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -15202,6 +15295,37 @@ impl PyExpanderResult {
             self.hard_limit_exceeded,
             self.bottleneck_constraint,
             self.reported_isentropic_efficiency,
+            self.design_expander_type,
+            self.design_load_type,
+            self.design_number_of_stages,
+            self.design_wheel_diameter,
+            self.design_tip_speed,
+            self.design_shaft_diameter,
+            self.design_rated_speed,
+            self.design_max_continuous_speed,
+            self.design_trip_speed,
+            self.design_first_critical_speed,
+            self.design_casing_pressure,
+            self.design_casing_temperature,
+            self.design_casing_wall_thickness,
+            self.design_bearing_span,
+            self.design_wheel_weight,
+            self.design_shaft_weight,
+            self.design_generator_weight,
+            self.design_seal_type,
+            self.design_bearing_type,
+            self.design_inner_diameter,
+            self.design_outer_diameter,
+            self.design_tantan_length,
+            self.design_weight_vessel,
+            self.design_weight_internals,
+            self.design_weight_piping,
+            self.design_weight_electro_instrument,
+            self.design_weight_structural_steel,
+            self.design_weight_total,
+            self.design_module_length,
+            self.design_module_width,
+            self.design_module_height,
             self.warnings.len()
         )
     }
@@ -15237,6 +15361,103 @@ impl From<&azoth_process::models::expander::ExpanderResult> for PyExpanderResult
             hard_limit_exceeded: r.hard_limit_exceeded,
             bottleneck_constraint: r.bottleneck_constraint.clone(),
             reported_isentropic_efficiency: r.reported_isentropic_efficiency,
+            design_expander_type: r.design_expander_type.clone(),
+            design_load_type: r.design_load_type.clone(),
+            design_number_of_stages: r.design_number_of_stages,
+            design_wheel_diameter: r.design_wheel_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_tip_speed: r.design_tip_speed.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m/s".to_string(),
+            }),
+            design_shaft_diameter: r.design_shaft_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_rated_speed: r.design_rated_speed,
+            design_max_continuous_speed: r.design_max_continuous_speed,
+            design_trip_speed: r.design_trip_speed,
+            design_first_critical_speed: r.design_first_critical_speed,
+            design_casing_pressure: r.design_casing_pressure.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            design_casing_temperature: r.design_casing_temperature.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "K".to_string(),
+            }),
+            design_casing_wall_thickness: r.design_casing_wall_thickness.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_bearing_span: r.design_bearing_span.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_wheel_weight: r.design_wheel_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_shaft_weight: r.design_shaft_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_generator_weight: r.design_generator_weight.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_seal_type: r.design_seal_type.clone(),
+            design_bearing_type: r.design_bearing_type.clone(),
+            design_inner_diameter: r.design_inner_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_outer_diameter: r.design_outer_diameter.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_tantan_length: r.design_tantan_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_weight_vessel: r.design_weight_vessel.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_internals: r.design_weight_internals.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_piping: r.design_weight_piping.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_electro_instrument: r.design_weight_electro_instrument.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_structural_steel: r.design_weight_structural_steel.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_weight_total: r.design_weight_total.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg".to_string(),
+            }),
+            design_module_length: r.design_module_length.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_module_width: r.design_module_width.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_module_height: r.design_module_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }

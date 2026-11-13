@@ -6090,6 +6090,99 @@ class ExpanderResult(_HasWarnings):
     #: the efficiency the mode produced: `dH/(h_isentropic - h_in)` for a stated power (above one or negative allowed), or the solved one. Absent in the ordinary branch and where the isentropic step is zero.
     reported_isentropic_efficiency: float | None
 
+    #: `getExpanderType`: `radial_inflow` below the class's `100000` m3/hr inlet-volume-flow threshold, `axial` above it. **`mixed_flow` is never selected** and is listed for completeness.
+    design_expander_type: str | None
+
+    #: `getLoadType`: `generator` above `100` kW recovered, `brake` below. **`compressor` is never selected**.
+    design_load_type: str | None
+
+    #: `getNumberOfStages`: one for a radial machine, `ceil(dH/50 kJ/kg)` for an axial one.
+    design_number_of_stages: float | None
+
+    #: `getWheelDiameter`, from the tip speed and the rated speed, clamped to `100-1000` mm; the `300` mm default where the drop or the volume flow is non-positive.
+    design_wheel_diameter: Q | None
+
+    #: `getTipSpeed`: `0.7 sqrt(2 dH)` capped at `450` m/s.
+    design_tip_speed: Q | None
+
+    #: `getShaftDiameter`: the torque's shear-stress diameter at `50` MPa, times `1.5`, rounded up to 5 mm and floored at `30` mm.
+    design_shaft_diameter: Q | None
+
+    #: `getRatedSpeed`, in revolutions per minute.
+    design_rated_speed: float | None
+
+    #: `maxContinuousSpeed`, in revolutions per minute: `1.05` times the rated speed, or the class's `21000` where the wheel sizing takes its default.
+    design_max_continuous_speed: float | None
+
+    #: `tripSpeed`, in revolutions per minute: `1.10` times the rated speed, or the class's `23100` where the wheel sizing takes its default.
+    design_trip_speed: float | None
+
+    #: `getFirstCriticalSpeed`, in revolutions per minute: the Rayleigh-Ritz estimate floored at half the rated speed.
+    design_first_critical_speed: float | None
+
+    #: `getCasingDesignPressure`: the inlet pressure times `1.10`.
+    design_casing_pressure: Q | None
+
+    #: `getCasingDesignTemperature`: the hotter of the inlet and outlet, plus `30` degC.
+    design_casing_temperature: Q | None
+
+    #: `casingWallThickness`: the ASME shell formula at `137.9` MPa with the temperature derate, plus `3` mm and floored at `10` mm.
+    design_casing_wall_thickness: Q | None
+
+    #: `bearingSpan`: `2.5` wheel diameters.
+    design_bearing_span: Q | None
+
+    #: `wheelWeight`: the hollowed wheel's disc volume at 70 % of the steel density.
+    design_wheel_weight: Q | None
+
+    #: `shaftWeight`: the shaft cylinder at the steel density.
+    design_shaft_weight: Q | None
+
+    #: `generatorWeight`: a banded empirical function of the recovered power, zero for a brake load.
+    design_generator_weight: Q | None
+
+    #: `getSealType`: `dry_gas` above `50` bara casing pressure, `labyrinth` otherwise.
+    design_seal_type: str | None
+
+    #: `getBearingType`, by rated speed: active magnetic above `50000`, tilting pad above `20000`, sleeve otherwise.
+    design_bearing_type: str | None
+
+    #: the casing's inner diameter, `1.3` wheel diameters.
+    design_inner_diameter: Q | None
+
+    #: the casing's outer diameter: the inner one plus twice the wall thickness.
+    design_outer_diameter: Q | None
+
+    #: `tantanLength`: `2.0` bearing spans.
+    design_tantan_length: Q | None
+
+    #: the base class's `weightVessel`: the casing weight, at `1.5` times the steel volume.
+    design_weight_vessel: Q | None
+
+    #: the base class's `weigthInternals`: the wheel, the shaft and 30 % of the wheel.
+    design_weight_internals: Q | None
+
+    #: the base class's `weightPiping`: 15 % of the equipment weight plus the lube and seal systems.
+    design_weight_piping: Q | None
+
+    #: the base class's `weightElectroInstrument`: `0.3` times the recovered power for a generator, `50` kg for a brake.
+    design_weight_electro_instrument: Q | None
+
+    #: the base class's `weightStructualSteel`: 10 % of the equipment weight plus the baseplate's 20 %.
+    design_weight_structural_steel: Q | None
+
+    #: `getWeightTotal`: the equipment, lube, seal, baseplate, piping, electrical and structural weights summed.
+    design_weight_total: Q | None
+
+    #: `getModuleLength`.
+    design_module_length: Q | None
+
+    #: `getModuleWidth`.
+    design_module_width: Q | None
+
+    #: `getModuleHeight`.
+    design_module_height: Q | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

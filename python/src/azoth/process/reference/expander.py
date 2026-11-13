@@ -35,6 +35,7 @@ from azoth.eos.reference.ph_flash import enthalpy_at
 from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
 from azoth.eos.reference.ps_flash import entropy_at
 from azoth.eos.reference.ps_flash import ps_flash as ps_flash_solve
+from azoth.process.reference.expander_mechanical import design as design_expander
 
 
 def expander(
@@ -51,6 +52,7 @@ def expander(
     rated_recovered_power: Q | None = None,
     shaft_power: Q | None = None,
     outlet_temperature: Q | None = None,
+    mechanical_design: bool | None = None,
 ) -> ExpanderResult:
     """Drop a stream's pressure along an isentrope, or in polytropic steps.
 
@@ -67,6 +69,10 @@ def expander(
         number_of_steps: the stepped branch's pressure increments.
         rated_recovered_power: ``setRatedRecoveredPower``; absent is 0, which creates no
             constraint, and so does a non-positive value.
+        shaft_power: the total shaft power the run applies instead of an efficiency.
+        outlet_temperature: the outlet temperature the efficiency is solved for.
+        mechanical_design: run ``ExpanderMechanicalDesign.calcDesign`` and publish its
+            API 617 design; absent is false.
 
     Returns:
         The outlet's record, the recovered power (negative) and the recovered-power map.
@@ -161,6 +167,19 @@ def expander(
         h_in, h_out, outlet_t = states.h_in, states.h_out, states.outlet_t
 
     power = n * (h_out - h_in)
+    design = (
+        None
+        if not mechanical_design
+        else design_expander(
+            components,
+            n,
+            inlet_z,
+            t,
+            p,
+            outlet_t.to("K").magnitude,
+            power,
+        )
+    )
     capacity = _recovered_power_capacity(power, rated)
     return ExpanderResult(
         outlet_n=from_si(n, "mol/s"),
@@ -175,6 +194,61 @@ def expander(
         hard_limit_exceeded=capacity.hard_limit_exceeded,
         bottleneck_constraint=capacity.bottleneck_constraint,
         reported_isentropic_efficiency=reported,
+        design_expander_type=None if design is None else design.expander_type,
+        design_load_type=None if design is None else design.load_type,
+        design_number_of_stages=None if design is None else float(design.number_of_stages),
+        design_wheel_diameter=(
+            None if design is None else from_si(design.wheel_diameter, "m")
+        ),
+        design_tip_speed=None if design is None else from_si(design.tip_speed, "m/s"),
+        design_shaft_diameter=(
+            None if design is None else from_si(design.shaft_diameter, "m")
+        ),
+        design_rated_speed=None if design is None else design.rated_speed,
+        design_max_continuous_speed=None if design is None else design.max_continuous_speed,
+        design_trip_speed=None if design is None else design.trip_speed,
+        design_first_critical_speed=None if design is None else design.first_critical_speed,
+        design_casing_pressure=(
+            None if design is None else from_si(design.casing_pressure, "Pa")
+        ),
+        design_casing_temperature=(
+            None if design is None else from_si(design.casing_temperature, "K")
+        ),
+        design_casing_wall_thickness=(
+            None if design is None else from_si(design.casing_wall_thickness, "m")
+        ),
+        design_bearing_span=None if design is None else from_si(design.bearing_span, "m"),
+        design_wheel_weight=None if design is None else from_si(design.wheel_weight, "kg"),
+        design_shaft_weight=None if design is None else from_si(design.shaft_weight, "kg"),
+        design_generator_weight=(
+            None if design is None else from_si(design.generator_weight, "kg")
+        ),
+        design_seal_type=None if design is None else design.seal_type,
+        design_bearing_type=None if design is None else design.bearing_type,
+        design_inner_diameter=(
+            None if design is None else from_si(design.inner_diameter, "m")
+        ),
+        design_outer_diameter=(
+            None if design is None else from_si(design.outer_diameter, "m")
+        ),
+        design_tantan_length=None if design is None else from_si(design.tantan_length, "m"),
+        design_weight_vessel=None if design is None else from_si(design.weight_vessel, "kg"),
+        design_weight_internals=(
+            None if design is None else from_si(design.weight_internals, "kg")
+        ),
+        design_weight_piping=None if design is None else from_si(design.weight_piping, "kg"),
+        design_weight_electro_instrument=(
+            None if design is None else from_si(design.weight_electro_instrument, "kg")
+        ),
+        design_weight_structural_steel=(
+            None if design is None else from_si(design.weight_structural_steel, "kg")
+        ),
+        design_weight_total=None if design is None else from_si(design.weight_total, "kg"),
+        design_module_length=(
+            None if design is None else from_si(design.module_length, "m")
+        ),
+        design_module_width=None if design is None else from_si(design.module_width, "m"),
+        design_module_height=None if design is None else from_si(design.module_height, "m"),
         warnings=tuple(warnings),
     )
 

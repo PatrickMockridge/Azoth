@@ -2972,6 +2972,37 @@ class ExpanderResult:
     hard_limit_exceeded: bool
     bottleneck_constraint: str | None
     reported_isentropic_efficiency: float | None
+    design_expander_type: str | None
+    design_load_type: str | None
+    design_number_of_stages: float | None
+    design_wheel_diameter: Qty | None
+    design_tip_speed: Qty | None
+    design_shaft_diameter: Qty | None
+    design_rated_speed: float | None
+    design_max_continuous_speed: float | None
+    design_trip_speed: float | None
+    design_first_critical_speed: float | None
+    design_casing_pressure: Qty | None
+    design_casing_temperature: Qty | None
+    design_casing_wall_thickness: Qty | None
+    design_bearing_span: Qty | None
+    design_wheel_weight: Qty | None
+    design_shaft_weight: Qty | None
+    design_generator_weight: Qty | None
+    design_seal_type: str | None
+    design_bearing_type: str | None
+    design_inner_diameter: Qty | None
+    design_outer_diameter: Qty | None
+    design_tantan_length: Qty | None
+    design_weight_vessel: Qty | None
+    design_weight_internals: Qty | None
+    design_weight_piping: Qty | None
+    design_weight_electro_instrument: Qty | None
+    design_weight_structural_steel: Qty | None
+    design_weight_total: Qty | None
+    design_module_length: Qty | None
+    design_module_width: Qty | None
+    design_module_height: Qty | None
     warnings: list[Warning]
 
 @final
@@ -6184,6 +6215,7 @@ def expander(
     number_of_steps: float | None = None,
     shaft_power: float | None = None,
     outlet_temperature: float | None = None,
+    mechanical_design: bool | None = None,
 ) -> ExpanderResult: ...
 def filter(
     components: list[str],

@@ -29,6 +29,7 @@ pub mod palette_gen;
 pub mod pump_chart;
 pub mod reactor;
 pub mod recycle;
+pub mod rotating_design;
 pub mod segment;
 pub mod separator_design;
 pub mod stream;
