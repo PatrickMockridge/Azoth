@@ -1832,3 +1832,23 @@ the chart head converted back with `9.81`. The impeller screen is not clipped: t
 row keeps the head-based candidate and prints the two issues, which is the branch's own
 report. `CompressorCasingDesignCalculator`'s checks are a separate audit and are not in
 the published surface.
+
+## The turbine-expander-compressor's mechanical design
+
+`process_turbo_expander_mechanical_design.tsv` is
+`TurboExpanderCompressorMechanicalDesign.calcDesign` on the coupled machine: the design point,
+a lower expander inlet pressure, and a `120` bara expander inlet. It reads **both ends** - the
+expander's states size its wheel and casing, the compressor's suction and discharge size its
+impeller and casing, and the shared shaft takes the two powers.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe turbo_expander_mechanical \
+  > captures/process_turbo_expander_mechanical_design.tsv
+```
+
+**The design is reachable only after `initTECMechanicalDesign()`**: the equipment's field is
+null until that call, and nothing in `run` constructs it. The compressor's `BARREL` arm is
+not reached on these states, because its discharge is set by the machine's own chart rather
+than by the expander's power; it is stated rather than cased. The seal-gas envelope, shear
+pins, thrust balance and anti-surge report are the class's configured auxiliary surfaces and
+are not in this capture.
