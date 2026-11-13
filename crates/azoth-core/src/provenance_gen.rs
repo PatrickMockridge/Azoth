@@ -3663,7 +3663,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         calc_id: "process.pump",
         name: "Pump",
         spec_path: "specs/models/process/pump.toml",
-        spec_sha256: "710818610b18a30dfc6a1e34d1539e1703c160f6702e2816fbabd1012fa60b33",
+        spec_sha256: "74caf77d01f43bd46e3876ca6d6633160ef4c759f939906408ab151d9a5001be",
         python_path: "python/src/azoth/process/reference/pump.py",
         python_sha256: "1db61a8f8cea134858b0fdacb254beea2d303005415473afbd35f524e325fcb8",
         rust_path: "crates/azoth-process/src/models/pump.rs",

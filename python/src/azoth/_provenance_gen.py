@@ -2691,7 +2691,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.pump': {
         "calc_id": 'process.pump',
         "name": 'Pump',
-        "spec": {'path': 'specs/models/process/pump.toml', 'sha256': '710818610b18a30dfc6a1e34d1539e1703c160f6702e2816fbabd1012fa60b33'},
+        "spec": {'path': 'specs/models/process/pump.toml', 'sha256': '74caf77d01f43bd46e3876ca6d6633160ef4c759f939906408ab151d9a5001be'},
         "code": [{'path': 'python/src/azoth/process/reference/pump.py', 'sha256': '1db61a8f8cea134858b0fdacb254beea2d303005415473afbd35f524e325fcb8'}, {'path': 'crates/azoth-process/src/models/pump.rs', 'sha256': '0a98fe791dc98d2004e0921a1b29effbb8a8f585d9a1b011e4dc1ce4fb09d857'}],
         "source": 'NeqSim process/equipment/pump/Pump.java and process/equipment/pump/PumpChart.java',
         "verification": 'partially_verified',

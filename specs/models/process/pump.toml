@@ -124,14 +124,14 @@ description = "`setSealType`. **Absent is `single_mechanical`**, the class's ini
 unit = "Pa"
 optional = true
 description = "`setMaximumSuctionPressure`, the pressure the design basis starts from. **Absent is the inlet's.** Refused without `mechanical_design`.\n"
-[inputs.shutoff_head]
-unit = "m"
-optional = true
-description = "`setShutoffHead`, the purchaser's shutoff head. **Absent is the vendor curve's `getHead(0)` where one exists, else none**; a stated value makes the source `purchaser_input`. Refused without `mechanical_design`.\n"
 [inputs.furnished_casing_mawp]
 unit = "Pa"
 optional = true
 description = "`setFurnishedCasingMawp`, the vendor's casing MAWP. **Absent is no evidence**, and the pressure-casing check is then not evaluated. Refused without `mechanical_design`.\n"
+[inputs.shutoff_head]
+unit = "m"
+optional = true
+description = "`setShutoffHead`, the purchaser's shutoff head. **Absent is the vendor curve's `getHead(0)` where one exists, else none**; a stated value makes the source `purchaser_input`. Refused without `mechanical_design`.\n"
 [inputs.npsh_margin_factor]
 unit = "dimensionless"
 optional = true
