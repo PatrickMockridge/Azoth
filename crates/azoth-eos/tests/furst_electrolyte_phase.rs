@@ -126,10 +126,10 @@ fn a_composition_that_is_not_one_is_refused() {
 fn the_2004_revision_matches_its_own_oracle() {
     let names = ["methane", "water", "Na+", "Cl-"];
     let x = [
-        0.000_226_524_776_743_935,
-        0.997_777_272_904_135,
-        0.000_998_101_159_560_386,
-        0.000_998_101_159_560_386,
+        0.000_216_687_955_198_943,
+        0.997_787_089_966_906,
+        0.000_998_111_038_947_586,
+        0.000_998_111_038_947_586,
     ];
     let (mod2004, _) = azoth_eos::furst_electrolyte::furst_mod2004_mixture_of(
         &names,
@@ -145,17 +145,17 @@ fn the_2004_revision_matches_its_own_oracle() {
         .expect("solves");
 
     assert!(
-        (state.z - 0.009_635_856_372_047_19).abs() < 1.0e-8,
-        "Z = {}, NeqSim gives 0.00963585637204719",
+        (state.z - 0.009_630_831_154_870_79).abs() < 1.0e-8,
+        "Z = {}, NeqSim gives 0.00963083115487079",
         state.z
     );
     // Master's numbers, at the `1e-7` this settles to. They were `1e-6`-apart from its
     // 3.20.0 values before the 2004 revision stopped adding the extensive `FBornD` term (issues #3862/#3888).
     let want: [f64; 4] = [
-        8.372_595_908_242_34,
-        -5.748_783_296_884_28,
-        -275.908_793_598_670,
-        -166.578_354_735_104,
+        8.416_941_833_017_34,
+        -5.748_759_353_816_24,
+        -301.305_471_291_309,
+        -166.548_642_828_689,
     ];
     for (i, &expected) in want.iter().enumerate() {
         let scale = expected.abs().max(1.0);
