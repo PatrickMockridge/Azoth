@@ -197,20 +197,14 @@ def expander(
         design_expander_type=None if design is None else design.expander_type,
         design_load_type=None if design is None else design.load_type,
         design_number_of_stages=None if design is None else float(design.number_of_stages),
-        design_wheel_diameter=(
-            None if design is None else from_si(design.wheel_diameter, "m")
-        ),
+        design_wheel_diameter=(None if design is None else from_si(design.wheel_diameter, "m")),
         design_tip_speed=None if design is None else from_si(design.tip_speed, "m/s"),
-        design_shaft_diameter=(
-            None if design is None else from_si(design.shaft_diameter, "m")
-        ),
+        design_shaft_diameter=(None if design is None else from_si(design.shaft_diameter, "m")),
         design_rated_speed=None if design is None else design.rated_speed,
         design_max_continuous_speed=None if design is None else design.max_continuous_speed,
         design_trip_speed=None if design is None else design.trip_speed,
         design_first_critical_speed=None if design is None else design.first_critical_speed,
-        design_casing_pressure=(
-            None if design is None else from_si(design.casing_pressure, "Pa")
-        ),
+        design_casing_pressure=(None if design is None else from_si(design.casing_pressure, "Pa")),
         design_casing_temperature=(
             None if design is None else from_si(design.casing_temperature, "K")
         ),
@@ -225,12 +219,8 @@ def expander(
         ),
         design_seal_type=None if design is None else design.seal_type,
         design_bearing_type=None if design is None else design.bearing_type,
-        design_inner_diameter=(
-            None if design is None else from_si(design.inner_diameter, "m")
-        ),
-        design_outer_diameter=(
-            None if design is None else from_si(design.outer_diameter, "m")
-        ),
+        design_inner_diameter=(None if design is None else from_si(design.inner_diameter, "m")),
+        design_outer_diameter=(None if design is None else from_si(design.outer_diameter, "m")),
         design_tantan_length=None if design is None else from_si(design.tantan_length, "m"),
         design_weight_vessel=None if design is None else from_si(design.weight_vessel, "kg"),
         design_weight_internals=(
@@ -244,9 +234,7 @@ def expander(
             None if design is None else from_si(design.weight_structural_steel, "kg")
         ),
         design_weight_total=None if design is None else from_si(design.weight_total, "kg"),
-        design_module_length=(
-            None if design is None else from_si(design.module_length, "m")
-        ),
+        design_module_length=(None if design is None else from_si(design.module_length, "m")),
         design_module_width=None if design is None else from_si(design.module_width, "m"),
         design_module_height=None if design is None else from_si(design.module_height, "m"),
         warnings=tuple(warnings),

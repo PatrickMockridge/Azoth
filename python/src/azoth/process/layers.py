@@ -148,9 +148,7 @@ def _pump(inputs: Mapping[str, Any]) -> dict[str, float]:
                 "module_height_m": design.module_height,
                 "design_npsh_margin_m": design.npsh_margin,
                 "design_npsh_margin_ratio": design.npsh_margin_ratio,
-                "effective_isentropic_efficiency": float(
-                    inputs.get("isentropic_efficiency", 1.0)
-                ),
+                "effective_isentropic_efficiency": float(inputs.get("isentropic_efficiency", 1.0)),
                 "inlet_m3_per_hr": volume * 3600.0,
                 "inlet_density_kg_per_m3": density,
                 "mass_flow_kg_per_hr": density * volume * 3600.0,

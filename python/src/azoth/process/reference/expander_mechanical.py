@@ -195,9 +195,7 @@ class _Wheel:
     trip_speed: float
 
 
-def _wheel_sizing(
-    volume_flow_m3_hr: float, enthalpy_drop_kj_kg: float, stages: int
-) -> _Wheel:
+def _wheel_sizing(volume_flow_m3_hr: float, enthalpy_drop_kj_kg: float, stages: int) -> _Wheel:
     """``calculateWheelSizing``, in the class's millimetres and rpm."""
     if enthalpy_drop_kj_kg <= 0.0 or volume_flow_m3_hr <= 0.0:
         return _Wheel(300.0, 300.0, 20_000.0, 21_000.0, 23_100.0)
@@ -283,7 +281,8 @@ def _casing_design(
         allowable_stress *= 0.9
     joint_efficiency = 0.85
     wall_thickness = (
-        pressure_mpa * inner_diameter
+        pressure_mpa
+        * inner_diameter
         / (2.0 * allowable_stress * joint_efficiency - 0.6 * pressure_mpa)
         + 3.0
     )
@@ -362,13 +361,7 @@ def _weights(
         piping=piping + lube_system + seal_system,
         electro_instrument=electrical,
         structural_steel=structural + baseplate,
-        total=equipment
-        + lube_system
-        + seal_system
-        + baseplate
-        + piping
-        + electrical
-        + structural,
+        total=equipment + lube_system + seal_system + baseplate + piping + electrical + structural,
     )
 
 
