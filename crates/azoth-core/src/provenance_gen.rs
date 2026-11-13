@@ -3380,7 +3380,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         spec_path: "specs/models/process/compressor.toml",
         spec_sha256: "524105a2862382ceeede2bc71d60870b91e027e3a51f53df927db4e1bf7b9f43",
         python_path: "python/src/azoth/process/reference/compressor.py",
-        python_sha256: "1ed33e05b78d17be4f6de949fff4a4599682a1fc29fc517dbc5fadaad7021f63",
+        python_sha256: "c5b91600937b59bfc9c341ecc513d32782dcd3bb793a12cc43b7d700bd6c792f",
         rust_path: "crates/azoth-process/src/models/compressor.rs",
         rust_sha256: "d4fe02c374d4021ffdf34939279c9c1f26fce0bc4cabb3465557550d37831787",
         source: "NeqSim process/equipment/compressor/Compressor.java",
