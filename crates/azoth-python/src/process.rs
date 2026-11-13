@@ -223,10 +223,10 @@ pub fn pump_stream(
 /// record field crosses by.
 #[pyfunction]
 #[pyo3(
-    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, curve = None, speed = None, reference_density = None, viscosity = None, use_viscosity_correction = None, check_npsh = None, npsh_margin = None, mechanical_design = None, api610_pump_type = None, seal_type = None, maximum_suction_pressure = None, shutoff_head = None)
+    signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure = None, curve = None, speed = None, reference_density = None, viscosity = None, use_viscosity_correction = None, check_npsh = None, npsh_margin = None, mechanical_design = None, api610_pump_type = None, seal_type = None, maximum_suction_pressure = None, furnished_casing_mawp = None, shutoff_head = None, npsh_margin_factor = None, minimum_npsh_margin = None, por_low_fraction = None, por_high_fraction = None, aor_low_fraction = None, aor_high_fraction = None)
 )]
 #[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, curve=None, speed=None, reference_density=None, viscosity=None, use_viscosity_correction=None, check_npsh=None, npsh_margin=None, mechanical_design=None, api610_pump_type=None, seal_type=None, maximum_suction_pressure=None, shutoff_head=None)"
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, isentropic_efficiency, outlet_pressure=None, curve=None, speed=None, reference_density=None, viscosity=None, use_viscosity_correction=None, check_npsh=None, npsh_margin=None, mechanical_design=None, api610_pump_type=None, seal_type=None, maximum_suction_pressure=None, furnished_casing_mawp=None, shutoff_head=None, npsh_margin_factor=None, minimum_npsh_margin=None, por_low_fraction=None, por_high_fraction=None, aor_low_fraction=None, aor_high_fraction=None)"
 )]
 #[allow(clippy::too_many_arguments)] // one argument per declared input
 pub fn pump(
@@ -249,7 +249,14 @@ pub fn pump(
     api610_pump_type: Option<String>,
     seal_type: Option<String>,
     maximum_suction_pressure: Option<f64>,
+    furnished_casing_mawp: Option<f64>,
     shutoff_head: Option<f64>,
+    npsh_margin_factor: Option<f64>,
+    minimum_npsh_margin: Option<f64>,
+    por_low_fraction: Option<f64>,
+    por_high_fraction: Option<f64>,
+    aor_low_fraction: Option<f64>,
+    aor_high_fraction: Option<f64>,
 ) -> PyResult<crate::transport_gen::PyPumpResult> {
     let points: Option<Vec<azoth_process::models::pump::PumpCurvePoint>> = curve.map(|rows| {
         rows.into_iter()
@@ -281,7 +288,14 @@ pub fn pump(
         api610_pump_type,
         seal_type,
         maximum_suction_pressure.map(pascals),
+        furnished_casing_mawp.map(pascals),
         shutoff_head.map(meters),
+        npsh_margin_factor,
+        minimum_npsh_margin.map(meters),
+        por_low_fraction,
+        por_high_fraction,
+        aor_low_fraction,
+        aor_high_fraction,
     )
     .map(|r| crate::transport_gen::PyPumpResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

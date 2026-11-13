@@ -20,6 +20,10 @@ use crate::stream::Stream;
 
 /// The class's own gravity, `PumpMechanicalDesign.GRAVITY`.
 const GRAVITY: f64 = 9.81;
+/// The API 610 calculator's gravity, which the assessment's pressure basis uses. It is not
+/// the design's 9.81, and that is why the design pressure and the required casing pressure
+/// differ by a few parts in a thousand.
+const API610_GRAVITY: f64 = 9.80665;
 /// The driver margins, from absorbed power: below 22 kW, at or below 55 kW, above.
 const DRIVER_MARGIN_SMALL: f64 = 1.25;
 const DRIVER_MARGIN_MEDIUM: f64 = 1.15;
@@ -156,6 +160,41 @@ impl SealType {
             _ => return None,
         })
     }
+
+    /// Whether the class treats it as sealless.
+    fn is_sealless(self) -> bool {
+        matches!(self, Self::MagneticDrive | Self::CannedMotor)
+    }
+}
+
+/// The API 610 check vocabulary, in the class's order of severity.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Status {
+    Pass,
+    Warning,
+    Fail,
+    NotEvaluated,
+}
+
+/// `updateAssessmentStatus`: a failure anywhere is a failure; otherwise a warning or a
+/// gap beside at least one pass is `PASS_WITH_WARNINGS`.
+fn assessment_status(statuses: &[Status]) -> &'static str {
+    let mut evaluated = false;
+    let mut warning_or_gap = false;
+    for status in statuses {
+        match status {
+            Status::Fail => return "FAIL",
+            Status::Pass => evaluated = true,
+            Status::Warning | Status::NotEvaluated => warning_or_gap = true,
+        }
+    }
+    if !evaluated {
+        "NOT_EVALUATED"
+    } else if warning_or_gap {
+        "PASS_WITH_WARNINGS"
+    } else {
+        "PASS"
+    }
 }
 
 /// The caller's design inputs, in SI.
@@ -166,8 +205,23 @@ pub struct PumpDesignInputs<'a> {
     pub seal_type: SealType,
     /// The maximum suction pressure; absent is the inlet's.
     pub maximum_suction_pressure: Option<Pressure>,
+    /// The furnished casing MAWP; absent is no evidence.
+    pub furnished_casing_mawp: Option<Pressure>,
     /// The purchaser's shutoff head; absent is the chart's, or none.
     pub shutoff_head: Option<Length>,
+    /// The NPSH margin factor, effectively `1.20` from the class's database.
+    pub npsh_margin_factor: f64,
+    /// The minimum NPSH margin.
+    pub minimum_npsh_margin: Length,
+    /// The preferred operating region's low and high fractions.
+    pub por_low: f64,
+    pub por_high: f64,
+    /// The allowable operating region's low and high fractions.
+    pub aor_low: f64,
+    pub aor_high: f64,
+    /// The rated-point band's low and high fractions.
+    pub rated_low: f64,
+    pub rated_high: f64,
     /// The pump's speed, rpm.
     pub speed: f64,
     /// The vendor curve, when one is stated.
@@ -269,6 +323,26 @@ pub struct PumpDesign {
     pub npsh_margin: Length,
     /// The NPSH margin ratio.
     pub npsh_margin_ratio: f64,
+    /// The `assessmentStatus` aggregation.
+    pub assessment_status: &'static str,
+    /// `getAssessmentBasis`.
+    pub assessment_basis: &'static str,
+    /// The operating flow over the BEP flow; absent without a BEP.
+    pub operating_flow_ratio: f64,
+    /// `POR`, `AOR`, `OUTSIDE_AOR` or `NOT_EVALUATED`.
+    pub operating_region: &'static str,
+    /// The shutoff head the pressure basis uses.
+    pub governing_shutoff_head: Length,
+    /// The pressure the casing must hold, Pa: suction plus governing shutoff.
+    pub required_casing_pressure: Pressure,
+    /// The preliminary hydrostatic test pressure, Pa.
+    pub preliminary_hydrostatic_test_pressure: Pressure,
+    /// The head rise from rated flow to shutoff, as a fraction.
+    pub head_rise_to_shutoff: f64,
+    /// The driver power the absorbed power and margin require, W.
+    pub required_driver_power: Power,
+    /// `purchaser_input` or `screening_estimate`.
+    pub pump_type_source: &'static str,
 }
 
 /// `calcDesign` on the pump's run state.
@@ -404,6 +478,114 @@ pub fn design(
         f64::NAN
     };
 
+    // **The assessment's per-check list is a presentation surface and is not published**;
+    // `assessment_status` is the class's aggregation of it, and the scalars below are the
+    // numeric consequences the check list produces.
+    let bep_flow_value = bep_flow_m3_hr.unwrap_or(f64::NAN);
+    let operating_flow_ratio = if volume_flow_m3_hr > 0.0 && bep_flow_value > 0.0 {
+        volume_flow_m3_hr / bep_flow_value
+    } else {
+        f64::NAN
+    };
+    let (operating_region, operating_status) = if operating_flow_ratio.is_nan() {
+        ("NOT_EVALUATED", Status::NotEvaluated)
+    } else if operating_flow_ratio >= inputs.rated_low && operating_flow_ratio <= inputs.rated_high
+    {
+        ("POR", Status::Pass)
+    } else if operating_flow_ratio >= inputs.por_low && operating_flow_ratio <= inputs.por_high {
+        ("POR", Status::Warning)
+    } else if operating_flow_ratio >= inputs.aor_low && operating_flow_ratio <= inputs.aor_high {
+        ("AOR", Status::Warning)
+    } else {
+        ("OUTSIDE_AOR", Status::Fail)
+    };
+    let npsh_status = if npsh_available.value.is_finite() && npsh_required.value > 0.0 {
+        let ratio = npsh_available.value / npsh_required.value;
+        let margin = npsh_available.value - npsh_required.value;
+        if ratio >= inputs.npsh_margin_factor && margin >= inputs.minimum_npsh_margin.value {
+            Status::Pass
+        } else {
+            Status::Fail
+        }
+    } else {
+        Status::NotEvaluated
+    };
+    let required_casing_pressure_bara =
+        maximum_suction_bara + density * API610_GRAVITY * governing_shutoff / 1.0e5;
+    let pressure_status = if maximum_suction_bara > 0.0 && pump_head > 0.0 && density > 0.0 {
+        match inputs.furnished_casing_mawp {
+            None => Status::NotEvaluated,
+            Some(mawp) => {
+                if mawp.value / 1.0e5 >= required_casing_pressure_bara {
+                    Status::Pass
+                } else {
+                    Status::Fail
+                }
+            }
+        }
+    } else {
+        Status::NotEvaluated
+    };
+    let hydrostatic_basis_bara = inputs
+        .furnished_casing_mawp
+        .filter(|mawp| mawp.value > 0.0)
+        .map(|mawp| mawp.value / 1.0e5)
+        .unwrap_or(required_casing_pressure_bara);
+    let preliminary_hydrostatic_test_pressure_bara = hydrostatic_basis_bara * 1.50;
+    let head_rise_to_shutoff = if matches!(shutoff_source, "vendor_curve" | "purchaser_input")
+        && shutoff_head.is_some_and(|head| head.value > 0.0)
+        && pump_head > 0.0
+    {
+        shutoff_head.unwrap().value / pump_head - 1.0
+    } else {
+        f64::NAN
+    };
+    let head_rise_status = if head_rise_to_shutoff.is_nan() {
+        Status::NotEvaluated
+    } else if head_rise_to_shutoff >= 0.10 {
+        Status::Pass
+    } else {
+        Status::Fail
+    };
+    let required_driver_power_kw = absorbed_power_kw * driver_margin;
+    let driver_status = if absorbed_power_kw > 0.0 {
+        if required_driver_power_kw <= 10_000.0 {
+            Status::Pass
+        } else {
+            Status::Fail
+        }
+    } else {
+        Status::NotEvaluated
+    };
+    let pump_type_status = match inputs.api610_pump_type {
+        None => Status::Warning,
+        Some(Api610PumpType::Unspecified) => Status::NotEvaluated,
+        Some(_) => Status::Pass,
+    };
+    let mut statuses = vec![
+        operating_status,
+        npsh_status,
+        pressure_status,
+        Status::NotEvaluated,
+        head_rise_status,
+        driver_status,
+        Status::NotEvaluated,
+        Status::NotEvaluated,
+        Status::NotEvaluated,
+        Status::NotEvaluated,
+        Status::NotEvaluated,
+        pump_type_status,
+    ];
+    if inputs.seal_type.is_sealless() {
+        statuses.push(Status::Warning);
+    }
+    let status = assessment_status(&statuses);
+    let pump_type_source = if inputs.api610_pump_type.is_some() {
+        "purchaser_input"
+    } else {
+        "screening_estimate"
+    };
+
     Ok(PumpDesign {
         pump_type,
         api610_pump_type: api610.as_str(),
@@ -463,6 +645,18 @@ pub fn design(
         module_height: meters(module_height),
         npsh_margin: meters(npsh_margin),
         npsh_margin_ratio,
+        assessment_status: status,
+        assessment_basis: "API 610 screening; vendor and purchaser verification required",
+        operating_flow_ratio,
+        operating_region,
+        governing_shutoff_head: meters(governing_shutoff),
+        required_casing_pressure: pascals(required_casing_pressure_bara * 1.0e5),
+        preliminary_hydrostatic_test_pressure: pascals(
+            preliminary_hydrostatic_test_pressure_bara * 1.0e5,
+        ),
+        head_rise_to_shutoff,
+        required_driver_power: watts(required_driver_power_kw * 1000.0),
+        pump_type_source,
     })
 }
 

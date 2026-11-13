@@ -6796,7 +6796,7 @@ def plug_flow_reactor(components: list[str], feed_n: Q, feed_z: list[float], fee
     )
 
 
-def pump(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, reference_density: Q | None=None, viscosity: Q | None=None, use_viscosity_correction: bool | None=None, check_npsh: bool | None=None, npsh_margin: float | None=None, mechanical_design: bool | None=None, api610_pump_type: str | None=None, seal_type: str | None=None, maximum_suction_pressure: Q | None=None, shutoff_head: Q | None=None) -> PumpResult:
+def pump(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, isentropic_efficiency: float, outlet_pressure: Q | None=None, curve: list[dict[str, Q]] | None=None, speed: float | None=None, reference_density: Q | None=None, viscosity: Q | None=None, use_viscosity_correction: bool | None=None, check_npsh: bool | None=None, npsh_margin: float | None=None, mechanical_design: bool | None=None, api610_pump_type: str | None=None, seal_type: str | None=None, maximum_suction_pressure: Q | None=None, furnished_casing_mawp: Q | None=None, shutoff_head: Q | None=None, npsh_margin_factor: float | None=None, minimum_npsh_margin: Q | None=None, por_low_fraction: float | None=None, por_high_fraction: float | None=None, aor_low_fraction: float | None=None, aor_high_fraction: float | None=None) -> PumpResult:
     """``process.pump``, computed in Rust."""
     spec = _models_gen.model("process.pump")
     result = _core.pump(
@@ -6818,7 +6818,14 @@ def pump(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, in
         api610_pump_type,
         seal_type,
         None if maximum_suction_pressure is None else input_to_si(spec, "maximum_suction_pressure", maximum_suction_pressure),
+        None if furnished_casing_mawp is None else input_to_si(spec, "furnished_casing_mawp", furnished_casing_mawp),
         None if shutoff_head is None else input_to_si(spec, "shutoff_head", shutoff_head),
+        None if npsh_margin_factor is None else npsh_margin_factor,
+        None if minimum_npsh_margin is None else input_to_si(spec, "minimum_npsh_margin", minimum_npsh_margin),
+        None if por_low_fraction is None else por_low_fraction,
+        None if por_high_fraction is None else por_high_fraction,
+        None if aor_low_fraction is None else aor_low_fraction,
+        None if aor_high_fraction is None else aor_high_fraction,
     )
     return PumpResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -6877,6 +6884,16 @@ def pump(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, in
         design_module_height=None if result.design_module_height is None else from_si(result.design_module_height.magnitude_si, result.design_module_height.unit),
         design_npsh_margin=None if result.design_npsh_margin is None else from_si(result.design_npsh_margin.magnitude_si, result.design_npsh_margin.unit),
         design_npsh_margin_ratio=result.design_npsh_margin_ratio,
+        design_assessment_status=result.design_assessment_status,
+        design_assessment_basis=result.design_assessment_basis,
+        design_operating_flow_ratio=result.design_operating_flow_ratio,
+        design_operating_region=result.design_operating_region,
+        design_governing_shutoff_head=None if result.design_governing_shutoff_head is None else from_si(result.design_governing_shutoff_head.magnitude_si, result.design_governing_shutoff_head.unit),
+        design_required_casing_pressure=None if result.design_required_casing_pressure is None else from_si(result.design_required_casing_pressure.magnitude_si, result.design_required_casing_pressure.unit),
+        design_preliminary_hydrostatic_test_pressure=None if result.design_preliminary_hydrostatic_test_pressure is None else from_si(result.design_preliminary_hydrostatic_test_pressure.magnitude_si, result.design_preliminary_hydrostatic_test_pressure.unit),
+        design_head_rise_to_shutoff=result.design_head_rise_to_shutoff,
+        design_required_driver_power=None if result.design_required_driver_power is None else from_si(result.design_required_driver_power.magnitude_si, result.design_required_driver_power.unit),
+        design_pump_type_source=result.design_pump_type_source,
         warnings=_warnings(result.warnings),
     )
 

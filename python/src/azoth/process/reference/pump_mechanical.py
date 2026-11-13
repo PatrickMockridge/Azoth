@@ -19,6 +19,8 @@ from azoth.process.reference import capacity
 
 #: The class's own gravity, ``PumpMechanicalDesign.GRAVITY``.
 GRAVITY = 9.81
+#: The API 610 calculator's gravity, which the assessment's pressure basis uses.
+API610_GRAVITY = 9.80665
 #: The driver margins, from absorbed power: below 22 kW, at or below 55 kW, above.
 DRIVER_MARGIN_SMALL = 1.25
 DRIVER_MARGIN_MEDIUM = 1.15
@@ -117,6 +119,16 @@ class PumpMechanicalDesign:
     module_height: float
     npsh_margin: float
     npsh_margin_ratio: float
+    assessment_status: str
+    assessment_basis: str
+    operating_flow_ratio: float
+    operating_region: str
+    governing_shutoff_head: float
+    required_casing_pressure: float
+    preliminary_hydrostatic_test_pressure: float
+    head_rise_to_shutoff: float
+    required_driver_power: float
+    pump_type_source: str
 
 
 def design(
@@ -136,7 +148,16 @@ def design(
     api610_pump_type: str | None,
     seal_type: str | None,
     maximum_suction_pressure: float | None,
+    furnished_casing_mawp: float | None,
     shutoff_head: float | None,
+    npsh_margin_factor: float = 1.20,
+    minimum_npsh_margin: float = 1.0,
+    por_low: float = 0.70,
+    por_high: float = 1.20,
+    aor_low: float = 0.65,
+    aor_high: float = 1.25,
+    rated_low: float = 0.80,
+    rated_high: float = 1.10,
 ) -> PumpMechanicalDesign:
     """``calcDesign`` on the pump's run state, in SI.
 
@@ -233,6 +254,99 @@ def design(
     npsh_margin_ratio = npsh_available / npsh_required if npsh_required > 0.0 else math.nan
     basis = bep_flow if bep_flow is not None and bep_flow > 0.0 else volume_flow_m3_hr
 
+    # **The per-check list is a presentation surface and is not published.** Its statuses
+    # aggregate into ``assessment_status``; the scalars below are its numeric consequences.
+    bep_flow_value = bep_flow if bep_flow is not None else math.nan
+    operating_flow_ratio = (
+        volume_flow_m3_hr / bep_flow_value
+        if volume_flow_m3_hr > 0.0 and bep_flow_value > 0.0
+        else math.nan
+    )
+    if math.isnan(operating_flow_ratio):
+        operating_region = "NOT_EVALUATED"
+        operating_status = _NOT_EVALUATED
+    elif rated_low <= operating_flow_ratio <= rated_high:
+        operating_region = "POR"
+        operating_status = _PASS
+    elif por_low <= operating_flow_ratio <= por_high:
+        operating_region = "POR"
+        operating_status = _WARNING
+    elif aor_low <= operating_flow_ratio <= aor_high:
+        operating_region = "AOR"
+        operating_status = _WARNING
+    else:
+        operating_region = "OUTSIDE_AOR"
+        operating_status = _FAIL
+
+    if math.isfinite(npsh_available) and npsh_required > 0.0:
+        npsh_status = (
+            _PASS
+            if npsh_margin_ratio >= npsh_margin_factor and npsh_margin >= minimum_npsh_margin
+            else _FAIL
+        )
+    else:
+        npsh_status = _NOT_EVALUATED
+
+    required_casing_pressure_bara = (
+        maximum_suction_bara + density * API610_GRAVITY * governing_shutoff / 1.0e5
+    )
+    if maximum_suction_bara > 0.0 and pump_head > 0.0 and density > 0.0:
+        if furnished_casing_mawp is None:
+            pressure_status = _NOT_EVALUATED
+        elif furnished_casing_mawp / 1.0e5 >= required_casing_pressure_bara:
+            pressure_status = _PASS
+        else:
+            pressure_status = _FAIL
+    else:
+        pressure_status = _NOT_EVALUATED
+    hydrostatic_basis_bara = (
+        furnished_casing_mawp / 1.0e5
+        if furnished_casing_mawp is not None and furnished_casing_mawp > 0.0
+        else required_casing_pressure_bara
+    )
+    preliminary_hydrostatic_test_pressure_bara = hydrostatic_basis_bara * 1.50
+
+    if shutoff is not None and shutoff > 0.0 and pump_head > 0.0 and shutoff_source in (
+        "vendor_curve",
+        "purchaser_input",
+    ):
+        head_rise_to_shutoff = shutoff / pump_head - 1.0
+        head_rise_status = _PASS if head_rise_to_shutoff >= 0.10 else _FAIL
+    else:
+        head_rise_to_shutoff = math.nan
+        head_rise_status = _NOT_EVALUATED
+
+    required_driver_power_kw = absorbed_power_kw * driver_margin
+    if absorbed_power_kw > 0.0:
+        driver_status = _PASS if required_driver_power_kw <= 10000.0 else _FAIL
+    else:
+        driver_status = _NOT_EVALUATED
+
+    if api610_pump_type is None:
+        pump_type_status = _WARNING
+    elif api610_pump_type == "unspecified":
+        pump_type_status = _NOT_EVALUATED
+    else:
+        pump_type_status = _PASS
+    statuses = [
+        operating_status,
+        npsh_status,
+        pressure_status,
+        _NOT_EVALUATED,
+        head_rise_status,
+        driver_status,
+        _NOT_EVALUATED,
+        _NOT_EVALUATED,
+        _NOT_EVALUATED,
+        _NOT_EVALUATED,
+        _NOT_EVALUATED,
+        pump_type_status,
+    ]
+    if seal_type in ("magnetic_drive", "canned_motor"):
+        statuses.append(_WARNING)
+    status = _assessment_status(statuses)
+    pump_type_source = "purchaser_input" if api610_pump_type is not None else "screening_estimate"
+
     return PumpMechanicalDesign(
         pump_type=pump_type,
         api610_pump_type=api610,
@@ -280,6 +394,16 @@ def design(
         module_height=module_height,
         npsh_margin=npsh_margin,
         npsh_margin_ratio=npsh_margin_ratio,
+        assessment_status=status,
+        assessment_basis="API 610 screening; vendor and purchaser verification required",
+        operating_flow_ratio=operating_flow_ratio,
+        operating_region=operating_region,
+        governing_shutoff_head=governing_shutoff,
+        required_casing_pressure=required_casing_pressure_bara * 1.0e5,
+        preliminary_hydrostatic_test_pressure=preliminary_hydrostatic_test_pressure_bara * 1.0e5,
+        head_rise_to_shutoff=head_rise_to_shutoff,
+        required_driver_power=required_driver_power_kw * 1000.0,
+        pump_type_source=pump_type_source,
     )
 
 
@@ -573,3 +697,25 @@ def _module_dimensions(impeller_diameter: float, driver_power_kw: float) -> tupl
     module_length = pump_length + motor_length + 1.0
     module_height = max(0.5, impeller_diameter / 1000.0 + 0.3)
     return module_length, module_width, module_height
+
+
+_PASS = "pass"
+_WARNING = "warning"
+_FAIL = "fail"
+_NOT_EVALUATED = "not_evaluated"
+
+
+def _assessment_status(statuses: list[str]) -> str:
+    """``updateAssessmentStatus``: a failure anywhere defeats a warning or a gap."""
+    evaluated = False
+    warning_or_gap = False
+    for status in statuses:
+        if status == _FAIL:
+            return "FAIL"
+        if status == _PASS:
+            evaluated = True
+        else:
+            warning_or_gap = True
+    if not evaluated:
+        return "NOT_EVALUATED"
+    return "PASS_WITH_WARNINGS" if warning_or_gap else "PASS"

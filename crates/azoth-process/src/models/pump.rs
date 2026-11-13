@@ -152,6 +152,26 @@ pub struct PumpResult {
     pub design_npsh_margin: Option<Length>,
     /// The NPSH margin ratio.
     pub design_npsh_margin_ratio: Option<f64>,
+    /// `assessmentStatus`.
+    pub design_assessment_status: Option<String>,
+    /// `getAssessmentBasis`.
+    pub design_assessment_basis: Option<String>,
+    /// The operating flow over the BEP flow.
+    pub design_operating_flow_ratio: Option<f64>,
+    /// `POR`, `AOR`, `OUTSIDE_AOR` or `NOT_EVALUATED`.
+    pub design_operating_region: Option<String>,
+    /// The shutoff head the pressure basis uses, m.
+    pub design_governing_shutoff_head: Option<Length>,
+    /// The casing pressure the suction-plus-shutoff basis requires, Pa.
+    pub design_required_casing_pressure: Option<Pressure>,
+    /// The preliminary hydrostatic test pressure, Pa.
+    pub design_preliminary_hydrostatic_test_pressure: Option<Pressure>,
+    /// The head rise from rated flow to shutoff.
+    pub design_head_rise_to_shutoff: Option<f64>,
+    /// The driver power the absorbed power and margin require, W.
+    pub design_required_driver_power: Option<Power>,
+    /// `purchaser_input` or `screening_estimate`.
+    pub design_pump_type_source: Option<String>,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
@@ -182,7 +202,14 @@ pub fn pump(
     api610_pump_type: Option<String>,
     seal_type: Option<String>,
     maximum_suction_pressure: Option<Pressure>,
+    furnished_casing_mawp: Option<Pressure>,
     shutoff_head: Option<Length>,
+    npsh_margin_factor: Option<f64>,
+    minimum_npsh_margin: Option<Length>,
+    por_low_fraction: Option<f64>,
+    por_high_fraction: Option<f64>,
+    aor_low_fraction: Option<f64>,
+    aor_high_fraction: Option<f64>,
 ) -> Result<PumpResult> {
     let spec = &model_gen::PUMP_SPEC;
     let mut warnings = Vec::new();
@@ -318,7 +345,16 @@ pub fn pump(
             api610_pump_type: api610,
             seal_type: seal,
             maximum_suction_pressure,
+            furnished_casing_mawp,
             shutoff_head,
+            npsh_margin_factor: npsh_margin_factor.unwrap_or(1.20),
+            minimum_npsh_margin: minimum_npsh_margin.unwrap_or(meters(1.0)),
+            por_low: por_low_fraction.unwrap_or(0.70),
+            por_high: por_high_fraction.unwrap_or(1.20),
+            aor_low: aor_low_fraction.unwrap_or(0.65),
+            aor_high: aor_high_fraction.unwrap_or(1.25),
+            rated_low: 0.80,
+            rated_high: 1.10,
             speed,
             chart: chart.as_ref(),
         };
@@ -355,8 +391,12 @@ pub fn pump(
         design_rated_head: d.map(|value| value.rated_head),
         design_hydraulic_power: d.map(|value| value.hydraulic_power),
         design_rated_speed: d.map(|value| value.rated_speed),
-        design_specific_speed: d.map(|value| value.specific_speed),
-        design_suction_specific_speed: d.map(|value| value.suction_specific_speed),
+        design_specific_speed: d
+            .map(|value| value.specific_speed)
+            .filter(|value| value.is_finite()),
+        design_suction_specific_speed: d
+            .map(|value| value.suction_specific_speed)
+            .filter(|value| value.is_finite()),
         design_number_of_stages: d.map(|value| f64::from(value.number_of_stages)),
         design_bep_flow: d.and_then(|value| value.bep_flow),
         design_bep_head: d.and_then(|value| value.bep_head),
@@ -392,7 +432,24 @@ pub fn pump(
         design_module_width: d.map(|value| value.module_width),
         design_module_height: d.map(|value| value.module_height),
         design_npsh_margin: d.map(|value| value.npsh_margin),
-        design_npsh_margin_ratio: d.map(|value| value.npsh_margin_ratio),
+        design_npsh_margin_ratio: d
+            .map(|value| value.npsh_margin_ratio)
+            .filter(|value| value.is_finite()),
+        design_assessment_status: d.map(|value| value.assessment_status.to_owned()),
+        design_assessment_basis: d.map(|value| value.assessment_basis.to_owned()),
+        design_operating_flow_ratio: d
+            .map(|value| value.operating_flow_ratio)
+            .filter(|value| value.is_finite()),
+        design_operating_region: d.map(|value| value.operating_region.to_owned()),
+        design_governing_shutoff_head: d.map(|value| value.governing_shutoff_head),
+        design_required_casing_pressure: d.map(|value| value.required_casing_pressure),
+        design_preliminary_hydrostatic_test_pressure: d
+            .map(|value| value.preliminary_hydrostatic_test_pressure),
+        design_head_rise_to_shutoff: d
+            .map(|value| value.head_rise_to_shutoff)
+            .filter(|value| value.is_finite()),
+        design_required_driver_power: d.map(|value| value.required_driver_power),
+        design_pump_type_source: d.map(|value| value.pump_type_source.to_owned()),
         warnings,
     })
 }

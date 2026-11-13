@@ -3479,6 +3479,16 @@ class PumpResult:
     design_module_height: Qty | None
     design_npsh_margin: Qty | None
     design_npsh_margin_ratio: float | None
+    design_assessment_status: str | None
+    design_assessment_basis: str | None
+    design_operating_flow_ratio: float | None
+    design_operating_region: str | None
+    design_governing_shutoff_head: Qty | None
+    design_required_casing_pressure: Qty | None
+    design_preliminary_hydrostatic_test_pressure: Qty | None
+    design_head_rise_to_shutoff: float | None
+    design_required_driver_power: Qty | None
+    design_pump_type_source: str | None
     warnings: list[Warning]
 
 @final
@@ -6658,6 +6668,13 @@ def pump(
     seal_type: str | None = None,
     maximum_suction_pressure: float | None = None,
     shutoff_head: float | None = None,
+    furnished_casing_mawp: float | None = None,
+    npsh_margin_factor: float | None = None,
+    minimum_npsh_margin: float | None = None,
+    por_low_fraction: float | None = None,
+    por_high_fraction: float | None = None,
+    aor_low_fraction: float | None = None,
+    aor_high_fraction: float | None = None,
 ) -> PumpResult: ...
 def rate_based_packed_column(
     gas_components: list[str],

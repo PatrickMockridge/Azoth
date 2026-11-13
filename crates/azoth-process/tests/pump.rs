@@ -74,6 +74,13 @@ fn the_npsh_curve_run_matches_the_capture() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the captured state pumps");
 
@@ -136,6 +143,13 @@ fn a_pump_with_neither_a_curve_nor_a_pressure_is_refused() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect_err("there is no pressure to reach");
     assert_eq!(error.field(), Some("outlet_pressure"));
@@ -159,6 +173,13 @@ fn the_captured_plain_design_is_reproduced() {
         None,
         None,
         Some(true),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
         None,
         None,
@@ -365,6 +386,13 @@ fn the_captured_multistage_design_is_reproduced() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the design computes");
 
@@ -457,7 +485,14 @@ fn the_captured_purchaser_design_is_reproduced() {
         Some("oh2".to_string()),
         Some("single_mechanical".to_string()),
         Some(pascals(600_000.0)),
+        Some(pascals(2_500_000.0)),
         Some(meters(400.0)),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the design computes");
 
@@ -508,6 +543,13 @@ fn a_sealless_pump_is_the_magnetic_drive() {
         Some("magnetic_drive".to_string()),
         None,
         None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the design computes");
     assert_eq!(result.design_seal_type.as_deref(), Some("magnetic_drive"));
@@ -532,6 +574,13 @@ fn the_captured_vendor_npsh_design_is_reproduced() {
         Some(true),
         Some(1.3),
         Some(true),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
         None,
         None,
@@ -601,5 +650,121 @@ fn the_captured_vendor_npsh_design_is_reproduced() {
         50.14,
         1e-9,
         "maximum flow",
+    );
+}
+
+#[test]
+fn the_captured_assessment_statuses_are_reproduced() {
+    let plain = pump(
+        &["n-butane".to_string()],
+        1.0,
+        &[1.0],
+        pascals(500_000.0),
+        kelvins(250.0),
+        Some(pascals(2_000_000.0)),
+        0.75,
+        None,
+        Some(1000.0),
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(true),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .expect("the plain design computes");
+    assert_eq!(
+        plain.design_assessment_status.as_deref(),
+        Some("PASS_WITH_WARNINGS")
+    );
+    assert_eq!(
+        plain.design_pump_type_source.as_deref(),
+        Some("screening_estimate")
+    );
+    assert_eq!(
+        plain.design_operating_region.as_deref(),
+        Some("NOT_EVALUATED")
+    );
+    close(
+        plain.design_governing_shutoff_head.expect("a head").value,
+        273.119_122_281_756_23,
+        1e-6,
+        "governing shutoff",
+    );
+    close(
+        plain
+            .design_required_casing_pressure
+            .expect("a pressure")
+            .value,
+        2_149_436.544_342_507_5,
+        1e-6,
+        "required casing pressure",
+    );
+    close(
+        plain
+            .design_preliminary_hydrostatic_test_pressure
+            .expect("a pressure")
+            .value,
+        3_224_154.816_513_761_4,
+        1e-6,
+        "preliminary hydrostatic",
+    );
+    close(
+        plain.design_required_driver_power.expect("a power").value,
+        220.199_011_235_736_18,
+        1e-6,
+        "required driver",
+    );
+
+    let purchaser = pump(
+        &["n-butane".to_string()],
+        1.0,
+        &[1.0],
+        pascals(500_000.0),
+        kelvins(250.0),
+        Some(pascals(2_000_000.0)),
+        0.75,
+        None,
+        Some(1000.0),
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(true),
+        Some("oh2".to_string()),
+        Some("single_mechanical".to_string()),
+        Some(pascals(600_000.0)),
+        Some(pascals(2_500_000.0)),
+        Some(meters(400.0)),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .expect("the purchaser design computes");
+    assert_eq!(purchaser.design_assessment_status.as_deref(), Some("FAIL"));
+    assert_eq!(
+        purchaser.design_pump_type_source.as_deref(),
+        Some("purchaser_input")
+    );
+    close(
+        purchaser.design_head_rise_to_shutoff.expect("a rise"),
+        0.611_018_651_217_271_7,
+        1e-6,
+        "head rise",
     );
 }

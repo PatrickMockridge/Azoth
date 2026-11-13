@@ -18646,6 +18646,36 @@ pub struct PyPumpResult {
     /// `getNpshMarginRatio`: available over required.
     #[pyo3(get)]
     pub design_npsh_margin_ratio: Option<f64>,
+    /// `getAssessmentStatus`: `PASS`, `PASS_WITH_WARNINGS`, `FAIL` or `NOT_EVALUATED`, the class's aggregation of its checks. **The per-check list itself is a presentation surface and is not published**; its numeric consequences are the outputs beside this one.
+    #[pyo3(get)]
+    pub design_assessment_status: Option<String>,
+    /// `getAssessmentBasis`, the class's own sentence.
+    #[pyo3(get)]
+    pub design_assessment_basis: Option<String>,
+    /// the rated flow over the BEP flow; `NaN` without a vendor BEP.
+    #[pyo3(get)]
+    pub design_operating_flow_ratio: Option<f64>,
+    /// `POR`, `AOR`, `OUTSIDE_AOR` or `NOT_EVALUATED`, from the class's rated-point, preferred and allowable bands.
+    #[pyo3(get)]
+    pub design_operating_region: Option<String>,
+    /// the shutoff head the pressure basis uses: the vendor or purchaser value, else the rated head times `1.10`.
+    #[pyo3(get)]
+    pub design_governing_shutoff_head: Option<PyQty>,
+    /// the casing pressure the suction basis and governing shutoff head require.
+    #[pyo3(get)]
+    pub design_required_casing_pressure: Option<PyQty>,
+    /// the basis times the class's `1.50` hydrostatic factor; the basis is the furnished MAWP where one is stated.
+    #[pyo3(get)]
+    pub design_preliminary_hydrostatic_test_pressure: Option<PyQty>,
+    /// `shutoff / rated - 1`; `NaN` where no vendor or purchaser shutoff head exists.
+    #[pyo3(get)]
+    pub design_head_rise_to_shutoff: Option<f64>,
+    /// the absorbed power times the margin, before the rating selection.
+    #[pyo3(get)]
+    pub design_required_driver_power: Option<PyQty>,
+    /// `purchaser_input` or `screening_estimate`.
+    #[pyo3(get)]
+    pub design_pump_type_source: Option<String>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -18655,7 +18685,7 @@ pub struct PyPumpResult {
 impl PyPumpResult {
     fn __repr__(&self) -> String {
         format!(
-            "PumpResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, head={:?}, efficiency={:?}, npsh_required={:?}, npsh_available={:?}, cavitating={:?}, power={:?}, design_pump_type={:?}, design_api610_pump_type={:?}, design_seal_type={:?}, design_rated_flow={:?}, design_rated_head={:?}, design_hydraulic_power={:?}, design_rated_speed={:?}, design_specific_speed={:?}, design_suction_specific_speed={:?}, design_number_of_stages={:?}, design_bep_flow={:?}, design_bep_head={:?}, design_bep_source={:?}, design_npshr_source={:?}, design_shutoff_source={:?}, design_shutoff_head={:?}, design_pressure={:?}, design_temperature={:?}, design_impeller_diameter={:?}, design_impeller_width={:?}, design_shaft_diameter={:?}, design_casing_wall_thickness={:?}, design_max_allowable_working_pressure={:?}, design_driver_power={:?}, design_driver_margin={:?}, design_suction_nozzle_size={:?}, design_discharge_nozzle_size={:?}, design_minimum_flow={:?}, design_maximum_flow={:?}, design_casing_weight={:?}, design_motor_weight={:?}, design_baseplate_weight={:?}, design_inner_diameter={:?}, design_outer_diameter={:?}, design_tantan_length={:?}, design_wall_thickness={:?}, design_weight_piping={:?}, design_weight_electro_instrument={:?}, design_weight_structural_steel={:?}, design_weight_total={:?}, design_module_length={:?}, design_module_width={:?}, design_module_height={:?}, design_npsh_margin={:?}, design_npsh_margin_ratio={:?}, {} warning(s))",
+            "PumpResult(outlet_n={:?}, outlet_z={:?}, outlet_p={:?}, outlet_t={:?}, outlet_h={:?}, head={:?}, efficiency={:?}, npsh_required={:?}, npsh_available={:?}, cavitating={:?}, power={:?}, design_pump_type={:?}, design_api610_pump_type={:?}, design_seal_type={:?}, design_rated_flow={:?}, design_rated_head={:?}, design_hydraulic_power={:?}, design_rated_speed={:?}, design_specific_speed={:?}, design_suction_specific_speed={:?}, design_number_of_stages={:?}, design_bep_flow={:?}, design_bep_head={:?}, design_bep_source={:?}, design_npshr_source={:?}, design_shutoff_source={:?}, design_shutoff_head={:?}, design_pressure={:?}, design_temperature={:?}, design_impeller_diameter={:?}, design_impeller_width={:?}, design_shaft_diameter={:?}, design_casing_wall_thickness={:?}, design_max_allowable_working_pressure={:?}, design_driver_power={:?}, design_driver_margin={:?}, design_suction_nozzle_size={:?}, design_discharge_nozzle_size={:?}, design_minimum_flow={:?}, design_maximum_flow={:?}, design_casing_weight={:?}, design_motor_weight={:?}, design_baseplate_weight={:?}, design_inner_diameter={:?}, design_outer_diameter={:?}, design_tantan_length={:?}, design_wall_thickness={:?}, design_weight_piping={:?}, design_weight_electro_instrument={:?}, design_weight_structural_steel={:?}, design_weight_total={:?}, design_module_length={:?}, design_module_width={:?}, design_module_height={:?}, design_npsh_margin={:?}, design_npsh_margin_ratio={:?}, design_assessment_status={:?}, design_assessment_basis={:?}, design_operating_flow_ratio={:?}, design_operating_region={:?}, design_governing_shutoff_head={:?}, design_required_casing_pressure={:?}, design_preliminary_hydrostatic_test_pressure={:?}, design_head_rise_to_shutoff={:?}, design_required_driver_power={:?}, design_pump_type_source={:?}, {} warning(s))",
             self.outlet_n,
             self.outlet_z,
             self.outlet_p,
@@ -18712,6 +18742,16 @@ impl PyPumpResult {
             self.design_module_height,
             self.design_npsh_margin,
             self.design_npsh_margin_ratio,
+            self.design_assessment_status,
+            self.design_assessment_basis,
+            self.design_operating_flow_ratio,
+            self.design_operating_region,
+            self.design_governing_shutoff_head,
+            self.design_required_casing_pressure,
+            self.design_preliminary_hydrostatic_test_pressure,
+            self.design_head_rise_to_shutoff,
+            self.design_required_driver_power,
+            self.design_pump_type_source,
             self.warnings.len()
         )
     }
@@ -18901,6 +18941,30 @@ impl From<&azoth_process::models::pump::PumpResult> for PyPumpResult {
                 unit: "m".to_string(),
             }),
             design_npsh_margin_ratio: r.design_npsh_margin_ratio,
+            design_assessment_status: r.design_assessment_status.clone(),
+            design_assessment_basis: r.design_assessment_basis.clone(),
+            design_operating_flow_ratio: r.design_operating_flow_ratio,
+            design_operating_region: r.design_operating_region.clone(),
+            design_governing_shutoff_head: r.design_governing_shutoff_head.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            design_required_casing_pressure: r.design_required_casing_pressure.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            design_preliminary_hydrostatic_test_pressure: r
+                .design_preliminary_hydrostatic_test_pressure
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "Pa".to_string(),
+                }),
+            design_head_rise_to_shutoff: r.design_head_rise_to_shutoff,
+            design_required_driver_power: r.design_required_driver_power.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W".to_string(),
+            }),
+            design_pump_type_source: r.design_pump_type_source.clone(),
             warnings: transport(&r.warnings),
         }
     }

@@ -186,7 +186,14 @@ def pump(
     api610_pump_type: str | None = None,
     seal_type: str | None = None,
     maximum_suction_pressure: Q | None = None,
+    furnished_casing_mawp: Q | None = None,
     shutoff_head: Q | None = None,
+    npsh_margin_factor: float | None = None,
+    minimum_npsh_margin: Q | None = None,
+    por_low_fraction: float | None = None,
+    por_high_fraction: float | None = None,
+    aor_low_fraction: float | None = None,
+    aor_high_fraction: float | None = None,
 ) -> PumpResult:
     """Raise a stream's pressure, adding the pump's work as enthalpy.
 
@@ -227,7 +234,14 @@ def pump(
         api610_pump_type=api610_pump_type,
         seal_type=seal_type,
         maximum_suction_pressure=maximum_suction_pressure,
+        furnished_casing_mawp=furnished_casing_mawp,
         shutoff_head=shutoff_head,
+        npsh_margin_factor=npsh_margin_factor,
+        minimum_npsh_margin=minimum_npsh_margin,
+        por_low_fraction=por_low_fraction,
+        por_high_fraction=por_high_fraction,
+        aor_low_fraction=aor_low_fraction,
+        aor_high_fraction=aor_high_fraction,
     )
 
 

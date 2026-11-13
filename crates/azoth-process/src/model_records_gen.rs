@@ -919,6 +919,16 @@ impl CalcResult for PumpResult {
         "design_module_height",
         "design_npsh_margin",
         "design_npsh_margin_ratio",
+        "design_assessment_status",
+        "design_assessment_basis",
+        "design_operating_flow_ratio",
+        "design_operating_region",
+        "design_governing_shutoff_head",
+        "design_required_casing_pressure",
+        "design_preliminary_hydrostatic_test_pressure",
+        "design_head_rise_to_shutoff",
+        "design_required_driver_power",
+        "design_pump_type_source",
         "warnings",
     ];
 

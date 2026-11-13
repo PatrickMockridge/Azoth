@@ -7581,6 +7581,36 @@ class PumpResult(_HasWarnings):
     #: `getNpshMarginRatio`: available over required.
     design_npsh_margin_ratio: float | None
 
+    #: `getAssessmentStatus`: `PASS`, `PASS_WITH_WARNINGS`, `FAIL` or `NOT_EVALUATED`, the class's aggregation of its checks. **The per-check list itself is a presentation surface and is not published**; its numeric consequences are the outputs beside this one.
+    design_assessment_status: str | None
+
+    #: `getAssessmentBasis`, the class's own sentence.
+    design_assessment_basis: str | None
+
+    #: the rated flow over the BEP flow; `NaN` without a vendor BEP.
+    design_operating_flow_ratio: float | None
+
+    #: `POR`, `AOR`, `OUTSIDE_AOR` or `NOT_EVALUATED`, from the class's rated-point, preferred and allowable bands.
+    design_operating_region: str | None
+
+    #: the shutoff head the pressure basis uses: the vendor or purchaser value, else the rated head times `1.10`.
+    design_governing_shutoff_head: Q | None
+
+    #: the casing pressure the suction basis and governing shutoff head require.
+    design_required_casing_pressure: Q | None
+
+    #: the basis times the class's `1.50` hydrostatic factor; the basis is the furnished MAWP where one is stated.
+    design_preliminary_hydrostatic_test_pressure: Q | None
+
+    #: `shutoff / rated - 1`; `NaN` where no vendor or purchaser shutoff head exists.
+    design_head_rise_to_shutoff: float | None
+
+    #: the absorbed power times the margin, before the rating selection.
+    design_required_driver_power: Q | None
+
+    #: `purchaser_input` or `screening_estimate`.
+    design_pump_type_source: str | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

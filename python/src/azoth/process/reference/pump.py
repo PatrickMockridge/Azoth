@@ -90,7 +90,14 @@ def pump(
     api610_pump_type: str | None = None,
     seal_type: str | None = None,
     maximum_suction_pressure: Q | None = None,
+    furnished_casing_mawp: Q | None = None,
     shutoff_head: Q | None = None,
+    npsh_margin_factor: float | None = None,
+    minimum_npsh_margin: Q | None = None,
+    por_low_fraction: float | None = None,
+    por_high_fraction: float | None = None,
+    aor_low_fraction: float | None = None,
+    aor_high_fraction: float | None = None,
 ) -> PumpResult:
     """Raise a stream's pressure, adding the pump's work as enthalpy.
 
@@ -158,8 +165,18 @@ def pump(
         if maximum_suction_pressure is None
         else input_to_si(spec, "maximum_suction_pressure", maximum_suction_pressure)
     )
+    furnished_mawp_si = (
+        None
+        if furnished_casing_mawp is None
+        else input_to_si(spec, "furnished_casing_mawp", furnished_casing_mawp)
+    )
     shutoff_si = (
         None if shutoff_head is None else input_to_si(spec, "shutoff_head", shutoff_head)
+    )
+    min_npsh_margin_si = (
+        None
+        if minimum_npsh_margin is None
+        else input_to_si(spec, "minimum_npsh_margin", minimum_npsh_margin)
     )
 
     apply_checks(
@@ -191,7 +208,14 @@ def pump(
             ("api610_pump_type", api610_pump_type is not None),
             ("seal_type", seal_type is not None),
             ("maximum_suction_pressure", max_suction_si is not None),
+            ("furnished_casing_mawp", furnished_mawp_si is not None),
             ("shutoff_head", shutoff_si is not None),
+            ("npsh_margin_factor", npsh_margin_factor is not None),
+            ("minimum_npsh_margin", min_npsh_margin_si is not None),
+            ("por_low_fraction", por_low_fraction is not None),
+            ("por_high_fraction", por_high_fraction is not None),
+            ("aor_low_fraction", aor_low_fraction is not None),
+            ("aor_high_fraction", aor_high_fraction is not None),
         ):
             if stated:
                 raise InvalidInputError(
@@ -304,7 +328,14 @@ def pump(
             api610_pump_type,
             seal_type,
             max_suction_si,
+            furnished_mawp_si,
             shutoff_si,
+            1.20 if npsh_margin_factor is None else float(npsh_margin_factor),
+            1.0 if min_npsh_margin_si is None else min_npsh_margin_si,
+            0.70 if por_low_fraction is None else float(por_low_fraction),
+            1.20 if por_high_fraction is None else float(por_high_fraction),
+            0.65 if aor_low_fraction is None else float(aor_low_fraction),
+            1.25 if aor_high_fraction is None else float(aor_high_fraction),
         )
     )
     d = design
@@ -328,8 +359,14 @@ def pump(
         design_rated_head=None if d is None else from_si(d.rated_head, "m"),
         design_hydraulic_power=None if d is None else from_si(d.hydraulic_power, "W"),
         design_rated_speed=None if d is None else d.rated_speed,
-        design_specific_speed=None if d is None else d.specific_speed,
-        design_suction_specific_speed=None if d is None else d.suction_specific_speed,
+        design_specific_speed=(
+            None if d is None or not math.isfinite(d.specific_speed) else d.specific_speed
+        ),
+        design_suction_specific_speed=(
+            None
+            if d is None or not math.isfinite(d.suction_specific_speed)
+            else d.suction_specific_speed
+        ),
         design_number_of_stages=None if d is None else float(d.number_of_stages),
         design_bep_flow=(
             None if d is None or d.bep_flow is None else from_si(d.bep_flow / 3600.0, "m**3/h")
@@ -387,7 +424,35 @@ def pump(
         design_module_width=None if d is None else from_si(d.module_width, "m"),
         design_module_height=None if d is None else from_si(d.module_height, "m"),
         design_npsh_margin=None if d is None else from_si(d.npsh_margin, "m"),
-        design_npsh_margin_ratio=None if d is None else d.npsh_margin_ratio,
+        design_npsh_margin_ratio=(
+            None if d is None or not math.isfinite(d.npsh_margin_ratio) else d.npsh_margin_ratio
+        ),
+        design_assessment_status=None if d is None else d.assessment_status,
+        design_assessment_basis=None if d is None else d.assessment_basis,
+        design_operating_flow_ratio=(
+            None
+            if d is None or not math.isfinite(d.operating_flow_ratio)
+            else d.operating_flow_ratio
+        ),
+        design_operating_region=None if d is None else d.operating_region,
+        design_governing_shutoff_head=(
+            None if d is None else from_si(d.governing_shutoff_head, "m")
+        ),
+        design_required_casing_pressure=(
+            None if d is None else from_si(d.required_casing_pressure, "Pa")
+        ),
+        design_preliminary_hydrostatic_test_pressure=(
+            None if d is None else from_si(d.preliminary_hydrostatic_test_pressure, "Pa")
+        ),
+        design_head_rise_to_shutoff=(
+            None
+            if d is None or not math.isfinite(d.head_rise_to_shutoff)
+            else d.head_rise_to_shutoff
+        ),
+        design_required_driver_power=(
+            None if d is None else from_si(d.required_driver_power, "W")
+        ),
+        design_pump_type_source=None if d is None else d.pump_type_source,
         warnings=tuple(warnings),
     )
 
