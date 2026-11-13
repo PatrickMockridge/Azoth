@@ -1813,3 +1813,22 @@ captured `npsh_margin_factor` is `1.20`, the AOR `0.65/1.25` and the rated-point
 pump stores `innerDiameter`, `outerDiameter` and `tantanLength` in metres and
 `wallThickness` in millimetres. The pump's `zero_flow` block is evidence only - the model
 refuses `inlet_n = 0`.
+
+## The compressor's mechanical design
+
+`process_compressor_mechanical_design.tsv` is `CompressorMechanicalDesign.calcDesign` on
+the states its branches divide: two polytropic efficiencies, the three casing thresholds
+(vertical at `20` bara, horizontal at `80`, barrel at `150`), a NACE state, and two chart
+machines at `3` and `1` MSm3/day.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe compressor_mechanical \
+  > captures/process_compressor_mechanical_design.tsv
+```
+
+**The design reads the class's polytropic fluid head, not the chart's metre head.** The
+no-chart polytropic branch's head is `power / kg_per_s / 1000 * eta`; the chart branch's is
+the chart head converted back with `9.81`. The impeller screen is not clipped: the barrel
+row keeps the head-based candidate and prints the two issues, which is the branch's own
+report. `CompressorCasingDesignCalculator`'s checks are a separate audit and are not in
+the published surface.
