@@ -4063,18 +4063,18 @@ static ALL: &[ModelInputs] = &[
                 dimension: Some("pressure"),
             },
             ModelInput {
-                name: "shutoff_head",
-                kind: "quantity",
-                values: &[],
-                optional: true,
-                dimension: Some("length"),
-            },
-            ModelInput {
                 name: "furnished_casing_mawp",
                 kind: "quantity",
                 values: &[],
                 optional: true,
                 dimension: Some("pressure"),
+            },
+            ModelInput {
+                name: "shutoff_head",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("length"),
             },
             ModelInput {
                 name: "npsh_margin_factor",
