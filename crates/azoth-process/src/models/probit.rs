@@ -73,6 +73,18 @@ pub fn probit(
             "a probit needs a dose or a probit value, and neither was stated",
         ));
     }
+    if a.is_nan() || b.is_nan() || n.is_nan() {
+        return Err(AzothError::invalid_input(
+            "a",
+            "the probit constants must be numbers, and a NaN is not",
+        ));
+    }
+    if probit_value.is_some_and(f64::is_nan) {
+        return Err(AzothError::invalid_input(
+            "probit_value",
+            "a stated probit value must be a number, and a NaN is not",
+        ));
+    }
     let probit = dose.map(|value| probit_of(a, b, n, value));
     let evaluated = probit_value.or(probit).unwrap_or(f64::NAN);
     Ok(ProbitResult {

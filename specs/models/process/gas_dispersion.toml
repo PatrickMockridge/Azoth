@@ -183,6 +183,18 @@ min_inclusive = false
 severity = "error"
 rationale = "the plume divides by the wind speed, and the class's constructor refuses a non-positive one"
 [[valid_range]]
+quantity = "ambient_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; the air density divides by it"
+[[valid_range]]
+quantity = "atmospheric_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; the air density and the LFL conversion divide by it"
+[[valid_range]]
 quantity = "lower_flammable_limit"
 min = 0
 min_inclusive = false

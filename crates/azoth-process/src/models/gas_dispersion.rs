@@ -386,6 +386,8 @@ pub fn gas_dispersion(
         spec.input_checks(),
         |quantity| match quantity {
             "mass_release_rate" => Some(mass_release_rate.value),
+            "ambient_temperature" => Some(ambient_t.value),
+            "atmospheric_pressure" => Some(ambient_p.value),
             "wind_speed" => Some(wind.value),
             "lower_flammable_limit" => lower_flammable_limit,
             _ => None,

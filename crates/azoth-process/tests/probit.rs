@@ -71,4 +71,12 @@ fn the_non_positive_dose_is_refused() {
         probit(5.0, 0.0, 1.0, None, None).is_err(),
         "neither a dose nor a probit value is a state"
     );
+    assert!(
+        probit(5.0, 0.0, 1.0, None, Some(f64::NAN)).is_err(),
+        "a NaN probit value is not a probability argument"
+    );
+    assert!(
+        probit(f64::NAN, 0.0, 1.0, Some(1.0), None).is_err(),
+        "a NaN constant is refused"
+    );
 }

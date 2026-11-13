@@ -75,6 +75,8 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `mass_release_rate > 0` | raises | the class's analyze refuses a non-positive release rate at construction |
 | `wind_speed > 0` | raises | the plume divides by the wind speed, and the class's constructor refuses a non-positive one |
+| `ambient_temperature > 0` | raises | an absolute temperature; the air density divides by it |
+| `atmospheric_pressure > 0` | raises | an absolute pressure; the air density and the LFL conversion divide by it |
 | `lower_flammable_limit > 0` | raises | a stated zero or negative limit is ignored by the class; the port refuses what it would silently discard |
 
 ## Assumptions

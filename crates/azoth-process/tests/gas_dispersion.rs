@@ -395,4 +395,52 @@ fn the_guards_are_the_class_and_the_spec() {
         None,
     );
     assert!(model.is_err(), "an unknown model word is refused");
+
+    let cold = gas_dispersion(
+        &names(&["methane"]),
+        &[1.0],
+        kilograms_per_second(1.0),
+        Some(kelvins(0.0)),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    );
+    assert!(
+        cold.is_err(),
+        "a non-positive ambient temperature is refused"
+    );
+}
+
+#[test]
+fn a_stated_toxic_component_without_a_threshold_reports_no_endpoint() {
+    let result = gas_dispersion(
+        &names(&["methane", "H2S"]),
+        &[0.98, 0.02],
+        kilograms_per_second(2.0),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("H2S"),
+        None,
+    )
+    .expect("the state is valid");
+    assert_eq!(result.toxic_component, "");
+    assert!(result.toxic_threshold.is_none());
+    assert!(result.toxic_distance.is_none());
+    assert!(!result.has_toxic_endpoint);
 }

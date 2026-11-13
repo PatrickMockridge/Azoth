@@ -24123,6 +24123,36 @@ static GAS_DISPERSION_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
         check: RangeCheck {
+            quantity: "ambient_temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; the air density divides by it",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "atmospheric_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; the air density and the LFL conversion divide by it",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
             quantity: "lower_flammable_limit",
             min: Some(0.0),
             min_inclusive: false,

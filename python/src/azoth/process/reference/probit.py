@@ -77,6 +77,12 @@ def probit(
         raise InvalidInputError(
             "dose", "a probit needs a dose or a probit value, and neither was stated"
         )
+    if math.isnan(a) or math.isnan(b) or math.isnan(n):
+        raise InvalidInputError("a", "the probit constants must be numbers, and a NaN is not")
+    if stated is not None and math.isnan(stated):
+        raise InvalidInputError(
+            "probit_value", "a stated probit value must be a number, and a NaN is not"
+        )
 
     computed = None if duty is None else a + b * n * math.log(duty)
     evaluated = stated if stated is not None else computed

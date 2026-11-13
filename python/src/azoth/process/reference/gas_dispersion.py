@@ -279,6 +279,8 @@ def gas_dispersion(
         checks.on_input,
         {
             "mass_release_rate": rate,
+            "ambient_temperature": ambient_t,
+            "atmospheric_pressure": ambient_p,
             "wind_speed": wind,
             "lower_flammable_limit": lower_flammable_limit,
         }.get,
@@ -396,14 +398,17 @@ def gas_dispersion(
                 )
             )
 
-    toxic_name = "" if toxic_component is None else toxic_component.strip()
-    asked_toxic = toxic_name != "" and (toxic_threshold is not None and toxic_threshold > 0.0)
+    stated_toxic = "" if toxic_component is None else toxic_component
+    asked_toxic = stated_toxic.strip() != "" and (
+        toxic_threshold is not None and toxic_threshold > 0.0
+    )
     toxic_distance: float | None = None
     reported_threshold: float | None = None
+    reported_name = stated_toxic if asked_toxic else ""
     if asked_toxic:
         reported_threshold = float(toxic_threshold)  # type: ignore[arg-type]
         component_mole, component_mass, component_molar_mass = _component_data(
-            components, phase_z, molar_masses, toxic_name
+            components, phase_z, molar_masses, stated_toxic
         )
         if component_mole > 0.0 and component_mass > 0.0 and math.isfinite(component_molar_mass):
             if selected == "heavy_gas":
@@ -444,7 +449,7 @@ def gas_dispersion(
         distance_to_half_lfl=None if distance_half is None else from_si(distance_half, "m"),
         distance_to_lfl=None if distance_lfl is None else from_si(distance_lfl, "m"),
         flammable_cloud_volume=from_si(cloud_volume, "m**3"),
-        toxic_component=toxic_name,
+        toxic_component=reported_name,
         toxic_threshold=reported_threshold,
         toxic_distance=None if toxic_distance is None else from_si(toxic_distance, "m"),
         wind_speed=from_si(wind, "m/s"),
