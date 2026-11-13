@@ -108,6 +108,7 @@ def _pump(inputs: Mapping[str, Any]) -> dict[str, float]:
             inputs.get("api610_pump_type"),
             inputs.get("seal_type"),
             None if maximum_suction is None else float(maximum_suction),
+            None,
             None if shutoff is None else float(shutoff),
         )
         dump.update(

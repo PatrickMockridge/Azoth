@@ -227,7 +227,7 @@ def _shaft_sizing(rated_speed: float, power_kw: float) -> float:
         return 50.0
     torque_knm = power_kw * 60.0 / (2.0 * math.pi * rated_speed)
     torque_nm = torque_knm * 1000.0
-    diameter_m = (16.0 * torque_nm / (math.pi * SHAFT_ALLOWABLE_SHEAR_PA)) ** (1.0 / 3.0)
+    diameter_m = float((16.0 * torque_nm / (math.pi * SHAFT_ALLOWABLE_SHEAR_PA)) ** (1.0 / 3.0))
     diameter_mm = diameter_m * 1000.0 * 1.5
     return max(math.ceil(diameter_mm / 5.0) * 5.0, 30.0)
 
