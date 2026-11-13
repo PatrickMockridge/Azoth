@@ -3665,7 +3665,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         spec_path: "specs/models/process/pump.toml",
         spec_sha256: "710818610b18a30dfc6a1e34d1539e1703c160f6702e2816fbabd1012fa60b33",
         python_path: "python/src/azoth/process/reference/pump.py",
-        python_sha256: "c6b86bc09e1daceeebf26fed6cc189e8f986712bcc4413367977bc641deae1c3",
+        python_sha256: "1db61a8f8cea134858b0fdacb254beea2d303005415473afbd35f524e325fcb8",
         rust_path: "crates/azoth-process/src/models/pump.rs",
         rust_sha256: "0a98fe791dc98d2004e0921a1b29effbb8a8f585d9a1b011e4dc1ce4fb09d857",
         source: "NeqSim process/equipment/pump/Pump.java and process/equipment/pump/PumpChart.java",
