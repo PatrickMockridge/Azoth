@@ -255,7 +255,7 @@ fn the_captured_mechanical_design_is_reproduced() {
     );
     close(
         result.design_bearing_span.expect("a span").value,
-        1.804_093_814_140_047_2,
+        1.804_093_814_140_047,
         0.05,
         "bearing span",
     );
@@ -272,7 +272,7 @@ fn the_captured_mechanical_design_is_reproduced() {
     assert_eq!(result.design_expander_seal_type.as_deref(), Some("Dry Gas"));
     close(
         result.design_weight_total.expect("a weight").value,
-        4003.596_731_763_368_6,
+        4_003.596_731_763_368_6,
         0.05,
         "total weight",
     );
