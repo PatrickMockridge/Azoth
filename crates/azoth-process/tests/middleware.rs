@@ -726,7 +726,9 @@ fn the_generated_input_table_is_the_models_own() {
     // `mechanical_design` and the pump's twelve: the flag, the API 610 type, the seal type,
     // the suction pressure, the furnished MAWP, the shutoff head, the NPSH factor, the
     // minimum NPSH margin and the four operating-region fractions - 739 + 13 = 752.
-    assert_eq!(walked, 752, "the inputs this test walked");
+    // **And the compressor's two** - `mechanical_design` and `max_stages_per_casing` -
+    // 752 + 2 = 754.
+    assert_eq!(walked, 754, "the inputs this test walked");
 }
 
 /// **The generated output table is the spec files' own, read a second time.**
