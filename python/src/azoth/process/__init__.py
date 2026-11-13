@@ -44,6 +44,7 @@ from azoth.core.result import (
     PackedColumnResult,
     PipeResult,
     PlugFlowReactorResult,
+    PoolFireResult,
     ProbitResult,
     PumpResult,
     RateBasedPackedColumnResult,
@@ -108,6 +109,7 @@ __all__ = [
     "packed_column",
     "pipe",
     "plug_flow_reactor",
+    "pool_fire",
     "probit",
     "pump",
     "rate_based_packed_column",
@@ -158,6 +160,7 @@ _SHORTCUT_DISTILLATION_COLUMN = "process.shortcut_distillation_column"
 _THROTTLING_VALVE = "process.throttling_valve"
 _GIBBS_REACTOR = "process.gibbs_reactor"
 _PLUG_FLOW_REACTOR = "process.plug_flow_reactor"
+_POOL_FIRE = "process.pool_fire"
 _PUMP = "process.pump"
 _SPLITTER = "process.splitter"
 _STIRRED_TANK_REACTOR = "process.stirred_tank_reactor"
@@ -961,6 +964,30 @@ def plug_flow_reactor(
         catalyst_molecular_diffusivity=catalyst_molecular_diffusivity,
         catalyst_effectiveness_enabled=catalyst_effectiveness_enabled,
         key_component=key_component,
+    )
+
+
+def pool_fire(
+    pool_diameter: Q,
+    burn_rate: Q,
+    air_density: float | None = None,
+    distance: Q | None = None,
+    target_flux: Q | None = None,
+) -> PoolFireResult:
+    """The pool-fire radiation at one distance, or the distance to a target flux.
+
+    Thomas's flame height, Mudan's smoke-corrected SEP and vertical-cylinder view factor.
+    **A target the fire cannot produce is absent**: the class answers its near bound,
+    ``R + 0.1``, where the flux is already below the target.
+
+    See :func:`azoth.process.reference.pool_fire`.
+    """
+    return resolve(_POOL_FIRE)(  # type: ignore[no-any-return]
+        pool_diameter=pool_diameter,
+        burn_rate=burn_rate,
+        air_density=air_density,
+        distance=distance,
+        target_flux=target_flux,
     )
 
 

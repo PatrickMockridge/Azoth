@@ -1340,6 +1340,39 @@ def _jet_fire(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dumped
 
 
+def _pool_fire(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.pool_fire`'s layers, from the reference's own arithmetic.
+
+    The capture's dead-parameter row is the same state under three values the class never
+    reads, so it has no case; the model declares only the diameter and the burn rate.
+    """
+    from azoth.core.units import quantity
+    from azoth.process.reference.pool_fire import pool_fire as pool_fire_model
+
+    air = inputs.get("air_density")
+    distance = inputs.get("distance")
+    target = inputs.get("target_flux")
+    result = pool_fire_model(
+        quantity(float(inputs["pool_diameter"]), "m"),
+        quantity(float(inputs["burn_rate"]), "kg/(m**2*s)"),
+        air_density=None if air is None else float(air),
+        distance=None if distance is None else quantity(float(distance), "m"),
+        target_flux=None if target is None else quantity(float(target), "W/m**2"),
+    )
+    dumped: dict[str, float] = {
+        "total_burn_rate_kg_s": result.total_burn_rate.to("kg/s").magnitude,
+        "flame_height_m": result.flame_height.to("m").magnitude,
+        "surface_emissive_power_w_m2": result.surface_emissive_power.to("W/m**2").magnitude,
+    }
+    if result.view_factor is not None:
+        dumped["view_factor"] = result.view_factor
+    if result.incident_heat_flux is not None:
+        dumped["incident_heat_flux_w_m2"] = result.incident_heat_flux.to("W/m**2").magnitude
+    if result.distance_to_flux is not None:
+        dumped["distance_to_flux_m"] = result.distance_to_flux.to("m").magnitude
+    return dumped
+
+
 def _probit(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.probit`'s layers, from the reference's own arithmetic.
 
@@ -1708,6 +1741,7 @@ DUMPERS: dict[str, Dumper] = {
     "process.gaussian_plume": _gaussian_plume,
     "process.gas_dispersion": _gas_dispersion,
     "process.jet_fire": _jet_fire,
+    "process.pool_fire": _pool_fire,
     "process.probit": _probit,
     "process.rate_based_packed_column": _rate_based_packed_column,
     "process.absorption_column": _absorption_column,
@@ -2307,6 +2341,51 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_jet_fire.tsv",
         block=7,
         identified_by=("#label", "jet_fire_small_target"),
+    ),
+    # The pool fire's six reachable states; the 12.5 kW/m2 target that exceeds the fire's
+    # near-field flux, the 1 MW/m2 target, the zero target and the dead-parameter state are
+    # uncased.
+    LayerCase(
+        model="process.pool_fire",
+        case="test_state_at_the_near_bound",
+        capture="process_pool_fire.tsv",
+        block=0,
+        identified_by=("#label", "pool_fire_test_5m1"),
+    ),
+    LayerCase(
+        model="process.pool_fire",
+        case="test_state_at_ten_metres",
+        capture="process_pool_fire.tsv",
+        block=1,
+        identified_by=("#label", "pool_fire_test_10m"),
+    ),
+    LayerCase(
+        model="process.pool_fire",
+        case="test_state_at_twenty_metres",
+        capture="process_pool_fire.tsv",
+        block=2,
+        identified_by=("#label", "pool_fire_test_20m"),
+    ),
+    LayerCase(
+        model="process.pool_fire",
+        case="test_state_at_fifty_metres",
+        capture="process_pool_fire.tsv",
+        block=3,
+        identified_by=("#label", "pool_fire_test_50m"),
+    ),
+    LayerCase(
+        model="process.pool_fire",
+        case="distance_to_ten_kw",
+        capture="process_pool_fire.tsv",
+        block=5,
+        identified_by=("#label", "pool_fire_distance_10000"),
+    ),
+    LayerCase(
+        model="process.pool_fire",
+        case="zero_distance",
+        capture="process_pool_fire.tsv",
+        block=6,
+        identified_by=("#label", "pool_fire_zero_distance"),
     ),
     # The probit's nine factory and stated-probit rows; the non-positive-dose guard is
     # uncased because the port refuses it.
@@ -3328,6 +3407,9 @@ UNCASED_ROWS: dict[str, int] = {
     # The jet fire's three: the zero-humidity `NaN`, the infinite zero-distance flux and the
     # zero-target refusal, each the measurement its guard rests on.
     "process_jet_fire.tsv": 3,
+    # The pool fire's four: the two unreachable targets the class answers with its near
+    # bound, the zero-target far bound, and the dead-parameter state.
+    "process_pool_fire.tsv": 4,
     # The probit's one: the non-positive-dose guard, whose `-Infinity` is the measurement
     # the refusal rests on.
     "process_probit.tsv": 1,

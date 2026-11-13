@@ -19021,6 +19021,82 @@ impl From<&azoth_process::models::plug_flow_reactor::PlugFlowReactorResult>
         }
     }
 }
+/// Result of `process.pool_fire`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PoolFireResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPoolFireResult {
+    /// `m'' pi D^2 / 4`, the mass the pool burns per second.
+    #[pyo3(get)]
+    pub total_burn_rate: PyQty,
+    /// Thomas's flame height above the pool.
+    #[pyo3(get)]
+    pub flame_height: PyQty,
+    /// Mudan's smoke-corrected SEP, a function of the diameter alone.
+    #[pyo3(get)]
+    pub surface_emissive_power: PyQty,
+    /// Mudan's vertical-cylinder view factor at `distance`. Present only with `distance`.
+    #[pyo3(get)]
+    pub view_factor: Option<f64>,
+    /// `SEP` times the view factor at `distance`. Present only with `distance`.
+    #[pyo3(get)]
+    pub incident_heat_flux: Option<PyQty>,
+    /// the distance at which the flux falls to `target_flux`. **Absent when the flux at `R + 0.1` is already below the target**, where the class answers that near bound.
+    #[pyo3(get)]
+    pub distance_to_flux: Option<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPoolFireResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PoolFireResult(total_burn_rate={:?}, flame_height={:?}, surface_emissive_power={:?}, view_factor={:?}, incident_heat_flux={:?}, distance_to_flux={:?}, {} warning(s))",
+            self.total_burn_rate,
+            self.flame_height,
+            self.surface_emissive_power,
+            self.view_factor,
+            self.incident_heat_flux,
+            self.distance_to_flux,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::pool_fire::PoolFireResult> for PyPoolFireResult {
+    fn from(r: &azoth_process::models::pool_fire::PoolFireResult) -> Self {
+        Self {
+            total_burn_rate: PyQty {
+                magnitude_si: r.total_burn_rate.value,
+                unit: "kg/s".to_string(),
+            },
+            flame_height: PyQty {
+                magnitude_si: r.flame_height.value,
+                unit: "m".to_string(),
+            },
+            surface_emissive_power: PyQty {
+                magnitude_si: r.surface_emissive_power.value,
+                unit: "W/m**2".to_string(),
+            },
+            view_factor: r.view_factor,
+            incident_heat_flux: r.incident_heat_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/m**2".to_string(),
+            }),
+            distance_to_flux: r.distance_to_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.probit`, transported.
 #[pyclass(
     frozen,

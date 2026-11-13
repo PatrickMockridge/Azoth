@@ -6386,6 +6386,31 @@ pub fn packed_column(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Pool fire radiation.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (pool_diameter, burn_rate, air_density, distance, target_flux))]
+#[pyo3(text_signature = "(pool_diameter, burn_rate, air_density, distance, target_flux)")]
+pub fn pool_fire(
+    py: Python<'_>,
+    pool_diameter: f64,
+    burn_rate: f64,
+    air_density: Option<f64>,
+    distance: Option<f64>,
+    target_flux: Option<f64>,
+) -> PyResult<crate::transport_gen::PyPoolFireResult> {
+    azoth_process::models::pool_fire::pool_fire(
+        meters(pool_diameter),
+        kilograms_per_square_meter_second(burn_rate),
+        air_density,
+        distance.map(meters),
+        target_flux.map(watts_per_square_meter),
+    )
+    .map(|r| crate::transport_gen::PyPoolFireResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Probit dose-response.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

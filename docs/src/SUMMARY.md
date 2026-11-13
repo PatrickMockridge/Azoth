@@ -258,6 +258,7 @@
   - [Packed column](./process/packed_column.md)
   - [Pipe](./process/pipe.md)
   - [Plug-flow reactor](./process/plug_flow_reactor.md)
+  - [Pool fire radiation](./process/pool_fire.md)
   - [Probit dose-response](./process/probit.md)
   - [Pump](./process/pump.md)
   - [Rate-based packed column](./process/rate_based_packed_column.md)

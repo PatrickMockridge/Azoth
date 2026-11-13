@@ -26,6 +26,7 @@
 //!   - specs/models/process/packed_column.toml
 //!   - specs/models/process/pipe.toml
 //!   - specs/models/process/plug_flow_reactor.toml
+//!   - specs/models/process/pool_fire.toml
 //!   - specs/models/process/probit.toml
 //!   - specs/models/process/pump.toml
 //!   - specs/models/process/rate_based_packed_column.toml

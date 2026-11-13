@@ -77,6 +77,16 @@ not an equation, and both implementations read it from here.
 | `inside_one_metre` | mass_flow = 2.0, heat_of_combustion = 50000000.0, radiative_fraction = 0.2, relative_humidity = 0.5, distance = 0.5 | total_radiative_power = 20000000.0, transmissivity = 0.7684866970414382, incident_heat_flux = 4892338.261380348 |
 | `small_target_reaches_the_cap` | mass_flow = 2.0, heat_of_combustion = 50000000.0, radiative_fraction = 0.2, target_flux = 10.0 | total_radiative_power = 20000000.0, distance_to_flux = 214.477057488732 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 7 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - API STD 521 (2021). Pressure-relieving and Depressuring Systems, section 4.6, radiation.

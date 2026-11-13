@@ -7636,6 +7636,34 @@ class PlugFlowReactorResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PoolFireResult(_HasWarnings):
+    """Result of ``process.pool_fire``."""
+
+    CALC_ID: ClassVar[str] = "process.pool_fire"
+
+    #: `m'' pi D^2 / 4`, the mass the pool burns per second.
+    total_burn_rate: Q
+
+    #: Thomas's flame height above the pool.
+    flame_height: Q
+
+    #: Mudan's smoke-corrected SEP, a function of the diameter alone.
+    surface_emissive_power: Q
+
+    #: Mudan's vertical-cylinder view factor at `distance`. Present only with `distance`.
+    view_factor: float | None
+
+    #: `SEP` times the view factor at `distance`. Present only with `distance`.
+    incident_heat_flux: Q | None
+
+    #: the distance at which the flux falls to `target_flux`. **Absent when the flux at `R + 0.1` is already below the target**, where the class answers that near bound.
+    distance_to_flux: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ProbitResult(_HasWarnings):
     """Result of ``process.probit``."""
 

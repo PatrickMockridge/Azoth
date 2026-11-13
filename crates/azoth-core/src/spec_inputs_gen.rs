@@ -247,6 +247,7 @@
 //!   - specs/models/process/packed_column.toml
 //!   - specs/models/process/pipe.toml
 //!   - specs/models/process/plug_flow_reactor.toml
+//!   - specs/models/process/pool_fire.toml
 //!   - specs/models/process/probit.toml
 //!   - specs/models/process/pump.toml
 //!   - specs/models/process/rate_based_packed_column.toml
@@ -3779,6 +3780,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "catalyst_molecular_diffusivity",
         "diffusion_coefficient",
     ),
+    ("process.pool_fire", "pool_diameter", "length"),
+    ("process.pool_fire", "burn_rate", "mass_flux"),
+    ("process.pool_fire", "air_density", "mass_density"),
+    ("process.pool_fire", "distance", "length"),
+    ("process.pool_fire", "target_flux", "heat_flux_density"),
     ("process.probit", "a", "dimensionless"),
     ("process.probit", "b", "dimensionless"),
     ("process.probit", "n", "dimensionless"),

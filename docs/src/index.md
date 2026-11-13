@@ -351,6 +351,7 @@ Five sections, and the difference between them is the point:
 - [`process.packed_column`](./process/packed_column.md) — Packed column
 - [`process.pipe`](./process/pipe.md) — Pipe
 - [`process.plug_flow_reactor`](./process/plug_flow_reactor.md) — Plug-flow reactor
+- [`process.pool_fire`](./process/pool_fire.md) — Pool fire radiation
 - [`process.probit`](./process/probit.md) — Probit dose-response
 - [`process.pump`](./process/pump.md) — Pump
 - [`process.rate_based_packed_column`](./process/rate_based_packed_column.md) — Rate-based packed column

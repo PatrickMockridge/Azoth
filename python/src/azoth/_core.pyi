@@ -3500,6 +3500,16 @@ class PlugFlowReactorResult:
     warnings: list[Warning]
 
 @final
+class PoolFireResult:
+    total_burn_rate: Qty
+    flame_height: Qty
+    surface_emissive_power: Qty
+    view_factor: float | None
+    incident_heat_flux: Qty | None
+    distance_to_flux: Qty | None
+    warnings: list[Warning]
+
+@final
 class ProbitResult:
     probit: float | None
     probability: float
@@ -6821,6 +6831,13 @@ def plug_flow_reactor(
     catalyst_effectiveness_enabled: bool | None = None,
     key_component: str | None = None,
 ) -> PlugFlowReactorResult: ...
+def pool_fire(
+    pool_diameter: float,
+    burn_rate: float,
+    air_density: float | None = None,
+    distance: float | None = None,
+    target_flux: float | None = None,
+) -> PoolFireResult: ...
 def probit(
     a: float,
     b: float,

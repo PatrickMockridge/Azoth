@@ -36,6 +36,7 @@ use crate::models::mixer::MixerResult;
 use crate::models::packed_column::PackedColumnResult;
 use crate::models::pipe::PipeResult;
 use crate::models::plug_flow_reactor::PlugFlowReactorResult;
+use crate::models::pool_fire::PoolFireResult;
 use crate::models::probit::ProbitResult;
 use crate::models::pump::PumpResult;
 use crate::models::rate_based_packed_column::RateBasedPackedColumnResult;
@@ -955,6 +956,23 @@ impl CalcResult for PlugFlowReactorResult {
         "reaction_rate_profile",
         "molar_flow_profile",
         "residence_time",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for PoolFireResult {
+    const CALC_ID: &'static str = "process.pool_fire";
+    const FIELDS: &'static [&'static str] = &[
+        "total_burn_rate",
+        "flame_height",
+        "surface_emissive_power",
+        "view_factor",
+        "incident_heat_flux",
+        "distance_to_flux",
         "warnings",
     ];
 

@@ -194,6 +194,7 @@ from azoth.core.result import (
     PitzerPhaseResult,
     PitzerScaleActivityResult,
     PlugFlowReactorResult,
+    PoolFireResult,
     Pr78KappaResult,
     PrAlphaAbResult,
     PrCpaPhaseResult,
@@ -525,6 +526,7 @@ __all__ = [
     "pitzer_phase",
     "pitzer_scale_activity",
     "plug_flow_reactor",
+    "pool_fire",
     "pr78_kappa",
     "pr_alpha_ab",
     "pr_cpa_phase",
@@ -6928,6 +6930,27 @@ def plug_flow_reactor(components: list[str], feed_n: Q, feed_z: list[float], fee
         reaction_rate_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.reaction_rate_profile),
         molar_flow_profile=tuple(tuple(from_si(v.magnitude_si, v.unit) for v in row) for row in result.molar_flow_profile),
         residence_time=from_si(result.residence_time.magnitude_si, result.residence_time.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pool_fire(pool_diameter: Q, burn_rate: Q, air_density: float | None=None, distance: Q | None=None, target_flux: Q | None=None) -> PoolFireResult:
+    """``process.pool_fire``, computed in Rust."""
+    spec = _models_gen.model("process.pool_fire")
+    result = _core.pool_fire(
+        input_to_si(spec, "pool_diameter", pool_diameter),
+        input_to_si(spec, "burn_rate", burn_rate),
+        None if air_density is None else _si(spec, "air_density", air_density),
+        None if distance is None else input_to_si(spec, "distance", distance),
+        None if target_flux is None else input_to_si(spec, "target_flux", target_flux),
+    )
+    return PoolFireResult(
+        total_burn_rate=from_si(result.total_burn_rate.magnitude_si, result.total_burn_rate.unit),
+        flame_height=from_si(result.flame_height.magnitude_si, result.flame_height.unit),
+        surface_emissive_power=from_si(result.surface_emissive_power.magnitude_si, result.surface_emissive_power.unit),
+        view_factor=result.view_factor,
+        incident_heat_flux=None if result.incident_heat_flux is None else from_si(result.incident_heat_flux.magnitude_si, result.incident_heat_flux.unit),
+        distance_to_flux=None if result.distance_to_flux is None else from_si(result.distance_to_flux.magnitude_si, result.distance_to_flux.unit),
         warnings=_warnings(result.warnings),
     )
 

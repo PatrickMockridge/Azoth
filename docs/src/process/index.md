@@ -38,6 +38,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`process.packed_column`](./packed_column.md) | `sequential_substitution_sweeps` | NeqSim process/equipment/distillation/PackedColumn.java |
 | [`process.pipe`](./pipe.md) | `direct composition` | NeqSim process/equipment/pipeline/AdiabaticPipe.java |
 | [`process.plug_flow_reactor`](./plug_flow_reactor.md) | `direct composition` | NeqSim process/equipment/reactor/PlugFlowReactor.java |
+| [`process.pool_fire`](./pool_fire.md) | `api521_mudan_pool_fire` | NeqSim process/safety/fire/PoolFireModel.java |
 | [`process.probit`](./probit.md) | `closed_form_probit` | NeqSim process/safety/dispersion/ProbitModel.java |
 | [`process.pump`](./pump.md) | `direct composition` | NeqSim process/equipment/pump/Pump.java and process/equipment/pump/PumpChart.java |
 | [`process.rate_based_packed_column`](./rate_based_packed_column.md) | `counter_current_fixed_point_profile` | NeqSim process/equipment/distillation/RateBasedPackedColumn.java |
