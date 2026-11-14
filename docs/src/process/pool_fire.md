@@ -59,8 +59,8 @@ not an equation, and both implementations read it from here.
 - **the pool is circular and steady**: `m_dot = m'' pi D^2 / 4` over the stated diameter and mass-burning rate.
 - **the flame height is Thomas's no-wind correlation**: `H = D 42 (m'' / (rho_a sqrt(g D)))^0.61`, with `g = 9.81` m/s2.
 - **the surface emissive power is Mudan's smoke-corrected correlation**: `140000 exp(-0.12 D) + 20000 (1 - exp(-0.12 D))` W/m2. It is a function of the diameter alone.
-- **the class's constructor also takes the heat of combustion, the liquid density and a radiative fraction, and the arithmetic reads none of them.** The port declares only the diameter and the burn rate, and states the other three here rather than inventing an effect they do not have.
-- **the view factor is Mudan's vertical cylinder at a ground-level receiver**: `s = max(d, R + 0.001)/R`, `A = (h^2 + s^2 + 1)/(2s)`, `F = (atan(h / sqrt(s^2 - 1)) - (A - (s^2 + 1)/(2s)) / sqrt(A^2 - 1)) / pi`, clamped to `[0, 1]`, with `h = H/R`. A distance inside the pool is evaluated at `R + 0.001`.
+- **the constructor also takes the heat of combustion, the liquid density and a radiative fraction, and the arithmetic reads none of them.** The port declares only the diameter and the burn rate.
+- **the view factor is Mudan's vertical cylinder at a ground receiver**: `s = max(d, R + 0.001)/R`, `A = (h^2 + s^2 + 1)/(2s)`, `F = (atan(h / sqrt(s^2 - 1)) - (A - (s^2 + 1)/(2s)) / sqrt(A^2 - 1)) / pi`, clamped to `[0, 1]`, with `h = H/R`. Inside the pool it is evaluated at `R + 0.001`.
 - **the inverse is 60 halvings between `R + 0.1` and 1000 m, with no early break.**
 - **a target the fire cannot produce is absent, not a distance.** The class returns its near bound, `R + 0.1`, when the flux there is below the target; the port publishes no `distance_to_flux`. A non-positive target is refused: the class answers 1000 m for zero.
 - **the air density is the class's setter**, 1.2 kg/m3 when absent; a non-positive value is refused.

@@ -2472,7 +2472,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "calc_id": 'process.bleve',
         "name": 'BLEVE fireball radiation',
         "spec": {'path': 'specs/models/process/bleve.toml', 'sha256': '52a393332d453a33cd1615e300f618f24ca47dc0d52e3cb96c5e8e12d4bfbb87'},
-        "code": [{'path': 'python/src/azoth/process/reference/bleve.py', 'sha256': '39d9651e1314569f2572f5beca1b7cbc7d87bd2bd6d265462350bc1183a80b00'}, {'path': 'crates/azoth-process/src/models/bleve.rs', 'sha256': 'e9a3c21963c0ed7ed1794eed9ae110705f0482d202ec421b8dc51f7295447635'}],
+        "code": [{'path': 'python/src/azoth/process/reference/bleve.py', 'sha256': 'f5ab4605527c3490d2efabc1f7d7fa6ee216fae6ed4e02d5c23bddbf419203ac'}, {'path': 'crates/azoth-process/src/models/bleve.rs', 'sha256': 'f28297e01c032609d0a33f47e8fd3cb8eb59526072e160e85ee4563097a53b1a'}],
         "source": 'NeqSim process/safety/fire/BLEVECalculator.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
@@ -2735,7 +2735,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.pool_fire': {
         "calc_id": 'process.pool_fire',
         "name": 'Pool fire radiation',
-        "spec": {'path': 'specs/models/process/pool_fire.toml', 'sha256': '4698286d593d79b1e656a32a9b763cb40e70d142460165e2e5e5bf939f5c8c7b'},
+        "spec": {'path': 'specs/models/process/pool_fire.toml', 'sha256': '96d9af7b8770bb25ec6821b0599f7593296c73be02cc8212c7815b96244acf09'},
         "code": [{'path': 'python/src/azoth/process/reference/pool_fire.py', 'sha256': '041fcc9a17b414993d51604eb3fea44488e8f6e6cdcb76b8132fb4e0cbce11ee'}, {'path': 'crates/azoth-process/src/models/pool_fire.rs', 'sha256': '330282bc4874c25cd2a395daf1775ee1677c1e103965641dcd386f037f78d1cd'}],
         "source": 'NeqSim process/safety/fire/PoolFireModel.java',
         "verification": 'partially_verified',

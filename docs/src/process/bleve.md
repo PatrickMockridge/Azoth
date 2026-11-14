@@ -77,6 +77,16 @@ not an equation, and both implementations read it from here.
 | `distance_to_twelve_point_five_kw` | fuel_mass = 1000.0, heat_of_combustion = 46000000.0, radiative_fraction = 0.3, target_flux = 12500.0 | fireball_diameter = 58.0, fireball_duration = 4.5, surface_emissive_power = 290175.4808651283, distance_to_flux = 86.9917978858796 |
 | `small_target_contour` | fuel_mass = 1000.0, heat_of_combustion = 46000000.0, radiative_fraction = 0.3, target_flux = 10.0 | fireball_diameter = 58.0, fireball_duration = 4.5, surface_emissive_power = 290175.4808651283, distance_to_flux = 1305.5034136141694 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 5 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - CCPS (2010). Guidelines for Vapor Cloud Explosion, Pressure Vessel Burst, BLEVE and Flash Fire Hazards, 2nd Ed.
