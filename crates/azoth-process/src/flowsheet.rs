@@ -316,9 +316,9 @@ pub struct Flowsheet {
     /// number, a range and a SIL are what a P&ID states, and the simulation states none of
     /// them. They live in the document because a P&ID is one artifact and the exchange needs
     /// the control layer beside the process layer, not in a second file keyed by tag.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub instruments: Vec<Instrument>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub signals: Vec<Signal>,
     /// Where an editor draws each node, where one has been placed.
     ///
