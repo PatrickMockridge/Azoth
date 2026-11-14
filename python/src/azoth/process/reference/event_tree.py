@@ -57,7 +57,7 @@ def event_tree(
             "a non-finite frequency is not a number this calculation publishes",
         )
 
-    rows = input_records_to_si(spec, "branches", branches)
+    rows: list[dict[str, Any]] = input_records_to_si(spec, "branches", branches)
     cap = int(spec["algorithm"]["max_iterations"])
     if len(rows) > cap:
         raise InvalidInputError(

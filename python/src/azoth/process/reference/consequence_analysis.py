@@ -142,7 +142,7 @@ def _evaluate_row(
         fraction = _required(index, kind, row, "radiative_fraction")
         exposure = _required(index, kind, row, "exposure_seconds")
         humidity = row.get("relative_humidity")
-        result = jet_fire_model(
+        jet_result = jet_fire_model(
             quantity(mass, "kg/s"),
             heat,
             fraction,
@@ -151,8 +151,8 @@ def _evaluate_row(
         )
         flux = (
             0.0
-            if result.incident_heat_flux is None
-            else result.incident_heat_flux.to("W/m**2").magnitude
+            if jet_result.incident_heat_flux is None
+            else jet_result.incident_heat_flux.to("W/m**2").magnitude
         )
         dose = exposure * math.pow(flux, 4.0 / 3.0) / 1.0e4
     elif kind == "pool_fire":
@@ -160,7 +160,7 @@ def _evaluate_row(
         burn = _required(index, kind, row, "burn_rate")
         exposure = _required(index, kind, row, "exposure_seconds")
         air = row.get("air_density")
-        result = pool_fire_model(
+        pool_result = pool_fire_model(
             quantity(diameter, "m"),
             quantity(burn, "kg/(m**2*s)"),
             air_density=None if air is None else float(air),
@@ -168,8 +168,8 @@ def _evaluate_row(
         )
         flux = (
             0.0
-            if result.incident_heat_flux is None
-            else result.incident_heat_flux.to("W/m**2").magnitude
+            if pool_result.incident_heat_flux is None
+            else pool_result.incident_heat_flux.to("W/m**2").magnitude
         )
         dose = exposure * math.pow(flux, 4.0 / 3.0) / 1.0e4
     elif kind == "vce":
@@ -177,14 +177,18 @@ def _evaluate_row(
         heat = _required(index, kind, row, "heat_of_combustion")
         strength = _required(index, kind, row, "strength_class")
         ambient = row.get("ambient_pressure")
-        result = vce_model(
+        vce_result = vce_model(
             quantity(mass, "kg"),
             heat,
             strength,
             ambient_pressure=None if ambient is None else quantity(float(ambient), "Pa"),
             distance=quantity(receiver_distance, "m"),
         )
-        dose = 0.0 if result.overpressure is None else result.overpressure.to("Pa").magnitude
+        dose = (
+            0.0
+            if vce_result.overpressure is None
+            else vce_result.overpressure.to("Pa").magnitude
+        )
     else:
         emission = _required(index, kind, row, "emission_rate")
         stack = _required(index, kind, row, "effective_stack_height")
@@ -268,7 +272,7 @@ def consequence_analysis(
     _require_finite("release_frequency_per_year", frequency)
     _require_finite("receiver_distance", distance)
 
-    rows = input_records_to_si(spec, "outcomes", outcomes)
+    rows: list[dict[str, Any]] = input_records_to_si(spec, "outcomes", outcomes)
     results = []
     for index, row in enumerate(rows):
         label, kind, outcome_frequency, probability = _evaluate_row(index, row, frequency, distance)

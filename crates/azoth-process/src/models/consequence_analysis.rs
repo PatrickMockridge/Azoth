@@ -363,7 +363,14 @@ pub fn consequence_analysis(
                     * 1.0e6;
                 ppm * exposure.value / 60.0
             }
-            _ => unreachable!("the four types are checked above"),
+            _ => {
+                return Err(AzothError::invalid_input(
+                    format!("outcomes[{index}].outcome_type"),
+                    format!(
+                        "an outcome type is one of the class's four branches, and {kind:?} is not"
+                    ),
+                ));
+            }
         };
 
         let frequency = release_frequency_per_year * row.conditional_probability;

@@ -1459,7 +1459,7 @@ def _consequence_analysis(inputs: Mapping[str, Any]) -> dict[str, float]:
             else:
                 converted[name] = quantity(float(value), str(declaration["unit"]))
         prepared.append(converted)
-    rows = input_records_to_si(spec, "outcomes", prepared)
+    rows: list[dict[str, Any]] = input_records_to_si(spec, "outcomes", prepared)
     release = float(inputs["release_frequency_per_year"])
     distance = float(inputs["receiver_distance"])
     dumped: dict[str, float] = {"outcome_count": float(len(rows))}
