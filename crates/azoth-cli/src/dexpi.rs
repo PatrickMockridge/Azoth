@@ -63,6 +63,7 @@ pub fn export(args: &DexpiExportArgs) -> Result<Outcome, String> {
                 azoth_extensions: args.with_azoth_extensions,
                 topology_only: args.topology_only,
                 allow_unconverged: args.allow_unconverged,
+                drawing: args.with_drawing,
             };
             match export_process(&flowsheet, &palette, &options) {
                 Ok(report) => {
@@ -89,6 +90,7 @@ pub fn export(args: &DexpiExportArgs) -> Result<Outcome, String> {
                 allow_lossy: args.allow_lossy_mappings,
                 overrides,
                 azoth_extensions: args.with_azoth_extensions,
+                drawing: args.with_drawing,
             };
             match export_plant(&flowsheet, &palette, &options) {
                 Ok(report) => {
@@ -139,7 +141,7 @@ pub fn import(args: &DexpiImportArgs) -> Result<Outcome, String> {
                     strict: args.strict,
                 },
             ) {
-                Ok(report) => write_plant_import(&report, args),
+                Ok(report) => write_plant_import(report, args),
                 Err(diagnostics) => Ok(failure(&diagnostics, args.json)),
             },
             other => Err(format!(
@@ -176,7 +178,7 @@ pub fn import(args: &DexpiImportArgs) -> Result<Outcome, String> {
                 strict: args.strict,
             },
         ) {
-            Ok(report) => write_import(&report, args),
+            Ok(report) => write_import(report, args),
             Err(diagnostics) => Ok(failure(&diagnostics, args.json)),
         },
         Profile::Plant => match import_plant(
@@ -186,7 +188,7 @@ pub fn import(args: &DexpiImportArgs) -> Result<Outcome, String> {
                 strict: args.strict,
             },
         ) {
-            Ok(report) => write_plant_import(&report, args),
+            Ok(report) => write_plant_import(report, args),
             Err(diagnostics) => Ok(failure(&diagnostics, args.json)),
         },
     }
@@ -205,33 +207,39 @@ fn failure(diagnostics: &[DexpiDiagnostic], json: bool) -> Outcome {
     Outcome { ok: false, text }
 }
 
-fn write_import(report: &ImportReport, args: &DexpiImportArgs) -> Result<Outcome, String> {
+fn write_import(mut report: ImportReport, args: &DexpiImportArgs) -> Result<Outcome, String> {
+    if args.no_layout {
+        report.flowsheet.layout = None;
+    }
     let toml = report
         .flowsheet
         .to_toml()
         .map_err(|error| format!("the flowsheet could not be written: {error}"))?;
     write_file(&args.out, &toml)?;
     let text = if args.json {
-        render_import_json(report, &args.out)
+        render_import_json(&report, &args.out)
     } else {
-        render_import(report, &args.out)
+        render_import(&report, &args.out)
     };
     Ok(Outcome { ok: true, text })
 }
 
 fn write_plant_import(
-    report: &PlantImportReport,
+    mut report: PlantImportReport,
     args: &DexpiImportArgs,
 ) -> Result<Outcome, String> {
+    if args.no_layout {
+        report.flowsheet.layout = None;
+    }
     let toml = report
         .flowsheet
         .to_toml()
         .map_err(|error| format!("the flowsheet could not be written: {error}"))?;
     write_file(&args.out, &toml)?;
     let text = if args.json {
-        render_plant_import_json(report, &args.out)
+        render_plant_import_json(&report, &args.out)
     } else {
-        render_plant_import(report, &args.out)
+        render_plant_import(&report, &args.out)
     };
     Ok(Outcome { ok: true, text })
 }
@@ -344,6 +352,12 @@ fn render_export(report: &ExportReport, out: &Path) -> String {
         }
     );
     text.push_str("  semantic rules: pass\n");
+    if report.diagram_groups > 0 {
+        text.push_str(&format!(
+            "  drawing: {} groups, {} primitives\n",
+            report.diagram_groups, report.diagram_primitives
+        ));
+    }
     text.push_str(&format!("  approval: {}\n", report.approval_status));
     text.push_str(&format!(
         "  named-CAE round trip: {}\n",
@@ -361,6 +375,8 @@ fn render_export_json(report: &ExportReport, out: &Path) -> String {
         "out": out.display().to_string(),
         "steps": report.steps,
         "streams": report.streams,
+        "diagram_groups": report.diagram_groups,
+        "diagram_primitives": report.diagram_primitives,
         "converged": report.converged,
         "semantic_valid": report.semantic_valid,
         "approval_status": report.approval_status,
@@ -382,6 +398,12 @@ fn render_import(report: &ImportReport, out: &Path) -> String {
     text.push_str(
         "  this is a scaffold: feeds carry no composition and no step carries parameters\n",
     );
+    if report.layout_positions > 0 {
+        text.push_str(&format!(
+            "  layout: {} position(s) read from the drawing\n",
+            report.layout_positions
+        ));
+    }
     for diagnostic in &report.diagnostics {
         text.push_str(&render_diagnostic(diagnostic));
         text.push('\n');
@@ -397,6 +419,12 @@ fn render_plant_export(report: &PlantExportReport, out: &Path) -> String {
         report.segments
     );
     text.push_str("  semantic rules: pass\n");
+    if report.diagram_groups > 0 {
+        text.push_str(&format!(
+            "  drawing: {} groups, {} primitives\n",
+            report.diagram_groups, report.diagram_primitives
+        ));
+    }
     text.push_str(&format!("  approval: {}\n", report.approval_status));
     text.push_str(&format!(
         "  named-CAE round trip: {}\n",
@@ -414,6 +442,8 @@ fn render_plant_export_json(report: &PlantExportReport, out: &Path) -> String {
         "out": out.display().to_string(),
         "items": report.items,
         "segments": report.segments,
+        "diagram_groups": report.diagram_groups,
+        "diagram_primitives": report.diagram_primitives,
         "semantic_valid": report.semantic_valid,
         "approval_status": report.approval_status,
         "cae_round_trip": report.cae_round_trip,
@@ -434,6 +464,12 @@ fn render_plant_import(report: &PlantImportReport, out: &Path) -> String {
     text.push_str(
         "  this is a scaffold: feeds carry no composition and no item carries parameters\n",
     );
+    if report.layout_positions > 0 {
+        text.push_str(&format!(
+            "  layout: {} position(s) read from the drawing\n",
+            report.layout_positions
+        ));
+    }
     for diagnostic in &report.diagnostics {
         text.push_str(&render_diagnostic(diagnostic));
         text.push('\n');
@@ -445,6 +481,7 @@ fn render_plant_import_json(report: &PlantImportReport, out: &Path) -> String {
     let value = serde_json::json!({
         "out": out.display().to_string(),
         "flowsheet": report.flowsheet,
+        "layout_positions": report.layout_positions,
         "diagnostics": report.diagnostics,
     });
     serde_json::to_string_pretty(&value).unwrap_or_default()
@@ -454,6 +491,7 @@ fn render_import_json(report: &ImportReport, out: &Path) -> String {
     let value = serde_json::json!({
         "out": out.display().to_string(),
         "flowsheet": report.flowsheet,
+        "layout_positions": report.layout_positions,
         "diagnostics": report.diagnostics,
     });
     serde_json::to_string_pretty(&value).unwrap_or_default()

@@ -42,6 +42,7 @@ def export_process(
     with_azoth_extensions: bool = False,
     topology_only: bool = False,
     allow_unconverged: bool = False,
+    drawing: bool = False,
     maps: dict[str, str] | None = None,
 ) -> tuple[str, dict[str, Any]]:
     """Write a flowsheet as a DEXPI 2.0 Process exchange.
@@ -57,20 +58,25 @@ def export_process(
         with_azoth_extensions,
         topology_only,
         allow_unconverged,
+        drawing,
         maps,
     )
     return xml, _report(report)
 
 
 def import_process(
-    xml: str, palette_dir: str = "specs/unit_ops", *, strict: bool = False
+    xml: str,
+    palette_dir: str = "specs/unit_ops",
+    *,
+    strict: bool = False,
+    layout: bool = True,
 ) -> tuple[str, dict[str, Any]]:
     """Read a DEXPI 2.0 Process exchange as a flowsheet scaffold.
 
     Returns the flowsheet TOML and its report. A refused import raises `ValueError` whose message
     is the report JSON.
     """
-    toml, report = _core.dexpi_import(xml, palette_dir, strict)
+    toml, report = _core.dexpi_import(xml, palette_dir, strict, layout)
     return toml, _report(report)
 
 
@@ -80,6 +86,7 @@ def export_plant(
     *,
     allow_lossy_mappings: bool = False,
     with_azoth_extensions: bool = False,
+    drawing: bool = False,
     maps: dict[str, str] | None = None,
 ) -> tuple[str, dict[str, Any]]:
     """Write a flowsheet as a DEXPI 2.0 Plant exchange - a P&ID.
@@ -87,24 +94,32 @@ def export_plant(
     Returns the XML and its report. A refusal raises `ValueError` whose message is the report.
     """
     xml, report = _core.dexpi_export_plant(
-        flowsheet, palette_dir, allow_lossy_mappings, with_azoth_extensions, maps
+        flowsheet, palette_dir, allow_lossy_mappings, with_azoth_extensions, drawing, maps
     )
     return xml, _report(report)
 
 
 def import_plant(
-    xml: str, palette_dir: str = "specs/unit_ops", *, strict: bool = False
+    xml: str,
+    palette_dir: str = "specs/unit_ops",
+    *,
+    strict: bool = False,
+    layout: bool = True,
 ) -> tuple[str, dict[str, Any]]:
     """Read a DEXPI 2.0 Plant exchange as a flowsheet scaffold."""
-    toml, report = _core.dexpi_import_plant(xml, palette_dir, strict)
+    toml, report = _core.dexpi_import_plant(xml, palette_dir, strict, layout)
     return toml, _report(report)
 
 
 def import_proteus(
-    xml: str, palette_dir: str = "specs/unit_ops", *, strict: bool = False
+    xml: str,
+    palette_dir: str = "specs/unit_ops",
+    *,
+    strict: bool = False,
+    layout: bool = True,
 ) -> tuple[str, dict[str, Any]]:
     """Read a Proteus `PlantModel` - DEXPI 1.x's XML - as a flowsheet scaffold."""
-    toml, report = _core.dexpi_import_proteus(xml, palette_dir, strict)
+    toml, report = _core.dexpi_import_proteus(xml, palette_dir, strict, layout)
     return toml, _report(report)
 
 

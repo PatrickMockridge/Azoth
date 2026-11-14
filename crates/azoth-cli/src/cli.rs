@@ -114,6 +114,10 @@ pub struct DexpiExportArgs {
     #[arg(long)]
     pub topology_only: bool,
 
+    /// Draw the exchange as generic `Core/Diagram` primitives: a PFD or simplified P&ID.
+    #[arg(long)]
+    pub with_drawing: bool,
+
     /// Publish an unconverged run's numbers rather than refusing.
     #[arg(long)]
     pub allow_unconverged: bool,
@@ -145,6 +149,10 @@ pub struct DexpiImportArgs {
     /// Refuse every warning, not only an error.
     #[arg(long)]
     pub strict: bool,
+
+    /// Drop the positions a drawing carries; the editor then uses its deterministic layering.
+    #[arg(long)]
+    pub no_layout: bool,
 
     /// Print the report as JSON rather than as a report.
     #[arg(long)]

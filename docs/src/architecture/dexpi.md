@@ -142,7 +142,9 @@ DEXPI carries no composition, so mass flow cannot become molar flow and a feed r
 be written. An import therefore produces a **scaffold**: instances, connections, products and
 recycles, every feed left undeclared, and no unit carrying parameters. `azoth check` on the
 result reports `unknown_feed` and `missing_parameter` for each site; that verdict is the
-statement that the document is not runnable yet.
+statement that the document is not runnable yet. When the file carries graphics, the import
+also writes the drawing's arrangement into `[layout]`, so the scaffold opens where the drawing
+drew it; `--no-layout` drops it.
 
 Port names are the lossy part, because a DEXPI material port is connection-scoped rather
 than named the way a palette port is. The extension properties recover them exactly. Without
@@ -162,7 +164,10 @@ Three layers, three different claims:
 
 1. **Semantic rules** (`azoth dexpi validate`): the exact imports, unique ids, resolvable
    references, the reviewed type set, one Process model with at least one step and stream,
-   port/stream reciprocity, and finite unit-qualified quantities.
+   port/stream reciprocity, and finite unit-qualified quantities. Graphics are held to their
+   structure, not the unit profile: a `Core/Diagram.*` or `Plant/Diagram.*` class this port
+   does not render is a warning, and a graphical `Represents` that points at nothing is a
+   warning rather than a broken reference.
 2. **The official schema** (`--xsd`): `xmllint --nonet --noout --schema` against the pinned
    XSD. A missing `xmllint` is a failure, never a silent pass — a check that did not run must
    not be reported as one that did.
@@ -229,6 +234,37 @@ trip setpoints, instrumentation graphics, and instrumentation in the **Proteus**
 the projection does not carry it yet. The SIL and voting recorded are exchange evidence, not
 SIL verification.
 
+## Graphics
+
+A drawing is **presentation, not process state**. DEXPI 2.0 carries it in the `Core/Diagram`
+package: a `Diagram` holding `RepresentationGroup`s, each linked by `Represents` to the
+conceptual object it draws, each holding a `Static` of `PolyLine`/`Polygon`/`Text` primitives.
+`crates/azoth-dexpi/src/drawing/` reads that model onto a neutral `Drawing` - groups of
+polylines, polygons, ellipses, arcs and text, with the representing object's id - and writes
+the reviewed subset back.
+
+The reader is wider than the writer. It resolves `ShapeCatalogue`/`ShapeUsage`, nested groups,
+labels, connector lines and node positions, and understands the geometry a vendor file
+carries. A drawing class or a shape it cannot render is a `DEXPI_GRAPHICS_UNSUPPORTED`
+warning, never a refusal: a CAD file's furniture is not a defect in its process model. Both
+`Core/Diagram.*` and `Plant/Diagram.*` are the graphics namespace for that reason, and an
+unresolved `Represents` is a warning rather than a broken reference.
+
+**Coordinates.** DEXPI and CAD are y-up; the editor's `[layout]` is y-down. The reader flips
+once (around the diagram's `MaxY`, or the Proteus `Extent/Max`) and normalises to a zero
+origin; the writer flips back. The arrangement therefore survives an exchange **up to a
+translation**, which is what a layout view claims. An import with graphics places each
+instance, feed and product in `[layout]`; `--no-layout` drops it.
+
+**What an export draws.** `--with-drawing` adds a PFD to a Process export and a simplified
+P&ID to a Plant export. A unit is a box with its name and palette or Plant class, a stream is
+an orthogonal polyline with an arrow and its label (and, when a run wrote it, kg/h), a
+boundary is a pentagon, a recycle is a diamond with dashed streams, and a P&ID adds line
+numbers, instrument bubbles and dashed signals. This is deliberately **not a symbol library**:
+the primitives are generic Core shapes, and a CAD tool replaces them with its own ISO symbols.
+Routing is one orthogonal step, with a return lane for a backward edge; `DexpiLayoutEngine`
+and its 3,572 lines are not ported, and the drawing places what the canvas places.
+
 ## Proteus
 
 DEXPI 1.x serialises the same drawing as Proteus XML: a `PlantModel` root, `ComponentClass`
@@ -237,11 +273,14 @@ attributes instead of `type` references, `Connection` elements with `FromID`/`To
 DEXPI 2.0 Plant metamodel, and the Plant importer reads the result - so the topology rules,
 port assignment, line numbers and recycle inference are shared rather than written twice.
 
-What the projection drops is named: positions and presentation are graphics; inline fittings
-this port has no unit for (a reducer, a blind flange, a strainer, an orifice plate) are
-joined through with an `inline_component_skipped` diagnostic; connections ending at a
-component with no azoth unit are counted in a `topology_gap` note. A valve in a segment is
-kept as `unit_ops.throttling_valve`.
+The projection itself carries no graphics; the same parsed tree feeds
+`drawing/proteus.rs`, which reads the `ShapeCatalogue`, each component's `Position`/`Scale`,
+the segment `CenterLine`s and the `Label` texts into the neutral drawing. Its groups use the
+projected object ids, so a drawn item and the imported instance share one key. Inline fittings
+this port has no unit for (a reducer, a blind flange, a strainer, an orifice plate) are joined
+through in the topology with an `inline_component_skipped` diagnostic and kept as
+drawing-only groups; connections ending at a component with no azoth unit are counted in a
+`topology_gap` note. A valve in a segment is kept as `unit_ops.throttling_valve`.
 
 The official DEXPI 1.3 sample is not vendored - its redistribution terms are not clear enough
 to copy - so the tests use a fixture written for them, and the sample is read by hand during
@@ -256,10 +295,13 @@ and splitting the segment's pipe around its nodes is the step that closes it; un
 The instrumentation layer exchanges; the pieces named in that section are not ported yet.
 The middleware's command model has no instrument edit - a document's instruments are written
 by hand or by an exchange, not by a form - and the editor's graph does not draw them.
-Graphics need the diagram representation groups; `DexpiLayoutEngine` (3,572 lines) is the
-class that would close automatic routing, and it is not ported. Multi-area `ProcessModel`
-packages, the conformance-assessment machinery and the revision-impact reports are NeqSim's
+
+Graphics exchange as generic primitives, but **the viewer is not a CAD editor**: it does not
+move, create or author a symbol, and it does not route a stream. `DexpiLayoutEngine` (3,572
+lines) is the class that would close automatic routing, and it is not ported; an export
+places the canvas's arrangement with one orthogonal step. Multi-area `ProcessModel` packages,
+the conformance-assessment machinery and the revision-impact reports are NeqSim's
 `Dexpi20ProcessModelPackage*` family and are not ported either: one file, one exchange, until
 a caller needs a package.
 
-*Enforcement: check — `tools/gen_dexpi_mapping.py --check` refuses a palette entry with no mapping row or a row naming no entry, and the vendored schema's SHA-256; `crates/azoth-dexpi/tests/` holds the mapping, units, refusals, round trips and the two NeqSim oracles (Process and Plant); `crates/azoth-dexpi/tests/process_export.rs` and `plant.rs` validate every export with `xmllint` against the pinned XSD and fail rather than skip when the tool is absent; `python/tests/test_dexpi.py` loads both exports with pyDEXPI in strict mode; and `docs/claims.toml` holds the mapping counts to the tables.*
+*Enforcement: check — `tools/gen_dexpi_mapping.py --check` refuses a palette entry with no mapping row or a row naming no entry, and the vendored schema's SHA-256; `crates/azoth-dexpi/tests/` holds the mapping, units, refusals, round trips, the drawing read/write and placement tests, and the two NeqSim oracles (Process and Plant); `crates/azoth-dexpi/tests/drawing_export.rs` draws a PFD and a P&ID from the shipped fixtures and checks every `Represents`; `process_export.rs` and `plant.rs` validate every export with `xmllint` against the pinned XSD and fail rather than skip when the tool is absent; `python/tests/test_dexpi.py` loads the process, plant and drawing exports with pyDEXPI in strict mode; and `docs/claims.toml` holds the mapping counts to the tables.*

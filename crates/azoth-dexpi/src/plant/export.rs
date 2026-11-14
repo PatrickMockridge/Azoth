@@ -11,9 +11,13 @@
 use std::collections::BTreeMap;
 
 use azoth_process::flowsheet::{Flowsheet, Instrument, Signal, split_endpoint};
+use azoth_process::middleware::graph;
 use azoth_process::{Severity, UnitOpSpec, validate};
 
 use crate::diagnostic::DexpiDiagnostic;
+use crate::drawing::Drawing;
+use crate::drawing::export::{self as drawing_export, DiagramEdge, DiagramNode, NodeShape};
+use crate::drawing::native::write_diagram;
 use crate::extensions;
 use crate::ids::{Mint, model_name};
 use crate::mapping::Disposition;
@@ -39,6 +43,8 @@ pub struct PlantExportOptions {
     pub overrides: BTreeMap<String, String>,
     /// Write the `Azoth/…` properties that make an azoth round trip exact.
     pub azoth_extensions: bool,
+    /// Draw the P&ID as generic `Core/Diagram` primitives.
+    pub drawing: bool,
 }
 
 /// A completed Plant export.
@@ -50,6 +56,10 @@ pub struct PlantExportReport {
     pub items: usize,
     /// Piping segments written.
     pub segments: usize,
+    /// Drawing groups written; zero when the export carried no drawing.
+    pub diagram_groups: usize,
+    /// Drawing primitives written.
+    pub diagram_primitives: usize,
     pub approval_status: &'static str,
     pub cae_round_trip: &'static str,
     pub semantic_valid: bool,
@@ -102,6 +112,7 @@ pub fn export_plant(
         return Err(validation.diagnostics);
     }
 
+    let (diagram_groups, diagram_primitives) = crate::drawing::native::counts(&document);
     let xml = write(&document).map_err(|error| {
         vec![DexpiDiagnostic::error(
             "write_failed",
@@ -115,6 +126,8 @@ pub fn export_plant(
         diagnostics,
         items,
         segments,
+        diagram_groups,
+        diagram_primitives,
         approval_status: APPROVAL_STATUS,
         cae_round_trip: CAE_ROUND_TRIP_STATUS,
         semantic_valid: true,
@@ -208,6 +221,18 @@ struct Builder<'a> {
     /// The instance id to the equipment object id, so an instrument can reference the item it
     /// watches or commands.
     item_ids: BTreeMap<String, String>,
+    /// The endpoint name to the off-page connector object id, for the drawing.
+    boundaries: BTreeMap<String, String>,
+    /// One entry per segment, for the drawing.
+    segment_edges: Vec<SegmentEdge>,
+}
+
+struct SegmentEdge {
+    object_id: String,
+    from: String,
+    to: String,
+    line: String,
+    recycle: bool,
 }
 
 struct Edge {
@@ -234,6 +259,8 @@ impl<'a> Builder<'a> {
             mint: Mint::new(),
             port_node: BTreeMap::new(),
             item_ids: BTreeMap::new(),
+            boundaries: BTreeMap::new(),
+            segment_edges: Vec::new(),
         }
     }
 
@@ -407,12 +434,20 @@ impl<'a> Builder<'a> {
                     segment.push(Child::Data(string_data(extensions::RECYCLE, recycle)));
                 }
             }
+            let object_id = format!("PipingNetworkSegment{number}");
             let object = Object {
-                id: Some(format!("PipingNetworkSegment{number}")),
+                id: Some(object_id.clone()),
                 name: None,
                 ty: "Plant/Piping.PipingNetworkSegment".to_string(),
                 children: segment,
             };
+            self.segment_edges.push(SegmentEdge {
+                object_id,
+                from: edge.from.clone(),
+                to: edge.to.clone(),
+                line: edge.line.clone(),
+                recycle: edge.recycle.is_some(),
+            });
             self.systems.entry(edge.line).or_default().push(object);
         }
     }
@@ -444,6 +479,8 @@ impl<'a> Builder<'a> {
         }
         self.connector_count += 1;
         let number = self.connector_count;
+        self.boundaries
+            .insert(endpoint.to_string(), format!("BoundaryConnector{number}"));
         let node = self.mint.next("BoundaryPipingNode");
         let item = Object {
             id: Some(format!("BoundaryConnector{number}")),
@@ -469,7 +506,127 @@ impl<'a> Builder<'a> {
         Some(Node::Boundary { node, item })
     }
 
-    fn finish(self) -> Document {
+    /// The P&ID: items, off-page connectors, segments, instruments and signals.
+    #[allow(clippy::cast_precision_loss)]
+    fn diagram(&self) -> Drawing {
+        let positions = graph::positions(self.flowsheet);
+        let mut nodes = Vec::new();
+        for instance in &self.flowsheet.instances {
+            let Some(object_id) = self.item_ids.get(&instance.id) else {
+                continue;
+            };
+            let detail = self
+                .items
+                .iter()
+                .find(|item| item.id.as_deref() == Some(object_id.as_str()))
+                .map(|item| item.ty.rsplit('.').next().unwrap_or(&item.ty).to_string());
+            let position = positions.get(&instance.id);
+            nodes.push(DiagramNode {
+                key: instance.id.clone(),
+                object_id: object_id.clone(),
+                label: instance.id.clone(),
+                detail,
+                shape: NodeShape::Unit,
+                x: position.map_or(0.0, |position| position.x),
+                y: position.map_or(0.0, |position| position.y),
+            });
+        }
+        for input in &self.flowsheet.inputs {
+            let Some(object_id) = self.boundaries.get(&input.name) else {
+                continue;
+            };
+            let position = positions.get(&input.name);
+            nodes.push(DiagramNode {
+                key: input.name.clone(),
+                object_id: object_id.clone(),
+                label: input.name.clone(),
+                detail: Some("feed".to_string()),
+                shape: NodeShape::Input,
+                x: position.map_or(0.0, |position| position.x),
+                y: position.map_or(0.0, |position| position.y),
+            });
+        }
+        for product in &self.flowsheet.products {
+            let Some(object_id) = self.boundaries.get(product) else {
+                continue;
+            };
+            let position = positions.get(product);
+            nodes.push(DiagramNode {
+                key: product.clone(),
+                object_id: object_id.clone(),
+                label: product.clone(),
+                detail: Some("product".to_string()),
+                shape: NodeShape::Output,
+                x: position.map_or(0.0, |position| position.x),
+                y: position.map_or(0.0, |position| position.y),
+            });
+        }
+
+        let max_y = positions
+            .values()
+            .map(|position| position.y)
+            .fold(0.0, f64::max);
+        let mut slots: BTreeMap<String, usize> = BTreeMap::new();
+        for (index, instrument) in self.flowsheet.instruments.iter().enumerate() {
+            let anchor = instrument
+                .measures
+                .as_deref()
+                .or(instrument.actuates.as_deref())
+                .map(|target| split_endpoint(target).map_or(target, |(instance, _, _)| instance));
+            let (x, y) = match anchor.and_then(|name| positions.get(name).map(|p| (name, p))) {
+                Some((name, position)) => {
+                    let slot = slots.entry(name.to_string()).or_insert(0);
+                    let offset = *slot;
+                    *slot += 1;
+                    (position.x + 168.0, position.y - 20.0 + 50.0 * offset as f64)
+                }
+                None => (0.0, max_y + 80.0 + 50.0 * index as f64),
+            };
+            nodes.push(DiagramNode {
+                key: format!("instrument:{}", instrument.id),
+                object_id: format!("Instrument{}", index + 1),
+                label: instrument.id.clone(),
+                detail: Some(instrument.function.clone()),
+                shape: NodeShape::Instrument,
+                x,
+                y,
+            });
+        }
+
+        let mut edges = Vec::new();
+        for segment in &self.segment_edges {
+            let label = (segment.line != DEFAULT_LINE).then(|| segment.line.clone());
+            edges.push(DiagramEdge {
+                object_id: segment.object_id.clone(),
+                source: diagram_key(&segment.from),
+                target: diagram_key(&segment.to),
+                label,
+                dashed: segment.recycle,
+            });
+        }
+        let mut signal_number = 0_usize;
+        for instrument in &self.flowsheet.instruments {
+            for signal in self
+                .flowsheet
+                .signals
+                .iter()
+                .filter(|signal| signal.from == instrument.id)
+            {
+                signal_number += 1;
+                edges.push(DiagramEdge {
+                    object_id: format!("Signal{signal_number}"),
+                    source: format!("instrument:{}", signal.from),
+                    target: format!("instrument:{}", signal.to),
+                    label: signal.kind.clone(),
+                    dashed: true,
+                });
+            }
+        }
+        drawing_export::build(&self.flowsheet.name, &nodes, &edges)
+    }
+
+    fn finish(mut self) -> Document {
+        let diagram = self.options.drawing.then(|| self.diagram());
         let mut plant_children = vec![Child::Components(Components {
             property: "TaggedPlantItems".to_string(),
             children: self.items.into_iter().map(ComponentChild::Object).collect(),
@@ -569,6 +726,13 @@ impl<'a> Builder<'a> {
             property: "ConceptualModel".to_string(),
             children: vec![ComponentChild::Object(plant_model)],
         }));
+        if let Some(drawing) = diagram {
+            let diagram = write_diagram(&drawing, "PlantModel1", &mut self.mint);
+            engineering_children.push(Child::Components(Components {
+                property: "Diagram".to_string(),
+                children: vec![ComponentChild::Object(diagram)],
+            }));
+        }
         let engineering_model = Object {
             id: None,
             name: None,
@@ -598,6 +762,13 @@ impl<'a> Builder<'a> {
 enum Node {
     Existing(String),
     Boundary { node: String, item: Object },
+}
+
+/// The drawing node an endpoint names: the instance, or the boundary name.
+fn diagram_key(endpoint: &str) -> String {
+    split_endpoint(endpoint)
+        .map_or(endpoint, |(instance, _, _)| instance)
+        .to_string()
 }
 
 fn string_data(property: &str, value: &str) -> Data {

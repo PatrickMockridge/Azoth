@@ -96,6 +96,39 @@ pub fn read_document(document: &Document) -> Option<DrawingReport> {
     })
 }
 
+/// The representation groups and primitives a document carries, for an export report.
+#[must_use]
+pub fn counts(document: &Document) -> (usize, usize) {
+    fn walk(object: &Object, groups: &mut usize, primitives: &mut usize) {
+        match object.ty.as_str() {
+            "Core/Diagram.RepresentationGroup" => *groups += 1,
+            "Core/Diagram.PolyLine"
+            | "Core/Diagram.Polygon"
+            | "Core/Diagram.Ellipse"
+            | "Core/Diagram.EllipseArc"
+            | "Core/Diagram.Text" => *primitives += 1,
+            _ => {}
+        }
+        for child in &object.children {
+            if let Child::Components(components) = child {
+                for nested in &components.children {
+                    if let ComponentChild::Object(nested) = nested {
+                        walk(nested, groups, primitives);
+                    }
+                }
+            }
+        }
+    }
+    let mut groups = 0;
+    let mut primitives = 0;
+    for child in &document.model.children {
+        if let Child::Object(object) = child {
+            walk(object, &mut groups, &mut primitives);
+        }
+    }
+    (groups, primitives)
+}
+
 /// Build a `Core/Diagram.Diagram` from a drawing.
 ///
 /// **This is the only drawing vocabulary azoth writes**: polylines, polygons and text. A

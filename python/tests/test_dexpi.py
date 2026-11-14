@@ -181,3 +181,35 @@ def test_a_dexpi_2_drawing_loads_strictly() -> None:
     )
     model = load_xml_string(fixture.read_text(), strict=True)
     assert model is not None
+
+
+def test_a_pfd_export_carries_a_drawing_and_places_it() -> None:
+    xml, report = dexpi.export_process(
+        DEMO,
+        PALETTE,
+        allow_lossy_mappings=True,
+        project_recycles=True,
+        with_azoth_extensions=True,
+        drawing=True,
+    )
+    assert report["diagram_groups"] > 0
+    assert report["diagram_primitives"] > 0
+    load_xml_string(xml, strict=True)
+    toml, imported = dexpi.import_process(xml, PALETTE)
+    assert imported["layout_positions"] > 0
+    assert "[layout.instances]" in toml
+
+
+def test_a_pid_export_carries_a_drawing_and_places_it() -> None:
+    xml, report = dexpi.export_plant(
+        PLANT_FIXTURE,
+        PALETTE,
+        allow_lossy_mappings=True,
+        with_azoth_extensions=True,
+        drawing=True,
+    )
+    assert report["diagram_groups"] > 0
+    load_xml_string(xml, strict=True)
+    toml, imported = dexpi.import_plant(xml, PALETTE)
+    assert imported["layout_positions"] > 0
+    assert "[layout.instances]" in toml

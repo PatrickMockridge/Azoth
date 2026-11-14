@@ -37,11 +37,23 @@ pub fn import_proteus(
     options: &PlantImportOptions,
 ) -> Result<PlantImportReport, Vec<DexpiDiagnostic>> {
     let mut diagnostics = Vec::new();
-    let document = project(xml, &mut diagnostics).map_err(|diagnostic| vec![diagnostic])?;
-    let mut report = import_plant_document(document, palette, options)?;
+    let projection = project(xml, &mut diagnostics).map_err(|diagnostic| vec![diagnostic])?;
+    let mut report = import_plant_document(projection.document, palette, options)?;
+    if let Some(drawing) = projection.drawing {
+        let positions =
+            crate::drawing::layout::apply(&mut report.flowsheet, &drawing, &report.bindings);
+        report.layout_positions = positions;
+        report.drawing = Some(drawing);
+    }
     diagnostics.extend(report.diagnostics);
     report.diagnostics = diagnostics;
     Ok(report)
+}
+
+/// The projected document and the drawing it was projected from.
+pub(crate) struct Projection {
+    pub(crate) document: Document,
+    pub(crate) drawing: Option<crate::drawing::Drawing>,
 }
 
 /// Whether a file is a Proteus `PlantModel` rather than a DEXPI 2.0 `Model`.
@@ -63,7 +75,10 @@ struct ProjectedNozzle {
 }
 
 /// Project a Proteus document into the DEXPI 2.0 Plant metamodel.
-fn project(xml: &str, diagnostics: &mut Vec<DexpiDiagnostic>) -> Result<Document, DexpiDiagnostic> {
+fn project(
+    xml: &str,
+    diagnostics: &mut Vec<DexpiDiagnostic>,
+) -> Result<Projection, DexpiDiagnostic> {
     let root = crate::reader::parse_tree(xml)?;
     if root.name != "PlantModel" {
         return Err(DexpiDiagnostic::error(
@@ -100,6 +115,7 @@ fn project(xml: &str, diagnostics: &mut Vec<DexpiDiagnostic>) -> Result<Document
     };
 
     let mut items: Vec<Item> = Vec::new();
+    let mut ids: BTreeMap<String, String> = BTreeMap::new();
     let mut item_by_element: BTreeMap<String, usize> = BTreeMap::new();
     let mut nozzle_owner: BTreeMap<String, usize> = BTreeMap::new();
 
@@ -113,6 +129,9 @@ fn project(xml: &str, diagnostics: &mut Vec<DexpiDiagnostic>) -> Result<Document
             if let Some(unit) = plant::for_class(class) {
                 if !element.name.starts_with("Nozzle") && element.name != "PipingComponent" {
                     let object_id = format!("Item{}", items.len() + 1);
+                    if let Some(source) = element.attribute("ID") {
+                        ids.insert(source, object_id.clone());
+                    }
                     let tag = tag_of(element)
                         .unwrap_or_else(|| element.attribute("ID").unwrap_or_default());
                     items.push(Item {
@@ -198,6 +217,9 @@ fn project(xml: &str, diagnostics: &mut Vec<DexpiDiagnostic>) -> Result<Document
             continue;
         }
         let object_id = format!("Item{}", items.len() + 1);
+        if let Some(source) = element.attribute("ID") {
+            ids.insert(source, object_id.clone());
+        }
         let tag = tag_of(element).unwrap_or_else(|| element.attribute("ID").unwrap_or_default());
         // **The nozzle names no palette port.** A Proteus connection point does not say which
         // side of a valve a stream enters; the importer's direction rule does, so the name is
@@ -221,7 +243,7 @@ fn project(xml: &str, diagnostics: &mut Vec<DexpiDiagnostic>) -> Result<Document
     }
 
     // **Boundaries.** Off-page connectors are the drawing's environment inlets and outlets.
-    let mut boundaries: Vec<(String, String, bool)> = Vec::new();
+    let mut boundaries: Vec<(String, String, String, bool)> = Vec::new();
     for element in &elements {
         let Some(class) = element.attribute("ComponentClass") else {
             continue;
@@ -236,7 +258,12 @@ fn project(xml: &str, diagnostics: &mut Vec<DexpiDiagnostic>) -> Result<Document
             continue;
         };
         let name = connector_name(element);
-        boundaries.push((node.clone(), name, inbound));
+        boundaries.push((
+            element.attribute("ID").unwrap_or_default(),
+            node.clone(),
+            name,
+            inbound,
+        ));
     }
 
     // **The segment graph.** Each `Connection` is an edge between two component nodes; a
@@ -247,7 +274,7 @@ fn project(xml: &str, diagnostics: &mut Vec<DexpiDiagnostic>) -> Result<Document
             terminal.insert(nozzle.node.clone());
         }
     }
-    for (node, _, _) in &boundaries {
+    for (_, node, _, _) in &boundaries {
         terminal.insert(node.clone());
     }
 
@@ -261,7 +288,7 @@ fn project(xml: &str, diagnostics: &mut Vec<DexpiDiagnostic>) -> Result<Document
     for id in nozzle_owner.keys() {
         component_terminal.insert(id.as_str());
     }
-    for (_, name, _) in &boundaries {
+    for (_, _, name, _) in &boundaries {
         component_terminal.insert(name.as_str());
     }
     for element in &elements {
@@ -484,7 +511,8 @@ fn project(xml: &str, diagnostics: &mut Vec<DexpiDiagnostic>) -> Result<Document
         let connectors: Vec<ComponentChild> = boundaries
             .iter()
             .enumerate()
-            .map(|(index, (node, name, inbound))| {
+            .map(|(index, (source, node, name, inbound))| {
+                ids.insert(source.clone(), format!("BoundaryConnector{}", index + 1));
                 ComponentChild::Object(Object {
                     id: Some(format!("BoundaryConnector{}", index + 1)),
                     name: None,
@@ -532,7 +560,7 @@ fn project(xml: &str, diagnostics: &mut Vec<DexpiDiagnostic>) -> Result<Document
         })],
     };
 
-    Ok(Document {
+    let document = Document {
         model: Model {
             name: "ProteusProjection".to_string(),
             uri: "urn:azoth:dexpi:2.0:plant:proteus-projection".to_string(),
@@ -548,7 +576,12 @@ fn project(xml: &str, diagnostics: &mut Vec<DexpiDiagnostic>) -> Result<Document
             ],
             children: vec![Child::Object(engineering_model)],
         },
-    })
+    };
+    let drawing = crate::drawing::proteus::extract(&root, &ids).map(|report| {
+        diagnostics.extend(report.diagnostics);
+        report.drawing
+    });
+    Ok(Projection { document, drawing })
 }
 
 fn collect<'a>(element: &'a RawElement, elements: &mut Vec<&'a RawElement>) {
