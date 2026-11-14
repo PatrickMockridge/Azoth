@@ -36,8 +36,9 @@ def _combustion_energy(mass: float, heat_of_combustion: float) -> float:
 
 
 def _scaled_distance(distance: float, energy: float, ambient_pressure: float) -> float:
-    """`d / cbrt(E / p0)`, the Sachs-scaled distance."""
-    return distance / math.cbrt(energy / ambient_pressure)
+    """`d / cbrt(E / p0)`, the Sachs-scaled distance; infinite at zero energy."""
+    scale = math.cbrt(energy / ambient_pressure)
+    return math.inf if scale == 0.0 else distance / scale
 
 
 def _dimensionless_overpressure(
