@@ -13,7 +13,7 @@ pub static PROCESS_UNITS: &[UnitMapping] = &[
         azoth_id: "unit_ops.absorption_column",
         disposition: Disposition::Lossy,
         dexpi_types: &["Process/Process.Distilling"],
-        note: "Distilling exchanges the column as one distillation step; the absorption service, the solvent loop's role and the tray count are not carried.",
+        note: "Distilling exchanges the column as one distillation step; the absorption service, the solvent loop's role and the tray count lie outside what a DEXPI Process step records.",
     },
     UnitMapping {
         azoth_id: "unit_ops.component_splitter",
@@ -37,7 +37,7 @@ pub static PROCESS_UNITS: &[UnitMapping] = &[
         azoth_id: "unit_ops.distillation_column",
         disposition: Disposition::Lossy,
         dexpi_types: &["Process/Process.Distilling"],
-        note: "The step type is the process function, not the model: stages, feed stage, reflux and the column's specifications are not carried by a DEXPI Process step.",
+        note: "The step type is the process function, not the model: stages, feed stage, reflux and the column's specifications lie outside what a DEXPI Process step records.",
     },
     UnitMapping {
         azoth_id: "unit_ops.ejector",
@@ -109,7 +109,7 @@ pub static PROCESS_UNITS: &[UnitMapping] = &[
         azoth_id: "unit_ops.packed_column",
         disposition: Disposition::Lossy,
         dexpi_types: &["Process/Process.Distilling"],
-        note: "The step type is the process function, not the model: packing, packed height and the rate-based formulation are not carried.",
+        note: "The step type is the process function, not the model: packing, packed height and the rate-based formulation lie outside what a DEXPI Process step records.",
     },
     UnitMapping {
         azoth_id: "unit_ops.pipe",
@@ -133,7 +133,7 @@ pub static PROCESS_UNITS: &[UnitMapping] = &[
         azoth_id: "unit_ops.rate_based_packed_column",
         disposition: Disposition::Lossy,
         dexpi_types: &["Process/Process.Distilling"],
-        note: "The step type is the process function, not the model: packing, the rate-based formulation and the segment model are not carried.",
+        note: "The step type is the process function, not the model: packing, the rate-based formulation and the segment model lie outside what a DEXPI Process step records.",
     },
     UnitMapping {
         azoth_id: "unit_ops.separator",
@@ -145,13 +145,13 @@ pub static PROCESS_UNITS: &[UnitMapping] = &[
         azoth_id: "unit_ops.shortcut_distillation_column",
         disposition: Disposition::Lossy,
         dexpi_types: &["Process/Process.Distilling"],
-        note: "The step type is the process function, not the model: the shortcut's Fenske-Underwood-Gilliland basis and its specifications are not carried.",
+        note: "The step type is the process function, not the model: the shortcut's Fenske-Underwood-Gilliland basis and its specifications lie outside what a DEXPI Process step records.",
     },
     UnitMapping {
         azoth_id: "unit_ops.simple_absorber",
         disposition: Disposition::Refused,
         dexpi_types: &[],
-        note: "This unit is UNRUNNABLE in this port (its chemistry is unported), so it cannot be exported as a calculated step.",
+        note: "This unit is UNRUNNABLE in this port (its chemistry is outside the port’s kernels), so it cannot be exported as a calculated step.",
     },
     UnitMapping {
         azoth_id: "unit_ops.splitter",
@@ -169,7 +169,7 @@ pub static PROCESS_UNITS: &[UnitMapping] = &[
         azoth_id: "unit_ops.stripping_column",
         disposition: Disposition::Lossy,
         dexpi_types: &["Process/Process.Distilling"],
-        note: "Distilling exchanges the column as one distillation step; the stripping service and the stage count are not carried.",
+        note: "Distilling exchanges the column as one distillation step; the stripping service and the stage count lie outside what a DEXPI Process step records.",
     },
     UnitMapping {
         azoth_id: "unit_ops.tank",
