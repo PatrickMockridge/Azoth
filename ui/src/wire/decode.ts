@@ -974,7 +974,7 @@ function coverage(value: unknown, path: string): ObjectCoverage {
     unit: nullable(raw.unit, `${path}.unit`, str),
     azoth: nullable(raw.azoth, `${path}.azoth`, str),
     status: oneOf<CoverageStatus>(raw.status, `${path}.status`, COVERAGE_STATUSES),
-    reason: str(raw.reason, `${path}.reason`),
+    explanation: str(raw.explanation, `${path}.explanation`),
     alternatives: list(raw.alternatives, `${path}.alternatives`, str),
     imported: bool(raw.imported, `${path}.imported`),
     exportable: bool(raw.exportable, `${path}.exportable`),

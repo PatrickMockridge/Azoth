@@ -133,7 +133,7 @@ function ObjectRow({
       <span className="dexpi-object-label">{object.label}</span>
       <span className={`dexpi-badge status-${object.status}`}>{statusLabel(object.status)}</span>
       {object.unit === null ? null : <span className="dexpi-unit">{object.unit}</span>}
-      <span className="dexpi-reason">{object.reason}</span>
+      <span className="dexpi-reason">{object.explanation}</span>
     </button>
   );
 }

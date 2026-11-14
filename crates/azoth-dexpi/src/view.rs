@@ -52,7 +52,7 @@ pub struct ObjectCoverage {
     pub unit: Option<String>,
     pub azoth: Option<String>,
     pub status: CoverageStatus,
-    pub reason: String,
+    pub explanation: String,
     pub alternatives: Vec<String>,
     pub imported: bool,
     pub exportable: bool,
@@ -120,7 +120,7 @@ struct Coverage {
     status: CoverageStatus,
     unit: Option<String>,
     alternatives: Vec<String>,
-    reason: String,
+    explanation: String,
     exportable: bool,
 }
 
@@ -402,7 +402,7 @@ fn walk(
                 unit: coverage.unit,
                 azoth,
                 status: coverage.status,
-                reason: coverage.reason,
+                explanation: coverage.explanation,
                 alternatives: coverage.alternatives,
                 imported: imported_ok,
                 exportable: coverage.exportable,
@@ -447,7 +447,7 @@ fn coverage_of(object: &Object) -> Option<Coverage> {
             status: CoverageStatus::Control,
             unit: None,
             alternatives: Vec::new(),
-            reason: "carried as control evidence, not simulated".to_string(),
+            explanation: "carried as control evidence, not simulated".to_string(),
             exportable: true,
         });
     }
@@ -476,7 +476,7 @@ fn process_step(object: &Object, ty: &str) -> Coverage {
             status: CoverageStatus::Unmapped,
             unit: None,
             alternatives: Vec::new(),
-            reason: format!("no reviewed azoth unit for `{ty}`"),
+            explanation: format!("no reviewed azoth unit for `{ty}`"),
             exportable: false,
         },
         [unit] => from_unit(unit, "one azoth unit maps to this type"),
@@ -486,7 +486,7 @@ fn process_step(object: &Object, ty: &str) -> Coverage {
                 status: CoverageStatus::Ambiguous,
                 unit: None,
                 alternatives: candidates.iter().map(|unit| (*unit).to_string()).collect(),
-                reason: format!(
+                explanation: format!(
                     "several azoth units share `{ty}`; the importer chooses `{chosen}`"
                 ),
                 exportable: true,
@@ -495,7 +495,7 @@ fn process_step(object: &Object, ty: &str) -> Coverage {
     }
 }
 
-fn from_unit(unit: &str, reason: &str) -> Coverage {
+fn from_unit(unit: &str, explanation: &str) -> Coverage {
     match mapping::for_azoth(unit) {
         Some(row) => Coverage {
             status: if row.disposition == mapping::Disposition::Lossy {
@@ -505,10 +505,10 @@ fn from_unit(unit: &str, reason: &str) -> Coverage {
             },
             unit: Some(unit.to_string()),
             alternatives: Vec::new(),
-            reason: if row.disposition == mapping::Disposition::Lossy {
+            explanation: if row.disposition == mapping::Disposition::Lossy {
                 format!("lossy: {}", row.note)
             } else {
-                reason.to_string()
+                explanation.to_string()
             },
             exportable: row.disposition != mapping::Disposition::Refused,
         },
@@ -516,7 +516,7 @@ fn from_unit(unit: &str, reason: &str) -> Coverage {
             status: CoverageStatus::Unmapped,
             unit: None,
             alternatives: Vec::new(),
-            reason: format!("`{unit}` has no row in the Process mapping"),
+            explanation: format!("`{unit}` has no row in the Process mapping"),
             exportable: false,
         },
     }
@@ -529,7 +529,7 @@ fn plant_item(ty: &str) -> Coverage {
             status: CoverageStatus::Unmapped,
             unit: None,
             alternatives: Vec::new(),
-            reason: format!("no reviewed azoth unit for `{class}`; kept as `dexpi.unmapped`"),
+            explanation: format!("no reviewed azoth unit for `{class}`; kept as `dexpi.unmapped`"),
             exportable: false,
         };
     };
@@ -538,11 +538,11 @@ fn plant_item(ty: &str) -> Coverage {
             status: CoverageStatus::Unmapped,
             unit: None,
             alternatives: Vec::new(),
-            reason: format!("`{unit}` has no row in the Plant mapping"),
+            explanation: format!("`{unit}` has no row in the Plant mapping"),
             exportable: false,
         };
     };
-    let (status, reason, exportable) = match row.write {
+    let (status, explanation, exportable) = match row.write {
         crate::mapping::Disposition::Lossy => {
             (CoverageStatus::Lossy, format!("lossy: {}", row.note), true)
         }
@@ -559,17 +559,17 @@ fn plant_item(ty: &str) -> Coverage {
         status,
         unit: Some(unit.to_string()),
         alternatives: Vec::new(),
-        reason,
+        explanation,
         exportable,
     }
 }
 
-fn topology(reason: &str) -> Coverage {
+fn topology(explanation: &str) -> Coverage {
     Coverage {
         status: CoverageStatus::Topology,
         unit: None,
         alternatives: Vec::new(),
-        reason: reason.to_string(),
+        explanation: explanation.to_string(),
         exportable: true,
     }
 }
@@ -585,7 +585,7 @@ fn drawing_only(group: &DrawingGroup) -> ObjectCoverage {
         unit: None,
         azoth: None,
         status: CoverageStatus::DrawingOnly,
-        reason: "graphics with no conceptual object behind them".to_string(),
+        explanation: "graphics with no conceptual object behind them".to_string(),
         alternatives: Vec::new(),
         imported: false,
         exportable: false,
@@ -670,7 +670,7 @@ mod tests {
             coverage_of(&object("Plant/ProcessEquipment.AirCoolingSystem")).expect("an item");
         assert_eq!(coverage.status, CoverageStatus::Lossy);
         assert_eq!(coverage.unit.as_deref(), Some("unit_ops.cooler"));
-        assert!(!coverage.reason.is_empty());
+        assert!(!coverage.explanation.is_empty());
     }
 
     #[test]

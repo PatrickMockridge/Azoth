@@ -626,7 +626,7 @@ export interface ObjectCoverage {
   unit: string | null;
   azoth: string | null;
   status: CoverageStatus;
-  reason: string;
+  explanation: string;
   alternatives: string[];
   imported: boolean;
   exportable: boolean;
