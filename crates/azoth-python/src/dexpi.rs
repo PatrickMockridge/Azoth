@@ -211,6 +211,25 @@ fn plant_report(
     Ok((toml, json.to_string()))
 }
 
+/// Read a drawing and report what it would become: coverage, layout and the scaffold.
+///
+/// Returns the view as JSON. A file whose process model is refused still returns a view, because
+/// the drawing and the diagnostics are the answer; only unreadable XML raises `ValueError`.
+#[pyfunction]
+#[pyo3(signature = (xml, palette_dir="specs/unit_ops"))]
+pub fn dexpi_view(xml: &str, palette_dir: &str) -> PyResult<String> {
+    let palette = load_palette(Path::new(palette_dir))
+        .map_err(|error| PyValueError::new_err(format!("palette: {error}")))?;
+    match azoth_dexpi::inspect(xml, &palette) {
+        Ok(view) => {
+            serde_json::to_string(&view).map_err(|error| PyValueError::new_err(error.to_string()))
+        }
+        Err(diagnostics) => Err(PyValueError::new_err(
+            serde_json::json!({ "diagnostics": diagnostics }).to_string(),
+        )),
+    }
+}
+
 /// Check a DEXPI 2.0 document against the semantic rules.
 ///
 /// Returns the report as JSON; a document with an error is still reported rather than raised,

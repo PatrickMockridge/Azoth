@@ -44,6 +44,20 @@ The committed fixtures in `test/fixtures/` are the library's output. Regenerate 
 the palette or a shipped flowsheet; `test/currency.test.ts` recomputes them from the built wasm
 and fails when they are stale.
 
+## The Drawing workspace
+
+The third workspace is a read-only DEXPI viewer. Import a DEXPI 2.0 or Proteus file and it
+draws the file's own geometry, lists every conceptual object's coverage — modelled, lossy,
+ambiguous, unmapped, topology, control, drawing-only — and states what the file would become.
+"Open as flowsheet" loads the scaffold into the editor; "Export PFD" / "Export P&ID" write the
+open simulation back out, and "Download SVG" saves the figure.
+
+It is **not a CAD editor**: no symbol is moved or authored, and the arrangement is carried by
+`[layout]`. The door is `ExchangeDoor` in `src/wire/session.ts`; the module implements it
+(`Exchange.inspect` / `Exchange.export_flowsheet`) and `azoth serve` offers the same calls at
+`POST /dexpi`. `test/fixtures/dexpi-view.json` is the CLI's `azoth dexpi view --json` output and
+`test/currency.test.ts` recomputes it from the built module.
+
 ## Appearance
 
 `data-layout` on `<html>` is `xp`, `mac` or `cyberpunk`; `data-theme` is `light`, `neutral` or

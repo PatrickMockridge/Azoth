@@ -427,6 +427,7 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
         " layout: bool = ...)",
         "tuple[str, str]",
     ),
+    ("dexpi_view(xml: str, palette_dir: str = ...)", "str"),
     ("dexpi_schema_sha256()", "str"),
     ("dexpi_format_double(value: float)", "str"),
 )

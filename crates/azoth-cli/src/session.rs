@@ -50,6 +50,12 @@ impl Session {
         })
     }
 
+    /// The palette this session was opened with, for a door that does not edit the document.
+    #[must_use]
+    pub fn palette(&self) -> &[UnitOpSpec] {
+        &self.palette
+    }
+
     /// The tools, which are `middleware::tools`'s own list and nothing else.
     #[must_use]
     pub fn tools(&self) -> Vec<tools::Tool> {

@@ -37,9 +37,10 @@
 
 import { describe, expect, it } from "vitest";
 
-import { decodeCatalogue, decodeEnvelope } from "../src/wire/decode";
+import { decodeCatalogue, decodeDexpiView, decodeEnvelope } from "../src/wire/decode";
 import brokenJson from "./fixtures/broken.json";
 import catalogueJson from "./fixtures/catalogue.json";
+import dexpiViewJson from "./fixtures/dexpi-view.json";
 import envelopeJson from "./fixtures/envelope.json";
 import { controlFor } from "../src/wire/field";
 
@@ -341,5 +342,42 @@ describe("the envelope", () => {
     expect(refused.diagnostics[0]?.section).toBe("instances");
     expect(refused.diagnostics[0]?.path).toBe("p1.ports.outlet");
     expect(refused.diagnostics[0]?.message).not.toBe("");
+  });
+});
+
+const dexpiView = decodeDexpiView({ ok: true, view: dexpiViewJson });
+
+describe("the DEXPI view", () => {
+  const view = dexpiView.view;
+
+  it("is a Proteus drawing with coverage and a scaffold", () => {
+    expect(dexpiView.ok).toBe(true);
+    if (view === undefined) {
+      throw new Error("the fixture is a view");
+    }
+    expect(view.format).toBe("proteus");
+    expect(view.profile).toBe("plant");
+    expect(view.drawing?.origin).toBe("file");
+    expect(view.drawing?.groups.length).toBeGreaterThan(0);
+    expect(view.counts.groups).toBe(view.drawing?.groups.length);
+    expect(view.counts.semantic).toBe(
+      view.counts.modelled +
+        view.counts.lossy +
+        view.counts.ambiguous +
+        view.counts.unmapped +
+        view.counts.topology +
+        view.counts.control,
+    );
+    expect(view.scaffold?.instances).toBeGreaterThan(0);
+    expect(view.objects.some((object) => object.status === "drawing_only")).toBe(true);
+  });
+
+  it("carries primitives the canvas knows", () => {
+    if (view?.drawing === null || view?.drawing === undefined) {
+      throw new Error("the fixture draws something");
+    }
+    const kinds = new Set(view.drawing.groups.flatMap((group) => group.primitives.map((p) => p.kind)));
+    expect(kinds.has("polyline")).toBe(true);
+    expect(kinds.has("text")).toBe(true);
   });
 });

@@ -25,6 +25,7 @@ __all__ = [
     "import_proteus",
     "schema_sha256",
     "validate",
+    "view",
 ]
 
 
@@ -121,6 +122,15 @@ def import_proteus(
     """Read a Proteus `PlantModel` - DEXPI 1.x's XML - as a flowsheet scaffold."""
     toml, report = _core.dexpi_import_proteus(xml, palette_dir, strict, layout)
     return toml, _report(report)
+
+
+def view(xml: str, palette_dir: str = "specs/unit_ops") -> dict[str, Any]:
+    """Read a drawing as a view: coverage, layout and the scaffold it would become.
+
+    A file whose process model is refused still has a view; the diagnostics say why the
+    scaffold is absent. Only unreadable XML raises `ValueError`.
+    """
+    return _report(_core.dexpi_view(xml, palette_dir))
 
 
 def validate(xml: str) -> dict[str, Any]:

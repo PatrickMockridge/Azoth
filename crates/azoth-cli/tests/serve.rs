@@ -501,3 +501,52 @@ fn the_calculation_book_is_a_second_route() {
     assert!((power - 3914.81468).abs() < 1e-6, "{power}");
     assert_eq!(calculated["book"]["sheets"][0]["stale"], false);
 }
+
+#[test]
+fn the_exchange_route_views_a_drawing_and_exports_the_document() {
+    let server = Server::start(&[]);
+    let drawing = std::fs::read_to_string(
+        root().join("crates/azoth-dexpi/tests/fixtures/proteus_simple.xml"),
+    )
+    .expect("the drawing fixture reads");
+
+    let (status, answer) = server.request_to(
+        "/dexpi",
+        "POST",
+        Some(&json!({ "view": drawing }).to_string()),
+        None,
+    );
+    assert_eq!(status, 200);
+    assert_eq!(answer["ok"], json!(true), "{answer}");
+    assert_eq!(answer["view"]["format"], json!("proteus"));
+    assert!(
+        answer["view"]["drawing"]["groups"]
+            .as_array()
+            .is_some_and(|groups| !groups.is_empty())
+    );
+
+    let demo =
+        std::fs::read_to_string(root().join("specs/flowsheets/demo.toml")).expect("the demo reads");
+    let (status, answer) = server.request_to(
+        "/dexpi",
+        "POST",
+        Some(
+            &json!({
+                "export": {
+                    "document": demo,
+                    "profile": "process",
+                    "options": {
+                        "allow_lossy": true,
+                        "project_recycles": true,
+                        "drawing": true
+                    }
+                }
+            })
+            .to_string(),
+        ),
+        None,
+    );
+    assert_eq!(status, 200);
+    assert_eq!(answer["ok"], json!(true), "{answer}");
+    assert!(answer["diagram_groups"].as_u64().is_some_and(|n| n > 0));
+}

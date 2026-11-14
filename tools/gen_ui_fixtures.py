@@ -47,6 +47,16 @@ CASES: tuple[tuple[str, list[str]], ...] = (
         ["edit", "--flowsheet", DEMO, "--command", SET_POSITION, "--run", "--json"],
     ),
     ("broken.json", ["edit", "--flowsheet", DEMO, "--command", REMOVE_HEATER, "--json"]),
+    (
+        "dexpi-view.json",
+        [
+            "dexpi",
+            "view",
+            "--input",
+            "crates/azoth-dexpi/tests/fixtures/proteus_simple.xml",
+            "--json",
+        ],
+    ),
 )
 
 #: The exit codes a capture may answer with and still have written its document.

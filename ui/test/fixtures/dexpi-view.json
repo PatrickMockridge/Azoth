@@ -1,0 +1,821 @@
+{
+  "format": "proteus",
+  "profile": "plant",
+  "model_name": "Proteus test drawing",
+  "model_uri": "urn:azoth:dexpi:1:proteus",
+  "drawing": {
+    "name": "Proteus test drawing",
+    "units": "mm",
+    "background": {
+      "r": 255,
+      "g": 255,
+      "b": 255
+    },
+    "bounds": {
+      "min_x": 0.0,
+      "min_y": 0.0,
+      "max_x": 359.0,
+      "max_y": 20.0
+    },
+    "origin": "file",
+    "groups": [
+      {
+        "kind": "node",
+        "id": "CentrifugalPump-1",
+        "represents": "Item3",
+        "primitives": [
+          {
+            "kind": "ellipse",
+            "id": null,
+            "center": {
+              "x": 64.0,
+              "y": 10.0
+            },
+            "radius_x": 9.0,
+            "radius_y": 9.0,
+            "rotation": 0.0,
+            "fill": "Transparent",
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          },
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 55.0,
+                "y": 10.0
+              },
+              {
+                "x": 73.0,
+                "y": 10.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          },
+          {
+            "kind": "text",
+            "id": null,
+            "position": {
+              "x": 64.0,
+              "y": -8.0
+            },
+            "text": "P-100",
+            "size": 3.0,
+            "rotation": 0.0,
+            "alignment": "CenterCenter",
+            "color": {
+              "r": 0,
+              "g": 0,
+              "b": 0
+            }
+          }
+        ]
+      },
+      {
+        "kind": "node",
+        "id": "TubularHeatExchanger-1",
+        "represents": "Item2",
+        "primitives": [
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 168.0,
+                "y": 18.0
+              },
+              {
+                "x": 200.0,
+                "y": 18.0
+              },
+              {
+                "x": 200.0,
+                "y": 2.0
+              },
+              {
+                "x": 168.0,
+                "y": 2.0
+              },
+              {
+                "x": 168.0,
+                "y": 18.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          },
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 174.0,
+                "y": 18.0
+              },
+              {
+                "x": 194.0,
+                "y": 2.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "node",
+        "id": "Tank-1",
+        "represents": "Item1",
+        "primitives": [
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 290.0,
+                "y": 20.0
+              },
+              {
+                "x": 318.0,
+                "y": 20.0
+              },
+              {
+                "x": 318.0,
+                "y": 0.0
+              },
+              {
+                "x": 290.0,
+                "y": 0.0
+              },
+              {
+                "x": 290.0,
+                "y": 20.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "node",
+        "id": "FlowInPipeOffPageConnector-1",
+        "represents": "BoundaryConnector1",
+        "primitives": [
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 0.0,
+                "y": 5.0
+              },
+              {
+                "x": 9.0,
+                "y": 10.0
+              },
+              {
+                "x": 0.0,
+                "y": 15.0
+              },
+              {
+                "x": 0.0,
+                "y": 5.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "edge",
+        "id": "PipingNetworkSegment-1",
+        "represents": null,
+        "primitives": [
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 9.0,
+                "y": 10.0
+              },
+              {
+                "x": 54.0,
+                "y": 10.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "edge",
+        "id": "PipingNetworkSegment-2",
+        "represents": null,
+        "primitives": [
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 76.0,
+                "y": 10.0
+              },
+              {
+                "x": 166.0,
+                "y": 10.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          },
+          {
+            "kind": "text",
+            "id": null,
+            "position": {
+              "x": 119.0,
+              "y": 4.0
+            },
+            "text": "L-1001",
+            "size": 3.0,
+            "rotation": 0.0,
+            "alignment": "CenterCenter",
+            "color": {
+              "r": 0,
+              "g": 0,
+              "b": 0
+            }
+          }
+        ]
+      },
+      {
+        "kind": "node",
+        "id": "GlobeValve-1",
+        "represents": "Item4",
+        "primitives": [
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 238.0,
+                "y": 16.0
+              },
+              {
+                "x": 250.0,
+                "y": 4.0
+              },
+              {
+                "x": 250.0,
+                "y": 16.0
+              },
+              {
+                "x": 238.0,
+                "y": 4.0
+              },
+              {
+                "x": 238.0,
+                "y": 16.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "edge",
+        "id": "PipingNetworkSegment-3",
+        "represents": null,
+        "primitives": [
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 202.0,
+                "y": 10.0
+              },
+              {
+                "x": 286.0,
+                "y": 10.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "node",
+        "id": "PipeReducer-1",
+        "represents": null,
+        "primitives": [
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 325.0,
+                "y": 4.0
+              },
+              {
+                "x": 333.0,
+                "y": 7.0
+              },
+              {
+                "x": 333.0,
+                "y": 13.0
+              },
+              {
+                "x": 325.0,
+                "y": 16.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "edge",
+        "id": "PipingNetworkSegment-4",
+        "represents": null,
+        "primitives": [
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 316.0,
+                "y": 10.0
+              },
+              {
+                "x": 342.0,
+                "y": 10.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "node",
+        "id": "FlowOutPipeOffPageConnector-1",
+        "represents": "BoundaryConnector2",
+        "primitives": [
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 345.0,
+                "y": 5.0
+              },
+              {
+                "x": 354.0,
+                "y": 10.0
+              },
+              {
+                "x": 345.0,
+                "y": 15.0
+              },
+              {
+                "x": 345.0,
+                "y": 5.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "edge",
+        "id": "PipingNetworkSegment-5",
+        "represents": null,
+        "primitives": [
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 344.0,
+                "y": 10.0
+              },
+              {
+                "x": 359.0,
+                "y": 10.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "objects": [
+    {
+      "id": "Item1",
+      "ty": "Plant/ProcessEquipment.Tank",
+      "label": "T-100",
+      "unit": "unit_ops.tank",
+      "azoth": "T-100",
+      "status": "modelled",
+      "reason": "mapped",
+      "alternatives": [],
+      "imported": true,
+      "exportable": true,
+      "drawn": true,
+      "primitives": 1
+    },
+    {
+      "id": "Item2",
+      "ty": "Plant/ProcessEquipment.TubularHeatExchanger",
+      "label": "H-100",
+      "unit": "unit_ops.heat_exchanger",
+      "azoth": "H-100",
+      "status": "lossy",
+      "reason": "lossy: TubularHeatExchanger names one geometry; this unit is a two-stream exchanger of any kind. The reader accepts every exchanger class name as the same unit.",
+      "alternatives": [],
+      "imported": true,
+      "exportable": true,
+      "drawn": true,
+      "primitives": 2
+    },
+    {
+      "id": "Item3",
+      "ty": "Plant/ProcessEquipment.CentrifugalPump",
+      "label": "P-100",
+      "unit": "unit_ops.pump",
+      "azoth": "P-100",
+      "status": "modelled",
+      "reason": "mapped",
+      "alternatives": [],
+      "imported": true,
+      "exportable": true,
+      "drawn": true,
+      "primitives": 3
+    },
+    {
+      "id": "Item4",
+      "ty": "Plant/Piping.GlobeValve",
+      "label": "GlobeValve-1",
+      "unit": "unit_ops.throttling_valve",
+      "azoth": "GlobeValve-1",
+      "status": "modelled",
+      "reason": "readable, not writable: A valve is a piping component inside a segment, not a tagged plant item; this writer places no piping components yet, so the valve has no item to be. The reader accepts every valve class as `unit_ops.throttling_valve`.",
+      "alternatives": [],
+      "imported": true,
+      "exportable": false,
+      "drawn": true,
+      "primitives": 1
+    },
+    {
+      "id": "Segment1",
+      "ty": "Plant/Piping.PipingNetworkSegment",
+      "label": "Segment1",
+      "unit": null,
+      "azoth": null,
+      "status": "topology",
+      "reason": "piping topology",
+      "alternatives": [],
+      "imported": true,
+      "exportable": true,
+      "drawn": false,
+      "primitives": 0
+    },
+    {
+      "id": "Segment2",
+      "ty": "Plant/Piping.PipingNetworkSegment",
+      "label": "Segment2",
+      "unit": null,
+      "azoth": null,
+      "status": "topology",
+      "reason": "piping topology",
+      "alternatives": [],
+      "imported": true,
+      "exportable": true,
+      "drawn": false,
+      "primitives": 0
+    },
+    {
+      "id": "Segment3",
+      "ty": "Plant/Piping.PipingNetworkSegment",
+      "label": "Segment3",
+      "unit": null,
+      "azoth": null,
+      "status": "topology",
+      "reason": "piping topology",
+      "alternatives": [],
+      "imported": true,
+      "exportable": true,
+      "drawn": false,
+      "primitives": 0
+    },
+    {
+      "id": "Segment4",
+      "ty": "Plant/Piping.PipingNetworkSegment",
+      "label": "Segment4",
+      "unit": null,
+      "azoth": null,
+      "status": "topology",
+      "reason": "piping topology",
+      "alternatives": [],
+      "imported": true,
+      "exportable": true,
+      "drawn": false,
+      "primitives": 0
+    },
+    {
+      "id": "Segment5",
+      "ty": "Plant/Piping.PipingNetworkSegment",
+      "label": "Segment5",
+      "unit": null,
+      "azoth": null,
+      "status": "topology",
+      "reason": "piping topology",
+      "alternatives": [],
+      "imported": true,
+      "exportable": true,
+      "drawn": false,
+      "primitives": 0
+    },
+    {
+      "id": "BoundaryConnector1",
+      "ty": "Plant/Piping.FlowInPipeOffPageConnector",
+      "label": "BoundaryConnector1",
+      "unit": null,
+      "azoth": "FEED",
+      "status": "topology",
+      "reason": "piping topology",
+      "alternatives": [],
+      "imported": true,
+      "exportable": true,
+      "drawn": true,
+      "primitives": 1
+    },
+    {
+      "id": "BoundaryConnector2",
+      "ty": "Plant/Piping.FlowOutPipeOffPageConnector",
+      "label": "BoundaryConnector2",
+      "unit": null,
+      "azoth": "PRODUCT",
+      "status": "topology",
+      "reason": "piping topology",
+      "alternatives": [],
+      "imported": true,
+      "exportable": true,
+      "drawn": true,
+      "primitives": 1
+    },
+    {
+      "id": "PipingNetworkSegment-1",
+      "ty": "drawing",
+      "label": "PipingNetworkSegment-1",
+      "unit": null,
+      "azoth": null,
+      "status": "drawing_only",
+      "reason": "graphics with no conceptual object behind them",
+      "alternatives": [],
+      "imported": false,
+      "exportable": false,
+      "drawn": true,
+      "primitives": 1
+    },
+    {
+      "id": "PipingNetworkSegment-2",
+      "ty": "drawing",
+      "label": "PipingNetworkSegment-2",
+      "unit": null,
+      "azoth": null,
+      "status": "drawing_only",
+      "reason": "graphics with no conceptual object behind them",
+      "alternatives": [],
+      "imported": false,
+      "exportable": false,
+      "drawn": true,
+      "primitives": 2
+    },
+    {
+      "id": "PipingNetworkSegment-3",
+      "ty": "drawing",
+      "label": "PipingNetworkSegment-3",
+      "unit": null,
+      "azoth": null,
+      "status": "drawing_only",
+      "reason": "graphics with no conceptual object behind them",
+      "alternatives": [],
+      "imported": false,
+      "exportable": false,
+      "drawn": true,
+      "primitives": 1
+    },
+    {
+      "id": "PipeReducer-1",
+      "ty": "drawing",
+      "label": "PipeReducer-1",
+      "unit": null,
+      "azoth": null,
+      "status": "drawing_only",
+      "reason": "graphics with no conceptual object behind them",
+      "alternatives": [],
+      "imported": false,
+      "exportable": false,
+      "drawn": true,
+      "primitives": 1
+    },
+    {
+      "id": "PipingNetworkSegment-4",
+      "ty": "drawing",
+      "label": "PipingNetworkSegment-4",
+      "unit": null,
+      "azoth": null,
+      "status": "drawing_only",
+      "reason": "graphics with no conceptual object behind them",
+      "alternatives": [],
+      "imported": false,
+      "exportable": false,
+      "drawn": true,
+      "primitives": 1
+    },
+    {
+      "id": "PipingNetworkSegment-5",
+      "ty": "drawing",
+      "label": "PipingNetworkSegment-5",
+      "unit": null,
+      "azoth": null,
+      "status": "drawing_only",
+      "reason": "graphics with no conceptual object behind them",
+      "alternatives": [],
+      "imported": false,
+      "exportable": false,
+      "drawn": true,
+      "primitives": 1
+    }
+  ],
+  "counts": {
+    "semantic": 11,
+    "modelled": 3,
+    "lossy": 1,
+    "ambiguous": 0,
+    "unmapped": 0,
+    "topology": 7,
+    "control": 0,
+    "drawing_only": 6,
+    "drawn": 6,
+    "not_drawn": 5,
+    "groups": 12,
+    "primitives": 16,
+    "layout_positions": 5
+  },
+  "diagnostics": [
+    {
+      "severity": "info",
+      "code": "inline_component_skipped",
+      "subject": "PipeReducer-1",
+      "message": "`PipeReducer` is a fitting or instrument this port has no unit for; the stream crosses it and the topology is joined through it"
+    },
+    {
+      "severity": "warning",
+      "code": "port_assignment_assumed",
+      "subject": "H-100",
+      "message": "`unit_ops.heat_exchanger` declares 2 inlet ports and the drawing does not name which is which; assignment is by document order and unverified"
+    },
+    {
+      "severity": "warning",
+      "code": "port_assignment_assumed",
+      "subject": "H-100",
+      "message": "`unit_ops.heat_exchanger` declares 2 outlet ports and the drawing does not name which is which; assignment is by document order and unverified"
+    },
+    {
+      "severity": "warning",
+      "code": "port_assignment_assumed",
+      "subject": "T-100",
+      "message": "`unit_ops.tank` declares 2 outlet ports and the drawing does not name which is which; assignment is by document order and unverified"
+    },
+    {
+      "severity": "warning",
+      "code": "input_composition_missing",
+      "subject": "FEED",
+      "message": "DEXPI carries no composition, so this feed is left undeclared: add an [[inputs]] record with components, z, n, P and T, and `azoth check` stops reporting `unknown_feed`"
+    }
+  ],
+  "scaffold": {
+    "toml": "id = \"ProteusProjection\"\nname = \"ProteusProjection\"\nproducts = [\"PRODUCT\"]\ninputs = []\nrecycles = []\n\n[[instances]]\nid = \"T-100\"\nunit = \"unit_ops.tank\"\n\n[instances.parameters]\n\n[[instances]]\nid = \"H-100\"\nunit = \"unit_ops.heat_exchanger\"\n\n[instances.parameters]\n\n[[instances]]\nid = \"P-100\"\nunit = \"unit_ops.pump\"\n\n[instances.parameters]\n\n[[instances]]\nid = \"GlobeValve-1\"\nunit = \"unit_ops.throttling_valve\"\n\n[instances.parameters]\n\n[[connections]]\nfrom = \"P-100.outlet\"\nto = \"H-100.hot_in\"\nline = \"L-1001\"\n\n[[connections]]\nfrom = \"H-100.hot_out\"\nto = \"GlobeValve-1.inlet\"\nline = \"L-1001\"\n\n[[connections]]\nfrom = \"T-100.gas\"\nto = \"PRODUCT\"\nline = \"L-1001\"\n\n[[connections]]\nfrom = \"FEED\"\nto = \"P-100.inlet\"\nline = \"L-1001\"\n\n[[connections]]\nfrom = \"GlobeValve-1.outlet\"\nto = \"T-100.inlet\"\nline = \"L-1001\"\n\n[layout.instances]\nGlobeValve-1 = [238.0, 4.0]\nH-100 = [168.0, 2.0]\nP-100 = [55.0, 1.0]\nT-100 = [290.0, 0.0]\n\n[layout.products]\nPRODUCT = [345.0, 5.0]\n",
+    "flowsheet_id": "ProteusProjection",
+    "instances": 4,
+    "connections": 5,
+    "recycles": 0,
+    "instruments": 0,
+    "signals": 0,
+    "layout_positions": 5,
+    "check_errors": 8,
+    "check_warnings": 0
+  }
+}

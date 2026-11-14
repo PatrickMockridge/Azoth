@@ -21,7 +21,7 @@ use azoth_dexpi::{
 };
 use azoth_process::{load_palette, parse_flowsheet};
 
-use crate::cli::{DexpiExportArgs, DexpiImportArgs, DexpiValidateArgs};
+use crate::cli::{DexpiExportArgs, DexpiImportArgs, DexpiValidateArgs, DexpiViewArgs};
 
 /// What a verb produced: whether it succeeded, and the text to print.
 pub struct Outcome {
@@ -242,6 +242,73 @@ fn write_plant_import(
         render_plant_import(&report, &args.out)
     };
     Ok(Outcome { ok: true, text })
+}
+
+/// Read a drawing and report what it would become.
+///
+/// # Errors
+/// A palette that does not load, or a file that cannot be read. A document the semantic rules
+/// refuse is still a view: the drawing, its coverage and the diagnostics are the answer.
+pub fn view(args: &DexpiViewArgs) -> Result<Outcome, String> {
+    let palette = load_palette(&args.palette)?;
+    let xml = std::fs::read_to_string(&args.input)
+        .map_err(|error| format!("{}: {error}", args.input.display()))?;
+    match azoth_dexpi::inspect(&xml, &palette) {
+        Ok(report) => {
+            let text = if args.json {
+                serde_json::to_string_pretty(&report).unwrap_or_default()
+            } else {
+                render_view(&report)
+            };
+            Ok(Outcome { ok: true, text })
+        }
+        Err(diagnostics) => Ok(failure(&diagnostics, args.json)),
+    }
+}
+
+fn render_view(report: &azoth_dexpi::ViewReport) -> String {
+    let format = match report.format {
+        azoth_dexpi::ExchangeFormat::Dexpi20 => "DEXPI 2.0",
+        azoth_dexpi::ExchangeFormat::Proteus => "Proteus",
+    };
+    let profile = match report.profile {
+        Some(Profile::Process) => "process",
+        Some(Profile::Plant) => "plant",
+        None => "unknown",
+    };
+    let counts = &report.counts;
+    let mut text = format!("{}: {format} ({profile})\n", report.model_name);
+    text.push_str(&format!(
+        "  objects: {} semantic, {} drawn, {} not drawn\n",
+        counts.semantic, counts.drawn, counts.not_drawn
+    ));
+    text.push_str(&format!(
+        "  modelled {}, lossy {}, ambiguous {}, unmapped {}; topology {}, control {}, drawing-only {}\n",
+        counts.modelled,
+        counts.lossy,
+        counts.ambiguous,
+        counts.unmapped,
+        counts.topology,
+        counts.control,
+        counts.drawing_only
+    ));
+    text.push_str(&format!(
+        "  drawing: {} group(s), {} primitive(s); {} layout position(s)\n",
+        counts.groups, counts.primitives, counts.layout_positions
+    ));
+    if let Some(scaffold) = &report.scaffold {
+        text.push_str(&format!(
+            "  scaffold: {} instance(s), {} connection(s), {} instrument(s); {} check error(s)\n",
+            scaffold.instances, scaffold.connections, scaffold.instruments, scaffold.check_errors
+        ));
+    } else {
+        text.push_str("  scaffold: none (the document was refused)\n");
+    }
+    for diagnostic in &report.diagnostics {
+        text.push_str(&render_diagnostic(diagnostic));
+        text.push('\n');
+    }
+    text
 }
 
 /// Check a document against the semantic rules, and optionally the schema.

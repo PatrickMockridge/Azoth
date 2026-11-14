@@ -213,3 +213,11 @@ def test_a_pid_export_carries_a_drawing_and_places_it() -> None:
     toml, imported = dexpi.import_plant(xml, PALETTE)
     assert imported["layout_positions"] > 0
     assert "[layout.instances]" in toml
+
+
+def test_a_drawing_view_reports_coverage_and_layout() -> None:
+    report = dexpi.view(PROTEUS_FIXTURE, PALETTE)
+    assert report["format"] == "proteus"
+    assert report["counts"]["modelled"] > 0
+    assert report["scaffold"]["layout_positions"] > 0
+    assert report["drawing"]["groups"]

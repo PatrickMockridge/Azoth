@@ -75,7 +75,7 @@ struct ProjectedNozzle {
 }
 
 /// Project a Proteus document into the DEXPI 2.0 Plant metamodel.
-fn project(
+pub(crate) fn project(
     xml: &str,
     diagnostics: &mut Vec<DexpiDiagnostic>,
 ) -> Result<Projection, DexpiDiagnostic> {

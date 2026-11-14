@@ -31,7 +31,21 @@ import type {
   CalcProvenance,
   CalcWarning,
   Catalogue,
+  CoverageCounts,
+  CoverageStatus,
+  DexpiDiagnostic,
+  DexpiExport,
+  DexpiView,
+  DexpiViewResponse,
   Diagnostic,
+  Drawing,
+  DrawingColor,
+  DrawingGroup,
+  DrawingPoint,
+  DrawingPrimitive,
+  DrawingStroke,
+  ObjectCoverage,
+  Scaffold,
   Envelope,
   ExecutionOrder,
   Form,
@@ -815,3 +829,244 @@ export const parseEnvelope = (json: string): Envelope => parse(json, decodeEnvel
 export const parseCatalogue = (json: string): Catalogue => parse(json, decodeCatalogue);
 export const parseSheetEnvelope = (json: string): SheetEnvelope =>
   parse(json, decodeSheetEnvelope);
+export const parseDexpiView = (json: string): DexpiViewResponse =>
+  parse(json, decodeDexpiView);
+export const parseDexpiExport = (json: string): DexpiExport =>
+  parse(json, decodeDexpiExport);
+
+const COVERAGE_STATUSES = [
+  "modelled",
+  "lossy",
+  "ambiguous",
+  "unmapped",
+  "topology",
+  "control",
+  "drawing_only",
+] as const;
+
+const GROUP_KINDS = ["node", "edge", "annotation"] as const;
+const PRIMITIVE_KINDS = ["polyline", "polygon", "ellipse", "ellipse_arc", "text"] as const;
+
+function dexpiDiagnostic(value: unknown, path: string): DexpiDiagnostic {
+  const raw = obj(value, path);
+  return {
+    severity: oneOf(raw.severity, `${path}.severity`, ["error", "warning", "info"] as const),
+    code: str(raw.code, `${path}.code`),
+    subject: str(raw.subject, `${path}.subject`),
+    message: str(raw.message, `${path}.message`),
+  };
+}
+
+function point(value: unknown, path: string): DrawingPoint {
+  const raw = obj(value, path);
+  return { x: num(raw.x, `${path}.x`), y: num(raw.y, `${path}.y`) };
+}
+
+function color(value: unknown, path: string): DrawingColor {
+  const raw = obj(value, path);
+  return {
+    r: num(raw.r, `${path}.r`),
+    g: num(raw.g, `${path}.g`),
+    b: num(raw.b, `${path}.b`),
+  };
+}
+
+function stroke(value: unknown, path: string): DrawingStroke {
+  const raw = obj(value, path);
+  return {
+    color: color(raw.color, `${path}.color`),
+    width: num(raw.width, `${path}.width`),
+    dash: str(raw.dash, `${path}.dash`),
+  };
+}
+
+function primitive(value: unknown, path: string): DrawingPrimitive {
+  const raw = obj(value, path);
+  const kind = oneOf(raw.kind, `${path}.kind`, PRIMITIVE_KINDS);
+  const id = nullable(raw.id, `${path}.id`, str);
+  switch (kind) {
+    case "polyline":
+      return {
+        kind,
+        id,
+        points: list(raw.points, `${path}.points`, point),
+        stroke: stroke(raw.stroke, `${path}.stroke`),
+      };
+    case "polygon":
+      return {
+        kind,
+        id,
+        points: list(raw.points, `${path}.points`, point),
+        fill: str(raw.fill, `${path}.fill`),
+        stroke: stroke(raw.stroke, `${path}.stroke`),
+      };
+    case "ellipse":
+      return {
+        kind,
+        id,
+        center: point(raw.center, `${path}.center`),
+        radius_x: num(raw.radius_x, `${path}.radius_x`),
+        radius_y: num(raw.radius_y, `${path}.radius_y`),
+        rotation: num(raw.rotation, `${path}.rotation`),
+        fill: str(raw.fill, `${path}.fill`),
+        stroke: stroke(raw.stroke, `${path}.stroke`),
+      };
+    case "ellipse_arc":
+      return {
+        kind,
+        id,
+        center: point(raw.center, `${path}.center`),
+        radius_x: num(raw.radius_x, `${path}.radius_x`),
+        radius_y: num(raw.radius_y, `${path}.radius_y`),
+        start_angle: num(raw.start_angle, `${path}.start_angle`),
+        end_angle: num(raw.end_angle, `${path}.end_angle`),
+        rotation: num(raw.rotation, `${path}.rotation`),
+        stroke: stroke(raw.stroke, `${path}.stroke`),
+      };
+    case "text":
+      return {
+        kind,
+        id,
+        position: point(raw.position, `${path}.position`),
+        text: str(raw.text, `${path}.text`),
+        size: num(raw.size, `${path}.size`),
+        rotation: num(raw.rotation, `${path}.rotation`),
+        alignment: str(raw.alignment, `${path}.alignment`),
+        color: color(raw.color, `${path}.color`),
+      };
+  }
+}
+
+function group(value: unknown, path: string): DrawingGroup {
+  const raw = obj(value, path);
+  return {
+    kind: oneOf(raw.kind, `${path}.kind`, GROUP_KINDS),
+    id: nullable(raw.id, `${path}.id`, str),
+    represents: nullable(raw.represents, `${path}.represents`, str),
+    primitives: list(raw.primitives, `${path}.primitives`, primitive),
+  };
+}
+
+function drawing(value: unknown, path: string): Drawing {
+  const raw = obj(value, path);
+  const bounds = obj(raw.bounds, `${path}.bounds`);
+  return {
+    name: str(raw.name, `${path}.name`),
+    units: nullable(raw.units, `${path}.units`, str),
+    background: color(raw.background, `${path}.background`),
+    bounds: {
+      min_x: num(bounds.min_x, `${path}.bounds.min_x`),
+      min_y: num(bounds.min_y, `${path}.bounds.min_y`),
+      max_x: num(bounds.max_x, `${path}.bounds.max_x`),
+      max_y: num(bounds.max_y, `${path}.bounds.max_y`),
+    },
+    origin: oneOf(raw.origin, `${path}.origin`, ["file", "derived"] as const),
+    groups: list(raw.groups, `${path}.groups`, group),
+  };
+}
+
+function coverage(value: unknown, path: string): ObjectCoverage {
+  const raw = obj(value, path);
+  return {
+    id: str(raw.id, `${path}.id`),
+    ty: str(raw.ty, `${path}.ty`),
+    label: str(raw.label, `${path}.label`),
+    unit: nullable(raw.unit, `${path}.unit`, str),
+    azoth: nullable(raw.azoth, `${path}.azoth`, str),
+    status: oneOf<CoverageStatus>(raw.status, `${path}.status`, COVERAGE_STATUSES),
+    reason: str(raw.reason, `${path}.reason`),
+    alternatives: list(raw.alternatives, `${path}.alternatives`, str),
+    imported: bool(raw.imported, `${path}.imported`),
+    exportable: bool(raw.exportable, `${path}.exportable`),
+    drawn: bool(raw.drawn, `${path}.drawn`),
+    primitives: num(raw.primitives, `${path}.primitives`),
+  };
+}
+
+function counts(value: unknown, path: string): CoverageCounts {
+  const raw = obj(value, path);
+  const field = (name: keyof CoverageCounts): number => num(raw[name], `${path}.${name}`);
+  return {
+    semantic: field("semantic"),
+    modelled: field("modelled"),
+    lossy: field("lossy"),
+    ambiguous: field("ambiguous"),
+    unmapped: field("unmapped"),
+    topology: field("topology"),
+    control: field("control"),
+    drawing_only: field("drawing_only"),
+    drawn: field("drawn"),
+    not_drawn: field("not_drawn"),
+    groups: field("groups"),
+    primitives: field("primitives"),
+    layout_positions: field("layout_positions"),
+  };
+}
+
+function scaffold(value: unknown, path: string): Scaffold {
+  const raw = obj(value, path);
+  return {
+    toml: str(raw.toml, `${path}.toml`),
+    flowsheet_id: str(raw.flowsheet_id, `${path}.flowsheet_id`),
+    instances: num(raw.instances, `${path}.instances`),
+    connections: num(raw.connections, `${path}.connections`),
+    recycles: num(raw.recycles, `${path}.recycles`),
+    instruments: num(raw.instruments, `${path}.instruments`),
+    signals: num(raw.signals, `${path}.signals`),
+    layout_positions: num(raw.layout_positions, `${path}.layout_positions`),
+    check_errors: num(raw.check_errors, `${path}.check_errors`),
+    check_warnings: num(raw.check_warnings, `${path}.check_warnings`),
+  };
+}
+
+function view(value: unknown, path: string): DexpiView {
+  const raw = obj(value, path);
+  return {
+    format: oneOf(raw.format, `${path}.format`, ["dexpi20", "proteus"] as const),
+    profile: nullable(raw.profile, `${path}.profile`, (entry, at) =>
+      oneOf(entry, at, ["process", "plant"] as const),
+    ),
+    model_name: str(raw.model_name, `${path}.model_name`),
+    model_uri: str(raw.model_uri, `${path}.model_uri`),
+    drawing: nullable(raw.drawing, `${path}.drawing`, drawing),
+    objects: list(raw.objects, `${path}.objects`, coverage),
+    counts: counts(raw.counts, `${path}.counts`),
+    diagnostics: list(raw.diagnostics, `${path}.diagnostics`, dexpiDiagnostic),
+    scaffold: nullable(raw.scaffold, `${path}.scaffold`, scaffold),
+  };
+}
+
+/** The module's or the server's answer to `inspect`: a view, or why there is none. */
+export function decodeDexpiView(value: unknown): DexpiViewResponse {
+  const raw = obj(value, "view response");
+  const ok = bool(raw.ok, "view response.ok");
+  const diagnostics = nullable(raw.diagnostics, "view response.diagnostics", (entry, path) =>
+    list(entry, path, dexpiDiagnostic),
+  );
+  if (raw.view === undefined) {
+    const response: DexpiViewResponse = { ok };
+    if (diagnostics !== null) {
+      response.diagnostics = diagnostics;
+    }
+    return response;
+  }
+  const decoded = view(raw.view, "view response.view");
+  return diagnostics === null ? { ok, view: decoded } : { ok, view: decoded, diagnostics };
+}
+
+/** The exchange door's export answer. */
+export function decodeDexpiExport(value: unknown): DexpiExport {
+  const raw = obj(value, "export");
+  const field = (name: keyof DexpiExport): number => num(raw[name], `export.${name}`);
+  return {
+    ok: bool(raw.ok, "export.ok"),
+    xml: nullable(raw.xml, "export.xml", str),
+    diagnostics: list(raw.diagnostics, "export.diagnostics", dexpiDiagnostic),
+    steps: field("steps"),
+    streams: field("streams"),
+    items: field("items"),
+    segments: field("segments"),
+    diagram_groups: field("diagram_groups"),
+    diagram_primitives: field("diagram_primitives"),
+  };
+}

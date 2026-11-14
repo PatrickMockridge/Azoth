@@ -47,6 +47,7 @@ fn run_dexpi(args: DexpiArgs) -> std::process::ExitCode {
         DexpiCommand::Export(export) => dexpi::export(&export),
         DexpiCommand::Import(import) => dexpi::import(&import),
         DexpiCommand::Validate(validate) => dexpi::validate(&validate),
+        DexpiCommand::View(view) => dexpi::view(&view),
     };
     match outcome {
         Ok(outcome) => {

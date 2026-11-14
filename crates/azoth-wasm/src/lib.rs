@@ -225,6 +225,76 @@ impl SheetEditor {
     }
 }
 
+/// The DEXPI exchange: inspect a drawing, and export the open flowsheet.
+///
+/// **A second document, not a second editor.** `inspect` answers with the drawing, its
+/// coverage and the scaffold the file would become; `export_flowsheet` takes the document the
+/// editor already holds. Neither call touches the `Editor`'s state, and both answer with JSON
+/// strings, the same boundary the editor uses.
+#[wasm_bindgen]
+pub struct Exchange;
+
+impl Default for Exchange {
+    fn default() -> Self {
+        Self
+    }
+}
+
+#[wasm_bindgen]
+impl Exchange {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Exchange {
+        Exchange
+    }
+
+    /// Inspect a DEXPI 2.0 or Proteus XML document.
+    ///
+    /// The answer is `{"ok": true, "view": …}` or `{"ok": false, "diagnostics": […]}`, so a
+    /// viewer can show a refused model's drawing rather than an exception.
+    ///
+    /// # Errors
+    /// A JS exception only if the answer cannot be serialised.
+    pub fn inspect(&self, xml: &str) -> Result<String, JsValue> {
+        let answer = match azoth_dexpi::view::inspect(xml, &palette()) {
+            Ok(view) => serde_json::json!({ "ok": true, "view": view }),
+            Err(diagnostics) => serde_json::json!({ "ok": false, "diagnostics": diagnostics }),
+        };
+        serde_json::to_string(&answer).map_err(failed)
+    }
+
+    /// Export the flowsheet TOML as a Process PFD or a Plant P&ID.
+    ///
+    /// `options` is the JSON object `ExchangeOptions` reads.
+    ///
+    /// # Errors
+    /// A JS exception for options that are not one, or an answer that cannot be serialised. A
+    /// refused export is an answer with `ok: false`.
+    pub fn export_flowsheet(
+        &self,
+        document: &str,
+        profile: &str,
+        options: &str,
+    ) -> Result<String, JsValue> {
+        let options: azoth_dexpi::ExchangeOptions =
+            serde_json::from_str(options).map_err(failed)?;
+        let answer = match azoth_dexpi::exchange::export(document, &palette(), profile, &options) {
+            Ok(report) => serde_json::to_value(&report).map_err(failed)?,
+            Err(diagnostics) => serde_json::json!({
+                "ok": false,
+                "xml": null,
+                "diagnostics": diagnostics,
+                "steps": 0,
+                "streams": 0,
+                "items": 0,
+                "segments": 0,
+                "diagram_groups": 0,
+                "diagram_primitives": 0,
+            }),
+        };
+        serde_json::to_string(&answer).map_err(failed)
+    }
+}
+
 /// Every refusal, as a JS exception carrying the library's own sentence.
 ///
 /// One place, so a binding cannot lose the reason a call failed: "calculation failed" is not

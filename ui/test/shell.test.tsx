@@ -172,9 +172,9 @@ it("keeps the workspace switch reachable in the Macintosh and Cyberpunk shells",
     if (flowsheet === null) {
       throw new Error("the flowsheet should be mounted");
     }
-    const toCalculations = flowsheet.querySelectorAll<HTMLButtonElement>(
+    const toCalculations = [...flowsheet.querySelectorAll<HTMLButtonElement>(
       ".workspace-switch button",
-    )[1];
+    )].find((button) => button.textContent === "Calculations");
     if (toCalculations === undefined) {
       throw new Error("the workspace switch has no Calculations button");
     }

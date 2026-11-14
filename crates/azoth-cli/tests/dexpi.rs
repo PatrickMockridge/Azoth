@@ -253,6 +253,42 @@ fn a_proteus_plant_model_imports_from_the_command_line() {
 }
 
 #[test]
+fn the_view_reports_coverage_layout_and_the_scaffold() {
+    let fixture = root()
+        .join("crates/azoth-dexpi/tests/fixtures/proteus_simple.xml")
+        .display()
+        .to_string();
+    let view = azoth(&[
+        "dexpi",
+        "view",
+        "--input",
+        &fixture,
+        "--palette",
+        &palette(),
+        "--json",
+    ]);
+    assert!(
+        view.status.success(),
+        "view failed: {}",
+        String::from_utf8_lossy(&view.stderr)
+    );
+    let report: serde_json::Value = serde_json::from_slice(&view.stdout).expect("the view is JSON");
+    assert_eq!(report["format"], serde_json::json!("proteus"));
+    assert_eq!(report["profile"], serde_json::json!("plant"));
+    assert!(
+        report["drawing"]["groups"]
+            .as_array()
+            .is_some_and(|g| !g.is_empty())
+    );
+    assert!(report["counts"]["modelled"].as_u64().is_some_and(|n| n > 0));
+    assert!(
+        report["scaffold"]["layout_positions"]
+            .as_u64()
+            .is_some_and(|n| n > 0)
+    );
+}
+
+#[test]
 fn a_refused_export_exits_non_zero_and_prints_the_refusal() {
     let fixture = temp("flare.toml");
     std::fs::write(

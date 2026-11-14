@@ -20,8 +20,11 @@ import type { SheetCommand } from "./sheetCommands";
 import type {
   Catalogue,
   Command,
+  DexpiExport,
+  DexpiViewResponse,
   Envelope,
   ExecutionOrder,
+  ExchangeOptions,
   SheetEnvelope,
 } from "./types";
 
@@ -102,8 +105,25 @@ export type SheetDoor =
       attach(): Promise<SheetOpened>;
     };
 
-/** Both documents a page talks to: the flowsheet and the calculation book. */
+/**
+ * The drawing exchange: a DEXPI file in, or the open flowsheet out.
+ *
+ * **Stateless, and that is the difference from a `Door`.** It holds no document: `inspect` reads
+ * the XML it is handed, and `exportFlowsheet` is given the TOML the editor already has. Both the
+ * module and `azoth serve` provide it, so a viewer does not choose a transport.
+ */
+export interface ExchangeDoor {
+  inspect(xml: string): Promise<DexpiViewResponse>;
+  exportFlowsheet(
+    document: string,
+    profile: "process" | "plant",
+    options: ExchangeOptions,
+  ): Promise<DexpiExport>;
+}
+
+/** Both documents a page talks to: the flowsheet, the calculation book, and the exchange. */
 export interface Doors {
   flowsheet: Door;
   sheets: SheetDoor;
+  exchange: ExchangeDoor;
 }

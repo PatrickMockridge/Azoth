@@ -13,6 +13,7 @@
 
 pub mod diagnostic;
 pub mod drawing;
+pub mod exchange;
 pub mod extensions;
 pub mod ids;
 pub mod inventory;
@@ -25,6 +26,7 @@ pub mod proteus;
 pub mod reader;
 pub mod units;
 pub mod validate;
+pub mod view;
 pub mod writer;
 pub mod xsd;
 
@@ -36,6 +38,7 @@ pub use drawing::{
     Bounds, Color, Drawing, DrawingGroup, DrawingOrigin, DrawingReport, GroupKind, Point,
     Primitive, Stroke,
 };
+pub use exchange::{ExchangeExport, ExchangeOptions, export as export_document};
 pub use mapping::{Disposition, UnitMapping};
 pub use model::{
     Child, ComponentChild, Components, Data, DataValue, Document, Import, Model, Object, References,
@@ -48,3 +51,6 @@ pub use process::export::{ExportOptions, ExportReport, export_process};
 pub use process::import::{ImportOptions, ImportReport, import_process};
 pub use profile::Profile;
 pub use proteus::import_proteus;
+pub use view::{
+    CoverageCounts, CoverageStatus, ExchangeFormat, ObjectCoverage, Scaffold, ViewReport, inspect,
+};

@@ -521,3 +521,188 @@ export interface Catalogue {
  * widget send anything at all and still typecheck.
  */
 export type { EditorCommand as Command } from "./commands";
+
+/** What a drawn object would become in azoth. */
+export type CoverageStatus =
+  | "modelled"
+  | "lossy"
+  | "ambiguous"
+  | "unmapped"
+  | "topology"
+  | "control"
+  | "drawing_only";
+
+/** The exchange has a third severity the checker does not: information, not a loss. */
+export type DexpiSeverity = "error" | "warning" | "info";
+
+/** One finding about a DEXPI document or its projection. */
+export interface DexpiDiagnostic {
+  severity: DexpiSeverity;
+  code: string;
+  subject: string;
+  message: string;
+}
+
+export interface DrawingPoint {
+  x: number;
+  y: number;
+}
+
+export interface DrawingColor {
+  r: number;
+  g: number;
+  b: number;
+}
+
+export interface DrawingStroke {
+  color: DrawingColor;
+  width: number;
+  dash: string;
+}
+
+/** The five primitives a drawing resolves to; `kind` is the wire's tag. */
+export type DrawingPrimitive =
+  | { kind: "polyline"; id: string | null; points: DrawingPoint[]; stroke: DrawingStroke }
+  | {
+      kind: "polygon";
+      id: string | null;
+      points: DrawingPoint[];
+      fill: string;
+      stroke: DrawingStroke;
+    }
+  | {
+      kind: "ellipse";
+      id: string | null;
+      center: DrawingPoint;
+      radius_x: number;
+      radius_y: number;
+      rotation: number;
+      fill: string;
+      stroke: DrawingStroke;
+    }
+  | {
+      kind: "ellipse_arc";
+      id: string | null;
+      center: DrawingPoint;
+      radius_x: number;
+      radius_y: number;
+      start_angle: number;
+      end_angle: number;
+      rotation: number;
+      stroke: DrawingStroke;
+    }
+  | {
+      kind: "text";
+      id: string | null;
+      position: DrawingPoint;
+      text: string;
+      size: number;
+      rotation: number;
+      alignment: string;
+      color: DrawingColor;
+    };
+
+export interface DrawingGroup {
+  kind: "node" | "edge" | "annotation";
+  id: string | null;
+  /** The conceptual object the group draws, or an azoth key for a derived schematic. */
+  represents: string | null;
+  primitives: DrawingPrimitive[];
+}
+
+export interface Drawing {
+  name: string;
+  units: string | null;
+  background: DrawingColor;
+  bounds: { min_x: number; min_y: number; max_x: number; max_y: number };
+  origin: "file" | "derived";
+  groups: DrawingGroup[];
+}
+
+export interface ObjectCoverage {
+  id: string;
+  ty: string;
+  label: string;
+  unit: string | null;
+  azoth: string | null;
+  status: CoverageStatus;
+  reason: string;
+  alternatives: string[];
+  imported: boolean;
+  exportable: boolean;
+  drawn: boolean;
+  primitives: number;
+}
+
+export interface CoverageCounts {
+  semantic: number;
+  modelled: number;
+  lossy: number;
+  ambiguous: number;
+  unmapped: number;
+  topology: number;
+  control: number;
+  drawing_only: number;
+  drawn: number;
+  not_drawn: number;
+  groups: number;
+  primitives: number;
+  layout_positions: number;
+}
+
+export interface Scaffold {
+  toml: string;
+  flowsheet_id: string;
+  instances: number;
+  connections: number;
+  recycles: number;
+  instruments: number;
+  signals: number;
+  layout_positions: number;
+  check_errors: number;
+  check_warnings: number;
+}
+
+/** A drawing, its coverage, and the scaffold the file would become. */
+export interface DexpiView {
+  format: "dexpi20" | "proteus";
+  profile: "process" | "plant" | null;
+  model_name: string;
+  model_uri: string;
+  drawing: Drawing | null;
+  objects: ObjectCoverage[];
+  counts: CoverageCounts;
+  diagnostics: DexpiDiagnostic[];
+  scaffold: Scaffold | null;
+}
+
+/** The wasm and HTTP doors' answer to `inspect`: a view, or why there is none. */
+export interface DexpiViewResponse {
+  ok: boolean;
+  view?: DexpiView;
+  diagnostics?: DexpiDiagnostic[];
+}
+
+/** What an export may do, as the Rust `ExchangeOptions` reads it. */
+export interface ExchangeOptions {
+  allow_lossy: boolean;
+  project_recycles: boolean;
+  azoth_extensions: boolean;
+  topology_only: boolean;
+  allow_unconverged: boolean;
+  drawing: boolean;
+  overrides: Record<string, string>;
+}
+
+/** The file, or the diagnostics that refused it. */
+export interface DexpiExport {
+  ok: boolean;
+  xml: string | null;
+  diagnostics: DexpiDiagnostic[];
+  steps: number;
+  streams: number;
+  items: number;
+  segments: number;
+  diagram_groups: number;
+  diagram_primitives: number;
+}

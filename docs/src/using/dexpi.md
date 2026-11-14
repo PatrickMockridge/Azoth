@@ -81,6 +81,25 @@ print(imported["layout_positions"])
 take `layout=False` to drop the arrangement. Every call returns the text and its report as
 JSON, the same two documents the CLI prints.
 
+## The Drawing workspace
+
+The editor's **Drawing** tab is the same view as `azoth dexpi view`, in the browser. Import a
+DEXPI 2.0 P&ID/PFD or a Proteus file; the workspace draws it, lists every object's coverage -
+modelled, lossy, ambiguous, unmapped, topology, control, drawing-only - and says what the file
+would become: instances, connections, instruments, and the check errors still owed.
+
+- **Open as flowsheet** loads the scaffold into the editor, where `azoth check`'s diagnostics
+  mark the feeds and parameters still to declare.
+- **Export PFD** and **Export P&ID** write the *open simulation* back as a DEXPI file with the
+  drawing; a refusal lists its diagnostics in the panel.
+- **Download SVG** writes the figure as shown, for a document or a slide.
+
+It is a viewer, not a CAD: it does not move or author a symbol. The arrangement is carried by
+`[layout]`; hand the XML to CAD for symbols and revisions.
+
+`azoth dexpi view --input FILE --json` is the headless form, and `dexpi.view(xml)` the
+Python one.
+
 ## What the exchange does not promise
 
 A file that passes the schema and these rules is not a DEXPI EV certificate and not a named-CAE

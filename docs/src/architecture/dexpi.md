@@ -265,6 +265,24 @@ the primitives are generic Core shapes, and a CAD tool replaces them with its ow
 Routing is one orthogonal step, with a return lane for a backward edge; `DexpiLayoutEngine`
 and its 3,572 lines are not ported, and the drawing places what the canvas places.
 
+### The Drawing workspace
+
+`azoth-dexpi`'s `view::inspect` answers one question about a file: **what would azoth
+model?** It reads the document and its drawing, runs the same import the CLI runs, and marks
+each conceptual object `modelled`, `lossy`, `ambiguous`, `unmapped`, `topology` or
+`control`; a drawn group with no conceptual object behind it is `drawing_only`. The statuses
+come from the same mapping tables the importers read - there is no second mapping. The answer
+also carries the drawing, the scaffold TOML the file would become, and the positions the
+import wrote into `[layout]`.
+
+The editor's **Drawing workspace** is a read-only viewer over that answer: it imports a file,
+draws it, lists what would be modelled and what would not, and offers "Open as flowsheet"
+(the scaffold into the editor) and "Export PFD"/"Export P&ID" (the open document back out).
+It is **not a CAD editor**: no symbol is moved or authored, and the figure is not saved back
+as a drawing. The same call is on `/dexpi` over `azoth serve` and in the wasm module, so the
+viewer needs no server; a file with no graphics gets a schematic derived from its topology,
+labelled as such.
+
 ## Proteus
 
 DEXPI 1.x serialises the same drawing as Proteus XML: a `PlantModel` root, `ComponentClass`

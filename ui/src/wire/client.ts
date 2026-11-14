@@ -6,15 +6,32 @@
  * is `./http.ts`, and the interface both implement is `./session.ts`.
  */
 
-import init, { Editor, SheetEditor, palette_json } from "../wasm/pkg/azoth_wasm.js";
-import { parseCatalogue, parseEnvelope, parseSheetEnvelope } from "./decode";
-import type { Doors, Opened, OpenableDoor, Session, SheetOpened, SheetSession } from "./session";
+import init, { Editor, Exchange, SheetEditor, palette_json } from "../wasm/pkg/azoth_wasm.js";
+import {
+  parseCatalogue,
+  parseDexpiExport,
+  parseDexpiView,
+  parseEnvelope,
+  parseSheetEnvelope,
+} from "./decode";
+import type {
+  Doors,
+  ExchangeDoor,
+  Opened,
+  OpenableDoor,
+  Session,
+  SheetOpened,
+  SheetSession,
+} from "./session";
 import type { SheetCommand } from "./sheetCommands";
 import type {
   Catalogue,
   Command,
+  DexpiExport,
+  DexpiViewResponse,
   Envelope,
   ExecutionOrder,
+  ExchangeOptions,
   SheetEnvelope,
 } from "./types";
 
@@ -92,6 +109,23 @@ class WasmSheetDoor {
   }
 }
 
+/** The drawing exchange behind the module. **Stateless**: it holds no document. */
+class WasmExchange implements ExchangeDoor {
+  async inspect(xml: string): Promise<DexpiViewResponse> {
+    return parseDexpiView(new Exchange().inspect(xml));
+  }
+
+  async exportFlowsheet(
+    document: string,
+    profile: "process" | "plant",
+    options: ExchangeOptions,
+  ): Promise<DexpiExport> {
+    return parseDexpiExport(
+      new Exchange().export_flowsheet(document, profile, JSON.stringify(options)),
+    );
+  }
+}
+
 /**
  * Load the module, and both doors with it.
  *
@@ -101,5 +135,9 @@ class WasmSheetDoor {
  */
 export async function moduleDoors(): Promise<Doors> {
   await init();
-  return { flowsheet: new WasmDoor(), sheets: new WasmSheetDoor() };
+  return {
+    flowsheet: new WasmDoor(),
+    sheets: new WasmSheetDoor(),
+    exchange: new WasmExchange(),
+  };
 }
