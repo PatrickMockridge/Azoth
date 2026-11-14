@@ -65,7 +65,12 @@ def export_demo() -> str:
 
 def test_pydexpi_loads_azoths_export_strictly() -> None:
     model = load_xml_string(export_demo(), strict=True)
-    steps = model.conceptualModel.processSteps
+    conceptual = model.conceptualModel
+    assert conceptual is not None
+    # pyDEXPI's stub types the field as the abstract `ConceptualModel`; the loader returns
+    # the concrete `ProcessModel`, which is the one that carries the steps.
+    steps = getattr(conceptual, "processSteps", None)
+    assert steps is not None
     assert len(steps) == 7
     kinds = [type(step).__name__ for step in steps]
     assert "MixingSimple" in kinds
