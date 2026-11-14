@@ -178,9 +178,7 @@ def render(rows: list[dict]) -> str:
     reverse_rows = []
     for dexpi_type in sorted(reverse):
         ids = ", ".join(rust_string(i) for i in sorted(reverse[dexpi_type]))
-        reverse_rows.append(
-            f"    ({rust_string(dexpi_type)}, &[{ids}]),\n"
-        )
+        reverse_rows.append(f"    ({rust_string(dexpi_type)}, &[{ids}]),\n")
 
     text = (
         "//! GENERATED FILE - DO NOT EDIT BY HAND.\n"
@@ -234,8 +232,7 @@ def main() -> None:
     refused = sum(1 for row in rows if row["disposition"] == "refused")
     print(
         f"gen_dexpi_mapping: {len(rows)} palette entries, {faithful} faithful, "
-        f"{lossy} lossy, {refused} refused"
-        + (", generated file up to date" if check else "")
+        f"{lossy} lossy, {refused} refused" + (", generated file up to date" if check else "")
     )
 
 
