@@ -10,7 +10,7 @@
 
 use std::collections::BTreeMap;
 
-use azoth_process::flowsheet::{Flowsheet, split_endpoint};
+use azoth_process::flowsheet::{Flowsheet, Instrument, Signal, split_endpoint};
 use azoth_process::{Severity, UnitOpSpec, validate};
 
 use crate::diagnostic::DexpiDiagnostic;
@@ -205,6 +205,9 @@ struct Builder<'a> {
     connector_count: usize,
     mint: Mint,
     port_node: BTreeMap<(String, String), String>,
+    /// The instance id to the equipment object id, so an instrument can reference the item it
+    /// watches or commands.
+    item_ids: BTreeMap<String, String>,
 }
 
 struct Edge {
@@ -230,6 +233,7 @@ impl<'a> Builder<'a> {
             connector_count: 0,
             mint: Mint::new(),
             port_node: BTreeMap::new(),
+            item_ids: BTreeMap::new(),
         }
     }
 
@@ -285,6 +289,8 @@ impl<'a> Builder<'a> {
                 property: "Nozzles".to_string(),
                 children: nozzles,
             }));
+            self.item_ids
+                .insert(instance.id.clone(), equipment_id.clone());
             self.items.push(Object {
                 id: Some(equipment_id),
                 name: None,
@@ -490,6 +496,57 @@ impl<'a> Builder<'a> {
             }));
         }
 
+        if !self.flowsheet.instruments.is_empty() {
+            // The instrument objects first, so a signal can reference either end by object id.
+            let by_tag: BTreeMap<&str, String> = self
+                .flowsheet
+                .instruments
+                .iter()
+                .enumerate()
+                .map(|(index, instrument)| {
+                    (instrument.id.as_str(), format!("Instrument{}", index + 1))
+                })
+                .collect();
+            let mut built = Vec::new();
+            let mut signal_number = 0usize;
+            for instrument in &self.flowsheet.instruments {
+                let id = by_tag[instrument.id.as_str()].clone();
+                let mut children =
+                    instrument_children(instrument, &self.item_ids, self.options.azoth_extensions);
+                let mut signals: Vec<ComponentChild> = Vec::new();
+                for signal in self
+                    .flowsheet
+                    .signals
+                    .iter()
+                    .filter(|signal| signal.from == instrument.id)
+                {
+                    signal_number += 1;
+                    signals.push(ComponentChild::Object(signal_object(
+                        signal,
+                        &by_tag,
+                        signal_number,
+                        self.options.azoth_extensions,
+                    )));
+                }
+                if !signals.is_empty() {
+                    children.push(Child::Components(Components {
+                        property: "SignalConveyingFunctions".to_string(),
+                        children: signals,
+                    }));
+                }
+                built.push(ComponentChild::Object(Object {
+                    id: Some(id),
+                    name: None,
+                    ty: "Plant/Instrumentation.ProcessInstrumentationFunction".to_string(),
+                    children,
+                }));
+            }
+            plant_children.push(Child::Components(Components {
+                property: "ProcessInstrumentationFunctions".to_string(),
+                children: built,
+            }));
+        }
+
         let plant_model = Object {
             id: Some("PlantModel1".to_string()),
             name: None,
@@ -548,4 +605,195 @@ fn string_data(property: &str, value: &str) -> Data {
         property: property.to_string(),
         values: vec![DataValue::String(value.to_string())],
     }
+}
+
+fn number_data(property: &str, value: f64) -> Data {
+    Data {
+        property: property.to_string(),
+        values: vec![DataValue::Double(value)],
+    }
+}
+
+/// The DEXPI `ProcessInstrumentationFunction`'s properties, with the parts the model has no
+/// field for carried in `Azoth/…` extensions.
+fn instrument_children(
+    instrument: &Instrument,
+    item_ids: &BTreeMap<String, String>,
+    extensions: bool,
+) -> Vec<Child> {
+    let mut children = Vec::new();
+    let mut letters = instrument.function.chars();
+    if let Some(category) = letters.next() {
+        children.push(Child::Data(string_data(
+            "ProcessInstrumentationFunctionCategory",
+            &category.to_string(),
+        )));
+        let modifier: String = letters.collect();
+        if !modifier.is_empty() {
+            children.push(Child::Data(string_data(
+                "ProcessInstrumentationFunctionModifier",
+                &modifier,
+            )));
+        }
+    }
+    let number = instrument
+        .loop_number
+        .clone()
+        .or_else(|| trailing_digits(&instrument.id));
+    if let Some(number) = number.filter(|number| !number.is_empty()) {
+        children.push(Child::Data(string_data(
+            "ProcessInstrumentationFunctionNumber",
+            &number,
+        )));
+    }
+    if let Some(reference) = instrument.location.as_deref().and_then(location_reference) {
+        children.push(Child::Data(Data {
+            property: "Location".to_string(),
+            values: vec![DataValue::Reference(reference.to_string())],
+        }));
+    }
+    if let Some(safety) = &instrument.safety {
+        children.push(Child::Data(string_data(
+            "SafetyRelevanceClass",
+            &format!("SIL {}", safety.sil),
+        )));
+        if let Some(voting) = &safety.voting {
+            children.push(Child::Data(string_data(
+                "VotingSystemRepresentation",
+                voting,
+            )));
+        }
+        if extensions {
+            children.push(Child::Data(string_data(
+                extensions::SAFETY_FUNCTION,
+                &safety.function,
+            )));
+            if let Some(state) = &safety.safe_state {
+                children.push(Child::Data(string_data(extensions::SAFE_STATE, state)));
+            }
+            if let Some(hours) = safety.proof_test_hours {
+                children.push(Child::Data(number_data(
+                    extensions::PROOF_TEST_HOURS,
+                    hours,
+                )));
+            }
+            if let Some(seconds) = safety.closure_seconds {
+                children.push(Child::Data(number_data(
+                    extensions::CLOSURE_SECONDS,
+                    seconds,
+                )));
+            }
+        }
+    }
+    if extensions {
+        children.push(Child::Data(string_data(extensions::TAG, &instrument.id)));
+        if let Some(service) = &instrument.service {
+            children.push(Child::Data(string_data(extensions::SERVICE, service)));
+        }
+        if let Some(measures) = &instrument.measures {
+            children.push(Child::Data(string_data(extensions::MEASURES, measures)));
+        }
+        if let Some(actuates) = &instrument.actuates {
+            children.push(Child::Data(string_data(extensions::ACTUATES, actuates)));
+        }
+        if let Some(range) = &instrument.range {
+            children.push(Child::Data(number_data(extensions::RANGE_MIN, range.min)));
+            children.push(Child::Data(number_data(extensions::RANGE_MAX, range.max)));
+            children.push(Child::Data(string_data(
+                extensions::RANGE_UNIT,
+                &range.unit,
+            )));
+        }
+    }
+    for (property, target) in [
+        ("SensingLocation", &instrument.measures),
+        ("ActuatingLocation", &instrument.actuates),
+    ] {
+        if let Some(target) = target {
+            if let Some(item) = item_for(target, item_ids) {
+                children.push(Child::References(References {
+                    property: property.to_string(),
+                    objects: vec![format!("#{item}")],
+                }));
+            }
+        }
+    }
+    children
+}
+
+fn signal_object(
+    signal: &Signal,
+    by_tag: &BTreeMap<&str, String>,
+    number: usize,
+    _extensions: bool,
+) -> Object {
+    let mut children = Vec::new();
+    if let Some(reference) = signal.kind.as_deref().and_then(signal_conveying_reference) {
+        children.push(Child::Data(Data {
+            property: "SignalConveyingType".to_string(),
+            values: vec![DataValue::Reference(reference.to_string())],
+        }));
+    }
+    for (property, tag) in [("Source", &signal.from), ("Target", &signal.to)] {
+        if let Some(id) = by_tag.get(tag.as_str()) {
+            children.push(Child::References(References {
+                property: property.to_string(),
+                objects: vec![format!("#{id}")],
+            }));
+        }
+    }
+    Object {
+        id: Some(format!("Signal{number}")),
+        name: None,
+        ty: "Plant/Instrumentation.SignalConveyingFunction".to_string(),
+        children,
+    }
+}
+
+/// The item an endpoint's instance is, where the document has one.
+fn item_for<'a>(target: &str, item_ids: &'a BTreeMap<String, String>) -> Option<&'a str> {
+    let instance = split_endpoint(target).map_or(target, |(instance, _, _)| instance);
+    item_ids.get(instance).map(String::as_str)
+}
+
+fn location_reference(location: &str) -> Option<&'static str> {
+    match location {
+        "field" => Some("Plant/Enumerations.LocationClassification.Field"),
+        "panel" => Some("Plant/Enumerations.LocationClassification.ControlPanel"),
+        "central" => Some("Plant/Enumerations.LocationClassification.CentralLocation"),
+        _ => None,
+    }
+}
+
+fn signal_conveying_reference(kind: &str) -> Option<&'static str> {
+    match kind {
+        "electric" => {
+            Some("Plant/Enumerations.SignalConveyingTypeClassification.ElectricalSignalConveying")
+        }
+        "pneumatic" => {
+            Some("Plant/Enumerations.SignalConveyingTypeClassification.PneumaticSignalConveying")
+        }
+        "hydraulic" => {
+            Some("Plant/Enumerations.SignalConveyingTypeClassification.HydraulicSignalConveying")
+        }
+        "capillary" => {
+            Some("Plant/Enumerations.SignalConveyingTypeClassification.CapillarySignalConveying")
+        }
+        "radiation" => Some(
+            "Plant/Enumerations.SignalConveyingTypeClassification.ConductedRadiationSignalConveying",
+        ),
+        _ => None,
+    }
+}
+
+fn trailing_digits(tag: &str) -> Option<String> {
+    let digits: String = tag
+        .chars()
+        .rev()
+        .take_while(char::is_ascii_digit)
+        .collect::<String>()
+        .chars()
+        .rev()
+        .collect();
+    (!digits.is_empty()).then_some(digits)
 }

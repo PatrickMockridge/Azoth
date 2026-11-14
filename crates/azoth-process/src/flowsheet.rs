@@ -310,6 +310,16 @@ pub struct Flowsheet {
     pub connections: Vec<Connection>,
     #[serde(default)]
     pub recycles: Vec<Recycle>,
+    /// The instruments the drawing carries, and the signals between them.
+    ///
+    /// **A view of control, not physics.** Nothing in the run reads an instrument: a loop
+    /// number, a range and a SIL are what a P&ID states, and the simulation states none of
+    /// them. They live in the document because a P&ID is one artifact and the exchange needs
+    /// the control layer beside the process layer, not in a second file keyed by tag.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub instruments: Vec<Instrument>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub signals: Vec<Signal>,
     /// Where an editor draws each node, where one has been placed.
     ///
     /// **Last, and a table rather than a field on `Instance`.** `products` is names only — an
@@ -319,6 +329,95 @@ pub struct Flowsheet {
     /// order the writer can emit; `specs/flowsheets/` holds it to that.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub layout: Option<Layout>,
+}
+
+/// One instrument: a tagged function on the drawing.
+///
+/// **The tag is the identity, and its pieces are ISA's.** `function` is the function-letters
+/// part (`PSHH`, `TIC`, `FV`), `loop_number` the number the tag belongs to; together they
+/// spell what the DEXPI `ProcessInstrumentationFunction` splits into category, modifier and
+/// number. `measures` and `actuates` are endpoints the document already declares - a stream
+/// for a transmitter, an instance for a final element - so an instrument cannot point at
+/// something the drawing does not have.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Instrument {
+    /// The tag, e.g. `PSHH-101`.
+    pub id: String,
+    /// ISA function letters, e.g. `PSHH`, `TIC`, `FV`, `LS`.
+    pub function: String,
+    /// What it measures or commands, in words: `separator overhead pressure`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub service: Option<String>,
+    /// The loop number the tag's number belongs to.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub loop_number: Option<String>,
+    /// What it measures: a stream endpoint or an instance id.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub measures: Option<String>,
+    /// What it actuates: an instance id or an endpoint.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub actuates: Option<String>,
+    /// `field`, `panel` or `central` - the three locations DEXPI names.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub location: Option<String>,
+    /// The calibrated range, where the drawing states one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub range: Option<InstrumentRange>,
+    /// The safety function this instrument takes part in, where it takes part in one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub safety: Option<SafetyFunction>,
+}
+
+/// An instrument's calibrated range, under the declaration's own unit.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct InstrumentRange {
+    pub min: f64,
+    pub max: f64,
+    /// A unit from the closed vocabulary.
+    pub unit: String,
+}
+
+/// The safety function an instrument belongs to.
+///
+/// **Exchange evidence, not SIL verification.** A P&ID carries a SIL and a voting
+/// architecture; it does not prove them, and this record does not either - it is what the
+/// drawing says, kept so a round trip does not lose it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SafetyFunction {
+    /// The safety function's own tag, e.g. `SIF-101`.
+    pub function: String,
+    /// The declared SIL, 1 to 4.
+    pub sil: u8,
+    /// The voting architecture, e.g. `2oo3`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub voting: Option<String>,
+    /// The safe state the final element moves to: `open`, `closed` or `trip`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub safe_state: Option<String>,
+    /// The proof-test interval, hours.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub proof_test_hours: Option<f64>,
+    /// The final element's closure time, seconds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub closure_seconds: Option<f64>,
+}
+
+/// One signal between instruments: a measurement line, an information flow or an actuating
+/// signal.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Signal {
+    /// The instrument the signal leaves.
+    pub from: String,
+    /// The instrument it reaches.
+    pub to: String,
+    /// Its carrier: `electric`, `pneumatic`, `hydraulic`, `capillary` or `radiation` - the
+    /// five DEXPI names.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
 }
 
 /// Where the editor draws each node, by name.

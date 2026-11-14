@@ -146,6 +146,8 @@ pub const PLANT_SUPPORTED_TYPES: &[&str] = &[
     "Plant/Instrumentation.ProcessInstrumentationFunction",
     "Plant/Instrumentation.ProcessSignalGeneratingFunction",
     "Plant/Instrumentation.MeasuringLineFunction",
+    "Plant/Instrumentation.SignalConveyingFunction",
+    "Plant/Instrumentation.InstrumentationLoopFunction",
     "Plant/Diagram.PlantMetaData",
 ];
 

@@ -208,6 +208,8 @@ pub fn import_process(
         connections,
         recycles,
         layout: None,
+        instruments: Vec::new(),
+        signals: Vec::new(),
     };
 
     if options.strict {

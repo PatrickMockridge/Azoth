@@ -43,6 +43,69 @@ fn the_export_names_the_items_and_their_nozzles() {
 }
 
 #[test]
+fn the_export_writes_the_instrumentation_layer() {
+    let report = export_oracle(true);
+    assert!(
+        report
+            .xml
+            .contains("Plant/Instrumentation.ProcessInstrumentationFunction")
+    );
+    assert!(report.xml.contains("<String>SHH</String>"));
+    assert!(
+        report
+            .xml
+            .contains("Plant/Enumerations.LocationClassification.Field")
+    );
+    assert!(
+        report
+            .xml
+            .contains("Plant/Enumerations.SignalConveyingTypeClassification")
+    );
+    assert!(report.xml.contains("<String>SIL 2</String>"));
+}
+
+#[test]
+fn the_round_trip_recovers_the_instruments_and_signals() {
+    let palette = common::palette();
+    let original = common::plant_simple();
+    let xml = export_oracle(true).xml;
+    let imported = import_plant(&xml, &palette, &PlantImportOptions::default())
+        .expect("the extension exchange imports");
+    let instruments = &imported.flowsheet.instruments;
+    assert_eq!(instruments.len(), original.instruments.len());
+    let pressure = instruments
+        .iter()
+        .find(|instrument| instrument.id == "PSHH-101")
+        .expect("the pressure switch survives");
+    assert_eq!(pressure.function, "PSHH");
+    assert_eq!(pressure.loop_number.as_deref(), Some("101"));
+    assert_eq!(pressure.measures.as_deref(), Some("V-101.vapour"));
+    assert_eq!(pressure.location.as_deref(), Some("field"));
+    let range = pressure.range.as_ref().expect("the range survives");
+    assert_eq!(range.unit, "Pa");
+    assert!((range.max - 1.0e7).abs() < 1.0);
+    let safety = pressure
+        .safety
+        .as_ref()
+        .expect("the safety function survives");
+    assert_eq!(safety.function, "SIF-101");
+    assert_eq!(safety.sil, 2);
+    assert_eq!(safety.voting.as_deref(), Some("2oo3"));
+    assert_eq!(safety.safe_state.as_deref(), Some("closed"));
+    assert_eq!(safety.proof_test_hours, Some(8760.0));
+    assert_eq!(safety.closure_seconds, Some(2.0));
+
+    let signal = imported
+        .flowsheet
+        .signals
+        .iter()
+        .find(|signal| signal.from == "PSHH-101")
+        .expect("the signal survives");
+    assert_eq!(signal.to, "TIC-102");
+    assert_eq!(signal.kind.as_deref(), Some("electric"));
+}
+
+#[test]
 fn the_round_trip_recovers_the_topology() {
     let palette = common::palette();
     let original = common::plant_simple();

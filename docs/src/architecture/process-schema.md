@@ -148,6 +148,42 @@ is refused by name with the measurement that closes it). **`minimum_flow` is a s
 not a tolerance**: a tear below it is deactivated outright, its residuals *declared* zero
 rather than measured, and its loop stops at one pass.
 
+## The control layer
+
+`[[instruments]]` and `[[signals]]` are the P&ID's control layer, and they are a **view of
+control and not physics**: nothing in the run reads one, the executor never sees one, and a
+flowsheet with none is the ordinary case.
+
+An instrument's identity is its tag. `function` holds the ISA function letters (`PSHH`,
+`TIC`, `FV`) and `loop_number` the number the tag belongs to; `measures` and `actuates`
+name endpoints the document already declares — a stream for a transmitter, an instance for a
+final element — so an instrument cannot point at something the drawing does not have.
+`location` is one of `field`, `panel` and `central`, the three DEXPI names. `range` is a
+`min`, a `max` and a unit from the closed vocabulary. `safety` declares the safety function
+an instrument takes part in — its tag, SIL 1 to 4, an `NooM` voting architecture, the safe
+state, the proof-test interval in hours and the closure time in seconds — and it is
+**exchange evidence, not SIL verification**: it is what the drawing says, not what proves it.
+
+A `[[signals]]` entry joins two declared instruments, `from` and `to`, with a carrier the
+exchange names: `electric`, `pneumatic`, `hydraulic`, `capillary` or `radiation`.
+
+```toml
+[[instruments]]
+id = "PSHH-101"
+function = "PSHH"
+service = "separator overhead pressure"
+loop_number = "101"
+measures = "sep1.vapour"
+location = "field"
+range = { min = 0.0, max = 1.0e7, unit = "Pa" }
+safety = { function = "SIF-101", sil = 2, voting = "2oo3", safe_state = "closed", proof_test_hours = 8760.0, closure_seconds = 2.0 }
+
+[[signals]]
+from = "PSHH-101"
+to = "TIC-102"
+kind = "electric"
+```
+
 ## The checker
 
 `azoth_process::validate` runs the calculus's rules:
@@ -165,6 +201,10 @@ rather than measured, and its loop stops at one pass.
   feed/product is used exactly once;
 - no name is used for two things a reader has to tell apart — an instance and a feed, an instance
   and a product, or a feed and a product;
+- **an instrument's tag is unique**, its function letters are upper-case ISA letters, its
+  `measures`/`actuates` endpoints exist, its range is a range in a vocabulary unit, its safety
+  declaration is one a drawing could state, and a signal joins two declared instruments with a
+  named carrier;
 - **a connection and a tear may each be declared once**: a connection is identified by its two
   endpoints and a tear by its name, because those are what the executor resolves them by, so a
   second entry under the same identity feeds one port the same stream twice. Measured — a

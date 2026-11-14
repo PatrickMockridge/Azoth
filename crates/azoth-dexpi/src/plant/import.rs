@@ -12,13 +12,15 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use azoth_process::flowsheet::{Connection, Flowsheet, Instance, Recycle};
+use azoth_process::flowsheet::{
+    Connection, Flowsheet, Instance, Instrument, InstrumentRange, Recycle, SafetyFunction, Signal,
+};
 use azoth_process::{Direction, UnitOpSpec};
 
 use crate::diagnostic::{DexpiDiagnostic, Severity};
 use crate::extensions;
 use crate::ids::{model_name, sanitize_instance_id, uniquify};
-use crate::model::{Child, ComponentChild, Document, Object};
+use crate::model::{Child, ComponentChild, DataValue, Document, Object};
 use crate::plant::{self, DEFAULT_LINE, PASS_THROUGH_CLASSES};
 use crate::reader;
 use crate::validate::validate;
@@ -173,6 +175,9 @@ pub fn import_plant_document(
         .collect();
 
     let root = find_engineering_model(&document);
+    let item_tags = item_tags(plant_model);
+    let instrumentation = read_instruments(plant_model, &item_tags, &mut diagnostics);
+
     let flowsheet = Flowsheet {
         id: root
             .and_then(|root| root.data_string(extensions::FLOWSHEET_ID))
@@ -185,6 +190,8 @@ pub fn import_plant_document(
         instances,
         connections,
         recycles,
+        instruments: instrumentation.instruments,
+        signals: instrumentation.signals,
         layout: None,
     };
 
@@ -660,4 +667,260 @@ fn walk_object<'a>(object: &'a Object, visit_object: &mut impl FnMut(&'a Object)
             }
         }
     }
+}
+
+struct Instrumentation {
+    instruments: Vec<Instrument>,
+    signals: Vec<Signal>,
+}
+
+/// The tagged items' object ids to their tags, so an instrument's `SensingLocation` reference
+/// becomes the instance id the flowsheet uses.
+fn item_tags(plant_model: &Object) -> BTreeMap<String, String> {
+    let mut map = BTreeMap::new();
+    let Some(items) = plant_model.components("TaggedPlantItems") else {
+        return map;
+    };
+    for item in items.children.iter().filter_map(|child| match child {
+        ComponentChild::Object(object) => Some(object),
+        _ => None,
+    }) {
+        if let (Some(id), Some(tag)) = (item.id.clone(), item.data_string("TagName")) {
+            map.insert(id, tag.to_string());
+        }
+    }
+    map
+}
+
+/// The instruments and the signals between them, as the Plant model states them.
+///
+/// **The model's fields are the exchange's, and the extensions fill the rest.** Category,
+/// modifier and number, the location reference and the safety class are standard; the tag,
+/// service, measured and actuated endpoints, range, safe state and intervals are `Azoth/…`
+/// properties, because the DEXPI model has no field for them here.
+fn read_instruments(
+    plant_model: &Object,
+    items: &BTreeMap<String, String>,
+    diagnostics: &mut Vec<DexpiDiagnostic>,
+) -> Instrumentation {
+    let mut instruments = Vec::new();
+    let mut tags_by_object: BTreeMap<String, String> = BTreeMap::new();
+    let mut queued: Vec<(String, String, Option<String>)> = Vec::new();
+    let Some(component) = plant_model.components("ProcessInstrumentationFunctions") else {
+        return Instrumentation {
+            instruments,
+            signals: Vec::new(),
+        };
+    };
+    for object in component.children.iter().filter_map(|child| match child {
+        ComponentChild::Object(object) => Some(object),
+        _ => None,
+    }) {
+        let tag = object
+            .data_string(extensions::TAG)
+            .map(ToString::to_string)
+            .unwrap_or_else(|| reconstruct_tag(object));
+        if let Some(id) = &object.id {
+            tags_by_object.insert(id.clone(), tag.clone());
+        }
+        let location = read_location(object);
+        if object.data_value("Location").is_some() && location.is_none() {
+            diagnostics.push(DexpiDiagnostic::warning(
+                "unsupported_instrument_location",
+                tag.clone(),
+                "the location reference is not one of Field, ControlPanel or CentralLocation",
+            ));
+        }
+        let safety = read_safety(object, &tag, diagnostics);
+        instruments.push(Instrument {
+            id: tag.clone(),
+            function: function_letters(object),
+            service: object
+                .data_string(extensions::SERVICE)
+                .map(ToString::to_string),
+            loop_number: function_number(object),
+            measures: object
+                .data_string(extensions::MEASURES)
+                .map(ToString::to_string)
+                .or_else(|| reference_tag(object, "SensingLocation", items)),
+            actuates: object
+                .data_string(extensions::ACTUATES)
+                .map(ToString::to_string)
+                .or_else(|| reference_tag(object, "ActuatingLocation", items)),
+            location,
+            range: read_range(object),
+            safety,
+        });
+        if let Some(signals) = object.components("SignalConveyingFunctions") {
+            for signal in signals.children.iter().filter_map(|child| match child {
+                ComponentChild::Object(object) => Some(object),
+                _ => None,
+            }) {
+                let Some(target) = first_reference(signal, "Target") else {
+                    continue;
+                };
+                queued.push((
+                    tag.clone(),
+                    target.trim_start_matches('#').to_string(),
+                    read_signal_kind(signal),
+                ));
+            }
+        }
+    }
+
+    let mut signals = Vec::new();
+    for (from, target, kind) in queued {
+        match tags_by_object.get(&target) {
+            Some(to) => signals.push(Signal {
+                from,
+                to: to.clone(),
+                kind,
+            }),
+            None => diagnostics.push(DexpiDiagnostic::warning(
+                "unknown_signal_target",
+                from,
+                format!("the signal's target `{target}` is not a declared instrument"),
+            )),
+        }
+    }
+    Instrumentation {
+        instruments,
+        signals,
+    }
+}
+
+fn reconstruct_tag(object: &Object) -> String {
+    let letters = function_letters(object);
+    match function_number(object) {
+        Some(number) if !letters.is_empty() => format!("{letters}-{number}"),
+        Some(number) => number,
+        None if !letters.is_empty() => letters,
+        None => object.id.clone().unwrap_or_default(),
+    }
+}
+
+fn function_letters(object: &Object) -> String {
+    let category = object
+        .data_string("ProcessInstrumentationFunctionCategory")
+        .unwrap_or_default();
+    let modifier = object
+        .data_string("ProcessInstrumentationFunctionModifier")
+        .unwrap_or_default();
+    if !category.is_empty() {
+        return format!("{category}{modifier}");
+    }
+    // A file that states no category: the tag's leading letters are the function.
+    let tag = object
+        .data_string(extensions::TAG)
+        .or(object.id.as_deref())
+        .unwrap_or_default();
+    tag.chars()
+        .take_while(char::is_ascii_alphabetic)
+        .collect::<String>()
+        .to_ascii_uppercase()
+}
+
+fn function_number(object: &Object) -> Option<String> {
+    if let Some(number) = object.data_string("ProcessInstrumentationFunctionNumber") {
+        if !number.is_empty() {
+            return Some(number.to_string());
+        }
+    }
+    let tag = object
+        .data_string(extensions::TAG)
+        .or(object.id.as_deref())
+        .unwrap_or_default();
+    let digits: String = tag
+        .chars()
+        .rev()
+        .take_while(char::is_ascii_digit)
+        .collect::<String>()
+        .chars()
+        .rev()
+        .collect();
+    (!digits.is_empty()).then_some(digits)
+}
+
+fn read_location(object: &Object) -> Option<String> {
+    let DataValue::Reference(reference) = object.data_value("Location")? else {
+        return None;
+    };
+    match reference.rsplit('.').next()? {
+        "Field" => Some("field".to_string()),
+        "ControlPanel" => Some("panel".to_string()),
+        "CentralLocation" => Some("central".to_string()),
+        _ => None,
+    }
+}
+
+fn read_safety(
+    object: &Object,
+    tag: &str,
+    diagnostics: &mut Vec<DexpiDiagnostic>,
+) -> Option<SafetyFunction> {
+    let class = object.data_string("SafetyRelevanceClass")?;
+    let sil = class
+        .trim()
+        .strip_prefix("SIL")
+        .map(str::trim)
+        .and_then(|value| value.parse::<u8>().ok());
+    let Some(sil) = sil else {
+        diagnostics.push(DexpiDiagnostic::warning(
+            "unsupported_safety_class",
+            tag,
+            format!("`{class}` is not a `SIL n` class, so the safety function is not read"),
+        ));
+        return None;
+    };
+    Some(SafetyFunction {
+        function: object
+            .data_string(extensions::SAFETY_FUNCTION)
+            .map_or_else(|| tag.to_string(), ToString::to_string),
+        sil,
+        voting: object
+            .data_string("VotingSystemRepresentation")
+            .map(ToString::to_string),
+        safe_state: object
+            .data_string(extensions::SAFE_STATE)
+            .map(ToString::to_string),
+        proof_test_hours: number(object, extensions::PROOF_TEST_HOURS),
+        closure_seconds: number(object, extensions::CLOSURE_SECONDS),
+    })
+}
+
+fn read_range(object: &Object) -> Option<InstrumentRange> {
+    Some(InstrumentRange {
+        min: number(object, extensions::RANGE_MIN)?,
+        max: number(object, extensions::RANGE_MAX)?,
+        unit: object
+            .data_string(extensions::RANGE_UNIT)
+            .map(ToString::to_string)?,
+    })
+}
+
+fn read_signal_kind(object: &Object) -> Option<String> {
+    let DataValue::Reference(reference) = object.data_value("SignalConveyingType")? else {
+        return None;
+    };
+    match reference.rsplit('.').next()? {
+        "ElectricalSignalConveying" => Some("electric".to_string()),
+        "PneumaticSignalConveying" => Some("pneumatic".to_string()),
+        "HydraulicSignalConveying" => Some("hydraulic".to_string()),
+        "CapillarySignalConveying" => Some("capillary".to_string()),
+        "ConductedRadiationSignalConveying" => Some("radiation".to_string()),
+        _ => None,
+    }
+}
+
+fn number(object: &Object, property: &str) -> Option<f64> {
+    object.data_value(property).and_then(DataValue::as_f64)
+}
+
+fn reference_tag(
+    object: &Object,
+    property: &str,
+    map: &BTreeMap<String, String>,
+) -> Option<String> {
+    let target = first_reference(object, property)?;
+    map.get(target.trim_start_matches('#')).cloned()
 }

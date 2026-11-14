@@ -238,6 +238,56 @@ pub enum Diagnostic {
     UnrecycledLoop {
         detail: String,
     },
+    /// Two `[[instruments]]` entries carry the same tag.
+    ///
+    /// **A tag is an instrument's identity on a drawing**, and the exchange writes it as the
+    /// `ProcessInstrumentationFunction`'s tag; two entries sharing one would be written twice
+    /// under one identity, and a consumer would read one of them.
+    DuplicateInstrument {
+        id: String,
+    },
+    /// Two `[[signals]]` entries join the same pair of instruments.
+    DuplicateSignal {
+        from: String,
+        to: String,
+    },
+    /// An instrument's function letters are not ISA letters.
+    BadInstrumentFunction {
+        instrument: String,
+        function: String,
+    },
+    /// `measures` or `actuates` names an endpoint the document does not declare.
+    UnknownInstrumentTarget {
+        instrument: String,
+        field: &'static str,
+        target: String,
+    },
+    /// An instrument's range is not a range.
+    BadInstrumentRange {
+        instrument: String,
+        detail: String,
+    },
+    /// An instrument's location is not one the exchange names.
+    BadInstrumentLocation {
+        instrument: String,
+        location: String,
+    },
+    /// A safety function's declaration is outside what a P&ID can state.
+    BadSafetyFunction {
+        instrument: String,
+        detail: String,
+    },
+    /// A signal names an instrument the document does not declare.
+    UnknownSignalEnd {
+        from: String,
+        to: String,
+        end: &'static str,
+        instrument: String,
+    },
+    /// A signal's carrier is not one the exchange names.
+    BadSignalKind {
+        kind: String,
+    },
 }
 
 /// How bad a diagnostic is.
@@ -447,6 +497,15 @@ impl Diagnostic {
             Self::DuplicateConnection { .. } => "duplicate_connection",
             Self::DuplicateRecycle { .. } => "duplicate_recycle",
             Self::UnrecycledLoop { .. } => "unrecycled_loop",
+            Self::DuplicateInstrument { .. } => "duplicate_instrument",
+            Self::DuplicateSignal { .. } => "duplicate_signal",
+            Self::BadInstrumentFunction { .. } => "bad_instrument_function",
+            Self::UnknownInstrumentTarget { .. } => "unknown_instrument_target",
+            Self::BadInstrumentRange { .. } => "bad_instrument_range",
+            Self::BadInstrumentLocation { .. } => "bad_instrument_location",
+            Self::BadSafetyFunction { .. } => "bad_safety_function",
+            Self::UnknownSignalEnd { .. } => "unknown_signal_end",
+            Self::BadSignalKind { .. } => "bad_signal_kind",
         }
     }
 
@@ -581,6 +640,25 @@ impl Diagnostic {
                 endpoint: stream.clone(),
             },
             Self::UnrecycledLoop { .. } => Target::Document,
+            Self::DuplicateInstrument { id } => Target::Endpoint {
+                endpoint: id.clone(),
+            },
+            Self::DuplicateSignal { from, to } => Target::Edge {
+                from: from.clone(),
+                to: to.clone(),
+            },
+            Self::BadInstrumentFunction { instrument, .. }
+            | Self::BadInstrumentRange { instrument, .. }
+            | Self::BadInstrumentLocation { instrument, .. }
+            | Self::BadSafetyFunction { instrument, .. }
+            | Self::UnknownInstrumentTarget { instrument, .. } => Target::Endpoint {
+                endpoint: instrument.clone(),
+            },
+            Self::UnknownSignalEnd { from, to, .. } => Target::Edge {
+                from: from.clone(),
+                to: to.clone(),
+            },
+            Self::BadSignalKind { .. } => Target::Document,
         }
     }
 
@@ -643,6 +721,17 @@ impl Diagnostic {
             Self::DuplicateConnection { from, to } => at("connections", format!("{from} -> {to}")),
             Self::DuplicateRecycle { stream } => at("recycles", stream.clone()),
             Self::UnrecycledLoop { .. } => at("connections", String::new()),
+            Self::DuplicateInstrument { id } => at("instruments", id.clone()),
+            Self::BadInstrumentFunction { instrument, .. }
+            | Self::BadInstrumentRange { instrument, .. }
+            | Self::BadInstrumentLocation { instrument, .. }
+            | Self::BadSafetyFunction { instrument, .. }
+            | Self::UnknownInstrumentTarget { instrument, .. } => {
+                at("instruments", instrument.clone())
+            }
+            Self::DuplicateSignal { from, to } => at("signals", format!("{from} -> {to}")),
+            Self::UnknownSignalEnd { from, to, .. } => at("signals", format!("{from} -> {to}")),
+            Self::BadSignalKind { kind } => at("signals", kind.clone()),
         }
     }
 }
@@ -771,6 +860,52 @@ impl Diagnostic {
                 format!("the tear `{stream}` is declared twice")
             }
             Self::UnrecycledLoop { detail } => detail.clone(),
+            Self::DuplicateInstrument { id } => {
+                format!("the instrument `{id}` is declared twice")
+            }
+            Self::DuplicateSignal { from, to } => {
+                format!("the signal `{from} -> {to}` is declared twice")
+            }
+            Self::BadInstrumentFunction {
+                instrument,
+                function,
+            } => format!(
+                "`{instrument}` carries `{function}` as its function letters; ISA letters are \
+                 upper-case and non-empty"
+            ),
+            Self::UnknownInstrumentTarget {
+                instrument,
+                field,
+                target,
+            } => format!(
+                "`{instrument}`'s `{field}` names `{target}`, which the document does not declare"
+            ),
+            Self::BadInstrumentRange { instrument, detail } => {
+                format!("`{instrument}`'s range: {detail}")
+            }
+            Self::BadInstrumentLocation {
+                instrument,
+                location,
+            } => format!(
+                "`{instrument}`'s location `{location}` is not one the exchange names; they are \
+                 field, panel and central"
+            ),
+            Self::BadSafetyFunction { instrument, detail } => {
+                format!("`{instrument}`'s safety function: {detail}")
+            }
+            Self::UnknownSignalEnd {
+                from,
+                to,
+                end,
+                instrument,
+            } => format!(
+                "the signal `{from} -> {to}` names `{instrument}` as its `{end}`, which is not a \
+                 declared instrument"
+            ),
+            Self::BadSignalKind { kind } => format!(
+                "`{kind}` is not a signal carrier; they are electric, pneumatic, hydraulic, \
+                 capillary and radiation"
+            ),
         }
     }
 }
@@ -1215,7 +1350,196 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
         }
     }
 
+    validate_instruments(flowsheet, &specs, &mut diags);
+
     diags
+}
+
+/// The locations and signal carriers the exchange names.
+const INSTRUMENT_LOCATIONS: &[&str] = &["field", "panel", "central"];
+const SIGNAL_KINDS: &[&str] = &[
+    "electric",
+    "pneumatic",
+    "hydraulic",
+    "capillary",
+    "radiation",
+];
+
+/// The control layer's rules: one tag per instrument, endpoints that exist, a range that is a
+/// range, a safety declaration the drawing could state, and signals between declared
+/// instruments.
+///
+/// **Nothing here is physics**, and the executor never reads it. What the rules protect is that
+/// the document an exchange writes is one a P&ID could have carried: a tag twice, a
+/// measurement of a stream that does not exist, `min` above `max`, a SIL of 5 or a signal to
+/// nowhere are all things a drawing does not do.
+fn validate_instruments(
+    flowsheet: &Flowsheet,
+    specs: &HashMap<&str, &UnitOpSpec>,
+    diags: &mut Vec<Diagnostic>,
+) {
+    let mut tags: HashSet<&str> = HashSet::new();
+    for instrument in &flowsheet.instruments {
+        if !tags.insert(instrument.id.as_str()) {
+            diags.push(Diagnostic::DuplicateInstrument {
+                id: instrument.id.clone(),
+            });
+        }
+        if instrument.function.is_empty()
+            || !instrument.function.chars().all(|c| c.is_ascii_uppercase())
+        {
+            diags.push(Diagnostic::BadInstrumentFunction {
+                instrument: instrument.id.clone(),
+                function: instrument.function.clone(),
+            });
+        }
+        for (field, target) in [
+            ("measures", &instrument.measures),
+            ("actuates", &instrument.actuates),
+        ] {
+            if let Some(target) = target {
+                if !instrument_target_known(flowsheet, specs, target) {
+                    diags.push(Diagnostic::UnknownInstrumentTarget {
+                        instrument: instrument.id.clone(),
+                        field,
+                        target: target.clone(),
+                    });
+                }
+            }
+        }
+        if let Some(location) = &instrument.location {
+            if !INSTRUMENT_LOCATIONS.contains(&location.as_str()) {
+                diags.push(Diagnostic::BadInstrumentLocation {
+                    instrument: instrument.id.clone(),
+                    location: location.clone(),
+                });
+            }
+        }
+        if let Some(range) = &instrument.range {
+            let detail = if !range.min.is_finite() || !range.max.is_finite() {
+                Some("a bound is not finite".to_string())
+            } else if range.min >= range.max {
+                Some(format!(
+                    "`min` {} is not below `max` {}",
+                    range.min, range.max
+                ))
+            } else if !azoth_core::units::UNIT_NAMES.contains(&range.unit.as_str()) {
+                Some(format!("`{}` is not a unit of the vocabulary", range.unit))
+            } else {
+                None
+            };
+            if let Some(detail) = detail {
+                diags.push(Diagnostic::BadInstrumentRange {
+                    instrument: instrument.id.clone(),
+                    detail,
+                });
+            }
+        }
+        if let Some(safety) = &instrument.safety {
+            if let Some(detail) = safety_problem(safety) {
+                diags.push(Diagnostic::BadSafetyFunction {
+                    instrument: instrument.id.clone(),
+                    detail,
+                });
+            }
+        }
+    }
+
+    let mut pairs: HashSet<(&str, &str)> = HashSet::new();
+    for signal in &flowsheet.signals {
+        if !pairs.insert((signal.from.as_str(), signal.to.as_str())) {
+            diags.push(Diagnostic::DuplicateSignal {
+                from: signal.from.clone(),
+                to: signal.to.clone(),
+            });
+        }
+        for (end, instrument) in [("from", &signal.from), ("to", &signal.to)] {
+            if !tags.contains(instrument.as_str()) {
+                diags.push(Diagnostic::UnknownSignalEnd {
+                    from: signal.from.clone(),
+                    to: signal.to.clone(),
+                    end,
+                    instrument: instrument.clone(),
+                });
+            }
+        }
+        if let Some(kind) = &signal.kind {
+            if !SIGNAL_KINDS.contains(&kind.as_str()) {
+                diags.push(Diagnostic::BadSignalKind { kind: kind.clone() });
+            }
+        }
+    }
+}
+
+/// Whether `target` names an endpoint the document declares: a port of a declared instance, a
+/// declared instance, a feed or a product.
+fn instrument_target_known(
+    flowsheet: &Flowsheet,
+    specs: &HashMap<&str, &UnitOpSpec>,
+    target: &str,
+) -> bool {
+    if let Some((instance_id, port, _)) = split_endpoint(target) {
+        let Some(instance) = flowsheet
+            .instances
+            .iter()
+            .find(|instance| instance.id == instance_id)
+        else {
+            return false;
+        };
+        return specs
+            .get(instance.unit.as_str())
+            .is_some_and(|spec| spec.ports.iter().any(|declared| declared.name == port));
+    }
+    flowsheet
+        .instances
+        .iter()
+        .any(|instance| instance.id == target)
+        || flowsheet.inputs.iter().any(|input| input.name == target)
+        || flowsheet.products.iter().any(|product| product == target)
+}
+
+/// What a safety declaration says that a P&ID cannot: a SIL outside 1-4, a voting architecture
+/// that is not `NooM`, a safe state that is not open, closed or trip, or a non-positive
+/// interval.
+fn safety_problem(safety: &crate::flowsheet::SafetyFunction) -> Option<String> {
+    if safety.function.trim().is_empty() {
+        return Some("a safety function needs a tag".to_string());
+    }
+    if !(1..=4).contains(&safety.sil) {
+        return Some(format!("a SIL of {} is not 1 to 4", safety.sil));
+    }
+    if let Some(voting) = &safety.voting {
+        let lower = voting.to_ascii_lowercase();
+        let parsed = lower
+            .split_once("oo")
+            .and_then(|(left, right)| Some((left.parse::<u8>().ok()?, right.parse::<u8>().ok()?)));
+        match parsed {
+            Some((voted, total)) if (1..=4).contains(&total) && voted <= total => {}
+            _ => {
+                return Some(format!(
+                    "`{voting}` is not a voting architecture such as `2oo3`"
+                ));
+            }
+        }
+    }
+    if let Some(state) = &safety.safe_state {
+        if !matches!(state.as_str(), "open" | "closed" | "trip") {
+            return Some(format!(
+                "`{state}` is not a safe state; they are open, closed and trip"
+            ));
+        }
+    }
+    for (name, value) in [
+        ("proof_test_hours", safety.proof_test_hours),
+        ("closure_seconds", safety.closure_seconds),
+    ] {
+        if let Some(value) = value {
+            if !value.is_finite() || value <= 0.0 {
+                return Some(format!("`{name}` must be a positive number"));
+            }
+        }
+    }
+    None
 }
 
 /// A resolved endpoint of an edge.
@@ -1684,6 +2008,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         assert_clean(&flowsheet, &palette);
     }
@@ -1720,6 +2046,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         assert_clean(&flowsheet, &palette);
 
@@ -1770,6 +2098,8 @@ mod tests {
             connections: vec![],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         let diags = validate(&flowsheet, &[]);
         assert!(has(
@@ -1805,6 +2135,8 @@ mod tests {
             connections: vec![],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         let diags = validate(&flowsheet, &[pump]);
         assert!(has(
@@ -1837,6 +2169,8 @@ mod tests {
             }],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         let diags = validate(&flowsheet, &palette);
         assert!(has(
@@ -1869,6 +2203,8 @@ mod tests {
             }],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         let diags = validate(&flowsheet, &palette);
         assert!(has(
@@ -1913,6 +2249,8 @@ mod tests {
             }],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         let diags = validate(&flowsheet, &palette);
         assert!(has_variant(&diags, |d| matches!(
@@ -1948,6 +2286,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         let diags = validate(&flowsheet, &palette);
         assert!(has(
@@ -1998,6 +2338,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         assert!(has_variant(&validate(&looped, &palette), |d| matches!(
             d,
@@ -2018,6 +2360,8 @@ mod tests {
             }],
             recycles: vec![Recycle::new("r1", "p2.discharge", "p1.feed")],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         assert!(!has_variant(&validate(&torn, &palette), |d| matches!(
             d,
@@ -2118,6 +2462,8 @@ mod tests {
             ],
             recycles: Vec::new(),
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
 
         let diags = validate(&flowsheet, &palette);
@@ -2215,6 +2561,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         let diags = validate(&flowsheet, &palette);
         let sparse = diags
@@ -2263,6 +2611,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         let diags = validate(&flowsheet, &palette);
         let duplicate = diags
@@ -2304,6 +2654,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         assert_clean(&flowsheet, &palette);
     }
@@ -2352,6 +2704,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         let diags = validate(&flowsheet, &palette);
         let overused = diags
@@ -2393,6 +2747,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         assert_clean(&flowsheet, &palette);
     }
@@ -2423,6 +2779,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         }
     }
 
@@ -2470,6 +2828,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
 
         // The heater declares three parameters and requires none of them, which is why the rule
@@ -2543,6 +2903,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
         let diags = validate(&flowsheet, &two_port_palette);
         assert!(
@@ -2626,6 +2988,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
 
         let diags = validate(&flowsheet, &palette);
@@ -2713,6 +3077,8 @@ mod tests {
             ],
             recycles: vec![],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         };
 
         let diags = validate(&flowsheet, &palette);
@@ -2851,6 +3217,8 @@ mod tests {
             ],
             recycles: vec![Recycle::new("r1", "s1.products[0]", "m1.feed")],
             layout: None,
+            instruments: Vec::new(),
+            signals: Vec::new(),
         }
     }
 
