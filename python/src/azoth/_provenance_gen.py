@@ -2732,6 +2732,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 3,
         "tests_skipped": 0,
     },
+    'process.pfp_demand': {
+        "calc_id": 'process.pfp_demand',
+        "name": 'Passive fire protection demand',
+        "spec": {'path': 'specs/models/process/pfp_demand.toml', 'sha256': 'ce1a86503bcf8f04dba7b8e5f4becca0f7a2df7552bb0e5430972cba03a06a47'},
+        "code": [{'path': 'python/src/azoth/process/reference/pfp_demand.py', 'sha256': '03a2f103f2eb3c4ae109055144b54acb6b2e50ffdcf1049164601f0081e79b9b'}, {'path': 'crates/azoth-process/src/models/pfp_demand.rs', 'sha256': '46af83fd9b0b97e7fa15e7f24b2173b85ddaac57b0c4e933bfb08e15e677aef0'}],
+        "source": 'NeqSim process/safety/fire/PfpDemandCalculator.java',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 9,
+        "tests_skipped": 0,
+    },
     'process.pipe': {
         "calc_id": 'process.pipe',
         "name": 'Pipe',

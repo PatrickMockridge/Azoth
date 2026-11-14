@@ -248,6 +248,7 @@
 //!   - specs/models/process/map_turbo_expander_compressor.toml
 //!   - specs/models/process/mixer.toml
 //!   - specs/models/process/packed_column.toml
+//!   - specs/models/process/pfp_demand.toml
 //!   - specs/models/process/pipe.toml
 //!   - specs/models/process/plug_flow_reactor.toml
 //!   - specs/models/process/pool_fire.toml
@@ -3709,6 +3710,34 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "process.packed_column",
         "max_allowable_fs_factor",
         "dimensionless",
+    ),
+    (
+        "process.pfp_demand",
+        "incident_heat_flux",
+        "heat_flux_density",
+    ),
+    ("process.pfp_demand", "steel_thickness", "length"),
+    ("process.pfp_demand", "required_survival_time", "time"),
+    ("process.pfp_demand", "absorptivity", "dimensionless"),
+    (
+        "process.pfp_demand",
+        "initial_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "process.pfp_demand",
+        "critical_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "process.pfp_demand",
+        "fire_temperature",
+        "thermodynamic_temperature",
+    ),
+    (
+        "process.pfp_demand",
+        "pfp_conductivity",
+        "thermal_conductivity",
     ),
     ("process.pipe", "inlet_n", "molar_flow"),
     ("process.pipe", "inlet_z", "dimensionless"),

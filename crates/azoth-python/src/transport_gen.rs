@@ -18921,6 +18921,84 @@ impl From<&azoth_process::models::packed_column::PackedColumnResult> for PyPacke
         }
     }
 }
+/// Result of `process.pfp_demand`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PfpDemandResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPfpDemandResult {
+    /// the steel mass per exposed area, `7850 t` kg/m2; declared dimensionless because the vocabulary has no areal mass unit.
+    #[pyo3(get)]
+    pub steel_mass_per_area: f64,
+    /// `m'' c (T_crit - T_0) / (alpha q)`, the lumped time to the critical temperature.
+    #[pyo3(get)]
+    pub bare_steel_time_to_critical: PyQty,
+    /// the stated survival time, echoed as the class's result carries it.
+    #[pyo3(get)]
+    pub required_survival_time: PyQty,
+    /// whether `t_bare < t_req`. Strict: an equal time is false.
+    #[pyo3(get)]
+    pub pfp_required: bool,
+    /// the conduction-limited protection thickness; exactly zero when no protection is required.
+    #[pyo3(get)]
+    pub required_pfp_thickness: PyQty,
+    /// the same thickness in millimetres, the class's `getRequiredPfpThicknessMm`.
+    #[pyo3(get)]
+    pub required_pfp_thickness_mm: PyQty,
+    /// `none`, `h60`, `h120`, `j60` or `j120`, the class's `PfpRating` in the port's words.
+    #[pyo3(get)]
+    pub rating: String,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPfpDemandResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PfpDemandResult(steel_mass_per_area={:?}, bare_steel_time_to_critical={:?}, required_survival_time={:?}, pfp_required={:?}, required_pfp_thickness={:?}, required_pfp_thickness_mm={:?}, rating={:?}, {} warning(s))",
+            self.steel_mass_per_area,
+            self.bare_steel_time_to_critical,
+            self.required_survival_time,
+            self.pfp_required,
+            self.required_pfp_thickness,
+            self.required_pfp_thickness_mm,
+            self.rating,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::pfp_demand::PfpDemandResult> for PyPfpDemandResult {
+    fn from(r: &azoth_process::models::pfp_demand::PfpDemandResult) -> Self {
+        Self {
+            steel_mass_per_area: r.steel_mass_per_area,
+            bare_steel_time_to_critical: PyQty {
+                magnitude_si: r.bare_steel_time_to_critical.value,
+                unit: "s".to_string(),
+            },
+            required_survival_time: PyQty {
+                magnitude_si: r.required_survival_time.value,
+                unit: "s".to_string(),
+            },
+            pfp_required: r.pfp_required,
+            required_pfp_thickness: PyQty {
+                magnitude_si: r.required_pfp_thickness.value,
+                unit: "m".to_string(),
+            },
+            required_pfp_thickness_mm: PyQty {
+                magnitude_si: r.required_pfp_thickness_mm.value,
+                unit: "mm".to_string(),
+            },
+            rating: r.rating.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.pipe`, transported.
 #[pyclass(
     frozen,

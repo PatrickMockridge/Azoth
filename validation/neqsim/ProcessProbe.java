@@ -122,6 +122,8 @@
 //       > captures/process_event_tree.tsv
 //     java -cp .:neqsim-118d9af.jar ProcessProbe consequence_analysis \
 //       > captures/process_consequence_analysis.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe pfp_demand \
+//       > captures/process_pfp_demand.tsv
 
 import neqsim.process.equipment.stream.Stream;
 import neqsim.process.equipment.util.AccelerationMethod;
@@ -137,6 +139,9 @@ import neqsim.process.safety.dispersion.HeavyGasDispersion;
 import neqsim.process.safety.dispersion.ProbitModel;
 import neqsim.process.safety.fire.BLEVECalculator;
 import neqsim.process.safety.fire.JetFireModel;
+import neqsim.process.safety.fire.PfpDemandCalculator;
+import neqsim.process.safety.fire.PfpDemandCalculator.FireType;
+import neqsim.process.safety.fire.PfpDemandCalculator.PfpDemandResult;
 import neqsim.process.safety.fire.PoolFireModel;
 import neqsim.process.safety.fire.VCEModel;
 import neqsim.process.safety.qra.ConsequenceAnalysisEngine;
@@ -317,6 +322,9 @@ public class ProcessProbe {
         break;
       case "consequence_analysis":
         consequenceAnalysisRows();
+        break;
+      case "pfp_demand":
+        pfpDemandRows();
         break;
       case "expander_steps":
         expanderStepRows();
@@ -12649,6 +12657,142 @@ public class ProcessProbe {
       System.out.println("flux_at_distance_w_m2=" + model.incidentHeatFlux(solved));
     }
     System.out.println();
+  }
+
+  // === process.pfp_demand =====================================================
+
+  static void pfpDemandRows() {
+    // The class's own tests (`PfpDemandCalculatorTest`).
+    pfpDemandRow("pfp_pool_thin_wall_h60", 100.0e3, 0.012, 3600.0, Double.NaN, Double.NaN,
+        Double.NaN, Double.NaN, Double.NaN, FireType.POOL);
+    pfpDemandRow("pfp_jet_long_duration_j120", 250.0e3, 0.012, 7200.0, Double.NaN, Double.NaN,
+        Double.NaN, Double.NaN, Double.NaN, FireType.JET);
+    pfpDemandRow("pfp_thick_wall_none", 100.0e3, 0.20, 600.0, Double.NaN, Double.NaN,
+        Double.NaN, Double.NaN, Double.NaN, FireType.POOL);
+    // The strict `tBare < tReq`: an equal survival time needs no protection.
+    double bare = new PfpDemandCalculator(100.0e3, 0.012).bareSteelTimeToCriticalS();
+    pfpDemandRow("pfp_equal_time_no_pfp", 100.0e3, 0.012, bare, Double.NaN, Double.NaN,
+        Double.NaN, Double.NaN, Double.NaN, FireType.POOL);
+    // The `3600 + 1e-6` s rating boundary, from both sides.
+    pfpDemandRow("pfp_rating_at_threshold", 100.0e3, 0.012, 3600.0 + 1.0e-6, Double.NaN,
+        Double.NaN, Double.NaN, Double.NaN, Double.NaN, FireType.POOL);
+    pfpDemandRow("pfp_rating_past_threshold", 100.0e3, 0.012,
+        Math.nextUp(3600.0 + 1.0e-6), Double.NaN, Double.NaN, Double.NaN, Double.NaN,
+        Double.NaN, FireType.POOL);
+    pfpDemandRow("pfp_jet_short_j60", 250.0e3, 0.012, 3600.0, Double.NaN, Double.NaN,
+        Double.NaN, Double.NaN, Double.NaN, FireType.JET);
+    // A fire below the steel mean: `max(1, Tfire - steelAvg)` is the floor.
+    pfpDemandRow("pfp_driving_floor", 100.0e3, 0.012, 3600.0, Double.NaN, Double.NaN,
+        Double.NaN, 481.0, Double.NaN, FireType.POOL);
+    pfpDemandRow("pfp_overrides", 100.0e3, 0.012, 3600.0, 0.5, 293.15, 573.15, 973.15, 0.4,
+        FireType.POOL);
+    // The unguarded setters: equality publishes a zero time and an infinite thickness;
+    // below it, a negative time and thickness. The port refuses both.
+    pfpDemandRow("pfp_critical_equal_initial", 100.0e3, 0.012, 3600.0, Double.NaN, 288.15,
+        288.15, Double.NaN, Double.NaN, FireType.POOL);
+    pfpDemandRow("pfp_critical_below_initial", 100.0e3, 0.012, 3600.0, Double.NaN, 288.15,
+        273.15, Double.NaN, Double.NaN, FireType.POOL);
+    // The class's guards, as evidence rows.
+    pfpRefusal("pfp_refuse_heat_flux", 0.0, 0.012, 3600.0, Double.NaN, Double.NaN, Double.NaN,
+        Double.NaN, Double.NaN, FireType.POOL);
+    pfpRefusal("pfp_refuse_thickness", 100.0e3, 0.0, 3600.0, Double.NaN, Double.NaN,
+        Double.NaN, Double.NaN, Double.NaN, FireType.POOL);
+    pfpRefusal("pfp_refuse_absorptivity_zero", 100.0e3, 0.012, 3600.0, 0.0, Double.NaN,
+        Double.NaN, Double.NaN, Double.NaN, FireType.POOL);
+    pfpRefusal("pfp_refuse_absorptivity_above_one", 100.0e3, 0.012, 3600.0, 1.5, Double.NaN,
+        Double.NaN, Double.NaN, Double.NaN, FireType.POOL);
+    pfpRefusal("pfp_refuse_conductivity", 100.0e3, 0.012, 3600.0, Double.NaN, Double.NaN,
+        Double.NaN, Double.NaN, 0.0, FireType.POOL);
+    pfpRefusal("pfp_refuse_survival", 100.0e3, 0.012, 0.0, Double.NaN, Double.NaN, Double.NaN,
+        Double.NaN, Double.NaN, FireType.POOL);
+    pfpRefusal("pfp_refuse_null_fire_type", 100.0e3, 0.012, 3600.0, Double.NaN, Double.NaN,
+        Double.NaN, Double.NaN, Double.NaN, null);
+  }
+
+  static void pfpDemandRow(String label, double flux, double thickness, double survival,
+      double alpha, double initial, double critical, double fire, double conductivity,
+      FireType type) {
+    PfpDemandCalculator calc = new PfpDemandCalculator(flux, thickness);
+    pfpSettings(calc, alpha, initial, critical, fire, conductivity, type);
+    System.out.println(label);
+    pfpInputs(flux, thickness, survival, alpha, initial, critical, fire, conductivity, type);
+    PfpDemandResult result = calc.evaluate(survival);
+    System.out.println("steel_mass_per_area_kg_m2=" + calc.steelMassPerAreaKgPerM2());
+    System.out.println("bare_steel_time_to_critical_s=" + result.getBareSteelTimeToCriticalS());
+    System.out.println("required_survival_time_s=" + result.getRequiredSurvivalTimeS());
+    System.out.println("pfp_required=" + result.isPfpRequired());
+    System.out.println("required_pfp_thickness_m=" + result.getRequiredPfpThicknessM());
+    System.out.println("required_pfp_thickness_mm=" + result.getRequiredPfpThicknessMm());
+    System.out.println("rating=" + result.getRating());
+    double alphaEff = Double.isNaN(alpha) ? 0.9 : alpha;
+    double initialEff = Double.isNaN(initial) ? 288.15 : initial;
+    double criticalEff = Double.isNaN(critical) ? 673.15 : critical;
+    double fireEff = Double.isNaN(fire) ? 1173.15 : fire;
+    double deltaT = criticalEff - initialEff;
+    double mass = 7850.0 * thickness;
+    System.out.println("q_abs_w_m2=" + alphaEff * flux);
+    if (result.isPfpRequired()) {
+      double qAllow = mass * 490.0 * deltaT / survival;
+      double steelAvg = 0.5 * (initialEff + criticalEff);
+      System.out.println("q_allow_w_m2=" + qAllow);
+      System.out.println("steel_avg_temperature_k=" + steelAvg);
+      System.out.println("driving_temperature_k=" + Math.max(1.0, fireEff - steelAvg));
+    } else {
+      System.out.println("q_allow_w_m2=");
+      System.out.println("steel_avg_temperature_k=");
+      System.out.println("driving_temperature_k=");
+    }
+    System.out.println();
+  }
+
+  static void pfpRefusal(String label, double flux, double thickness, double survival,
+      double alpha, double initial, double critical, double fire, double conductivity,
+      FireType type) {
+    System.out.println(label);
+    pfpInputs(flux, thickness, survival, alpha, initial, critical, fire, conductivity, type);
+    try {
+      PfpDemandCalculator calc = new PfpDemandCalculator(flux, thickness);
+      pfpSettings(calc, alpha, initial, critical, fire, conductivity, type);
+      calc.evaluate(survival);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  static void pfpSettings(PfpDemandCalculator calc, double alpha, double initial,
+      double critical, double fire, double conductivity, FireType type) {
+    if (!Double.isNaN(alpha)) {
+      calc.setAbsorptivity(alpha);
+    }
+    if (!Double.isNaN(initial)) {
+      calc.setInitialTemperatureK(initial);
+    }
+    if (!Double.isNaN(critical)) {
+      calc.setCriticalTemperatureK(critical);
+    }
+    if (!Double.isNaN(fire)) {
+      calc.setFireTemperatureK(fire);
+    }
+    if (!Double.isNaN(conductivity)) {
+      calc.setPfpConductivityWPerMK(conductivity);
+    }
+    calc.setFireType(type);
+  }
+
+  static void pfpInputs(double flux, double thickness, double survival, double alpha,
+      double initial, double critical, double fire, double conductivity, FireType type) {
+    System.out.println("incident_heat_flux_w_m2=" + flux);
+    System.out.println("steel_thickness_m=" + thickness);
+    System.out.println("required_survival_time_s=" + survival);
+    System.out.println("absorptivity=" + (Double.isNaN(alpha) ? "" : alpha));
+    System.out.println("initial_temperature_k=" + (Double.isNaN(initial) ? "" : initial));
+    System.out.println("critical_temperature_k=" + (Double.isNaN(critical) ? "" : critical));
+    System.out.println("fire_temperature_k=" + (Double.isNaN(fire) ? "" : fire));
+    System.out.println(
+        "pfp_conductivity_w_m_k=" + (Double.isNaN(conductivity) ? "" : conductivity));
+    System.out.println("fire_type=" + type);
   }
 
   static void vceRows() {

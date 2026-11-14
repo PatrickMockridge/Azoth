@@ -45,6 +45,7 @@ from azoth.core.result import (
     MapTurboExpanderResult,
     MixerResult,
     PackedColumnResult,
+    PfpDemandResult,
     PipeResult,
     PlugFlowReactorResult,
     PoolFireResult,
@@ -114,6 +115,7 @@ __all__ = [
     "map_turbo_expander_compressor",
     "mixer",
     "packed_column",
+    "pfp_demand",
     "pipe",
     "plug_flow_reactor",
     "pool_fire",
@@ -138,6 +140,7 @@ __all__ = [
 _MANIFOLD = "process.manifold"
 _MIXER = "process.mixer"
 _PACKED_COLUMN = "process.packed_column"
+_PFP_DEMAND = "process.pfp_demand"
 _RATE_BASED_PACKED_COLUMN = "process.rate_based_packed_column"
 _PIPE = "process.pipe"
 _GAS_SCRUBBER = "process.gas_scrubber"
@@ -2403,6 +2406,45 @@ def probit(
         n=n,
         dose=dose,
         probit_value=probit_value,
+    )
+
+
+def pfp_demand(
+    incident_heat_flux: Q,
+    steel_thickness: Q,
+    required_survival_time: Q,
+    absorptivity: float | None = None,
+    initial_temperature: Q | None = None,
+    critical_temperature: Q | None = None,
+    fire_temperature: Q | None = None,
+    pfp_conductivity: Q | None = None,
+    fire_type: str | None = None,
+) -> PfpDemandResult:
+    """The bare-steel time to critical, the strict PFP verdict, the thickness and the rating.
+
+    The API 521 / NORSOK S-001 demand chain: ``t_bare = m'' c (T_crit - T_0) / (alpha q)``,
+    ``pfp_required = t_bare < t_req``, a conduction-limited thickness and an H or J rating.
+    The driving temperature is floored at 1 K, the class's own. **A critical temperature at
+    or below the initial one is refused**: the class publishes a zero or negative time with
+    an infinite or negative thickness there.
+
+    Raises:
+        InvalidInputError: for a non-positive flux, thickness or survival time, an
+            absorptivity outside ``(0, 1]``, a non-positive conductivity or temperature, a
+            critical temperature at or below the initial one, or an unknown fire type.
+
+    See :func:`azoth.process.reference.pfp_demand`.
+    """
+    return resolve(_PFP_DEMAND)(  # type: ignore[no-any-return]
+        incident_heat_flux=incident_heat_flux,
+        steel_thickness=steel_thickness,
+        required_survival_time=required_survival_time,
+        absorptivity=absorptivity,
+        initial_temperature=initial_temperature,
+        critical_temperature=critical_temperature,
+        fire_temperature=fire_temperature,
+        pfp_conductivity=pfp_conductivity,
+        fire_type=fire_type,
     )
 
 

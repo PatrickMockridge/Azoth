@@ -37,6 +37,7 @@ use crate::models::manifold::ManifoldResult;
 use crate::models::map_turbo_expander_compressor::MapTurboExpanderResult;
 use crate::models::mixer::MixerResult;
 use crate::models::packed_column::PackedColumnResult;
+use crate::models::pfp_demand::PfpDemandResult;
 use crate::models::pipe::PipeResult;
 use crate::models::plug_flow_reactor::PlugFlowReactorResult;
 use crate::models::pool_fire::PoolFireResult;
@@ -951,6 +952,24 @@ impl CalcResult for PackedColumnResult {
         "pressure_drop_per_meter",
         "resolved_packing",
         "resolved_packing_factor",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for PfpDemandResult {
+    const CALC_ID: &'static str = "process.pfp_demand";
+    const FIELDS: &'static [&'static str] = &[
+        "steel_mass_per_area",
+        "bare_steel_time_to_critical",
+        "required_survival_time",
+        "pfp_required",
+        "required_pfp_thickness",
+        "required_pfp_thickness_mm",
+        "rating",
         "warnings",
     ];
 

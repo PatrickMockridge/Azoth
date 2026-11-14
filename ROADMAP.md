@@ -851,9 +851,21 @@ a claim nothing holds.
   plugin, `report` and `toEventTree` are not carried**: they are presentation, and the tree
   is **`process.event_tree`**, `EventTreeAnalyzer`'s full `2^n` bit-order enumeration with a
   20-branch cap (`1 << n` has none) and the class's path spelling, held to
-  `process_event_tree.tsv`. What remains owed in the safety tree: **`PfpDemandCalculator`**
-  (2 callers) is thermal protection rather than consequence distance;
-  **`Api537FlareFlameModel`** (zero callers) is flame geometry and noise; **`FaultTreeAnalyzer`**,
+  `process_event_tree.tsv`.
+- **The passive fire protection demand** — **`process.pfp_demand` is
+  `PfpDemandCalculator`**: the lumped bare-steel time to critical temperature (7850 kg/m3,
+  490 J/(kg K)), the **strict** `t_bare < t_req` test, the conduction-limited thickness with
+  the class's 1 K driving-temperature floor, and the H60/H120/J60/J120 rating at the class's
+  `3600 + 1e-6` s long-duration boundary, held to `process_pfp_demand.tsv`. It takes the
+  incident flux as an input; `process.jet_fire` and `process.pool_fire` produce it. The port
+  refuses a critical temperature at or below the initial one, where NeqSim publishes a zero
+  time and infinite thickness at equality and a negative time and thickness below it
+  (`#5004`), and it reproduces the 1 K floor the class substitutes (`#5005`). **It has no
+  executable caller**: `ActiveFireProtectionScreening.setBareSteelTimeToCriticalS` is the
+  hand-off its javadoc names and `HazopConsequenceAutoPopulator` names the class in a
+  recommendation string; the old "(2 callers)" counted the class's two tests.
+  What remains owed in the safety tree: **`Api537FlareFlameModel`** (zero callers) is flame
+  geometry and noise; **`FaultTreeAnalyzer`**,
   the bowtie and the risk simulators (`RiskMatrix`, `OperationalRiskSimulator`, LOPA/SIL) are
   outside this chain; and the `firewater/` family is five calculators, named rather than ported.
 - **The reactions family's**: the **ionic branch** of `reactions.reactive_tp_flash` and

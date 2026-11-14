@@ -7606,6 +7606,37 @@ class PackedColumnResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PfpDemandResult(_HasWarnings):
+    """Result of ``process.pfp_demand``."""
+
+    CALC_ID: ClassVar[str] = "process.pfp_demand"
+
+    #: the steel mass per exposed area, `7850 t` kg/m2; declared dimensionless because the vocabulary has no areal mass unit.
+    steel_mass_per_area: float
+
+    #: `m'' c (T_crit - T_0) / (alpha q)`, the lumped time to the critical temperature.
+    bare_steel_time_to_critical: Q
+
+    #: the stated survival time, echoed as the class's result carries it.
+    required_survival_time: Q
+
+    #: whether `t_bare < t_req`. Strict: an equal time is false.
+    pfp_required: bool
+
+    #: the conduction-limited protection thickness; exactly zero when no protection is required.
+    required_pfp_thickness: Q
+
+    #: the same thickness in millimetres, the class's `getRequiredPfpThicknessMm`.
+    required_pfp_thickness_mm: Q
+
+    #: `none`, `h60`, `h120`, `j60` or `j120`, the class's `PfpRating` in the port's words.
+    rating: str
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PipeResult(_HasWarnings):
     """Result of ``process.pipe``."""
 

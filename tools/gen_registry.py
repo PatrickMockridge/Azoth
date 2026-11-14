@@ -210,6 +210,10 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # and `test_cross_impl` compares them on both results.
         "has_flammable_cloud",
         "has_toxic_endpoint",
+        # `pfp_demand`'s verdict, a boolean with no slot in `TestCase`.
+        # `crates/azoth-process/tests/pfp_demand.rs` asserts it against the capture, and
+        # `test_cross_impl` compares it on both results.
+        "pfp_required",
         # `thermal.shell_and_tube_vibration`'s four flags, booleans with no slot in
         # `TestCase`. `crates/azoth-thermal/tests/shell_and_tube_vibration.rs` asserts
         # them against the capture, and `test_cross_impl` compares them on both results.

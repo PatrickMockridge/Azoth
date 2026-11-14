@@ -3542,6 +3542,17 @@ class PackedColumnResult:
     warnings: list[Warning]
 
 @final
+class PfpDemandResult:
+    steel_mass_per_area: float
+    bare_steel_time_to_critical: Qty
+    required_survival_time: Qty
+    pfp_required: bool
+    required_pfp_thickness: Qty
+    required_pfp_thickness_mm: Qty
+    rating: str
+    warnings: list[Warning]
+
+@final
 class PipeResult:
     outlet_n: Qty
     outlet_z: list[float]
@@ -6884,6 +6895,17 @@ def packed_column(
     pumparound_max_iterations: float | None = None,
     max_allowable_fs_factor: float | None = None,
 ) -> PackedColumnResult: ...
+def pfp_demand(
+    incident_heat_flux: float,
+    steel_thickness: float,
+    required_survival_time: float,
+    absorptivity: float | None = None,
+    initial_temperature: float | None = None,
+    critical_temperature: float | None = None,
+    fire_temperature: float | None = None,
+    pfp_conductivity: float | None = None,
+    fire_type: str | None = None,
+) -> PfpDemandResult: ...
 def pipe(
     components: list[str],
     inlet_n: float,
