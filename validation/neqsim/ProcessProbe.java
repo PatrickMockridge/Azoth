@@ -124,6 +124,18 @@
 //       > captures/process_consequence_analysis.tsv
 //     java -cp .:neqsim-118d9af.jar ProcessProbe pfp_demand \
 //       > captures/process_pfp_demand.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe fire_water_demand \
+//       > captures/process_fire_water_demand.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe deluge_nozzle_layout \
+//       > captures/process_deluge_nozzle_layout.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe fire_monitor_coverage \
+//       > captures/process_fire_monitor_coverage.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe fire_water_coverage_assessment \
+//       > captures/process_fire_water_coverage_assessment.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe active_fire_protection_screening \
+//       > captures/process_active_fire_protection_screening.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe api537_flare_flame \
+//       > captures/process_api537_flare_flame.tsv
 
 import neqsim.process.equipment.stream.Stream;
 import neqsim.process.equipment.util.AccelerationMethod;
@@ -137,6 +149,7 @@ import neqsim.process.safety.dispersion.GasDispersionResult;
 import neqsim.process.safety.dispersion.GaussianPlume;
 import neqsim.process.safety.dispersion.HeavyGasDispersion;
 import neqsim.process.safety.dispersion.ProbitModel;
+import neqsim.process.safety.fire.Api537FlareFlameModel;
 import neqsim.process.safety.fire.BLEVECalculator;
 import neqsim.process.safety.fire.JetFireModel;
 import neqsim.process.safety.fire.PfpDemandCalculator;
@@ -144,6 +157,14 @@ import neqsim.process.safety.fire.PfpDemandCalculator.FireType;
 import neqsim.process.safety.fire.PfpDemandCalculator.PfpDemandResult;
 import neqsim.process.safety.fire.PoolFireModel;
 import neqsim.process.safety.fire.VCEModel;
+import neqsim.process.safety.firewater.ActiveFireProtectionScreening;
+import neqsim.process.safety.firewater.ActiveFireProtectionScreening.FireScenario;
+import neqsim.process.safety.firewater.DelugeNozzleLayout;
+import neqsim.process.safety.firewater.DelugeNozzleLayout.Nozzle;
+import neqsim.process.safety.firewater.FireMonitorCoverage;
+import neqsim.process.safety.firewater.FireWaterCoverageAssessment;
+import neqsim.process.safety.firewater.FireWaterCoverageAssessment.Verdict;
+import neqsim.process.safety.firewater.FireWaterDemandCalculator;
 import neqsim.process.safety.qra.ConsequenceAnalysisEngine;
 import neqsim.process.safety.release.HomogeneousEquilibriumReleaseModel;
 import neqsim.process.safety.release.LeakModel;
@@ -325,6 +346,24 @@ public class ProcessProbe {
         break;
       case "pfp_demand":
         pfpDemandRows();
+        break;
+      case "fire_water_demand":
+        fireWaterDemandRows();
+        break;
+      case "deluge_nozzle_layout":
+        delugeNozzleRows();
+        break;
+      case "fire_monitor_coverage":
+        fireMonitorRows();
+        break;
+      case "fire_water_coverage_assessment":
+        fireWaterCoverageRows();
+        break;
+      case "active_fire_protection_screening":
+        activeFireProtectionRows();
+        break;
+      case "api537_flare_flame":
+        api537FlareRows();
         break;
       case "expander_steps":
         expanderStepRows();
@@ -13086,6 +13125,662 @@ public class ProcessProbe {
     }
     System.out.println(
         "individual_fatality_risk_per_year=" + engine.individualFatalityRiskPerYear(receiver));
+    System.out.println();
+  }
+
+  // === process.fire_water_demand ==============================================
+
+  static void fireWaterDemandRows() {
+    // The class's own tests (`FireWaterDesignTest`).
+    fireWaterDemandRow("fwd_area_demand", 510.0, 10.0, 30.0, 0.0, 1.0, null, null);
+    fireWaterDemandRow("fwd_wellhead_rate", 510.0, 20.0, 30.0, 0.0, 1.0, null, null);
+    // `addHorizontalVessel`: shell `pi D L` plus the two ends `2 pi D^2 / 4`.
+    fireWaterDemandRow("fwd_horizontal_vessel", 0.0, 10.0, 30.0, 0.0, 1.0, null,
+        new double[] {0.72, 6.606, 10.0});
+    fireWaterDemandRow("fwd_selective_object", 510.0, 10.0, 30.0, 0.0, 1.0, null,
+        new double[] {0.72, 6.606, 10.0});
+    fireWaterDemandRow("fwd_foam", 100.0, 10.0, 30.0, 3.0, 1.0, null, null);
+    fireWaterDemandRow("fwd_simultaneous", 200.0, 10.0, 30.0, 0.0, 2.0, null, null);
+    // The class returns NaN when the area demand is zero.
+    fireWaterDemandRow("fwd_zero_area_ratio", 0.0, 10.0, 30.0, 0.0, 1.0, null, null);
+    // `addObject` validates nothing; a negative row publishes a negative demand.
+    fireWaterDemandRow("fwd_negative_object", 0.0, 10.0, 30.0, 0.0, 1.0,
+        new double[][] {{-1.0, 10.0}}, null);
+    // The class's constructor and setter guards, as evidence rows.
+    fireWaterDemandRefusal("fwd_refuse_negative_area", -1.0, 10.0, 30.0, 0.0, 1.0, null, null);
+    fireWaterDemandRefusal("fwd_refuse_negative_rate", 510.0, -1.0, 30.0, 0.0, 1.0, null, null);
+    fireWaterDemandRefusal("fwd_refuse_zero_duration", 510.0, 10.0, 0.0, 0.0, 1.0, null, null);
+    fireWaterDemandRefusal("fwd_refuse_foam_above_ten", 510.0, 10.0, 30.0, 11.0, 1.0, null, null);
+    fireWaterDemandRefusal("fwd_refuse_factor_below_one", 510.0, 10.0, 30.0, 0.0, 0.5, null,
+        null);
+    fireWaterDemandRefusal("fwd_refuse_vessel_diameter", 0.0, 10.0, 30.0, 0.0, 1.0, null,
+        new double[] {0.0, 6.606, 10.0});
+  }
+
+  static FireWaterDemandCalculator fireWaterDemandBuild(double area, double rate,
+      double durationMin, double foam, double factor, double[][] objects, double[] vessel) {
+    FireWaterDemandCalculator calc = new FireWaterDemandCalculator(area);
+    calc.setAreaRate(rate);
+    calc.setDurationMin(durationMin);
+    calc.setFoamConcentratePercent(foam);
+    calc.setSimultaneousAreaFactor(factor);
+    if (objects != null) {
+      for (double[] object : objects) {
+        calc.addObject("OBJ", object[0], object[1]);
+      }
+    }
+    if (vessel != null) {
+      calc.addHorizontalVessel("V", vessel[0], vessel[1], vessel[2]);
+    }
+    return calc;
+  }
+
+  static void fireWaterDemandInputs(double area, double rate, double durationMin, double foam,
+      double factor, double[] vessel) {
+    System.out.println("protected_area_m2=" + area);
+    System.out.println("application_rate_lpm_m2=" + rate);
+    System.out.println("duration_min=" + durationMin);
+    System.out.println("foam_concentrate_percent=" + foam);
+    System.out.println("simultaneous_area_factor=" + factor);
+    if (vessel != null) {
+      System.out.println("vessel_shell_diameter_m=" + vessel[0]);
+      System.out.println("vessel_tangent_length_m=" + vessel[1]);
+      System.out.println("vessel_application_rate_lpm_m2=" + vessel[2]);
+    }
+  }
+
+  static void fireWaterDemandRow(String label, double area, double rate, double durationMin,
+      double foam, double factor, double[][] objects, double[] vessel) {
+    FireWaterDemandCalculator calc =
+        fireWaterDemandBuild(area, rate, durationMin, foam, factor, objects, vessel);
+    System.out.println(label);
+    fireWaterDemandInputs(area, rate, durationMin, foam, factor, vessel);
+    java.util.List<FireWaterDemandCalculator.ProtectedObject> rows = calc.getObjects();
+    System.out.println("protected_object_count=" + rows.size());
+    for (int i = 0; i < rows.size(); i++) {
+      System.out.println(
+          "protected_object_" + i + "_surface_area_m2=" + rows.get(i).surfaceAreaM2);
+      System.out.println(
+          "protected_object_" + i + "_application_rate_lpm_m2=" + rows.get(i).rateLpmPerM2);
+    }
+    System.out.println("area_demand_lpm=" + calc.areaDemandLpm());
+    System.out.println("object_demand_lpm=" + calc.objectDemandLpm());
+    System.out.println("total_demand_lpm=" + calc.totalDemandLpm());
+    System.out.println("total_demand_m3_per_hour=" + calc.totalDemandM3PerHour());
+    System.out.println("water_volume_m3=" + calc.waterVolumeM3());
+    System.out.println("foam_concentrate_volume_m3=" + calc.foamConcentrateVolumeM3());
+    System.out.println("object_to_area_demand_ratio=" + calc.objectToAreaDemandRatio());
+    System.out.println();
+  }
+
+  static void fireWaterDemandRefusal(String label, double area, double rate, double durationMin,
+      double foam, double factor, double[][] objects, double[] vessel) {
+    System.out.println(label);
+    fireWaterDemandInputs(area, rate, durationMin, foam, factor, vessel);
+    try {
+      fireWaterDemandBuild(area, rate, durationMin, foam, factor, objects, vessel);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  // === process.deluge_nozzle_layout ===========================================
+
+  static void delugeNozzleRows() {
+    // The class's own tests (`FireWaterDesignTest`).
+    delugeRow("dnl_high_velocity", 510.0, 10.0, DelugeNozzleLayout.highVelocity(), 5.0, 1.0,
+        1.2);
+    delugeRow("dnl_high_capacity", 510.0, 10.0, DelugeNozzleLayout.highCapacity(), 5.0, 1.0, 1.2);
+    delugeRow("dnl_medium_velocity", 510.0, 10.0, DelugeNozzleLayout.mediumVelocity(), 5.0, 1.0,
+        1.2);
+    delugeRow("dnl_low_pressure", 100.0, 10.0, DelugeNozzleLayout.highVelocity(), 2.0, 1.0, 1.2);
+    delugeRow("dnl_efficiency", 510.0, 10.0, DelugeNozzleLayout.highVelocity(), 5.0, 0.8, 1.2);
+    delugeRow("dnl_clearance_fails", 100.0, 10.0, DelugeNozzleLayout.highVelocity(), 5.0, 1.0,
+        0.5);
+    // The class's guards, as evidence rows.
+    delugeRefusal("dnl_refuse_area", 0.0, 10.0, DelugeNozzleLayout.highVelocity(), 5.0, 1.0);
+    delugeRefusal("dnl_refuse_density", 510.0, 0.0, DelugeNozzleLayout.highVelocity(), 5.0, 1.0);
+    delugeRefusal("dnl_refuse_pressure", 510.0, 10.0, DelugeNozzleLayout.highVelocity(), 0.0, 1.0);
+    delugeRefusal("dnl_refuse_efficiency_zero", 510.0, 10.0, DelugeNozzleLayout.highVelocity(),
+        5.0, 0.0);
+    delugeRefusal("dnl_refuse_efficiency_above_one", 510.0, 10.0,
+        DelugeNozzleLayout.highVelocity(), 5.0, 1.1);
+    delugeNozzleRefusal("dnl_refuse_nozzle_k_zero", "zero K", 0.0, 3.5, 3.0, 1.0);
+    delugeNozzleRefusal("dnl_refuse_nozzle_min_pressure", "zero min", 42.9, 0.0, 3.0, 1.0);
+    delugeNozzleRefusal("dnl_refuse_nozzle_spacing", "zero spacing", 42.9, 3.5, 0.0, 1.0);
+  }
+
+  static void delugeInputs(double area, double density, String name, double k, double minPressure,
+      double spacing, double clearance, double pressure, double efficiency,
+      double availableClearance) {
+    System.out.println("protected_area_m2=" + area);
+    System.out.println("required_density_lpm_m2=" + density);
+    System.out.println("nozzle_name=" + name);
+    System.out.println("nozzle_k_lpm_sqrtbar=" + k);
+    System.out.println("nozzle_min_pressure_bar=" + minPressure);
+    System.out.println("nozzle_max_spacing_m=" + spacing);
+    System.out.println("nozzle_clearance_m=" + clearance);
+    System.out.println("operating_pressure_bar=" + pressure);
+    System.out.println("coverage_efficiency=" + efficiency);
+    System.out.println("available_clearance_m=" + availableClearance);
+  }
+
+  static void delugeRow(String label, double area, double density, Nozzle nozzle, double pressure,
+      double efficiency, double availableClearance) {
+    DelugeNozzleLayout calc = new DelugeNozzleLayout(area, density, nozzle);
+    calc.setOperatingPressureBarg(pressure);
+    calc.setCoverageEfficiency(efficiency);
+    System.out.println(label);
+    delugeInputs(area, density, nozzle.name, nozzle.kFactorLpmPerSqrtBar, nozzle.minPressureBarg,
+        nozzle.maxSpacingM, nozzle.requiredClearDepthM, pressure, efficiency, availableClearance);
+    System.out.println("required_flow_lpm=" + calc.requiredFlowLpm());
+    System.out.println("flow_per_nozzle_lpm=" + calc.flowPerNozzleLpm());
+    System.out.println("coverage_per_nozzle_m2=" + calc.coveragePerNozzleM2());
+    System.out.println("nozzle_count_from_flow=" + calc.nozzleCountFromFlow());
+    System.out.println("nozzle_count_from_coverage=" + calc.nozzleCountFromCoverage());
+    System.out.println("nozzle_count=" + calc.nozzleCount());
+    System.out.println("governing_criterion=" + calc.governingCriterion());
+    System.out.println("grid_spacing_m=" + calc.gridSpacingM());
+    System.out.println("delivered_flow_lpm=" + calc.deliveredFlowLpm());
+    System.out.println("delivered_density_lpm_m2=" + calc.deliveredDensityLpmPerM2());
+    System.out.println("pressure_adequate=" + calc.isPressureAdequate());
+    System.out.println("density_met=" + calc.isDensityMet());
+    System.out.println("clearance_adequate=" + calc.isClearanceAdequate(availableClearance));
+    System.out.println();
+  }
+
+  static void delugeRefusal(String label, double area, double density, Nozzle nozzle,
+      double pressure, double efficiency) {
+    System.out.println(label);
+    delugeInputs(area, density, nozzle.name, nozzle.kFactorLpmPerSqrtBar, nozzle.minPressureBarg,
+        nozzle.maxSpacingM, nozzle.requiredClearDepthM, pressure, efficiency, 0.0);
+    try {
+      DelugeNozzleLayout calc = new DelugeNozzleLayout(area, density, nozzle);
+      calc.setOperatingPressureBarg(pressure);
+      calc.setCoverageEfficiency(efficiency);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  static void delugeNozzleRefusal(String label, String name, double k, double minPressure,
+      double spacing, double clearance) {
+    System.out.println(label);
+    delugeInputs(510.0, 10.0, name, k, minPressure, spacing, clearance, 5.0, 1.0, 1.2);
+    try {
+      Nozzle nozzle = new Nozzle(name, k, minPressure, spacing, clearance);
+      new DelugeNozzleLayout(510.0, 10.0, nozzle);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  // === process.fire_monitor_coverage ==========================================
+
+  static void fireMonitorRows() {
+    // The class's own tests (`FireWaterDesignTest`).
+    fireMonitorRow("fmc_large_deck", 510.0, 10.0, 2, 2400.0, 40.0, 90.0, 0.0, 10.0, 8.0,
+        Double.NaN, false);
+    fireMonitorRow("fmc_wind_still", 3.0, 2000.0, 1, 2400.0, 40.0, 180.0, 0.0, 12.0, 8.0,
+        Double.NaN, false);
+    fireMonitorRow("fmc_wind_drift", 3.0, 2000.0, 1, 2400.0, 40.0, 180.0, 15.0, 12.0, 8.0,
+        Double.NaN, false);
+    fireMonitorRow("fmc_obstructed", 100.0, 10.0, 4, 4000.0, 40.0, 360.0, 0.0, 10.0, 8.0,
+        Double.NaN, true);
+    fireMonitorRow("fmc_marginal", 100.0, 10.0, 1, 2400.0, 40.0, 90.0, 5.0, 10.0, 8.0, Double.NaN,
+        false);
+    fireMonitorRow("fmc_feasible", 100.0, 10.0, 2, 2400.0, 40.0, 90.0, 1.0, 10.0, 8.0, Double.NaN,
+        false);
+    fireMonitorRow("fmc_flow_needed", 510.0, 10.0, 1, 2400.0, 40.0, 90.0, 5.0, 10.0, 8.0,
+        Double.NaN, false);
+    // Wind drift removes all coverage: the class returns `+Infinity`.
+    fireMonitorRow("fmc_drift_removes_coverage", 510.0, 10.0, 1, 2400.0, 40.0, 90.0, 100.0, 10.0,
+        8.0, Double.NaN, false);
+    fireMonitorRow("fmc_characteristic_dimension", 510.0, 10.0, 1, 2400.0, 40.0, 90.0, 5.0, 10.0,
+        8.0, 50.0, false);
+    // The class's guards, as evidence rows.
+    fireMonitorRefusal("fmc_refuse_area", 0.0, 10.0);
+    fireMonitorRefusal("fmc_refuse_density", 100.0, 0.0);
+    fireMonitorCountRefusal("fmc_refuse_count", 0, 2400.0);
+    fireMonitorCountRefusal("fmc_refuse_flow", 1, 0.0);
+    fireMonitorGeometryRefusal("fmc_refuse_throw", 0.0, 90.0);
+    fireMonitorGeometryRefusal("fmc_refuse_sweep_zero", 40.0, 0.0);
+    fireMonitorGeometryRefusal("fmc_refuse_sweep_above_360", 40.0, 361.0);
+    fireMonitorWindRefusal("fmc_refuse_wind", -1.0, 10.0);
+    fireMonitorWindRefusal("fmc_refuse_fall_height", 5.0, 0.0);
+    fireMonitorTerminalRefusal("fmc_refuse_terminal_velocity", 0.0);
+    fireMonitorDimensionRefusal("fmc_refuse_dimension", 0.0);
+  }
+
+  static void fireMonitorInputs(double area, double density, int count, double flow,
+      double throwM, double sweep, double wind, double fall, double terminal,
+      double dimension, boolean obstructed) {
+    System.out.println("target_area_m2=" + area);
+    System.out.println("required_density_lpm_m2=" + density);
+    System.out.println("monitor_count=" + count);
+    System.out.println("monitor_flow_lpm=" + flow);
+    System.out.println("effective_throw_m=" + throwM);
+    System.out.println("sweep_angle_deg=" + sweep);
+    System.out.println("wind_speed_m_s=" + wind);
+    System.out.println("fall_height_m=" + fall);
+    System.out.println("terminal_velocity_m_s=" + terminal);
+    System.out.println("characteristic_dimension_m=" + dimension);
+    System.out.println("line_of_sight_obstructed=" + obstructed);
+  }
+
+  static FireMonitorCoverage fireMonitorBuild(double area, double density, int count, double flow,
+      double throwM, double sweep, double wind, double fall, double terminal, double dimension,
+      boolean obstructed) {
+    FireMonitorCoverage calc = new FireMonitorCoverage(area, density);
+    calc.setMonitors(count, flow);
+    calc.setGeometry(throwM, sweep);
+    calc.setWind(wind, fall);
+    calc.setDropletTerminalVelocity(terminal);
+    if (!Double.isNaN(dimension)) {
+      calc.setCharacteristicTargetDimensionM(dimension);
+    }
+    calc.setLineOfSightObstructed(obstructed);
+    return calc;
+  }
+
+  static void fireMonitorRow(String label, double area, double density, int count, double flow,
+      double throwM, double sweep, double wind, double fall, double terminal, double dimension,
+      boolean obstructed) {
+    FireMonitorCoverage calc = fireMonitorBuild(area, density, count, flow, throwM, sweep, wind,
+        fall, terminal, dimension, obstructed);
+    System.out.println(label);
+    fireMonitorInputs(area, density, count, flow, throwM, sweep, wind, fall, terminal, dimension,
+        obstructed);
+    System.out.println("total_flow_lpm=" + calc.totalFlowLpm());
+    System.out.println("swept_area_m2=" + calc.sweptAreaM2());
+    System.out.println("nominal_density_lpm_m2=" + calc.nominalDensityLpmPerM2());
+    System.out.println("drift_displacement_m=" + calc.driftDisplacementM());
+    System.out.println("wind_coverage_fraction=" + calc.windCoverageFraction());
+    System.out.println("effective_density_lpm_m2=" + calc.effectiveDensityLpmPerM2());
+    System.out.println("meets_density_still_air=" + calc.meetsDensityStillAir());
+    System.out.println("meets_density_in_wind=" + calc.meetsDensityInWind());
+    System.out.println("flow_needed_for_compliance_lpm=" + calc.flowNeededForComplianceLpm());
+    System.out.println("verdict=" + calc.verdict());
+    System.out.println();
+  }
+
+  static void fireMonitorRefusal(String label, double area, double density) {
+    System.out.println(label);
+    System.out.println("target_area_m2=" + area);
+    System.out.println("required_density_lpm_m2=" + density);
+    try {
+      new FireMonitorCoverage(area, density);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  static void fireMonitorCountRefusal(String label, int count, double flow) {
+    System.out.println(label);
+    System.out.println("monitor_count=" + count);
+    System.out.println("monitor_flow_lpm=" + flow);
+    try {
+      new FireMonitorCoverage(100.0, 10.0).setMonitors(count, flow);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  static void fireMonitorGeometryRefusal(String label, double throwM, double sweep) {
+    System.out.println(label);
+    System.out.println("effective_throw_m=" + throwM);
+    System.out.println("sweep_angle_deg=" + sweep);
+    try {
+      new FireMonitorCoverage(100.0, 10.0).setGeometry(throwM, sweep);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  static void fireMonitorWindRefusal(String label, double wind, double fall) {
+    System.out.println(label);
+    System.out.println("wind_speed_m_s=" + wind);
+    System.out.println("fall_height_m=" + fall);
+    try {
+      new FireMonitorCoverage(100.0, 10.0).setWind(wind, fall);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  static void fireMonitorTerminalRefusal(String label, double terminal) {
+    System.out.println(label);
+    System.out.println("terminal_velocity_m_s=" + terminal);
+    try {
+      new FireMonitorCoverage(100.0, 10.0).setDropletTerminalVelocity(terminal);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  static void fireMonitorDimensionRefusal(String label, double dimension) {
+    System.out.println(label);
+    System.out.println("characteristic_dimension_m=" + dimension);
+    try {
+      new FireMonitorCoverage(100.0, 10.0).setCharacteristicTargetDimensionM(dimension);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  // === process.fire_water_coverage_assessment =================================
+
+  static void fireWaterCoverageRows() {
+    // The class's own tests (`FireWaterDesignTest`).
+    fireWaterCoverageRow("fwca_dedicated_supply", 510.0, 5100.0, 0.0, 0.0, -1000.0, -0.9, 0.5,
+        "XX-71-0010B");
+    fireWaterCoverageRow("fwca_pressure_deficit", 510.0, 5100.0, 0.0, 0.0, 20000.0, -0.9, 0.5,
+        "XX-71-0010B");
+    fireWaterCoverageRow("fwca_flow_deficit", 510.0, 5100.0, 0.0, 0.0, 100.0, 2.5, 0.5,
+        "XX-71-0011A");
+    fireWaterCoverageRow("fwca_compliant", 510.0, 5100.0, 510.0, 5200.0, 1000.0, 2.0, 0.5,
+        "XX-71-0011A");
+    fireWaterCoverageRow("fwca_coverage_gap", 510.0, 5100.0, 0.0, 5100.0, 1000.0, 2.0, 0.5,
+        "XX-71-0011A");
+    // An unset supply is NaN, and the class's `isFlowFeasible`/`isPressureFeasible` read it
+    // as feasible.
+    fireWaterCoverageRow("fwca_unknown_supply", 510.0, 5100.0, 0.0, 0.0, Double.NaN, Double.NaN,
+        Double.NaN, "");
+    // The class's guards, as evidence rows.
+    fireWaterCoverageAreaRefusal("fwca_refuse_area", 0.0, 5100.0);
+    fireWaterCoverageAreaRefusal("fwca_refuse_required_flow", 510.0, 0.0);
+    fireWaterCoverageSetterRefusal("fwca_refuse_covered_area", "covered", -1.0);
+    fireWaterCoverageSetterRefusal("fwca_refuse_existing_flow", "existing", -1.0);
+    fireWaterCoverageSetterRefusal("fwca_refuse_required_margin", "margin", -1.0);
+  }
+
+  static FireWaterCoverageAssessment fireWaterCoverageBuild(double area, double requiredFlow,
+      double covered, double existing, double spare, double margin, double requiredMargin,
+      String section) {
+    FireWaterCoverageAssessment calc = new FireWaterCoverageAssessment(area, requiredFlow);
+    calc.setCoveredAreaM2(covered);
+    calc.setExistingDeliveredFlowLpm(existing);
+    if (!Double.isNaN(spare)) {
+      calc.setSpareSupplyFlowLpm(spare);
+    }
+    if (!Double.isNaN(margin)) {
+      calc.setWorstCasePressureMarginBar(margin, section);
+    }
+    if (!Double.isNaN(requiredMargin)) {
+      calc.setRequiredPressureMarginBar(requiredMargin);
+    }
+    return calc;
+  }
+
+  static void fireWaterCoverageInputs(double area, double requiredFlow, double covered,
+      double existing, double spare, double margin, double requiredMargin, String section) {
+    System.out.println("protected_area_m2=" + area);
+    System.out.println("required_flow_lpm=" + requiredFlow);
+    System.out.println("covered_area_m2=" + covered);
+    System.out.println("existing_delivered_flow_lpm=" + existing);
+    System.out.println("spare_supply_flow_lpm=" + spare);
+    System.out.println("worst_case_pressure_margin_bar=" + margin);
+    System.out.println("required_pressure_margin_bar=" + requiredMargin);
+    System.out.println("serving_section=" + section);
+  }
+
+  static void fireWaterCoverageRow(String label, double area, double requiredFlow, double covered,
+      double existing, double spare, double margin, double requiredMargin, String section) {
+    FireWaterCoverageAssessment calc = fireWaterCoverageBuild(area, requiredFlow, covered,
+        existing, spare, margin, requiredMargin, section);
+    System.out.println(label);
+    fireWaterCoverageInputs(area, requiredFlow, covered, existing, spare, margin, requiredMargin,
+        section);
+    System.out.println("coverage_gap_m2=" + calc.coverageGapM2());
+    System.out.println("coverage_fraction=" + calc.coverageFraction());
+    System.out.println("flow_deficit_lpm=" + calc.flowDeficitLpm());
+    System.out.println("flow_feasible=" + calc.isFlowFeasible());
+    System.out.println("pressure_feasible=" + calc.isPressureFeasible());
+    System.out.println("verdict=" + calc.verdict().name());
+    System.out.println();
+  }
+
+  static void fireWaterCoverageAreaRefusal(String label, double area, double requiredFlow) {
+    System.out.println(label);
+    fireWaterCoverageInputs(area, requiredFlow, 0.0, 0.0, Double.NaN, Double.NaN, Double.NaN, "");
+    try {
+      new FireWaterCoverageAssessment(area, requiredFlow);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  static void fireWaterCoverageSetterRefusal(String label, String setter, double value) {
+    System.out.println(label);
+    System.out.println("setter=" + setter);
+    System.out.println("value=" + value);
+    try {
+      FireWaterCoverageAssessment calc = new FireWaterCoverageAssessment(510.0, 5100.0);
+      if ("covered".equals(setter)) {
+        calc.setCoveredAreaM2(value);
+      } else if ("existing".equals(setter)) {
+        calc.setExistingDeliveredFlowLpm(value);
+      } else {
+        calc.setRequiredPressureMarginBar(value);
+      }
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  // === process.active_fire_protection_screening ===============================
+
+  static void activeFireProtectionRows() {
+    // The class's own tests (`FireWaterDesignTest`).
+    activeFireProtectionRow("afps_gas_jet", FireScenario.GAS_JET_FIRE, 600.0, 900.0, 170.0,
+        5100.0);
+    activeFireProtectionRow("afps_pool_fire", FireScenario.LIQUID_POOL_FIRE, 600.0, 900.0, 170.0,
+        5100.0);
+    activeFireProtectionRow("afps_two_phase_jet", FireScenario.TWO_PHASE_JET_FIRE, 600.0, 900.0,
+        170.0, 5100.0);
+    activeFireProtectionRow("afps_ordinary_combustible", FireScenario.ORDINARY_COMBUSTIBLE_FIRE,
+        600.0, 900.0, 170.0, 5100.0);
+    activeFireProtectionRow("afps_slower_blowdown", FireScenario.GAS_JET_FIRE, 1200.0, 400.0,
+        170.0, 5100.0);
+    // The class's NaN defaults: a time that was never set makes the margin NaN.
+    activeFireProtectionRow("afps_unknown_times", FireScenario.GAS_JET_FIRE, Double.NaN,
+        Double.NaN, 170.0, 5100.0);
+    // `setDemands` validates nothing.
+    activeFireProtectionRow("afps_negative_demand", FireScenario.GAS_JET_FIRE, 600.0, 900.0, -1.0,
+        5100.0);
+    // The class's guards, as evidence rows.
+    activeFireProtectionTimeRefusal("afps_refuse_blowdown", 0.0, 900.0);
+    activeFireProtectionTimeRefusal("afps_refuse_bare_time", 600.0, 0.0);
+    activeFireProtectionScenarioRefusal("afps_refuse_null_scenario");
+  }
+
+  static ActiveFireProtectionScreening activeFireProtectionBuild(FireScenario scenario,
+      double blowdown, double bare, double dedicated, double general) {
+    ActiveFireProtectionScreening calc = new ActiveFireProtectionScreening(scenario);
+    if (!Double.isNaN(blowdown)) {
+      calc.setBlowdownTimeToTargetS(blowdown);
+    }
+    if (!Double.isNaN(bare)) {
+      calc.setBareSteelTimeToCriticalS(bare);
+    }
+    calc.setDemands(dedicated, general);
+    return calc;
+  }
+
+  static void activeFireProtectionRow(String label, FireScenario scenario, double blowdown,
+      double bare, double dedicated, double general) {
+    ActiveFireProtectionScreening calc =
+        activeFireProtectionBuild(scenario, blowdown, bare, dedicated, general);
+    System.out.println(label);
+    System.out.println("scenario=" + scenario.name());
+    System.out.println("blowdown_time_s=" + blowdown);
+    System.out.println("bare_steel_time_s=" + bare);
+    System.out.println("dedicated_demand_lpm=" + dedicated);
+    System.out.println("general_demand_lpm=" + general);
+    System.out.println("water_extinguishing=" + calc.isWaterExtinguishing());
+    System.out.println(
+        "water_creditable_for_escalation_control=" + calc.isWaterCreditableForEscalationControl());
+    System.out.println("passive_substitution_permitted=" + calc.isPassiveSubstitutionPermitted());
+    System.out.println("blowdown_faster_than_failure=" + calc.isBlowdownFasterThanFailure());
+    System.out.println("blowdown_margin_s=" + calc.blowdownMarginS());
+    System.out.println(
+        "selective_protection_saving_fraction=" + calc.selectiveProtectionSavingFraction());
+    System.out.println();
+  }
+
+  static void activeFireProtectionTimeRefusal(String label, double blowdown, double bare) {
+    System.out.println(label);
+    System.out.println("blowdown_time_s=" + blowdown);
+    System.out.println("bare_steel_time_s=" + bare);
+    try {
+      ActiveFireProtectionScreening calc =
+          new ActiveFireProtectionScreening(FireScenario.GAS_JET_FIRE);
+      if (!Double.isNaN(blowdown)) {
+        calc.setBlowdownTimeToTargetS(blowdown);
+      }
+      calc.setBareSteelTimeToCriticalS(bare);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  static void activeFireProtectionScenarioRefusal(String label) {
+    System.out.println(label);
+    try {
+      new ActiveFireProtectionScreening(null);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  // === process.api537_flare_flame_model =======================================
+
+  static void api537FlareRows() {
+    double[] targets = {1580.0, 4730.0, 6300.0, 9460.0};
+    // The class's own tests (`Api537FlareFlameModelTest`).
+    api537FlareRow("api537_flame_length", 50.0, 50.0e6, 0.20, 200.0, 40.0, 0.0, 1.0, 3.0e-6,
+        60.0, 100.0, targets);
+    api537FlareRow("api537_no_wind", 50.0, 50.0e6, 0.20, 200.0, 40.0, 0.0, 1.0, 3.0e-6, 60.0,
+        100.0, targets);
+    api537FlareRow("api537_wind", 50.0, 50.0e6, 0.20, 200.0, 40.0, 100.0, 1.0, 3.0e-6, 60.0,
+        100.0, targets);
+    // The documentation example.
+    api537FlareRow("api537_doc_example", 50.0, 50.0e6, 0.20, 200.0, 40.0, 10.0, 1.0, 3.0e-6,
+        60.0, 100.0, targets);
+    api537FlareRow("api537_zero_flow", 0.0, 50.0e6, 0.20, 200.0, 40.0, 0.0, 1.0, 3.0e-6, 60.0,
+        100.0, targets);
+    api537FlareRow("api537_transmissivity", 50.0, 50.0e6, 0.20, 200.0, 40.0, 0.0, 0.5, 3.0e-6,
+        60.0, 100.0, targets);
+    // The class's clamps and its unguarded stack height, as evidence rows.
+    api537FlareRow("api537_negative_wind_clamped", 50.0, 50.0e6, 0.20, 200.0, 40.0, -1.0, 1.0,
+        3.0e-6, 60.0, 100.0, targets);
+    api537FlareRow("api537_transmissivity_clamped", 50.0, 50.0e6, 0.20, 200.0, 40.0, 0.0, 2.0,
+        3.0e-6, 60.0, 100.0, targets);
+    api537FlareRow("api537_efficiency_clamped", 50.0, 50.0e6, 0.20, 200.0, 40.0, 0.0, 1.0, -1.0,
+        60.0, 100.0, targets);
+    api537FlareRow("api537_negative_stack", 50.0, 50.0e6, 0.20, 200.0, -1.0, 0.0, 1.0, 3.0e-6,
+        60.0, 100.0, targets);
+    // The class's constructor and method guards, as evidence rows.
+    api537FlareRefusal("api537_refuse_mass_flow", -1.0, 50.0e6, 0.20, 200.0, targets);
+    api537FlareRefusal("api537_refuse_heat_of_combustion", 50.0, 0.0, 0.20, 200.0, targets);
+    api537FlareRefusal("api537_refuse_radiative_fraction", 50.0, 50.0e6, 1.5, 200.0, targets);
+    api537FlareRefusal("api537_refuse_exit_velocity", 50.0, 50.0e6, 0.20, 0.0, targets);
+    api537FlareRefusal("api537_refuse_target_flux", 50.0, 50.0e6, 0.20, 200.0,
+        new double[] {0.0});
+  }
+
+  static void api537FlareRow(String label, double massFlow, double heatOfCombustion,
+      double radiativeFraction, double exitVelocity, double stackHeight, double windSpeed,
+      double transmissivity, double acousticEfficiency, double groundDistance,
+      double soundDistance, double[] targets) {
+    Api537FlareFlameModel model =
+        new Api537FlareFlameModel(massFlow, heatOfCombustion, radiativeFraction, exitVelocity);
+    model.setStackHeightM(stackHeight);
+    model.setWindSpeedMPerS(windSpeed);
+    model.setTransmissivity(transmissivity);
+    model.setAcousticEfficiency(acousticEfficiency);
+    System.out.println(label);
+    api537FlareInputs(massFlow, heatOfCombustion, radiativeFraction, exitVelocity, stackHeight,
+        windSpeed, transmissivity, acousticEfficiency, groundDistance, soundDistance, targets);
+    System.out.println("heat_release_w=" + model.totalHeatReleaseW());
+    System.out.println("radiative_power_w=" + model.totalRadiativePowerW());
+    System.out.println("flame_length_m=" + model.flameLengthM());
+    System.out.println("flame_tilt_rad=" + model.flameTiltRad());
+    System.out.println("flame_center_horizontal_m=" + model.flameCenterHorizontalM());
+    System.out.println("flame_center_height_m=" + model.flameCenterHeightM());
+    System.out.println("flame_tip_horizontal_m=" + model.flameTipHorizontalM());
+    System.out.println("flame_tip_height_m=" + model.flameTipHeightM());
+    System.out.println(
+        "heat_flux_at_ground_distance_w_m2=" + model.heatFluxAtGroundDistance(groundDistance));
+    for (int i = 0; i < targets.length; i++) {
+      System.out.println("target_flux_" + i + "_w_m2=" + targets[i]);
+      System.out.println("sterile_radius_" + i + "_m=" + model.sterileZoneRadiusM(targets[i]));
+    }
+    System.out.println("sound_power_level_db=" + model.soundPowerLevelDb());
+    System.out.println("sound_pressure_level_db=" + model.soundPressureLevelDb(soundDistance));
+    System.out.println("equivalent_flame_temperature_k=" + model.equivalentFlameTemperatureK());
+    System.out.println();
+  }
+
+  static void api537FlareInputs(double massFlow, double heatOfCombustion,
+      double radiativeFraction, double exitVelocity, double stackHeight, double windSpeed,
+      double transmissivity, double acousticEfficiency, double groundDistance,
+      double soundDistance, double[] targets) {
+    System.out.println("mass_flow_kg_s=" + massFlow);
+    System.out.println("heat_of_combustion_j_kg=" + heatOfCombustion);
+    System.out.println("radiative_fraction=" + radiativeFraction);
+    System.out.println("exit_velocity_m_s=" + exitVelocity);
+    System.out.println("stack_height_m=" + stackHeight);
+    System.out.println("wind_speed_m_s=" + windSpeed);
+    System.out.println("transmissivity=" + transmissivity);
+    System.out.println("acoustic_efficiency=" + acousticEfficiency);
+    System.out.println("ground_distance_m=" + groundDistance);
+    System.out.println("sound_distance_m=" + soundDistance);
+    System.out.println("target_flux_count=" + targets.length);
+  }
+
+  static void api537FlareRefusal(String label, double massFlow, double heatOfCombustion,
+      double radiativeFraction, double exitVelocity, double[] targets) {
+    System.out.println(label);
+    api537FlareInputs(massFlow, heatOfCombustion, radiativeFraction, exitVelocity, 40.0, 0.0,
+        1.0, 3.0e-6, 60.0, 100.0, targets);
+    try {
+      Api537FlareFlameModel model =
+          new Api537FlareFlameModel(massFlow, heatOfCombustion, radiativeFraction, exitVelocity);
+      model.setStackHeightM(40.0);
+      for (double target : targets) {
+        model.sterileZoneRadiusM(target);
+      }
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
     System.out.println();
   }
 }

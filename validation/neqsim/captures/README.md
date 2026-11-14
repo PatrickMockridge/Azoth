@@ -2060,3 +2060,95 @@ rating's long duration is `tReq > 3600.0 + 1.0e-6`, so `3600.000001` is H60 and 
 floor. The class's temperature setters are unguarded: equal temperatures publish a zero time
 and an infinite thickness, and a critical below the initial publishes a negative time and
 thickness; the port refuses both.
+
+## The fire-water demand
+
+`process_fire_water_demand.tsv` is `FireWaterDemandCalculator`'s area and object demand,
+simultaneous factor, hourly rate and the water and foam volumes on the class's six tests,
+the horizontal-vessel wetted area, a zero area demand and a negative object the class
+accepts.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe fire_water_demand \
+  > captures/process_fire_water_demand.tsv
+```
+
+**The ratio is the class's NaN**: `objectToAreaDemandRatio` answers NaN when the area
+demand is zero, and the port publishes the output as absent. `addObject` validates nothing,
+so the negative-surface row publishes a negative demand. The minutes are the class's; the
+port's duration input is in seconds.
+
+## The deluge nozzle layout
+
+`process_deluge_nozzle_layout.tsv` is `DelugeNozzleLayout`'s flow and coverage criteria on
+the class's three nozzle factories, a pressure below the nozzle minimum, a reduced coverage
+efficiency and a failed clearance check.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe deluge_nozzle_layout \
+  > captures/process_deluge_nozzle_layout.tsv
+```
+
+**The larger count governs**, and a tie is the flow criterion. The nozzle's K, minimum
+pressure, maximum spacing and clear depth are the factories' values; its name is JSON-only.
+
+## The fire-monitor coverage
+
+`process_fire_monitor_coverage.tsv` is `FireMonitorCoverage`'s density and wind-drift
+screening on the class's large-deck, drift, obstructed and three further states, including
+a state where the drift removes all coverage.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe fire_monitor_coverage \
+  > captures/process_fire_monitor_coverage.tsv
+```
+
+**`flowNeededForComplianceLpm` is `+Infinity`** when `windCoverageFraction` is zero; the
+port publishes the output as absent. The characteristic dimension is the class's NaN
+default, `sqrt(targetArea)`.
+
+## The fire-water coverage assessment
+
+`process_fire_water_coverage_assessment.tsv` is `FireWaterCoverageAssessment`'s
+coverage/flow/pressure priority on the class's four tests, a coverage gap with supply in
+hand, and the unset-supply state.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe fire_water_coverage_assessment \
+  > captures/process_fire_water_coverage_assessment.tsv
+```
+
+**An unset supply is NaN and reads as feasible**: `fwca_unknown_supply` publishes
+`flow_feasible=true` and `pressure_feasible=true` with no supply set. The port requires the
+spare flow and the pressure margin so an unknown supply cannot pass as a verdict.
+
+## The active fire protection screening
+
+`process_active_fire_protection_screening.tsv` is `ActiveFireProtectionScreening`'s four
+scenarios, the blowdown margin both ways, the class's NaN times and a negative demand the
+setter accepts.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe active_fire_protection_screening \
+  > captures/process_active_fire_protection_screening.tsv
+```
+
+**The class's prose is not carried**: the verdict, the ranked measures, the substitution
+reason and the escalation-control credit are presentation. `isWaterCreditableForEscalationControl`
+is the literal `true` and `isPassiveSubstitutionPermitted` the literal `false`.
+
+## The API 537 flare flame model
+
+`process_api537_flare_flame.tsv` is `Api537FlareFlameModel`'s flame geometry, ground flux,
+sterile zones and noise on the class's test state, no wind, tilted wind, the documentation
+example, a zero flow, a reduced transmissivity, the three clamps and the five refusals.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe api537_flare_flame \
+  > captures/process_api537_flare_flame.tsv
+```
+
+**The sterile zone is the class's four constants**: 1.58, 4.73, 6.3 and 9.46 kW/m2, printed
+in that order and flattened by the port into a per-target list. `setWindSpeedMPerS` and
+`setTransmissivity` clamp, and `setStackHeightM` is unguarded: the negative-stack row
+publishes flame geometry below grade.
