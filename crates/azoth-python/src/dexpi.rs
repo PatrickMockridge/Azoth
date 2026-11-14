@@ -23,7 +23,7 @@ use pyo3::prelude::*;
 /// Returns `(xml, report_json)`. A refused exchange raises `ValueError` whose message is the
 /// report JSON, so the diagnostics survive the boundary.
 #[pyfunction]
-#[pyo3(signature = (flowsheet, palette_dir="specs/unit_ops", allow_lossy_mappings=false, project_recycles=false, with_azoth_extensions=false, topology_only=false, allow_unconverged=false, maps=None))]
+#[pyo3(signature = (flowsheet, palette_dir="specs/unit_ops", allow_lossy_mappings=false, project_recycles=false, with_azoth_extensions=false, topology_only=false, allow_unconverged=false, drawing=false, maps=None))]
 #[allow(clippy::too_many_arguments)]
 pub fn dexpi_export(
     flowsheet: &str,
@@ -33,6 +33,7 @@ pub fn dexpi_export(
     with_azoth_extensions: bool,
     topology_only: bool,
     allow_unconverged: bool,
+    drawing: bool,
     maps: Option<BTreeMap<String, String>>,
 ) -> PyResult<(String, String)> {
     let palette = load_palette(Path::new(palette_dir))
@@ -46,12 +47,15 @@ pub fn dexpi_export(
         azoth_extensions: with_azoth_extensions,
         topology_only,
         allow_unconverged,
+        drawing,
     };
     match export_process(&flowsheet, &palette, &options) {
         Ok(report) => {
             let json = serde_json::json!({
                 "steps": report.steps,
                 "streams": report.streams,
+                "diagram_groups": report.diagram_groups,
+                "diagram_primitives": report.diagram_primitives,
                 "converged": report.converged,
                 "semantic_valid": report.semantic_valid,
                 "approval_status": report.approval_status,
@@ -71,18 +75,27 @@ pub fn dexpi_export(
 /// Returns `(flowsheet_toml, report_json)`. A refused import raises `ValueError` whose message is
 /// the report JSON.
 #[pyfunction]
-#[pyo3(signature = (xml, palette_dir="specs/unit_ops", strict=false))]
-pub fn dexpi_import(xml: &str, palette_dir: &str, strict: bool) -> PyResult<(String, String)> {
+#[pyo3(signature = (xml, palette_dir="specs/unit_ops", strict=false, layout=true))]
+pub fn dexpi_import(
+    xml: &str,
+    palette_dir: &str,
+    strict: bool,
+    layout: bool,
+) -> PyResult<(String, String)> {
     let palette = load_palette(Path::new(palette_dir))
         .map_err(|error| PyValueError::new_err(format!("palette: {error}")))?;
     match import_process(xml, &palette, &ImportOptions { strict }) {
-        Ok(report) => {
+        Ok(mut report) => {
+            if !layout {
+                report.flowsheet.layout = None;
+            }
             let toml = report
                 .flowsheet
                 .to_toml()
                 .map_err(|error| PyValueError::new_err(error.to_string()))?;
             let json = serde_json::json!({
                 "flowsheet": report.flowsheet,
+                "layout_positions": report.layout_positions,
                 "diagnostics": report.diagnostics,
             });
             Ok((toml, json.to_string()))
@@ -98,12 +111,13 @@ pub fn dexpi_import(xml: &str, palette_dir: &str, strict: bool) -> PyResult<(Str
 /// Returns `(xml, report_json)`. A refused exchange raises `ValueError` whose message is the
 /// report JSON.
 #[pyfunction]
-#[pyo3(signature = (flowsheet, palette_dir="specs/unit_ops", allow_lossy_mappings=false, with_azoth_extensions=false, maps=None))]
+#[pyo3(signature = (flowsheet, palette_dir="specs/unit_ops", allow_lossy_mappings=false, with_azoth_extensions=false, drawing=false, maps=None))]
 pub fn dexpi_export_plant(
     flowsheet: &str,
     palette_dir: &str,
     allow_lossy_mappings: bool,
     with_azoth_extensions: bool,
+    drawing: bool,
     maps: Option<BTreeMap<String, String>>,
 ) -> PyResult<(String, String)> {
     let palette = load_palette(Path::new(palette_dir))
@@ -114,12 +128,15 @@ pub fn dexpi_export_plant(
         allow_lossy: allow_lossy_mappings,
         overrides: maps.unwrap_or_default(),
         azoth_extensions: with_azoth_extensions,
+        drawing,
     };
     match export_plant(&flowsheet, &palette, &options) {
         Ok(report) => {
             let json = serde_json::json!({
                 "items": report.items,
                 "segments": report.segments,
+                "diagram_groups": report.diagram_groups,
+                "diagram_primitives": report.diagram_primitives,
                 "semantic_valid": report.semantic_valid,
                 "approval_status": report.approval_status,
                 "cae_round_trip": report.cae_round_trip,
@@ -137,16 +154,17 @@ pub fn dexpi_export_plant(
 ///
 /// Returns `(flowsheet_toml, report_json)`; a refusal raises `ValueError`.
 #[pyfunction]
-#[pyo3(signature = (xml, palette_dir="specs/unit_ops", strict=false))]
+#[pyo3(signature = (xml, palette_dir="specs/unit_ops", strict=false, layout=true))]
 pub fn dexpi_import_plant(
     xml: &str,
     palette_dir: &str,
     strict: bool,
+    layout: bool,
 ) -> PyResult<(String, String)> {
     let palette = load_palette(Path::new(palette_dir))
         .map_err(|error| PyValueError::new_err(format!("palette: {error}")))?;
     match import_plant(xml, &palette, &PlantImportOptions { strict }) {
-        Ok(report) => plant_report(report),
+        Ok(report) => plant_report(report, layout),
         Err(diagnostics) => Err(PyValueError::new_err(
             serde_json::json!({ "diagnostics": diagnostics }).to_string(),
         )),
@@ -157,29 +175,37 @@ pub fn dexpi_import_plant(
 ///
 /// Returns `(flowsheet_toml, report_json)`; a refusal raises `ValueError`.
 #[pyfunction]
-#[pyo3(signature = (xml, palette_dir="specs/unit_ops", strict=false))]
+#[pyo3(signature = (xml, palette_dir="specs/unit_ops", strict=false, layout=true))]
 pub fn dexpi_import_proteus(
     xml: &str,
     palette_dir: &str,
     strict: bool,
+    layout: bool,
 ) -> PyResult<(String, String)> {
     let palette = load_palette(Path::new(palette_dir))
         .map_err(|error| PyValueError::new_err(format!("palette: {error}")))?;
     match import_proteus(xml, &palette, &PlantImportOptions { strict }) {
-        Ok(report) => plant_report(report),
+        Ok(report) => plant_report(report, layout),
         Err(diagnostics) => Err(PyValueError::new_err(
             serde_json::json!({ "diagnostics": diagnostics }).to_string(),
         )),
     }
 }
 
-fn plant_report(report: azoth_dexpi::PlantImportReport) -> PyResult<(String, String)> {
+fn plant_report(
+    mut report: azoth_dexpi::PlantImportReport,
+    layout: bool,
+) -> PyResult<(String, String)> {
+    if !layout {
+        report.flowsheet.layout = None;
+    }
     let toml = report
         .flowsheet
         .to_toml()
         .map_err(|error| PyValueError::new_err(error.to_string()))?;
     let json = serde_json::json!({
         "flowsheet": report.flowsheet,
+        "layout_positions": report.layout_positions,
         "diagnostics": report.diagnostics,
     });
     Ok((toml, json.to_string()))

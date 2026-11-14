@@ -125,7 +125,8 @@ checker ignores it, the executor never sees it, and a flowsheet written by hand 
 the projection derives a deterministic layout from the connection graph and uses a stored
 position only where one exists. It is in the document so that one artifact is the whole editor
 state, which is what makes the round trip lossless for a figure drawn rather than only for a
-document typed. **A table and not a pair of fields on `[[instances]]`**, because `products` is
+document typed. A DEXPI import whose file carries graphics writes the drawing's arrangement
+here, so a P&ID opened as a simulation draws where it was drawn. **A table and not a pair of fields on `[[instances]]`**, because `products` is
 names only — an output is calculated and has nothing to state — so a per-instance position
 could not cover the boundary, and one table covers all three kinds uniformly.
 

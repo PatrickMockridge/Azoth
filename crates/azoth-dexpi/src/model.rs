@@ -112,6 +112,23 @@ impl Object {
         })
     }
 
+    /// Every value of one data property, in document order.
+    ///
+    /// **A vector, not one value**: a `PolyLine`'s `Points` is one `Data` carrying
+    /// repeated aggregated values, and a reader that took the first would draw one point.
+    pub fn data_values<'a>(
+        &'a self,
+        property: &'a str,
+    ) -> impl Iterator<Item = &'a DataValue> + 'a {
+        self.children
+            .iter()
+            .filter_map(move |child| match child {
+                Child::Data(data) if data.property == property => Some(data.values.iter()),
+                _ => None,
+            })
+            .flatten()
+    }
+
     /// One string property, by name.
     #[must_use]
     pub fn data_string(&self, property: &str) -> Option<&str> {

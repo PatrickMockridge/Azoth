@@ -37,6 +37,12 @@ pub struct ImportReport {
     pub flowsheet: Flowsheet,
     pub diagnostics: Vec<DexpiDiagnostic>,
     pub document: Document,
+    /// DEXPI object id to the azoth key it became, for a viewer's coverage join.
+    pub bindings: BTreeMap<String, String>,
+    /// The drawing the document carried, if it carried one.
+    pub drawing: Option<crate::drawing::Drawing>,
+    /// Positions written into the flowsheet's `[layout]`.
+    pub layout_positions: usize,
 }
 
 /// Read a DEXPI Process exchange as a flowsheet scaffold.
@@ -192,7 +198,7 @@ pub fn import_process(
         .collect();
 
     let root = find_engineering_model(&read.document);
-    let flowsheet = Flowsheet {
+    let mut flowsheet = Flowsheet {
         id: root
             .and_then(|root| root.data_string(extensions::FLOWSHEET_ID))
             .map_or_else(
@@ -212,6 +218,25 @@ pub fn import_process(
         signals: Vec::new(),
     };
 
+    let mut bindings = BTreeMap::new();
+    for step in &steps {
+        let Some(object_id) = &step.object_id else {
+            continue;
+        };
+        let name = match &step.kind {
+            StepKind::Unit(_) => step.instance_id.clone(),
+            _ => Some(step.identifier.clone()),
+        };
+        if let Some(name) = name {
+            bindings.insert(object_id.clone(), name);
+        }
+    }
+    let drawing =
+        crate::drawing::native::read_document(&read.document).map(|report| report.drawing);
+    let layout_positions = drawing.as_ref().map_or(0, |drawing| {
+        crate::drawing::layout::apply(&mut flowsheet, drawing, &bindings)
+    });
+
     if options.strict {
         for diagnostic in &mut diagnostics {
             if diagnostic.severity == Severity::Warning {
@@ -227,6 +252,9 @@ pub fn import_process(
         flowsheet,
         diagnostics,
         document: read.document,
+        bindings,
+        drawing,
+        layout_positions,
     })
 }
 

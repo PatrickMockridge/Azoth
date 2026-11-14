@@ -13,10 +13,15 @@ use std::collections::BTreeMap;
 
 use azoth_process::executor::session::{RunReport, run};
 use azoth_process::flowsheet::{Flowsheet, split_endpoint};
+use azoth_process::middleware::graph;
 use azoth_process::{ExecutionOrder, Severity, UnitOpSpec, validate};
 
 use crate::diagnostic::DexpiDiagnostic;
+use crate::drawing::Drawing;
+use crate::drawing::export::{self as drawing_export, DiagramEdge, DiagramNode, NodeShape};
+use crate::drawing::native::write_diagram;
 use crate::ids::{Mint, model_name};
+use crate::inventory::{quantity, stream_label};
 use crate::mapping::{self, Disposition};
 use crate::model::{
     Child, ComponentChild, Components, Data, DataValue, Document, Import, Model, Object, References,
@@ -24,7 +29,7 @@ use crate::model::{
 use crate::process::extensions;
 use crate::profile::Profile;
 use crate::validate::validate as validate_document;
-use crate::writer::write;
+use crate::writer::{format_double, write};
 
 /// The status an exchange carries when it has not been certified.
 pub const APPROVAL_STATUS: &str = "NOT_A_DEXPI_EV_CERTIFICATE";
@@ -49,6 +54,8 @@ pub struct ExportOptions {
     pub topology_only: bool,
     /// Publish an unconverged run's numbers rather than refusing.
     pub allow_unconverged: bool,
+    /// Draw the PFD as generic `Core/Diagram` primitives.
+    pub drawing: bool,
 }
 
 /// A completed export.
@@ -68,6 +75,10 @@ pub struct ExportReport {
     pub steps: usize,
     /// Material streams written.
     pub streams: usize,
+    /// Drawing groups written; zero when the export carried no drawing.
+    pub diagram_groups: usize,
+    /// Drawing primitives written.
+    pub diagram_primitives: usize,
 }
 
 /// Export a flowsheet as a DEXPI Process exchange.
@@ -163,6 +174,7 @@ pub fn export_process(
         return Err(validation.diagnostics);
     }
 
+    let (diagram_groups, diagram_primitives) = crate::drawing::native::counts(&document);
     let xml = write(&document).map_err(|error| {
         vec![DexpiDiagnostic::error(
             "write_failed",
@@ -180,6 +192,8 @@ pub fn export_process(
         semantic_valid: true,
         steps,
         streams,
+        diagram_groups,
+        diagram_primitives,
     })
 }
 
@@ -281,6 +295,8 @@ struct Edge {
     quantity_key: String,
     stream_id: String,
     label: String,
+    source_key: String,
+    target_key: String,
 }
 
 impl<'a> Builder<'a> {
@@ -456,6 +472,8 @@ impl<'a> Builder<'a> {
             quantity_key: quantity_key.to_string(),
             stream_id,
             label: label.to_string(),
+            source_key,
+            target_key,
         });
     }
 
@@ -580,7 +598,131 @@ impl<'a> Builder<'a> {
         }
     }
 
-    fn finish(self) -> Document {
+    /// The PFD: every step a node, every stream an edge, at the canvas's own positions.
+    fn diagram(&self) -> Drawing {
+        let positions = graph::positions(self.flowsheet);
+        let mut placed: BTreeMap<String, (f64, f64)> = BTreeMap::new();
+        let mut nodes: Vec<DiagramNode> = Vec::new();
+        for (ordinal, key) in self.order.iter().enumerate() {
+            let Some(step) = self.steps.get(key) else {
+                continue;
+            };
+            let (shape, position) = if let Some(name) = key.strip_prefix("input:") {
+                (
+                    NodeShape::Input,
+                    positions.get(name).map(|position| (position.x, position.y)),
+                )
+            } else if let Some(name) = key.strip_prefix("product:") {
+                (
+                    NodeShape::Output,
+                    positions.get(name).map(|position| (position.x, position.y)),
+                )
+            } else if key.starts_with("recycle:") {
+                (NodeShape::Recycle, None)
+            } else {
+                (
+                    NodeShape::Unit,
+                    step.azoth_instance
+                        .as_ref()
+                        .and_then(|id| positions.get(id))
+                        .map(|position| (position.x, position.y)),
+                )
+            };
+            if let Some((x, y)) = position {
+                placed.insert(key.clone(), (x, y));
+            }
+            let detail = match shape {
+                NodeShape::Input => Some("feed".to_string()),
+                NodeShape::Output => Some("product".to_string()),
+                NodeShape::Recycle => Some("recycle".to_string()),
+                NodeShape::Unit | NodeShape::Instrument => step
+                    .leaf_unit
+                    .as_deref()
+                    .map(|unit| unit.strip_prefix("unit_ops.").unwrap_or(unit).to_string()),
+            };
+            nodes.push(DiagramNode {
+                key: key.clone(),
+                object_id: format!("ProcessStep{}", ordinal + 1),
+                label: step.identifier.clone(),
+                detail,
+                shape,
+                x: 0.0,
+                y: 0.0,
+            });
+        }
+
+        // A projected recycle is not a node the canvas places; it sits between the two steps
+        // its two streams join.
+        let recycle_keys: Vec<String> = self
+            .order
+            .iter()
+            .filter(|key| key.starts_with("recycle:"))
+            .cloned()
+            .collect();
+        for key in recycle_keys {
+            let mut sum = (0.0, 0.0);
+            let mut count = 0_usize;
+            for edge in &self.edges {
+                let other = if edge.target_key == key {
+                    Some(&edge.source_key)
+                } else if edge.source_key == key {
+                    Some(&edge.target_key)
+                } else {
+                    None
+                };
+                if let Some(other) = other {
+                    if let Some((x, y)) = placed.get(other) {
+                        sum = (sum.0 + x, sum.1 + y);
+                        count += 1;
+                    }
+                }
+            }
+            #[allow(clippy::cast_precision_loss)]
+            let position = if count == 0 {
+                (0.0, 0.0)
+            } else {
+                (sum.0 / count as f64, sum.1 / count as f64)
+            };
+            placed.insert(key, position);
+        }
+        for node in &mut nodes {
+            if let Some((x, y)) = placed.get(&node.key) {
+                node.x = *x;
+                node.y = *y;
+            }
+        }
+
+        let mut edges = Vec::new();
+        for edge in &self.edges {
+            let stream = self
+                .streams
+                .iter()
+                .find(|stream| stream.id.as_deref() == Some(edge.stream_id.as_str()));
+            let mut label = stream
+                .and_then(stream_label)
+                .unwrap_or(edge.label.as_str())
+                .to_string();
+            if let Some((flow, _)) = stream.and_then(|stream| quantity(stream, "MassFlow")) {
+                if !label.is_empty() {
+                    label.push_str(" · ");
+                }
+                label.push_str(&format_double(flow));
+                label.push_str(" kg/h");
+            }
+            edges.push(DiagramEdge {
+                object_id: edge.stream_id.clone(),
+                source: edge.source_key.clone(),
+                target: edge.target_key.clone(),
+                label: Some(label),
+                dashed: edge.source_key.starts_with("recycle:")
+                    || edge.target_key.starts_with("recycle:"),
+            });
+        }
+        drawing_export::build(&self.flowsheet.name, &nodes, &edges)
+    }
+
+    fn finish(mut self) -> Document {
+        let diagram = self.options.drawing.then(|| self.diagram());
         let mut process_steps = Vec::new();
         for (ordinal, key) in self.order.iter().enumerate() {
             let Some(step) = self.steps.get(key) else {
@@ -657,6 +799,13 @@ impl<'a> Builder<'a> {
             property: "ConceptualModel".to_string(),
             children: vec![ComponentChild::Object(process_model)],
         }));
+        if let Some(drawing) = diagram {
+            let diagram = write_diagram(&drawing, "ProcessModel1", &mut self.mint);
+            engineering_children.push(Child::Components(Components {
+                property: "Diagram".to_string(),
+                children: vec![ComponentChild::Object(diagram)],
+            }));
+        }
         let engineering_model = Object {
             id: None,
             name: None,

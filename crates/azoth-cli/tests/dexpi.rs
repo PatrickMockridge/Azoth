@@ -99,6 +99,67 @@ fn the_demo_exports_validates_and_imports_again() {
 }
 
 #[test]
+fn the_drawing_flag_writes_a_pfd_and_the_import_places_it() {
+    let xml = temp("demo.drawing.xml");
+    let placed = temp("demo.placed.toml");
+    let unplaced = temp("demo.unplaced.toml");
+
+    let export = azoth(&[
+        "dexpi",
+        "export",
+        "--flowsheet",
+        &demo(),
+        "--palette",
+        &palette(),
+        "--out",
+        &xml,
+        "--allow-lossy-mappings",
+        "--project-recycles",
+        "--with-azoth-extensions",
+        "--with-drawing",
+    ]);
+    assert!(
+        export.status.success(),
+        "export failed: {}",
+        String::from_utf8_lossy(&export.stderr)
+    );
+    let text = std::fs::read_to_string(&xml).expect("the exchange is written");
+    assert!(
+        text.contains("Core/Diagram.Diagram"),
+        "the PFD carries a drawing"
+    );
+
+    let import = azoth(&[
+        "dexpi",
+        "import",
+        "--input",
+        &xml,
+        "--palette",
+        &palette(),
+        "--out",
+        &placed,
+    ]);
+    assert!(import.status.success());
+    let text = std::fs::read_to_string(&placed).expect("the import is written");
+    assert!(text.contains("[layout.instances]"), "{text}");
+
+    let import = azoth(&[
+        "dexpi",
+        "import",
+        "--input",
+        &xml,
+        "--palette",
+        &palette(),
+        "--out",
+        &unplaced,
+        "--no-layout",
+    ]);
+    assert!(import.status.success());
+    let text = std::fs::read_to_string(&unplaced).expect("the import is written");
+    assert!(!text.contains("[layout.instances]"), "{text}");
+}
+
+#[test]
 fn the_plant_profile_exports_validates_and_imports_again() {
     let fixture = root()
         .join("crates/azoth-dexpi/tests/fixtures/plant_simple.toml")

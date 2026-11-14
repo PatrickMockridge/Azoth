@@ -12,6 +12,7 @@
 //! read "conformant" as either.
 
 pub mod diagnostic;
+pub mod drawing;
 pub mod extensions;
 pub mod ids;
 pub mod inventory;
@@ -31,6 +32,10 @@ mod plant_mapping_gen;
 mod process_mapping_gen;
 
 pub use diagnostic::{DexpiDiagnostic, Severity};
+pub use drawing::{
+    Bounds, Color, Drawing, DrawingGroup, DrawingOrigin, DrawingReport, GroupKind, Point,
+    Primitive, Stroke,
+};
 pub use mapping::{Disposition, UnitMapping};
 pub use model::{
     Child, ComponentChild, Components, Data, DataValue, Document, Import, Model, Object, References,

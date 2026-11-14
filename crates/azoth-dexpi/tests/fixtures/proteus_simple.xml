@@ -7,10 +7,28 @@
 -->
 <PlantModel>
   <PlantInformation Application="Dexpi" Discipline="PID" SchemaVersion="4.1.1" Units="mm"/>
+  <Drawing Name="Proteus test drawing" Type="PID">
+    <Extent>
+      <Min X="0" Y="0"/>
+      <Max X="400" Y="200"/>
+    </Extent>
+  </Drawing>
   <Equipment ID="CentrifugalPump-1" ComponentClass="CentrifugalPump" ComponentClassURI="http://data.posccaesar.org/rdl/RDS327239" ComponentName="CENTRIFUGAL_PUMP_SHAPE">
     <GenericAttributes Set="DexpiAttributes" Number="1">
       <GenericAttribute Name="TagNameAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/TagNameAssignmentClass" Format="string" Value="P-100"/>
     </GenericAttributes>
+    <Position>
+      <Location X="100" Y="120" Z="0"/>
+    </Position>
+    <Scale X="1" Y="1"/>
+    <Label ID="PumpLabel-1" ComponentClass="EquipmentTagNameLabel" ComponentClassURI="http://sandbox.dexpi.org/rdl/EquipmentTagNameLabel">
+      <Text String="P-100" Font="Calibri" Height="3" Justification="CenterCenter">
+        <Presentation R="0" G="0" B="0"/>
+        <Position>
+          <Location X="100" Y="138" Z="0"/>
+        </Position>
+      </Text>
+    </Label>
     <Nozzle ID="Nozzle-1" ComponentClass="Nozzle" ComponentClassURI="http://data.posccaesar.org/rdl/RDS415214">
       <ConnectionPoints FlowIn="1" NumPoints="2">
         <Node ID="Nozzle-1-DefaultNode"/>
@@ -28,6 +46,10 @@
     <GenericAttributes Set="DexpiAttributes" Number="1">
       <GenericAttribute Name="TagNameAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/TagNameAssignmentClass" Format="string" Value="H-100"/>
     </GenericAttributes>
+    <Position>
+      <Location X="220" Y="120" Z="0"/>
+    </Position>
+    <Scale X="1" Y="1"/>
     <Nozzle ID="Nozzle-3" ComponentClass="Nozzle" ComponentClassURI="http://data.posccaesar.org/rdl/RDS415214">
       <ConnectionPoints FlowIn="1" NumPoints="2">
         <Node ID="Nozzle-3-DefaultNode"/>
@@ -41,10 +63,14 @@
       </ConnectionPoints>
     </Nozzle>
   </Equipment>
-  <Equipment ID="Tank-1" ComponentClass="Tank" ComponentClassURI="http://data.posccaesar.org/rdl/RDS445139">
+  <Equipment ID="Tank-1" ComponentClass="Tank" ComponentClassURI="http://data.posccaesar.org/rdl/RDS445139" ComponentName="TANK_SHAPE">
     <GenericAttributes Set="DexpiAttributes" Number="1">
       <GenericAttribute Name="TagNameAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/TagNameAssignmentClass" Format="string" Value="T-100"/>
     </GenericAttributes>
+    <Position>
+      <Location X="340" Y="120" Z="0"/>
+    </Position>
+    <Scale X="1" Y="1"/>
     <Nozzle ID="Nozzle-5" ComponentClass="Nozzle" ComponentClassURI="http://data.posccaesar.org/rdl/RDS415214">
       <ConnectionPoints FlowIn="1" NumPoints="2">
         <Node ID="Nozzle-5-DefaultNode"/>
@@ -63,52 +89,167 @@
       <GenericAttribute Name="LineNumberAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/LineNumberAssignmentClass" Format="string" Value="L-1001"/>
     </GenericAttributes>
     <PipingNetworkSegment ID="PipingNetworkSegment-1" ComponentClass="PipingNetworkSegment" ComponentClassURI="http://data.posccaesar.org/rdl/RDS267704">
-      <PipeOffPageConnector ID="FlowInPipeOffPageConnector-1" ComponentClass="FlowInPipeOffPageConnector" ComponentClassURI="http://sandbox.dexpi.org/rdl/FlowInPipeOffPageConnector">
+      <PipeOffPageConnector ID="FlowInPipeOffPageConnector-1" ComponentClass="FlowInPipeOffPageConnector" ComponentClassURI="http://sandbox.dexpi.org/rdl/FlowInPipeOffPageConnector" ComponentName="ARROW_SHAPE">
         <ConnectionPoints FlowOut="1" NumPoints="2">
           <Node ID="FlowInPipeOffPageConnector-1-DefaultNode"/>
           <Node Type="process" ID="PipingNode-7"/>
         </ConnectionPoints>
+        <Position>
+          <Location X="40" Y="120" Z="0"/>
+        </Position>
+        <Scale X="1" Y="1"/>
         <GenericAttributes Set="DexpiAttributes" Number="1">
           <GenericAttribute Name="PipeConnectorNumberAssignmentClass" Format="string" Value="FEED"/>
         </GenericAttributes>
       </PipeOffPageConnector>
+      <CenterLine NumPoints="2">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Coordinate X="45" Y="120"/>
+        <Coordinate X="90" Y="120"/>
+      </CenterLine>
       <Connection FromID="FlowInPipeOffPageConnector-1" FromNode="1" ToID="Nozzle-1" ToNode="1"/>
     </PipingNetworkSegment>
     <PipingNetworkSegment ID="PipingNetworkSegment-2" ComponentClass="PipingNetworkSegment" ComponentClassURI="http://data.posccaesar.org/rdl/RDS267704">
+      <Label ID="SegmentLabel-1" ComponentClass="PipingNetworkSegmentLabel" ComponentClassURI="http://sandbox.dexpi.org/rdl/PipingNetworkSegmentLabel">
+        <Text String="L-1001" Font="Calibri" Height="3" Justification="CenterCenter">
+          <Presentation R="0" G="0" B="0"/>
+          <Position>
+            <Location X="155" Y="126" Z="0"/>
+          </Position>
+        </Text>
+      </Label>
+      <CenterLine NumPoints="2">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Coordinate X="112" Y="120"/>
+        <Coordinate X="202" Y="120"/>
+      </CenterLine>
       <Connection FromID="Nozzle-2" FromNode="1" ToID="Nozzle-3" ToNode="1"/>
     </PipingNetworkSegment>
     <PipingNetworkSegment ID="PipingNetworkSegment-3" ComponentClass="PipingNetworkSegment" ComponentClassURI="http://data.posccaesar.org/rdl/RDS267704">
-      <PipingComponent ID="GlobeValve-1" ComponentClass="GlobeValve" ComponentClassURI="http://data.posccaesar.org/rdl/RDS332211">
+      <PipingComponent ID="GlobeValve-1" ComponentClass="GlobeValve" ComponentClassURI="http://data.posccaesar.org/rdl/RDS332211" ComponentName="GLOBE_VALVE_SHAPE">
         <ConnectionPoints FlowIn="1" NumPoints="3">
           <Node ID="GlobeValve-1-DefaultNode"/>
           <Node Type="process" ID="PipingNode-8"/>
           <Node Type="process" ID="PipingNode-9"/>
         </ConnectionPoints>
+        <Position>
+          <Location X="280" Y="120" Z="0"/>
+        </Position>
+        <Scale X="1" Y="1"/>
       </PipingComponent>
+      <CenterLine NumPoints="2">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Coordinate X="238" Y="120"/>
+        <Coordinate X="322" Y="120"/>
+      </CenterLine>
       <Connection FromID="Nozzle-4" FromNode="1" ToID="GlobeValve-1" ToNode="1"/>
       <Connection FromID="GlobeValve-1" FromNode="2" ToID="Nozzle-5" ToNode="1"/>
     </PipingNetworkSegment>
     <PipingNetworkSegment ID="PipingNetworkSegment-4" ComponentClass="PipingNetworkSegment" ComponentClassURI="http://data.posccaesar.org/rdl/RDS267704">
-      <PipeReducer ID="PipeReducer-1" ComponentClass="PipeReducer" ComponentClassURI="http://data.posccaesar.org/rdl/RDS267888">
+      <PipeReducer ID="PipeReducer-1" ComponentClass="PipeReducer" ComponentClassURI="http://data.posccaesar.org/rdl/RDS267888" ComponentName="REDUCER_SHAPE">
         <ConnectionPoints NumPoints="3">
           <Node ID="PipeReducer-1-DefaultNode"/>
           <Node Type="process" ID="PipingNode-10"/>
           <Node Type="process" ID="PipingNode-11"/>
         </ConnectionPoints>
+        <Position>
+          <Location X="365" Y="120" Z="0"/>
+        </Position>
+        <Scale X="1" Y="1"/>
       </PipeReducer>
+      <CenterLine NumPoints="2">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Coordinate X="352" Y="120"/>
+        <Coordinate X="378" Y="120"/>
+      </CenterLine>
       <Connection FromID="Nozzle-6" FromNode="1" ToID="PipeReducer-1" ToNode="1"/>
       <Connection FromID="PipeReducer-1" FromNode="2" ToID="FlowOutPipeOffPageConnector-1" ToNode="1"/>
     </PipingNetworkSegment>
     <PipingNetworkSegment ID="PipingNetworkSegment-5" ComponentClass="PipingNetworkSegment" ComponentClassURI="http://data.posccaesar.org/rdl/RDS267704">
-      <PipeOffPageConnector ID="FlowOutPipeOffPageConnector-1" ComponentClass="FlowOutPipeOffPageConnector" ComponentClassURI="http://sandbox.dexpi.org/rdl/FlowOutPipeOffPageConnector">
+      <PipeOffPageConnector ID="FlowOutPipeOffPageConnector-1" ComponentClass="FlowOutPipeOffPageConnector" ComponentClassURI="http://sandbox.dexpi.org/rdl/FlowOutPipeOffPageConnector" ComponentName="ARROW_SHAPE">
         <ConnectionPoints FlowIn="1" NumPoints="2">
           <Node ID="FlowOutPipeOffPageConnector-1-DefaultNode"/>
           <Node Type="process" ID="PipingNode-12"/>
         </ConnectionPoints>
+        <Position>
+          <Location X="385" Y="120" Z="0"/>
+        </Position>
+        <Scale X="1" Y="1"/>
         <GenericAttributes Set="DexpiAttributes" Number="1">
           <GenericAttribute Name="PipeConnectorNumberAssignmentClass" Format="string" Value="PRODUCT"/>
         </GenericAttributes>
       </PipeOffPageConnector>
+      <CenterLine NumPoints="2">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Coordinate X="380" Y="120"/>
+        <Coordinate X="395" Y="120"/>
+      </CenterLine>
     </PipingNetworkSegment>
   </PipingNetworkSystem>
+  <ShapeCatalogue Name="Shapes">
+    <Equipment ComponentName="CENTRIFUGAL_PUMP_SHAPE">
+      <Circle Radius="9">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Position><Location X="0" Y="0" Z="0"/></Position>
+      </Circle>
+      <PolyLine NumPoints="2">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Coordinate X="-9" Y="0"/>
+        <Coordinate X="9" Y="0"/>
+      </PolyLine>
+    </Equipment>
+    <Equipment ComponentName="FLOATING_HEAD_TUBE_BUNDLE_HEAT_EXCHANGER_SHAPE">
+      <PolyLine NumPoints="5">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Coordinate X="-16" Y="-8"/>
+        <Coordinate X="16" Y="-8"/>
+        <Coordinate X="16" Y="8"/>
+        <Coordinate X="-16" Y="8"/>
+        <Coordinate X="-16" Y="-8"/>
+      </PolyLine>
+      <PolyLine NumPoints="2">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Coordinate X="-10" Y="-8"/>
+        <Coordinate X="10" Y="8"/>
+      </PolyLine>
+    </Equipment>
+    <Equipment ComponentName="TANK_SHAPE">
+      <PolyLine NumPoints="5">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Coordinate X="-14" Y="-10"/>
+        <Coordinate X="14" Y="-10"/>
+        <Coordinate X="14" Y="10"/>
+        <Coordinate X="-14" Y="10"/>
+        <Coordinate X="-14" Y="-10"/>
+      </PolyLine>
+    </Equipment>
+    <PipingComponent ComponentName="GLOBE_VALVE_SHAPE">
+      <PolyLine NumPoints="5">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Coordinate X="-6" Y="-6"/>
+        <Coordinate X="6" Y="6"/>
+        <Coordinate X="6" Y="-6"/>
+        <Coordinate X="-6" Y="6"/>
+        <Coordinate X="-6" Y="-6"/>
+      </PolyLine>
+    </PipingComponent>
+    <PipeReducer ComponentName="REDUCER_SHAPE">
+      <PolyLine NumPoints="4">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Coordinate X="-4" Y="6"/>
+        <Coordinate X="4" Y="3"/>
+        <Coordinate X="4" Y="-3"/>
+        <Coordinate X="-4" Y="-6"/>
+      </PolyLine>
+    </PipeReducer>
+    <PipeOffPageConnector ComponentName="ARROW_SHAPE">
+      <PolyLine NumPoints="4">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Coordinate X="-4" Y="5"/>
+        <Coordinate X="5" Y="0"/>
+        <Coordinate X="-4" Y="-5"/>
+        <Coordinate X="-4" Y="5"/>
+      </PolyLine>
+    </PipeOffPageConnector>
+  </ShapeCatalogue>
 </PlantModel>

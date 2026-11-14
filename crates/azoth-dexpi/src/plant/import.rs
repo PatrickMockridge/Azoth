@@ -38,6 +38,12 @@ pub struct PlantImportReport {
     pub flowsheet: Flowsheet,
     pub diagnostics: Vec<DexpiDiagnostic>,
     pub document: Document,
+    /// DEXPI object id to the azoth key it became, for a viewer's coverage join.
+    pub bindings: BTreeMap<String, String>,
+    /// The drawing the document carried, if it carried one.
+    pub drawing: Option<crate::drawing::Drawing>,
+    /// Positions written into the flowsheet's `[layout]`.
+    pub layout_positions: usize,
 }
 
 /// Read a DEXPI Plant exchange as a flowsheet scaffold.
@@ -94,7 +100,11 @@ pub fn import_plant_document(
             }
         }
     }
-    let (feeds, products) = collect_boundaries(&document, &mut owners);
+    let mut bindings: BTreeMap<String, String> = steps
+        .iter()
+        .filter_map(|step| Some((step.object_id.clone()?, step.instance_id.clone()?)))
+        .collect();
+    let (feeds, products) = collect_boundaries(&document, &mut owners, &mut bindings);
     let segments = read_segments(plant_model);
 
     let mut connections = Vec::new();
@@ -177,8 +187,21 @@ pub fn import_plant_document(
     let root = find_engineering_model(&document);
     let item_tags = item_tags(plant_model);
     let instrumentation = read_instruments(plant_model, &item_tags, &mut diagnostics);
+    if let Some(component) = plant_model.components("ProcessInstrumentationFunctions") {
+        let ids: Vec<&str> = component
+            .children
+            .iter()
+            .filter_map(|child| match child {
+                ComponentChild::Object(object) => object.id.as_deref(),
+                ComponentChild::Reference { .. } => None,
+            })
+            .collect();
+        for (id, instrument) in ids.iter().zip(instrumentation.instruments.iter()) {
+            bindings.insert((*id).to_string(), instrument.id.clone());
+        }
+    }
 
-    let flowsheet = Flowsheet {
+    let mut flowsheet = Flowsheet {
         id: root
             .and_then(|root| root.data_string(extensions::FLOWSHEET_ID))
             .map_or_else(|| model_name(&document.model.name), |id| id.to_string()),
@@ -195,6 +218,11 @@ pub fn import_plant_document(
         layout: None,
     };
 
+    let drawing = crate::drawing::native::read_document(&document).map(|report| report.drawing);
+    let layout_positions = drawing.as_ref().map_or(0, |drawing| {
+        crate::drawing::layout::apply(&mut flowsheet, drawing, &bindings)
+    });
+
     if options.strict {
         for diagnostic in &mut diagnostics {
             if diagnostic.severity == Severity::Warning {
@@ -210,10 +238,14 @@ pub fn import_plant_document(
         flowsheet,
         diagnostics,
         document,
+        bindings,
+        drawing,
+        layout_positions,
     })
 }
 
 struct Step {
+    object_id: Option<String>,
     identifier: String,
     unit: Option<String>,
     instance_id: Option<String>,
@@ -299,6 +331,7 @@ fn read_steps(
             }
         }
         steps.push(Step {
+            object_id: item.id.clone(),
             identifier,
             unit,
             instance_id: Some(instance_id),
@@ -328,6 +361,7 @@ fn nozzle_node_ids(nozzle: &Object) -> Vec<String> {
 fn collect_boundaries(
     document: &Document,
     owners: &mut BTreeMap<String, NodeOwner>,
+    bindings: &mut BTreeMap<String, String>,
 ) -> (BTreeSet<String>, BTreeSet<String>) {
     let mut feeds = BTreeSet::new();
     let mut products = BTreeSet::new();
@@ -364,6 +398,9 @@ fn collect_boundaries(
                     boundary: Some(name.clone()),
                 },
             );
+        }
+        if let Some(id) = &object.id {
+            bindings.insert(id.clone(), name.clone());
         }
         if inbound {
             feeds.insert(name);

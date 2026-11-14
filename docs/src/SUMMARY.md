@@ -6,6 +6,7 @@
   - [Calculation sheets](./using/calculations.md)
   - [Reading a calculation page](./using/reading-a-calculation.md)
   - [Python scripting and Jupyter](./using/python.md)
+  - [Exchanging a DEXPI drawing](./using/dexpi.md)
 - [Inherent safety](./safety.md)
 <!-- BEGIN GENERATED: calcs -->
 - [Petroleum fraction characterisation](./characterization/index.md)

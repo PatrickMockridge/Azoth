@@ -558,7 +558,10 @@ impl Wiring {
 /// column per step of the longest path, a row per node within it, feeds left and products right.
 /// A node the document places keeps its own position, so a document that has been arranged draws
 /// as arranged and one that has never been opened draws as something.
-fn positions(flowsheet: &Flowsheet) -> HashMap<String, Position> {
+///
+/// Public because the DEXPI drawing export draws the same arrangement the canvas does: one
+/// layering, not a second. Coordinates are y-down with the node's top-left at its position.
+pub fn positions(flowsheet: &Flowsheet) -> HashMap<String, Position> {
     const COLUMN: f64 = 240.0;
     const ROW: f64 = 120.0;
 
