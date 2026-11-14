@@ -15,7 +15,7 @@
       "min_x": 0.0,
       "min_y": 0.0,
       "max_x": 359.0,
-      "max_y": 20.0
+      "max_y": 58.0
     },
     "origin": "file",
     "groups": [
@@ -29,7 +29,7 @@
             "id": null,
             "center": {
               "x": 64.0,
-              "y": 10.0
+              "y": 48.0
             },
             "radius_x": 9.0,
             "radius_y": 9.0,
@@ -51,11 +51,11 @@
             "points": [
               {
                 "x": 55.0,
-                "y": 10.0
+                "y": 48.0
               },
               {
                 "x": 73.0,
-                "y": 10.0
+                "y": 48.0
               }
             ],
             "stroke": {
@@ -73,7 +73,7 @@
             "id": null,
             "position": {
               "x": 64.0,
-              "y": -8.0
+              "y": 30.0
             },
             "text": "P-100",
             "size": 3.0,
@@ -98,23 +98,23 @@
             "points": [
               {
                 "x": 168.0,
-                "y": 18.0
+                "y": 56.0
               },
               {
                 "x": 200.0,
-                "y": 18.0
+                "y": 56.0
               },
               {
                 "x": 200.0,
-                "y": 2.0
+                "y": 40.0
               },
               {
                 "x": 168.0,
-                "y": 2.0
+                "y": 40.0
               },
               {
                 "x": 168.0,
-                "y": 18.0
+                "y": 56.0
               }
             ],
             "stroke": {
@@ -133,11 +133,11 @@
             "points": [
               {
                 "x": 174.0,
-                "y": 18.0
+                "y": 56.0
               },
               {
                 "x": 194.0,
-                "y": 2.0
+                "y": 40.0
               }
             ],
             "stroke": {
@@ -163,23 +163,23 @@
             "points": [
               {
                 "x": 290.0,
-                "y": 20.0
+                "y": 58.0
               },
               {
                 "x": 318.0,
-                "y": 20.0
+                "y": 58.0
               },
               {
                 "x": 318.0,
-                "y": 0.0
+                "y": 38.0
               },
               {
                 "x": 290.0,
-                "y": 0.0
+                "y": 38.0
               },
               {
                 "x": 290.0,
-                "y": 20.0
+                "y": 58.0
               }
             ],
             "stroke": {
@@ -205,19 +205,19 @@
             "points": [
               {
                 "x": 0.0,
-                "y": 5.0
+                "y": 43.0
               },
               {
                 "x": 9.0,
-                "y": 10.0
+                "y": 48.0
               },
               {
                 "x": 0.0,
-                "y": 15.0
+                "y": 53.0
               },
               {
                 "x": 0.0,
-                "y": 5.0
+                "y": 43.0
               }
             ],
             "stroke": {
@@ -243,11 +243,11 @@
             "points": [
               {
                 "x": 9.0,
-                "y": 10.0
+                "y": 48.0
               },
               {
                 "x": 54.0,
-                "y": 10.0
+                "y": 48.0
               }
             ],
             "stroke": {
@@ -273,11 +273,11 @@
             "points": [
               {
                 "x": 76.0,
-                "y": 10.0
+                "y": 48.0
               },
               {
                 "x": 166.0,
-                "y": 10.0
+                "y": 48.0
               }
             ],
             "stroke": {
@@ -295,7 +295,7 @@
             "id": null,
             "position": {
               "x": 119.0,
-              "y": 4.0
+              "y": 42.0
             },
             "text": "L-1001",
             "size": 3.0,
@@ -320,23 +320,23 @@
             "points": [
               {
                 "x": 238.0,
-                "y": 16.0
+                "y": 54.0
               },
               {
                 "x": 250.0,
-                "y": 4.0
+                "y": 42.0
               },
               {
                 "x": 250.0,
-                "y": 16.0
+                "y": 54.0
               },
               {
                 "x": 238.0,
-                "y": 4.0
+                "y": 42.0
               },
               {
                 "x": 238.0,
-                "y": 16.0
+                "y": 54.0
               }
             ],
             "stroke": {
@@ -362,11 +362,11 @@
             "points": [
               {
                 "x": 202.0,
-                "y": 10.0
+                "y": 48.0
               },
               {
                 "x": 286.0,
-                "y": 10.0
+                "y": 48.0
               }
             ],
             "stroke": {
@@ -392,19 +392,19 @@
             "points": [
               {
                 "x": 325.0,
-                "y": 4.0
+                "y": 42.0
               },
               {
                 "x": 333.0,
-                "y": 7.0
+                "y": 45.0
               },
               {
                 "x": 333.0,
-                "y": 13.0
+                "y": 51.0
               },
               {
                 "x": 325.0,
-                "y": 16.0
+                "y": 54.0
               }
             ],
             "stroke": {
@@ -430,11 +430,11 @@
             "points": [
               {
                 "x": 316.0,
-                "y": 10.0
+                "y": 48.0
               },
               {
                 "x": 342.0,
-                "y": 10.0
+                "y": 48.0
               }
             ],
             "stroke": {
@@ -460,19 +460,19 @@
             "points": [
               {
                 "x": 345.0,
-                "y": 5.0
+                "y": 43.0
               },
               {
                 "x": 354.0,
-                "y": 10.0
+                "y": 48.0
               },
               {
                 "x": 345.0,
-                "y": 15.0
+                "y": 53.0
               },
               {
                 "x": 345.0,
-                "y": 5.0
+                "y": 43.0
               }
             ],
             "stroke": {
@@ -498,11 +498,11 @@
             "points": [
               {
                 "x": 344.0,
-                "y": 10.0
+                "y": 48.0
               },
               {
                 "x": 359.0,
-                "y": 10.0
+                "y": 48.0
               }
             ],
             "stroke": {
@@ -513,6 +513,119 @@
               },
               "width": 0.3,
               "dash": "Solid"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "node",
+        "id": "ProcessInstrumentationFunction-1",
+        "represents": "Instrument1",
+        "primitives": [
+          {
+            "kind": "ellipse",
+            "id": null,
+            "center": {
+              "x": 64.0,
+              "y": 8.0
+            },
+            "radius_x": 8.0,
+            "radius_y": 8.0,
+            "rotation": 0.0,
+            "fill": "Transparent",
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          },
+          {
+            "kind": "text",
+            "id": null,
+            "position": {
+              "x": 64.0,
+              "y": 6.0
+            },
+            "text": "PSHH",
+            "size": 3.0,
+            "rotation": 0.0,
+            "alignment": "CenterCenter",
+            "color": {
+              "r": 0,
+              "g": 0,
+              "b": 0
+            }
+          }
+        ]
+      },
+      {
+        "kind": "node",
+        "id": "ProcessInstrumentationFunction-2",
+        "represents": "Instrument2",
+        "primitives": [
+          {
+            "kind": "ellipse",
+            "id": null,
+            "center": {
+              "x": 304.0,
+              "y": 8.0
+            },
+            "radius_x": 8.0,
+            "radius_y": 8.0,
+            "rotation": 0.0,
+            "fill": "Transparent",
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          },
+          {
+            "kind": "polyline",
+            "id": null,
+            "points": [
+              {
+                "x": 296.0,
+                "y": 8.0
+              },
+              {
+                "x": 312.0,
+                "y": 8.0
+              }
+            ],
+            "stroke": {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "width": 0.3,
+              "dash": "Solid"
+            }
+          },
+          {
+            "kind": "text",
+            "id": null,
+            "position": {
+              "x": 304.0,
+              "y": 6.0
+            },
+            "text": "TIC",
+            "size": 3.0,
+            "rotation": 0.0,
+            "alignment": "CenterCenter",
+            "color": {
+              "r": 0,
+              "g": 0,
+              "b": 0
             }
           }
         ]
@@ -675,6 +788,48 @@
       "primitives": 1
     },
     {
+      "id": "Instrument1",
+      "ty": "Plant/Instrumentation.ProcessInstrumentationFunction",
+      "label": "PSHH-101",
+      "unit": null,
+      "azoth": "PSHH-101",
+      "status": "control",
+      "explanation": "carried as control evidence, not simulated",
+      "alternatives": [],
+      "imported": true,
+      "exportable": true,
+      "drawn": true,
+      "primitives": 2
+    },
+    {
+      "id": "Signal1",
+      "ty": "Plant/Instrumentation.SignalConveyingFunction",
+      "label": "Signal1",
+      "unit": null,
+      "azoth": null,
+      "status": "control",
+      "explanation": "carried as control evidence, not simulated",
+      "alternatives": [],
+      "imported": true,
+      "exportable": true,
+      "drawn": false,
+      "primitives": 0
+    },
+    {
+      "id": "Instrument2",
+      "ty": "Plant/Instrumentation.ProcessInstrumentationFunction",
+      "label": "TIC-102",
+      "unit": null,
+      "azoth": "TIC-102",
+      "status": "control",
+      "explanation": "carried as control evidence, not simulated",
+      "alternatives": [],
+      "imported": true,
+      "exportable": true,
+      "drawn": true,
+      "primitives": 3
+    },
+    {
       "id": "PipingNetworkSegment-1",
       "ty": "drawing",
       "label": "PipingNetworkSegment-1",
@@ -760,18 +915,18 @@
     }
   ],
   "counts": {
-    "semantic": 11,
+    "semantic": 14,
     "modelled": 3,
     "lossy": 1,
     "ambiguous": 0,
     "unmapped": 0,
     "topology": 7,
-    "control": 0,
+    "control": 3,
     "drawing_only": 6,
-    "drawn": 6,
-    "not_drawn": 5,
-    "groups": 12,
-    "primitives": 16,
+    "drawn": 8,
+    "not_drawn": 6,
+    "groups": 14,
+    "primitives": 21,
     "layout_positions": 5
   },
   "diagnostics": [
@@ -807,13 +962,13 @@
     }
   ],
   "scaffold": {
-    "toml": "id = \"ProteusProjection\"\nname = \"ProteusProjection\"\nproducts = [\"PRODUCT\"]\ninputs = []\nrecycles = []\n\n[[instances]]\nid = \"T-100\"\nunit = \"unit_ops.tank\"\n\n[instances.parameters]\n\n[[instances]]\nid = \"H-100\"\nunit = \"unit_ops.heat_exchanger\"\n\n[instances.parameters]\n\n[[instances]]\nid = \"P-100\"\nunit = \"unit_ops.pump\"\n\n[instances.parameters]\n\n[[instances]]\nid = \"GlobeValve-1\"\nunit = \"unit_ops.throttling_valve\"\n\n[instances.parameters]\n\n[[connections]]\nfrom = \"P-100.outlet\"\nto = \"H-100.hot_in\"\nline = \"L-1001\"\n\n[[connections]]\nfrom = \"H-100.hot_out\"\nto = \"GlobeValve-1.inlet\"\nline = \"L-1001\"\n\n[[connections]]\nfrom = \"T-100.gas\"\nto = \"PRODUCT\"\nline = \"L-1001\"\n\n[[connections]]\nfrom = \"FEED\"\nto = \"P-100.inlet\"\nline = \"L-1001\"\n\n[[connections]]\nfrom = \"GlobeValve-1.outlet\"\nto = \"T-100.inlet\"\nline = \"L-1001\"\n\n[layout.instances]\nGlobeValve-1 = [238.0, 4.0]\nH-100 = [168.0, 2.0]\nP-100 = [55.0, 1.0]\nT-100 = [290.0, 0.0]\n\n[layout.products]\nPRODUCT = [345.0, 5.0]\n",
+    "toml": "id = \"ProteusProjection\"\nname = \"ProteusProjection\"\nproducts = [\"PRODUCT\"]\ninputs = []\nrecycles = []\n\n[[instances]]\nid = \"T-100\"\nunit = \"unit_ops.tank\"\n\n[instances.parameters]\n\n[[instances]]\nid = \"H-100\"\nunit = \"unit_ops.heat_exchanger\"\n\n[instances.parameters]\n\n[[instances]]\nid = \"P-100\"\nunit = \"unit_ops.pump\"\n\n[instances.parameters]\n\n[[instances]]\nid = \"GlobeValve-1\"\nunit = \"unit_ops.throttling_valve\"\n\n[instances.parameters]\n\n[[connections]]\nfrom = \"P-100.outlet\"\nto = \"H-100.hot_in\"\nline = \"L-1001\"\n\n[[connections]]\nfrom = \"H-100.hot_out\"\nto = \"GlobeValve-1.inlet\"\nline = \"L-1001\"\n\n[[connections]]\nfrom = \"T-100.gas\"\nto = \"PRODUCT\"\nline = \"L-1001\"\n\n[[connections]]\nfrom = \"FEED\"\nto = \"P-100.inlet\"\nline = \"L-1001\"\n\n[[connections]]\nfrom = \"GlobeValve-1.outlet\"\nto = \"T-100.inlet\"\nline = \"L-1001\"\n\n[[instruments]]\nid = \"PSHH-101\"\nfunction = \"PSHH\"\nloop_number = \"101\"\nmeasures = \"P-100\"\nlocation = \"field\"\n\n[[instruments]]\nid = \"TIC-102\"\nfunction = \"TIC\"\nloop_number = \"102\"\nmeasures = \"T-100\"\nlocation = \"panel\"\n\n[[signals]]\nfrom = \"PSHH-101\"\nto = \"TIC-102\"\n\n[layout.instances]\nGlobeValve-1 = [238.0, 42.0]\nH-100 = [168.0, 40.0]\nP-100 = [55.0, 39.0]\nT-100 = [290.0, 38.0]\n\n[layout.products]\nPRODUCT = [345.0, 43.0]\n",
     "flowsheet_id": "ProteusProjection",
     "instances": 4,
     "connections": 5,
     "recycles": 0,
-    "instruments": 0,
-    "signals": 0,
+    "instruments": 2,
+    "signals": 1,
     "layout_positions": 5,
     "check_errors": 8,
     "check_warnings": 0

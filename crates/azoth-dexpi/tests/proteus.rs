@@ -18,6 +18,36 @@ fn fixture() -> String {
 }
 
 #[test]
+fn the_projection_recovers_the_instruments_and_the_signal() {
+    let report = import_proteus(
+        &fixture(),
+        &common::palette(),
+        &PlantImportOptions::default(),
+    )
+    .expect("the Proteus fixture imports");
+    let instruments = &report.flowsheet.instruments;
+    assert_eq!(instruments.len(), 2, "{instruments:?}");
+    let switch = instruments
+        .iter()
+        .find(|instrument| instrument.id == "PSHH-101")
+        .expect("the pressure switch");
+    assert_eq!(switch.function, "PSHH");
+    assert_eq!(switch.loop_number.as_deref(), Some("101"));
+    assert_eq!(switch.location.as_deref(), Some("field"));
+    assert_eq!(switch.measures.as_deref(), Some("P-100"));
+    let controller = instruments
+        .iter()
+        .find(|instrument| instrument.id == "TIC-102")
+        .expect("the temperature controller");
+    assert_eq!(controller.function, "TIC");
+    assert_eq!(controller.location.as_deref(), Some("panel"));
+    assert_eq!(controller.measures.as_deref(), Some("T-100"));
+    assert_eq!(report.flowsheet.signals.len(), 1);
+    assert_eq!(report.flowsheet.signals[0].from, "PSHH-101");
+    assert_eq!(report.flowsheet.signals[0].to, "TIC-102");
+}
+
+#[test]
 fn the_projection_recovers_the_items_and_their_units() {
     let report = import_proteus(
         &fixture(),

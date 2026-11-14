@@ -9,15 +9,18 @@
 //! twice.
 //!
 //! **What the projection drops is named.** Positions, labels, centroids and presentation are
-//! graphics; design attributes are not carried into the flowsheet. Inline instrumentation and
-//! fittings this port has no unit for are collapsed through, with an
-//! `inline_component_skipped` diagnostic per class. Nothing is guessed silently.
+//! graphics; design attributes are not carried into the flowsheet. Inline fittings this port
+//! has no unit for are collapsed through, with an `inline_component_skipped` diagnostic per
+//! class. Instrumentation is carried: a `ProcessInstrumentationFunction`, its tag, location
+//! and measured item become a Plant instrumentation object, and a `SignalConveyingFunction`
+//! between two instruments becomes the signal record. Nothing is guessed silently.
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use azoth_process::UnitOpSpec;
 
 use crate::diagnostic::DexpiDiagnostic;
+use crate::extensions;
 use crate::model::{
     Child, ComponentChild, Components, Data, DataValue, Document, Import, Model, Object, References,
 };
@@ -544,6 +547,15 @@ pub(crate) fn project(
         }));
     }
 
+    let instruments =
+        project_instruments(&elements, &items, &item_by_element, &mut ids, diagnostics);
+    if !instruments.is_empty() {
+        plant_children.push(Child::Components(Components {
+            property: "ProcessInstrumentationFunctions".to_string(),
+            children: instruments,
+        }));
+    }
+
     let plant_model = Object {
         id: Some("PlantModel1".to_string()),
         name: None,
@@ -582,6 +594,199 @@ pub(crate) fn project(
         report.drawing
     });
     Ok(Projection { document, drawing })
+}
+
+/// Project Proteus instrumentation onto the Plant model's instrumentation objects.
+///
+/// **The drawing's control layer is not decoration.** A `ProcessInstrumentationFunction` names
+/// its tag in the category/functions/number attributes, its location in
+/// `LocationSpecialization`, and what it watches in a nested `ProcessSignalGeneratingFunction`'s
+/// `is located in` association. A `SignalConveyingFunction` joins two instruments by
+/// `has logical start`/`has logical end`; one that ends at an actuator rather than an
+/// instrument is not a signal this record can hold, and is reported rather than guessed.
+fn project_instruments(
+    elements: &[&RawElement],
+    items: &[Item],
+    item_by_element: &BTreeMap<String, usize>,
+    source_ids: &mut BTreeMap<String, String>,
+    diagnostics: &mut Vec<DexpiDiagnostic>,
+) -> Vec<ComponentChild> {
+    let item_tags: BTreeMap<&str, &str> = item_by_element
+        .iter()
+        .map(|(source, index)| (source.as_str(), items[*index].tag.as_str()))
+        .collect();
+    let functions: Vec<&RawElement> = elements
+        .iter()
+        .copied()
+        .filter(|element| {
+            element.attribute("ComponentClass").as_deref() == Some("ProcessInstrumentationFunction")
+        })
+        .collect();
+    let ids: BTreeMap<String, String> = functions
+        .iter()
+        .enumerate()
+        .filter_map(|(index, element)| {
+            element
+                .attribute("ID")
+                .map(|id| (id, format!("Instrument{}", index + 1)))
+        })
+        .collect();
+
+    let mut signals: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let mut signal_number = 0_usize;
+    for flow in elements.iter().filter(|element| {
+        element.attribute("ComponentClass").as_deref() == Some("SignalConveyingFunction")
+    }) {
+        let (Some(start), Some(end)) = (
+            association(flow, "has logical start"),
+            association(flow, "has logical end"),
+        ) else {
+            continue;
+        };
+        let (Some(_), Some(target)) = (ids.get(&start), ids.get(&end)) else {
+            diagnostics.push(DexpiDiagnostic::info(
+                "instrumentation_signal_skipped",
+                flow.attribute("ID").unwrap_or_default(),
+                "the signal ends at an actuator rather than an instrument, which this record \
+                 does not hold",
+            ));
+            continue;
+        };
+        signal_number += 1;
+        signals
+            .entry(start)
+            .or_default()
+            .push(format!("Signal{signal_number}|{target}"));
+    }
+
+    let mut objects = Vec::new();
+    for (index, element) in functions.iter().enumerate() {
+        let object_id = format!("Instrument{}", index + 1);
+        if let Some(source) = element.attribute("ID") {
+            source_ids.insert(source, object_id.clone());
+        }
+        let category = generic_attribute(
+            element,
+            "ProcessInstrumentationFunctionCategoryAssignmentClass",
+        )
+        .unwrap_or_default();
+        let functions_attr =
+            generic_attribute(element, "ProcessInstrumentationFunctionsAssignmentClass")
+                .unwrap_or_default();
+        let number = generic_attribute(
+            element,
+            "ProcessInstrumentationFunctionNumberAssignmentClass",
+        )
+        .unwrap_or_default();
+        let tag = if category.is_empty() && functions_attr.is_empty() && number.is_empty() {
+            element.attribute("ID").unwrap_or_default()
+        } else {
+            format!("{category}{functions_attr}-{number}")
+        };
+        let mut children = vec![
+            Child::Data(string_data(extensions::TAG, &tag)),
+            Child::Data(string_data(
+                "ProcessInstrumentationFunctionCategory",
+                &category,
+            )),
+            Child::Data(string_data(
+                "ProcessInstrumentationFunctionModifier",
+                &functions_attr,
+            )),
+            Child::Data(string_data("ProcessInstrumentationFunctionNumber", &number)),
+        ];
+        if let Some(location) = generic_attribute(element, "LocationSpecialization")
+            .and_then(|value| location_reference(&value))
+        {
+            children.push(Child::Data(Data {
+                property: "Location".to_string(),
+                values: vec![DataValue::Reference(location.to_string())],
+            }));
+        }
+        if let Some(measures) = measure_tag(element, &item_tags) {
+            children.push(Child::Data(string_data(extensions::MEASURES, &measures)));
+        }
+        let source = element.attribute("ID").unwrap_or_default();
+        let mut conveying = Vec::new();
+        for signal in signals.get(&source).into_iter().flatten() {
+            let Some((id, target)) = signal.split_once('|') else {
+                continue;
+            };
+            conveying.push(ComponentChild::Object(Object {
+                id: Some(id.to_string()),
+                name: None,
+                ty: "Plant/Instrumentation.SignalConveyingFunction".to_string(),
+                children: vec![Child::References(References {
+                    property: "Target".to_string(),
+                    objects: vec![format!("#{target}")],
+                })],
+            }));
+        }
+        if !conveying.is_empty() {
+            children.push(Child::Components(Components {
+                property: "SignalConveyingFunctions".to_string(),
+                children: conveying,
+            }));
+        }
+        objects.push(ComponentChild::Object(Object {
+            id: Some(object_id),
+            name: None,
+            ty: "Plant/Instrumentation.ProcessInstrumentationFunction".to_string(),
+            children,
+        }));
+    }
+    objects
+}
+
+fn generic_attribute(element: &RawElement, name: &str) -> Option<String> {
+    element
+        .elements()
+        .filter(|child| child.name == "GenericAttributes")
+        .flat_map(|attributes| attributes.elements())
+        .find(|attribute| {
+            attribute.name == "GenericAttribute"
+                && attribute.attribute("Name").as_deref() == Some(name)
+        })
+        .and_then(|attribute| attribute.attribute("Value"))
+}
+
+fn association(element: &RawElement, kind: &str) -> Option<String> {
+    element
+        .elements()
+        .filter(|child| child.name == "Association")
+        .find(|association| association.attribute("Type").as_deref() == Some(kind))
+        .and_then(|association| association.attribute("ItemID"))
+}
+
+fn location_reference(value: &str) -> Option<&'static str> {
+    match value {
+        "Field" => Some("Plant/Enumerations.LocationClassification.Field"),
+        "ControlPanel" => Some("Plant/Enumerations.LocationClassification.ControlPanel"),
+        "CentralLocation" => Some("Plant/Enumerations.LocationClassification.CentralLocation"),
+        _ => None,
+    }
+}
+
+fn measure_tag(element: &RawElement, item_tags: &BTreeMap<&str, &str>) -> Option<String> {
+    for generator in descendants(element, "ProcessSignalGeneratingFunction") {
+        if let Some(target) = association(generator, "is located in") {
+            if let Some(tag) = item_tags.get(target.as_str()) {
+                return Some((*tag).to_string());
+            }
+        }
+    }
+    None
+}
+
+fn descendants<'a>(element: &'a RawElement, name: &str) -> Vec<&'a RawElement> {
+    let mut found = Vec::new();
+    if element.name == name {
+        found.push(element);
+    }
+    for child in element.elements() {
+        found.extend(descendants(child, name));
+    }
+    found
 }
 
 fn collect<'a>(element: &'a RawElement, elements: &mut Vec<&'a RawElement>) {

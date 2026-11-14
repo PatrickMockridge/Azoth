@@ -186,6 +186,78 @@
       </CenterLine>
     </PipingNetworkSegment>
   </PipingNetworkSystem>
+  <ProcessInstrumentationFunction ID="ProcessInstrumentationFunction-1" ComponentClass="ProcessInstrumentationFunction" ComponentClassURI="http://sandbox.dexpi.org/rdl/ProcessInstrumentationFunction" ComponentName="INSTRUMENTATION_BUBBLE_SHAPE_FIELD">
+    <Position>
+      <Location X="100" Y="160" Z="0"/>
+    </Position>
+    <Label ID="ProcessInstrumentationFunctionLabel-1" ComponentClass="ProcessInstrumentationFunctionLabel" ComponentClassURI="http://sandbox.dexpi.org/rdl/ProcessInstrumentationFunctionLabel">
+      <Text String="PSHH" Font="Calibri" Height="3" Justification="CenterCenter">
+        <Presentation R="0" G="0" B="0"/>
+        <Position>
+          <Location X="100" Y="162" Z="0"/>
+        </Position>
+      </Text>
+      <Text String="101" Font="Calibri" Height="3" Justification="CenterCenter">
+        <Presentation R="0" G="0" B="0"/>
+        <Position>
+          <Location X="100" Y="158.5" Z="0"/>
+        </Position>
+      </Text>
+    </Label>
+    <GenericAttributes Set="DexpiAttributes" Number="4">
+      <GenericAttribute Name="LocationSpecialization" AttributeURI="http://sandbox.dexpi.org/rdl/LocationSpecialization" Format="anyURI" Value="Field"/>
+      <GenericAttribute Name="ProcessInstrumentationFunctionCategoryAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/ProcessInstrumentationFunctionCategoryAssignmentClass" Format="string" Value="P"/>
+      <GenericAttribute Name="ProcessInstrumentationFunctionNumberAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/ProcessInstrumentationFunctionNumberAssignmentClass" Format="string" Value="101"/>
+      <GenericAttribute Name="ProcessInstrumentationFunctionsAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/ProcessInstrumentationFunctionsAssignmentClass" Format="string" Value="SHH"/>
+    </GenericAttributes>
+    <ConnectionPoints NumPoints="1">
+      <Node ID="ProcessInstrumentationFunction-1-DefaultNode"/>
+    </ConnectionPoints>
+    <ProcessSignalGeneratingFunction ID="ProcessSignalGeneratingFunction-1" ComponentClass="ProcessSignalGeneratingFunction" ComponentClassURI="http://sandbox.dexpi.org/rdl/ProcessSignalGeneratingFunction">
+      <GenericAttributes Set="DexpiAttributes" Number="1">
+        <GenericAttribute Name="ProcessSignalGeneratingFunctionNumberAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/ProcessSignalGeneratingFunctionNumberAssignmentClass" Format="string" Value="PT101"/>
+      </GenericAttributes>
+      <Association Type="is located in" ItemID="CentrifugalPump-1"/>
+    </ProcessSignalGeneratingFunction>
+    <InformationFlow ID="SignalConveyingFunction-1" ComponentClass="SignalConveyingFunction" ComponentClassURI="http://sandbox.dexpi.org/rdl/SignalConveyingFunction">
+      <Association Type="has logical start" ItemID="ProcessInstrumentationFunction-1"/>
+      <Association Type="has logical end" ItemID="ProcessInstrumentationFunction-2"/>
+    </InformationFlow>
+  </ProcessInstrumentationFunction>
+  <ProcessInstrumentationFunction ID="ProcessInstrumentationFunction-2" ComponentClass="ProcessInstrumentationFunction" ComponentClassURI="http://sandbox.dexpi.org/rdl/ProcessInstrumentationFunction" ComponentName="INSTRUMENTATION_BUBBLE_SHAPE_CENTRAL">
+    <Position>
+      <Location X="340" Y="160" Z="0"/>
+    </Position>
+    <Label ID="ProcessInstrumentationFunctionLabel-2" ComponentClass="ProcessInstrumentationFunctionLabel" ComponentClassURI="http://sandbox.dexpi.org/rdl/ProcessInstrumentationFunctionLabel">
+      <Text String="TIC" Font="Calibri" Height="3" Justification="CenterCenter">
+        <Presentation R="0" G="0" B="0"/>
+        <Position>
+          <Location X="340" Y="162" Z="0"/>
+        </Position>
+      </Text>
+      <Text String="102" Font="Calibri" Height="3" Justification="CenterCenter">
+        <Presentation R="0" G="0" B="0"/>
+        <Position>
+          <Location X="340" Y="158.5" Z="0"/>
+        </Position>
+      </Text>
+    </Label>
+    <GenericAttributes Set="DexpiAttributes" Number="4">
+      <GenericAttribute Name="LocationSpecialization" AttributeURI="http://sandbox.dexpi.org/rdl/LocationSpecialization" Format="anyURI" Value="ControlPanel"/>
+      <GenericAttribute Name="ProcessInstrumentationFunctionCategoryAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/ProcessInstrumentationFunctionCategoryAssignmentClass" Format="string" Value="T"/>
+      <GenericAttribute Name="ProcessInstrumentationFunctionNumberAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/ProcessInstrumentationFunctionNumberAssignmentClass" Format="string" Value="102"/>
+      <GenericAttribute Name="ProcessInstrumentationFunctionsAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/ProcessInstrumentationFunctionsAssignmentClass" Format="string" Value="IC"/>
+    </GenericAttributes>
+    <ConnectionPoints NumPoints="1">
+      <Node ID="ProcessInstrumentationFunction-2-DefaultNode"/>
+    </ConnectionPoints>
+    <ProcessSignalGeneratingFunction ID="ProcessSignalGeneratingFunction-2" ComponentClass="ProcessSignalGeneratingFunction" ComponentClassURI="http://sandbox.dexpi.org/rdl/ProcessSignalGeneratingFunction">
+      <GenericAttributes Set="DexpiAttributes" Number="1">
+        <GenericAttribute Name="ProcessSignalGeneratingFunctionNumberAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/ProcessSignalGeneratingFunctionNumberAssignmentClass" Format="string" Value="TT102"/>
+      </GenericAttributes>
+      <Association Type="is located in" ItemID="Tank-1"/>
+    </ProcessSignalGeneratingFunction>
+  </ProcessInstrumentationFunction>
   <ShapeCatalogue Name="Shapes">
     <Equipment ComponentName="CENTRIFUGAL_PUMP_SHAPE">
       <Circle Radius="9">
@@ -251,5 +323,22 @@
         <Coordinate X="-4" Y="5"/>
       </PolyLine>
     </PipeOffPageConnector>
+    <ProcessInstrumentationFunction ComponentName="INSTRUMENTATION_BUBBLE_SHAPE_FIELD">
+      <Circle Radius="8">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Position><Location X="0" Y="0" Z="0"/></Position>
+      </Circle>
+    </ProcessInstrumentationFunction>
+    <ProcessInstrumentationFunction ComponentName="INSTRUMENTATION_BUBBLE_SHAPE_CENTRAL">
+      <Circle Radius="8">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Position><Location X="0" Y="0" Z="0"/></Position>
+      </Circle>
+      <PolyLine NumPoints="2">
+        <Presentation LineType="0" LineWeight="0.3" R="0" G="0" B="0"/>
+        <Coordinate X="-8" Y="0"/>
+        <Coordinate X="8" Y="0"/>
+      </PolyLine>
+    </ProcessInstrumentationFunction>
   </ShapeCatalogue>
 </PlantModel>
