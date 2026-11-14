@@ -138,7 +138,11 @@ pub fn dexpi_export_plant(
 /// Returns `(flowsheet_toml, report_json)`; a refusal raises `ValueError`.
 #[pyfunction]
 #[pyo3(signature = (xml, palette_dir="specs/unit_ops", strict=false))]
-pub fn dexpi_import_plant(xml: &str, palette_dir: &str, strict: bool) -> PyResult<(String, String)> {
+pub fn dexpi_import_plant(
+    xml: &str,
+    palette_dir: &str,
+    strict: bool,
+) -> PyResult<(String, String)> {
     let palette = load_palette(Path::new(palette_dir))
         .map_err(|error| PyValueError::new_err(format!("palette: {error}")))?;
     match import_plant(xml, &palette, &PlantImportOptions { strict }) {
