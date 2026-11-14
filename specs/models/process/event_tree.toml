@@ -1,0 +1,63 @@
+id = "process.event_tree"
+name = "Event tree"
+kind = "procedure"
+assumptions = [
+    "**the leaves are the full `2^n` enumeration in bit order**: branch `b` is bit `b` of the leaf index, set meaning yes and clear meaning no.",
+    "**the path is `name=Y` or `name=N` per branch in branch order, joined by `\"; \"`**; a tree with no branches has one leaf whose path is empty.",
+    "**the leaf probability is the product of the branches' probabilities and their complements**, and the frequency is that probability times the initiating frequency.",
+    "**the branch count is capped at the algorithm's `max_iterations`, 20.** The class's `1 << n` has no cap and its leaf count overflows; two million rows is not an answer.",
+    "**a negative initiating frequency is refused**, as the class throws; **a branch probability outside `[0, 1]`, or a NaN, is refused**, as `addBranch` throws.",
+    "**the initiating event's name and the report text are not carried**: they are presentation, and the port's rows carry the paths.",
+    "**the frequency is per year and dimensionless**: the vocabulary has no year unit, so the value crosses unconverted.",
+]
+references = [
+    "ISO 31010:2019. Risk management - Risk assessment techniques, annex B.18, event tree analysis.",
+    "CCPS (2008). Guidelines for Hazard Evaluation Procedures, 3rd Ed., chapter 5.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/safety/risk/eta/EventTreeAnalyzer.java` is the port source.",
+    "`validation/neqsim/captures/process_event_tree.tsv` - the class's two- and three-branch tests, a no-branch tree, a certain/impossible pair, the two refusals and the shift count.",
+]
+[source]
+standard = "NeqSim process/safety/risk/eta/EventTreeAnalyzer.java"
+edition = "Its `addBranch` and `evaluate`: the full `2^n` enumeration in bit order, the path spelling and the product. `report` is presentation and is not carried."
+[algorithm]
+scheme = "full_binary_enumeration"
+initialisation = "leaf_index_zero"
+convergence = "absolute"
+tolerance = 1.0e-12
+max_iterations = 20
+[inputs]
+[inputs.initiating_frequency_per_year]
+unit = "dimensionless"
+description = "the initiating event's frequency, in 1/year, at least zero. Declared dimensionless because the vocabulary has no year unit.\n"
+[inputs.branches]
+type = "record_list"
+row_type = "EventTreeBranch"
+description = "the pivotal events in branch order. **An empty list is a tree with no branches**, whose single leaf has an empty path and the initiating frequency.\n"
+[inputs.branches.fields.name]
+type = "string"
+description = "the pivotal event's name, used only in the path.\n"
+[inputs.branches.fields.probability_of_yes]
+unit = "dimensionless"
+description = "the probability the event occurs, in `[0, 1]`; the no branch carries its complement.\n"
+[outputs]
+[outputs.outcomes]
+type = "record_list"
+description = "one row per leaf, in the class's bit order: `2^n` rows, or one when there are no branches.\n"
+[outputs.outcomes.fields.path]
+type = "string"
+description = "the branch states joined by `\"; \"`, each `name=Y` or `name=N`; empty for a no-branch tree.\n"
+[outputs.outcomes.fields.probability]
+unit = "dimensionless"
+description = "the product of the branch probabilities and complements on this path.\n"
+[outputs.outcomes.fields.frequency_per_year]
+unit = "dimensionless"
+description = "the probability times the initiating frequency, in 1/year.\n"
+[[valid_range]]
+quantity = "initiating_frequency_per_year"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "the class's constructor refuses a negative frequency"
+[implementations]
+python = "azoth.process.event_tree"
+rust = "azoth_process::event_tree"

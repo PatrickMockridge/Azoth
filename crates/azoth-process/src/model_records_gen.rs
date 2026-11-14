@@ -19,6 +19,7 @@ use crate::models::compressor::CompressorResult;
 use crate::models::cooler::CoolerResult;
 use crate::models::distillation_column::DistillationColumnResult;
 use crate::models::ejector::EjectorResult;
+use crate::models::event_tree::EventTreeResult;
 use crate::models::expander::ExpanderResult;
 use crate::models::filter::FilterResult;
 use crate::models::flare::FlareResult;
@@ -346,6 +347,15 @@ impl CalcResult for EjectorResult {
         "discharge_connection_length",
         "warnings",
     ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for EventTreeResult {
+    const CALC_ID: &'static str = "process.event_tree";
+    const FIELDS: &'static [&'static str] = &["outcomes", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

@@ -249,6 +249,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "process.cooler" => azoth_process::models::cooler::CoolerResult::FIELDS.to_vec(),
         "process.distillation_column" => azoth_process::models::distillation_column::DistillationColumnResult::FIELDS.to_vec(),
         "process.ejector" => azoth_process::models::ejector::EjectorResult::FIELDS.to_vec(),
+        "process.event_tree" => azoth_process::models::event_tree::EventTreeResult::FIELDS.to_vec(),
         "process.expander" => azoth_process::models::expander::ExpanderResult::FIELDS.to_vec(),
         "process.filter" => azoth_process::models::filter::FilterResult::FIELDS.to_vec(),
         "process.flare" => azoth_process::models::flare::FlareResult::FIELDS.to_vec(),

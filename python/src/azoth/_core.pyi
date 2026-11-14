@@ -410,6 +410,12 @@ class DepositMass(TypedDict):
     mechanism: str
     mass: float
 
+class EventTreeBranch(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    name: str
+    probability_of_yes: float
+
 class FilterDropPoint(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -710,6 +716,14 @@ class WaterMixingResult:
     si_srso4: float | None
     si_caso4: float | None
     si_feco3: float | None
+
+@final
+class EventTreeOutcome:
+    """one row per leaf, in the class's bit order: `2^n` rows, or one when there are no branches."""
+
+    path: str
+    probability: float
+    frequency_per_year: float
 
 @final
 class HeatExchangerMechanicalType:
@@ -3002,6 +3016,11 @@ class EjectorResult:
     total_volume: Qty
     suction_connection_length: Qty
     discharge_connection_length: Qty
+    warnings: list[Warning]
+
+@final
+class EventTreeResult:
+    outcomes: list[EventTreeOutcome]
     warnings: list[Warning]
 
 @final
@@ -6430,6 +6449,10 @@ def ejector(
     mixing_efficiency: float,
     diffuser_efficiency: float,
 ) -> EjectorResult: ...
+def event_tree(
+    initiating_frequency_per_year: float,
+    branches: list[EventTreeBranch],
+) -> EventTreeResult: ...
 def expander(
     components: list[str],
     inlet_n: float,

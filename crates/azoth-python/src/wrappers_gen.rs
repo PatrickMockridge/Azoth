@@ -5750,6 +5750,29 @@ pub fn distillation_column(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Event tree.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (initiating_frequency_per_year, branches))]
+#[pyo3(text_signature = "(initiating_frequency_per_year, branches)")]
+pub fn event_tree(
+    py: Python<'_>,
+    initiating_frequency_per_year: f64,
+    branches: Vec<crate::records_gen::EventTreeBranch>,
+) -> PyResult<crate::transport_gen::PyEventTreeResult> {
+    let branches_records: Vec<azoth_process::models::event_tree::EventTreeBranch> = branches
+        .into_iter()
+        .map(|row| azoth_process::models::event_tree::EventTreeBranch {
+            name: row.name,
+            probability_of_yes: row.probability_of_yes,
+        })
+        .collect();
+    azoth_process::models::event_tree::event_tree(initiating_frequency_per_year, &branches_records)
+        .map(|r| crate::transport_gen::PyEventTreeResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// Expander.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

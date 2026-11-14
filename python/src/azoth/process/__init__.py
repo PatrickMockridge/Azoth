@@ -27,6 +27,7 @@ from azoth.core.result import (
     CoolerResult,
     DistillationColumnResult,
     EjectorResult,
+    EventTreeResult,
     ExpanderResult,
     FilterResult,
     FlareResult,
@@ -92,6 +93,7 @@ __all__ = [
     "cooler",
     "distillation_column",
     "ejector",
+    "event_tree",
     "expander",
     "filter",
     "flare",
@@ -145,6 +147,7 @@ _STRIPPING_COLUMN = "process.stripping_column"
 _DISTILLATION_COLUMN = "process.distillation_column"
 _COOLER = "process.cooler"
 _EJECTOR = "process.ejector"
+_EVENT_TREE = "process.event_tree"
 _EXPANDER = "process.expander"
 _TURBO_EXPANDER_COMPRESSOR = "process.turbo_expander_compressor"
 _MAP_TURBO_EXPANDER_COMPRESSOR = "process.map_turbo_expander_compressor"
@@ -2053,6 +2056,23 @@ def ejector(
         suction_nozzle_efficiency=suction_nozzle_efficiency,
         mixing_efficiency=mixing_efficiency,
         diffuser_efficiency=diffuser_efficiency,
+    )
+
+
+def event_tree(
+    initiating_frequency_per_year: float,
+    branches: list[dict[str, object]],
+) -> EventTreeResult:
+    """The full 2^n event tree in bit order.
+
+    The leaf paths, probabilities and frequencies of the class's enumeration. **The branch
+    count is capped at 20** and a probability outside ``[0, 1]`` is refused.
+
+    See :func:`azoth.process.reference.event_tree`.
+    """
+    return resolve(_EVENT_TREE)(  # type: ignore[no-any-return]
+        initiating_frequency_per_year=initiating_frequency_per_year,
+        branches=branches,
     )
 
 

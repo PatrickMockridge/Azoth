@@ -458,6 +458,46 @@ impl From<&azoth_eos::results::EquilibriumSoundSpeedSample> for PyEquilibriumSou
     }
 }
 
+/// one row per leaf, in the class's bit order: `2^n` rows, or one when there are no branches.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "EventTreeOutcome"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyEventTreeOutcome {
+    /// the branch states joined by `"; "`, each `name=Y` or `name=N`; empty for a no-branch tree.
+    #[pyo3(get)]
+    pub path: String,
+    /// the product of the branch probabilities and complements on this path.
+    #[pyo3(get)]
+    pub probability: f64,
+    /// the probability times the initiating frequency, in 1/year.
+    #[pyo3(get)]
+    pub frequency_per_year: f64,
+}
+
+#[pymethods]
+impl PyEventTreeOutcome {
+    fn __repr__(&self) -> String {
+        format!(
+            "EventTreeOutcome(path={}, probability={}, frequency_per_year={})",
+            self.path, self.probability, self.frequency_per_year
+        )
+    }
+}
+
+impl From<&azoth_process::models::event_tree::EventTreeOutcome> for PyEventTreeOutcome {
+    fn from(row: &azoth_process::models::event_tree::EventTreeOutcome) -> Self {
+        Self {
+            path: row.path.clone(),
+            probability: row.probability,
+            frequency_per_year: row.frequency_per_year,
+        }
+    }
+}
+
 /// The `N + 1` points, inlet first; a point's index is absent where its ions are.
 #[pyclass(
     frozen,

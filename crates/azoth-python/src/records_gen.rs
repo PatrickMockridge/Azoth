@@ -104,6 +104,15 @@ pub struct EfficiencyPoint {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct EventTreeBranch {
+    #[pyo3(item)]
+    pub name: String,
+    #[pyo3(item)]
+    pub probability_of_yes: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct ExpanderMapPoint {
     #[pyo3(item)]
     pub igv: f64,

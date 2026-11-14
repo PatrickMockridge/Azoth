@@ -171,6 +171,20 @@ class EquilibriumSoundSpeedSample:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class EventTreeOutcome:
+    """one row per leaf, in the class's bit order: `2^n` rows, or one when there are no branches."""
+
+    #: the branch states joined by `"; "`, each `name=Y` or `name=N`; empty for a no-branch tree.
+    path: str
+
+    #: the product of the branch probabilities and complements on this path.
+    probability: float
+
+    #: the probability times the initiating frequency, in 1/year.
+    frequency_per_year: float
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FlowlineScaleSegment:
     """The `N + 1` points, inlet first; a point's index is absent where its ions are."""
 

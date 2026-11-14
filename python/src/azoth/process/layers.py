@@ -1838,6 +1838,11 @@ DUMPERS: dict[str, Dumper] = {
 #: **This is not "the model is too simple to check".** Each entry names the arithmetic and
 #: what would have to exist for there to be a layer.
 NO_INTERIOR: dict[str, str] = {
+    "process.event_tree": (
+        "the kernel is the class's own ``evaluate``: a full 2^n enumeration over the branch "
+        "probabilities the caller states, with no composed model beneath it. The case set is "
+        "the oracle and ``process_event_tree.tsv`` is its evidence"
+    ),
     "process.throttling_valve": (
         "the kernel is one ``Stream::from_ph`` - the outlet pressure the valve applied, and "
         "the flash it runs at the inlet's enthalpy. The applied pressure *is* the outlet "
@@ -3598,6 +3603,9 @@ UNCASED_ROWS: dict[str, int] = {
     # evidence beside the PR oracle, and the zero-rate refusal the port raises rather than
     # reproduces.
     "process_gas_dispersion.tsv": 5,
+    # The event tree's four: the no-branch tree, the two refusals and the shift count, which
+    # cannot be cased (an empty record value is not a case).
+    "process_event_tree.tsv": 4,
     # The jet fire's three: the zero-humidity `NaN`, the infinite zero-distance flux and the
     # zero-target refusal, each the measurement its guard rests on.
     "process_jet_fire.tsv": 3,

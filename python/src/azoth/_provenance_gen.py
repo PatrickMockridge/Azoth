@@ -2534,6 +2534,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 4,
         "tests_skipped": 0,
     },
+    'process.event_tree': {
+        "calc_id": 'process.event_tree',
+        "name": 'Event tree',
+        "spec": {'path': 'specs/models/process/event_tree.toml', 'sha256': 'a8d9bce20be4caf871ff258f4e04f008abd99447a75721b5007ab8928cf04fc9'},
+        "code": [{'path': 'python/src/azoth/process/reference/event_tree.py', 'sha256': 'bc0c9e5a90290755d4ac2a754959ad776e66532d6051b56a63aa955345186a3f'}, {'path': 'crates/azoth-process/src/models/event_tree.rs', 'sha256': '375250677a03457b5a05da81f43ff4043edc9115841f763ba26c5a72c07ec0c3'}],
+        "source": 'NeqSim process/safety/risk/eta/EventTreeAnalyzer.java',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'process.expander': {
         "calc_id": 'process.expander',
         "name": 'Expander',

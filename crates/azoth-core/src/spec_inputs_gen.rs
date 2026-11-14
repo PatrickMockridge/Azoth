@@ -230,6 +230,7 @@
 //!   - specs/models/process/cooler.toml
 //!   - specs/models/process/distillation_column.toml
 //!   - specs/models/process/ejector.toml
+//!   - specs/models/process/event_tree.toml
 //!   - specs/models/process/expander.toml
 //!   - specs/models/process/filter.toml
 //!   - specs/models/process/flare.toml
@@ -2987,6 +2988,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     ("process.ejector", "mixing_efficiency", "dimensionless"),
     ("process.ejector", "diffuser_efficiency", "dimensionless"),
+    (
+        "process.event_tree",
+        "initiating_frequency_per_year",
+        "dimensionless",
+    ),
     ("process.expander", "inlet_n", "molar_flow"),
     ("process.expander", "inlet_z", "dimensionless"),
     ("process.expander", "inlet_p", "pressure"),

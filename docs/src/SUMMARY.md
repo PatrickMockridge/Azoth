@@ -241,6 +241,7 @@
   - [Cooler](./process/cooler.md)
   - [Distillation column](./process/distillation_column.md)
   - [Ejector](./process/ejector.md)
+  - [Event tree](./process/event_tree.md)
   - [Expander](./process/expander.md)
   - [Filter](./process/filter.md)
   - [Flare](./process/flare.md)

@@ -83,6 +83,8 @@ from azoth.core.result import (
     EquilibriumSoundSpeedSample,
     ErosionPredictionResult,
     ErosionRiskLevel,
+    EventTreeOutcome,
+    EventTreeResult,
     ExpanderResult,
     FeSMorphology,
     FilippovConductivityResult,
@@ -433,6 +435,7 @@ __all__ = [
     "equilibrium_constant",
     "equilibrium_sound_speed",
     "erosion_prediction",
+    "event_tree",
     "expander",
     "filippov_conductivity",
     "filter",
@@ -5951,6 +5954,19 @@ def ejector(motive_components: list[str], motive_n: Q, motive_z: list[float], mo
         total_volume=from_si(result.total_volume.magnitude_si, result.total_volume.unit),
         suction_connection_length=from_si(result.suction_connection_length.magnitude_si, result.suction_connection_length.unit),
         discharge_connection_length=from_si(result.discharge_connection_length.magnitude_si, result.discharge_connection_length.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def event_tree(initiating_frequency_per_year: float, branches: list[dict[str, object]]) -> EventTreeResult:
+    """``process.event_tree``, computed in Rust."""
+    spec = _models_gen.model("process.event_tree")
+    result = _core.event_tree(
+        initiating_frequency_per_year,
+        input_records_to_si(spec, "branches", branches),
+    )
+    return EventTreeResult(
+        outcomes=tuple(EventTreeOutcome(path=c.path, probability=c.probability, frequency_per_year=c.frequency_per_year) for c in result.outcomes),
         warnings=_warnings(result.warnings),
     )
 
