@@ -76,6 +76,16 @@ not an equation, and both implementations read it from here.
 | `distance_to_ten_kw` | pool_diameter = 10.0, burn_rate = 0.06, target_flux = 10000.0 | total_burn_rate = 4.71238898038469, flame_height = 16.678690349069907, surface_emissive_power = 56143.30542946426, distance_to_flux = 5.781778829395185 |
 | `zero_distance` | pool_diameter = 10.0, burn_rate = 0.06, distance = 0.0 | total_burn_rate = 4.71238898038469, flame_height = 16.678690349069907, surface_emissive_power = 56143.30542946426, view_factor = 0.2250981067686007, incident_heat_flux = 12637.751759903706 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 6 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - API STD 521 (2021). Pressure-relieving and Depressurating Systems, section 4.6, pool fires.

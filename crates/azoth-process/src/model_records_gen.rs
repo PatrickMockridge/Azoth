@@ -51,6 +51,7 @@ use crate::models::tank::TankResult;
 use crate::models::three_phase_separator::ThreePhaseSeparatorResult;
 use crate::models::throttling_valve::ThrottlingValveResult;
 use crate::models::turbo_expander_compressor::TurboExpanderResult;
+use crate::models::vce::VceResult;
 
 impl CalcResult for AbsorptionColumnResult {
     const CALC_ID: &'static str = "process.absorption_column";
@@ -1527,6 +1528,22 @@ impl CalcResult for TurboExpanderResult {
         "design_module_length",
         "design_module_width",
         "design_module_height",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for VceResult {
+    const CALC_ID: &'static str = "process.vce";
+    const FIELDS: &'static [&'static str] = &[
+        "combustion_energy",
+        "scaled_distance",
+        "dimensionless_overpressure",
+        "overpressure",
+        "distance_to_overpressure",
         "warnings",
     ];
 

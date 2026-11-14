@@ -63,14 +63,15 @@ pub use models::{
     SeparatorPerformanceResult,
     SeparatorResult, ShortcutDistillationColumnResult, SplitterResult, StirredTankReactorResult,
     StrippingColumnResult, TankResult, ThreePhaseSeparatorResult, ThrottlingValveResult,
-    TurboExpanderResult, absorption_column, anti_surge_recycle, component_splitter, compressor,
+    TurboExpanderResult, VceResult, absorption_column, anti_surge_recycle, component_splitter,
+    compressor,
     cooler, distillation_column, ejector, expander, filter, flare, gas_dispersion, gas_scrubber,
     gaussian_plume, gibbs_reactor, heat_exchanger, heater, hem_release, jet_fire, leak_blowdown,
     manifold, map_turbo_expander_compressor, mixer, packed_column, pipe, plug_flow_reactor,
     pool_fire, probit, pump,
     rate_based_packed_column, separator, separator_capacity_assessment, separator_performance,
     shortcut_distillation_column, splitter, stirred_tank_reactor, stripping_column, tank,
-    three_phase_separator, throttling_valve, turbo_expander_compressor,
+    three_phase_separator, throttling_valve, turbo_expander_compressor, vce,
 };
 pub use stream::Stream;
 pub use unit_op::{Param, Source, UnitOpSpec};

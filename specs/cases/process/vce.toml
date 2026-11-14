@@ -1,0 +1,181 @@
+model = "process.vce"
+[[cases]]
+id = "test_state_at_twenty_metres"
+tolerance = 1.0e-9
+source = "`FireModelsTest.vceOverpressureDecreasesWithDistance`'s state, 1000 kg at 46 MJ/kg and strength class 4, read at 20 m. From `validation/neqsim/captures/process_vce.tsv` (`vce_test_20m`)."
+[cases.inputs]
+cloud_fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+strength_class = 4.0
+distance = 20.0
+[cases.expected]
+combustion_energy = 46000000000.0
+scaled_distance = 0.2602253427568675
+dimensionless_overpressure = 0.1
+overpressure = 10132.5
+[[cases]]
+id = "test_state_at_two_hundred_metres"
+tolerance = 1.0e-9
+source = "The same state read at 200 m, in the power-law branch. From (`vce_test_200m`)."
+[cases.inputs]
+cloud_fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+strength_class = 4.0
+distance = 200.0
+[cases.expected]
+combustion_energy = 46000000000.0
+scaled_distance = 2.602253427568675
+dimensionless_overpressure = 0.03842823260047794
+overpressure = 3893.740668243427
+[[cases]]
+id = "distance_to_five_kpa"
+tolerance = 1.0e-9
+source = "A 5 kPa target, below the class-4 plateau, so the inverse is a contour. From (`vce_distance_5000`)."
+[cases.inputs]
+cloud_fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+strength_class = 4.0
+target_overpressure = 5000.0
+[cases.expected]
+combustion_energy = 46000000000.0
+distance_to_overpressure = 155.74962672973703
+[[cases]]
+id = "class_1_plateau"
+tolerance = 1.0e-9
+source = "Class 1 at 20 m, inside the plateau. From (`vce_class_1`)."
+[cases.inputs]
+cloud_fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+strength_class = 1.0
+distance = 20.0
+[cases.expected]
+combustion_energy = 46000000000.0
+scaled_distance = 0.2602253427568675
+dimensionless_overpressure = 0.01
+overpressure = 1013.25
+[[cases]]
+id = "class_2_plateau"
+tolerance = 1.0e-9
+source = "Class 2 at 20 m. From (`vce_class_2`)."
+[cases.inputs]
+cloud_fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+strength_class = 2.0
+distance = 20.0
+[cases.expected]
+combustion_energy = 46000000000.0
+scaled_distance = 0.2602253427568675
+dimensionless_overpressure = 0.02
+overpressure = 2026.5
+[[cases]]
+id = "class_3_plateau"
+tolerance = 1.0e-9
+source = "Class 3 at 20 m. From (`vce_class_3`)."
+[cases.inputs]
+cloud_fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+strength_class = 3.0
+distance = 20.0
+[cases.expected]
+combustion_energy = 46000000000.0
+scaled_distance = 0.2602253427568675
+dimensionless_overpressure = 0.05
+overpressure = 5066.25
+[[cases]]
+id = "class_4_plateau"
+tolerance = 1.0e-9
+source = "Class 4 at 20 m, the test state's own plateau. From (`vce_class_4`)."
+[cases.inputs]
+cloud_fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+strength_class = 4.0
+distance = 20.0
+[cases.expected]
+combustion_energy = 46000000000.0
+scaled_distance = 0.2602253427568675
+dimensionless_overpressure = 0.1
+overpressure = 10132.5
+[[cases]]
+id = "class_5_plateau"
+tolerance = 1.0e-9
+source = "Class 5 at 20 m, the last of the `beta = 1` classes. From (`vce_class_5`)."
+[cases.inputs]
+cloud_fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+strength_class = 5.0
+distance = 20.0
+[cases.expected]
+combustion_energy = 46000000000.0
+scaled_distance = 0.2602253427568675
+dimensionless_overpressure = 0.2
+overpressure = 20265.0
+[[cases]]
+id = "class_6_plateau"
+tolerance = 1.0e-9
+source = "Class 6 at 20 m, the first of the `beta = 1.2` classes. From (`vce_class_6`)."
+[cases.inputs]
+cloud_fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+strength_class = 6.0
+distance = 20.0
+[cases.expected]
+combustion_energy = 46000000000.0
+scaled_distance = 0.2602253427568675
+dimensionless_overpressure = 0.5
+overpressure = 50662.5
+[[cases]]
+id = "class_7_plateau"
+tolerance = 1.0e-9
+source = "Class 7 at 20 m. From (`vce_class_7`)."
+[cases.inputs]
+cloud_fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+strength_class = 7.0
+distance = 20.0
+[cases.expected]
+combustion_energy = 46000000000.0
+scaled_distance = 0.2602253427568675
+dimensionless_overpressure = 1.0
+overpressure = 101325.0
+[[cases]]
+id = "class_8_plateau"
+tolerance = 1.0e-9
+source = "Class 8 at 20 m. From (`vce_class_8`)."
+[cases.inputs]
+cloud_fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+strength_class = 8.0
+distance = 20.0
+[cases.expected]
+combustion_energy = 46000000000.0
+scaled_distance = 0.2602253427568675
+dimensionless_overpressure = 2.0
+overpressure = 202650.0
+[[cases]]
+id = "class_9_plateau"
+tolerance = 1.0e-9
+source = "Class 9 at 20 m. From (`vce_class_9`)."
+[cases.inputs]
+cloud_fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+strength_class = 9.0
+distance = 20.0
+[cases.expected]
+combustion_energy = 46000000000.0
+scaled_distance = 0.2602253427568675
+dimensionless_overpressure = 5.0
+overpressure = 506625.0
+[[cases]]
+id = "class_10_plateau"
+tolerance = 1.0e-9
+source = "Class 10 at 20 m, the detonation plateau. From (`vce_class_10`)."
+[cases.inputs]
+cloud_fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+strength_class = 10.0
+distance = 20.0
+[cases.expected]
+combustion_energy = 46000000000.0
+scaled_distance = 0.2602253427568675
+dimensionless_overpressure = 10.0
+overpressure = 1013250.0

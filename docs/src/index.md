@@ -366,6 +366,7 @@ Five sections, and the difference between them is the point:
 - [`process.three_phase_separator`](./process/three_phase_separator.md) — Three-phase separator
 - [`process.throttling_valve`](./process/throttling_valve.md) — Throttling valve
 - [`process.turbo_expander_compressor`](./process/turbo_expander_compressor.md) — Turbo-expander compressor
+- [`process.vce`](./process/vce.md) — Vapour-cloud explosion overpressure
 
 **Reactions** - [`reactions/index.md`](./reactions/index.md):
 

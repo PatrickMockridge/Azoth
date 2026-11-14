@@ -3979,6 +3979,15 @@ class TurboExpanderResult:
     warnings: list[Warning]
 
 @final
+class VceResult:
+    combustion_energy: Qty
+    scaled_distance: float | None
+    dimensionless_overpressure: float | None
+    overpressure: Qty | None
+    distance_to_overpressure: Qty | None
+    warnings: list[Warning]
+
+@final
 class ChemicalEquilibriumResult:
     moles: list[Qty]
     iterations: int
@@ -7168,6 +7177,14 @@ def turbo_expander_compressor(
     igv_penalty_curve: list[TurboIgvPenaltyPoint] | None = None,
     mechanical_design: bool | None = None,
 ) -> TurboExpanderResult: ...
+def vce(
+    cloud_fuel_mass: float,
+    heat_of_combustion: float,
+    strength_class: float,
+    ambient_pressure: float | None = None,
+    distance: float | None = None,
+    target_overpressure: float | None = None,
+) -> VceResult: ...
 def chemical_equilibrium(
     a_matrix: list[list[float]],
     b: list[float],

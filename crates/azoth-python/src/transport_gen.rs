@@ -22600,6 +22600,71 @@ impl From<&azoth_process::models::turbo_expander_compressor::TurboExpanderResult
         }
     }
 }
+/// Result of `process.vce`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "VceResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyVceResult {
+    /// `m dHc`, the cloud's combustion energy.
+    #[pyo3(get)]
+    pub combustion_energy: PyQty,
+    /// `d / cbrt(E / p0)`, the Sachs-scaled distance. Present only with `distance`.
+    #[pyo3(get)]
+    pub scaled_distance: Option<f64>,
+    /// the class's plateau or power-law value at `distance`. Present only with `distance`.
+    #[pyo3(get)]
+    pub dimensionless_overpressure: Option<f64>,
+    /// the dimensionless overpressure times `p0`. Present only with `distance`.
+    #[pyo3(get)]
+    pub overpressure: Option<PyQty>,
+    /// the distance at which the overpressure falls to the target. **Absent when the overpressure at 0.1 m is already below the target**, where the class answers that near bound.
+    #[pyo3(get)]
+    pub distance_to_overpressure: Option<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyVceResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "VceResult(combustion_energy={:?}, scaled_distance={:?}, dimensionless_overpressure={:?}, overpressure={:?}, distance_to_overpressure={:?}, {} warning(s))",
+            self.combustion_energy,
+            self.scaled_distance,
+            self.dimensionless_overpressure,
+            self.overpressure,
+            self.distance_to_overpressure,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::vce::VceResult> for PyVceResult {
+    fn from(r: &azoth_process::models::vce::VceResult) -> Self {
+        Self {
+            combustion_energy: PyQty {
+                magnitude_si: r.combustion_energy.value,
+                unit: "J".to_string(),
+            },
+            scaled_distance: r.scaled_distance,
+            dimensionless_overpressure: r.dimensionless_overpressure,
+            overpressure: r.overpressure.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            distance_to_overpressure: r.distance_to_overpressure.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `reactions.chemical_equilibrium`, transported.
 #[pyclass(
     frozen,

@@ -59,6 +59,7 @@ from azoth.core.result import (
     ThreePhaseSeparatorResult,
     ThrottlingValveResult,
     TurboExpanderResult,
+    VceResult,
 )
 from azoth.core.units import Q
 from azoth.process.flowsheet import (
@@ -125,6 +126,7 @@ __all__ = [
     "throttling_valve",
     "tools",
     "validate",
+    "vce",
 ]
 
 _MANIFOLD = "process.manifold"
@@ -144,6 +146,7 @@ _EJECTOR = "process.ejector"
 _EXPANDER = "process.expander"
 _TURBO_EXPANDER_COMPRESSOR = "process.turbo_expander_compressor"
 _MAP_TURBO_EXPANDER_COMPRESSOR = "process.map_turbo_expander_compressor"
+_VCE = "process.vce"
 _FILTER = "process.filter"
 _FLARE = "process.flare"
 _HEATER = "process.heater"
@@ -2998,4 +3001,30 @@ def gibbs_reactor(
         regularization=regularization,
         regularization_threshold=regularization_threshold,
         regularization_tau=regularization_tau,
+    )
+
+
+def vce(
+    cloud_fuel_mass: Q,
+    heat_of_combustion: float,
+    strength_class: float,
+    ambient_pressure: Q | None = None,
+    distance: Q | None = None,
+    target_overpressure: Q | None = None,
+) -> VceResult:
+    """The TNO Multi-Energy overpressure at one distance, or its inverse.
+
+    The Sachs-scaled distance, the strength-class plateau and the class's power-law fit.
+    **A target above the near-field overpressure is absent**: the class answers 0.1 m with
+    a lower overpressure.
+
+    See :func:`azoth.process.reference.vce`.
+    """
+    return resolve(_VCE)(  # type: ignore[no-any-return]
+        cloud_fuel_mass=cloud_fuel_mass,
+        heat_of_combustion=heat_of_combustion,
+        strength_class=strength_class,
+        ambient_pressure=ambient_pressure,
+        distance=distance,
+        target_overpressure=target_overpressure,
     )

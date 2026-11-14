@@ -10,11 +10,11 @@ use crate::eos::{PyAssociationSpec, build_mixture, build_mixture_with_mass};
 use crate::errors::to_pyerr;
 use azoth_core::units::{
     cubic_meters, cubic_meters_per_mole, cubic_meters_per_second, joules_per_kilogram_kelvin,
-    joules_per_mole, joules_per_mole_kelvin, kelvin_intervals, kelvins, kilograms_per_cubic_meter,
-    kilograms_per_mole, kilograms_per_second, kilograms_per_square_meter_second, meters,
-    meters_per_second, moles_per_cubic_meter, newtons_per_meter, pascal_seconds, pascals, seconds,
-    square_meters, watts, watts_per_meter_kelvin, watts_per_square_meter,
-    watts_per_square_meter_kelvin,
+    joules_per_mole, joules_per_mole_kelvin, kelvin_intervals, kelvins, kilograms,
+    kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second,
+    kilograms_per_square_meter_second, meters, meters_per_second, moles_per_cubic_meter,
+    newtons_per_meter, pascal_seconds, pascals, seconds, square_meters, watts,
+    watts_per_meter_kelvin, watts_per_square_meter, watts_per_square_meter_kelvin,
 };
 use pyo3::prelude::*;
 
@@ -6766,6 +6766,35 @@ pub fn throttling_valve(
         sizing_standard,
     )
     .map(|r| crate::transport_gen::PyThrottlingValveResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Vapour-cloud explosion overpressure.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (cloud_fuel_mass, heat_of_combustion, strength_class, ambient_pressure, distance, target_overpressure))]
+#[pyo3(
+    text_signature = "(cloud_fuel_mass, heat_of_combustion, strength_class, ambient_pressure, distance, target_overpressure)"
+)]
+pub fn vce(
+    py: Python<'_>,
+    cloud_fuel_mass: f64,
+    heat_of_combustion: f64,
+    strength_class: f64,
+    ambient_pressure: Option<f64>,
+    distance: Option<f64>,
+    target_overpressure: Option<f64>,
+) -> PyResult<crate::transport_gen::PyVceResult> {
+    azoth_process::models::vce::vce(
+        kilograms(cloud_fuel_mass),
+        heat_of_combustion,
+        strength_class,
+        ambient_pressure.map(pascals),
+        distance.map(meters),
+        target_overpressure.map(pascals),
+    )
+    .map(|r| crate::transport_gen::PyVceResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

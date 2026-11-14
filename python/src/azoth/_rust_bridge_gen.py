@@ -319,6 +319,7 @@ from azoth.core.result import (
     UniquacActivityCoefficientsResult,
     ValveScaleDriftResult,
     VanLaarAcidActivityCoefficientsResult,
+    VceResult,
     Vdw1fMixBinaryResult,
     VhFlashResult,
     ViscosityResult,
@@ -642,6 +643,7 @@ __all__ = [
     "uniquac_activity_coefficients",
     "valve_scale_drift",
     "van_laar_acid_activity_coefficients",
+    "vce",
     "vdw1f_mix_binary",
     "vh_flash",
     "viscosity",
@@ -7806,6 +7808,27 @@ def turbo_expander_compressor(expander_components: list[str], compressor_compone
         design_module_length=None if result.design_module_length is None else from_si(result.design_module_length.magnitude_si, result.design_module_length.unit),
         design_module_width=None if result.design_module_width is None else from_si(result.design_module_width.magnitude_si, result.design_module_width.unit),
         design_module_height=None if result.design_module_height is None else from_si(result.design_module_height.magnitude_si, result.design_module_height.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def vce(cloud_fuel_mass: Q, heat_of_combustion: float, strength_class: float, ambient_pressure: Q | None=None, distance: Q | None=None, target_overpressure: Q | None=None) -> VceResult:
+    """``process.vce``, computed in Rust."""
+    spec = _models_gen.model("process.vce")
+    result = _core.vce(
+        input_to_si(spec, "cloud_fuel_mass", cloud_fuel_mass),
+        heat_of_combustion,
+        strength_class,
+        None if ambient_pressure is None else input_to_si(spec, "ambient_pressure", ambient_pressure),
+        None if distance is None else input_to_si(spec, "distance", distance),
+        None if target_overpressure is None else input_to_si(spec, "target_overpressure", target_overpressure),
+    )
+    return VceResult(
+        combustion_energy=from_si(result.combustion_energy.magnitude_si, result.combustion_energy.unit),
+        scaled_distance=result.scaled_distance,
+        dimensionless_overpressure=result.dimensionless_overpressure,
+        overpressure=None if result.overpressure is None else from_si(result.overpressure.magnitude_si, result.overpressure.unit),
+        distance_to_overpressure=None if result.distance_to_overpressure is None else from_si(result.distance_to_overpressure.magnitude_si, result.distance_to_overpressure.unit),
         warnings=_warnings(result.warnings),
     )
 

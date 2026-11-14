@@ -262,6 +262,7 @@
 //!   - specs/models/process/three_phase_separator.toml
 //!   - specs/models/process/throttling_valve.toml
 //!   - specs/models/process/turbo_expander_compressor.toml
+//!   - specs/models/process/vce.toml
 //!   - specs/models/reactions/chemical_equilibrium.toml
 //!   - specs/calcs/reactions/equilibrium_constant.toml
 //!   - specs/models/reactions/kinetic_rate_law.toml
@@ -4552,6 +4553,12 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "expander_out_temperature",
         "thermodynamic_temperature",
     ),
+    ("process.vce", "cloud_fuel_mass", "mass"),
+    ("process.vce", "heat_of_combustion", "dimensionless"),
+    ("process.vce", "strength_class", "dimensionless"),
+    ("process.vce", "ambient_pressure", "pressure"),
+    ("process.vce", "distance", "length"),
+    ("process.vce", "target_overpressure", "pressure"),
     (
         "reactions.chemical_equilibrium",
         "a_matrix",

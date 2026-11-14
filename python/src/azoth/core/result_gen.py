@@ -9043,6 +9043,31 @@ class TurboExpanderResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class VceResult(_HasWarnings):
+    """Result of ``process.vce``."""
+
+    CALC_ID: ClassVar[str] = "process.vce"
+
+    #: `m dHc`, the cloud's combustion energy.
+    combustion_energy: Q
+
+    #: `d / cbrt(E / p0)`, the Sachs-scaled distance. Present only with `distance`.
+    scaled_distance: float | None
+
+    #: the class's plateau or power-law value at `distance`. Present only with `distance`.
+    dimensionless_overpressure: float | None
+
+    #: the dimensionless overpressure times `p0`. Present only with `distance`.
+    overpressure: Q | None
+
+    #: the distance at which the overpressure falls to the target. **Absent when the overpressure at 0.1 m is already below the target**, where the class answers that near bound.
+    distance_to_overpressure: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ChemicalEquilibriumResult(_HasWarnings):
     """Result of ``reactions.chemical_equilibrium``."""
 

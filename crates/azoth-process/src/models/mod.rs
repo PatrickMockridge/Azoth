@@ -70,6 +70,7 @@ pub mod tank;
 pub mod three_phase_separator;
 pub mod throttling_valve;
 pub mod turbo_expander_compressor;
+pub mod vce;
 
 pub use absorption_column::{AbsorptionColumnResult, absorption_column};
 pub use anti_surge_recycle::{AntiSurgeRecycleResult, anti_surge_recycle};
@@ -115,3 +116,4 @@ pub use tank::{TankResult, tank};
 pub use three_phase_separator::{ThreePhaseSeparatorResult, three_phase_separator};
 pub use throttling_valve::{ThrottlingValveResult, throttling_valve};
 pub use turbo_expander_compressor::{TurboExpanderResult, turbo_expander_compressor};
+pub use vce::{VceResult, vce};

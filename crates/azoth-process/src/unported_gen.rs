@@ -41,6 +41,7 @@
 //!   - specs/models/process/three_phase_separator.toml
 //!   - specs/models/process/throttling_valve.toml
 //!   - specs/models/process/turbo_expander_compressor.toml
+//!   - specs/models/process/vce.toml
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
 //! on any difference.

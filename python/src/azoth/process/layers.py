@@ -1373,6 +1373,36 @@ def _pool_fire(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dumped
 
 
+def _vce(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.vce`'s layers, from the reference's own arithmetic."""
+    from azoth.core.units import quantity
+    from azoth.process.reference.vce import vce as vce_model
+
+    ambient = inputs.get("ambient_pressure")
+    distance = inputs.get("distance")
+    target = inputs.get("target_overpressure")
+    result = vce_model(
+        quantity(float(inputs["cloud_fuel_mass"]), "kg"),
+        float(inputs["heat_of_combustion"]),
+        float(inputs["strength_class"]),
+        ambient_pressure=None if ambient is None else quantity(float(ambient), "Pa"),
+        distance=None if distance is None else quantity(float(distance), "m"),
+        target_overpressure=None if target is None else quantity(float(target), "Pa"),
+    )
+    dumped: dict[str, float] = {
+        "combustion_energy_j": result.combustion_energy.to("J").magnitude,
+    }
+    if result.scaled_distance is not None:
+        dumped["scaled_distance"] = result.scaled_distance
+    if result.dimensionless_overpressure is not None:
+        dumped["dimensionless_overpressure"] = result.dimensionless_overpressure
+    if result.overpressure is not None:
+        dumped["overpressure_pa"] = result.overpressure.to("Pa").magnitude
+    if result.distance_to_overpressure is not None:
+        dumped["distance_to_overpressure_m"] = result.distance_to_overpressure.to("m").magnitude
+    return dumped
+
+
 def _probit(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.probit`'s layers, from the reference's own arithmetic.
 
@@ -1743,6 +1773,7 @@ DUMPERS: dict[str, Dumper] = {
     "process.jet_fire": _jet_fire,
     "process.pool_fire": _pool_fire,
     "process.probit": _probit,
+    "process.vce": _vce,
     "process.rate_based_packed_column": _rate_based_packed_column,
     "process.absorption_column": _absorption_column,
     "process.packed_column": _packed_column,
@@ -2386,6 +2417,100 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_pool_fire.tsv",
         block=6,
         identified_by=("#label", "pool_fire_zero_distance"),
+    ),
+    # The VCE's thirteen reachable states: the test state at two distances, the 5 kPa
+    # contour and all ten plateaus. The 20.7 kPa target that exceeds the class-4 plateau,
+    # the 1 MPa target and the zero target are uncased.
+    LayerCase(
+        model="process.vce",
+        case="test_state_at_twenty_metres",
+        capture="process_vce.tsv",
+        block=0,
+        identified_by=("#label", "vce_test_20m"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="test_state_at_two_hundred_metres",
+        capture="process_vce.tsv",
+        block=1,
+        identified_by=("#label", "vce_test_200m"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="distance_to_five_kpa",
+        capture="process_vce.tsv",
+        block=3,
+        identified_by=("#label", "vce_distance_5000"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_1_plateau",
+        capture="process_vce.tsv",
+        block=4,
+        identified_by=("#label", "vce_class_1"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_2_plateau",
+        capture="process_vce.tsv",
+        block=5,
+        identified_by=("#label", "vce_class_2"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_3_plateau",
+        capture="process_vce.tsv",
+        block=6,
+        identified_by=("#label", "vce_class_3"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_4_plateau",
+        capture="process_vce.tsv",
+        block=7,
+        identified_by=("#label", "vce_class_4"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_5_plateau",
+        capture="process_vce.tsv",
+        block=8,
+        identified_by=("#label", "vce_class_5"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_6_plateau",
+        capture="process_vce.tsv",
+        block=9,
+        identified_by=("#label", "vce_class_6"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_7_plateau",
+        capture="process_vce.tsv",
+        block=10,
+        identified_by=("#label", "vce_class_7"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_8_plateau",
+        capture="process_vce.tsv",
+        block=11,
+        identified_by=("#label", "vce_class_8"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_9_plateau",
+        capture="process_vce.tsv",
+        block=12,
+        identified_by=("#label", "vce_class_9"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_10_plateau",
+        capture="process_vce.tsv",
+        block=13,
+        identified_by=("#label", "vce_class_10"),
     ),
     # The probit's nine factory and stated-probit rows; the non-positive-dose guard is
     # uncased because the port refuses it.
@@ -3410,6 +3535,9 @@ UNCASED_ROWS: dict[str, int] = {
     # The pool fire's four: the two unreachable targets the class answers with its near
     # bound, the zero-target far bound, and the dead-parameter state.
     "process_pool_fire.tsv": 4,
+    # The VCE's three: two unreachable targets the class answers with its near bound, and
+    # the zero-target refusal.
+    "process_vce.tsv": 3,
     # The probit's one: the non-positive-dose guard, whose `-Infinity` is the measurement
     # the refusal rests on.
     "process_probit.tsv": 1,
