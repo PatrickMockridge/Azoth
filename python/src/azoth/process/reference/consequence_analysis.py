@@ -185,9 +185,7 @@ def _evaluate_row(
             distance=quantity(receiver_distance, "m"),
         )
         dose = (
-            0.0
-            if vce_result.overpressure is None
-            else vce_result.overpressure.to("Pa").magnitude
+            0.0 if vce_result.overpressure is None else vce_result.overpressure.to("Pa").magnitude
         )
     else:
         emission = _required(index, kind, row, "emission_rate")
