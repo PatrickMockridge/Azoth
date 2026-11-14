@@ -47,7 +47,7 @@ or names). Elements are unqualified; there is no target namespace.
 
 `Data property` is an XSD `nameReference`, not a free string: a bare name may carry no dot,
 and a dot is legal only after a `prefix/`. That is why azoth's extension properties are
-spelled `Azoth/UnitOp` rather than `Azoth.UnitOp`.
+spelled with a slash after the vendor prefix, not a dot.
 
 The reader refuses a document type declaration, caps the document at 64 MiB and nesting at
 128, and treats an element it does not know as an error rather than a subtree walked past.
