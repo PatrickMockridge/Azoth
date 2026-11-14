@@ -106,6 +106,7 @@ fn a_proteus_view_reads_the_graphics() {
     assert!(view.counts.modelled >= 3, "{:?}", view.counts);
     assert!(view.counts.lossy >= 1, "{:?}", view.counts);
     assert!(view.counts.topology >= 5);
+    assert_eq!(view.counts.control, 3, "{:?}", view.counts);
     assert!(view.counts.drawing_only >= 1, "{:?}", view.counts);
     let scaffold = view.scaffold.as_ref().expect("the file imports");
     assert!(scaffold.layout_positions > 0);

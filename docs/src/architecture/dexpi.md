@@ -233,9 +233,14 @@ carrier. Import reads the whole layer back, including the extensions when they a
 **Not ported in this layer**: `ProcessSignalGeneratingFunction` and `ActuatingFunction` (the
 model's sensor and final-element decomposition, which the instrument record does not split),
 `InstrumentationLoopFunction` grouping (a loop is derivable from `loop_number`), alarm and
-trip setpoints, instrumentation graphics, and instrumentation in the **Proteus** reader -
-the projection does not carry it yet. The SIL and voting recorded are exchange evidence, not
-SIL verification.
+trip setpoints, and instrumentation graphics. The SIL and voting recorded are exchange
+evidence, not SIL verification.
+
+The **Proteus** reader carries the same layer: a `ProcessInstrumentationFunction` becomes an
+instrument with its tag, location and the item its `ProcessSignalGeneratingFunction` is
+located in, and a `SignalConveyingFunction` between two instruments becomes the signal. A
+signal ending at an actuator is reported as `instrumentation_signal_skipped` rather than
+invented as an instrument.
 
 ## Graphics
 

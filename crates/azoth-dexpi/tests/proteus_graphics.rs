@@ -67,6 +67,32 @@ fn the_proteus_drawing_resolves_its_shapes_and_positions() {
             .any(|group| group.represents.is_none() && group.kind == GroupKind::Node),
         "the reducer has no azoth unit and is drawing-only"
     );
+
+    let switch = report
+        .bindings
+        .iter()
+        .find(|(_, name)| name.as_str() == "PSHH-101")
+        .map(|(id, _)| id.clone())
+        .expect("the switch is bound");
+    let bubble = drawing
+        .groups
+        .iter()
+        .find(|group| group.represents.as_deref() == Some(switch.as_str()))
+        .expect("the instrument bubble is drawn");
+    assert!(
+        bubble
+            .primitives
+            .iter()
+            .any(|primitive| matches!(primitive, Primitive::Ellipse { .. })),
+        "the bubble's circle became an ellipse"
+    );
+    assert!(
+        bubble
+            .primitives
+            .iter()
+            .any(|primitive| matches!(primitive, Primitive::Text { text, .. } if text == "PSHH")),
+        "the instrument's label is attached to its group"
+    );
 }
 
 #[test]
