@@ -5556,6 +5556,59 @@ pub fn component_splitter(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Consequence analysis.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (release_frequency_per_year, receiver_distance, outcomes))]
+#[pyo3(text_signature = "(release_frequency_per_year, receiver_distance, outcomes)")]
+pub fn consequence_analysis(
+    py: Python<'_>,
+    release_frequency_per_year: f64,
+    receiver_distance: f64,
+    outcomes: Vec<crate::records_gen::ConsequenceOutcomeSpec>,
+) -> PyResult<crate::transport_gen::PyConsequenceAnalysisResult> {
+    let outcomes_records: Vec<azoth_process::models::consequence_analysis::ConsequenceOutcomeSpec> =
+        outcomes
+            .into_iter()
+            .map(
+                |row| azoth_process::models::consequence_analysis::ConsequenceOutcomeSpec {
+                    outcome_type: row.outcome_type,
+                    conditional_probability: row.conditional_probability,
+                    probit_a: row.probit_a,
+                    probit_b: row.probit_b,
+                    probit_n: row.probit_n,
+                    exposure_seconds: row.exposure_seconds.map(seconds),
+                    mass_flow: row.mass_flow.map(kilograms_per_second),
+                    heat_of_combustion: row.heat_of_combustion,
+                    radiative_fraction: row.radiative_fraction,
+                    relative_humidity: row.relative_humidity,
+                    pool_diameter: row.pool_diameter.map(meters),
+                    burn_rate: row.burn_rate.map(kilograms_per_square_meter_second),
+                    air_density: row.air_density,
+                    cloud_fuel_mass: row.cloud_fuel_mass.map(kilograms),
+                    strength_class: row.strength_class,
+                    ambient_pressure: row.ambient_pressure.map(pascals),
+                    emission_rate: row.emission_rate.map(kilograms_per_second),
+                    effective_stack_height: row.effective_stack_height.map(meters),
+                    wind_speed: row.wind_speed.map(meters_per_second),
+                    stability: row.stability,
+                    terrain: row.terrain,
+                    molar_mass: row.molar_mass.map(kilograms_per_mole),
+                    temperature: row.temperature.map(kelvins),
+                    pressure: row.pressure.map(pascals),
+                },
+            )
+            .collect();
+    azoth_process::models::consequence_analysis::consequence_analysis(
+        release_frequency_per_year,
+        meters(receiver_distance),
+        &outcomes_records,
+    )
+    .map(|r| crate::transport_gen::PyConsequenceAnalysisResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Cooler.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

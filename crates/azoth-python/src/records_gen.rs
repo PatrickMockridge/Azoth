@@ -86,6 +86,59 @@ pub struct CompressorSurgePoint {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct ConsequenceOutcomeSpec {
+    #[pyo3(item)]
+    pub outcome_type: String,
+    #[pyo3(item)]
+    pub conditional_probability: f64,
+    #[pyo3(item)]
+    pub probit_a: f64,
+    #[pyo3(item)]
+    pub probit_b: f64,
+    #[pyo3(item)]
+    pub probit_n: f64,
+    #[pyo3(item)]
+    pub exposure_seconds: Option<f64>,
+    #[pyo3(item)]
+    pub mass_flow: Option<f64>,
+    #[pyo3(item)]
+    pub heat_of_combustion: Option<f64>,
+    #[pyo3(item)]
+    pub radiative_fraction: Option<f64>,
+    #[pyo3(item)]
+    pub relative_humidity: Option<f64>,
+    #[pyo3(item)]
+    pub pool_diameter: Option<f64>,
+    #[pyo3(item)]
+    pub burn_rate: Option<f64>,
+    #[pyo3(item)]
+    pub air_density: Option<f64>,
+    #[pyo3(item)]
+    pub cloud_fuel_mass: Option<f64>,
+    #[pyo3(item)]
+    pub strength_class: Option<f64>,
+    #[pyo3(item)]
+    pub ambient_pressure: Option<f64>,
+    #[pyo3(item)]
+    pub emission_rate: Option<f64>,
+    #[pyo3(item)]
+    pub effective_stack_height: Option<f64>,
+    #[pyo3(item)]
+    pub wind_speed: Option<f64>,
+    #[pyo3(item)]
+    pub stability: Option<String>,
+    #[pyo3(item)]
+    pub terrain: Option<String>,
+    #[pyo3(item)]
+    pub molar_mass: Option<f64>,
+    #[pyo3(item)]
+    pub temperature: Option<f64>,
+    #[pyo3(item)]
+    pub pressure: Option<f64>,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct DepositMass {
     #[pyo3(item)]
     pub mechanism: String,

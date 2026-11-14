@@ -57,6 +57,8 @@ from azoth.core.result import (
     ComponentSplitterResult,
     CompressorResult,
     ConductionPlaneWallResult,
+    ConsequenceAnalysisResult,
+    ConsequenceOutcomeResult,
     ControlValveCvResult,
     CooldownVerdict,
     CoolerResult,
@@ -414,6 +416,7 @@ __all__ = [
     "component_splitter",
     "compressor",
     "conduction_plane_wall",
+    "consequence_analysis",
     "control_valve_cv",
     "cooler",
     "costald_molar_volume",
@@ -5744,6 +5747,21 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
         design_module_length=None if result.design_module_length is None else from_si(result.design_module_length.magnitude_si, result.design_module_length.unit),
         design_module_width=None if result.design_module_width is None else from_si(result.design_module_width.magnitude_si, result.design_module_width.unit),
         design_module_height=None if result.design_module_height is None else from_si(result.design_module_height.magnitude_si, result.design_module_height.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def consequence_analysis(release_frequency_per_year: float, receiver_distance: Q, outcomes: list[dict[str, object]]) -> ConsequenceAnalysisResult:
+    """``process.consequence_analysis``, computed in Rust."""
+    spec = _models_gen.model("process.consequence_analysis")
+    result = _core.consequence_analysis(
+        release_frequency_per_year,
+        input_to_si(spec, "receiver_distance", receiver_distance),
+        input_records_to_si(spec, "outcomes", outcomes),
+    )
+    return ConsequenceAnalysisResult(
+        outcomes=tuple(ConsequenceOutcomeResult(outcome=c.outcome, outcome_type=c.outcome_type, frequency_per_year=c.frequency_per_year, fatality_probability=c.fatality_probability, fatality_frequency_per_year=c.fatality_frequency_per_year) for c in result.outcomes),
+        individual_fatality_risk_per_year=result.individual_fatality_risk_per_year,
         warnings=_warnings(result.warnings),
     )
 

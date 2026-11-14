@@ -6,6 +6,7 @@
 //!   - specs/models/process/bleve.toml
 //!   - specs/models/process/component_splitter.toml
 //!   - specs/models/process/compressor.toml
+//!   - specs/models/process/consequence_analysis.toml
 //!   - specs/models/process/cooler.toml
 //!   - specs/models/process/distillation_column.toml
 //!   - specs/models/process/ejector.toml

@@ -27,6 +27,7 @@ from azoth.core.record_outputs_gen import (
     BrineMixingPointRow,
     CharacterizationComponent,
     ChemicalWarningRow,
+    ConsequenceOutcomeResult,
     DepositionSegmentRow,
     EquilibriumSoundSpeedSample,
     EventTreeOutcome,
@@ -5892,6 +5893,22 @@ class CompressorResult(_HasWarnings):
 
     #: `getModuleHeight`, floored at `3` m.
     design_module_height: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ConsequenceAnalysisResult(_HasWarnings):
+    """Result of ``process.consequence_analysis``."""
+
+    CALC_ID: ClassVar[str] = "process.consequence_analysis"
+
+    #: one row per input row, in caller order: the class's fixed label, the branch type, its frequency, fatality probability and fatality frequency.
+    outcomes: tuple[ConsequenceOutcomeResult, ...]
+
+    #: the sum of the rows' fatality frequencies, in 1/year.
+    individual_fatality_risk_per_year: float
 
     #: Caveats.
     warnings: tuple[Warning, ...]

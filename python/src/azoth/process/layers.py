@@ -1433,6 +1433,47 @@ def _bleve(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dumped
 
 
+def _consequence_analysis(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.consequence_analysis`'s layers, through the reference's own row evaluator.
+
+    The capture's labels and types are strings, which the cases compare; the dumper returns
+    the numeric columns the layer harness can hold to the capture.
+    """
+    from azoth import _models_gen
+    from azoth.core.units import input_records_to_si, quantity
+    from azoth.process.reference.consequence_analysis import _evaluate_row
+
+    spec = _models_gen.model("process.consequence_analysis")
+    fields = spec["inputs"]["outcomes"]["fields"]
+    prepared = []
+    for row in inputs["outcomes"]:
+        converted: dict[str, Any] = {}
+        for name, declaration in fields.items():
+            value = row.get(name)
+            if value is None:
+                converted[name] = None
+            elif declaration.get("type") in ("enum", "string", "boolean"):
+                converted[name] = value
+            elif declaration.get("unit") == "dimensionless":
+                converted[name] = float(value)
+            else:
+                converted[name] = quantity(float(value), str(declaration["unit"]))
+        prepared.append(converted)
+    rows = input_records_to_si(spec, "outcomes", prepared)
+    release = float(inputs["release_frequency_per_year"])
+    distance = float(inputs["receiver_distance"])
+    dumped: dict[str, float] = {"outcome_count": float(len(rows))}
+    risk = 0.0
+    for index, row in enumerate(rows):
+        _, _, frequency, probability = _evaluate_row(index, row, release, distance)
+        dumped[f"outcome{index}_frequency_per_year"] = frequency
+        dumped[f"outcome{index}_fatality_probability"] = probability
+        dumped[f"outcome{index}_fatality_frequency_per_year"] = frequency * probability
+        risk += frequency * probability
+    dumped["individual_fatality_risk_per_year"] = risk
+    return dumped
+
+
 def _probit(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.probit`'s layers, from the reference's own arithmetic.
 
@@ -1801,6 +1842,7 @@ DUMPERS: dict[str, Dumper] = {
     "process.gaussian_plume": _gaussian_plume,
     "process.gas_dispersion": _gas_dispersion,
     "process.bleve": _bleve,
+    "process.consequence_analysis": _consequence_analysis,
     "process.jet_fire": _jet_fire,
     "process.pool_fire": _pool_fire,
     "process.probit": _probit,
@@ -2585,6 +2627,57 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_bleve.tsv",
         block=5,
         identified_by=("#label", "bleve_small_target"),
+    ),
+    # The consequence engine's seven reachable states; the zero-distance and
+    # negative-probability evidence rows are uncased.
+    LayerCase(
+        model="process.consequence_analysis",
+        case="jet_fire_at_ten_metres",
+        capture="process_consequence_analysis.tsv",
+        block=0,
+        identified_by=("#label", "consequence_analysis_jet_fire"),
+    ),
+    LayerCase(
+        model="process.consequence_analysis",
+        case="pool_fire_at_twenty_metres",
+        capture="process_consequence_analysis.tsv",
+        block=1,
+        identified_by=("#label", "consequence_analysis_pool_fire"),
+    ),
+    LayerCase(
+        model="process.consequence_analysis",
+        case="vce_at_twenty_metres",
+        capture="process_consequence_analysis.tsv",
+        block=2,
+        identified_by=("#label", "consequence_analysis_vce"),
+    ),
+    LayerCase(
+        model="process.consequence_analysis",
+        case="toxic_dispersion_at_fifty_metres",
+        capture="process_consequence_analysis.tsv",
+        block=3,
+        identified_by=("#label", "consequence_analysis_toxic_dispersion"),
+    ),
+    LayerCase(
+        model="process.consequence_analysis",
+        case="mixed_outcomes_at_twenty_metres",
+        capture="process_consequence_analysis.tsv",
+        block=4,
+        identified_by=("#label", "consequence_analysis_mixed"),
+    ),
+    LayerCase(
+        model="process.consequence_analysis",
+        case="zero_exposure_is_zero_probability",
+        capture="process_consequence_analysis.tsv",
+        block=5,
+        identified_by=("#label", "consequence_analysis_zero_exposure"),
+    ),
+    LayerCase(
+        model="process.consequence_analysis",
+        case="zero_emission_is_zero_probability",
+        capture="process_consequence_analysis.tsv",
+        block=6,
+        identified_by=("#label", "consequence_analysis_zero_emission"),
     ),
     # The probit's nine factory and stated-probit rows; the non-positive-dose guard is
     # uncased because the port refuses it.
@@ -3606,6 +3699,9 @@ UNCASED_ROWS: dict[str, int] = {
     # The event tree's four: the no-branch tree, the two refusals and the shift count, which
     # cannot be cased (an empty record value is not a case).
     "process_event_tree.tsv": 4,
+    # The consequence engine's two: the class's infinite flux at zero distance, and the
+    # negative branch probability it throws on.
+    "process_consequence_analysis.tsv": 2,
     # The jet fire's three: the zero-humidity `NaN`, the infinite zero-distance flux and the
     # zero-target refusal, each the measurement its guard rests on.
     "process_jet_fire.tsv": 3,

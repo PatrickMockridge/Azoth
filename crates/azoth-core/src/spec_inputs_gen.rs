@@ -227,6 +227,7 @@
 //!   - specs/models/process/bleve.toml
 //!   - specs/models/process/component_splitter.toml
 //!   - specs/models/process/compressor.toml
+//!   - specs/models/process/consequence_analysis.toml
 //!   - specs/models/process/cooler.toml
 //!   - specs/models/process/distillation_column.toml
 //!   - specs/models/process/ejector.toml
@@ -2753,6 +2754,16 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "process.compressor",
         "max_stages_per_casing",
         "dimensionless",
+    ),
+    (
+        "process.consequence_analysis",
+        "release_frequency_per_year",
+        "dimensionless",
+    ),
+    (
+        "process.consequence_analysis",
+        "receiver_distance",
+        "length",
     ),
     ("process.cooler", "inlet_n", "molar_flow"),
     ("process.cooler", "inlet_z", "dimensionless"),

@@ -6,6 +6,7 @@
 //!   - specs/models/process/bleve.toml
 //!   - specs/models/process/component_splitter.toml
 //!   - specs/models/process/compressor.toml
+//!   - specs/models/process/consequence_analysis.toml
 //!   - specs/models/process/cooler.toml
 //!   - specs/models/process/distillation_column.toml
 //!   - specs/models/process/ejector.toml
@@ -19197,6 +19198,893 @@ pub static COMPRESSOR_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: COMPRESSOR_CHECKS,
     cases: COMPRESSOR_CASES,
+};
+
+static CONSEQUENCE_ANALYSIS_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "release_frequency_per_year",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a negative frequency is not a state; the class's constructor omits the guard and the port adds it",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "receiver_distance",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the composed jet and VCE kernels refuse zero, where the class answers an infinite flux and overpressure",
+        },
+    },
+];
+
+static CONSEQUENCE_ANALYSIS_CASES: &[TestCase] = &[
+    TestCase {
+        id: "jet_fire_at_ten_metres",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("release_frequency_per_year", 0.0001),
+            ("receiver_distance", 10.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("individual_fatality_risk_per_year", 5e-06)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "outcomes",
+            &[&[
+                RecordField {
+                    name: "outcome_type",
+                    value: FieldValue::Name("jet_fire"),
+                },
+                RecordField {
+                    name: "conditional_probability",
+                    value: FieldValue::Number(0.05),
+                },
+                RecordField {
+                    name: "probit_a",
+                    value: FieldValue::Number(-14.9),
+                },
+                RecordField {
+                    name: "probit_b",
+                    value: FieldValue::Number(2.56),
+                },
+                RecordField {
+                    name: "probit_n",
+                    value: FieldValue::Number(1.0),
+                },
+                RecordField {
+                    name: "exposure_seconds",
+                    value: FieldValue::Number(60.0),
+                },
+                RecordField {
+                    name: "mass_flow",
+                    value: FieldValue::Number(30.0),
+                },
+                RecordField {
+                    name: "heat_of_combustion",
+                    value: FieldValue::Number(50000000.0),
+                },
+                RecordField {
+                    name: "radiative_fraction",
+                    value: FieldValue::Number(0.25),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "outcomes",
+            &[&[
+                RecordField {
+                    name: "outcome",
+                    value: FieldValue::Name("Jet fire"),
+                },
+                RecordField {
+                    name: "outcome_type",
+                    value: FieldValue::Name("jet_fire"),
+                },
+                RecordField {
+                    name: "frequency_per_year",
+                    value: FieldValue::Number(5e-06),
+                },
+                RecordField {
+                    name: "fatality_probability",
+                    value: FieldValue::Number(1.0),
+                },
+                RecordField {
+                    name: "fatality_frequency_per_year",
+                    value: FieldValue::Number(5e-06),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "pool_fire_at_twenty_metres",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("release_frequency_per_year", 0.0001),
+            ("receiver_distance", 20.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("individual_fatality_risk_per_year", 1.0553585033729052e-09)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "outcomes",
+            &[&[
+                RecordField {
+                    name: "outcome_type",
+                    value: FieldValue::Name("pool_fire"),
+                },
+                RecordField {
+                    name: "conditional_probability",
+                    value: FieldValue::Number(0.1),
+                },
+                RecordField {
+                    name: "probit_a",
+                    value: FieldValue::Number(-14.9),
+                },
+                RecordField {
+                    name: "probit_b",
+                    value: FieldValue::Number(2.56),
+                },
+                RecordField {
+                    name: "probit_n",
+                    value: FieldValue::Number(1.0),
+                },
+                RecordField {
+                    name: "exposure_seconds",
+                    value: FieldValue::Number(60.0),
+                },
+                RecordField {
+                    name: "pool_diameter",
+                    value: FieldValue::Number(10.0),
+                },
+                RecordField {
+                    name: "burn_rate",
+                    value: FieldValue::Number(0.06),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "outcomes",
+            &[&[
+                RecordField {
+                    name: "outcome",
+                    value: FieldValue::Name("Pool fire"),
+                },
+                RecordField {
+                    name: "outcome_type",
+                    value: FieldValue::Name("pool_fire"),
+                },
+                RecordField {
+                    name: "frequency_per_year",
+                    value: FieldValue::Number(1e-05),
+                },
+                RecordField {
+                    name: "fatality_probability",
+                    value: FieldValue::Number(0.00010553585033729052),
+                },
+                RecordField {
+                    name: "fatality_frequency_per_year",
+                    value: FieldValue::Number(1.0553585033729052e-09),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "vce_at_twenty_metres",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("release_frequency_per_year", 0.0001),
+            ("receiver_distance", 20.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("individual_fatality_risk_per_year", 0.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "outcomes",
+            &[&[
+                RecordField {
+                    name: "outcome_type",
+                    value: FieldValue::Name("vce"),
+                },
+                RecordField {
+                    name: "conditional_probability",
+                    value: FieldValue::Number(0.3),
+                },
+                RecordField {
+                    name: "probit_a",
+                    value: FieldValue::Number(-77.1),
+                },
+                RecordField {
+                    name: "probit_b",
+                    value: FieldValue::Number(6.91),
+                },
+                RecordField {
+                    name: "probit_n",
+                    value: FieldValue::Number(1.0),
+                },
+                RecordField {
+                    name: "cloud_fuel_mass",
+                    value: FieldValue::Number(1000.0),
+                },
+                RecordField {
+                    name: "heat_of_combustion",
+                    value: FieldValue::Number(46000000.0),
+                },
+                RecordField {
+                    name: "strength_class",
+                    value: FieldValue::Number(4.0),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "outcomes",
+            &[&[
+                RecordField {
+                    name: "outcome",
+                    value: FieldValue::Name("VCE"),
+                },
+                RecordField {
+                    name: "outcome_type",
+                    value: FieldValue::Name("vce"),
+                },
+                RecordField {
+                    name: "frequency_per_year",
+                    value: FieldValue::Number(3e-05),
+                },
+                RecordField {
+                    name: "fatality_probability",
+                    value: FieldValue::Number(0.0),
+                },
+                RecordField {
+                    name: "fatality_frequency_per_year",
+                    value: FieldValue::Number(0.0),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "toxic_dispersion_at_fifty_metres",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("release_frequency_per_year", 0.0001),
+            ("receiver_distance", 50.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("individual_fatality_risk_per_year", 0.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "outcomes",
+            &[&[
+                RecordField {
+                    name: "outcome_type",
+                    value: FieldValue::Name("toxic_dispersion"),
+                },
+                RecordField {
+                    name: "conditional_probability",
+                    value: FieldValue::Number(0.2),
+                },
+                RecordField {
+                    name: "probit_a",
+                    value: FieldValue::Number(-31.42),
+                },
+                RecordField {
+                    name: "probit_b",
+                    value: FieldValue::Number(3.008),
+                },
+                RecordField {
+                    name: "probit_n",
+                    value: FieldValue::Number(1.43),
+                },
+                RecordField {
+                    name: "emission_rate",
+                    value: FieldValue::Number(1.0),
+                },
+                RecordField {
+                    name: "effective_stack_height",
+                    value: FieldValue::Number(10.0),
+                },
+                RecordField {
+                    name: "wind_speed",
+                    value: FieldValue::Number(5.0),
+                },
+                RecordField {
+                    name: "stability",
+                    value: FieldValue::Name("D"),
+                },
+                RecordField {
+                    name: "terrain",
+                    value: FieldValue::Name("rural"),
+                },
+                RecordField {
+                    name: "molar_mass",
+                    value: FieldValue::Number(0.0340819),
+                },
+                RecordField {
+                    name: "temperature",
+                    value: FieldValue::Number(288.15),
+                },
+                RecordField {
+                    name: "pressure",
+                    value: FieldValue::Number(101325.0),
+                },
+                RecordField {
+                    name: "exposure_seconds",
+                    value: FieldValue::Number(600.0),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "outcomes",
+            &[&[
+                RecordField {
+                    name: "outcome",
+                    value: FieldValue::Name("Toxic dispersion"),
+                },
+                RecordField {
+                    name: "outcome_type",
+                    value: FieldValue::Name("toxic_dispersion"),
+                },
+                RecordField {
+                    name: "frequency_per_year",
+                    value: FieldValue::Number(2e-05),
+                },
+                RecordField {
+                    name: "fatality_probability",
+                    value: FieldValue::Number(0.0),
+                },
+                RecordField {
+                    name: "fatality_frequency_per_year",
+                    value: FieldValue::Number(0.0),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "mixed_outcomes_at_twenty_metres",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("release_frequency_per_year", 0.001),
+            ("receiver_distance", 20.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("individual_fatality_risk_per_year", 4.996981060860579e-05)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "outcomes",
+            &[
+                &[
+                    RecordField {
+                        name: "outcome_type",
+                        value: FieldValue::Name("jet_fire"),
+                    },
+                    RecordField {
+                        name: "conditional_probability",
+                        value: FieldValue::Number(0.05),
+                    },
+                    RecordField {
+                        name: "probit_a",
+                        value: FieldValue::Number(-14.9),
+                    },
+                    RecordField {
+                        name: "probit_b",
+                        value: FieldValue::Number(2.56),
+                    },
+                    RecordField {
+                        name: "probit_n",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "exposure_seconds",
+                        value: FieldValue::Number(60.0),
+                    },
+                    RecordField {
+                        name: "mass_flow",
+                        value: FieldValue::Number(30.0),
+                    },
+                    RecordField {
+                        name: "heat_of_combustion",
+                        value: FieldValue::Number(50000000.0),
+                    },
+                    RecordField {
+                        name: "radiative_fraction",
+                        value: FieldValue::Number(0.25),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "outcome_type",
+                        value: FieldValue::Name("pool_fire"),
+                    },
+                    RecordField {
+                        name: "conditional_probability",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "probit_a",
+                        value: FieldValue::Number(-14.9),
+                    },
+                    RecordField {
+                        name: "probit_b",
+                        value: FieldValue::Number(2.56),
+                    },
+                    RecordField {
+                        name: "probit_n",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "exposure_seconds",
+                        value: FieldValue::Number(60.0),
+                    },
+                    RecordField {
+                        name: "pool_diameter",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "burn_rate",
+                        value: FieldValue::Number(0.06),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "outcome_type",
+                        value: FieldValue::Name("vce"),
+                    },
+                    RecordField {
+                        name: "conditional_probability",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "probit_a",
+                        value: FieldValue::Number(-77.1),
+                    },
+                    RecordField {
+                        name: "probit_b",
+                        value: FieldValue::Number(6.91),
+                    },
+                    RecordField {
+                        name: "probit_n",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "cloud_fuel_mass",
+                        value: FieldValue::Number(1000.0),
+                    },
+                    RecordField {
+                        name: "heat_of_combustion",
+                        value: FieldValue::Number(46000000.0),
+                    },
+                    RecordField {
+                        name: "strength_class",
+                        value: FieldValue::Number(4.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "outcome_type",
+                        value: FieldValue::Name("toxic_dispersion"),
+                    },
+                    RecordField {
+                        name: "conditional_probability",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "probit_a",
+                        value: FieldValue::Number(-31.42),
+                    },
+                    RecordField {
+                        name: "probit_b",
+                        value: FieldValue::Number(3.008),
+                    },
+                    RecordField {
+                        name: "probit_n",
+                        value: FieldValue::Number(1.43),
+                    },
+                    RecordField {
+                        name: "emission_rate",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "effective_stack_height",
+                        value: FieldValue::Number(10.0),
+                    },
+                    RecordField {
+                        name: "wind_speed",
+                        value: FieldValue::Number(5.0),
+                    },
+                    RecordField {
+                        name: "stability",
+                        value: FieldValue::Name("D"),
+                    },
+                    RecordField {
+                        name: "terrain",
+                        value: FieldValue::Name("rural"),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.0340819),
+                    },
+                    RecordField {
+                        name: "temperature",
+                        value: FieldValue::Number(288.15),
+                    },
+                    RecordField {
+                        name: "pressure",
+                        value: FieldValue::Number(101325.0),
+                    },
+                    RecordField {
+                        name: "exposure_seconds",
+                        value: FieldValue::Number(600.0),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[(
+            "outcomes",
+            &[
+                &[
+                    RecordField {
+                        name: "outcome",
+                        value: FieldValue::Name("Jet fire"),
+                    },
+                    RecordField {
+                        name: "outcome_type",
+                        value: FieldValue::Name("jet_fire"),
+                    },
+                    RecordField {
+                        name: "frequency_per_year",
+                        value: FieldValue::Number(5e-05),
+                    },
+                    RecordField {
+                        name: "fatality_probability",
+                        value: FieldValue::Number(0.999185140471441),
+                    },
+                    RecordField {
+                        name: "fatality_frequency_per_year",
+                        value: FieldValue::Number(4.9959257023572056e-05),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "outcome",
+                        value: FieldValue::Name("Pool fire"),
+                    },
+                    RecordField {
+                        name: "outcome_type",
+                        value: FieldValue::Name("pool_fire"),
+                    },
+                    RecordField {
+                        name: "frequency_per_year",
+                        value: FieldValue::Number(0.0001),
+                    },
+                    RecordField {
+                        name: "fatality_probability",
+                        value: FieldValue::Number(0.00010553585033729052),
+                    },
+                    RecordField {
+                        name: "fatality_frequency_per_year",
+                        value: FieldValue::Number(1.0553585033729052e-08),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "outcome",
+                        value: FieldValue::Name("VCE"),
+                    },
+                    RecordField {
+                        name: "outcome_type",
+                        value: FieldValue::Name("vce"),
+                    },
+                    RecordField {
+                        name: "frequency_per_year",
+                        value: FieldValue::Number(0.0003),
+                    },
+                    RecordField {
+                        name: "fatality_probability",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fatality_frequency_per_year",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "outcome",
+                        value: FieldValue::Name("Toxic dispersion"),
+                    },
+                    RecordField {
+                        name: "outcome_type",
+                        value: FieldValue::Name("toxic_dispersion"),
+                    },
+                    RecordField {
+                        name: "frequency_per_year",
+                        value: FieldValue::Number(0.0002),
+                    },
+                    RecordField {
+                        name: "fatality_probability",
+                        value: FieldValue::Number(0.0),
+                    },
+                    RecordField {
+                        name: "fatality_frequency_per_year",
+                        value: FieldValue::Number(0.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "zero_exposure_is_zero_probability",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("release_frequency_per_year", 0.0001),
+            ("receiver_distance", 10.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("individual_fatality_risk_per_year", 0.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "outcomes",
+            &[&[
+                RecordField {
+                    name: "outcome_type",
+                    value: FieldValue::Name("jet_fire"),
+                },
+                RecordField {
+                    name: "conditional_probability",
+                    value: FieldValue::Number(0.05),
+                },
+                RecordField {
+                    name: "probit_a",
+                    value: FieldValue::Number(-14.9),
+                },
+                RecordField {
+                    name: "probit_b",
+                    value: FieldValue::Number(2.56),
+                },
+                RecordField {
+                    name: "probit_n",
+                    value: FieldValue::Number(1.0),
+                },
+                RecordField {
+                    name: "exposure_seconds",
+                    value: FieldValue::Number(0.0),
+                },
+                RecordField {
+                    name: "mass_flow",
+                    value: FieldValue::Number(30.0),
+                },
+                RecordField {
+                    name: "heat_of_combustion",
+                    value: FieldValue::Number(50000000.0),
+                },
+                RecordField {
+                    name: "radiative_fraction",
+                    value: FieldValue::Number(0.25),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "outcomes",
+            &[&[
+                RecordField {
+                    name: "outcome",
+                    value: FieldValue::Name("Jet fire"),
+                },
+                RecordField {
+                    name: "outcome_type",
+                    value: FieldValue::Name("jet_fire"),
+                },
+                RecordField {
+                    name: "frequency_per_year",
+                    value: FieldValue::Number(5e-06),
+                },
+                RecordField {
+                    name: "fatality_probability",
+                    value: FieldValue::Number(0.0),
+                },
+                RecordField {
+                    name: "fatality_frequency_per_year",
+                    value: FieldValue::Number(0.0),
+                },
+            ]],
+        )],
+    },
+    TestCase {
+        id: "zero_emission_is_zero_probability",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[
+            ("release_frequency_per_year", 0.0001),
+            ("receiver_distance", 50.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("individual_fatality_risk_per_year", 0.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "outcomes",
+            &[&[
+                RecordField {
+                    name: "outcome_type",
+                    value: FieldValue::Name("toxic_dispersion"),
+                },
+                RecordField {
+                    name: "conditional_probability",
+                    value: FieldValue::Number(0.2),
+                },
+                RecordField {
+                    name: "probit_a",
+                    value: FieldValue::Number(-31.42),
+                },
+                RecordField {
+                    name: "probit_b",
+                    value: FieldValue::Number(3.008),
+                },
+                RecordField {
+                    name: "probit_n",
+                    value: FieldValue::Number(1.43),
+                },
+                RecordField {
+                    name: "emission_rate",
+                    value: FieldValue::Number(0.0),
+                },
+                RecordField {
+                    name: "effective_stack_height",
+                    value: FieldValue::Number(10.0),
+                },
+                RecordField {
+                    name: "wind_speed",
+                    value: FieldValue::Number(5.0),
+                },
+                RecordField {
+                    name: "stability",
+                    value: FieldValue::Name("D"),
+                },
+                RecordField {
+                    name: "terrain",
+                    value: FieldValue::Name("rural"),
+                },
+                RecordField {
+                    name: "molar_mass",
+                    value: FieldValue::Number(0.0340819),
+                },
+                RecordField {
+                    name: "temperature",
+                    value: FieldValue::Number(288.15),
+                },
+                RecordField {
+                    name: "pressure",
+                    value: FieldValue::Number(101325.0),
+                },
+                RecordField {
+                    name: "exposure_seconds",
+                    value: FieldValue::Number(600.0),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "outcomes",
+            &[&[
+                RecordField {
+                    name: "outcome",
+                    value: FieldValue::Name("Toxic dispersion"),
+                },
+                RecordField {
+                    name: "outcome_type",
+                    value: FieldValue::Name("toxic_dispersion"),
+                },
+                RecordField {
+                    name: "frequency_per_year",
+                    value: FieldValue::Number(2e-05),
+                },
+                RecordField {
+                    name: "fatality_probability",
+                    value: FieldValue::Number(0.0),
+                },
+                RecordField {
+                    name: "fatality_frequency_per_year",
+                    value: FieldValue::Number(0.0),
+                },
+            ]],
+        )],
+    },
+];
+
+static CONSEQUENCE_ANALYSIS_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "outcome_frequency_composition",
+    convergence: "absolute",
+    tolerance: 1e-12,
+    max_iterations: 1,
+    bracket: None,
+    initialisation: Some("first_outcome_in_caller_order"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `process.consequence_analysis`.
+pub static CONSEQUENCE_ANALYSIS_SPEC: ModelSpec = ModelSpec {
+    id: "process.consequence_analysis",
+    kind: "procedure",
+    algorithm: Some(&CONSEQUENCE_ANALYSIS_ALGORITHM),
+    checks: CONSEQUENCE_ANALYSIS_CHECKS,
+    cases: CONSEQUENCE_ANALYSIS_CASES,
 };
 
 static COOLER_CHECKS: &[SpecCheck] = &[
@@ -54820,6 +55708,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &BLEVE_SPEC,
     &COMPONENT_SPLITTER_SPEC,
     &COMPRESSOR_SPEC,
+    &CONSEQUENCE_ANALYSIS_SPEC,
     &COOLER_SPEC,
     &DISTILLATION_COLUMN_SPEC,
     &EJECTOR_SPEC,

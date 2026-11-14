@@ -24,6 +24,7 @@ from azoth.core.result import (
     BleveResult,
     ComponentSplitterResult,
     CompressorResult,
+    ConsequenceAnalysisResult,
     CoolerResult,
     DistillationColumnResult,
     EjectorResult,
@@ -90,6 +91,7 @@ __all__ = [
     "catalogue",
     "component_splitter",
     "compressor",
+    "consequence_analysis",
     "cooler",
     "distillation_column",
     "ejector",
@@ -142,6 +144,7 @@ _GAS_SCRUBBER = "process.gas_scrubber"
 _HEAT_EXCHANGER = "process.heat_exchanger"
 _COMPONENT_SPLITTER = "process.component_splitter"
 _COMPRESSOR = "process.compressor"
+_CONSEQUENCE_ANALYSIS = "process.consequence_analysis"
 _ABSORPTION_COLUMN = "process.absorption_column"
 _STRIPPING_COLUMN = "process.stripping_column"
 _DISTILLATION_COLUMN = "process.distillation_column"
@@ -1533,6 +1536,26 @@ def turbo_expander_compressor(
         chart=chart,
         igv_penalty_curve=igv_penalty_curve,
         mechanical_design=mechanical_design,
+    )
+
+
+def consequence_analysis(
+    release_frequency_per_year: float,
+    receiver_distance: Q,
+    outcomes: list[dict[str, object]],
+) -> ConsequenceAnalysisResult:
+    """The class's four consequence branches over one receiver, and the summed risk.
+
+    The jet, pool, VCE and toxic branches in caller order, over the ported consequence
+    kernels. **A zero dose is a zero probability**, and a field belonging to another
+    branch type is refused.
+
+    See :func:`azoth.process.reference.consequence_analysis`.
+    """
+    return resolve(_CONSEQUENCE_ANALYSIS)(  # type: ignore[no-any-return]
+        release_frequency_per_year=release_frequency_per_year,
+        receiver_distance=receiver_distance,
+        outcomes=outcomes,
     )
 
 

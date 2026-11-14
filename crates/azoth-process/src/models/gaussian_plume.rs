@@ -62,7 +62,7 @@ pub(crate) enum Terrain {
 }
 
 impl Terrain {
-    fn parse(value: &str) -> Result<Self> {
+    pub(crate) fn parse(value: &str) -> Result<Self> {
         Ok(match value {
             "rural" => Self::Rural,
             "urban" => Self::Urban,

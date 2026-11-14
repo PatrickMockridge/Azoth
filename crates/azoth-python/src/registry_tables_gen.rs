@@ -246,6 +246,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "process.bleve" => azoth_process::models::bleve::BleveResult::FIELDS.to_vec(),
         "process.component_splitter" => azoth_process::models::component_splitter::ComponentSplitterResult::FIELDS.to_vec(),
         "process.compressor" => azoth_process::models::compressor::CompressorResult::FIELDS.to_vec(),
+        "process.consequence_analysis" => azoth_process::models::consequence_analysis::ConsequenceAnalysisResult::FIELDS.to_vec(),
         "process.cooler" => azoth_process::models::cooler::CoolerResult::FIELDS.to_vec(),
         "process.distillation_column" => azoth_process::models::distillation_column::DistillationColumnResult::FIELDS.to_vec(),
         "process.ejector" => azoth_process::models::ejector::EjectorResult::FIELDS.to_vec(),

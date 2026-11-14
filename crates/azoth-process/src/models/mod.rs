@@ -35,6 +35,7 @@ pub mod anti_surge_recycle;
 pub mod bleve;
 pub mod component_splitter;
 pub mod compressor;
+pub mod consequence_analysis;
 pub mod cooler;
 pub mod distillation_column;
 pub mod ejector;
@@ -79,6 +80,10 @@ pub use anti_surge_recycle::{AntiSurgeRecycleResult, anti_surge_recycle};
 pub use bleve::{BleveResult, bleve};
 pub use component_splitter::{ComponentSplitterResult, component_splitter};
 pub use compressor::{CompressorResult, compressor};
+pub use consequence_analysis::{
+    ConsequenceAnalysisResult, ConsequenceOutcomeResult, ConsequenceOutcomeSpec,
+    consequence_analysis,
+};
 pub use cooler::{CoolerResult, cooler};
 pub use distillation_column::{DistillationColumnResult, distillation_column};
 pub use ejector::{EjectorResult, ejector};
