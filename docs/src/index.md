@@ -328,6 +328,7 @@ Five sections, and the difference between them is the point:
 
 - [`process.absorption_column`](./process/absorption_column.md) — Absorption column
 - [`process.anti_surge_recycle`](./process/anti_surge_recycle.md) — Anti-surge recycle calculator
+- [`process.bleve`](./process/bleve.md) — BLEVE fireball radiation
 - [`process.component_splitter`](./process/component_splitter.md) — Component splitter
 - [`process.compressor`](./process/compressor.md) — Compressor
 - [`process.cooler`](./process/cooler.md) — Cooler
@@ -343,6 +344,7 @@ Five sections, and the difference between them is the point:
 - [`process.heat_exchanger`](./process/heat_exchanger.md) — Heat exchanger
 - [`process.heater`](./process/heater.md) — Heater
 - [`process.hem_release`](./process/hem_release.md) — Homogeneous-equilibrium orifice release
+- [`process.jet_fire`](./process/jet_fire.md) — Jet fire radiation
 - [`process.leak_blowdown`](./process/leak_blowdown.md) — Vessel leak blowdown
 - [`process.manifold`](./process/manifold.md) — Manifold
 - [`process.map_turbo_expander_compressor`](./process/map_turbo_expander_compressor.md) — Map turbo-expander compressor
@@ -350,6 +352,7 @@ Five sections, and the difference between them is the point:
 - [`process.packed_column`](./process/packed_column.md) — Packed column
 - [`process.pipe`](./process/pipe.md) — Pipe
 - [`process.plug_flow_reactor`](./process/plug_flow_reactor.md) — Plug-flow reactor
+- [`process.pool_fire`](./process/pool_fire.md) — Pool fire radiation
 - [`process.probit`](./process/probit.md) — Probit dose-response
 - [`process.pump`](./process/pump.md) — Pump
 - [`process.rate_based_packed_column`](./process/rate_based_packed_column.md) — Rate-based packed column
@@ -364,6 +367,7 @@ Five sections, and the difference between them is the point:
 - [`process.three_phase_separator`](./process/three_phase_separator.md) — Three-phase separator
 - [`process.throttling_valve`](./process/throttling_valve.md) — Throttling valve
 - [`process.turbo_expander_compressor`](./process/turbo_expander_compressor.md) — Turbo-expander compressor
+- [`process.vce`](./process/vce.md) — Vapour-cloud explosion overpressure
 
 **Reactions** - [`reactions/index.md`](./reactions/index.md):
 

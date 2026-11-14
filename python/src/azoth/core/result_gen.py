@@ -5630,6 +5630,34 @@ class AntiSurgeRecycleResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class BleveResult(_HasWarnings):
+    """Result of ``process.bleve``."""
+
+    CALC_ID: ClassVar[str] = "process.bleve"
+
+    #: `5.8 M^(1/3)`, the fireball's diameter.
+    fireball_diameter: Q
+
+    #: `0.45 M^(1/3)`, the fireball's lifetime.
+    fireball_duration: Q
+
+    #: `eta M dHc / (pi D^2 t)`, the surface emissive power.
+    surface_emissive_power: Q
+
+    #: Wayne's `tau` at `distance`. Present only with `distance`.
+    transmissivity: float | None
+
+    #: `SEP` times the capped point-source view factor and `tau`. Present only with `distance`.
+    incident_heat_flux: Q | None
+
+    #: the distance at which the flux falls to the target. **Absent when the flux at `D/2 + 0.1` is already below the target**, where the class answers that near bound.
+    distance_to_flux: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ComponentSplitterResult(_HasWarnings):
     """Result of ``process.component_splitter``."""
 
@@ -7226,6 +7254,28 @@ class HemReleaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class JetFireResult(_HasWarnings):
+    """Result of ``process.jet_fire``."""
+
+    CALC_ID: ClassVar[str] = "process.jet_fire"
+
+    #: `eta m_dot dHc`, the total heat the jet radiates.
+    total_radiative_power: Q
+
+    #: Wayne's `tau` at `distance`. Present only with `distance`.
+    transmissivity: float | None
+
+    #: `Q tau / (4 pi d^2)` at `distance`. Present only with `distance`.
+    incident_heat_flux: Q | None
+
+    #: the fixed point of `Q tau(r) / (4 pi r^2) = target`, at the class's 25-iteration cap. Present only with `target_flux`.
+    distance_to_flux: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class LeakBlowdownResult(_HasWarnings):
     """Result of ``process.leak_blowdown``."""
 
@@ -7608,6 +7658,34 @@ class PlugFlowReactorResult(_HasWarnings):
 
     #: `getResidenceTime()`: the tube's volume over the feed's volumetric flow, which the kernel already computes and this id dropped.
     residence_time: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class PoolFireResult(_HasWarnings):
+    """Result of ``process.pool_fire``."""
+
+    CALC_ID: ClassVar[str] = "process.pool_fire"
+
+    #: `m'' pi D^2 / 4`, the mass the pool burns per second.
+    total_burn_rate: Q
+
+    #: Thomas's flame height above the pool.
+    flame_height: Q
+
+    #: Mudan's smoke-corrected SEP, a function of the diameter alone.
+    surface_emissive_power: Q
+
+    #: Mudan's vertical-cylinder view factor at `distance`. Present only with `distance`.
+    view_factor: float | None
+
+    #: `SEP` times the view factor at `distance`. Present only with `distance`.
+    incident_heat_flux: Q | None
+
+    #: the distance at which the flux falls to `target_flux`. **Absent when the flux at `R + 0.1` is already below the target**, where the class answers that near bound.
+    distance_to_flux: Q | None
 
     #: Caveats.
     warnings: tuple[Warning, ...]
@@ -8987,6 +9065,31 @@ class TurboExpanderResult(_HasWarnings):
 
     #: `getModuleHeight`, floored at `2.0`.
     design_module_height: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class VceResult(_HasWarnings):
+    """Result of ``process.vce``."""
+
+    CALC_ID: ClassVar[str] = "process.vce"
+
+    #: `m dHc`, the cloud's combustion energy.
+    combustion_energy: Q
+
+    #: `d / cbrt(E / p0)`, the Sachs-scaled distance. Present only with `distance`.
+    scaled_distance: float | None
+
+    #: the class's plateau or power-law value at `distance`. Present only with `distance`.
+    dimensionless_overpressure: float | None
+
+    #: the dimensionless overpressure times `p0`. Present only with `distance`.
+    overpressure: Q | None
+
+    #: the distance at which the overpressure falls to the target. **Absent when the overpressure at 0.1 m is already below the target**, where the class answers that near bound.
+    distance_to_overpressure: Q | None
 
     #: Caveats.
     warnings: tuple[Warning, ...]

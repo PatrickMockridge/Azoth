@@ -1,0 +1,93 @@
+model = "process.jet_fire"
+[[cases]]
+id = "test_state_at_twenty_metres"
+tolerance = 1.0e-9
+source = "`FireModelsTest.jetFireFluxDecreasesWithDistance`'s state, 2 kg/s at 50 MJ/kg and a 0.20 radiative fraction, read at 20 m with the default humidity. From `validation/neqsim/captures/process_jet_fire.tsv` (`jet_fire_test_20m`)."
+[cases.inputs]
+mass_flow = 2.0
+heat_of_combustion = 50000000.0
+radiative_fraction = 0.2
+distance = 20.0
+[cases.expected]
+total_radiative_power = 20000000.0
+transmissivity = 0.5326676326817309
+incident_heat_flux = 2119.417169158887
+[[cases]]
+id = "test_state_at_eighty_metres"
+tolerance = 1.0e-9
+source = "The same test state read at 80 m; the flux falls. From (`jet_fire_test_80m`)."
+[cases.inputs]
+mass_flow = 2.0
+heat_of_combustion = 50000000.0
+radiative_fraction = 0.2
+distance = 80.0
+[cases.expected]
+total_radiative_power = 20000000.0
+transmissivity = 0.3964089088042082
+incident_heat_flux = 98.57880831539701
+[[cases]]
+id = "distance_to_twelve_point_five_kw"
+tolerance = 1.0e-9
+source = "`FireModelsTest.jetFireDistanceToFluxConsistent`'s target, 12.5 kW/m2, whose inverse is the class's fixed point. From (`jet_fire_distance_12500`)."
+[cases.inputs]
+mass_flow = 2.0
+heat_of_combustion = 50000000.0
+radiative_fraction = 0.2
+target_flux = 12500.0
+[cases.expected]
+total_radiative_power = 20000000.0
+distance_to_flux = 8.780123032005108
+[[cases]]
+id = "humidity_half_at_fifty_metres"
+tolerance = 1.0e-9
+source = "The default humidity stated, at 50 m. From (`jet_fire_humidity_05`)."
+[cases.inputs]
+mass_flow = 2.0
+heat_of_combustion = 50000000.0
+radiative_fraction = 0.2
+relative_humidity = 0.5
+distance = 50.0
+[cases.expected]
+total_radiative_power = 20000000.0
+transmissivity = 0.4445289824297164
+incident_heat_flux = 282.9959396051986
+[[cases]]
+id = "saturated_at_fifty_metres"
+tolerance = 1.0e-9
+source = "Saturated air at 50 m; the transmissivity falls. From (`jet_fire_humidity_1`)."
+[cases.inputs]
+mass_flow = 2.0
+heat_of_combustion = 50000000.0
+radiative_fraction = 0.2
+relative_humidity = 1.0
+distance = 50.0
+[cases.expected]
+total_radiative_power = 20000000.0
+transmissivity = 0.3728721363977805
+incident_heat_flux = 237.37777459576876
+[[cases]]
+id = "inside_one_metre"
+tolerance = 1.0e-9
+source = "Half a metre from the flame centre: the transmissivity is evaluated at one metre and the flux keeps its own 1/d^2. From (`jet_fire_inside_one_metre`)."
+[cases.inputs]
+mass_flow = 2.0
+heat_of_combustion = 50000000.0
+radiative_fraction = 0.2
+relative_humidity = 0.5
+distance = 0.5
+[cases.expected]
+total_radiative_power = 20000000.0
+transmissivity = 0.7684866970414382
+incident_heat_flux = 4892338.261380348
+[[cases]]
+id = "small_target_reaches_the_cap"
+tolerance = 1.0e-9
+source = "A 10 W/m2 target, far enough out to exercise the 25-iteration cap; the class converges inside it. From (`jet_fire_small_target`)."
+[cases.inputs]
+mass_flow = 2.0
+heat_of_combustion = 50000000.0
+radiative_fraction = 0.2
+target_flux = 10.0
+[cases.expected]
+total_radiative_power = 20000000.0
+distance_to_flux = 214.477057488732

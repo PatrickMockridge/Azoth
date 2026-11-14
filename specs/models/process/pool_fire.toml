@@ -1,0 +1,103 @@
+id = "process.pool_fire"
+name = "Pool fire radiation"
+kind = "procedure"
+assumptions = [
+    "**the pool is circular and steady**: `m_dot = m'' pi D^2 / 4` over the stated diameter and mass-burning rate.",
+    "**the flame height is Thomas's no-wind correlation**: `H = D 42 (m'' / (rho_a sqrt(g D)))^0.61`, with `g = 9.81` m/s2.",
+    "**the surface emissive power is Mudan's smoke-corrected correlation**: `140000 exp(-0.12 D) + 20000 (1 - exp(-0.12 D))` W/m2. It is a function of the diameter alone.",
+    "**the constructor also takes the heat of combustion, the liquid density and a radiative fraction, and the arithmetic reads none of them.** The port declares only the diameter and the burn rate.",
+    "**the view factor is Mudan's vertical cylinder at a ground receiver**: `s = max(d, R + 0.001)/R`, `A = (h^2 + s^2 + 1)/(2s)`, `F = (atan(h / sqrt(s^2 - 1)) - (A - (s^2 + 1)/(2s)) / sqrt(A^2 - 1)) / pi`, clamped to `[0, 1]`, with `h = H/R`. Inside the pool it is evaluated at `R + 0.001`.",
+    "**the inverse is 60 halvings between `R + 0.1` and 1000 m, with no early break.**",
+    "**a target the fire cannot produce is absent, not a distance.** The class returns its near bound, `R + 0.1`, when the flux there is below the target; the port publishes no `distance_to_flux`. A non-positive target is refused: the class answers 1000 m for zero.",
+    "**the air density is the class's setter**, 1.2 kg/m3 when absent; a non-positive value is refused.",
+]
+references = [
+    "API STD 521 (2021). Pressure-relieving and Depressurating Systems, section 4.6, pool fires.",
+    "Mudan, K. S. (1984). \"Thermal radiation hazards from hydrocarbon pool fires.\" Progress in Energy and Combustion Science 10, 59-80.",
+    "Thomas, P. H. (1963). \"The size of flames from natural fires.\" Ninth Symposium (International) on Combustion, 844-859.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/safety/fire/PoolFireModel.java` is the port source.",
+    "`validation/neqsim/captures/process_pool_fire.tsv` - the class's own test state at four distances, a reachable target, the zero-distance view factor, the unreachable target and the dead-parameter state.",
+]
+[source]
+standard = "NeqSim process/safety/fire/PoolFireModel.java"
+edition = "Its `totalBurnRateKgPerS`, `flameHeightM`, `surfaceEmissivePowerWPerM2`, `viewFactorVertical`, `incidentHeatFlux` and `distanceToFlux`."
+[algorithm]
+scheme = "api521_mudan_pool_fire"
+initialisation = "near_bound_pool_radius"
+convergence = "absolute"
+tolerance = 1.0e-12
+max_iterations = 60
+[inputs]
+[inputs.pool_diameter]
+unit = "m"
+description = "the equivalent circular pool diameter, above zero.\n"
+[inputs.burn_rate]
+unit = "kg/(m**2*s)"
+description = "the mass-burning rate per unit area, above zero; typical values are 0.04 for LNG, 0.055 for gasoline and 0.078 for crude oil.\n"
+[inputs.air_density]
+unit = "kg/m**3"
+optional = true
+description = "the ambient air density the flame height divides, above zero. **Absent is `1.2`.**\n"
+[inputs.distance]
+unit = "m"
+optional = true
+description = "the horizontal distance from the pool centre at which the flux is asked, at least zero. **Absent leaves `view_factor` and `incident_heat_flux` absent.**\n"
+[inputs.target_flux]
+unit = "W/m**2"
+optional = true
+description = "the flux whose distance is solved for. **Absent leaves `distance_to_flux` absent**; a non-positive target is refused.\n"
+[outputs]
+[outputs.total_burn_rate]
+unit = "kg/s"
+description = "`m'' pi D^2 / 4`, the mass the pool burns per second.\n"
+[outputs.flame_height]
+unit = "m"
+description = "Thomas's flame height above the pool.\n"
+[outputs.surface_emissive_power]
+unit = "W/m**2"
+description = "Mudan's smoke-corrected SEP, a function of the diameter alone.\n"
+[outputs.view_factor]
+unit = "dimensionless"
+optional = true
+description = "Mudan's vertical-cylinder view factor at `distance`. Present only with `distance`.\n"
+[outputs.incident_heat_flux]
+unit = "W/m**2"
+optional = true
+description = "`SEP` times the view factor at `distance`. Present only with `distance`.\n"
+[outputs.distance_to_flux]
+unit = "m"
+optional = true
+description = "the distance at which the flux falls to `target_flux`. **Absent when the flux at `R + 0.1` is already below the target**, where the class answers that near bound.\n"
+[[valid_range]]
+quantity = "pool_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class's constructor refuses a non-positive diameter, and the view factor divides by the radius"
+[[valid_range]]
+quantity = "burn_rate"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class's constructor refuses a non-positive burning rate"
+[[valid_range]]
+quantity = "air_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the flame height divides by it"
+[[valid_range]]
+quantity = "distance"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a horizontal distance from the pool centre; the class's view factor is defined at zero"
+[[valid_range]]
+quantity = "target_flux"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a non-positive target is not a contour; the class answers the search's far bound for zero"
+[implementations]
+python = "azoth.process.pool_fire"
+rust = "azoth_process::pool_fire"

@@ -1308,6 +1308,131 @@ def _gas_dispersion(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dumped
 
 
+def _jet_fire(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.jet_fire`'s layers, from the reference's own arithmetic.
+
+    The capture prints the default humidity as the string `default_0.5`; the model's own
+    absence is the same state, so the dumper states nothing for it.
+    """
+    from azoth.core.units import quantity
+    from azoth.process.reference.jet_fire import jet_fire as jet_fire_model
+
+    humidity = inputs.get("relative_humidity")
+    distance = inputs.get("distance")
+    target = inputs.get("target_flux")
+    result = jet_fire_model(
+        quantity(float(inputs["mass_flow"]), "kg/s"),
+        float(inputs["heat_of_combustion"]),
+        float(inputs["radiative_fraction"]),
+        relative_humidity=None if humidity is None else float(humidity),
+        distance=None if distance is None else quantity(float(distance), "m"),
+        target_flux=None if target is None else quantity(float(target), "W/m**2"),
+    )
+    dumped: dict[str, float] = {
+        "total_radiative_power_w": result.total_radiative_power.to("W").magnitude,
+    }
+    if result.transmissivity is not None:
+        dumped["transmissivity"] = result.transmissivity
+    if result.incident_heat_flux is not None:
+        dumped["incident_heat_flux_w_m2"] = result.incident_heat_flux.to("W/m**2").magnitude
+    if result.distance_to_flux is not None:
+        dumped["distance_to_flux_m"] = result.distance_to_flux.to("m").magnitude
+    return dumped
+
+
+def _pool_fire(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.pool_fire`'s layers, from the reference's own arithmetic.
+
+    The capture's dead-parameter row is the same state under three values the class never
+    reads, so it has no case; the model declares only the diameter and the burn rate.
+    """
+    from azoth.core.units import quantity
+    from azoth.process.reference.pool_fire import pool_fire as pool_fire_model
+
+    air = inputs.get("air_density")
+    distance = inputs.get("distance")
+    target = inputs.get("target_flux")
+    result = pool_fire_model(
+        quantity(float(inputs["pool_diameter"]), "m"),
+        quantity(float(inputs["burn_rate"]), "kg/(m**2*s)"),
+        air_density=None if air is None else float(air),
+        distance=None if distance is None else quantity(float(distance), "m"),
+        target_flux=None if target is None else quantity(float(target), "W/m**2"),
+    )
+    dumped: dict[str, float] = {
+        "total_burn_rate_kg_s": result.total_burn_rate.to("kg/s").magnitude,
+        "flame_height_m": result.flame_height.to("m").magnitude,
+        "surface_emissive_power_w_m2": result.surface_emissive_power.to("W/m**2").magnitude,
+    }
+    if result.view_factor is not None:
+        dumped["view_factor"] = result.view_factor
+    if result.incident_heat_flux is not None:
+        dumped["incident_heat_flux_w_m2"] = result.incident_heat_flux.to("W/m**2").magnitude
+    if result.distance_to_flux is not None:
+        dumped["distance_to_flux_m"] = result.distance_to_flux.to("m").magnitude
+    return dumped
+
+
+def _vce(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.vce`'s layers, from the reference's own arithmetic."""
+    from azoth.core.units import quantity
+    from azoth.process.reference.vce import vce as vce_model
+
+    ambient = inputs.get("ambient_pressure")
+    distance = inputs.get("distance")
+    target = inputs.get("target_overpressure")
+    result = vce_model(
+        quantity(float(inputs["cloud_fuel_mass"]), "kg"),
+        float(inputs["heat_of_combustion"]),
+        float(inputs["strength_class"]),
+        ambient_pressure=None if ambient is None else quantity(float(ambient), "Pa"),
+        distance=None if distance is None else quantity(float(distance), "m"),
+        target_overpressure=None if target is None else quantity(float(target), "Pa"),
+    )
+    dumped: dict[str, float] = {
+        "combustion_energy_j": result.combustion_energy.to("J").magnitude,
+    }
+    if result.scaled_distance is not None:
+        dumped["scaled_distance"] = result.scaled_distance
+    if result.dimensionless_overpressure is not None:
+        dumped["dimensionless_overpressure"] = result.dimensionless_overpressure
+    if result.overpressure is not None:
+        dumped["overpressure_pa"] = result.overpressure.to("Pa").magnitude
+    if result.distance_to_overpressure is not None:
+        dumped["distance_to_overpressure_m"] = result.distance_to_overpressure.to("m").magnitude
+    return dumped
+
+
+def _bleve(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.bleve`'s layers, from the reference's own arithmetic."""
+    from azoth.core.units import quantity
+    from azoth.process.reference.bleve import bleve as bleve_model
+
+    humidity = inputs.get("relative_humidity")
+    distance = inputs.get("distance")
+    target = inputs.get("target_flux")
+    result = bleve_model(
+        quantity(float(inputs["fuel_mass"]), "kg"),
+        float(inputs["heat_of_combustion"]),
+        float(inputs["radiative_fraction"]),
+        relative_humidity=None if humidity is None else float(humidity),
+        distance=None if distance is None else quantity(float(distance), "m"),
+        target_flux=None if target is None else quantity(float(target), "W/m**2"),
+    )
+    dumped: dict[str, float] = {
+        "fireball_diameter_m": result.fireball_diameter.to("m").magnitude,
+        "fireball_duration_s": result.fireball_duration.to("s").magnitude,
+        "surface_emissive_power_w_m2": result.surface_emissive_power.to("W/m**2").magnitude,
+    }
+    if result.transmissivity is not None:
+        dumped["transmissivity"] = result.transmissivity
+    if result.incident_heat_flux is not None:
+        dumped["incident_heat_flux_w_m2"] = result.incident_heat_flux.to("W/m**2").magnitude
+    if result.distance_to_flux is not None:
+        dumped["distance_to_flux_m"] = result.distance_to_flux.to("m").magnitude
+    return dumped
+
+
 def _probit(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.probit`'s layers, from the reference's own arithmetic.
 
@@ -1675,7 +1800,11 @@ DUMPERS: dict[str, Dumper] = {
     "process.leak_blowdown": _leak_blowdown,
     "process.gaussian_plume": _gaussian_plume,
     "process.gas_dispersion": _gas_dispersion,
+    "process.bleve": _bleve,
+    "process.jet_fire": _jet_fire,
+    "process.pool_fire": _pool_fire,
     "process.probit": _probit,
+    "process.vce": _vce,
     "process.rate_based_packed_column": _rate_based_packed_column,
     "process.absorption_column": _absorption_column,
     "process.packed_column": _packed_column,
@@ -2222,6 +2351,235 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_gas_dispersion.tsv",
         block=12,
         identified_by=("#label", "pr_source_term_rate"),
+    ),
+    # The jet fire's seven reachable states; the zero-humidity NaN, the infinite
+    # zero-distance flux and the zero-target refusal are uncased because the port refuses
+    # each of them.
+    LayerCase(
+        model="process.jet_fire",
+        case="test_state_at_twenty_metres",
+        capture="process_jet_fire.tsv",
+        block=0,
+        identified_by=("#label", "jet_fire_test_20m"),
+    ),
+    LayerCase(
+        model="process.jet_fire",
+        case="test_state_at_eighty_metres",
+        capture="process_jet_fire.tsv",
+        block=1,
+        identified_by=("#label", "jet_fire_test_80m"),
+    ),
+    LayerCase(
+        model="process.jet_fire",
+        case="distance_to_twelve_point_five_kw",
+        capture="process_jet_fire.tsv",
+        block=2,
+        identified_by=("#label", "jet_fire_distance_12500"),
+    ),
+    LayerCase(
+        model="process.jet_fire",
+        case="humidity_half_at_fifty_metres",
+        capture="process_jet_fire.tsv",
+        block=4,
+        identified_by=("#label", "jet_fire_humidity_05"),
+    ),
+    LayerCase(
+        model="process.jet_fire",
+        case="saturated_at_fifty_metres",
+        capture="process_jet_fire.tsv",
+        block=5,
+        identified_by=("#label", "jet_fire_humidity_1"),
+    ),
+    LayerCase(
+        model="process.jet_fire",
+        case="inside_one_metre",
+        capture="process_jet_fire.tsv",
+        block=6,
+        identified_by=("#label", "jet_fire_inside_one_metre"),
+    ),
+    LayerCase(
+        model="process.jet_fire",
+        case="small_target_reaches_the_cap",
+        capture="process_jet_fire.tsv",
+        block=7,
+        identified_by=("#label", "jet_fire_small_target"),
+    ),
+    # The pool fire's six reachable states; the 12.5 kW/m2 target that exceeds the fire's
+    # near-field flux, the 1 MW/m2 target, the zero target and the dead-parameter state are
+    # uncased.
+    LayerCase(
+        model="process.pool_fire",
+        case="test_state_at_the_near_bound",
+        capture="process_pool_fire.tsv",
+        block=0,
+        identified_by=("#label", "pool_fire_test_5m1"),
+    ),
+    LayerCase(
+        model="process.pool_fire",
+        case="test_state_at_ten_metres",
+        capture="process_pool_fire.tsv",
+        block=1,
+        identified_by=("#label", "pool_fire_test_10m"),
+    ),
+    LayerCase(
+        model="process.pool_fire",
+        case="test_state_at_twenty_metres",
+        capture="process_pool_fire.tsv",
+        block=2,
+        identified_by=("#label", "pool_fire_test_20m"),
+    ),
+    LayerCase(
+        model="process.pool_fire",
+        case="test_state_at_fifty_metres",
+        capture="process_pool_fire.tsv",
+        block=3,
+        identified_by=("#label", "pool_fire_test_50m"),
+    ),
+    LayerCase(
+        model="process.pool_fire",
+        case="distance_to_ten_kw",
+        capture="process_pool_fire.tsv",
+        block=5,
+        identified_by=("#label", "pool_fire_distance_10000"),
+    ),
+    LayerCase(
+        model="process.pool_fire",
+        case="zero_distance",
+        capture="process_pool_fire.tsv",
+        block=6,
+        identified_by=("#label", "pool_fire_zero_distance"),
+    ),
+    # The VCE's thirteen reachable states: the test state at two distances, the 5 kPa
+    # contour and all ten plateaus. The 20.7 kPa target that exceeds the class-4 plateau,
+    # the 1 MPa target and the zero target are uncased.
+    LayerCase(
+        model="process.vce",
+        case="test_state_at_twenty_metres",
+        capture="process_vce.tsv",
+        block=0,
+        identified_by=("#label", "vce_test_20m"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="test_state_at_two_hundred_metres",
+        capture="process_vce.tsv",
+        block=1,
+        identified_by=("#label", "vce_test_200m"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="distance_to_five_kpa",
+        capture="process_vce.tsv",
+        block=3,
+        identified_by=("#label", "vce_distance_5000"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_1_plateau",
+        capture="process_vce.tsv",
+        block=4,
+        identified_by=("#label", "vce_class_1"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_2_plateau",
+        capture="process_vce.tsv",
+        block=5,
+        identified_by=("#label", "vce_class_2"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_3_plateau",
+        capture="process_vce.tsv",
+        block=6,
+        identified_by=("#label", "vce_class_3"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_4_plateau",
+        capture="process_vce.tsv",
+        block=7,
+        identified_by=("#label", "vce_class_4"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_5_plateau",
+        capture="process_vce.tsv",
+        block=8,
+        identified_by=("#label", "vce_class_5"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_6_plateau",
+        capture="process_vce.tsv",
+        block=9,
+        identified_by=("#label", "vce_class_6"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_7_plateau",
+        capture="process_vce.tsv",
+        block=10,
+        identified_by=("#label", "vce_class_7"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_8_plateau",
+        capture="process_vce.tsv",
+        block=11,
+        identified_by=("#label", "vce_class_8"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_9_plateau",
+        capture="process_vce.tsv",
+        block=12,
+        identified_by=("#label", "vce_class_9"),
+    ),
+    LayerCase(
+        model="process.vce",
+        case="class_10_plateau",
+        capture="process_vce.tsv",
+        block=13,
+        identified_by=("#label", "vce_class_10"),
+    ),
+    # The BLEVE's five reachable states; the zero-humidity NaN, the unreachable target,
+    # the negative fraction, the infinite zero-distance flux and the zero target are
+    # uncased.
+    LayerCase(
+        model="process.bleve",
+        case="test_state_geometry",
+        capture="process_bleve.tsv",
+        block=0,
+        identified_by=("#label", "bleve_test_geometry"),
+    ),
+    LayerCase(
+        model="process.bleve",
+        case="flux_at_one_hundred_metres",
+        capture="process_bleve.tsv",
+        block=1,
+        identified_by=("#label", "bleve_flux_100m"),
+    ),
+    LayerCase(
+        model="process.bleve",
+        case="humidity_half_at_fifty_metres",
+        capture="process_bleve.tsv",
+        block=2,
+        identified_by=("#label", "bleve_humidity_05_50m"),
+    ),
+    LayerCase(
+        model="process.bleve",
+        case="distance_to_twelve_point_five_kw",
+        capture="process_bleve.tsv",
+        block=4,
+        identified_by=("#label", "bleve_distance_12500"),
+    ),
+    LayerCase(
+        model="process.bleve",
+        case="small_target_contour",
+        capture="process_bleve.tsv",
+        block=5,
+        identified_by=("#label", "bleve_small_target"),
     ),
     # The probit's nine factory and stated-probit rows; the non-positive-dose guard is
     # uncased because the port refuses it.
@@ -3240,6 +3598,18 @@ UNCASED_ROWS: dict[str, int] = {
     # evidence beside the PR oracle, and the zero-rate refusal the port raises rather than
     # reproduces.
     "process_gas_dispersion.tsv": 5,
+    # The jet fire's three: the zero-humidity `NaN`, the infinite zero-distance flux and the
+    # zero-target refusal, each the measurement its guard rests on.
+    "process_jet_fire.tsv": 3,
+    # The pool fire's four: the two unreachable targets the class answers with its near
+    # bound, the zero-target far bound, and the dead-parameter state.
+    "process_pool_fire.tsv": 4,
+    # The VCE's three: two unreachable targets the class answers with its near bound, and
+    # the zero-target refusal.
+    "process_vce.tsv": 3,
+    # The BLEVE's five: the zero-humidity NaN, the unreachable target's near bound, the
+    # negative radiative fraction, the infinite zero-distance flux and the zero target.
+    "process_bleve.tsv": 5,
     # The probit's one: the non-positive-dose guard, whose `-Infinity` is the measurement
     # the refusal rests on.
     "process_probit.tsv": 1,

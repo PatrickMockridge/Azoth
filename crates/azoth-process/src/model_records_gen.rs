@@ -13,6 +13,7 @@ use azoth_core::{CalcResult, Warning};
 
 use crate::models::absorption_column::AbsorptionColumnResult;
 use crate::models::anti_surge_recycle::AntiSurgeRecycleResult;
+use crate::models::bleve::BleveResult;
 use crate::models::component_splitter::ComponentSplitterResult;
 use crate::models::compressor::CompressorResult;
 use crate::models::cooler::CoolerResult;
@@ -28,6 +29,7 @@ use crate::models::gibbs_reactor::GibbsReactorResult;
 use crate::models::heat_exchanger::HeatExchangerResult;
 use crate::models::heater::HeaterResult;
 use crate::models::hem_release::HemReleaseResult;
+use crate::models::jet_fire::JetFireResult;
 use crate::models::leak_blowdown::LeakBlowdownResult;
 use crate::models::manifold::ManifoldResult;
 use crate::models::map_turbo_expander_compressor::MapTurboExpanderResult;
@@ -35,6 +37,7 @@ use crate::models::mixer::MixerResult;
 use crate::models::packed_column::PackedColumnResult;
 use crate::models::pipe::PipeResult;
 use crate::models::plug_flow_reactor::PlugFlowReactorResult;
+use crate::models::pool_fire::PoolFireResult;
 use crate::models::probit::ProbitResult;
 use crate::models::pump::PumpResult;
 use crate::models::rate_based_packed_column::RateBasedPackedColumnResult;
@@ -49,6 +52,7 @@ use crate::models::tank::TankResult;
 use crate::models::three_phase_separator::ThreePhaseSeparatorResult;
 use crate::models::throttling_valve::ThrottlingValveResult;
 use crate::models::turbo_expander_compressor::TurboExpanderResult;
+use crate::models::vce::VceResult;
 
 impl CalcResult for AbsorptionColumnResult {
     const CALC_ID: &'static str = "process.absorption_column";
@@ -109,6 +113,23 @@ impl CalcResult for AntiSurgeRecycleResult {
         "surge_flow",
         "control_flow",
         "distance_to_surge",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for BleveResult {
+    const CALC_ID: &'static str = "process.bleve";
+    const FIELDS: &'static [&'static str] = &[
+        "fireball_diameter",
+        "fireball_duration",
+        "surface_emissive_power",
+        "transmissivity",
+        "incident_heat_flux",
+        "distance_to_flux",
         "warnings",
     ];
 
@@ -764,6 +785,21 @@ impl CalcResult for HemReleaseResult {
     }
 }
 
+impl CalcResult for JetFireResult {
+    const CALC_ID: &'static str = "process.jet_fire";
+    const FIELDS: &'static [&'static str] = &[
+        "total_radiative_power",
+        "transmissivity",
+        "incident_heat_flux",
+        "distance_to_flux",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 impl CalcResult for LeakBlowdownResult {
     const CALC_ID: &'static str = "process.leak_blowdown";
     const FIELDS: &'static [&'static str] = &[
@@ -939,6 +975,23 @@ impl CalcResult for PlugFlowReactorResult {
         "reaction_rate_profile",
         "molar_flow_profile",
         "residence_time",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for PoolFireResult {
+    const CALC_ID: &'static str = "process.pool_fire";
+    const FIELDS: &'static [&'static str] = &[
+        "total_burn_rate",
+        "flame_height",
+        "surface_emissive_power",
+        "view_factor",
+        "incident_heat_flux",
+        "distance_to_flux",
         "warnings",
     ];
 
@@ -1493,6 +1546,22 @@ impl CalcResult for TurboExpanderResult {
         "design_module_length",
         "design_module_width",
         "design_module_height",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for VceResult {
+    const CALC_ID: &'static str = "process.vce";
+    const FIELDS: &'static [&'static str] = &[
+        "combustion_energy",
+        "scaled_distance",
+        "dimensionless_overpressure",
+        "overpressure",
+        "distance_to_overpressure",
         "warnings",
     ];
 

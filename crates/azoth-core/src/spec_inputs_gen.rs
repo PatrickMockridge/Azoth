@@ -224,6 +224,7 @@
 //!   - specs/calcs/hydraulics/tray_hydraulics.toml
 //!   - specs/models/process/absorption_column.toml
 //!   - specs/models/process/anti_surge_recycle.toml
+//!   - specs/models/process/bleve.toml
 //!   - specs/models/process/component_splitter.toml
 //!   - specs/models/process/compressor.toml
 //!   - specs/models/process/cooler.toml
@@ -239,6 +240,7 @@
 //!   - specs/models/process/heat_exchanger.toml
 //!   - specs/models/process/heater.toml
 //!   - specs/models/process/hem_release.toml
+//!   - specs/models/process/jet_fire.toml
 //!   - specs/models/process/leak_blowdown.toml
 //!   - specs/models/process/manifold.toml
 //!   - specs/models/process/map_turbo_expander_compressor.toml
@@ -246,6 +248,7 @@
 //!   - specs/models/process/packed_column.toml
 //!   - specs/models/process/pipe.toml
 //!   - specs/models/process/plug_flow_reactor.toml
+//!   - specs/models/process/pool_fire.toml
 //!   - specs/models/process/probit.toml
 //!   - specs/models/process/pump.toml
 //!   - specs/models/process/rate_based_packed_column.toml
@@ -260,6 +263,7 @@
 //!   - specs/models/process/three_phase_separator.toml
 //!   - specs/models/process/throttling_valve.toml
 //!   - specs/models/process/turbo_expander_compressor.toml
+//!   - specs/models/process/vce.toml
 //!   - specs/models/reactions/chemical_equilibrium.toml
 //!   - specs/calcs/reactions/equilibrium_constant.toml
 //!   - specs/models/reactions/kinetic_rate_law.toml
@@ -2690,6 +2694,12 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "max_iterations",
         "dimensionless",
     ),
+    ("process.bleve", "fuel_mass", "mass"),
+    ("process.bleve", "heat_of_combustion", "dimensionless"),
+    ("process.bleve", "radiative_fraction", "dimensionless"),
+    ("process.bleve", "relative_humidity", "dimensionless"),
+    ("process.bleve", "distance", "length"),
+    ("process.bleve", "target_flux", "heat_flux_density"),
     ("process.component_splitter", "feed_n", "molar_flow"),
     ("process.component_splitter", "feed_z", "dimensionless"),
     ("process.component_splitter", "feed_p", "pressure"),
@@ -3416,6 +3426,12 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "dimensionless",
     ),
     ("process.hem_release", "back_pressure", "pressure"),
+    ("process.jet_fire", "mass_flow", "mass_rate"),
+    ("process.jet_fire", "heat_of_combustion", "dimensionless"),
+    ("process.jet_fire", "radiative_fraction", "dimensionless"),
+    ("process.jet_fire", "relative_humidity", "dimensionless"),
+    ("process.jet_fire", "distance", "length"),
+    ("process.jet_fire", "target_flux", "heat_flux_density"),
     ("process.leak_blowdown", "initial_z", "dimensionless"),
     (
         "process.leak_blowdown",
@@ -3772,6 +3788,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "catalyst_molecular_diffusivity",
         "diffusion_coefficient",
     ),
+    ("process.pool_fire", "pool_diameter", "length"),
+    ("process.pool_fire", "burn_rate", "mass_flux"),
+    ("process.pool_fire", "air_density", "mass_density"),
+    ("process.pool_fire", "distance", "length"),
+    ("process.pool_fire", "target_flux", "heat_flux_density"),
     ("process.probit", "a", "dimensionless"),
     ("process.probit", "b", "dimensionless"),
     ("process.probit", "n", "dimensionless"),
@@ -4539,6 +4560,12 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "expander_out_temperature",
         "thermodynamic_temperature",
     ),
+    ("process.vce", "cloud_fuel_mass", "mass"),
+    ("process.vce", "heat_of_combustion", "dimensionless"),
+    ("process.vce", "strength_class", "dimensionless"),
+    ("process.vce", "ambient_pressure", "pressure"),
+    ("process.vce", "distance", "length"),
+    ("process.vce", "target_overpressure", "pressure"),
     (
         "reactions.chemical_equilibrium",
         "a_matrix",

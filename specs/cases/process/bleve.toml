@@ -1,0 +1,72 @@
+model = "process.bleve"
+[[cases]]
+id = "test_state_geometry"
+tolerance = 1.0e-9
+source = "`FireModelsTest.bleveDiameterAndDurationFromCorrelation`'s state, 1000 kg at 46 MJ/kg and a 0.30 radiative fraction. From `validation/neqsim/captures/process_bleve.tsv` (`bleve_test_geometry`)."
+[cases.inputs]
+fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+radiative_fraction = 0.3
+[cases.expected]
+fireball_diameter = 58.0
+fireball_duration = 4.5
+surface_emissive_power = 290175.4808651283
+[[cases]]
+id = "flux_at_one_hundred_metres"
+tolerance = 1.0e-9
+source = "The same state read at 100 m with the default humidity. From (`bleve_flux_100m`)."
+[cases.inputs]
+fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+radiative_fraction = 0.3
+distance = 100.0
+[cases.expected]
+fireball_diameter = 58.0
+fireball_duration = 4.5
+surface_emissive_power = 290175.4808651283
+transmissivity = 0.3728721363977805
+incident_heat_flux = 9099.48135950447
+[[cases]]
+id = "humidity_half_at_fifty_metres"
+tolerance = 1.0e-9
+source = "The shared transmissivity at 50 m and half humidity, the jet fire's own value. From (`bleve_humidity_05_50m`)."
+[cases.inputs]
+fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+radiative_fraction = 0.3
+relative_humidity = 0.5
+distance = 50.0
+[cases.expected]
+fireball_diameter = 58.0
+fireball_duration = 4.5
+surface_emissive_power = 290175.4808651283
+transmissivity = 0.4445289824297164
+incident_heat_flux = 43392.71073946379
+[[cases]]
+id = "distance_to_twelve_point_five_kw"
+tolerance = 1.0e-9
+source = "A 12.5 kW/m2 target, reachable for the fireball, whose contour is the class's bisection. From (`bleve_distance_12500`)."
+[cases.inputs]
+fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+radiative_fraction = 0.3
+target_flux = 12500.0
+[cases.expected]
+fireball_diameter = 58.0
+fireball_duration = 4.5
+surface_emissive_power = 290175.4808651283
+distance_to_flux = 86.9917978858796
+[[cases]]
+id = "small_target_contour"
+tolerance = 1.0e-9
+source = "A 10 W/m2 target, far out. From (`bleve_small_target`)."
+[cases.inputs]
+fuel_mass = 1000.0
+heat_of_combustion = 46000000.0
+radiative_fraction = 0.3
+target_flux = 10.0
+[cases.expected]
+fireball_diameter = 58.0
+fireball_duration = 4.5
+surface_emissive_power = 290175.4808651283
+distance_to_flux = 1305.5034136141694

@@ -1901,3 +1901,72 @@ on the five factory triples and the class's two monotonic test pairs.
 **The `zero_dose_evidence` row prints `-Infinity`**: `probit(0)` is the class's guard, and
 `probability` of it is `0.0`. Neither is a published number; the row is the measurement the
 refusal rests on.
+
+## The jet fire
+
+`process_jet_fire.tsv` is `JetFireModel`'s radiative power, Wayne transmissivity, incident
+heat flux and distance-to-flux on its own test state, the humidity range, a sub-metre
+distance and a small target.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe jet_fire \
+  > captures/process_jet_fire.tsv
+```
+
+**`relative_humidity=0.0` answers `NaN`**: the correlation's `log10(rh * 1700 * d)` has no
+finite value at zero, and the class's clamp admits the value. The row is printed as the
+class answers it. The `zero_distance` row prints `Infinity`, and the `zero_target` row the
+class's `IllegalArgumentException`.
+
+## The pool fire
+
+`process_pool_fire.tsv` is `PoolFireModel`'s burn rate, Thomas flame height, Mudan SEP,
+view factor, incident flux and distance-to-flux on its own test state, plus the
+unreachable-target and dead-parameter states.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe pool_fire \
+  > captures/process_pool_fire.tsv
+```
+
+**The arithmetic reads only the pool diameter and the burn rate.** The constructor's heat
+of combustion, liquid density and radiative fraction are stored and never used, and
+`pool_fire_dead_parameters` is the same geometry with all three changed and identical
+results. **`distanceToFlux` returns its near bound when the target is above the near-field
+flux**: a 10 m pool tops out near 12.6 kW/m2, so the 12.5 kW/m2 row answers 5.1 m with an
+11.7 kW/m2 flux, and the 1 MW/m2 row answers the same 5.1 m. A zero target answers the
+search's far bound, 1000 m.
+
+## The vapour-cloud explosion
+
+`process_vce.tsv` is `VCEModel`'s combustion energy, scaled distance, dimensionless
+overpressure, side-on overpressure and distance-to-overpressure on its own test state, all
+ten strength classes at one distance, and the unreachable-target state.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe vce \
+  > captures/process_vce.tsv
+```
+
+**The overpressure curve is a power-law fit to TNO Fig. 4.10, not the figure's curves**: a
+plateau per strength class, then `plateau * Rbar^-beta`. **`distanceToOverpressure` returns
+its near bound, 0.1 m, when the target is above the plateau**: a class-4 cloud answers
+20.7 kPa with 0.1 m and a 10.1 kPa overpressure. The zero-target row is the class's
+`IllegalArgumentException`.
+
+## The BLEVE fireball
+
+`process_bleve.tsv` is `BLEVECalculator`'s diameter, duration, SEP, transmissivity,
+incident flux and distance-to-flux on its own test state, a small target, the unreachable
+target, and a negative radiative fraction.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe bleve \
+  > captures/process_bleve.tsv
+```
+
+**The transmissivity is `JetFireModel`'s**, and `bleve_humidity_05_50m` agrees with
+`jet_fire_humidity_05`'s 50 m value digit for digit. **The constructor does not validate
+the radiative fraction**: `bleve_negative_fraction` answers a negative SEP, a negative
+flux and the near bound as a distance. The zero-distance row prints `Infinity`; the
+zero-target row answers the end of the bisection's numerical range.

@@ -14086,6 +14086,82 @@ impl From<&azoth_process::models::anti_surge_recycle::AntiSurgeRecycleResult>
         }
     }
 }
+/// Result of `process.bleve`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "BleveResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyBleveResult {
+    /// `5.8 M^(1/3)`, the fireball's diameter.
+    #[pyo3(get)]
+    pub fireball_diameter: PyQty,
+    /// `0.45 M^(1/3)`, the fireball's lifetime.
+    #[pyo3(get)]
+    pub fireball_duration: PyQty,
+    /// `eta M dHc / (pi D^2 t)`, the surface emissive power.
+    #[pyo3(get)]
+    pub surface_emissive_power: PyQty,
+    /// Wayne's `tau` at `distance`. Present only with `distance`.
+    #[pyo3(get)]
+    pub transmissivity: Option<f64>,
+    /// `SEP` times the capped point-source view factor and `tau`. Present only with `distance`.
+    #[pyo3(get)]
+    pub incident_heat_flux: Option<PyQty>,
+    /// the distance at which the flux falls to the target. **Absent when the flux at `D/2 + 0.1` is already below the target**, where the class answers that near bound.
+    #[pyo3(get)]
+    pub distance_to_flux: Option<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyBleveResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "BleveResult(fireball_diameter={:?}, fireball_duration={:?}, surface_emissive_power={:?}, transmissivity={:?}, incident_heat_flux={:?}, distance_to_flux={:?}, {} warning(s))",
+            self.fireball_diameter,
+            self.fireball_duration,
+            self.surface_emissive_power,
+            self.transmissivity,
+            self.incident_heat_flux,
+            self.distance_to_flux,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::bleve::BleveResult> for PyBleveResult {
+    fn from(r: &azoth_process::models::bleve::BleveResult) -> Self {
+        Self {
+            fireball_diameter: PyQty {
+                magnitude_si: r.fireball_diameter.value,
+                unit: "m".to_string(),
+            },
+            fireball_duration: PyQty {
+                magnitude_si: r.fireball_duration.value,
+                unit: "s".to_string(),
+            },
+            surface_emissive_power: PyQty {
+                magnitude_si: r.surface_emissive_power.value,
+                unit: "W/m**2".to_string(),
+            },
+            transmissivity: r.transmissivity,
+            incident_heat_flux: r.incident_heat_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/m**2".to_string(),
+            }),
+            distance_to_flux: r.distance_to_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.component_splitter`, transported.
 #[pyclass(
     frozen,
@@ -17917,6 +17993,66 @@ impl From<&azoth_process::models::hem_release::HemReleaseResult> for PyHemReleas
         }
     }
 }
+/// Result of `process.jet_fire`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "JetFireResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyJetFireResult {
+    /// `eta m_dot dHc`, the total heat the jet radiates.
+    #[pyo3(get)]
+    pub total_radiative_power: PyQty,
+    /// Wayne's `tau` at `distance`. Present only with `distance`.
+    #[pyo3(get)]
+    pub transmissivity: Option<f64>,
+    /// `Q tau / (4 pi d^2)` at `distance`. Present only with `distance`.
+    #[pyo3(get)]
+    pub incident_heat_flux: Option<PyQty>,
+    /// the fixed point of `Q tau(r) / (4 pi r^2) = target`, at the class's 25-iteration cap. Present only with `target_flux`.
+    #[pyo3(get)]
+    pub distance_to_flux: Option<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyJetFireResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "JetFireResult(total_radiative_power={:?}, transmissivity={:?}, incident_heat_flux={:?}, distance_to_flux={:?}, {} warning(s))",
+            self.total_radiative_power,
+            self.transmissivity,
+            self.incident_heat_flux,
+            self.distance_to_flux,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::jet_fire::JetFireResult> for PyJetFireResult {
+    fn from(r: &azoth_process::models::jet_fire::JetFireResult) -> Self {
+        Self {
+            total_radiative_power: PyQty {
+                magnitude_si: r.total_radiative_power.value,
+                unit: "W".to_string(),
+            },
+            transmissivity: r.transmissivity,
+            incident_heat_flux: r.incident_heat_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/m**2".to_string(),
+            }),
+            distance_to_flux: r.distance_to_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.leak_blowdown`, transported.
 #[pyclass(
     frozen,
@@ -18957,6 +19093,82 @@ impl From<&azoth_process::models::plug_flow_reactor::PlugFlowReactorResult>
                 magnitude_si: r.residence_time.value,
                 unit: "s".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `process.pool_fire`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PoolFireResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPoolFireResult {
+    /// `m'' pi D^2 / 4`, the mass the pool burns per second.
+    #[pyo3(get)]
+    pub total_burn_rate: PyQty,
+    /// Thomas's flame height above the pool.
+    #[pyo3(get)]
+    pub flame_height: PyQty,
+    /// Mudan's smoke-corrected SEP, a function of the diameter alone.
+    #[pyo3(get)]
+    pub surface_emissive_power: PyQty,
+    /// Mudan's vertical-cylinder view factor at `distance`. Present only with `distance`.
+    #[pyo3(get)]
+    pub view_factor: Option<f64>,
+    /// `SEP` times the view factor at `distance`. Present only with `distance`.
+    #[pyo3(get)]
+    pub incident_heat_flux: Option<PyQty>,
+    /// the distance at which the flux falls to `target_flux`. **Absent when the flux at `R + 0.1` is already below the target**, where the class answers that near bound.
+    #[pyo3(get)]
+    pub distance_to_flux: Option<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPoolFireResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PoolFireResult(total_burn_rate={:?}, flame_height={:?}, surface_emissive_power={:?}, view_factor={:?}, incident_heat_flux={:?}, distance_to_flux={:?}, {} warning(s))",
+            self.total_burn_rate,
+            self.flame_height,
+            self.surface_emissive_power,
+            self.view_factor,
+            self.incident_heat_flux,
+            self.distance_to_flux,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::pool_fire::PoolFireResult> for PyPoolFireResult {
+    fn from(r: &azoth_process::models::pool_fire::PoolFireResult) -> Self {
+        Self {
+            total_burn_rate: PyQty {
+                magnitude_si: r.total_burn_rate.value,
+                unit: "kg/s".to_string(),
+            },
+            flame_height: PyQty {
+                magnitude_si: r.flame_height.value,
+                unit: "m".to_string(),
+            },
+            surface_emissive_power: PyQty {
+                magnitude_si: r.surface_emissive_power.value,
+                unit: "W/m**2".to_string(),
+            },
+            view_factor: r.view_factor,
+            incident_heat_flux: r.incident_heat_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/m**2".to_string(),
+            }),
+            distance_to_flux: r.distance_to_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
             warnings: transport(&r.warnings),
         }
     }
@@ -22457,6 +22669,71 @@ impl From<&azoth_process::models::turbo_expander_compressor::TurboExpanderResult
                 unit: "m".to_string(),
             }),
             design_module_height: r.design_module_height.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `process.vce`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "VceResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyVceResult {
+    /// `m dHc`, the cloud's combustion energy.
+    #[pyo3(get)]
+    pub combustion_energy: PyQty,
+    /// `d / cbrt(E / p0)`, the Sachs-scaled distance. Present only with `distance`.
+    #[pyo3(get)]
+    pub scaled_distance: Option<f64>,
+    /// the class's plateau or power-law value at `distance`. Present only with `distance`.
+    #[pyo3(get)]
+    pub dimensionless_overpressure: Option<f64>,
+    /// the dimensionless overpressure times `p0`. Present only with `distance`.
+    #[pyo3(get)]
+    pub overpressure: Option<PyQty>,
+    /// the distance at which the overpressure falls to the target. **Absent when the overpressure at 0.1 m is already below the target**, where the class answers that near bound.
+    #[pyo3(get)]
+    pub distance_to_overpressure: Option<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyVceResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "VceResult(combustion_energy={:?}, scaled_distance={:?}, dimensionless_overpressure={:?}, overpressure={:?}, distance_to_overpressure={:?}, {} warning(s))",
+            self.combustion_energy,
+            self.scaled_distance,
+            self.dimensionless_overpressure,
+            self.overpressure,
+            self.distance_to_overpressure,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::vce::VceResult> for PyVceResult {
+    fn from(r: &azoth_process::models::vce::VceResult) -> Self {
+        Self {
+            combustion_energy: PyQty {
+                magnitude_si: r.combustion_energy.value,
+                unit: "J".to_string(),
+            },
+            scaled_distance: r.scaled_distance,
+            dimensionless_overpressure: r.dimensionless_overpressure,
+            overpressure: r.overpressure.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "Pa".to_string(),
+            }),
+            distance_to_overpressure: r.distance_to_overpressure.map(|v| PyQty {
                 magnitude_si: v.value,
                 unit: "m".to_string(),
             }),

@@ -15,6 +15,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 |---|---|---|
 | [`process.absorption_column`](./absorption_column.md) | `direct composition` | NeqSim process/equipment/absorber/AbsorptionColumn.java |
 | [`process.anti_surge_recycle`](./anti_surge_recycle.md) | `damped_fixed_point_recycle` | NeqSim process/equipment/compressor/AntiSurgeRecycleCalculator.java |
+| [`process.bleve`](./bleve.md) | `ccps_fireball_point_source` | NeqSim process/safety/fire/BLEVECalculator.java |
 | [`process.component_splitter`](./component_splitter.md) | `direct composition` | NeqSim process/equipment/splitter/ComponentSplitter.java |
 | [`process.compressor`](./compressor.md) | `direct composition` | NeqSim process/equipment/compressor/Compressor.java |
 | [`process.cooler`](./cooler.md) | `direct composition` | NeqSim process/equipment/heatexchanger/Cooler.java |
@@ -30,6 +31,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`process.heat_exchanger`](./heat_exchanger.md) | `direct composition` | NeqSim process/equipment/heatexchanger/HeatExchanger.java |
 | [`process.heater`](./heater.md) | `direct composition` | NeqSim process/equipment/heatexchanger/Heater.java |
 | [`process.hem_release`](./hem_release.md) | `log_pressure_scan_golden_section` | NeqSim process/safety/release/HomogeneousEquilibriumReleaseModel.java |
+| [`process.jet_fire`](./jet_fire.md) | `api521_point_source_wayne_transmissivity` | NeqSim process/safety/fire/JetFireModel.java |
 | [`process.leak_blowdown`](./leak_blowdown.md) | `explicit_euler_isentropic_blowdown` | NeqSim process/safety/release/LeakModel.java |
 | [`process.manifold`](./manifold.md) | `direct composition` | NeqSim process/equipment/manifold/Manifold.java |
 | [`process.map_turbo_expander_compressor`](./map_turbo_expander_compressor.md) | `direct composition` | NeqSim process/equipment/expander/MapTurboExpanderCompressor.java |
@@ -37,6 +39,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`process.packed_column`](./packed_column.md) | `sequential_substitution_sweeps` | NeqSim process/equipment/distillation/PackedColumn.java |
 | [`process.pipe`](./pipe.md) | `direct composition` | NeqSim process/equipment/pipeline/AdiabaticPipe.java |
 | [`process.plug_flow_reactor`](./plug_flow_reactor.md) | `direct composition` | NeqSim process/equipment/reactor/PlugFlowReactor.java |
+| [`process.pool_fire`](./pool_fire.md) | `api521_mudan_pool_fire` | NeqSim process/safety/fire/PoolFireModel.java |
 | [`process.probit`](./probit.md) | `closed_form_probit` | NeqSim process/safety/dispersion/ProbitModel.java |
 | [`process.pump`](./pump.md) | `direct composition` | NeqSim process/equipment/pump/Pump.java and process/equipment/pump/PumpChart.java |
 | [`process.rate_based_packed_column`](./rate_based_packed_column.md) | `counter_current_fixed_point_profile` | NeqSim process/equipment/distillation/RateBasedPackedColumn.java |
@@ -51,3 +54,4 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`process.three_phase_separator`](./three_phase_separator.md) | `direct composition` | NeqSim process/equipment/separator/ThreePhaseSeparator.java |
 | [`process.throttling_valve`](./throttling_valve.md) | `direct composition` | NeqSim process/equipment/valve/ThrottlingValve.java |
 | [`process.turbo_expander_compressor`](./turbo_expander_compressor.md) | `direct composition` | NeqSim process/equipment/expander/TurboExpanderCompressor.java |
+| [`process.vce`](./vce.md) | `tno_multi_energy_scaled_overpressure` | NeqSim process/safety/fire/VCEModel.java |

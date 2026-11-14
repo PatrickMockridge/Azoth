@@ -53,21 +53,23 @@ pub use recycle::{Acceleration, RecycleSettings, Residuals};
 // connection carries, while a model takes the record field by field so that a case, a
 // cross-impl test and a NeqSim capture can address it.
 pub use models::{
-    AbsorptionColumnResult, AntiSurgeRecycleResult, ComponentSplitterResult, CompressorResult,
-    CoolerResult, DistillationColumnResult, EjectorResult, ExpanderResult, FilterResult,
-    FlareResult, GasDispersionResult, GasScrubberResult, GaussianPlumeResult, GibbsReactorResult,
-    HeatExchangerResult, HeaterResult, HemReleaseResult, LeakBlowdownResult, ManifoldResult,
-    MapTurboExpanderResult, MixerResult, PackedColumnResult, PipeResult, PlugFlowReactorResult,
-    ProbitResult, PumpResult, RateBasedPackedColumnResult, SeparatorPerformanceResult,
-    SeparatorResult, ShortcutDistillationColumnResult, SplitterResult, StirredTankReactorResult,
+    AbsorptionColumnResult, AntiSurgeRecycleResult, BleveResult, ComponentSplitterResult,
+    CompressorResult, CoolerResult, DistillationColumnResult, EjectorResult, ExpanderResult,
+    FilterResult, FlareResult, GasDispersionResult, GasScrubberResult, GaussianPlumeResult,
+    GibbsReactorResult, HeatExchangerResult, HeaterResult, HemReleaseResult, JetFireResult,
+    LeakBlowdownResult, ManifoldResult, MapTurboExpanderResult, MixerResult, PackedColumnResult,
+    PipeResult, PlugFlowReactorResult, PoolFireResult, ProbitResult, PumpResult,
+    RateBasedPackedColumnResult, SeparatorPerformanceResult, SeparatorResult,
+    ShortcutDistillationColumnResult, SplitterResult, StirredTankReactorResult,
     StrippingColumnResult, TankResult, ThreePhaseSeparatorResult, ThrottlingValveResult,
-    TurboExpanderResult, absorption_column, anti_surge_recycle, component_splitter, compressor,
-    cooler, distillation_column, ejector, expander, filter, flare, gas_dispersion, gas_scrubber,
-    gaussian_plume, gibbs_reactor, heat_exchanger, heater, hem_release, leak_blowdown, manifold,
-    map_turbo_expander_compressor, mixer, packed_column, pipe, plug_flow_reactor, probit, pump,
-    rate_based_packed_column, separator, separator_capacity_assessment, separator_performance,
-    shortcut_distillation_column, splitter, stirred_tank_reactor, stripping_column, tank,
-    three_phase_separator, throttling_valve, turbo_expander_compressor,
+    TurboExpanderResult, VceResult, absorption_column, anti_surge_recycle, bleve,
+    component_splitter, compressor, cooler, distillation_column, ejector, expander, filter, flare,
+    gas_dispersion, gas_scrubber, gaussian_plume, gibbs_reactor, heat_exchanger, heater,
+    hem_release, jet_fire, leak_blowdown, manifold, map_turbo_expander_compressor, mixer,
+    packed_column, pipe, plug_flow_reactor, pool_fire, probit, pump, rate_based_packed_column,
+    separator, separator_capacity_assessment, separator_performance, shortcut_distillation_column,
+    splitter, stirred_tank_reactor, stripping_column, tank, three_phase_separator,
+    throttling_valve, turbo_expander_compressor, vce,
 };
 pub use stream::Stream;
 pub use unit_op::{Param, Source, UnitOpSpec};

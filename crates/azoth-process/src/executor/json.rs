@@ -23,8 +23,8 @@
 //! take the whole envelope with it, which is the failure `run_error` exists to prevent.
 
 use azoth_core::units::{
-    Area, DiffusionCoefficient, DynamicViscosity, Force, HeatFluxDensity, HeatTransfer, Length,
-    Mass, MassDensity, MassFlux, MassRate, MolarEnergy, MolarHeatCapacity, Power, Pressure,
+    Area, DiffusionCoefficient, DynamicViscosity, Energy, Force, HeatFluxDensity, HeatTransfer,
+    Length, Mass, MassDensity, MassFlux, MassRate, MolarEnergy, MolarHeatCapacity, Power, Pressure,
     ThermalConductance, ThermodynamicTemperature, Time, Velocity, Volume, VolumeRate,
 };
 use azoth_core::{AzothError, Result, Warning};
@@ -94,6 +94,13 @@ impl WireScalar for ThermodynamicTemperature {
 
 impl WireScalar for MolarEnergy {
     const UNIT: &'static str = "J/mol";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for Energy {
+    const UNIT: &'static str = "J";
     fn magnitude(&self) -> f64 {
         self.value
     }

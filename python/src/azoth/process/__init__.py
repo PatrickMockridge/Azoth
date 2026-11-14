@@ -21,6 +21,7 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     AbsorptionColumnResult,
     AntiSurgeRecycleResult,
+    BleveResult,
     ComponentSplitterResult,
     CompressorResult,
     CoolerResult,
@@ -36,6 +37,7 @@ from azoth.core.result import (
     HeaterResult,
     HeatExchangerResult,
     HemReleaseResult,
+    JetFireResult,
     LeakBlowdownResult,
     ManifoldResult,
     MapTurboExpanderResult,
@@ -43,6 +45,7 @@ from azoth.core.result import (
     PackedColumnResult,
     PipeResult,
     PlugFlowReactorResult,
+    PoolFireResult,
     ProbitResult,
     PumpResult,
     RateBasedPackedColumnResult,
@@ -57,6 +60,7 @@ from azoth.core.result import (
     ThreePhaseSeparatorResult,
     ThrottlingValveResult,
     TurboExpanderResult,
+    VceResult,
 )
 from azoth.core.units import Q
 from azoth.process.flowsheet import (
@@ -81,6 +85,7 @@ __all__ = [
     "TearResult",
     "absorption_column",
     "anti_surge_recycle",
+    "bleve",
     "catalogue",
     "component_splitter",
     "compressor",
@@ -98,6 +103,7 @@ __all__ = [
     "heat_exchanger",
     "heater",
     "hem_release",
+    "jet_fire",
     "leak_blowdown",
     "load_flowsheet",
     "manifold",
@@ -106,6 +112,7 @@ __all__ = [
     "packed_column",
     "pipe",
     "plug_flow_reactor",
+    "pool_fire",
     "probit",
     "pump",
     "rate_based_packed_column",
@@ -121,6 +128,7 @@ __all__ = [
     "throttling_valve",
     "tools",
     "validate",
+    "vce",
 ]
 
 _MANIFOLD = "process.manifold"
@@ -140,10 +148,12 @@ _EJECTOR = "process.ejector"
 _EXPANDER = "process.expander"
 _TURBO_EXPANDER_COMPRESSOR = "process.turbo_expander_compressor"
 _MAP_TURBO_EXPANDER_COMPRESSOR = "process.map_turbo_expander_compressor"
+_VCE = "process.vce"
 _FILTER = "process.filter"
 _FLARE = "process.flare"
 _HEATER = "process.heater"
 _HEM_RELEASE = "process.hem_release"
+_JET_FIRE = "process.jet_fire"
 _LEAK_BLOWDOWN = "process.leak_blowdown"
 _GAS_DISPERSION = "process.gas_dispersion"
 _GAUSSIAN_PLUME = "process.gaussian_plume"
@@ -155,12 +165,14 @@ _SHORTCUT_DISTILLATION_COLUMN = "process.shortcut_distillation_column"
 _THROTTLING_VALVE = "process.throttling_valve"
 _GIBBS_REACTOR = "process.gibbs_reactor"
 _PLUG_FLOW_REACTOR = "process.plug_flow_reactor"
+_POOL_FIRE = "process.pool_fire"
 _PUMP = "process.pump"
 _SPLITTER = "process.splitter"
 _STIRRED_TANK_REACTOR = "process.stirred_tank_reactor"
 _TANK = "process.tank"
 _THREE_PHASE_SEPARATOR = "process.three_phase_separator"
 _ANTI_SURGE_RECYCLE = "process.anti_surge_recycle"
+_BLEVE = "process.bleve"
 
 
 def validate(flowsheet: str, palette_dir: str = "specs/unit_ops") -> list[str]:
@@ -961,6 +973,30 @@ def plug_flow_reactor(
     )
 
 
+def pool_fire(
+    pool_diameter: Q,
+    burn_rate: Q,
+    air_density: float | None = None,
+    distance: Q | None = None,
+    target_flux: Q | None = None,
+) -> PoolFireResult:
+    """The pool-fire radiation at one distance, or the distance to a target flux.
+
+    Thomas's flame height, Mudan's smoke-corrected SEP and vertical-cylinder view factor.
+    **A target the fire cannot produce is absent**: the class answers its near bound,
+    ``R + 0.1``, where the flux is already below the target.
+
+    See :func:`azoth.process.reference.pool_fire`.
+    """
+    return resolve(_POOL_FIRE)(  # type: ignore[no-any-return]
+        pool_diameter=pool_diameter,
+        burn_rate=burn_rate,
+        air_density=air_density,
+        distance=distance,
+        target_flux=target_flux,
+    )
+
+
 def filter(
     components: list[str],
     inlet_n: Q,
@@ -1133,6 +1169,32 @@ def anti_surge_recycle(
         damping=damping,
         tolerance=tolerance,
         max_iterations=max_iterations,
+    )
+
+
+def bleve(
+    fuel_mass: Q,
+    heat_of_combustion: float,
+    radiative_fraction: float,
+    relative_humidity: float | None = None,
+    distance: Q | None = None,
+    target_flux: Q | None = None,
+) -> BleveResult:
+    """The fireball radiation at one distance, or the distance to a target flux.
+
+    The CCPS/TNO fireball's diameter, duration and surface emissive power, the capped
+    point-source view factor and the jet fire's shared transmissivity. **A target above
+    the near-field flux is absent**: the class answers ``D/2 + 0.1``.
+
+    See :func:`azoth.process.reference.bleve`.
+    """
+    return resolve(_BLEVE)(  # type: ignore[no-any-return]
+        fuel_mass=fuel_mass,
+        heat_of_combustion=heat_of_combustion,
+        radiative_fraction=radiative_fraction,
+        relative_humidity=relative_humidity,
+        distance=distance,
+        target_flux=target_flux,
     )
 
 
@@ -2106,6 +2168,33 @@ def hem_release(
     )
 
 
+def jet_fire(
+    mass_flow: Q,
+    heat_of_combustion: float,
+    radiative_fraction: float,
+    relative_humidity: float | None = None,
+    distance: Q | None = None,
+    target_flux: Q | None = None,
+) -> JetFireResult:
+    """The point-source jet-fire radiation at one distance, or the distance to a target flux.
+
+    ``Q = eta m_dot dHc`` and the incident flux ``Q tau / (4 pi d^2)`` over Wayne's
+    transmissivity. **A non-positive distance, target or humidity is refused**: the class
+    answers ``Infinity`` at zero distance, throws on a zero target, and answers ``NaN`` at
+    zero humidity.
+
+    See :func:`azoth.process.reference.jet_fire`.
+    """
+    return resolve(_JET_FIRE)(  # type: ignore[no-any-return]
+        mass_flow=mass_flow,
+        heat_of_combustion=heat_of_combustion,
+        radiative_fraction=radiative_fraction,
+        relative_humidity=relative_humidity,
+        distance=distance,
+        target_flux=target_flux,
+    )
+
+
 def leak_blowdown(
     components: list[str],
     initial_z: list[float],
@@ -2941,4 +3030,30 @@ def gibbs_reactor(
         regularization=regularization,
         regularization_threshold=regularization_threshold,
         regularization_tau=regularization_tau,
+    )
+
+
+def vce(
+    cloud_fuel_mass: Q,
+    heat_of_combustion: float,
+    strength_class: float,
+    ambient_pressure: Q | None = None,
+    distance: Q | None = None,
+    target_overpressure: Q | None = None,
+) -> VceResult:
+    """The TNO Multi-Energy overpressure at one distance, or its inverse.
+
+    The Sachs-scaled distance, the strength-class plateau and the class's power-law fit.
+    **A target above the near-field overpressure is absent**: the class answers 0.1 m with
+    a lower overpressure.
+
+    See :func:`azoth.process.reference.vce`.
+    """
+    return resolve(_VCE)(  # type: ignore[no-any-return]
+        cloud_fuel_mass=cloud_fuel_mass,
+        heat_of_combustion=heat_of_combustion,
+        strength_class=strength_class,
+        ambient_pressure=ambient_pressure,
+        distance=distance,
+        target_overpressure=target_overpressure,
     )

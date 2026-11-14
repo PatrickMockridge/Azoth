@@ -2816,6 +2816,16 @@ class AntiSurgeRecycleResult:
     warnings: list[Warning]
 
 @final
+class BleveResult:
+    fireball_diameter: Qty
+    fireball_duration: Qty
+    surface_emissive_power: Qty
+    transmissivity: float | None
+    incident_heat_flux: Qty | None
+    distance_to_flux: Qty | None
+    warnings: list[Warning]
+
+@final
 class ComponentSplitterResult:
     overhead_n: Qty
     overhead_z: list[float]
@@ -3358,6 +3368,14 @@ class HemReleaseResult:
     warnings: list[Warning]
 
 @final
+class JetFireResult:
+    total_radiative_power: Qty
+    transmissivity: float | None
+    incident_heat_flux: Qty | None
+    distance_to_flux: Qty | None
+    warnings: list[Warning]
+
+@final
 class LeakBlowdownResult:
     status: str
     scenario_name: str
@@ -3489,6 +3507,16 @@ class PlugFlowReactorResult:
     reaction_rate_profile: list[Qty]
     molar_flow_profile: list[list[Qty]]
     residence_time: Qty
+    warnings: list[Warning]
+
+@final
+class PoolFireResult:
+    total_burn_rate: Qty
+    flame_height: Qty
+    surface_emissive_power: Qty
+    view_factor: float | None
+    incident_heat_flux: Qty | None
+    distance_to_flux: Qty | None
     warnings: list[Warning]
 
 @final
@@ -3958,6 +3986,15 @@ class TurboExpanderResult:
     design_module_length: Qty | None
     design_module_width: Qty | None
     design_module_height: Qty | None
+    warnings: list[Warning]
+
+@final
+class VceResult:
+    combustion_energy: Qty
+    scaled_distance: float | None
+    dimensionless_overpressure: float | None
+    overpressure: Qty | None
+    distance_to_overpressure: Qty | None
     warnings: list[Warning]
 
 @final
@@ -6244,6 +6281,14 @@ def anti_surge_recycle(
     tolerance: float | None = None,
     max_iterations: float | None = None,
 ) -> AntiSurgeRecycleResult: ...
+def bleve(
+    fuel_mass: float,
+    heat_of_combustion: float,
+    radiative_fraction: float,
+    relative_humidity: float | None = None,
+    distance: float | None = None,
+    target_flux: float | None = None,
+) -> BleveResult: ...
 def component_splitter(
     components: list[str],
     feed_n: float,
@@ -6655,6 +6700,14 @@ def hem_release(
     discharge_coefficient: float,
     back_pressure: float,
 ) -> HemReleaseResult: ...
+def jet_fire(
+    mass_flow: float,
+    heat_of_combustion: float,
+    radiative_fraction: float,
+    relative_humidity: float | None = None,
+    distance: float | None = None,
+    target_flux: float | None = None,
+) -> JetFireResult: ...
 def leak_blowdown(
     components: list[str],
     initial_z: list[float],
@@ -6805,6 +6858,13 @@ def plug_flow_reactor(
     catalyst_effectiveness_enabled: bool | None = None,
     key_component: str | None = None,
 ) -> PlugFlowReactorResult: ...
+def pool_fire(
+    pool_diameter: float,
+    burn_rate: float,
+    air_density: float | None = None,
+    distance: float | None = None,
+    target_flux: float | None = None,
+) -> PoolFireResult: ...
 def probit(
     a: float,
     b: float,
@@ -7135,6 +7195,14 @@ def turbo_expander_compressor(
     igv_penalty_curve: list[TurboIgvPenaltyPoint] | None = None,
     mechanical_design: bool | None = None,
 ) -> TurboExpanderResult: ...
+def vce(
+    cloud_fuel_mass: float,
+    heat_of_combustion: float,
+    strength_class: float,
+    ambient_pressure: float | None = None,
+    distance: float | None = None,
+    target_overpressure: float | None = None,
+) -> VceResult: ...
 def chemical_equilibrium(
     a_matrix: list[list[float]],
     b: list[float],

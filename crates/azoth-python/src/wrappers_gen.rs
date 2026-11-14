@@ -10,11 +10,11 @@ use crate::eos::{PyAssociationSpec, build_mixture, build_mixture_with_mass};
 use crate::errors::to_pyerr;
 use azoth_core::units::{
     cubic_meters, cubic_meters_per_mole, cubic_meters_per_second, joules_per_kilogram_kelvin,
-    joules_per_mole, joules_per_mole_kelvin, kelvin_intervals, kelvins, kilograms_per_cubic_meter,
-    kilograms_per_mole, kilograms_per_second, kilograms_per_square_meter_second, meters,
-    meters_per_second, moles_per_cubic_meter, newtons_per_meter, pascal_seconds, pascals, seconds,
-    square_meters, watts, watts_per_meter_kelvin, watts_per_square_meter,
-    watts_per_square_meter_kelvin,
+    joules_per_mole, joules_per_mole_kelvin, kelvin_intervals, kelvins, kilograms,
+    kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second,
+    kilograms_per_square_meter_second, meters, meters_per_second, moles_per_cubic_meter,
+    newtons_per_meter, pascal_seconds, pascals, seconds, square_meters, watts,
+    watts_per_meter_kelvin, watts_per_square_meter, watts_per_square_meter_kelvin,
 };
 use pyo3::prelude::*;
 
@@ -5500,6 +5500,35 @@ pub fn anti_surge_recycle(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// BLEVE fireball radiation.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (fuel_mass, heat_of_combustion, radiative_fraction, relative_humidity, distance, target_flux))]
+#[pyo3(
+    text_signature = "(fuel_mass, heat_of_combustion, radiative_fraction, relative_humidity, distance, target_flux)"
+)]
+pub fn bleve(
+    py: Python<'_>,
+    fuel_mass: f64,
+    heat_of_combustion: f64,
+    radiative_fraction: f64,
+    relative_humidity: Option<f64>,
+    distance: Option<f64>,
+    target_flux: Option<f64>,
+) -> PyResult<crate::transport_gen::PyBleveResult> {
+    azoth_process::models::bleve::bleve(
+        kilograms(fuel_mass),
+        heat_of_combustion,
+        radiative_fraction,
+        relative_humidity,
+        distance.map(meters),
+        target_flux.map(watts_per_square_meter),
+    )
+    .map(|r| crate::transport_gen::PyBleveResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Component splitter.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -6151,6 +6180,35 @@ pub fn hem_release(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Jet fire radiation.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (mass_flow, heat_of_combustion, radiative_fraction, relative_humidity, distance, target_flux))]
+#[pyo3(
+    text_signature = "(mass_flow, heat_of_combustion, radiative_fraction, relative_humidity, distance, target_flux)"
+)]
+pub fn jet_fire(
+    py: Python<'_>,
+    mass_flow: f64,
+    heat_of_combustion: f64,
+    radiative_fraction: f64,
+    relative_humidity: Option<f64>,
+    distance: Option<f64>,
+    target_flux: Option<f64>,
+) -> PyResult<crate::transport_gen::PyJetFireResult> {
+    azoth_process::models::jet_fire::jet_fire(
+        kilograms_per_second(mass_flow),
+        heat_of_combustion,
+        radiative_fraction,
+        relative_humidity,
+        distance.map(meters),
+        target_flux.map(watts_per_square_meter),
+    )
+    .map(|r| crate::transport_gen::PyJetFireResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Vessel leak blowdown.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -6354,6 +6412,31 @@ pub fn packed_column(
         max_allowable_fs_factor,
     )
     .map(|r| crate::transport_gen::PyPackedColumnResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Pool fire radiation.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (pool_diameter, burn_rate, air_density, distance, target_flux))]
+#[pyo3(text_signature = "(pool_diameter, burn_rate, air_density, distance, target_flux)")]
+pub fn pool_fire(
+    py: Python<'_>,
+    pool_diameter: f64,
+    burn_rate: f64,
+    air_density: Option<f64>,
+    distance: Option<f64>,
+    target_flux: Option<f64>,
+) -> PyResult<crate::transport_gen::PyPoolFireResult> {
+    azoth_process::models::pool_fire::pool_fire(
+        meters(pool_diameter),
+        kilograms_per_square_meter_second(burn_rate),
+        air_density,
+        distance.map(meters),
+        target_flux.map(watts_per_square_meter),
+    )
+    .map(|r| crate::transport_gen::PyPoolFireResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -6712,6 +6795,35 @@ pub fn throttling_valve(
         sizing_standard,
     )
     .map(|r| crate::transport_gen::PyThrottlingValveResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Vapour-cloud explosion overpressure.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (cloud_fuel_mass, heat_of_combustion, strength_class, ambient_pressure, distance, target_overpressure))]
+#[pyo3(
+    text_signature = "(cloud_fuel_mass, heat_of_combustion, strength_class, ambient_pressure, distance, target_overpressure)"
+)]
+pub fn vce(
+    py: Python<'_>,
+    cloud_fuel_mass: f64,
+    heat_of_combustion: f64,
+    strength_class: f64,
+    ambient_pressure: Option<f64>,
+    distance: Option<f64>,
+    target_overpressure: Option<f64>,
+) -> PyResult<crate::transport_gen::PyVceResult> {
+    azoth_process::models::vce::vce(
+        kilograms(cloud_fuel_mass),
+        heat_of_combustion,
+        strength_class,
+        ambient_pressure.map(pascals),
+        distance.map(meters),
+        target_overpressure.map(pascals),
+    )
+    .map(|r| crate::transport_gen::PyVceResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

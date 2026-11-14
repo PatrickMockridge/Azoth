@@ -1,0 +1,112 @@
+id = "process.vce"
+name = "Vapour-cloud explosion overpressure"
+kind = "procedure"
+assumptions = [
+    "**the energy is `E = m dHc`** and the Sachs-scaled distance is `Rbar = d / cbrt(E / p0)`, with `p0` the ambient pressure.",
+    "**the dimensionless overpressure is the class's power-law fit, not the TNO figure's curves**: a plateau per strength class at `Rbar <= 1`, the ten values `0.01, 0.02, 0.05, 0.10, 0.20, 0.50, 1.00, 2.00, 5.00, 10.0`.",
+    "**beyond `Rbar = 1` it decays as `plateau Rbar^-beta`**, with `beta = 1.0` for classes 1-5 and `1.2` for classes 6-10. The side-on overpressure is `dPbar p0`.",
+    "**the strength class is the class's `int`, 1 to 10.** It is declared dimensionless with a range, and a non-integral value is refused because the class's constructor would truncate it.",
+    "**the inverse is 80 halvings between 0.1 and 50000 m, with no early break.**",
+    "**a target above the near-field overpressure is absent.** The class returns its near bound, 0.1 m, where the overpressure is already below the target; the port publishes no `distance_to_overpressure`. A non-positive target is refused: the class throws.",
+    "**a non-positive distance is refused**: the class answers an infinite overpressure at zero. **The ambient pressure is the class's setter**, 101325 Pa when absent.",
+    "**heat of combustion is in J/kg and crosses unconverted**, declared dimensionless because no vocabulary unit expresses a mass-specific energy.",
+]
+references = [
+    "Berg, A. C. (1985). \"The multi-energy method: a framework for vapour cloud explosion blast prediction.\" Journal of Hazardous Materials 12, 1-10.",
+    "TNO (2005). Yellow Book, 3rd Ed., CPR 14E, chapter 5.",
+    "CCPS (2010). Guidelines for Vapor Cloud Explosion, Pressure Vessel Burst, BLEVE and Flash Fire Hazards, 2nd Ed.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/safety/fire/VCEModel.java` is the port source.",
+    "`validation/neqsim/captures/process_vce.tsv` - the class's own test state at two distances, all ten strength classes at one distance, a reachable 5 kPa target and the unreachable states.",
+]
+[source]
+standard = "NeqSim process/safety/fire/VCEModel.java"
+edition = "Its `combustionEnergyJ`, `scaledDistance`, `dimensionlessOverpressure`, `overpressurePa` and `distanceToOverpressure`."
+[algorithm]
+scheme = "tno_multi_energy_scaled_overpressure"
+initialisation = "near_bound_one_decimetre"
+convergence = "absolute"
+tolerance = 1.0e-12
+max_iterations = 80
+[inputs]
+[inputs.cloud_fuel_mass]
+unit = "kg"
+description = "the mass of fuel in the flammable portion of the cloud, at least zero.\n"
+[inputs.heat_of_combustion]
+unit = "dimensionless"
+description = "the lower heating value in J/kg, above zero. Declared dimensionless because no vocabulary unit expresses a mass-specific energy.\n"
+[inputs.strength_class]
+unit = "dimensionless"
+description = "the TNO strength class, a whole number from 1 (very weak, open) to 10 (detonation); 4 is the class's petrochemical example.\n"
+[inputs.ambient_pressure]
+unit = "Pa"
+optional = true
+description = "the ambient pressure the scaled distance and the overpressure both read, above zero. **Absent is `101325`.**\n"
+[inputs.distance]
+unit = "m"
+optional = true
+description = "the distance from the cloud centre at which the overpressure is asked, above zero. **Absent leaves `scaled_distance`, `dimensionless_overpressure` and `overpressure` absent.**\n"
+[inputs.target_overpressure]
+unit = "Pa"
+optional = true
+description = "the side-on overpressure whose distance is solved for, above zero. **Absent leaves `distance_to_overpressure` absent.**\n"
+[outputs]
+[outputs.combustion_energy]
+unit = "J"
+description = "`m dHc`, the cloud's combustion energy.\n"
+[outputs.scaled_distance]
+unit = "dimensionless"
+optional = true
+description = "`d / cbrt(E / p0)`, the Sachs-scaled distance. Present only with `distance`.\n"
+[outputs.dimensionless_overpressure]
+unit = "dimensionless"
+optional = true
+description = "the class's plateau or power-law value at `distance`. Present only with `distance`.\n"
+[outputs.overpressure]
+unit = "Pa"
+optional = true
+description = "the dimensionless overpressure times `p0`. Present only with `distance`.\n"
+[outputs.distance_to_overpressure]
+unit = "m"
+optional = true
+description = "the distance at which the overpressure falls to the target. **Absent when the overpressure at 0.1 m is already below the target**, where the class answers that near bound.\n"
+[[valid_range]]
+quantity = "cloud_fuel_mass"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "the class's constructor refuses a negative mass; a zero mass gives zero energy and no scaled distance"
+[[valid_range]]
+quantity = "heat_of_combustion"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class's constructor refuses a non-positive heating value"
+[[valid_range]]
+quantity = "strength_class"
+min = 1
+min_inclusive = true
+max = 10
+max_inclusive = true
+severity = "error"
+rationale = "the class's constructor refuses a class outside [1, 10]"
+[[valid_range]]
+quantity = "ambient_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the scaled distance and overpressure both divide or multiply by it"
+[[valid_range]]
+quantity = "distance"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class answers an infinite overpressure at zero distance, which is not a published number"
+[[valid_range]]
+quantity = "target_overpressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class throws IllegalArgumentException for a non-positive target"
+[implementations]
+python = "azoth.process.vce"
+rust = "azoth_process::vce"

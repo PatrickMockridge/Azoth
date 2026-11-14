@@ -28,6 +28,7 @@ from azoth.core.result import (
     BariteCelestiteSolidSolutionResult,
     BeggsBrillRegime,
     BeggsBrillSegmentResult,
+    BleveResult,
     BoilingHeatTransferResult,
     BrineMixingPointRow,
     BrineMixingScaleEvaluatorResult,
@@ -142,6 +143,7 @@ from azoth.core.result import (
     IncrementalZoneRow,
     InterfacePropertiesResult,
     Iso6976Result,
+    JetFireResult,
     KComponent,
     KentEisenbergPhaseResult,
     KFactorsResult,
@@ -193,6 +195,7 @@ from azoth.core.result import (
     PitzerPhaseResult,
     PitzerScaleActivityResult,
     PlugFlowReactorResult,
+    PoolFireResult,
     Pr78KappaResult,
     PrAlphaAbResult,
     PrCpaPhaseResult,
@@ -317,6 +320,7 @@ from azoth.core.result import (
     UniquacActivityCoefficientsResult,
     ValveScaleDriftResult,
     VanLaarAcidActivityCoefficientsResult,
+    VceResult,
     Vdw1fMixBinaryResult,
     VhFlashResult,
     ViscosityResult,
@@ -383,6 +387,7 @@ __all__ = [
     "assay_mass_fractions",
     "barite_celestite_solid_solution",
     "beggs_brill_segment",
+    "bleve",
     "boiling_heat_transfer",
     "brine_mixing_scale_evaluator",
     "bubble_pressure",
@@ -478,6 +483,7 @@ __all__ = [
     "incremental_zone_analysis",
     "interface_properties",
     "iso6976",
+    "jet_fire",
     "kent_eisenberg_phase",
     "kinetic_rate_law",
     "kinetics",
@@ -523,6 +529,7 @@ __all__ = [
     "pitzer_phase",
     "pitzer_scale_activity",
     "plug_flow_reactor",
+    "pool_fire",
     "pr78_kappa",
     "pr_alpha_ab",
     "pr_cpa_phase",
@@ -638,6 +645,7 @@ __all__ = [
     "uniquac_activity_coefficients",
     "valve_scale_drift",
     "van_laar_acid_activity_coefficients",
+    "vce",
     "vdw1f_mix_binary",
     "vh_flash",
     "viscosity",
@@ -5585,6 +5593,28 @@ def anti_surge_recycle(components: list[str], feed_n: Q, feed_z: list[float], fe
     )
 
 
+def bleve(fuel_mass: Q, heat_of_combustion: float, radiative_fraction: float, relative_humidity: float | None=None, distance: Q | None=None, target_flux: Q | None=None) -> BleveResult:
+    """``process.bleve``, computed in Rust."""
+    spec = _models_gen.model("process.bleve")
+    result = _core.bleve(
+        input_to_si(spec, "fuel_mass", fuel_mass),
+        heat_of_combustion,
+        radiative_fraction,
+        None if relative_humidity is None else relative_humidity,
+        None if distance is None else input_to_si(spec, "distance", distance),
+        None if target_flux is None else input_to_si(spec, "target_flux", target_flux),
+    )
+    return BleveResult(
+        fireball_diameter=from_si(result.fireball_diameter.magnitude_si, result.fireball_diameter.unit),
+        fireball_duration=from_si(result.fireball_duration.magnitude_si, result.fireball_duration.unit),
+        surface_emissive_power=from_si(result.surface_emissive_power.magnitude_si, result.surface_emissive_power.unit),
+        transmissivity=result.transmissivity,
+        incident_heat_flux=None if result.incident_heat_flux is None else from_si(result.incident_heat_flux.magnitude_si, result.incident_heat_flux.unit),
+        distance_to_flux=None if result.distance_to_flux is None else from_si(result.distance_to_flux.magnitude_si, result.distance_to_flux.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def component_splitter(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, split_factors: list[float]) -> ComponentSplitterResult:
     """``process.component_splitter``, computed in Rust."""
     spec = _models_gen.model("process.component_splitter")
@@ -6598,6 +6628,26 @@ def hem_release(components: list[str], upstream_z: list[float], upstream_t: Q, u
     )
 
 
+def jet_fire(mass_flow: Q, heat_of_combustion: float, radiative_fraction: float, relative_humidity: float | None=None, distance: Q | None=None, target_flux: Q | None=None) -> JetFireResult:
+    """``process.jet_fire``, computed in Rust."""
+    spec = _models_gen.model("process.jet_fire")
+    result = _core.jet_fire(
+        input_to_si(spec, "mass_flow", mass_flow),
+        heat_of_combustion,
+        radiative_fraction,
+        None if relative_humidity is None else relative_humidity,
+        None if distance is None else input_to_si(spec, "distance", distance),
+        None if target_flux is None else input_to_si(spec, "target_flux", target_flux),
+    )
+    return JetFireResult(
+        total_radiative_power=from_si(result.total_radiative_power.magnitude_si, result.total_radiative_power.unit),
+        transmissivity=result.transmissivity,
+        incident_heat_flux=None if result.incident_heat_flux is None else from_si(result.incident_heat_flux.magnitude_si, result.incident_heat_flux.unit),
+        distance_to_flux=None if result.distance_to_flux is None else from_si(result.distance_to_flux.magnitude_si, result.distance_to_flux.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def leak_blowdown(components: list[str], initial_z: list[float], initial_t: Q, initial_p: Q, duration: Q, vessel_volume: Q | None=None, hole_diameter: Q | None=None, discharge_coefficient: float | None=None, back_pressure: Q | None=None, time_step: Q | None=None, scenario_name: str | None=None) -> LeakBlowdownResult:
     """``process.leak_blowdown``, computed in Rust."""
     spec = _models_gen.model("process.leak_blowdown")
@@ -6906,6 +6956,27 @@ def plug_flow_reactor(components: list[str], feed_n: Q, feed_z: list[float], fee
         reaction_rate_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.reaction_rate_profile),
         molar_flow_profile=tuple(tuple(from_si(v.magnitude_si, v.unit) for v in row) for row in result.molar_flow_profile),
         residence_time=from_si(result.residence_time.magnitude_si, result.residence_time.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pool_fire(pool_diameter: Q, burn_rate: Q, air_density: float | None=None, distance: Q | None=None, target_flux: Q | None=None) -> PoolFireResult:
+    """``process.pool_fire``, computed in Rust."""
+    spec = _models_gen.model("process.pool_fire")
+    result = _core.pool_fire(
+        input_to_si(spec, "pool_diameter", pool_diameter),
+        input_to_si(spec, "burn_rate", burn_rate),
+        None if air_density is None else _si(spec, "air_density", air_density),
+        None if distance is None else input_to_si(spec, "distance", distance),
+        None if target_flux is None else input_to_si(spec, "target_flux", target_flux),
+    )
+    return PoolFireResult(
+        total_burn_rate=from_si(result.total_burn_rate.magnitude_si, result.total_burn_rate.unit),
+        flame_height=from_si(result.flame_height.magnitude_si, result.flame_height.unit),
+        surface_emissive_power=from_si(result.surface_emissive_power.magnitude_si, result.surface_emissive_power.unit),
+        view_factor=result.view_factor,
+        incident_heat_flux=None if result.incident_heat_flux is None else from_si(result.incident_heat_flux.magnitude_si, result.incident_heat_flux.unit),
+        distance_to_flux=None if result.distance_to_flux is None else from_si(result.distance_to_flux.magnitude_si, result.distance_to_flux.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -7761,6 +7832,27 @@ def turbo_expander_compressor(expander_components: list[str], compressor_compone
         design_module_length=None if result.design_module_length is None else from_si(result.design_module_length.magnitude_si, result.design_module_length.unit),
         design_module_width=None if result.design_module_width is None else from_si(result.design_module_width.magnitude_si, result.design_module_width.unit),
         design_module_height=None if result.design_module_height is None else from_si(result.design_module_height.magnitude_si, result.design_module_height.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def vce(cloud_fuel_mass: Q, heat_of_combustion: float, strength_class: float, ambient_pressure: Q | None=None, distance: Q | None=None, target_overpressure: Q | None=None) -> VceResult:
+    """``process.vce``, computed in Rust."""
+    spec = _models_gen.model("process.vce")
+    result = _core.vce(
+        input_to_si(spec, "cloud_fuel_mass", cloud_fuel_mass),
+        heat_of_combustion,
+        strength_class,
+        None if ambient_pressure is None else input_to_si(spec, "ambient_pressure", ambient_pressure),
+        None if distance is None else input_to_si(spec, "distance", distance),
+        None if target_overpressure is None else input_to_si(spec, "target_overpressure", target_overpressure),
+    )
+    return VceResult(
+        combustion_energy=from_si(result.combustion_energy.magnitude_si, result.combustion_energy.unit),
+        scaled_distance=result.scaled_distance,
+        dimensionless_overpressure=result.dimensionless_overpressure,
+        overpressure=None if result.overpressure is None else from_si(result.overpressure.magnitude_si, result.overpressure.unit),
+        distance_to_overpressure=None if result.distance_to_overpressure is None else from_si(result.distance_to_overpressure.magnitude_si, result.distance_to_overpressure.unit),
         warnings=_warnings(result.warnings),
     )
 

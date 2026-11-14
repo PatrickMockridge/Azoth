@@ -827,6 +827,25 @@ a claim nothing holds.
   arithmetic. The DTO's scenario name, `toJson` and the `analyzeStream`/`sourceTerm`
   conveniences are session surface; the unported callers are named with their classes: QRA
   `ConsequenceAnalysisEngine`, `ReleaseDispersionScenarioGenerator` and `CfdSourceTermCase`.
+- **The fire and explosion family** — `process/safety/fire/`'s four pure consequence models.
+  **`process.jet_fire` is `JetFireModel`**: the API 521 / Mudan-Croce point source, Wayne's
+  transmissivity, and its 25-iteration fixed-point inverse. **`process.pool_fire` is
+  `PoolFireModel`**: Thomas's flame height, Mudan's smoke-corrected SEP and vertical-cylinder
+  view factor, and the bisection contour — whose constructor's heat of combustion, liquid
+  density and radiative fraction are stored and read by nothing (NeqSim `#4976`), which the
+  port states rather than declares. **`process.vce` is `VCEModel`**: the Sachs-scaled distance
+  and the class's plateau-plus-power-law **fit** to the TNO curves, not the curves themselves.
+  **`process.bleve` is `BLEVECalculator`**: the CCPS diameter, duration and SEP, sharing
+  Wayne's transmissivity with `jet_fire`. All four publish **no distance for a target the fire
+  cannot produce**, where the classes answer their near bound (`#4975`); `bleve` refuses a
+  negative radiative fraction its class accepts (`#4977`), and both radiation models refuse
+  the zero-humidity `NaN` their clamps admit (`#4978`). Held to the four captures. What remains
+  owed in the package: **`ConsequenceAnalysisEngine`** (276 lines, **zero `src/main` callers**)
+  is the QRA composer whose whole dependency set — `jet_fire`, `pool_fire`, `vce`, `probit`,
+  `gaussian_plume` — is now carried, but its outcome branches need a fixed input schema;
+  **`PfpDemandCalculator`** (2 callers) is thermal protection rather than consequence distance;
+  **`Api537FlareFlameModel`** (zero callers) is flame geometry and noise; and the `firewater/`
+  family is five calculators, named rather than ported.
 - **The reactions family's**: the **ionic branch** of `reactions.reactive_tp_flash` and
   `reactions.reactive_ph_flash`, which is why a charged substance is refused at all;
   `reactions.reactive_ph_flash`'s **entropy-specified variant** and its `NR = 0` delegation to

@@ -242,6 +242,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyTrayHydraulicsResult>()?;
     m.add_class::<crate::transport_gen::PyAbsorptionColumnResult>()?;
     m.add_class::<crate::transport_gen::PyAntiSurgeRecycleResult>()?;
+    m.add_class::<crate::transport_gen::PyBleveResult>()?;
     m.add_class::<crate::transport_gen::PyComponentSplitterResult>()?;
     m.add_class::<crate::transport_gen::PyCompressorResult>()?;
     m.add_class::<crate::transport_gen::PyCoolerResult>()?;
@@ -257,6 +258,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyHeatExchangerResult>()?;
     m.add_class::<crate::transport_gen::PyHeaterResult>()?;
     m.add_class::<crate::transport_gen::PyHemReleaseResult>()?;
+    m.add_class::<crate::transport_gen::PyJetFireResult>()?;
     m.add_class::<crate::transport_gen::PyLeakBlowdownResult>()?;
     m.add_class::<crate::transport_gen::PyManifoldResult>()?;
     m.add_class::<crate::transport_gen::PyMapTurboExpanderResult>()?;
@@ -264,6 +266,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyPackedColumnResult>()?;
     m.add_class::<crate::transport_gen::PyPipeResult>()?;
     m.add_class::<crate::transport_gen::PyPlugFlowReactorResult>()?;
+    m.add_class::<crate::transport_gen::PyPoolFireResult>()?;
     m.add_class::<crate::transport_gen::PyProbitResult>()?;
     m.add_class::<crate::transport_gen::PyPumpResult>()?;
     m.add_class::<crate::transport_gen::PyRateBasedPackedColumnResult>()?;
@@ -278,6 +281,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyThreePhaseSeparatorResult>()?;
     m.add_class::<crate::transport_gen::PyThrottlingValveResult>()?;
     m.add_class::<crate::transport_gen::PyTurboExpanderResult>()?;
+    m.add_class::<crate::transport_gen::PyVceResult>()?;
     m.add_class::<crate::transport_gen::PyChemicalEquilibriumResult>()?;
     m.add_class::<crate::transport_gen::PyEquilibriumConstantResult>()?;
     m.add_class::<crate::transport_gen::PyKineticRateLawResult>()?;
@@ -871,6 +875,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::anti_surge_recycle,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::bleve, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::component_splitter,
         m
@@ -892,6 +897,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::process::heat_exchanger, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::heater, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::hem_release, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::jet_fire, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::leak_blowdown, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::manifold, m)?)?;
     m.add_function(wrap_pyfunction!(
@@ -902,6 +908,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::packed_column, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::pipe, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::plug_flow_reactor, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::pool_fire, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::probit, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::pump, m)?)?;
     m.add_function(wrap_pyfunction!(
@@ -931,6 +938,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::process::turbo_expander_compressor,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::vce, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::chemical_equilibrium,
         m
