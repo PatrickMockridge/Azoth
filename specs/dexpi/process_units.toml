@@ -1,0 +1,204 @@
+# The azoth palette -> DEXPI 2.0 Process mapping.
+#
+# One row per palette entry, and `tools/gen_dexpi_mapping.py` refuses a palette entry
+# with no row or a row naming no entry, so adding a unit operation cannot leave the
+# exchange silently incomplete.
+#
+# `disposition` is what the exchange costs:
+#   faithful - the DEXPI type carries what the azoth unit does;
+#   lossy    - the type is the nearest reviewed counterpart and something is lost, named
+#              in `note`; an export that includes it requires --allow-lossy-mappings;
+#   refused  - no reviewed DEXPI Process type exists, and the export fails naming the unit.
+#              Gaining a mapping is a review, not a flag, except for an explicit --map.
+#
+# The types are NeqSim's reviewed set (`Dexpi20ProcessModelWriter.type`, the switch at
+# lines 401-449 of the pinned source). Do not extend this list by intuition: a type not
+# in that switch has not been reviewed against the DEXPI model.
+schema_version = 1
+profile = "dexpi-2.0-process"
+
+[[unit]]
+azoth_id = "unit_ops.absorption_column"
+disposition = "lossy"
+dexpi_types = ["Process/Process.Distilling"]
+note = "Distilling exchanges the column as one distillation step; the absorption service, the solvent loop's role and the tray count are not carried."
+
+[[unit]]
+azoth_id = "unit_ops.component_splitter"
+disposition = "lossy"
+dexpi_types = ["Process/Process.SplittingMaterial"]
+note = "SplittingMaterial divides a flow by amount; this unit divides it by composition, so a consumer sees a flow split unless the azoth extension property is read."
+
+[[unit]]
+azoth_id = "unit_ops.compressor"
+disposition = "faithful"
+dexpi_types = ["Process/Process.Compressing"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.cooler"
+disposition = "faithful"
+dexpi_types = ["Process/Process.Cooling"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.distillation_column"
+disposition = "lossy"
+dexpi_types = ["Process/Process.Distilling"]
+note = "The step type is the process function, not the model: stages, feed stage, reflux and the column's specifications are not carried by a DEXPI Process step."
+
+[[unit]]
+azoth_id = "unit_ops.ejector"
+disposition = "refused"
+dexpi_types = []
+note = "The Process model has no ejecting type in the reviewed set; NeqSim's type() has no Ejector branch either."
+
+[[unit]]
+azoth_id = "unit_ops.expander"
+disposition = "lossy"
+dexpi_types = ["Process/Process.TransportingFluids"]
+note = "TransportingFluids carries the pressure change but not the extracted shaft work, which is the expander's product."
+
+[[unit]]
+azoth_id = "unit_ops.filter"
+disposition = "refused"
+dexpi_types = []
+note = "A filter removes solids by a barrier; SeparatingByGravity is a different mechanism, and the Process model has no filtering type in the reviewed set."
+
+[[unit]]
+azoth_id = "unit_ops.flare"
+disposition = "refused"
+dexpi_types = []
+note = "No flaring or waste-gas type is in the reviewed Process set; the Plant model has WasteGasEmitter and is the later profile's concern."
+
+[[unit]]
+azoth_id = "unit_ops.gas_scrubber"
+disposition = "faithful"
+dexpi_types = ["Process/Process.SeparatingByGravity"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.gibbs_reactor"
+disposition = "refused"
+dexpi_types = []
+note = "The reviewed Process set has no reacting type; a reactor cannot be exchanged as a process step without inventing one."
+
+[[unit]]
+azoth_id = "unit_ops.heater"
+disposition = "lossy"
+dexpi_types = ["Process/Process.HeatingInFurnace"]
+note = "HeatingInFurnace names a fired furnace; this unit is a generic heater whose duty may come from any utility."
+
+[[unit]]
+azoth_id = "unit_ops.heat_exchanger"
+disposition = "faithful"
+dexpi_types = ["Process/Process.ExchangingThermalEnergy"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.manifold"
+disposition = "refused"
+dexpi_types = []
+note = "A manifold's many-inlet junction has no Process step type in the reviewed set; mixing and splitting are separate types and neither is a manifold."
+
+[[unit]]
+azoth_id = "unit_ops.map_turbo_expander_compressor"
+disposition = "refused"
+dexpi_types = []
+note = "A four-port rotating machine has no Process step type; Compressing and TransportingFluids are two-port functions."
+
+[[unit]]
+azoth_id = "unit_ops.mixer"
+disposition = "faithful"
+dexpi_types = ["Process/Process.MixingSimple"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.packed_column"
+disposition = "lossy"
+dexpi_types = ["Process/Process.Distilling"]
+note = "The step type is the process function, not the model: packing, packed height and the rate-based formulation are not carried."
+
+[[unit]]
+azoth_id = "unit_ops.pipe"
+disposition = "faithful"
+dexpi_types = ["Process/Process.TransportingFluids"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.plug_flow_reactor"
+disposition = "refused"
+dexpi_types = []
+note = "The reviewed Process set has no reacting type; a reactor cannot be exchanged as a process step without inventing one."
+
+[[unit]]
+azoth_id = "unit_ops.pump"
+disposition = "faithful"
+dexpi_types = ["Process/Process.Pumping"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.rate_based_packed_column"
+disposition = "lossy"
+dexpi_types = ["Process/Process.Distilling"]
+note = "The step type is the process function, not the model: packing, the rate-based formulation and the segment model are not carried."
+
+[[unit]]
+azoth_id = "unit_ops.separator"
+disposition = "faithful"
+dexpi_types = ["Process/Process.SeparatingByGravity"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.shortcut_distillation_column"
+disposition = "lossy"
+dexpi_types = ["Process/Process.Distilling"]
+note = "The step type is the process function, not the model: the shortcut's Fenske-Underwood-Gilliland basis and its specifications are not carried."
+
+[[unit]]
+azoth_id = "unit_ops.simple_absorber"
+disposition = "refused"
+dexpi_types = []
+note = "This unit is UNRUNNABLE in this port (its chemistry is unported), so it cannot be exported as a calculated step."
+
+[[unit]]
+azoth_id = "unit_ops.splitter"
+disposition = "faithful"
+dexpi_types = ["Process/Process.SplittingMaterial"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.stirred_tank_reactor"
+disposition = "refused"
+dexpi_types = []
+note = "The reviewed Process set has no reacting type; a reactor cannot be exchanged as a process step without inventing one."
+
+[[unit]]
+azoth_id = "unit_ops.stripping_column"
+disposition = "lossy"
+dexpi_types = ["Process/Process.Distilling"]
+note = "Distilling exchanges the column as one distillation step; the stripping service and the stage count are not carried."
+
+[[unit]]
+azoth_id = "unit_ops.tank"
+disposition = "faithful"
+dexpi_types = ["Process/Process.StoringFluids"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.three_phase_separator"
+disposition = "lossy"
+dexpi_types = ["Process/Process.SeparatingByGravity"]
+note = "The type is right and the three outlets are not: SeparatingByGravity does not say which outlet is water, and an importer cannot recover the assignment without the azoth port extension."
+
+[[unit]]
+azoth_id = "unit_ops.throttling_valve"
+disposition = "faithful"
+dexpi_types = ["Process/Process.RegulatingFlow"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.turbo_expander_compressor"
+disposition = "refused"
+dexpi_types = []
+note = "A four-port rotating machine has no Process step type; Compressing and TransportingFluids are two-port functions."

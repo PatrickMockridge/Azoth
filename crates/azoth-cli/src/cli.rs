@@ -52,6 +52,110 @@ pub enum Command {
     /// Cross-check a NeqSim flash request: one `runFlash` document per line in, one verdict per
     /// line out.
     Crosscheck(CrosscheckArgs),
+
+    /// Exchange a flowsheet as a DEXPI 2.0 Process model, and back.
+    Dexpi(DexpiArgs),
+}
+
+#[derive(Debug, clap::Args)]
+pub struct DexpiArgs {
+    #[command(subcommand)]
+    pub command: DexpiCommand,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DexpiCommand {
+    /// Write a flowsheet, and its run, as a DEXPI 2.0 Process exchange.
+    Export(DexpiExportArgs),
+
+    /// Read a DEXPI 2.0 Process exchange as a flowsheet scaffold.
+    Import(DexpiImportArgs),
+
+    /// Check a DEXPI 2.0 document against the semantic rules, and optionally the schema.
+    Validate(DexpiValidateArgs),
+}
+
+#[derive(Debug, clap::Args)]
+pub struct DexpiExportArgs {
+    /// The flowsheet to exchange. It declares its own inputs and is run before export.
+    #[arg(long)]
+    pub flowsheet: std::path::PathBuf,
+
+    /// The palette directory. Defaults to the shipped `specs/unit_ops`.
+    #[arg(long, default_value = "specs/unit_ops")]
+    pub palette: std::path::PathBuf,
+
+    /// The DEXPI XML file to write.
+    #[arg(long)]
+    pub out: std::path::PathBuf,
+
+    /// Include mappings whose DEXPI type loses something, named in the report.
+    #[arg(long)]
+    pub allow_lossy_mappings: bool,
+
+    /// Map a refused palette unit to a DEXPI type, as `unit_ops.ejector=Process/Process.Pumping`.
+    /// Repeatable. The override is recorded in the report.
+    #[arg(long = "map")]
+    pub maps: Vec<String>,
+
+    /// Write each `[[recycles]]` entry as a `TransportingFluids` step.
+    #[arg(long)]
+    pub project_recycles: bool,
+
+    /// Write the `Azoth/…` properties that make an azoth round trip exact.
+    #[arg(long)]
+    pub with_azoth_extensions: bool,
+
+    /// Write topology only, without running the flowsheet.
+    #[arg(long)]
+    pub topology_only: bool,
+
+    /// Publish an unconverged run's numbers rather than refusing.
+    #[arg(long)]
+    pub allow_unconverged: bool,
+
+    /// Print the report as JSON rather than as a report.
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Debug, clap::Args)]
+pub struct DexpiImportArgs {
+    /// The DEXPI XML file to read.
+    #[arg(long = "input")]
+    pub input: std::path::PathBuf,
+
+    /// The flowsheet TOML to write.
+    #[arg(long)]
+    pub out: std::path::PathBuf,
+
+    /// The palette directory the ports are named from.
+    #[arg(long, default_value = "specs/unit_ops")]
+    pub palette: std::path::PathBuf,
+
+    /// Refuse every warning, not only an error.
+    #[arg(long)]
+    pub strict: bool,
+
+    /// Print the report as JSON rather than as a report.
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Debug, clap::Args)]
+pub struct DexpiValidateArgs {
+    /// The DEXPI XML file to check.
+    #[arg(long = "input")]
+    pub input: std::path::PathBuf,
+
+    /// Also validate against the official DEXPI XSD, through `xmllint`. Fails when `xmllint` is
+    /// absent rather than reporting a check it did not run.
+    #[arg(long)]
+    pub xsd: bool,
+
+    /// Print the report as JSON rather than as a report.
+    #[arg(long)]
+    pub json: bool,
 }
 
 #[derive(Debug, clap::Args)]

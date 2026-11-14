@@ -54,6 +54,11 @@ dev = [
   # the tests executed the changed code. `tools/check_coverage.py` reads what this writes, and
   # the CI job runs the scoped set instrumented rather than twice.
   "pytest-cov>=6",
+  # A second implementation of the DEXPI specification, used to load this crate's export
+  # strictly in `python/tests/test_dexpi.py`. Dev-only: nothing under `python/src/azoth`
+  # imports it, and the exchange itself runs in Rust. A missing check is an invisible gap, so
+  # it is here rather than in an optional extra.
+  "pydexpi>=2.1",
 ]
 agent = [
   # Running an orchestration needs the DeepSeek Harness runtime; exporting the

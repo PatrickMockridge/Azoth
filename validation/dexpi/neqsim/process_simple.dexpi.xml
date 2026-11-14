@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Model name="DEXPI_process_oracle" uri="urn:neqsim:dexpi:2.0:process:DEXPI_process_oracle">
+    <Import prefix="Core" source="https://data.dexpi.org/models/2.0.0/Core.xml"/>
+    <Import prefix="Process" source="https://data.dexpi.org/models/2.0.0/Process.xml"/>
+    <Object type="Core/EngineeringModel">
+        <Components property="ConceptualModel">
+            <Object id="ProcessModel1" type="Process/ProcessModel">
+                <Components property="ProcessSteps">
+                    <Object id="ProcessStep1" type="Process/Process.Source">
+                        <Data property="Identifier">
+                            <String>FEED</String>
+                        </Data>
+                        <Data property="Label">
+                            <String>FEED</String>
+                        </Data>
+                        <Components property="Ports">
+                            <Object id="Stream1SourcePort" type="Process/Process.MaterialPort">
+                                <Data property="Identifier">
+                                    <String>Stream1SourcePort</String>
+                                </Data>
+                                <Data property="NominalDirection">
+                                    <DataReference data="Process/Enumerations.PortDirection.Outlet"/>
+                                </Data>
+                                <References objects="#Stream1" property="ConnectorReference"/>
+                            </Object>
+                        </Components>
+                    </Object>
+                    <Object id="ProcessStep2" type="Process/Process.SeparatingByGravity">
+                        <Data property="Identifier">
+                            <String>V-101</String>
+                        </Data>
+                        <Data property="Label">
+                            <String>V-101</String>
+                        </Data>
+                        <Components property="Ports">
+                            <Object id="Stream1TargetPort" type="Process/Process.MaterialPort">
+                                <Data property="Identifier">
+                                    <String>Stream1TargetPort</String>
+                                </Data>
+                                <Data property="NominalDirection">
+                                    <DataReference data="Process/Enumerations.PortDirection.Inlet"/>
+                                </Data>
+                                <References objects="#Stream1" property="ConnectorReference"/>
+                            </Object>
+                            <Object id="Stream2SourcePort" type="Process/Process.MaterialPort">
+                                <Data property="Identifier">
+                                    <String>Stream2SourcePort</String>
+                                </Data>
+                                <Data property="NominalDirection">
+                                    <DataReference data="Process/Enumerations.PortDirection.Outlet"/>
+                                </Data>
+                                <References objects="#Stream2" property="ConnectorReference"/>
+                            </Object>
+                            <Object id="Stream6SourcePort" type="Process/Process.MaterialPort">
+                                <Data property="Identifier">
+                                    <String>Stream6SourcePort</String>
+                                </Data>
+                                <Data property="NominalDirection">
+                                    <DataReference data="Process/Enumerations.PortDirection.Outlet"/>
+                                </Data>
+                                <References objects="#Stream6" property="ConnectorReference"/>
+                            </Object>
+                        </Components>
+                    </Object>
+                    <Object id="ProcessStep3" type="Process/Process.Compressing">
+                        <Data property="Identifier">
+                            <String>K-101</String>
+                        </Data>
+                        <Data property="Label">
+                            <String>K-101</String>
+                        </Data>
+                        <Components property="Ports">
+                            <Object id="Stream2TargetPort" type="Process/Process.MaterialPort">
+                                <Data property="Identifier">
+                                    <String>Stream2TargetPort</String>
+                                </Data>
+                                <Data property="NominalDirection">
+                                    <DataReference data="Process/Enumerations.PortDirection.Inlet"/>
+                                </Data>
+                                <References objects="#Stream2" property="ConnectorReference"/>
+                            </Object>
+                            <Object id="Stream3SourcePort" type="Process/Process.MaterialPort">
+                                <Data property="Identifier">
+                                    <String>Stream3SourcePort</String>
+                                </Data>
+                                <Data property="NominalDirection">
+                                    <DataReference data="Process/Enumerations.PortDirection.Outlet"/>
+                                </Data>
+                                <References objects="#Stream3" property="ConnectorReference"/>
+                            </Object>
+                        </Components>
+                    </Object>
+                    <Object id="ProcessStep4" type="Process/Process.Cooling">
+                        <Data property="Identifier">
+                            <String>E-101</String>
+                        </Data>
+                        <Data property="Label">
+                            <String>E-101</String>
+                        </Data>
+                        <Components property="Ports">
+                            <Object id="Stream3TargetPort" type="Process/Process.MaterialPort">
+                                <Data property="Identifier">
+                                    <String>Stream3TargetPort</String>
+                                </Data>
+                                <Data property="NominalDirection">
+                                    <DataReference data="Process/Enumerations.PortDirection.Inlet"/>
+                                </Data>
+                                <References objects="#Stream3" property="ConnectorReference"/>
+                            </Object>
+                            <Object id="Stream4SourcePort" type="Process/Process.MaterialPort">
+                                <Data property="Identifier">
+                                    <String>Stream4SourcePort</String>
+                                </Data>
+                                <Data property="NominalDirection">
+                                    <DataReference data="Process/Enumerations.PortDirection.Outlet"/>
+                                </Data>
+                                <References objects="#Stream4" property="ConnectorReference"/>
+                            </Object>
+                        </Components>
+                    </Object>
+                    <Object id="ProcessStep5" type="Process/Process.RegulatingFlow">
+                        <Data property="Identifier">
+                            <String>FV-101</String>
+                        </Data>
+                        <Data property="Label">
+                            <String>FV-101</String>
+                        </Data>
+                        <Components property="Ports">
+                            <Object id="Stream4TargetPort" type="Process/Process.MaterialPort">
+                                <Data property="Identifier">
+                                    <String>Stream4TargetPort</String>
+                                </Data>
+                                <Data property="NominalDirection">
+                                    <DataReference data="Process/Enumerations.PortDirection.Inlet"/>
+                                </Data>
+                                <References objects="#Stream4" property="ConnectorReference"/>
+                            </Object>
+                            <Object id="Stream5SourcePort" type="Process/Process.MaterialPort">
+                                <Data property="Identifier">
+                                    <String>Stream5SourcePort</String>
+                                </Data>
+                                <Data property="NominalDirection">
+                                    <DataReference data="Process/Enumerations.PortDirection.Outlet"/>
+                                </Data>
+                                <References objects="#Stream5" property="ConnectorReference"/>
+                            </Object>
+                        </Components>
+                    </Object>
+                    <Object id="ProcessStep6" type="Process/Process.Sink">
+                        <Data property="Identifier">
+                            <String>GAS</String>
+                        </Data>
+                        <Data property="Label">
+                            <String>GAS</String>
+                        </Data>
+                        <Components property="Ports">
+                            <Object id="Stream5TargetPort" type="Process/Process.MaterialPort">
+                                <Data property="Identifier">
+                                    <String>Stream5TargetPort</String>
+                                </Data>
+                                <Data property="NominalDirection">
+                                    <DataReference data="Process/Enumerations.PortDirection.Inlet"/>
+                                </Data>
+                                <References objects="#Stream5" property="ConnectorReference"/>
+                            </Object>
+                        </Components>
+                    </Object>
+                    <Object id="ProcessStep7" type="Process/Process.Sink">
+                        <Data property="Identifier">
+                            <String>OIL</String>
+                        </Data>
+                        <Data property="Label">
+                            <String>OIL</String>
+                        </Data>
+                        <Components property="Ports">
+                            <Object id="Stream6TargetPort" type="Process/Process.MaterialPort">
+                                <Data property="Identifier">
+                                    <String>Stream6TargetPort</String>
+                                </Data>
+                                <Data property="NominalDirection">
+                                    <DataReference data="Process/Enumerations.PortDirection.Inlet"/>
+                                </Data>
+                                <References objects="#Stream6" property="ConnectorReference"/>
+                            </Object>
+                        </Components>
+                    </Object>
+                </Components>
+                <Components property="ProcessConnections">
+                    <Object id="Stream1" type="Process/Process.Stream">
+                        <Data property="Identifier">
+                            <String>Stream1</String>
+                        </Data>
+                        <Data property="Label">
+                            <String>FEED</String>
+                        </Data>
+                        <References objects="#Stream1SourcePort" property="Source"/>
+                        <References objects="#Stream1TargetPort" property="Target"/>
+                        <Components property="MassFlow">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.MassFlowRateUnit.KilogramPerHour"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>999.9999999999999</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                        <Components property="Pressure">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.PressureAbsoluteUnit.Bar"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>50.0</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                        <Components property="Temperature">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.TemperatureUnit.DegreeCelsius"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>30.0</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                    </Object>
+                    <Object id="Stream2" type="Process/Process.Stream">
+                        <Data property="Identifier">
+                            <String>Stream2</String>
+                        </Data>
+                        <Data property="Label">
+                            <String>gasOutStream</String>
+                        </Data>
+                        <References objects="#Stream2SourcePort" property="Source"/>
+                        <References objects="#Stream2TargetPort" property="Target"/>
+                        <Components property="MassFlow">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.MassFlowRateUnit.KilogramPerHour"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>715.245097426682</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                        <Components property="Pressure">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.PressureAbsoluteUnit.Bar"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>50.0</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                        <Components property="Temperature">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.TemperatureUnit.DegreeCelsius"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>30.0</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                    </Object>
+                    <Object id="Stream3" type="Process/Process.Stream">
+                        <Data property="Identifier">
+                            <String>Stream3</String>
+                        </Data>
+                        <Data property="Label">
+                            <String>K-101 out stream</String>
+                        </Data>
+                        <References objects="#Stream3SourcePort" property="Source"/>
+                        <References objects="#Stream3TargetPort" property="Target"/>
+                        <Components property="MassFlow">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.MassFlowRateUnit.KilogramPerHour"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>715.245097426682</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                        <Components property="Pressure">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.PressureAbsoluteUnit.Bar"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>80.0</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                        <Components property="Temperature">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.TemperatureUnit.DegreeCelsius"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>63.13284503222587</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                    </Object>
+                    <Object id="Stream4" type="Process/Process.Stream">
+                        <Data property="Identifier">
+                            <String>Stream4</String>
+                        </Data>
+                        <Data property="Label">
+                            <String>outStream</String>
+                        </Data>
+                        <References objects="#Stream4SourcePort" property="Source"/>
+                        <References objects="#Stream4TargetPort" property="Target"/>
+                        <Components property="MassFlow">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.MassFlowRateUnit.KilogramPerHour"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>715.245097426682</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                        <Components property="Pressure">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.PressureAbsoluteUnit.Bar"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>80.0</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                        <Components property="Temperature">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.TemperatureUnit.DegreeCelsius"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>30.0</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                    </Object>
+                    <Object id="Stream5" type="Process/Process.Stream">
+                        <Data property="Identifier">
+                            <String>Stream5</String>
+                        </Data>
+                        <Data property="Label">
+                            <String>FV-101 out stream</String>
+                        </Data>
+                        <References objects="#Stream5SourcePort" property="Source"/>
+                        <References objects="#Stream5TargetPort" property="Target"/>
+                        <Components property="MassFlow">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.MassFlowRateUnit.KilogramPerHour"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>715.245097426682</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                        <Components property="Pressure">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.PressureAbsoluteUnit.Bar"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>10.0</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                        <Components property="Temperature">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.TemperatureUnit.DegreeCelsius"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>-7.312471144116444</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                    </Object>
+                    <Object id="Stream6" type="Process/Process.Stream">
+                        <Data property="Identifier">
+                            <String>Stream6</String>
+                        </Data>
+                        <Data property="Label">
+                            <String>liquidOutStream</String>
+                        </Data>
+                        <References objects="#Stream6SourcePort" property="Source"/>
+                        <References objects="#Stream6TargetPort" property="Target"/>
+                        <Components property="MassFlow">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.MassFlowRateUnit.KilogramPerHour"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>284.75490257331774</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                        <Components property="Pressure">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.PressureAbsoluteUnit.Bar"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>50.0</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                        <Components property="Temperature">
+                            <Object type="Core/QualifiedValue">
+                                <Data property="Value">
+                                    <AggregatedDataValue type="Core/PhysicalQuantities.PhysicalQuantity">
+                                        <Data property="Unit">
+                                            <DataReference data="Core/PhysicalQuantities.TemperatureUnit.DegreeCelsius"/>
+                                        </Data>
+                                        <Data property="Value">
+                                            <Double>30.0</Double>
+                                        </Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                    </Object>
+                </Components>
+            </Object>
+        </Components>
+    </Object>
+</Model>

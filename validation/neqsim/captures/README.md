@@ -195,6 +195,28 @@ is the only probe here that drives `neqsim.process` rather than `neqsim.thermo`.
   > captures/process_column_divergence.tsv
 ```
 
+## The DEXPI 2.0 Process exchange
+
+`dexpi_process_simple.tsv` is `Dexpi20ProcessModelWriter`'s output for one small
+`ProcessSystem`, read back and printed as an inventory: the steps and their types, each
+stream's source and target step, and the mass flow, pressure and temperature with their
+reference units. It is the export half of `crates/azoth-dexpi`'s oracle. **There is no import
+half**: NeqSim has no native DEXPI 2.0 Process reader, so the reader is held to the model and
+to round-trip rather than to this probe.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar Dexpi20ProcessProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar Dexpi20ProcessProbe \
+  > captures/dexpi_process_simple.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar Dexpi20ProcessProbe simple \
+  --xml ../dexpi/neqsim/process_simple.dexpi.xml
+```
+
+The capture committed here was taken with the jar on hand, `neqsim-f0c7436.jar`, because the
+pin's `neqsim-118d9af.jar` is not built on the machine that wrote it. The writer's
+serialisation is the same in both; refresh the capture at the pin when it is built, which is
+what `tools/oracle_sweep.py` does for every probe.
+
 ## The heat exchanger's delta-T mode
 
 `process_heat_exchanger_delta_t.tsv` is `HeatExchanger.runDeltaT`, which `setDeltaT` enables:

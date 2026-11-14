@@ -1,0 +1,21 @@
+[package]
+name = "azoth-dexpi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "DEXPI exchange: a flowsheet as a DEXPI 2.0 Process model, and back"
+
+[dependencies]
+azoth-core.workspace = true
+azoth-process.workspace = true
+quick-xml.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+azoth-test-support.workspace = true
+
+[lints]
+workspace = true

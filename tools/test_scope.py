@@ -298,6 +298,9 @@ EXTENSION_TESTS: tuple[str, ...] = (
     f"{TESTS}/test_gen_python_registry.py",
     f"{TESTS}/test_gen_python_transport.py",
     f"{TESTS}/test_gen_python_wrappers.py",
+    # The DEXPI binding: the exchange runs in Rust, and this is the only test that drives it
+    # through the compiled extension.
+    f"{TESTS}/test_dexpi.py",
     # A hand-written `#[pyfunction]` whose parameter order has moved away from its spec is a
     # stub drift, and this is the test that names it.
     f"{TESTS}/test_gen_stub.py",
@@ -389,6 +392,7 @@ LANE_BUDGET_MINUTES: dict[str, int] = {
 #: every edit - spends 2m40s of a 5-minute budget before a test runs.
 SPEC_GENERATORS = frozenset(
     {
+        "gen_dexpi_mapping",
         "gen_dispatch",
         "gen_docs",
         "gen_guard_theorems",
@@ -483,6 +487,7 @@ MODULE_TESTS: dict[str, tuple[str, ...]] = {
     "_data": (f"{TESTS}/test_data.py", f"{TESTS}/test_data_agreement.py"),
     "_dispatch": (f"{TESTS}/test_dispatch.py", f"{TESTS}/test_cross_impl.py"),
     "_rust_bridge": (f"{TESTS}/test_registration_completeness.py",),
+    "dexpi": (f"{TESTS}/test_dexpi.py",),
 }
 
 #: The `specs/` trees that carry no id, and what a change in each reaches.
@@ -503,6 +508,20 @@ SPEC_TREES: tuple[tuple[str, Claim], ...] = (
                 ),
             ),
             files=(f"{TESTS}/test_keycard_schema.py", f"{TESTS}/test_spec_lint.py"),
+            generated=True,
+        ),
+    ),
+    (
+        "specs/dexpi/",
+        Claim(
+            commands=(
+                Command(
+                    "the mapping is generated from this table and must cover the palette",
+                    SCRIPT,
+                    "python tools/gen_dexpi_mapping.py --check",
+                ),
+            ),
+            files=(f"{TESTS}/test_dexpi.py",),
             generated=True,
         ),
     ),
@@ -700,6 +719,7 @@ def crate_namespaces() -> dict[str, str]:
 NAMELESS_CRATES = (
     "azoth-cli",
     "azoth-core",
+    "azoth-dexpi",
     "azoth-python",
     "azoth-sheets",
     "azoth-test-support",
@@ -731,6 +751,11 @@ def crate_claim(crate: str) -> Claim:
     if crate == "azoth-python":
         # The extension itself: its own suites and the smoke ids, not the whole surface.
         return Claim(files=EXTENSION_TESTS, ids=SMOKE_IDS)
+    if crate == "azoth-dexpi":
+        # The exchange has no Python mirror - the Rust crate is the one implementation - but
+        # its binding is driven through the extension, and that test is what a change here
+        # reaches.
+        return Claim(files=(f"{TESTS}/test_dexpi.py",))
     if crate == "azoth-cli":
         return Claim(files=(f"{TESTS}/validation/test_mcp_conformance.py",))
     if crate == "azoth-sheets":

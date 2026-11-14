@@ -34,6 +34,7 @@ use pyo3::types::PyModule;
 mod batch;
 mod characterization;
 mod data;
+mod dexpi;
 mod eos;
 mod errors;
 mod hydraulics;
@@ -88,6 +89,11 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Introspection.
     m.add_function(wrap_pyfunction!(batch::batch_run, m)?)?;
+    m.add_function(wrap_pyfunction!(dexpi::dexpi_export, m)?)?;
+    m.add_function(wrap_pyfunction!(dexpi::dexpi_import, m)?)?;
+    m.add_function(wrap_pyfunction!(dexpi::dexpi_validate, m)?)?;
+    m.add_function(wrap_pyfunction!(dexpi::dexpi_schema_sha256, m)?)?;
+    m.add_function(wrap_pyfunction!(dexpi::dexpi_format_double, m)?)?;
     m.add_function(wrap_pyfunction!(data::data_files, m)?)?;
     m.add_function(wrap_pyfunction!(data::fittings_rows, m)?)?;
     m.add_function(wrap_pyfunction!(data::fluid_rows, m)?)?;

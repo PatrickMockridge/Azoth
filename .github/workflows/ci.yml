@@ -188,6 +188,10 @@ jobs:
       # line already relies on the runner image carrying the toolchain.
       - run: python tools/gen_palette.py --check
       - run: python tools/gen_model_inputs.py --check
+      # The DEXPI Process mapping: one row per palette entry, refused if one is missing, and
+      # the vendored schema's digest checked on the way. Stdlib plus `rustfmt`, like the two
+      # above.
+      - run: python tools/gen_dexpi_mapping.py --check
       # The guard theorems, against the manifest and the specs. Both are stdlib-only: the
       # checker answers "is every edge-case class owned", and Lean is what answers whether the
       # claims are true - which is the `lean-verify` job's, because it needs the toolchain.
@@ -225,6 +229,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # **`azoth-dexpi`'s schema gate is `xmllint`'s.** The crate refuses a document type
+      # declaration in Rust, but the official XSD is validated by libxml2, and the test fails
+      # rather than skips when the tool is absent - a schema check that quietly did not run is
+      # the gap the gate exists to prevent. Installing it here is what keeps the test honest.
+      - name: the official DEXPI schema needs libxml2
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
       # **What this change reaches, which is not the whole workspace.** The full set runs in
       # `.github/workflows/nightly.yml` on a 24-hour cycle. A push runs the crates its diff
       # touches and every crate that depends on them - read off the manifests by

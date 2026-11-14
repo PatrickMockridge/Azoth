@@ -150,12 +150,39 @@ cleanly sourced upstream. That is not inspectable from here, and the mitigation 
 attribution rather than inspection: the source is named, so a reader who needs to
 know where a number came from knows where to look.
 
+**The DEXPI 2.0 Process exchange.** `crates/azoth-dexpi` ports the reviewed Process
+mapping from NeqSim's `Dexpi20ProcessModelWriter` - the type switch at the pinned source -
+and the quantity conventions its writer emits (kg/h, bar absolute, °C). The Proteus reader,
+the Plant writer and the topology resolver are *not* ported yet; they are named in
+`docs/src/architecture/dexpi.md` as the classes that would close the next tranche.
+
 ### Changes
 
 Recorded in each calculation's spec, in its own notes - which is where the design
 decisions already live - rather than in a block kept for the purpose. What each
 spec says is how its implementation differs from NeqSim's and why, because those
 differences are the part a reader cannot recover from either side.
+
+The DEXPI exchange's changes are recorded on its own page: the mapping is a reviewed
+subset with explicit refusal and loss rows, the structural ids are counters rather than
+equipment names, and the `Azoth/…` extension properties do not exist upstream.
+
+--------------------------------------------------------------------------------
+DEXPI specification
+--------------------------------------------------------------------------------
+
+  Project:   DEXPI - https://gitlab.com/dexpi/Specification
+  Release:   DEXPI XML V2.0.0 (2.0.1 publishes a byte-identical schema)
+  Licence:   Creative Commons Attribution 4.0 International (CC BY 4.0)
+             https://creativecommons.org/licenses/by/4.0/
+  Copyright: DEXPI e.V. and the DEXPI contributors
+  Vendored:  crates/azoth-dexpi/schema/DEXPI_XML_Schema.xsd, unmodified
+  SHA-256:   0bd6568b7c52fd59ac4ef6d8547ab2b2aa890c009a3a1bfbc5d7cc18c53b36e6
+
+The schema is bundled so exports can be validated deterministically without network access.
+It remains under CC BY 4.0; the crate around it is AGPL-3.0-or-later. The digest is checked
+by `tools/gen_dexpi_mapping.py` on every run, and the schema's own `version="1.0.0"` header
+is not its release - the digest is the identity.
 
 --------------------------------------------------------------------------------
 NeqSim community skills

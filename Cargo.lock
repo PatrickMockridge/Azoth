@@ -74,6 +74,7 @@ name = "azoth-cli"
 version = "0.1.3"
 dependencies = [
  "azoth-core",
+ "azoth-dexpi",
  "azoth-eos",
  "azoth-hydraulics",
  "azoth-process",
@@ -91,6 +92,18 @@ version = "0.1.3"
 dependencies = [
  "thiserror",
  "uom",
+]
+
+[[package]]
+name = "azoth-dexpi"
+version = "0.1.3"
+dependencies = [
+ "azoth-core",
+ "azoth-process",
+ "azoth-test-support",
+ "quick-xml",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -139,6 +152,7 @@ version = "0.1.3"
 dependencies = [
  "azoth-characterization",
  "azoth-core",
+ "azoth-dexpi",
  "azoth-eos",
  "azoth-hydraulics",
  "azoth-process",
@@ -437,6 +451,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.38.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b66c2058c55a409d601666cffe35f04333cf1013010882cec174a7467cd4e21c"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]

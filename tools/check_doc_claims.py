@@ -589,7 +589,38 @@ class ProbeError(Exception):
     """A probe could not measure - the tree is not where the probe looks."""
 
 
+def _dexpi_rows() -> list[dict]:
+    """The DEXPI Process mapping rows, read from their one hand-written table."""
+    path = ROOT / "specs" / "dexpi" / "process_units.toml"
+    with path.open("rb") as handle:
+        rows = tomllib.load(handle).get("unit", [])
+    if not rows:
+        raise ProbeError(f"{path.relative_to(ROOT)} declares no [[unit]] rows")
+    return rows
+
+
+def dexpi_mappings() -> int:
+    """Every azoth palette entry the DEXPI Process exchange maps, refused included."""
+    return len(_dexpi_rows())
+
+
+def dexpi_faithful() -> int:
+    return sum(1 for row in _dexpi_rows() if row.get("disposition") == "faithful")
+
+
+def dexpi_lossy() -> int:
+    return sum(1 for row in _dexpi_rows() if row.get("disposition") == "lossy")
+
+
+def dexpi_refused() -> int:
+    return sum(1 for row in _dexpi_rows() if row.get("disposition") == "refused")
+
+
 MEASURES = {
+    "dexpi.mappings": dexpi_mappings,
+    "dexpi.faithful": dexpi_faithful,
+    "dexpi.lossy": dexpi_lossy,
+    "dexpi.refused": dexpi_refused,
     "specs.calcs": specs_calcs,
     "specs.models": specs_models,
     "specs.ids": specs_ids,

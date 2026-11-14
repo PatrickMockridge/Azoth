@@ -10,6 +10,7 @@ members = [
   "crates/azoth-standards",
   "crates/azoth-characterization",
   "crates/azoth-sheets",
+  "crates/azoth-dexpi",
   "crates/azoth-process",
   "crates/azoth-python",
   "crates/azoth-wasm",
@@ -35,6 +36,7 @@ azoth-reactions = { path = "crates/azoth-reactions" }
 azoth-standards = { path = "crates/azoth-standards" }
 azoth-characterization = { path = "crates/azoth-characterization" }
 azoth-sheets = { path = "crates/azoth-sheets" }
+azoth-dexpi = { path = "crates/azoth-dexpi" }
 azoth-process = { path = "crates/azoth-process" }
 azoth-python = { path = "crates/azoth-python" }
 azoth-cli = { path = "crates/azoth-cli" }
@@ -65,6 +67,13 @@ serde = { version = "1", features = ["derive"] }
 # name carries one, and JSON has no representation for a non-finite number at all.
 serde_json = "1"
 toml = "1"
+
+# The DEXPI exchange. One parser for both directions: `roxmltree` reads only, and a
+# second writer would mean escaping XML by hand - the silent failure the csv and json
+# comments above exist to avoid. Default features off leaves only `memchr`, which
+# `csv` already pulls in. Schema validation is delegated to libxml2's `xmllint`
+# rather than to a Rust XSD validator, so no encoding or schema backend is needed.
+quick-xml = { version = "0.38", default-features = false }
 
 # The Python extension. abi3-py312 gives one wheel tag covering CPython
 # 3.12 and later, so the release matrix does not need a wheel per version.

@@ -396,6 +396,22 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
         "catalogue(palette_dir: str | None = ..., with_tools: bool = ...)",
         "str",
     ),
+    # The DEXPI exchange. The two directions return the text and its report as JSON, in the
+    # same pairing the CLI prints, so a notebook reads exactly what a shell reads.
+    (
+        "dexpi_export(flowsheet: str, palette_dir: str = ...,"
+        " allow_lossy_mappings: bool = ..., project_recycles: bool = ...,"
+        " with_azoth_extensions: bool = ..., topology_only: bool = ...,"
+        " allow_unconverged: bool = ..., maps: dict[str, str] | None = ...)",
+        "tuple[str, str]",
+    ),
+    (
+        "dexpi_import(xml: str, palette_dir: str = ..., strict: bool = ...)",
+        "tuple[str, str]",
+    ),
+    ("dexpi_validate(xml: str)", "str"),
+    ("dexpi_schema_sha256()", "str"),
+    ("dexpi_format_double(value: float)", "str"),
 )
 
 #: The exception hierarchy, re-exported from `azoth.core.errors` so both backends raise

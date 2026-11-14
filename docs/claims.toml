@@ -10,7 +10,8 @@
 # may be written here on one line; punctuation must be exact, because a page that
 # retypes an em dash is a stale declaration rather than a claim that quietly moved.
 #
-# Probes: specs.calcs, specs.models, specs.ids, specs.unported_rows, unit_ops.declared,
+# Probes: dexpi.mappings, dexpi.faithful, dexpi.lossy, dexpi.refused,
+# specs.calcs, specs.models, specs.ids, specs.unported_rows, unit_ops.declared,
 # unit_ops.kernels, unit_ops.dispatch, unit_ops.refusals, vocabulary.units,
 # lean.axioms_gated, lean.axioms_dim, lean.gate_printed, lean.guards_gated, lean.modules,
 # pairs.eos_files,
@@ -178,6 +179,16 @@ measure = { azoth_basis = "skills.azoth" }
 page = "docs/src/agentic/roadmap.md"
 text = "The remaining {placeholders} are placeholders — {screening} `screening`, {advisory} `advisory` and {data_retrieval} `data-retrieval`"
 measure = { placeholders = "skills.placeholders", screening = "skills.screening", advisory = "skills.advisory", data_retrieval = "skills.data_retrieval" }
+
+# --- the DEXPI exchange --------------------------------------------------------
+
+# The mapping's size and its three dispositions, measured from the one hand-written table.
+# A palette entry added without a row fails the generator; this claim is what holds the page
+# to the same table once the row is written.
+[[claim]]
+page = "docs/src/architecture/dexpi.md"
+text = "The Process mapping covers **{total} palette entries**: {faithful} faithful, {lossy} lossy and {refused} refused."
+measure = { total = "dexpi.mappings", faithful = "dexpi.faithful", lossy = "dexpi.lossy", refused = "dexpi.refused" }
 
 # --- what CI cannot measure ----------------------------------------------------
 #

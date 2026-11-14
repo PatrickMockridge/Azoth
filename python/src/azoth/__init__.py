@@ -101,6 +101,7 @@ __all__ = [
     "characterization",
     "core",
     "describe",
+    "dexpi",
     "eos",
     "extension",
     "hydraulics",
@@ -118,8 +119,8 @@ __all__ = [
 def __getattr__(name: str) -> Any:
     """Import `azoth.process` on first use: it needs the compiled extension, and
     `import azoth` must not (the docs generator imports azoth from source)."""
-    if name == "process":
-        module = importlib.import_module("azoth.process")
+    if name in ("process", "dexpi"):
+        module = importlib.import_module(f"azoth.{name}")
         globals()[name] = module
         return module
     raise AttributeError(name)

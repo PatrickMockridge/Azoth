@@ -16,6 +16,7 @@
 pub mod check;
 pub mod cli;
 pub mod crosscheck;
+pub mod dexpi;
 pub mod edit;
 pub mod forms;
 pub mod mcp;

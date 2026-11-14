@@ -16,10 +16,10 @@
 //! wiring, which is the part an integration test against the built binary covers.
 
 use azoth_cli::cli::{
-    CheckArgs, Cli, Command, CrosscheckArgs, EditArgs, FormsArgs, McpArgs, PipeArgs, RunArgs,
-    ServeArgs, SheetsArgs,
+    CheckArgs, Cli, Command, CrosscheckArgs, DexpiArgs, DexpiCommand, EditArgs, FormsArgs, McpArgs,
+    PipeArgs, RunArgs, ServeArgs, SheetsArgs,
 };
-use azoth_cli::{check, crosscheck, edit, forms, mcp, pipe, report, run, serve, sheets};
+use azoth_cli::{check, crosscheck, dexpi, edit, forms, mcp, pipe, report, run, serve, sheets};
 use clap::Parser;
 
 fn main() -> std::process::ExitCode {
@@ -38,6 +38,32 @@ fn main() -> std::process::ExitCode {
         Command::Serve(args) => run_serve(args),
         Command::Sheets(args) => run_sheets(args),
         Command::Crosscheck(args) => run_crosscheck(args),
+        Command::Dexpi(args) => run_dexpi(args),
+    }
+}
+
+fn run_dexpi(args: DexpiArgs) -> std::process::ExitCode {
+    let outcome = match args.command {
+        DexpiCommand::Export(export) => dexpi::export(&export),
+        DexpiCommand::Import(import) => dexpi::import(&import),
+        DexpiCommand::Validate(validate) => dexpi::validate(&validate),
+    };
+    match outcome {
+        Ok(outcome) => {
+            print!("{}", outcome.text);
+            if outcome.text.is_empty() {
+                return std::process::ExitCode::SUCCESS;
+            }
+            if outcome.ok {
+                std::process::ExitCode::SUCCESS
+            } else {
+                std::process::ExitCode::from(2)
+            }
+        }
+        Err(message) => {
+            eprintln!("azoth: {message}");
+            std::process::ExitCode::from(2)
+        }
     }
 }
 
