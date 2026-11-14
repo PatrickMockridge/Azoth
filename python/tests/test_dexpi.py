@@ -136,7 +136,9 @@ def test_a_plant_export_loads_in_pydexpi() -> None:
     functions = getattr(plant, "processInstrumentationFunctions", None)
     assert functions is not None
     assert len(functions) == 2
-    switch = next(item for item in functions if item.processInstrumentationFunctionModifier == "SHH")
+    switch = next(
+        item for item in functions if item.processInstrumentationFunctionModifier == "SHH"
+    )
     assert switch.processInstrumentationFunctionCategory == "P"
     assert switch.processInstrumentationFunctionNumber == "101"
     assert switch.safetyRelevanceClass == "SIL 2"

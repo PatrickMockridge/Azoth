@@ -315,9 +315,9 @@ mod tests {
             ],
             recycles: vec![Recycle::new("recycle_1", "b.outlet", "a.inlet")],
             layout: None,
-                    instruments: Vec::new(),
+            instruments: Vec::new(),
             signals: Vec::new(),
-};
+        };
         assert_eq!(
             execution_order(&flowsheet, ExecutionOrder::Topological).expect("it orders"),
             vec![0, 1]

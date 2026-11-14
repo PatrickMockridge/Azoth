@@ -208,9 +208,9 @@ pub fn import_process(
         connections,
         recycles,
         layout: None,
-            instruments: Vec::new(),
+        instruments: Vec::new(),
         signals: Vec::new(),
-};
+    };
 
     if options.strict {
         for diagnostic in &mut diagnostics {
