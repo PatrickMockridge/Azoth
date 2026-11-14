@@ -53,7 +53,8 @@ pub use recycle::{Acceleration, RecycleSettings, Residuals};
 // connection carries, while a model takes the record field by field so that a case, a
 // cross-impl test and a NeqSim capture can address it.
 pub use models::{
-    AbsorptionColumnResult, AntiSurgeRecycleResult, ComponentSplitterResult, CompressorResult,
+    AbsorptionColumnResult, AntiSurgeRecycleResult, BleveResult, ComponentSplitterResult,
+    CompressorResult,
     CoolerResult, DistillationColumnResult, EjectorResult, ExpanderResult, FilterResult,
     FlareResult, GasDispersionResult, GasScrubberResult, GaussianPlumeResult, GibbsReactorResult,
     HeatExchangerResult, HeaterResult, HemReleaseResult, JetFireResult, LeakBlowdownResult,
@@ -64,7 +65,7 @@ pub use models::{
     SeparatorResult, ShortcutDistillationColumnResult, SplitterResult, StirredTankReactorResult,
     StrippingColumnResult, TankResult, ThreePhaseSeparatorResult, ThrottlingValveResult,
     TurboExpanderResult, VceResult, absorption_column, anti_surge_recycle, component_splitter,
-    compressor,
+    bleve, compressor,
     cooler, distillation_column, ejector, expander, filter, flare, gas_dispersion, gas_scrubber,
     gaussian_plume, gibbs_reactor, heat_exchanger, heater, hem_release, jet_fire, leak_blowdown,
     manifold, map_turbo_expander_compressor, mixer, packed_column, pipe, plug_flow_reactor,

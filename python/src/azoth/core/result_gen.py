@@ -5630,6 +5630,34 @@ class AntiSurgeRecycleResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class BleveResult(_HasWarnings):
+    """Result of ``process.bleve``."""
+
+    CALC_ID: ClassVar[str] = "process.bleve"
+
+    #: `5.8 M^(1/3)`, the fireball's diameter.
+    fireball_diameter: Q
+
+    #: `0.45 M^(1/3)`, the fireball's lifetime.
+    fireball_duration: Q
+
+    #: `eta M dHc / (pi D^2 t)`, the surface emissive power.
+    surface_emissive_power: Q
+
+    #: Wayne's `tau` at `distance`. Present only with `distance`.
+    transmissivity: float | None
+
+    #: `SEP` times the capped point-source view factor and `tau`. Present only with `distance`.
+    incident_heat_flux: Q | None
+
+    #: the distance at which the flux falls to the target. **Absent when the flux at `D/2 + 0.1` is already below the target**, where the class answers that near bound.
+    distance_to_flux: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ComponentSplitterResult(_HasWarnings):
     """Result of ``process.component_splitter``."""
 

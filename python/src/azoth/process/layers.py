@@ -1403,6 +1403,36 @@ def _vce(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dumped
 
 
+def _bleve(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.bleve`'s layers, from the reference's own arithmetic."""
+    from azoth.core.units import quantity
+    from azoth.process.reference.bleve import bleve as bleve_model
+
+    humidity = inputs.get("relative_humidity")
+    distance = inputs.get("distance")
+    target = inputs.get("target_flux")
+    result = bleve_model(
+        quantity(float(inputs["fuel_mass"]), "kg"),
+        float(inputs["heat_of_combustion"]),
+        float(inputs["radiative_fraction"]),
+        relative_humidity=None if humidity is None else float(humidity),
+        distance=None if distance is None else quantity(float(distance), "m"),
+        target_flux=None if target is None else quantity(float(target), "W/m**2"),
+    )
+    dumped: dict[str, float] = {
+        "fireball_diameter_m": result.fireball_diameter.to("m").magnitude,
+        "fireball_duration_s": result.fireball_duration.to("s").magnitude,
+        "surface_emissive_power_w_m2": result.surface_emissive_power.to("W/m**2").magnitude,
+    }
+    if result.transmissivity is not None:
+        dumped["transmissivity"] = result.transmissivity
+    if result.incident_heat_flux is not None:
+        dumped["incident_heat_flux_w_m2"] = result.incident_heat_flux.to("W/m**2").magnitude
+    if result.distance_to_flux is not None:
+        dumped["distance_to_flux_m"] = result.distance_to_flux.to("m").magnitude
+    return dumped
+
+
 def _probit(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.probit`'s layers, from the reference's own arithmetic.
 
@@ -1770,6 +1800,7 @@ DUMPERS: dict[str, Dumper] = {
     "process.leak_blowdown": _leak_blowdown,
     "process.gaussian_plume": _gaussian_plume,
     "process.gas_dispersion": _gas_dispersion,
+    "process.bleve": _bleve,
     "process.jet_fire": _jet_fire,
     "process.pool_fire": _pool_fire,
     "process.probit": _probit,
@@ -2511,6 +2542,44 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_vce.tsv",
         block=13,
         identified_by=("#label", "vce_class_10"),
+    ),
+    # The BLEVE's five reachable states; the zero-humidity NaN, the unreachable target,
+    # the negative fraction, the infinite zero-distance flux and the zero target are
+    # uncased.
+    LayerCase(
+        model="process.bleve",
+        case="test_state_geometry",
+        capture="process_bleve.tsv",
+        block=0,
+        identified_by=("#label", "bleve_test_geometry"),
+    ),
+    LayerCase(
+        model="process.bleve",
+        case="flux_at_one_hundred_metres",
+        capture="process_bleve.tsv",
+        block=1,
+        identified_by=("#label", "bleve_flux_100m"),
+    ),
+    LayerCase(
+        model="process.bleve",
+        case="humidity_half_at_fifty_metres",
+        capture="process_bleve.tsv",
+        block=2,
+        identified_by=("#label", "bleve_humidity_05_50m"),
+    ),
+    LayerCase(
+        model="process.bleve",
+        case="distance_to_twelve_point_five_kw",
+        capture="process_bleve.tsv",
+        block=4,
+        identified_by=("#label", "bleve_distance_12500"),
+    ),
+    LayerCase(
+        model="process.bleve",
+        case="small_target_contour",
+        capture="process_bleve.tsv",
+        block=5,
+        identified_by=("#label", "bleve_small_target"),
     ),
     # The probit's nine factory and stated-probit rows; the non-positive-dose guard is
     # uncased because the port refuses it.
@@ -3538,6 +3607,9 @@ UNCASED_ROWS: dict[str, int] = {
     # The VCE's three: two unreachable targets the class answers with its near bound, and
     # the zero-target refusal.
     "process_vce.tsv": 3,
+    # The BLEVE's five: the zero-humidity NaN, the unreachable target's near bound, the
+    # negative radiative fraction, the infinite zero-distance flux and the zero target.
+    "process_bleve.tsv": 5,
     # The probit's one: the non-positive-dose guard, whose `-Infinity` is the measurement
     # the refusal rests on.
     "process_probit.tsv": 1,

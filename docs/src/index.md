@@ -328,6 +328,7 @@ Five sections, and the difference between them is the point:
 
 - [`process.absorption_column`](./process/absorption_column.md) — Absorption column
 - [`process.anti_surge_recycle`](./process/anti_surge_recycle.md) — Anti-surge recycle calculator
+- [`process.bleve`](./process/bleve.md) — BLEVE fireball radiation
 - [`process.component_splitter`](./process/component_splitter.md) — Component splitter
 - [`process.compressor`](./process/compressor.md) — Compressor
 - [`process.cooler`](./process/cooler.md) — Cooler

@@ -224,6 +224,7 @@
 //!   - specs/calcs/hydraulics/tray_hydraulics.toml
 //!   - specs/models/process/absorption_column.toml
 //!   - specs/models/process/anti_surge_recycle.toml
+//!   - specs/models/process/bleve.toml
 //!   - specs/models/process/component_splitter.toml
 //!   - specs/models/process/compressor.toml
 //!   - specs/models/process/cooler.toml
@@ -2693,6 +2694,12 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "max_iterations",
         "dimensionless",
     ),
+    ("process.bleve", "fuel_mass", "mass"),
+    ("process.bleve", "heat_of_combustion", "dimensionless"),
+    ("process.bleve", "radiative_fraction", "dimensionless"),
+    ("process.bleve", "relative_humidity", "dimensionless"),
+    ("process.bleve", "distance", "length"),
+    ("process.bleve", "target_flux", "heat_flux_density"),
     ("process.component_splitter", "feed_n", "molar_flow"),
     ("process.component_splitter", "feed_z", "dimensionless"),
     ("process.component_splitter", "feed_p", "pressure"),

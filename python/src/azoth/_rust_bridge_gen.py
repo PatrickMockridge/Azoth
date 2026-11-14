@@ -28,6 +28,7 @@ from azoth.core.result import (
     BariteCelestiteSolidSolutionResult,
     BeggsBrillRegime,
     BeggsBrillSegmentResult,
+    BleveResult,
     BoilingHeatTransferResult,
     BrineMixingPointRow,
     BrineMixingScaleEvaluatorResult,
@@ -386,6 +387,7 @@ __all__ = [
     "assay_mass_fractions",
     "barite_celestite_solid_solution",
     "beggs_brill_segment",
+    "bleve",
     "boiling_heat_transfer",
     "brine_mixing_scale_evaluator",
     "bubble_pressure",
@@ -5587,6 +5589,28 @@ def anti_surge_recycle(components: list[str], feed_n: Q, feed_z: list[float], fe
         surge_flow=from_si(result.surge_flow.magnitude_si, result.surge_flow.unit),
         control_flow=from_si(result.control_flow.magnitude_si, result.control_flow.unit),
         distance_to_surge=result.distance_to_surge,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def bleve(fuel_mass: Q, heat_of_combustion: float, radiative_fraction: float, relative_humidity: float | None=None, distance: Q | None=None, target_flux: Q | None=None) -> BleveResult:
+    """``process.bleve``, computed in Rust."""
+    spec = _models_gen.model("process.bleve")
+    result = _core.bleve(
+        input_to_si(spec, "fuel_mass", fuel_mass),
+        heat_of_combustion,
+        radiative_fraction,
+        None if relative_humidity is None else relative_humidity,
+        None if distance is None else input_to_si(spec, "distance", distance),
+        None if target_flux is None else input_to_si(spec, "target_flux", target_flux),
+    )
+    return BleveResult(
+        fireball_diameter=from_si(result.fireball_diameter.magnitude_si, result.fireball_diameter.unit),
+        fireball_duration=from_si(result.fireball_duration.magnitude_si, result.fireball_duration.unit),
+        surface_emissive_power=from_si(result.surface_emissive_power.magnitude_si, result.surface_emissive_power.unit),
+        transmissivity=result.transmissivity,
+        incident_heat_flux=None if result.incident_heat_flux is None else from_si(result.incident_heat_flux.magnitude_si, result.incident_heat_flux.unit),
+        distance_to_flux=None if result.distance_to_flux is None else from_si(result.distance_to_flux.magnitude_si, result.distance_to_flux.unit),
         warnings=_warnings(result.warnings),
     )
 

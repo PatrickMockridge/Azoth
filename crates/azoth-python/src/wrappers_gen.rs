@@ -5500,6 +5500,35 @@ pub fn anti_surge_recycle(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// BLEVE fireball radiation.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (fuel_mass, heat_of_combustion, radiative_fraction, relative_humidity, distance, target_flux))]
+#[pyo3(
+    text_signature = "(fuel_mass, heat_of_combustion, radiative_fraction, relative_humidity, distance, target_flux)"
+)]
+pub fn bleve(
+    py: Python<'_>,
+    fuel_mass: f64,
+    heat_of_combustion: f64,
+    radiative_fraction: f64,
+    relative_humidity: Option<f64>,
+    distance: Option<f64>,
+    target_flux: Option<f64>,
+) -> PyResult<crate::transport_gen::PyBleveResult> {
+    azoth_process::models::bleve::bleve(
+        kilograms(fuel_mass),
+        heat_of_combustion,
+        radiative_fraction,
+        relative_humidity,
+        distance.map(meters),
+        target_flux.map(watts_per_square_meter),
+    )
+    .map(|r| crate::transport_gen::PyBleveResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Component splitter.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

@@ -2816,6 +2816,16 @@ class AntiSurgeRecycleResult:
     warnings: list[Warning]
 
 @final
+class BleveResult:
+    fireball_diameter: Qty
+    fireball_duration: Qty
+    surface_emissive_power: Qty
+    transmissivity: float | None
+    incident_heat_flux: Qty | None
+    distance_to_flux: Qty | None
+    warnings: list[Warning]
+
+@final
 class ComponentSplitterResult:
     overhead_n: Qty
     overhead_z: list[float]
@@ -6271,6 +6281,14 @@ def anti_surge_recycle(
     tolerance: float | None = None,
     max_iterations: float | None = None,
 ) -> AntiSurgeRecycleResult: ...
+def bleve(
+    fuel_mass: float,
+    heat_of_combustion: float,
+    radiative_fraction: float,
+    relative_humidity: float | None = None,
+    distance: float | None = None,
+    target_flux: float | None = None,
+) -> BleveResult: ...
 def component_splitter(
     components: list[str],
     feed_n: float,

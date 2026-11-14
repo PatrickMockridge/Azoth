@@ -21,6 +21,7 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     AbsorptionColumnResult,
     AntiSurgeRecycleResult,
+    BleveResult,
     ComponentSplitterResult,
     CompressorResult,
     CoolerResult,
@@ -84,6 +85,7 @@ __all__ = [
     "TearResult",
     "absorption_column",
     "anti_surge_recycle",
+    "bleve",
     "catalogue",
     "component_splitter",
     "compressor",
@@ -170,6 +172,7 @@ _STIRRED_TANK_REACTOR = "process.stirred_tank_reactor"
 _TANK = "process.tank"
 _THREE_PHASE_SEPARATOR = "process.three_phase_separator"
 _ANTI_SURGE_RECYCLE = "process.anti_surge_recycle"
+_BLEVE = "process.bleve"
 
 
 def validate(flowsheet: str, palette_dir: str = "specs/unit_ops") -> list[str]:
@@ -1166,6 +1169,32 @@ def anti_surge_recycle(
         damping=damping,
         tolerance=tolerance,
         max_iterations=max_iterations,
+    )
+
+
+def bleve(
+    fuel_mass: Q,
+    heat_of_combustion: float,
+    radiative_fraction: float,
+    relative_humidity: float | None = None,
+    distance: Q | None = None,
+    target_flux: Q | None = None,
+) -> BleveResult:
+    """The fireball radiation at one distance, or the distance to a target flux.
+
+    The CCPS/TNO fireball's diameter, duration and surface emissive power, the capped
+    point-source view factor and the jet fire's shared transmissivity. **A target above
+    the near-field flux is absent**: the class answers ``D/2 + 0.1``.
+
+    See :func:`azoth.process.reference.bleve`.
+    """
+    return resolve(_BLEVE)(  # type: ignore[no-any-return]
+        fuel_mass=fuel_mass,
+        heat_of_combustion=heat_of_combustion,
+        radiative_fraction=radiative_fraction,
+        relative_humidity=relative_humidity,
+        distance=distance,
+        target_flux=target_flux,
     )
 
 

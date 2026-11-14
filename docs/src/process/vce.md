@@ -84,6 +84,16 @@ not an equation, and both implementations read it from here.
 | `class_9_plateau` | cloud_fuel_mass = 1000.0, heat_of_combustion = 46000000.0, strength_class = 9.0, distance = 20.0 | combustion_energy = 46000000000.0, scaled_distance = 0.2602253427568675, dimensionless_overpressure = 5.0, overpressure = 506625.0 |
 | `class_10_plateau` | cloud_fuel_mass = 1000.0, heat_of_combustion = 46000000.0, strength_class = 10.0, distance = 20.0 | combustion_energy = 46000000000.0, scaled_distance = 0.2602253427568675, dimensionless_overpressure = 10.0, overpressure = 1013250.0 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 13 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Berg, A. C. (1985). "The multi-energy method: a framework for vapour cloud explosion blast prediction." Journal of Hazardous Materials 12, 1-10.

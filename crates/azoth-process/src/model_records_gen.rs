@@ -13,6 +13,7 @@ use azoth_core::{CalcResult, Warning};
 
 use crate::models::absorption_column::AbsorptionColumnResult;
 use crate::models::anti_surge_recycle::AntiSurgeRecycleResult;
+use crate::models::bleve::BleveResult;
 use crate::models::component_splitter::ComponentSplitterResult;
 use crate::models::compressor::CompressorResult;
 use crate::models::cooler::CoolerResult;
@@ -112,6 +113,23 @@ impl CalcResult for AntiSurgeRecycleResult {
         "surge_flow",
         "control_flow",
         "distance_to_surge",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for BleveResult {
+    const CALC_ID: &'static str = "process.bleve";
+    const FIELDS: &'static [&'static str] = &[
+        "fireball_diameter",
+        "fireball_duration",
+        "surface_emissive_power",
+        "transmissivity",
+        "incident_heat_flux",
+        "distance_to_flux",
         "warnings",
     ];
 

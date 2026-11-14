@@ -235,6 +235,7 @@
 - [Unit operations](./process/index.md)
   - [Absorption column](./process/absorption_column.md)
   - [Anti-surge recycle calculator](./process/anti_surge_recycle.md)
+  - [BLEVE fireball radiation](./process/bleve.md)
   - [Component splitter](./process/component_splitter.md)
   - [Compressor](./process/compressor.md)
   - [Cooler](./process/cooler.md)

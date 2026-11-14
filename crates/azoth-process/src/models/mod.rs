@@ -32,6 +32,7 @@
 
 pub mod absorption_column;
 pub mod anti_surge_recycle;
+pub mod bleve;
 pub mod component_splitter;
 pub mod compressor;
 pub mod cooler;
@@ -74,6 +75,7 @@ pub mod vce;
 
 pub use absorption_column::{AbsorptionColumnResult, absorption_column};
 pub use anti_surge_recycle::{AntiSurgeRecycleResult, anti_surge_recycle};
+pub use bleve::{BleveResult, bleve};
 pub use component_splitter::{ComponentSplitterResult, component_splitter};
 pub use compressor::{CompressorResult, compressor};
 pub use cooler::{CoolerResult, cooler};

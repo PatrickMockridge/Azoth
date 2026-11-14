@@ -14086,6 +14086,82 @@ impl From<&azoth_process::models::anti_surge_recycle::AntiSurgeRecycleResult>
         }
     }
 }
+/// Result of `process.bleve`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "BleveResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyBleveResult {
+    /// `5.8 M^(1/3)`, the fireball's diameter.
+    #[pyo3(get)]
+    pub fireball_diameter: PyQty,
+    /// `0.45 M^(1/3)`, the fireball's lifetime.
+    #[pyo3(get)]
+    pub fireball_duration: PyQty,
+    /// `eta M dHc / (pi D^2 t)`, the surface emissive power.
+    #[pyo3(get)]
+    pub surface_emissive_power: PyQty,
+    /// Wayne's `tau` at `distance`. Present only with `distance`.
+    #[pyo3(get)]
+    pub transmissivity: Option<f64>,
+    /// `SEP` times the capped point-source view factor and `tau`. Present only with `distance`.
+    #[pyo3(get)]
+    pub incident_heat_flux: Option<PyQty>,
+    /// the distance at which the flux falls to the target. **Absent when the flux at `D/2 + 0.1` is already below the target**, where the class answers that near bound.
+    #[pyo3(get)]
+    pub distance_to_flux: Option<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyBleveResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "BleveResult(fireball_diameter={:?}, fireball_duration={:?}, surface_emissive_power={:?}, transmissivity={:?}, incident_heat_flux={:?}, distance_to_flux={:?}, {} warning(s))",
+            self.fireball_diameter,
+            self.fireball_duration,
+            self.surface_emissive_power,
+            self.transmissivity,
+            self.incident_heat_flux,
+            self.distance_to_flux,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::bleve::BleveResult> for PyBleveResult {
+    fn from(r: &azoth_process::models::bleve::BleveResult) -> Self {
+        Self {
+            fireball_diameter: PyQty {
+                magnitude_si: r.fireball_diameter.value,
+                unit: "m".to_string(),
+            },
+            fireball_duration: PyQty {
+                magnitude_si: r.fireball_duration.value,
+                unit: "s".to_string(),
+            },
+            surface_emissive_power: PyQty {
+                magnitude_si: r.surface_emissive_power.value,
+                unit: "W/m**2".to_string(),
+            },
+            transmissivity: r.transmissivity,
+            incident_heat_flux: r.incident_heat_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "W/m**2".to_string(),
+            }),
+            distance_to_flux: r.distance_to_flux.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "m".to_string(),
+            }),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.component_splitter`, transported.
 #[pyclass(
     frozen,
