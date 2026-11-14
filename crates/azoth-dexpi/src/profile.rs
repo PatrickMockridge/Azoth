@@ -161,3 +161,14 @@ pub const DIRECTION_OUTLET: &str = "Process/Enumerations.PortDirection.Outlet";
 pub fn supports(ty: &str) -> bool {
     SUPPORTED_TYPES.contains(&ty)
 }
+
+/// Whether a type belongs to the graphical model rather than to the conceptual one.
+///
+/// **Graphics are not units.** A drawing class says how an object is drawn, not what it is,
+/// so the validator accepts the package and warns about a shape it cannot render instead of
+/// refusing a file whose process model is sound. Both namespaces are read because a native
+/// Plant P&ID labels equipment with `Plant/Diagram.*Label` classes.
+#[must_use]
+pub fn is_graphics(ty: &str) -> bool {
+    ty.starts_with("Core/Diagram.") || ty.starts_with("Plant/Diagram.")
+}

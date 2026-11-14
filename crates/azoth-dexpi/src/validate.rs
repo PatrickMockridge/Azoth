@@ -128,29 +128,56 @@ pub fn validate(document: &Document) -> ValidationReport {
         &mut tag_names,
     );
 
-    // References resolve, against ids and names.
+    // References resolve, against ids and names. **A drawing reference is a warning**: a CAD
+    // file may carry furniture that is not a conceptual object, and refusing the process model
+    // because a symbol is not linked would make a real P&ID unviewable.
     for object in objects.values() {
+        let graphics = crate::profile::is_graphics(&object.ty);
         for child in &object.children {
             let Child::References(references) = child else {
                 continue;
             };
             if references.objects.is_empty() {
-                report.error(
-                    "empty_reference",
-                    object.id.clone().unwrap_or_default(),
-                    format!("`{}` names no object", references.property),
-                );
+                let code = if graphics {
+                    "empty_representation"
+                } else {
+                    "empty_reference"
+                };
+                if graphics {
+                    report.warning(
+                        code,
+                        object.id.clone().unwrap_or_default(),
+                        format!("`{}` names no object", references.property),
+                    );
+                } else {
+                    report.error(
+                        code,
+                        object.id.clone().unwrap_or_default(),
+                        format!("`{}` names no object", references.property),
+                    );
+                }
             }
             for target in &references.objects {
                 if resolve(target, &objects).is_none() {
-                    report.error(
-                        "unresolved_reference",
-                        object.id.clone().unwrap_or_default(),
-                        format!(
-                            "`{}` points at `{target}`, which the document does not hold",
-                            references.property
-                        ),
-                    );
+                    if graphics {
+                        report.warning(
+                            "unresolved_representation",
+                            object.id.clone().unwrap_or_default(),
+                            format!(
+                                "`{}` points at `{target}`, which the document does not hold",
+                                references.property
+                            ),
+                        );
+                    } else {
+                        report.error(
+                            "unresolved_reference",
+                            object.id.clone().unwrap_or_default(),
+                            format!(
+                                "`{}` points at `{target}`, which the document does not hold",
+                                references.property
+                            ),
+                        );
+                    }
                 }
             }
         }
@@ -621,7 +648,18 @@ fn collect_object<'a>(
             format!("`{}` is not a `prefix/name` reference", object.ty),
         ),
     }
-    if !selected.supports(&object.ty) {
+    if crate::profile::is_graphics(&object.ty) {
+        if !crate::drawing::native::renders(&object.ty) {
+            report.warning(
+                "unsupported_diagram_type",
+                &subject,
+                format!(
+                    "`{}` is a drawing class this port does not render",
+                    object.ty
+                ),
+            );
+        }
+    } else if !selected.supports(&object.ty) {
         report.error(
             "unsupported_type",
             &subject,

@@ -172,3 +172,12 @@ def test_the_schema_is_pinned() -> None:
     assert dexpi.schema_sha256() == (
         "0bd6568b7c52fd59ac4ef6d8547ab2b2aa890c009a3a1bfbc5d7cc18c53b36e6"
     )
+
+
+def test_a_dexpi_2_drawing_loads_strictly() -> None:
+    """A `Core/Diagram` document is a DEXPI 2.0 document to the independent parser too."""
+    fixture = (
+        ROOT / "crates" / "azoth-dexpi" / "tests" / "fixtures" / "native_projection_shape.dexpi.xml"
+    )
+    model = load_xml_string(fixture.read_text(), strict=True)
+    assert model is not None

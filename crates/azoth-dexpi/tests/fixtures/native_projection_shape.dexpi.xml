@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  A DEXPI 2.0 drawing written for this test: one diagram, one group drawn from primitives
+  and one from a shape usage, both representing a tagged item. It mirrors the paths NeqSim's
+  Dexpi20GraphicalProjectionWriter writes - Diagram -> Groups -> RepresentationGroup ->
+  Static -> Elements - without redistributing any sample.
+-->
+<Model name="graphics" uri="urn:test:graphics">
+    <Import prefix="Core" source="https://data.dexpi.org/models/2.0.0/Core.xml"/>
+    <Import prefix="Plant" source="https://data.dexpi.org/models/2.0.0/Plant.xml"/>
+    <Object type="Core/EngineeringModel">
+        <Components property="ConceptualModel">
+            <Object id="PlantModel1" type="Plant/PlantModel">
+                <Components property="TaggedPlantItems">
+                    <Object id="Equipment1" type="Plant/ProcessEquipment.Separator">
+                        <Data property="TagName"><String>V-101</String></Data>
+                    </Object>
+                    <Object id="Equipment2" type="Plant/ProcessEquipment.Separator">
+                        <Data property="TagName"><String>V-102</String></Data>
+                    </Object>
+                </Components>
+            </Object>
+        </Components>
+        <Components property="ShapeCatalogue">
+            <Object id="Catalogue1" type="Core/Diagram.ShapeCatalogue">
+                <Data property="Name"><String>Shapes for this test</String></Data>
+                <Components property="Shapes">
+                    <Object id="Shape1" type="Core/Diagram.Shape">
+                        <Data property="Name"><String>VESSEL_SHAPE</String></Data>
+                        <Data property="SymbolRegistrationNumber"><String>ISO10628:2012-2062-A</String></Data>
+                        <Components property="Primitives">
+                            <Object id="ShapePolygon1" type="Core/Diagram.Polygon">
+                                <Data property="FillStyle"><DataReference data="Core/Diagram.FillStyle.Transparent"/></Data>
+                                <Data property="Points">
+                                    <AggregatedDataValue type="Core/Diagram.Point">
+                                        <Data property="X"><Double>0.0</Double></Data>
+                                        <Data property="Y"><Double>0.0</Double></Data>
+                                    </AggregatedDataValue>
+                                    <AggregatedDataValue type="Core/Diagram.Point">
+                                        <Data property="X"><Double>10.0</Double></Data>
+                                        <Data property="Y"><Double>0.0</Double></Data>
+                                    </AggregatedDataValue>
+                                    <AggregatedDataValue type="Core/Diagram.Point">
+                                        <Data property="X"><Double>5.0</Double></Data>
+                                        <Data property="Y"><Double>10.0</Double></Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                                <Data property="Stroke">
+                                    <AggregatedDataValue type="Core/Diagram.Stroke">
+                                        <Data property="Color">
+                                            <AggregatedDataValue type="Core/Diagram.Color">
+                                                <Data property="B"><Integer>0</Integer></Data>
+                                                <Data property="G"><Integer>0</Integer></Data>
+                                                <Data property="R"><Integer>0</Integer></Data>
+                                            </AggregatedDataValue>
+                                        </Data>
+                                        <Data property="DashStyle"><DataReference data="Core/Diagram.DashStyle.Solid"/></Data>
+                                        <Data property="Width"><Double>1.5</Double></Data>
+                                    </AggregatedDataValue>
+                                </Data>
+                            </Object>
+                        </Components>
+                    </Object>
+                </Components>
+            </Object>
+        </Components>
+        <Components property="Diagram">
+            <Object id="Diagram1" type="Core/Diagram.Diagram">
+                <Data property="Name"><String>Drawing for this test</String></Data>
+                <Data property="BackgroundColor">
+                    <AggregatedDataValue type="Core/Diagram.Color">
+                        <Data property="B"><Integer>255</Integer></Data>
+                        <Data property="G"><Integer>255</Integer></Data>
+                        <Data property="R"><Integer>255</Integer></Data>
+                    </AggregatedDataValue>
+                </Data>
+                <Data property="MinX"><Double>0.0</Double></Data>
+                <Data property="MinY"><Double>0.0</Double></Data>
+                <Data property="MaxX"><Double>100.0</Double></Data>
+                <Data property="MaxY"><Double>100.0</Double></Data>
+                <References property="Represents" objects="#PlantModel1"/>
+                <Components property="Groups">
+                    <Object id="RepresentationGroup1" type="Core/Diagram.RepresentationGroup">
+                        <References property="Represents" objects="#Equipment1"/>
+                        <Components property="Groups">
+                            <Object id="Static1" type="Core/Diagram.Static">
+                                <Components property="Elements">
+                                    <Object id="Polygon1" type="Core/Diagram.Polygon">
+                                        <Data property="FillStyle"><DataReference data="Core/Diagram.FillStyle.Solid"/></Data>
+                                        <Data property="Points">
+                                            <AggregatedDataValue type="Core/Diagram.Point">
+                                                <Data property="X"><Double>10.0</Double></Data>
+                                                <Data property="Y"><Double>20.0</Double></Data>
+                                            </AggregatedDataValue>
+                                            <AggregatedDataValue type="Core/Diagram.Point">
+                                                <Data property="X"><Double>50.0</Double></Data>
+                                                <Data property="Y"><Double>20.0</Double></Data>
+                                            </AggregatedDataValue>
+                                            <AggregatedDataValue type="Core/Diagram.Point">
+                                                <Data property="X"><Double>50.0</Double></Data>
+                                                <Data property="Y"><Double>40.0</Double></Data>
+                                            </AggregatedDataValue>
+                                            <AggregatedDataValue type="Core/Diagram.Point">
+                                                <Data property="X"><Double>10.0</Double></Data>
+                                                <Data property="Y"><Double>40.0</Double></Data>
+                                            </AggregatedDataValue>
+                                        </Data>
+                                        <Data property="Stroke">
+                                            <AggregatedDataValue type="Core/Diagram.Stroke">
+                                                <Data property="Color">
+                                                    <AggregatedDataValue type="Core/Diagram.Color">
+                                                        <Data property="B"><Integer>0</Integer></Data>
+                                                        <Data property="G"><Integer>0</Integer></Data>
+                                                        <Data property="R"><Integer>0</Integer></Data>
+                                                    </AggregatedDataValue>
+                                                </Data>
+                                                <Data property="DashStyle"><DataReference data="Core/Diagram.DashStyle.Solid"/></Data>
+                                                <Data property="Width"><Double>1.0</Double></Data>
+                                            </AggregatedDataValue>
+                                        </Data>
+                                    </Object>
+                                    <Object id="PolyLine1" type="Core/Diagram.PolyLine">
+                                        <Data property="Points">
+                                            <AggregatedDataValue type="Core/Diagram.Point">
+                                                <Data property="X"><Double>10.0</Double></Data>
+                                                <Data property="Y"><Double>30.0</Double></Data>
+                                            </AggregatedDataValue>
+                                            <AggregatedDataValue type="Core/Diagram.Point">
+                                                <Data property="X"><Double>4.0</Double></Data>
+                                                <Data property="Y"><Double>30.0</Double></Data>
+                                            </AggregatedDataValue>
+                                        </Data>
+                                        <Data property="Stroke">
+                                            <AggregatedDataValue type="Core/Diagram.Stroke">
+                                                <Data property="Color">
+                                                    <AggregatedDataValue type="Core/Diagram.Color">
+                                                        <Data property="B"><Integer>0</Integer></Data>
+                                                        <Data property="G"><Integer>0</Integer></Data>
+                                                        <Data property="R"><Integer>0</Integer></Data>
+                                                    </AggregatedDataValue>
+                                                </Data>
+                                                <Data property="DashStyle"><DataReference data="Core/Diagram.DashStyle.Solid"/></Data>
+                                                <Data property="Width"><Double>1.0</Double></Data>
+                                            </AggregatedDataValue>
+                                        </Data>
+                                    </Object>
+                                    <Object id="Text1" type="Core/Diagram.Text">
+                                        <Data property="Alignment"><DataReference data="Core/Diagram.TextAlignment.CenterCenter"/></Data>
+                                        <Data property="Color">
+                                            <AggregatedDataValue type="Core/Diagram.Color">
+                                                <Data property="B"><Integer>0</Integer></Data>
+                                                <Data property="G"><Integer>0</Integer></Data>
+                                                <Data property="R"><Integer>0</Integer></Data>
+                                            </AggregatedDataValue>
+                                        </Data>
+                                        <Data property="Font"><String>Arial</String></Data>
+                                        <Data property="Position">
+                                            <AggregatedDataValue type="Core/Diagram.Point">
+                                                <Data property="X"><Double>30.0</Double></Data>
+                                                <Data property="Y"><Double>50.0</Double></Data>
+                                            </AggregatedDataValue>
+                                        </Data>
+                                        <Data property="Rotation"><Double>0.0</Double></Data>
+                                        <Data property="Size"><Double>3.0</Double></Data>
+                                        <Data property="Text"><String>V-101</String></Data>
+                                    </Object>
+                                </Components>
+                            </Object>
+                        </Components>
+                    </Object>
+                    <Object id="RepresentationGroup2" type="Core/Diagram.RepresentationGroup">
+                        <References property="Represents" objects="#Equipment2"/>
+                        <Components property="Groups">
+                            <Object id="Static2" type="Core/Diagram.Static">
+                                <Components property="Elements">
+                                    <Object id="ShapeUsage1" type="Core/Diagram.ShapeUsage">
+                                        <References property="Shape" objects="#Shape1"/>
+                                        <Data property="IsMirrored"><Boolean>false</Boolean></Data>
+                                        <Data property="Position">
+                                            <AggregatedDataValue type="Core/Diagram.Point">
+                                                <Data property="X"><Double>80.0</Double></Data>
+                                                <Data property="Y"><Double>30.0</Double></Data>
+                                            </AggregatedDataValue>
+                                        </Data>
+                                        <Data property="Rotation"><Double>0.0</Double></Data>
+                                        <Data property="ScaleX"><Double>2.0</Double></Data>
+                                        <Data property="ScaleY"><Double>2.0</Double></Data>
+                                    </Object>
+                                </Components>
+                            </Object>
+                        </Components>
+                    </Object>
+                </Components>
+            </Object>
+        </Components>
+    </Object>
+</Model>
