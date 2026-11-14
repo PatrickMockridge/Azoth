@@ -100,11 +100,30 @@ pub struct Instance {
 /// `from` is a feed name or `instance.port` (an outlet); `to` is a product name
 /// or `instance.port` (an inlet). A bare name in `from` position is a feed, in
 /// `to` position a product; the dot separates an instance from its port.
+///
+/// **`line` is the one field a calculation does not read.** A P&ID names the line a
+/// material edge belongs to - `PipingNetworkSystem.LineNumber` in DEXPI - and a flowsheet
+/// has no other place to keep it. It is optional, the checker ignores it, and the executor
+/// never sees it; it exists so that an exchange is not the lossy half of a round trip.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Connection {
     pub from: String,
     pub to: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub line: Option<String>,
+}
+
+impl Connection {
+    /// A connection with no line number.
+    #[must_use]
+    pub fn new(from: impl Into<String>, to: impl Into<String>) -> Self {
+        Self {
+            from: from.into(),
+            to: to.into(),
+            line: None,
+        }
+    }
 }
 
 impl Flowsheet {

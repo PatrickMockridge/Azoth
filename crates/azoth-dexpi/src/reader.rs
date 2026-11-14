@@ -49,7 +49,7 @@ pub fn read(xml: &str) -> Result<ReadReport, DexpiDiagnostic> {
             ),
         ));
     }
-    let root = parse(xml)?;
+    let root = parse_tree(xml)?;
     if root.name != "Model" {
         return Err(DexpiDiagnostic::error(
             "unsupported_root",
@@ -225,26 +225,26 @@ fn parse_f64(element: &RawElement, text: &str) -> Result<f64, DexpiDiagnostic> {
 
 // --- the untyped tree -------------------------------------------------------------------
 
-struct RawElement {
-    name: String,
+pub(crate) struct RawElement {
+    pub(crate) name: String,
     attributes: Vec<(String, String)>,
-    children: Vec<RawNode>,
+    pub(crate) children: Vec<RawNode>,
 }
 
-enum RawNode {
+pub(crate) enum RawNode {
     Element(RawElement),
     Text(String),
 }
 
 impl RawElement {
-    fn attribute(&self, name: &str) -> Option<String> {
+    pub(crate) fn attribute(&self, name: &str) -> Option<String> {
         self.attributes
             .iter()
             .find(|(key, _)| key == name)
             .map(|(_, value)| value.clone())
     }
 
-    fn required(&self, name: &str) -> Result<String, DexpiDiagnostic> {
+    pub(crate) fn required(&self, name: &str) -> Result<String, DexpiDiagnostic> {
         self.attribute(name).ok_or_else(|| {
             DexpiDiagnostic::error(
                 "missing_attribute",
@@ -254,14 +254,14 @@ impl RawElement {
         })
     }
 
-    fn elements(&self) -> impl Iterator<Item = &RawElement> {
+    pub(crate) fn elements(&self) -> impl Iterator<Item = &RawElement> {
         self.children.iter().filter_map(|child| match child {
             RawNode::Element(element) => Some(element),
             RawNode::Text(_) => None,
         })
     }
 
-    fn text(&self) -> String {
+    pub(crate) fn text(&self) -> String {
         let mut text = String::new();
         for child in &self.children {
             if let RawNode::Text(chunk) = child {
@@ -296,7 +296,7 @@ fn resolve_reference(name: &str) -> Option<String> {
     char::from_u32(value).map(String::from)
 }
 
-fn parse(xml: &str) -> Result<RawElement, DexpiDiagnostic> {
+pub(crate) fn parse_tree(xml: &str) -> Result<RawElement, DexpiDiagnostic> {
     let mut reader = Reader::from_str(xml);
     reader.config_mut().check_end_names = true;
     let mut stack: Vec<RawElement> = Vec::new();

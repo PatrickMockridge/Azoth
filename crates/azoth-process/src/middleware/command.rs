@@ -194,6 +194,7 @@ pub fn apply(flowsheet: &mut Flowsheet, palette: &[UnitOpSpec], command: &Comman
                 flowsheet.connections.push(Connection {
                     from: from.clone(),
                     to: to.clone(),
+                    line: None,
                 });
             }
         }

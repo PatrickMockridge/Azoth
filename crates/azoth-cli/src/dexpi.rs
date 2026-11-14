@@ -11,10 +11,13 @@
 
 use std::path::Path;
 
+use azoth_dexpi::plant::export::PlantExportOptions;
+use azoth_dexpi::plant::import::PlantImportOptions;
 use azoth_dexpi::process::export::ExportOptions;
 use azoth_dexpi::process::import::ImportOptions;
 use azoth_dexpi::{
-    DexpiDiagnostic, ExportReport, ImportReport, Severity, export_process, import_process, xsd,
+    DexpiDiagnostic, ExportReport, ImportReport, PlantExportReport, PlantImportReport, Profile,
+    Severity, export_plant, export_process, import_plant, import_process, xsd,
 };
 use azoth_process::{load_palette, parse_flowsheet};
 
@@ -26,7 +29,7 @@ pub struct Outcome {
     pub text: String,
 }
 
-/// Write a DEXPI Process exchange.
+/// Write a DEXPI exchange - a PFD (`--profile process`) or a P&ID (`--profile plant`).
 ///
 /// # Errors
 /// A message naming what could not be read or written. A document the exchange refuses is an
@@ -42,48 +45,69 @@ pub fn export(args: &DexpiExportArgs) -> Result<Outcome, String> {
     for entry in &args.maps {
         let Some((unit, dexpi_type)) = entry.split_once('=') else {
             return Err(format!(
-                "--map `{entry}` is not `unit_ops.<name>=Process/Process.<Type>`"
+                "--map `{entry}` is not `unit_ops.<name>=<prefix>/<class>`"
             ));
         };
-        if !unit.starts_with("unit_ops.") || !dexpi_type.starts_with("Process/Process.") {
-            return Err(format!(
-                "--map `{entry}` must name a palette id and a Process type"
-            ));
+        if !unit.starts_with("unit_ops.") {
+            return Err(format!("--map `{entry}` must name a palette id"));
         }
         overrides.insert(unit.to_string(), dexpi_type.to_string());
     }
 
-    let options = ExportOptions {
-        allow_lossy: args.allow_lossy_mappings,
-        overrides,
-        project_recycles: args.project_recycles,
-        azoth_extensions: args.with_azoth_extensions,
-        topology_only: args.topology_only,
-        allow_unconverged: args.allow_unconverged,
-    };
-    match export_process(&flowsheet, &palette, &options) {
-        Ok(report) => {
-            std::fs::write(&args.out, &report.xml)
-                .map_err(|error| format!("{}: {error}", args.out.display()))?;
-            let text = if args.json {
-                render_export_json(&report, &args.out)
-            } else {
-                render_export(&report, &args.out)
+    match args.profile.as_str() {
+        "process" => {
+            let options = ExportOptions {
+                allow_lossy: args.allow_lossy_mappings,
+                overrides,
+                project_recycles: args.project_recycles,
+                azoth_extensions: args.with_azoth_extensions,
+                topology_only: args.topology_only,
+                allow_unconverged: args.allow_unconverged,
             };
-            Ok(Outcome { ok: true, text })
+            match export_process(&flowsheet, &palette, &options) {
+                Ok(report) => {
+                    write_file(&args.out, &report.xml)?;
+                    let text = if args.json {
+                        render_export_json(&report, &args.out)
+                    } else {
+                        render_export(&report, &args.out)
+                    };
+                    Ok(Outcome { ok: true, text })
+                }
+                Err(diagnostics) => Ok(failure(&diagnostics, args.json)),
+            }
         }
-        Err(diagnostics) => {
-            let text = if args.json {
-                render_failure_json(&diagnostics)
-            } else {
-                render_failure(&diagnostics)
+        "plant" => {
+            if args.topology_only || args.project_recycles || args.allow_unconverged {
+                return Err(
+                    "a Plant exchange carries no process state: --topology-only, \
+                     --project-recycles and --allow-unconverged are Process flags"
+                        .to_string(),
+                );
+            }
+            let options = PlantExportOptions {
+                allow_lossy: args.allow_lossy_mappings,
+                overrides,
+                azoth_extensions: args.with_azoth_extensions,
             };
-            Ok(Outcome { ok: false, text })
+            match export_plant(&flowsheet, &palette, &options) {
+                Ok(report) => {
+                    write_file(&args.out, &report.xml)?;
+                    let text = if args.json {
+                        render_plant_export_json(&report, &args.out)
+                    } else {
+                        render_plant_export(&report, &args.out)
+                    };
+                    Ok(Outcome { ok: true, text })
+                }
+                Err(diagnostics) => Ok(failure(&diagnostics, args.json)),
+            }
         }
+        other => Err(format!("--profile `{other}` is not `process` or `plant`")),
     }
 }
 
-/// Read a DEXPI Process exchange as a flowsheet scaffold.
+/// Read a DEXPI exchange as a flowsheet scaffold, detecting its profile from its imports.
 ///
 /// # Errors
 /// A message naming what could not be read or written. A refused document is an [`Outcome`] with
@@ -92,33 +116,124 @@ pub fn import(args: &DexpiImportArgs) -> Result<Outcome, String> {
     let palette = load_palette(&args.palette)?;
     let xml = std::fs::read_to_string(&args.input)
         .map_err(|error| format!("{}: {error}", args.input.display()))?;
-    let options = ImportOptions {
-        strict: args.strict,
+    // **A Proteus file is a different serialisation, not a broken DEXPI 2.0 one.** It is
+    // projected into the Plant metamodel and read through the same importer.
+    let document = match azoth_dexpi::reader::read(&xml) {
+        Ok(read) => Some(read.document),
+        Err(diagnostic)
+            if diagnostic.code == "unsupported_root" && azoth_dexpi::proteus::is_proteus(&xml) =>
+        {
+            None
+        }
+        Err(diagnostic) => return Ok(failure(&[diagnostic], args.json)),
     };
-    match import_process(&xml, &palette, &options) {
-        Ok(report) => {
-            let toml = report
-                .flowsheet
-                .to_toml()
-                .map_err(|error| format!("the flowsheet could not be written: {error}"))?;
-            std::fs::write(&args.out, &toml)
-                .map_err(|error| format!("{}: {error}", args.out.display()))?;
-            let text = if args.json {
-                render_import_json(&report, &args.out)
-            } else {
-                render_import(&report, &args.out)
-            };
-            Ok(Outcome { ok: true, text })
+    let Some(document) = document else {
+        return match args.profile.as_str() {
+            "process" => {
+                Err("a Proteus PlantModel is a P&ID; read it with `--profile plant`".to_string())
+            }
+            "auto" | "plant" => match azoth_dexpi::import_proteus(
+                &xml,
+                &palette,
+                &PlantImportOptions {
+                    strict: args.strict,
+                },
+            ) {
+                Ok(report) => write_plant_import(&report, args),
+                Err(diagnostics) => Ok(failure(&diagnostics, args.json)),
+            },
+            other => Err(format!(
+                "--profile `{other}` is not `auto`, `process` or `plant`"
+            )),
+        };
+    };
+    let detected = Profile::of(&document);
+    let selected = match args.profile.as_str() {
+        "auto" => detected.ok_or_else(|| {
+            "the document imports neither the Plant nor the Process model, so its profile \
+             cannot be taken from its imports"
+                .to_string()
+        })?,
+        "process" => Profile::Process,
+        "plant" => Profile::Plant,
+        other => {
+            return Err(format!(
+                "--profile `{other}` is not `auto`, `process` or `plant`"
+            ));
         }
-        Err(diagnostics) => {
-            let text = if args.json {
-                render_failure_json(&diagnostics)
-            } else {
-                render_failure(&diagnostics)
-            };
-            Ok(Outcome { ok: false, text })
-        }
+    };
+    if args.profile != "auto" && detected != Some(selected) {
+        return Err(format!(
+            "the document imports the {detected:?} model, not the {selected:?} one"
+        ));
     }
+
+    match selected {
+        Profile::Process => match import_process(
+            &xml,
+            &palette,
+            &ImportOptions {
+                strict: args.strict,
+            },
+        ) {
+            Ok(report) => write_import(&report, args),
+            Err(diagnostics) => Ok(failure(&diagnostics, args.json)),
+        },
+        Profile::Plant => match import_plant(
+            &xml,
+            &palette,
+            &PlantImportOptions {
+                strict: args.strict,
+            },
+        ) {
+            Ok(report) => write_plant_import(&report, args),
+            Err(diagnostics) => Ok(failure(&diagnostics, args.json)),
+        },
+    }
+}
+
+fn write_file(path: &Path, contents: &str) -> Result<(), String> {
+    std::fs::write(path, contents).map_err(|error| format!("{}: {error}", path.display()))
+}
+
+fn failure(diagnostics: &[DexpiDiagnostic], json: bool) -> Outcome {
+    let text = if json {
+        render_failure_json(diagnostics)
+    } else {
+        render_failure(diagnostics)
+    };
+    Outcome { ok: false, text }
+}
+
+fn write_import(report: &ImportReport, args: &DexpiImportArgs) -> Result<Outcome, String> {
+    let toml = report
+        .flowsheet
+        .to_toml()
+        .map_err(|error| format!("the flowsheet could not be written: {error}"))?;
+    write_file(&args.out, &toml)?;
+    let text = if args.json {
+        render_import_json(report, &args.out)
+    } else {
+        render_import(report, &args.out)
+    };
+    Ok(Outcome { ok: true, text })
+}
+
+fn write_plant_import(
+    report: &PlantImportReport,
+    args: &DexpiImportArgs,
+) -> Result<Outcome, String> {
+    let toml = report
+        .flowsheet
+        .to_toml()
+        .map_err(|error| format!("the flowsheet could not be written: {error}"))?;
+    write_file(&args.out, &toml)?;
+    let text = if args.json {
+        render_plant_import_json(report, &args.out)
+    } else {
+        render_plant_import(report, &args.out)
+    };
+    Ok(Outcome { ok: true, text })
 }
 
 /// Check a document against the semantic rules, and optionally the schema.
@@ -272,6 +387,67 @@ fn render_import(report: &ImportReport, out: &Path) -> String {
         text.push('\n');
     }
     text
+}
+
+fn render_plant_export(report: &PlantExportReport, out: &Path) -> String {
+    let mut text = format!(
+        "{}: {} tagged items, {} piping segments\n",
+        out.display(),
+        report.items,
+        report.segments
+    );
+    text.push_str("  semantic rules: pass\n");
+    text.push_str(&format!("  approval: {}\n", report.approval_status));
+    text.push_str(&format!(
+        "  named-CAE round trip: {}\n",
+        report.cae_round_trip
+    ));
+    for diagnostic in &report.diagnostics {
+        text.push_str(&render_diagnostic(diagnostic));
+        text.push('\n');
+    }
+    text
+}
+
+fn render_plant_export_json(report: &PlantExportReport, out: &Path) -> String {
+    let value = serde_json::json!({
+        "out": out.display().to_string(),
+        "items": report.items,
+        "segments": report.segments,
+        "semantic_valid": report.semantic_valid,
+        "approval_status": report.approval_status,
+        "cae_round_trip": report.cae_round_trip,
+        "diagnostics": report.diagnostics,
+    });
+    serde_json::to_string_pretty(&value).unwrap_or_default()
+}
+
+fn render_plant_import(report: &PlantImportReport, out: &Path) -> String {
+    let flowsheet = &report.flowsheet;
+    let mut text = format!(
+        "{}: {} instances, {} connections, {} recycle(s)\n",
+        out.display(),
+        flowsheet.instances.len(),
+        flowsheet.connections.len(),
+        flowsheet.recycles.len()
+    );
+    text.push_str(
+        "  this is a scaffold: feeds carry no composition and no item carries parameters\n",
+    );
+    for diagnostic in &report.diagnostics {
+        text.push_str(&render_diagnostic(diagnostic));
+        text.push('\n');
+    }
+    text
+}
+
+fn render_plant_import_json(report: &PlantImportReport, out: &Path) -> String {
+    let value = serde_json::json!({
+        "out": out.display().to_string(),
+        "flowsheet": report.flowsheet,
+        "diagnostics": report.diagnostics,
+    });
+    serde_json::to_string_pretty(&value).unwrap_or_default()
 }
 
 fn render_import_json(report: &ImportReport, out: &Path) -> String {

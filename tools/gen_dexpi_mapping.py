@@ -212,27 +212,225 @@ def render(rows: list[dict]) -> str:
     return format_rust(text, "gen_dexpi_mapping")
 
 
+PLANT_SPEC = ROOT / "specs" / "dexpi" / "plant_units.toml"
+PLANT_OUT = ROOT / "crates" / "azoth-dexpi" / "src" / "plant_mapping_gen.rs"
+
+#: The native Plant classes this profile reads, mirroring the Plant half of NeqSim's
+#: `Dexpi20SemanticValidator.SUPPORTED_TYPES`. A type outside it is not reviewed here.
+PLANT_SUPPORTED_TYPES = [
+    "Plant/PlantModel",
+    "Plant/ProcessEquipment.ProcessEquipment",
+    "Plant/ProcessEquipment.CentrifugalCompressor",
+    "Plant/ProcessEquipment.CentrifugalPump",
+    "Plant/ProcessEquipment.Separator",
+    "Plant/ProcessEquipment.AirCoolingSystem",
+    "Plant/ProcessEquipment.TubularHeatExchanger",
+    "Plant/ProcessEquipment.FiredHeater",
+    "Plant/ProcessEquipment.Tank",
+    "Plant/ProcessEquipment.Nozzle",
+    "Plant/Piping.PipingNetworkSystem",
+    "Plant/Piping.PipingNetworkSegment",
+    "Plant/Piping.PipingNode",
+    "Plant/Piping.Pipe",
+    "Plant/Piping.GlobeValve",
+    "Plant/Piping.SpringLoadedGlobeSafetyValve",
+    "Plant/Piping.SwingCheckValve",
+    "Plant/Piping.FlowInPipeOffPageConnector",
+    "Plant/Piping.FlowOutPipeOffPageConnector",
+    "Plant/Instrumentation.ProcessInstrumentationFunction",
+    "Plant/Instrumentation.ProcessSignalGeneratingFunction",
+    "Plant/Instrumentation.MeasuringLineFunction",
+    "Plant/Diagram.PlantMetaData",
+]
+
+
+def read_plant_spec() -> list[dict]:
+    with PLANT_SPEC.open("rb") as handle:
+        document = tomllib.load(handle)
+    if document.get("schema_version") != 1:
+        sys.exit("gen_dexpi_mapping: plant schema_version must be 1")
+    rows = document.get("unit", [])
+    if not rows:
+        sys.exit(f"gen_dexpi_mapping: {PLANT_SPEC.relative_to(ROOT)} declares no [[unit]] rows")
+    return rows
+
+
+def check_plant_rows(rows: list[dict]) -> None:
+    palette = palette_ids()
+    seen: dict[str, str] = {}
+    reader_owner: dict[str, str] = {}
+    problems: list[str] = []
+    for row in rows:
+        ident = row.get("azoth_id")
+        if not ident:
+            problems.append("a plant row has no azoth_id")
+            continue
+        if ident in seen:
+            problems.append(f"{ident}: declared twice")
+        seen[ident] = ident
+        if ident not in palette:
+            problems.append(f"{ident}: no such palette entry")
+        write = row.get("write")
+        if write not in DISPOSITIONS:
+            problems.append(f"{ident}: write {write!r} is not one of {DISPOSITIONS}")
+            continue
+        types = row.get("plant_types", [])
+        note = row.get("note", "").strip()
+        if write in ("faithful", "lossy") and len(types) != 1:
+            problems.append(f"{ident}: a writable row names exactly one Plant type")
+        if write == "refused" and types:
+            problems.append(f"{ident}: a refused row names a Plant type")
+        if write in ("lossy", "refused") and not note:
+            problems.append(f"{ident}: {write} row carries no reason")
+        for plant_type in types:
+            if plant_type not in PLANT_SUPPORTED_TYPES:
+                problems.append(f"{ident}: {plant_type} is outside the reviewed Plant profile")
+        for reader_type in row.get("reader_types", []):
+            if reader_type in reader_owner:
+                problems.append(
+                    f"{ident}: reads {reader_type}, already read as {reader_owner[reader_type]}"
+                )
+            reader_owner[reader_type] = ident
+    for ident in sorted(palette - seen.keys()):
+        problems.append(f"{ident}: palette entry has no plant mapping row")
+    if problems:
+        for problem in problems:
+            print(f"gen_dexpi_mapping: {problem}", file=sys.stderr)
+        sys.exit("gen_dexpi_mapping: the plant table does not cover the palette")
+
+
+def render_plant(rows: list[dict]) -> str:
+    rows = sorted(rows, key=lambda row: row["azoth_id"])
+    faithful = sum(1 for row in rows if row["write"] == "faithful")
+    lossy = sum(1 for row in rows if row["write"] == "lossy")
+    refused = sum(1 for row in rows if row["write"] == "refused")
+    readable = sum(1 for row in rows if row.get("reader_types"))
+
+    entries = []
+    for row in rows:
+        types = ", ".join(rust_string(t) for t in row["plant_types"])
+        readers = ", ".join(rust_string(t) for t in row["reader_types"])
+        entries.append(
+            "    PlantMapping {\n"
+            f"        azoth_id: {rust_string(row['azoth_id'])},\n"
+            f"        write: Disposition::{row['write'].capitalize()},\n"
+            f"        plant_types: &[{types}],\n"
+            f"        reader_types: &[{readers}],\n"
+            f"        note: {rust_string(row.get('note', '').strip())},\n"
+            "    },\n"
+        )
+
+    classes = []
+    for row in rows:
+        for reader_type in row["reader_types"]:
+            classes.append((reader_type, row["azoth_id"]))
+    class_rows = [
+        f"    ({rust_string(name)}, {rust_string(ident)}),\n" for name, ident in sorted(classes)
+    ]
+
+    # The native type a projected reader class is spelled as. A valve is a piping component;
+    # everything else is equipment. This is what lets the semantic validator accept a
+    # projection of a class the writer never emits.
+    valve_types = {
+        "GlobeValve",
+        "ButterflyValve",
+        "CheckValve",
+        "ControlValve",
+        "PressureSafetyValve",
+        "PressureReliefValve",
+        "PressureReducingValve",
+        "BallValve",
+        "GateValve",
+        "PlugValve",
+        "DiaphragmValve",
+        "NeedleValve",
+        "SwingCheckValve",
+        "SpringLoadedGlobeSafetyValve",
+        "PilotOperatedSafetyValve",
+        "SolenoidValve",
+        "PinchValve",
+        "RuptureDisk",
+        "Valve",
+        "Pipe",
+    }
+    projected = sorted(
+        {
+            f"Plant/Piping.{name}" if name in valve_types else f"Plant/ProcessEquipment.{name}"
+            for name, _ in classes
+        }
+    )
+    projected_block = "".join(f"    {rust_string(name)},\n" for name in projected)
+
+    text = (
+        "//! GENERATED FILE - DO NOT EDIT BY HAND.\n"
+        "//!\n"
+        "//! Generated by `tools/gen_dexpi_mapping.py` from `specs/dexpi/plant_units.toml`,\n"
+        "//! which is the one hand-written statement of the azoth palette -> DEXPI 2.0 Plant\n"
+        "//! mapping. Its completeness is checked against `specs/unit_ops/`.\n"
+        "\n"
+        "use crate::mapping::Disposition;\n"
+        "use crate::plant::PlantMapping;\n"
+        "\n"
+        "/// Every palette entry, with what exchanging it as a tagged plant item costs.\n"
+        "pub static PLANT_UNITS: &[PlantMapping] = &[\n"
+        f"{''.join(entries)}];\n"
+        "\n"
+        "/// The reverse index a reader uses: a class name and the azoth unit it stands for.\n"
+        "/// One name, one unit - a class that could mean two is mapped to the general one.\n"
+        "pub static PLANT_CLASS_CANDIDATES: &[(&str, &str)] = &[\n"
+        f"{''.join(class_rows)}];\n"
+        "\n"
+        "/// The native types a reader class is spelled as in a projection. A valve is a piping\n"
+        "/// component; everything else is equipment. The semantic validator accepts these beside\n"
+        "/// the writer's own narrow set, because these are what this reader has reviewed.\n"
+        "pub static PLANT_CLASS_TYPES: &[&str] = &[\n"
+        f"{projected_block}];\n"
+        "\n"
+        f"/// Faithful writes: {faithful}.\n"
+        f"pub const PLANT_FAITHFUL_COUNT: usize = {faithful};\n"
+        "\n"
+        f"/// Lossy writes: {lossy}.\n"
+        f"pub const PLANT_LOSSY_COUNT: usize = {lossy};\n"
+        "\n"
+        f"/// Refused writes: {refused}.\n"
+        f"pub const PLANT_REFUSED_COUNT: usize = {refused};\n"
+        "\n"
+        f"/// Rows with at least one readable class name: {readable}.\n"
+        f"pub const PLANT_READABLE_COUNT: usize = {readable};\n"
+    )
+    return format_rust(text, "gen_dexpi_mapping")
+
+
 def main() -> None:
     check = "--check" in sys.argv
     check_schema()
     rows = read_spec()
     check_rows(rows)
     rendered = render(rows)
+    plant_rows = read_plant_spec()
+    check_plant_rows(plant_rows)
+    plant_rendered = render_plant(plant_rows)
 
-    existing = OUT.read_text(encoding="utf-8") if OUT.exists() else None
-    if existing != rendered:
-        if check:
-            print(f"gen_dexpi_mapping: {OUT.relative_to(ROOT)} is out of date")
-            sys.exit("gen_dexpi_mapping: generated file is stale; run tools/gen_dexpi_mapping.py")
-        OUT.write_text(rendered, encoding="utf-8")
-        print(f"gen_dexpi_mapping: wrote {OUT.relative_to(ROOT)}")
+    for out, content, label in ((OUT, rendered, "Process"), (PLANT_OUT, plant_rendered, "Plant")):
+        existing = out.read_text(encoding="utf-8") if out.exists() else None
+        if existing != content:
+            if check:
+                print(f"gen_dexpi_mapping: {out.relative_to(ROOT)} is out of date")
+                sys.exit(
+                    f"gen_dexpi_mapping: generated {label} file is stale; run "
+                    "tools/gen_dexpi_mapping.py"
+                )
+            out.write_text(content, encoding="utf-8")
+            print(f"gen_dexpi_mapping: wrote {out.relative_to(ROOT)}")
 
     faithful = sum(1 for row in rows if row["disposition"] == "faithful")
     lossy = sum(1 for row in rows if row["disposition"] == "lossy")
     refused = sum(1 for row in rows if row["disposition"] == "refused")
+    writable = sum(1 for row in plant_rows if row["write"] != "refused")
     print(
         f"gen_dexpi_mapping: {len(rows)} palette entries, {faithful} faithful, "
-        f"{lossy} lossy, {refused} refused" + (", generated file up to date" if check else "")
+        f"{lossy} lossy, {refused} refused; Plant {writable} writable, "
+        f"{len(plant_rows) - writable} refused" + (", generated files up to date" if check else "")
     )
 
 

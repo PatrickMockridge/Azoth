@@ -32,6 +32,18 @@ pub fn oracle_simple() -> azoth_process::Flowsheet {
     azoth_process::parse_flowsheet(&text).expect("the oracle fixture parses")
 }
 
+/// The Plant export fixture: only units the Plant writer reviewed.
+pub fn plant_simple() -> azoth_process::Flowsheet {
+    let text = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("fixtures")
+            .join("plant_simple.toml"),
+    )
+    .expect("the Plant fixture reads");
+    azoth_process::parse_flowsheet(&text).expect("the Plant fixture parses")
+}
+
 pub fn demo() -> azoth_process::Flowsheet {
     let text = std::fs::read_to_string(
         workspace_root()

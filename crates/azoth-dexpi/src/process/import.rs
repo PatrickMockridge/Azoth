@@ -109,7 +109,11 @@ pub fn import_process(
             &steps[stream.target.step],
             names.get(&(index, Role::Target)),
         );
-        connections.push(Connection { from, to });
+        connections.push(Connection {
+            from,
+            to,
+            line: None,
+        });
     }
 
     let mut recycles = Vec::new();

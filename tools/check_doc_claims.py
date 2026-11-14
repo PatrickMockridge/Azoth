@@ -616,11 +616,36 @@ def dexpi_refused() -> int:
     return sum(1 for row in _dexpi_rows() if row.get("disposition") == "refused")
 
 
+def _dexpi_plant_rows() -> list[dict]:
+    """The DEXPI Plant mapping rows, read from their one hand-written table."""
+    path = ROOT / "specs" / "dexpi" / "plant_units.toml"
+    with path.open("rb") as handle:
+        rows = tomllib.load(handle).get("unit", [])
+    if not rows:
+        raise ProbeError(f"{path.relative_to(ROOT)} declares no [[unit]] rows")
+    return rows
+
+
+def dexpi_plant_total() -> int:
+    return len(_dexpi_plant_rows())
+
+
+def dexpi_plant_writable() -> int:
+    return sum(1 for row in _dexpi_plant_rows() if row.get("write") != "refused")
+
+
+def dexpi_plant_readable() -> int:
+    return sum(1 for row in _dexpi_plant_rows() if row.get("reader_types"))
+
+
 MEASURES = {
     "dexpi.mappings": dexpi_mappings,
     "dexpi.faithful": dexpi_faithful,
     "dexpi.lossy": dexpi_lossy,
     "dexpi.refused": dexpi_refused,
+    "dexpi.plant.total": dexpi_plant_total,
+    "dexpi.plant.writable": dexpi_plant_writable,
+    "dexpi.plant.readable": dexpi_plant_readable,
     "specs.calcs": specs_calcs,
     "specs.models": specs_models,
     "specs.ids": specs_ids,
