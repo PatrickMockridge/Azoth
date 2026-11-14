@@ -134,6 +134,26 @@ class ChemicalWarningRow:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ConsequenceOutcomeResult:
+    """one row per input row, in caller order: the class's fixed label, the branch type, its frequency, fatality probability and fatality frequency."""
+
+    #: the class's fixed label: `Jet fire`, `Pool fire`, `VCE` or `Toxic dispersion`.
+    outcome: str
+
+    #: the branch type, as the input's enum spells it.
+    outcome_type: str
+
+    #: `release_frequency * conditional_probability`, in 1/year.
+    frequency_per_year: float
+
+    #: the probit of the class's dose, or zero when the dose is not positive.
+    fatality_probability: float
+
+    #: the frequency times the fatality probability, in 1/year.
+    fatality_frequency_per_year: float
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class DepositionSegmentRow:
     """One row per evaluated segment, in the profile's order."""
 
@@ -168,6 +188,20 @@ class EquilibriumSoundSpeedSample:
 
     #: the vapour fraction where the sample is two-phase.
     vapour_fraction: float | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class EventTreeOutcome:
+    """one row per leaf, in the class's bit order: `2^n` rows, or one when there are no branches."""
+
+    #: the branch states joined by `"; "`, each `name=Y` or `name=N`; empty for a no-branch tree.
+    path: str
+
+    #: the product of the branch probabilities and complements on this path.
+    probability: float
+
+    #: the probability times the initiating frequency, in 1/year.
+    frequency_per_year: float
 
 
 @dataclass(frozen=True, slots=True, eq=False)

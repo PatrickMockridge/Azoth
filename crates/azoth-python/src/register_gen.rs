@@ -245,9 +245,11 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyBleveResult>()?;
     m.add_class::<crate::transport_gen::PyComponentSplitterResult>()?;
     m.add_class::<crate::transport_gen::PyCompressorResult>()?;
+    m.add_class::<crate::transport_gen::PyConsequenceAnalysisResult>()?;
     m.add_class::<crate::transport_gen::PyCoolerResult>()?;
     m.add_class::<crate::transport_gen::PyDistillationColumnResult>()?;
     m.add_class::<crate::transport_gen::PyEjectorResult>()?;
+    m.add_class::<crate::transport_gen::PyEventTreeResult>()?;
     m.add_class::<crate::transport_gen::PyExpanderResult>()?;
     m.add_class::<crate::transport_gen::PyFilterResult>()?;
     m.add_class::<crate::transport_gen::PyFlareResult>()?;
@@ -311,8 +313,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::record_outputs_gen::PyBrineMixingPointRow>()?;
     m.add_class::<crate::record_outputs_gen::PyCharacterizationComponent>()?;
     m.add_class::<crate::record_outputs_gen::PyChemicalWarningRow>()?;
+    m.add_class::<crate::record_outputs_gen::PyConsequenceOutcomeResult>()?;
     m.add_class::<crate::record_outputs_gen::PyDepositionSegmentRow>()?;
     m.add_class::<crate::record_outputs_gen::PyEquilibriumSoundSpeedSample>()?;
+    m.add_class::<crate::record_outputs_gen::PyEventTreeOutcome>()?;
     m.add_class::<crate::record_outputs_gen::PyFlowlineScaleSegment>()?;
     m.add_class::<crate::record_outputs_gen::PyHeatExchangerMechanicalType>()?;
     m.add_class::<crate::record_outputs_gen::PyHeaterInstrument>()?;
@@ -881,12 +885,17 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::process::compressor, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::consequence_analysis,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::cooler, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::distillation_column,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::process::ejector, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::event_tree, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::expander, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::filter, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::flare, m)?)?;

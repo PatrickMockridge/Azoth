@@ -15,13 +15,14 @@
 
 use crate::record_outputs_gen::{
     PyActivityCoefficientRow, PyAppliedStandardRow, PyBrineMixingPointRow,
-    PyCharacterizationComponent, PyChemicalWarningRow, PyDepositionSegmentRow,
-    PyEquilibriumSoundSpeedSample, PyFlowlineScaleSegment, PyHeatExchangerMechanicalType,
-    PyHeaterInstrument, PyHeaterMechanicalType, PyHemReleaseDiagnostic, PyHemReleaseStation,
-    PyHydrateRiskPoint, PyIncrementalZoneRow, PyKComponent, PyLeakBlowdownDiagnostic,
-    PyLeakBlowdownPoint, PyMineralEquilibriumRow, PyNaceIssueRow, PyRemediationOptionRow,
-    PyScaleControlRiskRow, PyScaleControlRow, PyScenarioChangeRow, PyScenarioIndexRow,
-    PyStreamScaleMineralRow, PySubFraction, PyWaterMixingResult, PyZoneRatingRow,
+    PyCharacterizationComponent, PyChemicalWarningRow, PyConsequenceOutcomeResult,
+    PyDepositionSegmentRow, PyEquilibriumSoundSpeedSample, PyEventTreeOutcome,
+    PyFlowlineScaleSegment, PyHeatExchangerMechanicalType, PyHeaterInstrument,
+    PyHeaterMechanicalType, PyHemReleaseDiagnostic, PyHemReleaseStation, PyHydrateRiskPoint,
+    PyIncrementalZoneRow, PyKComponent, PyLeakBlowdownDiagnostic, PyLeakBlowdownPoint,
+    PyMineralEquilibriumRow, PyNaceIssueRow, PyRemediationOptionRow, PyScaleControlRiskRow,
+    PyScaleControlRow, PyScenarioChangeRow, PyScenarioIndexRow, PyStreamScaleMineralRow,
+    PySubFraction, PyWaterMixingResult, PyZoneRatingRow,
 };
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
@@ -14732,6 +14733,53 @@ impl From<&azoth_process::models::compressor::CompressorResult> for PyCompressor
         }
     }
 }
+/// Result of `process.consequence_analysis`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ConsequenceAnalysisResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyConsequenceAnalysisResult {
+    /// one row per input row, in caller order: the class's fixed label, the branch type, its frequency, fatality probability and fatality frequency.
+    #[pyo3(get)]
+    pub outcomes: Vec<PyConsequenceOutcomeResult>,
+    /// the sum of the rows' fatality frequencies, in 1/year.
+    #[pyo3(get)]
+    pub individual_fatality_risk_per_year: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyConsequenceAnalysisResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ConsequenceAnalysisResult(outcomes={:?}, individual_fatality_risk_per_year={:?}, {} warning(s))",
+            self.outcomes,
+            self.individual_fatality_risk_per_year,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::consequence_analysis::ConsequenceAnalysisResult>
+    for PyConsequenceAnalysisResult
+{
+    fn from(r: &azoth_process::models::consequence_analysis::ConsequenceAnalysisResult) -> Self {
+        Self {
+            outcomes: r
+                .outcomes
+                .iter()
+                .map(PyConsequenceOutcomeResult::from)
+                .collect(),
+            individual_fatality_risk_per_year: r.individual_fatality_risk_per_year,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.cooler`, transported.
 #[pyclass(
     frozen,
@@ -15462,6 +15510,42 @@ impl From<&azoth_process::models::ejector::EjectorResult> for PyEjectorResult {
                 magnitude_si: r.discharge_connection_length.value,
                 unit: "m".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `process.event_tree`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "EventTreeResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyEventTreeResult {
+    /// one row per leaf, in the class's bit order: `2^n` rows, or one when there are no branches.
+    #[pyo3(get)]
+    pub outcomes: Vec<PyEventTreeOutcome>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyEventTreeResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "EventTreeResult(outcomes={:?}, {} warning(s))",
+            self.outcomes,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::event_tree::EventTreeResult> for PyEventTreeResult {
+    fn from(r: &azoth_process::models::event_tree::EventTreeResult) -> Self {
+        Self {
+            outcomes: r.outcomes.iter().map(PyEventTreeOutcome::from).collect(),
             warnings: transport(&r.warnings),
         }
     }

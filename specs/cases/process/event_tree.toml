@@ -1,0 +1,52 @@
+model = "process.event_tree"
+[[cases]]
+id = "two_branch_tree"
+tolerance = 1.0e-9
+source = "`EventTreeAnalyzerTest.twoBranchTreeFrequenciesSumToInitiating`: one branch at 0.1 on 1e-3/yr. From `validation/neqsim/captures/process_event_tree.tsv` (`event_tree_two_branch`)."
+[cases.inputs]
+initiating_frequency_per_year = 0.001
+branches = [{ name = "Ignition", probability_of_yes = 0.1 }]
+[cases.expected]
+outcomes = [
+  { path = "Ignition=N", probability = 0.9, frequency_per_year = 9.000000000000001e-4 },
+  { path = "Ignition=Y", probability = 0.1, frequency_per_year = 1.0e-4 },
+]
+[[cases]]
+id = "three_branch_tree"
+tolerance = 1.0e-9
+source = "`EventTreeAnalyzerTest.threeBranchTreeHasEightOutcomes`: three pivotal events on 1e-2/yr; all eight leaves, in bit order. From (`event_tree_three_branch`)."
+[cases.inputs]
+initiating_frequency_per_year = 0.01
+branches = [
+  { name = "Immediate ignition", probability_of_yes = 0.05 },
+  { name = "Delayed ignition", probability_of_yes = 0.10 },
+  { name = "ESD success", probability_of_yes = 0.99 },
+]
+[cases.expected]
+outcomes = [
+  { path = "Immediate ignition=N; Delayed ignition=N; ESD success=N", probability = 0.008550000000000007, frequency_per_year = 8.550000000000007e-5 },
+  { path = "Immediate ignition=Y; Delayed ignition=N; ESD success=N", probability = 4.500000000000005e-4, frequency_per_year = 4.500000000000005e-6 },
+  { path = "Immediate ignition=N; Delayed ignition=Y; ESD success=N", probability = 9.500000000000009e-4, frequency_per_year = 9.500000000000009e-6 },
+  { path = "Immediate ignition=Y; Delayed ignition=Y; ESD success=N", probability = 5.0000000000000057e-5, frequency_per_year = 5.000000000000006e-7 },
+  { path = "Immediate ignition=N; Delayed ignition=N; ESD success=Y", probability = 0.8464499999999999, frequency_per_year = 0.0084645 },
+  { path = "Immediate ignition=Y; Delayed ignition=N; ESD success=Y", probability = 0.044550000000000006, frequency_per_year = 4.455000000000001e-4 },
+  { path = "Immediate ignition=N; Delayed ignition=Y; ESD success=Y", probability = 0.09405, frequency_per_year = 9.404999999999999e-4 },
+  { path = "Immediate ignition=Y; Delayed ignition=Y; ESD success=Y", probability = 0.004950000000000001, frequency_per_year = 4.950000000000001e-5 },
+]
+[[cases]]
+id = "certain_and_impossible_branches"
+tolerance = 1.0e-9
+source = "A branch certain to occur and one certain not to: only the Certain=Y; Impossible=N path survives. From (`event_tree_zero_and_one`)."
+[cases.inputs]
+initiating_frequency_per_year = 0.001
+branches = [
+  { name = "Certain", probability_of_yes = 1.0 },
+  { name = "Impossible", probability_of_yes = 0.0 },
+]
+[cases.expected]
+outcomes = [
+  { path = "Certain=N; Impossible=N", probability = 0.0, frequency_per_year = 0.0 },
+  { path = "Certain=Y; Impossible=N", probability = 1.0, frequency_per_year = 0.001 },
+  { path = "Certain=N; Impossible=Y", probability = 0.0, frequency_per_year = 0.0 },
+  { path = "Certain=Y; Impossible=Y", probability = 0.0, frequency_per_year = 0.0 },
+]

@@ -410,6 +410,40 @@ class DepositMass(TypedDict):
     mechanism: str
     mass: float
 
+class ConsequenceOutcomeSpec(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    outcome_type: str
+    conditional_probability: float
+    probit_a: float
+    probit_b: float
+    probit_n: float
+    exposure_seconds: float | None
+    mass_flow: float | None
+    heat_of_combustion: float | None
+    radiative_fraction: float | None
+    relative_humidity: float | None
+    pool_diameter: float | None
+    burn_rate: float | None
+    air_density: float | None
+    cloud_fuel_mass: float | None
+    strength_class: float | None
+    ambient_pressure: float | None
+    emission_rate: float | None
+    effective_stack_height: float | None
+    wind_speed: float | None
+    stability: str | None
+    terrain: str | None
+    molar_mass: float | None
+    temperature: float | None
+    pressure: float | None
+
+class EventTreeBranch(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    name: str
+    probability_of_yes: float
+
 class FilterDropPoint(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -710,6 +744,24 @@ class WaterMixingResult:
     si_srso4: float | None
     si_caso4: float | None
     si_feco3: float | None
+
+@final
+class ConsequenceOutcomeResult:
+    """one row per input row, in caller order: the class's fixed label, the branch type, its frequency, fatality probability and fatality frequency."""
+
+    outcome: str
+    outcome_type: str
+    frequency_per_year: float
+    fatality_probability: float
+    fatality_frequency_per_year: float
+
+@final
+class EventTreeOutcome:
+    """one row per leaf, in the class's bit order: `2^n` rows, or one when there are no branches."""
+
+    path: str
+    probability: float
+    frequency_per_year: float
 
 @final
 class HeatExchangerMechanicalType:
@@ -2907,6 +2959,12 @@ class CompressorResult:
     warnings: list[Warning]
 
 @final
+class ConsequenceAnalysisResult:
+    outcomes: list[ConsequenceOutcomeResult]
+    individual_fatality_risk_per_year: float
+    warnings: list[Warning]
+
+@final
 class CoolerResult:
     outlet_n: Qty
     outlet_z: list[float]
@@ -3002,6 +3060,11 @@ class EjectorResult:
     total_volume: Qty
     suction_connection_length: Qty
     discharge_connection_length: Qty
+    warnings: list[Warning]
+
+@final
+class EventTreeResult:
+    outcomes: list[EventTreeOutcome]
     warnings: list[Warning]
 
 @final
@@ -6330,6 +6393,11 @@ def compressor(
     mechanical_design: bool | None = None,
     max_stages_per_casing: float | None = None,
 ) -> CompressorResult: ...
+def consequence_analysis(
+    release_frequency_per_year: float,
+    receiver_distance: float,
+    outcomes: list[ConsequenceOutcomeSpec],
+) -> ConsequenceAnalysisResult: ...
 def cooler(
     components: list[str],
     inlet_n: float,
@@ -6430,6 +6498,10 @@ def ejector(
     mixing_efficiency: float,
     diffuser_efficiency: float,
 ) -> EjectorResult: ...
+def event_tree(
+    initiating_frequency_per_year: float,
+    branches: list[EventTreeBranch],
+) -> EventTreeResult: ...
 def expander(
     components: list[str],
     inlet_n: float,

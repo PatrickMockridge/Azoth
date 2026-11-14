@@ -57,6 +57,8 @@ from azoth.core.result import (
     ComponentSplitterResult,
     CompressorResult,
     ConductionPlaneWallResult,
+    ConsequenceAnalysisResult,
+    ConsequenceOutcomeResult,
     ControlValveCvResult,
     CooldownVerdict,
     CoolerResult,
@@ -83,6 +85,8 @@ from azoth.core.result import (
     EquilibriumSoundSpeedSample,
     ErosionPredictionResult,
     ErosionRiskLevel,
+    EventTreeOutcome,
+    EventTreeResult,
     ExpanderResult,
     FeSMorphology,
     FilippovConductivityResult,
@@ -412,6 +416,7 @@ __all__ = [
     "component_splitter",
     "compressor",
     "conduction_plane_wall",
+    "consequence_analysis",
     "control_valve_cv",
     "cooler",
     "costald_molar_volume",
@@ -433,6 +438,7 @@ __all__ = [
     "equilibrium_constant",
     "equilibrium_sound_speed",
     "erosion_prediction",
+    "event_tree",
     "expander",
     "filippov_conductivity",
     "filter",
@@ -5745,6 +5751,21 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
     )
 
 
+def consequence_analysis(release_frequency_per_year: float, receiver_distance: Q, outcomes: list[dict[str, object]]) -> ConsequenceAnalysisResult:
+    """``process.consequence_analysis``, computed in Rust."""
+    spec = _models_gen.model("process.consequence_analysis")
+    result = _core.consequence_analysis(
+        release_frequency_per_year,
+        input_to_si(spec, "receiver_distance", receiver_distance),
+        input_records_to_si(spec, "outcomes", outcomes),
+    )
+    return ConsequenceAnalysisResult(
+        outcomes=tuple(ConsequenceOutcomeResult(outcome=c.outcome, outcome_type=c.outcome_type, frequency_per_year=c.frequency_per_year, fatality_probability=c.fatality_probability, fatality_frequency_per_year=c.fatality_frequency_per_year) for c in result.outcomes),
+        individual_fatality_risk_per_year=result.individual_fatality_risk_per_year,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def cooler(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_temperature: Q | None=None, duty: Q | None=None, pressure_drop: Q | None=None, time_step: Q | None=None, dynamic_temperature_control_enabled: bool | None=None, design_mass_flow: Q | None=None, design_inlet_temperature: Q | None=None, design_outlet_temperature: Q | None=None, cooling_medium_temperature: Q | None=None, design_valve_opening: float | None=None, actuator_time_constant: Q | None=None, thermal_time_constant: Q | None=None, cooling_valve_opening: float | None=None, requested_valve_opening: float | None=None, dynamic_outlet_temperature: Q | None=None) -> CoolerResult:
     """``process.cooler``, computed in Rust."""
     spec = _models_gen.model("process.cooler")
@@ -5951,6 +5972,19 @@ def ejector(motive_components: list[str], motive_n: Q, motive_z: list[float], mo
         total_volume=from_si(result.total_volume.magnitude_si, result.total_volume.unit),
         suction_connection_length=from_si(result.suction_connection_length.magnitude_si, result.suction_connection_length.unit),
         discharge_connection_length=from_si(result.discharge_connection_length.magnitude_si, result.discharge_connection_length.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def event_tree(initiating_frequency_per_year: float, branches: list[dict[str, object]]) -> EventTreeResult:
+    """``process.event_tree``, computed in Rust."""
+    spec = _models_gen.model("process.event_tree")
+    result = _core.event_tree(
+        initiating_frequency_per_year,
+        input_records_to_si(spec, "branches", branches),
+    )
+    return EventTreeResult(
+        outcomes=tuple(EventTreeOutcome(path=c.path, probability=c.probability, frequency_per_year=c.frequency_per_year) for c in result.outcomes),
         warnings=_warnings(result.warnings),
     )
 

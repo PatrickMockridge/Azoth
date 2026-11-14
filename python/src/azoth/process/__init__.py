@@ -24,9 +24,11 @@ from azoth.core.result import (
     BleveResult,
     ComponentSplitterResult,
     CompressorResult,
+    ConsequenceAnalysisResult,
     CoolerResult,
     DistillationColumnResult,
     EjectorResult,
+    EventTreeResult,
     ExpanderResult,
     FilterResult,
     FlareResult,
@@ -89,9 +91,11 @@ __all__ = [
     "catalogue",
     "component_splitter",
     "compressor",
+    "consequence_analysis",
     "cooler",
     "distillation_column",
     "ejector",
+    "event_tree",
     "expander",
     "filter",
     "flare",
@@ -140,11 +144,13 @@ _GAS_SCRUBBER = "process.gas_scrubber"
 _HEAT_EXCHANGER = "process.heat_exchanger"
 _COMPONENT_SPLITTER = "process.component_splitter"
 _COMPRESSOR = "process.compressor"
+_CONSEQUENCE_ANALYSIS = "process.consequence_analysis"
 _ABSORPTION_COLUMN = "process.absorption_column"
 _STRIPPING_COLUMN = "process.stripping_column"
 _DISTILLATION_COLUMN = "process.distillation_column"
 _COOLER = "process.cooler"
 _EJECTOR = "process.ejector"
+_EVENT_TREE = "process.event_tree"
 _EXPANDER = "process.expander"
 _TURBO_EXPANDER_COMPRESSOR = "process.turbo_expander_compressor"
 _MAP_TURBO_EXPANDER_COMPRESSOR = "process.map_turbo_expander_compressor"
@@ -1533,6 +1539,26 @@ def turbo_expander_compressor(
     )
 
 
+def consequence_analysis(
+    release_frequency_per_year: float,
+    receiver_distance: Q,
+    outcomes: list[dict[str, object]],
+) -> ConsequenceAnalysisResult:
+    """The class's four consequence branches over one receiver, and the summed risk.
+
+    The jet, pool, VCE and toxic branches in caller order, over the ported consequence
+    kernels. **A zero dose is a zero probability**, and a field belonging to another
+    branch type is refused.
+
+    See :func:`azoth.process.reference.consequence_analysis`.
+    """
+    return resolve(_CONSEQUENCE_ANALYSIS)(  # type: ignore[no-any-return]
+        release_frequency_per_year=release_frequency_per_year,
+        receiver_distance=receiver_distance,
+        outcomes=outcomes,
+    )
+
+
 def cooler(
     components: list[str],
     inlet_n: Q,
@@ -2053,6 +2079,23 @@ def ejector(
         suction_nozzle_efficiency=suction_nozzle_efficiency,
         mixing_efficiency=mixing_efficiency,
         diffuser_efficiency=diffuser_efficiency,
+    )
+
+
+def event_tree(
+    initiating_frequency_per_year: float,
+    branches: list[dict[str, object]],
+) -> EventTreeResult:
+    """The full 2^n event tree in bit order.
+
+    The leaf paths, probabilities and frequencies of the class's enumeration. **The branch
+    count is capped at 20** and a probability outside ``[0, 1]`` is refused.
+
+    See :func:`azoth.process.reference.event_tree`.
+    """
+    return resolve(_EVENT_TREE)(  # type: ignore[no-any-return]
+        initiating_frequency_per_year=initiating_frequency_per_year,
+        branches=branches,
     )
 
 

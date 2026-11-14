@@ -343,6 +343,60 @@ impl From<&azoth_eos::results::ChemicalWarningRow> for PyChemicalWarningRow {
     }
 }
 
+/// one row per input row, in caller order: the class's fixed label, the branch type, its frequency, fatality probability and fatality frequency.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ConsequenceOutcomeResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyConsequenceOutcomeResult {
+    /// the class's fixed label: `Jet fire`, `Pool fire`, `VCE` or `Toxic dispersion`.
+    #[pyo3(get)]
+    pub outcome: String,
+    /// the branch type, as the input's enum spells it.
+    #[pyo3(get)]
+    pub outcome_type: String,
+    /// `release_frequency * conditional_probability`, in 1/year.
+    #[pyo3(get)]
+    pub frequency_per_year: f64,
+    /// the probit of the class's dose, or zero when the dose is not positive.
+    #[pyo3(get)]
+    pub fatality_probability: f64,
+    /// the frequency times the fatality probability, in 1/year.
+    #[pyo3(get)]
+    pub fatality_frequency_per_year: f64,
+}
+
+#[pymethods]
+impl PyConsequenceOutcomeResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ConsequenceOutcomeResult(outcome={}, outcome_type={}, frequency_per_year={}, fatality_probability={}, fatality_frequency_per_year={})",
+            self.outcome,
+            self.outcome_type,
+            self.frequency_per_year,
+            self.fatality_probability,
+            self.fatality_frequency_per_year
+        )
+    }
+}
+
+impl From<&azoth_process::models::consequence_analysis::ConsequenceOutcomeResult>
+    for PyConsequenceOutcomeResult
+{
+    fn from(row: &azoth_process::models::consequence_analysis::ConsequenceOutcomeResult) -> Self {
+        Self {
+            outcome: row.outcome.clone(),
+            outcome_type: row.outcome_type.clone(),
+            frequency_per_year: row.frequency_per_year,
+            fatality_probability: row.fatality_probability,
+            fatality_frequency_per_year: row.fatality_frequency_per_year,
+        }
+    }
+}
+
 /// One row per evaluated segment, in the profile's order.
 #[pyclass(
     frozen,
@@ -454,6 +508,46 @@ impl From<&azoth_eos::results::EquilibriumSoundSpeedSample> for PyEquilibriumSou
             },
             phase: row.phase.as_str().to_string(),
             vapour_fraction: row.vapour_fraction,
+        }
+    }
+}
+
+/// one row per leaf, in the class's bit order: `2^n` rows, or one when there are no branches.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "EventTreeOutcome"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyEventTreeOutcome {
+    /// the branch states joined by `"; "`, each `name=Y` or `name=N`; empty for a no-branch tree.
+    #[pyo3(get)]
+    pub path: String,
+    /// the product of the branch probabilities and complements on this path.
+    #[pyo3(get)]
+    pub probability: f64,
+    /// the probability times the initiating frequency, in 1/year.
+    #[pyo3(get)]
+    pub frequency_per_year: f64,
+}
+
+#[pymethods]
+impl PyEventTreeOutcome {
+    fn __repr__(&self) -> String {
+        format!(
+            "EventTreeOutcome(path={}, probability={}, frequency_per_year={})",
+            self.path, self.probability, self.frequency_per_year
+        )
+    }
+}
+
+impl From<&azoth_process::models::event_tree::EventTreeOutcome> for PyEventTreeOutcome {
+    fn from(row: &azoth_process::models::event_tree::EventTreeOutcome) -> Self {
+        Self {
+            path: row.path.clone(),
+            probability: row.probability,
+            frequency_per_year: row.frequency_per_year,
         }
     }
 }
