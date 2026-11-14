@@ -205,6 +205,30 @@ every feed undeclared and no parameter invented. A loop with no marker is found 
 importer, torn at the lexicographically first edge in it, and reported as `recycle_inferred`;
 an azoth export writes the real tear in `Azoth/Recycle`.
 
+### Instrumentation and control
+
+The flowsheet's `[[instruments]]` and `[[signals]]` (documented in
+[the process schema](process-schema.md#the-control-layer)) exchange as the DEXPI 2.0
+instrumentation objects. One `ProcessInstrumentationFunction` is written per instrument, with
+the tag split into the model's own parts - category, modifier and number - and with the
+`Location` as a reference to `Plant/Enumerations.LocationClassification.*`. The safety class
+and voting architecture go in the model's `SafetyRelevanceClass` and
+`VotingSystemRepresentation`; the tag, service, measured and actuated endpoints, range, safe
+state and intervals travel in `Azoth/…` properties, because the model has no field for them
+here. The instrument references the plant item it watches or commands through
+`SensingLocation`/`ActuatingLocation`.
+
+A signal is a `SignalConveyingFunction` under its source instrument, with `Source` and
+`Target` references to the two instruments and a `SignalConveyingType` reference for the
+carrier. Import reads the whole layer back, including the extensions when they are present.
+
+**Not ported in this layer**: `ProcessSignalGeneratingFunction` and `ActuatingFunction` (the
+model's sensor and final-element decomposition, which the instrument record does not split),
+`InstrumentationLoopFunction` grouping (a loop is derivable from `loop_number`), alarm and
+trip setpoints, instrumentation graphics, and instrumentation in the **Proteus** reader -
+the projection does not carry it yet. The SIL and voting recorded are exchange evidence, not
+SIL verification.
+
 ## Proteus
 
 DEXPI 1.x serialises the same drawing as Proteus XML: a `PlantModel` root, `ComponentClass`
@@ -229,13 +253,13 @@ development.
 and splitting the segment's pipe around its nodes is the step that closes it; until then
 `unit_ops.throttling_valve` is refused on Plant write.
 
-Instrumentation, control loops and SIS/HIPPS semantics need a document concept azoth does
-not have - there is no instrument model - and are a tranche of their own, not a serialiser.
-The Plant profile reads the instrumentation classes so a real P&ID validates, and reports
-the objects as unplaced. Graphics need the diagram representation groups;
-`DexpiLayoutEngine` (3,572 lines) is the class that would close automatic routing, and it is
-not ported. Multi-area `ProcessModel` packages, the conformance-assessment machinery and the
-revision-impact reports are NeqSim's `Dexpi20ProcessModelPackage*` family and are not ported
-either: one file, one exchange, until a caller needs a package.
+The instrumentation layer exchanges; the pieces named in that section are not ported yet.
+The middleware's command model has no instrument edit - a document's instruments are written
+by hand or by an exchange, not by a form - and the editor's graph does not draw them.
+Graphics need the diagram representation groups; `DexpiLayoutEngine` (3,572 lines) is the
+class that would close automatic routing, and it is not ported. Multi-area `ProcessModel`
+packages, the conformance-assessment machinery and the revision-impact reports are NeqSim's
+`Dexpi20ProcessModelPackage*` family and are not ported either: one file, one exchange, until
+a caller needs a package.
 
 *Enforcement: check — `tools/gen_dexpi_mapping.py --check` refuses a palette entry with no mapping row or a row naming no entry, and the vendored schema's SHA-256; `crates/azoth-dexpi/tests/` holds the mapping, units, refusals, round trips and the two NeqSim oracles (Process and Plant); `crates/azoth-dexpi/tests/process_export.rs` and `plant.rs` validate every export with `xmllint` against the pinned XSD and fail rather than skip when the tool is absent; `python/tests/test_dexpi.py` loads both exports with pyDEXPI in strict mode; and `docs/claims.toml` holds the mapping counts to the tables.*

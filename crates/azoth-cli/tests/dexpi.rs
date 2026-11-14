@@ -153,6 +153,8 @@ fn the_plant_profile_exports_validates_and_imports_again() {
     let flowsheet = parse_flowsheet(&text).expect("the imported document parses");
     assert_eq!(flowsheet.instances.len(), 3);
     assert_eq!(flowsheet.connections.len(), 5);
+    assert_eq!(flowsheet.instruments.len(), 2);
+    assert_eq!(flowsheet.signals.len(), 1);
     assert_eq!(flowsheet.connections[0].line.as_deref(), Some("L-1001"));
 }
 

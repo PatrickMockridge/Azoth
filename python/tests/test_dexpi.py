@@ -133,6 +133,15 @@ def test_a_plant_export_loads_in_pydexpi() -> None:
     items = getattr(plant, "taggedPlantItems", None)
     assert items is not None
     assert len(items) == 3
+    functions = getattr(plant, "processInstrumentationFunctions", None)
+    assert functions is not None
+    assert len(functions) == 2
+    switch = next(item for item in functions if item.processInstrumentationFunctionModifier == "SHH")
+    assert switch.processInstrumentationFunctionCategory == "P"
+    assert switch.processInstrumentationFunctionNumber == "101"
+    assert switch.safetyRelevanceClass == "SIL 2"
+    assert switch.votingSystemRepresentation == "2oo3"
+    assert len(switch.signalConveyingFunctions) == 1
 
 
 def test_the_plant_round_trip_recovers_the_topology() -> None:

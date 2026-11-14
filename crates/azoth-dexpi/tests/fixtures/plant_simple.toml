@@ -60,3 +60,25 @@ line = "L-1004"
 from = "V-101.liquid"
 to = "OIL"
 line = "L-1005"
+
+[[instruments]]
+id = "PSHH-101"
+function = "PSHH"
+service = "separator overhead pressure"
+loop_number = "101"
+measures = "V-101.vapour"
+location = "field"
+range = { min = 0.0, max = 1.0e7, unit = "Pa" }
+safety = { function = "SIF-101", sil = 2, voting = "2oo3", safe_state = "closed", proof_test_hours = 8760.0, closure_seconds = 2.0 }
+
+[[instruments]]
+id = "TIC-102"
+function = "TIC"
+service = "cooler outlet temperature"
+measures = "E-101.outlet"
+location = "panel"
+
+[[signals]]
+from = "PSHH-101"
+to = "TIC-102"
+kind = "electric"
