@@ -1,0 +1,21 @@
+# DEXPI 2.0 Plant export inventory, pinned NeqSim
+root.name=DEXPI_plant_oracle
+import.Core=https://data.dexpi.org/models/2.0.0/Core.xml
+import.Plant=https://data.dexpi.org/models/2.0.0/Plant.xml
+item.V-101.type=Plant/ProcessEquipment.Separator
+item.V-101.nozzle=INLET
+item.V-101.nozzle=OUTLET_1
+item.V-101.nozzle=OUTLET_2
+item.K-101.type=Plant/ProcessEquipment.CentrifugalCompressor
+item.K-101.nozzle=INLET
+item.K-101.nozzle=OUTLET_1
+item.E-101.type=Plant/ProcessEquipment.AirCoolingSystem
+item.E-101.nozzle=INLET
+item.E-101.nozzle=OUTLET_1
+item.count=3
+nozzle.count=7
+segment.V-101->K-101
+segment.K-101->E-101
+segment.count=2
+semantic.errors=0
+semantic.warnings=0

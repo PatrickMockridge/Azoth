@@ -110,6 +110,53 @@ def test_validate_reports_rather_than_raising() -> None:
     assert broken["valid"] is False
 
 
+PLANT_FIXTURE = (
+    ROOT / "crates" / "azoth-dexpi" / "tests" / "fixtures" / "plant_simple.toml"
+).read_text()
+PROTEUS_FIXTURE = (
+    ROOT / "crates" / "azoth-dexpi" / "tests" / "fixtures" / "proteus_simple.xml"
+).read_text()
+
+
+def test_a_plant_export_loads_in_pydexpi() -> None:
+    xml, report = dexpi.export_plant(
+        PLANT_FIXTURE,
+        PALETTE,
+        allow_lossy_mappings=True,
+        with_azoth_extensions=True,
+    )
+    assert report["items"] == 3
+    assert report["segments"] == 5
+    model = load_xml_string(xml, strict=True)
+    plant = model.conceptualModel
+    assert plant is not None
+    items = getattr(plant, "taggedPlantItems", None)
+    assert items is not None
+    assert len(items) == 3
+
+
+def test_the_plant_round_trip_recovers_the_topology() -> None:
+    xml, _ = dexpi.export_plant(
+        PLANT_FIXTURE,
+        PALETTE,
+        allow_lossy_mappings=True,
+        with_azoth_extensions=True,
+    )
+    _, report = dexpi.import_plant(xml, PALETTE)
+    units = [instance["unit"] for instance in report["flowsheet"]["instances"]]
+    assert units == ["unit_ops.separator", "unit_ops.compressor", "unit_ops.cooler"]
+    assert len(report["flowsheet"]["connections"]) == 5
+
+
+def test_a_proteus_plant_model_imports() -> None:
+    _, report = dexpi.import_proteus(PROTEUS_FIXTURE, PALETTE)
+    units = {instance["id"]: instance["unit"] for instance in report["flowsheet"]["instances"]}
+    assert units["P-100"] == "unit_ops.pump"
+    assert units["T-100"] == "unit_ops.tank"
+    assert units["GlobeValve-1"] == "unit_ops.throttling_valve"
+    assert report["flowsheet"]["products"] == ["PRODUCT"]
+
+
 def test_the_schema_is_pinned() -> None:
     assert dexpi.schema_sha256() == (
         "0bd6568b7c52fd59ac4ef6d8547ab2b2aa890c009a3a1bfbc5d7cc18c53b36e6"

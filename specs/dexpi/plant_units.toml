@@ -1,0 +1,239 @@
+# The azoth palette -> DEXPI 2.0 Plant mapping.
+#
+# **Reading and writing are two different questions.** A native Plant writer reviewed by
+# NeqSim emits a narrow set - its `Dexpi20XmlWriter.dexpiType` has ten branches, one of them
+# a generic fallback this port refuses. A Plant *reader* must accept everything a P&ID can
+# hold, so `reader_types` is far wider than `plant_types`. That asymmetry is NeqSim's, and
+# this table states it rather than flattening it into one column.
+#
+#   write = "faithful" | "lossy" | "refused"  - what an export costs, as in the Process table.
+#   plant_types  - the native `Plant/ProcessEquipment.*` class the writer emits (one, for a
+#                  writable row; none for a refusal).
+#   reader_types - the bare class names a reader accepts. A native file spells them
+#                  `Plant/ProcessEquipment.<name>`; a Proteus file spells them `<name>` in
+#                  `ComponentClass`. One name, one azoth unit: a class that could mean two
+#                  units is mapped to the general one, and the importer does not guess.
+#
+# The names come from NeqSim's two reviewed mapping tables at the pin
+# (`dexpi_equipment_mapping.properties`, 66 rows, and `dexpi_piping_component_mapping.properties`,
+# 28 rows) plus the classes its native writer emits. A name not in either is left unmapped and
+# read as `dexpi.unmapped`.
+schema_version = 1
+profile = "dexpi-2.0-plant"
+
+[[unit]]
+azoth_id = "unit_ops.absorption_column"
+write = "refused"
+plant_types = []
+reader_types = ["AbsorptionColumn"]
+note = "No native Plant class was reviewed for an absorption column in the writer this port follows; the reader accepts the Proteus class name."
+
+[[unit]]
+azoth_id = "unit_ops.component_splitter"
+write = "refused"
+plant_types = []
+reader_types = []
+note = "A composition split is not a plant item; no DEXPI class names one."
+
+[[unit]]
+azoth_id = "unit_ops.compressor"
+write = "faithful"
+plant_types = ["Plant/ProcessEquipment.CentrifugalCompressor"]
+reader_types = ["CentrifugalCompressor", "ReciprocatingCompressor", "ScrewCompressor", "Fan", "Blower", "Compressor"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.cooler"
+write = "lossy"
+plant_types = ["Plant/ProcessEquipment.AirCoolingSystem"]
+reader_types = ["Cooler", "AirCoolingSystem"]
+note = "AirCoolingSystem names one cooling technology; this unit is a generic cooler whose duty may come from any utility."
+
+[[unit]]
+azoth_id = "unit_ops.distillation_column"
+write = "refused"
+plant_types = []
+reader_types = ["ProcessColumn", "Column", "DistillationColumn", "TrayColumn"]
+note = "The native writer reviewed by this port has no column branch and falls back to a generic type, which this exchange refuses; the reader accepts the column class names."
+
+[[unit]]
+azoth_id = "unit_ops.ejector"
+write = "refused"
+plant_types = []
+reader_types = ["Ejector", "SteamJetEjector", "EjectorPump"]
+note = "No native Plant class was reviewed for an ejector in the writer this port follows."
+
+[[unit]]
+azoth_id = "unit_ops.expander"
+write = "refused"
+plant_types = []
+reader_types = ["Expander", "Turbine"]
+note = "No expander branch exists in the reviewed native writer; the reader accepts the turbine and expander class names."
+
+[[unit]]
+azoth_id = "unit_ops.filter"
+write = "refused"
+plant_types = []
+reader_types = ["Filter"]
+note = "No native Plant class was reviewed for a filter in the writer this port follows."
+
+[[unit]]
+azoth_id = "unit_ops.flare"
+write = "refused"
+plant_types = []
+reader_types = ["Flare", "FlareStack", "WasteGasEmitter"]
+note = "No flare branch exists in the reviewed native writer; the reader accepts the flare class names."
+
+[[unit]]
+azoth_id = "unit_ops.gas_scrubber"
+write = "lossy"
+plant_types = ["Plant/ProcessEquipment.Separator"]
+reader_types = ["Scrubber"]
+note = "Separator does not name the scrubber service; the vessel and its outlets are what the item records."
+
+[[unit]]
+azoth_id = "unit_ops.gibbs_reactor"
+write = "refused"
+plant_types = []
+reader_types = []
+note = "The reviewed Plant writer has no reactor branch, and no DEXPI class names a Gibbs reactor."
+
+[[unit]]
+azoth_id = "unit_ops.heater"
+write = "lossy"
+plant_types = ["Plant/ProcessEquipment.FiredHeater"]
+reader_types = ["FiredHeater", "ElectricHeater", "Boiler", "Heater"]
+note = "FiredHeater names a fired furnace; this unit is a generic heater whose duty may come from any utility."
+
+[[unit]]
+azoth_id = "unit_ops.heat_exchanger"
+write = "lossy"
+plant_types = ["Plant/ProcessEquipment.TubularHeatExchanger"]
+reader_types = ["PlateHeatExchanger", "ShellAndTubeHeatExchanger", "TubularHeatExchanger", "AirCooledHeatExchanger", "SpiralHeatExchanger", "DoubleJacketedVessel", "HeatExchanger"]
+note = "TubularHeatExchanger names one geometry; this unit is a two-stream exchanger of any kind. The reader accepts every exchanger class name as the same unit."
+
+[[unit]]
+azoth_id = "unit_ops.manifold"
+write = "refused"
+plant_types = []
+reader_types = []
+note = "A manifold is a piping junction, not a tagged plant item in the reviewed writer."
+
+[[unit]]
+azoth_id = "unit_ops.map_turbo_expander_compressor"
+write = "refused"
+plant_types = []
+reader_types = []
+note = "A four-port rotating machine has no reviewed Plant class."
+
+[[unit]]
+azoth_id = "unit_ops.mixer"
+write = "refused"
+plant_types = []
+reader_types = ["Agitator", "StaticMixer", "Mixer"]
+note = "A mixer is a junction in the piping network, not a tagged plant item; exporting one as an item would invent an equipment that the drawing does not have."
+
+[[unit]]
+azoth_id = "unit_ops.packed_column"
+write = "refused"
+plant_types = []
+reader_types = ["PackedColumn"]
+note = "No column branch exists in the reviewed native writer; the reader accepts the packed-column class name."
+
+[[unit]]
+azoth_id = "unit_ops.pipe"
+write = "refused"
+plant_types = []
+reader_types = ["Pipe"]
+note = "Plant represents piping as segments and pipes between nozzles, not as a tagged item; this unit's own calculation has no item to be."
+
+[[unit]]
+azoth_id = "unit_ops.plug_flow_reactor"
+write = "refused"
+plant_types = []
+reader_types = ["PlugFlowReactor"]
+note = "The reviewed Plant writer has no reactor branch; the reader accepts the reactor class name."
+
+[[unit]]
+azoth_id = "unit_ops.pump"
+write = "faithful"
+plant_types = ["Plant/ProcessEquipment.CentrifugalPump"]
+reader_types = ["CentrifugalPump", "ReciprocatingPump", "RotaryPump", "DiaphragmPump", "CustomPump", "Pump"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.rate_based_packed_column"
+write = "refused"
+plant_types = []
+reader_types = []
+note = "No column branch exists in the reviewed native writer, and no distinct class name separates this formulation from a packed column."
+
+[[unit]]
+azoth_id = "unit_ops.separator"
+write = "faithful"
+plant_types = ["Plant/ProcessEquipment.Separator"]
+reader_types = ["Separator", "KnockoutDrum", "Cyclone", "Demister", "Centrifuge"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.shortcut_distillation_column"
+write = "refused"
+plant_types = []
+reader_types = []
+note = "No column branch exists in the reviewed native writer; a shortcut column has no distinct class name."
+
+[[unit]]
+azoth_id = "unit_ops.simple_absorber"
+write = "refused"
+plant_types = []
+reader_types = []
+note = "This unit is UNRUNNABLE in this port, so it cannot be exported as a plant item."
+
+[[unit]]
+azoth_id = "unit_ops.splitter"
+write = "refused"
+plant_types = []
+reader_types = ["PipeTee", "Splitter"]
+note = "A splitter is a piping junction, not a tagged plant item."
+
+[[unit]]
+azoth_id = "unit_ops.stirred_tank_reactor"
+write = "refused"
+plant_types = []
+reader_types = ["StirredTankReactor"]
+note = "The reviewed Plant writer has no reactor branch; the reader accepts the reactor class name."
+
+[[unit]]
+azoth_id = "unit_ops.stripping_column"
+write = "refused"
+plant_types = []
+reader_types = ["StripperColumn"]
+note = "No column branch exists in the reviewed native writer; the reader accepts the stripping-column class name."
+
+[[unit]]
+azoth_id = "unit_ops.tank"
+write = "faithful"
+plant_types = ["Plant/ProcessEquipment.Tank"]
+reader_types = ["Tank", "Vessel", "StorageTank", "PressureVessel"]
+note = ""
+
+[[unit]]
+azoth_id = "unit_ops.three_phase_separator"
+write = "lossy"
+plant_types = ["Plant/ProcessEquipment.Separator"]
+reader_types = ["ThreePhaseSeparator"]
+note = "Separator does not say which outlet is water; the three nozzles carry the three outlets and their names are the port names."
+
+[[unit]]
+azoth_id = "unit_ops.throttling_valve"
+write = "refused"
+plant_types = []
+reader_types = ["GlobeValve", "ButterflyValve", "CheckValve", "ControlValve", "PressureSafetyValve", "PressureReliefValve", "PressureReducingValve", "BallValve", "GateValve", "PlugValve", "DiaphragmValve", "NeedleValve", "SwingCheckValve", "SpringLoadedGlobeSafetyValve", "PilotOperatedSafetyValve", "SolenoidValve", "PinchValve", "RuptureDisk", "Valve"]
+note = "A valve is a piping component inside a segment, not a tagged plant item; this writer places no piping components yet, so the valve has no item to be. The reader accepts every valve class as `unit_ops.throttling_valve`."
+
+[[unit]]
+azoth_id = "unit_ops.turbo_expander_compressor"
+write = "refused"
+plant_types = []
+reader_types = []
+note = "A four-port rotating machine has no reviewed Plant class."

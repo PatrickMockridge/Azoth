@@ -22,15 +22,16 @@ pub fn is_xml_id(text: &str) -> bool {
 ///
 /// **The dot and the brackets are the endpoint's**, not XML's: `instance.port[i]` is how a
 /// connection addresses a stream, so an instance id carrying either would make the endpoint
-/// ambiguous. They are replaced along with anything else outside the XML id alphabet.
+/// ambiguous. **A hyphen is not**: `V-101` is a legal azoth id and a tag a P&ID actually
+/// carries, so it survives; whitespace and anything outside `[A-Za-z0-9_-]` does not.
 #[must_use]
 pub fn sanitize_instance_id(text: &str) -> String {
     let mut sanitized = String::with_capacity(text.len() + 1);
     for (index, value) in text.chars().enumerate() {
         let accepted = if index == 0 {
-            value.is_ascii_alphabetic() || value == '_'
+            value.is_ascii_alphabetic() || value == '_' || value == '-'
         } else {
-            value.is_ascii_alphanumeric() || value == '_'
+            value.is_ascii_alphanumeric() || value == '_' || value == '-'
         };
         sanitized.push(if accepted { value } else { '_' });
     }
@@ -40,11 +41,22 @@ pub fn sanitize_instance_id(text: &str) -> String {
     sanitized
 }
 
-/// A DEXPI model name from an azoth flowsheet id, which may carry dots and hyphens.
+/// A DEXPI `name` from an azoth flowsheet id: `[A-Za-z_][A-Za-z_0-9]*`, no hyphen.
+///
+/// **Stricter than an instance id**, because `Model/@name` is an XSD `name` - a dot and a
+/// hyphen are both illegal there, while an azoth id may carry either.
 #[must_use]
 pub fn model_name(id: &str) -> String {
-    let sanitized = sanitize_instance_id(id);
-    if sanitized == "_" {
+    let mut sanitized = String::with_capacity(id.len() + 1);
+    for (index, value) in id.chars().enumerate() {
+        let accepted = if index == 0 {
+            value.is_ascii_alphabetic() || value == '_'
+        } else {
+            value.is_ascii_alphanumeric() || value == '_'
+        };
+        sanitized.push(if accepted { value } else { '_' });
+    }
+    if sanitized.is_empty() || sanitized == "_" {
         "AzothFlowsheet".to_string()
     } else {
         sanitized

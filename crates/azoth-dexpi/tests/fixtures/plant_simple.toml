@@ -1,0 +1,62 @@
+# The topology the Plant export tests use: every unit is one the Plant writer reviewed.
+#
+# **No valve.** A DEXPI Plant model places a valve inside a segment, not among the tagged
+# items, and this writer places no piping components yet; `unit_ops.throttling_valve` is
+# therefore refused on write and read-only.
+id = "flowsheets.plant_simple"
+name = "Plant profile simple"
+
+products = ["GAS", "OIL"]
+
+[[inputs]]
+name = "FEED"
+components = ["methane", "n-butane"]
+n = 11.357
+z = [0.8, 0.2]
+P = 5.0e6
+T = 303.15
+
+[[instances]]
+id = "V-101"
+unit = "unit_ops.separator"
+[instances.parameters]
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+
+[[instances]]
+id = "K-101"
+unit = "unit_ops.compressor"
+[instances.parameters]
+outlet_pressure = 8.0e6
+isentropic_efficiency = 1.0
+
+[[instances]]
+id = "E-101"
+unit = "unit_ops.cooler"
+[instances.parameters]
+outlet_temperature = 303.15
+
+[[connections]]
+from = "FEED"
+to = "V-101.feed"
+line = "L-1001"
+
+[[connections]]
+from = "V-101.vapour"
+to = "K-101.inlet"
+line = "L-1002"
+
+[[connections]]
+from = "K-101.outlet"
+to = "E-101.inlet"
+line = "L-1003"
+
+[[connections]]
+from = "E-101.outlet"
+to = "GAS"
+line = "L-1004"
+
+[[connections]]
+from = "V-101.liquid"
+to = "OIL"
+line = "L-1005"

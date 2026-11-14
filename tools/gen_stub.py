@@ -410,6 +410,20 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
         "tuple[str, str]",
     ),
     ("dexpi_validate(xml: str)", "str"),
+    (
+        "dexpi_export_plant(flowsheet: str, palette_dir: str = ...,"
+        " allow_lossy_mappings: bool = ..., with_azoth_extensions: bool = ...,"
+        " maps: dict[str, str] | None = ...)",
+        "tuple[str, str]",
+    ),
+    (
+        "dexpi_import_plant(xml: str, palette_dir: str = ..., strict: bool = ...)",
+        "tuple[str, str]",
+    ),
+    (
+        "dexpi_import_proteus(xml: str, palette_dir: str = ..., strict: bool = ...)",
+        "tuple[str, str]",
+    ),
     ("dexpi_schema_sha256()", "str"),
     ("dexpi_format_double(value: float)", "str"),
 )

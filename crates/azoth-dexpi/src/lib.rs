@@ -12,23 +12,34 @@
 //! read "conformant" as either.
 
 pub mod diagnostic;
+pub mod extensions;
 pub mod ids;
 pub mod inventory;
 pub mod mapping;
 pub mod model;
+pub mod plant;
 pub mod process;
 pub mod profile;
+pub mod proteus;
 pub mod reader;
 pub mod units;
 pub mod validate;
 pub mod writer;
 pub mod xsd;
 
+mod plant_mapping_gen;
 mod process_mapping_gen;
 
 pub use diagnostic::{DexpiDiagnostic, Severity};
 pub use mapping::{Disposition, UnitMapping};
-pub use model::{Child, Components, Data, DataValue, Document, Import, Model, Object, References};
+pub use model::{
+    Child, ComponentChild, Components, Data, DataValue, Document, Import, Model, Object, References,
+};
+pub use plant::export::{PlantExportOptions, PlantExportReport, export_plant};
+pub use plant::import::{
+    PlantImportOptions, PlantImportReport, import_plant, import_plant_document,
+};
 pub use process::export::{ExportOptions, ExportReport, export_process};
 pub use process::import::{ImportOptions, ImportReport, import_process};
 pub use profile::Profile;
+pub use proteus::import_proteus;

@@ -22,8 +22,9 @@ differences is a separate, accountable step.
 ## The release the files name
 
 The Process profile imports the Core and Process information models at
-`https://data.dexpi.org/models/2.0.0/Core.xml` and `.../Process.xml`. DEXPI 2.0.1 publishes a
-byte-identical XML schema, so one digest pins both releases:
+`https://data.dexpi.org/models/2.0.0/Core.xml` and `.../Process.xml`; the Plant profile
+imports Core and `.../Plant.xml`. DEXPI 2.0.1 publishes a byte-identical XML schema, so one
+digest pins both releases:
 
 ```
 sha256 0bd6568b7c52fd59ac4ef6d8547ab2b2aa890c009a3a1bfbc5d7cc18c53b36e6
@@ -172,13 +173,69 @@ writer is the oracle for export and the reader is held to the DEXPI model, the s
 rules, and export→import→export round-trip. The export oracle is
 `validation/neqsim/Dexpi20ProcessProbe.java` and its committed capture.
 
+## The Plant model
+
+A Plant exchange is a P&ID. It carries no process state - no mass flow, pressure or
+temperature - and what it does carry is the part a PFD loses: the tag of every item, the
+nozzle each stream leaves by, and the line it belongs to.
+
+One tagged plant item is written per mapped instance, with one `Nozzle` per palette port
+(each owning a `PipingNode`). Each material edge becomes a `PipingNetworkSegment` with a
+`Pipe` joining two nodes. A flowsheet that states `line` on a connection is grouped into one
+`PipingNetworkSystem` per line, whose `LineNumber` is that line; a connection without one
+goes under `AzothProcessConnections`, and import turns that placeholder back into no line.
+Feeds and products are `FlowIn`/`FlowOut` off-page connectors inside the segment that uses
+them.
+
+**A valve is not a tagged item.** The DEXPI Plant model places a valve as a piping
+component inside a segment, and a tagged item is a different class. This writer places no
+piping components yet, so `unit_ops.throttling_valve` is refused on write and read-only;
+placing valves needs the segment's `Items` component and is the next step. pyDEXPI, loading
+a valve as a tagged item, rejects the file - which is how this was found.
+
+The Plant mapping writes **9 of 31 palette entries** and reads 23.
+
+Reading is wider than writing by design: NeqSim's reviewed Plant writer emits a narrow set,
+while a real P&ID carries every valve, column and reactor class. A class this port reads but
+does not write maps to its azoth unit on import, one class to one unit; a class in neither
+list is kept as `dexpi.unmapped`, which the checker refuses.
+
+Import is the same scaffold policy as Process: instances, connections and line numbers, with
+every feed undeclared and no parameter invented. A loop with no marker is found by the
+importer, torn at the lexicographically first edge in it, and reported as `recycle_inferred`;
+an azoth export writes the real tear in `Azoth/Recycle`.
+
+## Proteus
+
+DEXPI 1.x serialises the same drawing as Proteus XML: a `PlantModel` root, `ComponentClass`
+attributes instead of `type` references, `Connection` elements with `FromID`/`ToID`, and
+`GenericAttributes`. `crates/azoth-dexpi/src/proteus.rs` **projects** that document into the
+DEXPI 2.0 Plant metamodel, and the Plant importer reads the result - so the topology rules,
+port assignment, line numbers and recycle inference are shared rather than written twice.
+
+What the projection drops is named: positions and presentation are graphics; inline fittings
+this port has no unit for (a reducer, a blind flange, a strainer, an orifice plate) are
+joined through with an `inline_component_skipped` diagnostic; connections ending at a
+component with no azoth unit are counted in a `topology_gap` note. A valve in a segment is
+kept as `unit_ops.throttling_valve`.
+
+The official DEXPI 1.3 sample is not vendored - its redistribution terms are not clear enough
+to copy - so the tests use a fixture written for them, and the sample is read by hand during
+development.
+
 ## Not ported
 
-The Plant (P&ID) profile and the Proteus 4.x serialisation are the next tranche;
-`Dexpi20XmlWriter`, `DexpiTopologyResolver` and `DexpiXmlReader` are the classes that close
-them. Instrumentation, control loops and SIS/HIPPS semantics need a document concept azoth
-does not have — there is no instrument model — and are a tranche of their own, not a
-serializer. Graphics need the diagram representation groups; `DexpiLayoutEngine` (3,572
-lines) is the class that would close automatic routing, and it is not ported.
+**A valve cannot be written yet.** Placing a `GlobeValve` in a segment's `Items` component
+and splitting the segment's pipe around its nodes is the step that closes it; until then
+`unit_ops.throttling_valve` is refused on Plant write.
 
-*Enforcement: check — `tools/gen_dexpi_mapping.py --check` refuses a palette entry with no mapping row or a row naming no entry, and the vendored schema's SHA-256; `crates/azoth-dexpi/tests/` holds the mapping, units, refusals, round trip and the NeqSim oracle; `crates/azoth-dexpi/tests/process_export.rs` validates every export with `xmllint` against the pinned XSD and fails rather than skips when the tool is absent; `python/tests/test_dexpi.py` loads the export with pyDEXPI in strict mode; and `docs/claims.toml` holds the mapping counts to the table.*
+Instrumentation, control loops and SIS/HIPPS semantics need a document concept azoth does
+not have - there is no instrument model - and are a tranche of their own, not a serialiser.
+The Plant profile reads the instrumentation classes so a real P&ID validates, and reports
+the objects as unplaced. Graphics need the diagram representation groups;
+`DexpiLayoutEngine` (3,572 lines) is the class that would close automatic routing, and it is
+not ported. Multi-area `ProcessModel` packages, the conformance-assessment machinery and the
+revision-impact reports are NeqSim's `Dexpi20ProcessModelPackage*` family and are not ported
+either: one file, one exchange, until a caller needs a package.
+
+*Enforcement: check — `tools/gen_dexpi_mapping.py --check` refuses a palette entry with no mapping row or a row naming no entry, and the vendored schema's SHA-256; `crates/azoth-dexpi/tests/` holds the mapping, units, refusals, round trips and the two NeqSim oracles (Process and Plant); `crates/azoth-dexpi/tests/process_export.rs` and `plant.rs` validate every export with `xmllint` against the pinned XSD and fail rather than skip when the tool is absent; `python/tests/test_dexpi.py` loads both exports with pyDEXPI in strict mode; and `docs/claims.toml` holds the mapping counts to the tables.*

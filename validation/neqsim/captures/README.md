@@ -217,6 +217,20 @@ pin's `neqsim-118d9af.jar` is not built on the machine that wrote it. The writer
 serialisation is the same in both; refresh the capture at the pin when it is built, which is
 what `tools/oracle_sweep.py` does for every probe.
 
+`dexpi_plant_simple.tsv` is the same process serialised as a P&ID by `Dexpi20XmlWriter`:
+tagged items with their types and nozzle sub-tags, and the internal segments between them.
+NeqSim's default Plant export draws no boundary segments, so the comparison is on the items
+and the internal edges; the reader side has no NeqSim oracle at all beyond `DexpiXmlReader`
+on Proteus files, which is exercised by hand against the official sample.
+
+```bash
+../../tools/gated.sh javac -proc:none -cp neqsim-118d9af.jar Dexpi20PlantProbe.java
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar Dexpi20PlantProbe \
+  > captures/dexpi_plant_simple.tsv
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar Dexpi20PlantProbe \
+  --xml ../dexpi/neqsim/plant_simple.dexpi.xml
+```
+
 ## The heat exchanger's delta-T mode
 
 `process_heat_exchanger_delta_t.tsv` is `HeatExchanger.runDeltaT`, which `setDeltaT` enables:

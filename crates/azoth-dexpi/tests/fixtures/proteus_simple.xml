@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  A Proteus fixture in the shape a DEXPI 1.x tool emits, written for this test.
+  It mirrors the constructs the official sample uses - a tagged equipment with nozzles, a
+  segment per Connection, an inline valve, a pass-through fitting, and off-page connectors -
+  without redistributing the sample itself.
+-->
+<PlantModel>
+  <PlantInformation Application="Dexpi" Discipline="PID" SchemaVersion="4.1.1" Units="mm"/>
+  <Equipment ID="CentrifugalPump-1" ComponentClass="CentrifugalPump" ComponentClassURI="http://data.posccaesar.org/rdl/RDS327239" ComponentName="CENTRIFUGAL_PUMP_SHAPE">
+    <GenericAttributes Set="DexpiAttributes" Number="1">
+      <GenericAttribute Name="TagNameAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/TagNameAssignmentClass" Format="string" Value="P-100"/>
+    </GenericAttributes>
+    <Nozzle ID="Nozzle-1" ComponentClass="Nozzle" ComponentClassURI="http://data.posccaesar.org/rdl/RDS415214">
+      <ConnectionPoints FlowIn="1" NumPoints="2">
+        <Node ID="Nozzle-1-DefaultNode"/>
+        <Node Type="process" ID="PipingNode-1"/>
+      </ConnectionPoints>
+    </Nozzle>
+    <Nozzle ID="Nozzle-2" ComponentClass="Nozzle" ComponentClassURI="http://data.posccaesar.org/rdl/RDS415214">
+      <ConnectionPoints FlowOut="1" NumPoints="2">
+        <Node ID="Nozzle-2-DefaultNode"/>
+        <Node Type="process" ID="PipingNode-2"/>
+      </ConnectionPoints>
+    </Nozzle>
+  </Equipment>
+  <Equipment ID="TubularHeatExchanger-1" ComponentClass="TubularHeatExchanger" ComponentClassURI="http://data.posccaesar.org/rdl/RDS13971182" ComponentName="FLOATING_HEAD_TUBE_BUNDLE_HEAT_EXCHANGER_SHAPE">
+    <GenericAttributes Set="DexpiAttributes" Number="1">
+      <GenericAttribute Name="TagNameAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/TagNameAssignmentClass" Format="string" Value="H-100"/>
+    </GenericAttributes>
+    <Nozzle ID="Nozzle-3" ComponentClass="Nozzle" ComponentClassURI="http://data.posccaesar.org/rdl/RDS415214">
+      <ConnectionPoints FlowIn="1" NumPoints="2">
+        <Node ID="Nozzle-3-DefaultNode"/>
+        <Node Type="process" ID="PipingNode-3"/>
+      </ConnectionPoints>
+    </Nozzle>
+    <Nozzle ID="Nozzle-4" ComponentClass="Nozzle" ComponentClassURI="http://data.posccaesar.org/rdl/RDS415214">
+      <ConnectionPoints FlowOut="1" NumPoints="2">
+        <Node ID="Nozzle-4-DefaultNode"/>
+        <Node Type="process" ID="PipingNode-4"/>
+      </ConnectionPoints>
+    </Nozzle>
+  </Equipment>
+  <Equipment ID="Tank-1" ComponentClass="Tank" ComponentClassURI="http://data.posccaesar.org/rdl/RDS445139">
+    <GenericAttributes Set="DexpiAttributes" Number="1">
+      <GenericAttribute Name="TagNameAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/TagNameAssignmentClass" Format="string" Value="T-100"/>
+    </GenericAttributes>
+    <Nozzle ID="Nozzle-5" ComponentClass="Nozzle" ComponentClassURI="http://data.posccaesar.org/rdl/RDS415214">
+      <ConnectionPoints FlowIn="1" NumPoints="2">
+        <Node ID="Nozzle-5-DefaultNode"/>
+        <Node Type="process" ID="PipingNode-5"/>
+      </ConnectionPoints>
+    </Nozzle>
+    <Nozzle ID="Nozzle-6" ComponentClass="Nozzle" ComponentClassURI="http://data.posccaesar.org/rdl/RDS415214">
+      <ConnectionPoints FlowOut="1" NumPoints="2">
+        <Node ID="Nozzle-6-DefaultNode"/>
+        <Node Type="process" ID="PipingNode-6"/>
+      </ConnectionPoints>
+    </Nozzle>
+  </Equipment>
+  <PipingNetworkSystem ID="PipingNetworkSystem-1" ComponentClass="PipingNetworkSystem" ComponentClassURI="http://data.posccaesar.org/rdl/RDS270359">
+    <GenericAttributes Set="DexpiAttributes" Number="1">
+      <GenericAttribute Name="LineNumberAssignmentClass" AttributeURI="http://sandbox.dexpi.org/rdl/LineNumberAssignmentClass" Format="string" Value="L-1001"/>
+    </GenericAttributes>
+    <PipingNetworkSegment ID="PipingNetworkSegment-1" ComponentClass="PipingNetworkSegment" ComponentClassURI="http://data.posccaesar.org/rdl/RDS267704">
+      <PipeOffPageConnector ID="FlowInPipeOffPageConnector-1" ComponentClass="FlowInPipeOffPageConnector" ComponentClassURI="http://sandbox.dexpi.org/rdl/FlowInPipeOffPageConnector">
+        <ConnectionPoints FlowOut="1" NumPoints="2">
+          <Node ID="FlowInPipeOffPageConnector-1-DefaultNode"/>
+          <Node Type="process" ID="PipingNode-7"/>
+        </ConnectionPoints>
+        <GenericAttributes Set="DexpiAttributes" Number="1">
+          <GenericAttribute Name="PipeConnectorNumberAssignmentClass" Format="string" Value="FEED"/>
+        </GenericAttributes>
+      </PipeOffPageConnector>
+      <Connection FromID="FlowInPipeOffPageConnector-1" FromNode="1" ToID="Nozzle-1" ToNode="1"/>
+    </PipingNetworkSegment>
+    <PipingNetworkSegment ID="PipingNetworkSegment-2" ComponentClass="PipingNetworkSegment" ComponentClassURI="http://data.posccaesar.org/rdl/RDS267704">
+      <Connection FromID="Nozzle-2" FromNode="1" ToID="Nozzle-3" ToNode="1"/>
+    </PipingNetworkSegment>
+    <PipingNetworkSegment ID="PipingNetworkSegment-3" ComponentClass="PipingNetworkSegment" ComponentClassURI="http://data.posccaesar.org/rdl/RDS267704">
+      <PipingComponent ID="GlobeValve-1" ComponentClass="GlobeValve" ComponentClassURI="http://data.posccaesar.org/rdl/RDS332211">
+        <ConnectionPoints FlowIn="1" NumPoints="3">
+          <Node ID="GlobeValve-1-DefaultNode"/>
+          <Node Type="process" ID="PipingNode-8"/>
+          <Node Type="process" ID="PipingNode-9"/>
+        </ConnectionPoints>
+      </PipingComponent>
+      <Connection FromID="Nozzle-4" FromNode="1" ToID="GlobeValve-1" ToNode="1"/>
+      <Connection FromID="GlobeValve-1" FromNode="2" ToID="Nozzle-5" ToNode="1"/>
+    </PipingNetworkSegment>
+    <PipingNetworkSegment ID="PipingNetworkSegment-4" ComponentClass="PipingNetworkSegment" ComponentClassURI="http://data.posccaesar.org/rdl/RDS267704">
+      <PipeReducer ID="PipeReducer-1" ComponentClass="PipeReducer" ComponentClassURI="http://data.posccaesar.org/rdl/RDS267888">
+        <ConnectionPoints NumPoints="3">
+          <Node ID="PipeReducer-1-DefaultNode"/>
+          <Node Type="process" ID="PipingNode-10"/>
+          <Node Type="process" ID="PipingNode-11"/>
+        </ConnectionPoints>
+      </PipeReducer>
+      <Connection FromID="Nozzle-6" FromNode="1" ToID="PipeReducer-1" ToNode="1"/>
+      <Connection FromID="PipeReducer-1" FromNode="2" ToID="FlowOutPipeOffPageConnector-1" ToNode="1"/>
+    </PipingNetworkSegment>
+    <PipingNetworkSegment ID="PipingNetworkSegment-5" ComponentClass="PipingNetworkSegment" ComponentClassURI="http://data.posccaesar.org/rdl/RDS267704">
+      <PipeOffPageConnector ID="FlowOutPipeOffPageConnector-1" ComponentClass="FlowOutPipeOffPageConnector" ComponentClassURI="http://sandbox.dexpi.org/rdl/FlowOutPipeOffPageConnector">
+        <ConnectionPoints FlowIn="1" NumPoints="2">
+          <Node ID="FlowOutPipeOffPageConnector-1-DefaultNode"/>
+          <Node Type="process" ID="PipingNode-12"/>
+        </ConnectionPoints>
+        <GenericAttributes Set="DexpiAttributes" Number="1">
+          <GenericAttribute Name="PipeConnectorNumberAssignmentClass" Format="string" Value="PRODUCT"/>
+        </GenericAttributes>
+      </PipeOffPageConnector>
+    </PipingNetworkSegment>
+  </PipingNetworkSystem>
+</PlantModel>

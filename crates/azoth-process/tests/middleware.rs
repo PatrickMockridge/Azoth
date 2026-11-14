@@ -1376,10 +1376,12 @@ fn a_many_outlet_has_one_handle_per_position() {
     flowsheet.connections.push(Connection {
         from: "sep1.vapour".into(),
         to: "s1.feed".into(),
+        line: None,
     });
     flowsheet.connections.push(Connection {
         from: "s1.products[0]".into(),
         to: "vapour_product".into(),
+        line: None,
     });
 
     let document = graph(&flowsheet, &palette()).expect("it projects");

@@ -221,6 +221,7 @@ mod tests {
         Connection {
             from: from.to_string(),
             to: to.to_string(),
+            line: None,
         }
     }
 

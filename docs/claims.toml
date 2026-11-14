@@ -11,6 +11,7 @@
 # retypes an em dash is a stale declaration rather than a claim that quietly moved.
 #
 # Probes: dexpi.mappings, dexpi.faithful, dexpi.lossy, dexpi.refused,
+# dexpi.plant.total, dexpi.plant.writable, dexpi.plant.readable,
 # specs.calcs, specs.models, specs.ids, specs.unported_rows, unit_ops.declared,
 # unit_ops.kernels, unit_ops.dispatch, unit_ops.refusals, vocabulary.units,
 # lean.axioms_gated, lean.axioms_dim, lean.gate_printed, lean.guards_gated, lean.modules,
@@ -189,6 +190,13 @@ measure = { placeholders = "skills.placeholders", screening = "skills.screening"
 page = "docs/src/architecture/dexpi.md"
 text = "The Process mapping covers **{total} palette entries**: {faithful} faithful, {lossy} lossy and {refused} refused."
 measure = { total = "dexpi.mappings", faithful = "dexpi.faithful", lossy = "dexpi.lossy", refused = "dexpi.refused" }
+
+# The Plant table's two directions, measured from the same source. Writing is deliberately
+# narrower than reading, and the page states both.
+[[claim]]
+page = "docs/src/architecture/dexpi.md"
+text = "The Plant mapping writes **{writable} of {total} palette entries** and reads {readable}."
+measure = { writable = "dexpi.plant.writable", total = "dexpi.plant.total", readable = "dexpi.plant.readable" }
 
 # --- what CI cannot measure ----------------------------------------------------
 #

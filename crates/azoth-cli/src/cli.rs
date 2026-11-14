@@ -77,13 +77,17 @@ pub enum DexpiCommand {
 
 #[derive(Debug, clap::Args)]
 pub struct DexpiExportArgs {
-    /// The flowsheet to exchange. It declares its own inputs and is run before export.
+    /// The flowsheet to exchange. It declares its own inputs and is run before a Process export.
     #[arg(long)]
     pub flowsheet: std::path::PathBuf,
 
     /// The palette directory. Defaults to the shipped `specs/unit_ops`.
     #[arg(long, default_value = "specs/unit_ops")]
     pub palette: std::path::PathBuf,
+
+    /// The information model to write: `process` for a PFD/BFD, `plant` for a P&ID.
+    #[arg(long, default_value = "process")]
+    pub profile: String,
 
     /// The DEXPI XML file to write.
     #[arg(long)]
@@ -132,6 +136,11 @@ pub struct DexpiImportArgs {
     /// The palette directory the ports are named from.
     #[arg(long, default_value = "specs/unit_ops")]
     pub palette: std::path::PathBuf,
+
+    /// The profile to read as: `auto` takes it from the document's imports, `process` or
+    /// `plant` refuses a mismatch.
+    #[arg(long, default_value = "auto")]
+    pub profile: String,
 
     /// Refuse every warning, not only an error.
     #[arg(long)]

@@ -7,9 +7,13 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
+use azoth_dexpi::plant::export::PlantExportOptions;
+use azoth_dexpi::plant::import::PlantImportOptions;
 use azoth_dexpi::process::export::ExportOptions;
 use azoth_dexpi::process::import::ImportOptions;
-use azoth_dexpi::{export_process, import_process, writer};
+use azoth_dexpi::{
+    export_plant, export_process, import_plant, import_process, import_proteus, writer,
+};
 use azoth_process::{load_palette, parse_flowsheet};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -87,6 +91,98 @@ pub fn dexpi_import(xml: &str, palette_dir: &str, strict: bool) -> PyResult<(Str
             serde_json::json!({ "diagnostics": diagnostics }).to_string(),
         )),
     }
+}
+
+/// Write a flowsheet as a DEXPI 2.0 Plant exchange - a P&ID.
+///
+/// Returns `(xml, report_json)`. A refused exchange raises `ValueError` whose message is the
+/// report JSON.
+#[pyfunction]
+#[pyo3(signature = (flowsheet, palette_dir="specs/unit_ops", allow_lossy_mappings=false, with_azoth_extensions=false, maps=None))]
+pub fn dexpi_export_plant(
+    flowsheet: &str,
+    palette_dir: &str,
+    allow_lossy_mappings: bool,
+    with_azoth_extensions: bool,
+    maps: Option<BTreeMap<String, String>>,
+) -> PyResult<(String, String)> {
+    let palette = load_palette(Path::new(palette_dir))
+        .map_err(|error| PyValueError::new_err(format!("palette: {error}")))?;
+    let flowsheet = parse_flowsheet(flowsheet)
+        .map_err(|error| PyValueError::new_err(format!("flowsheet: {error}")))?;
+    let options = PlantExportOptions {
+        allow_lossy: allow_lossy_mappings,
+        overrides: maps.unwrap_or_default(),
+        azoth_extensions: with_azoth_extensions,
+    };
+    match export_plant(&flowsheet, &palette, &options) {
+        Ok(report) => {
+            let json = serde_json::json!({
+                "items": report.items,
+                "segments": report.segments,
+                "semantic_valid": report.semantic_valid,
+                "approval_status": report.approval_status,
+                "cae_round_trip": report.cae_round_trip,
+                "diagnostics": report.diagnostics,
+            });
+            Ok((report.xml, json.to_string()))
+        }
+        Err(diagnostics) => Err(PyValueError::new_err(
+            serde_json::json!({ "diagnostics": diagnostics }).to_string(),
+        )),
+    }
+}
+
+/// Read a DEXPI 2.0 Plant exchange as a flowsheet scaffold.
+///
+/// Returns `(flowsheet_toml, report_json)`; a refusal raises `ValueError`.
+#[pyfunction]
+#[pyo3(signature = (xml, palette_dir="specs/unit_ops", strict=false))]
+pub fn dexpi_import_plant(
+    xml: &str,
+    palette_dir: &str,
+    strict: bool,
+) -> PyResult<(String, String)> {
+    let palette = load_palette(Path::new(palette_dir))
+        .map_err(|error| PyValueError::new_err(format!("palette: {error}")))?;
+    match import_plant(xml, &palette, &PlantImportOptions { strict }) {
+        Ok(report) => plant_report(report),
+        Err(diagnostics) => Err(PyValueError::new_err(
+            serde_json::json!({ "diagnostics": diagnostics }).to_string(),
+        )),
+    }
+}
+
+/// Read a Proteus `PlantModel` as a flowsheet scaffold.
+///
+/// Returns `(flowsheet_toml, report_json)`; a refusal raises `ValueError`.
+#[pyfunction]
+#[pyo3(signature = (xml, palette_dir="specs/unit_ops", strict=false))]
+pub fn dexpi_import_proteus(
+    xml: &str,
+    palette_dir: &str,
+    strict: bool,
+) -> PyResult<(String, String)> {
+    let palette = load_palette(Path::new(palette_dir))
+        .map_err(|error| PyValueError::new_err(format!("palette: {error}")))?;
+    match import_proteus(xml, &palette, &PlantImportOptions { strict }) {
+        Ok(report) => plant_report(report),
+        Err(diagnostics) => Err(PyValueError::new_err(
+            serde_json::json!({ "diagnostics": diagnostics }).to_string(),
+        )),
+    }
+}
+
+fn plant_report(report: azoth_dexpi::PlantImportReport) -> PyResult<(String, String)> {
+    let toml = report
+        .flowsheet
+        .to_toml()
+        .map_err(|error| PyValueError::new_err(error.to_string()))?;
+    let json = serde_json::json!({
+        "flowsheet": report.flowsheet,
+        "diagnostics": report.diagnostics,
+    });
+    Ok((toml, json.to_string()))
 }
 
 /// Check a DEXPI 2.0 document against the semantic rules.

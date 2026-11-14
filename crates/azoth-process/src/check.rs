@@ -1674,10 +1674,12 @@ mod tests {
                 Connection {
                     from: "feed_1".into(),
                     to: "p1.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "p1.discharge".into(),
                     to: "purge".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -1708,10 +1710,12 @@ mod tests {
                 Connection {
                     from: "feed_1".into(),
                     to: "p1.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "p1.discharge".into(),
                     to: "purge".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -1829,6 +1833,7 @@ mod tests {
             connections: vec![Connection {
                 from: "p1.feed".into(),
                 to: "p1.discharge".into(),
+                line: None,
             }],
             recycles: vec![],
             layout: None,
@@ -1860,6 +1865,7 @@ mod tests {
             connections: vec![Connection {
                 from: "feed_1".into(),
                 to: "p1.discharge".into(),
+                line: None,
             }],
             recycles: vec![],
             layout: None,
@@ -1903,6 +1909,7 @@ mod tests {
             connections: vec![Connection {
                 from: "p1.discharge".into(),
                 to: "w1.feed".into(),
+                line: None,
             }],
             recycles: vec![],
             layout: None,
@@ -1931,10 +1938,12 @@ mod tests {
                 Connection {
                     from: "a".into(),
                     to: "p1.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "b".into(),
                     to: "p1.feed".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -1979,10 +1988,12 @@ mod tests {
                 Connection {
                     from: "p1.discharge".into(),
                     to: "p2.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "p2.discharge".into(),
                     to: "p1.feed".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -2003,6 +2014,7 @@ mod tests {
             connections: vec![Connection {
                 from: "p1.discharge".into(),
                 to: "p2.feed".into(),
+                line: None,
             }],
             recycles: vec![Recycle::new("r1", "p2.discharge", "p1.feed")],
             layout: None,
@@ -2101,6 +2113,7 @@ mod tests {
                 Connection {
                     from: "nowhere".into(),
                     to: "m2.product".into(),
+                    line: None,
                 },
             ],
             recycles: Vec::new(),
@@ -2192,10 +2205,12 @@ mod tests {
                 Connection {
                     from: "a".into(),
                     to: "m1.feed[0]".into(),
+                    line: None,
                 },
                 Connection {
                     from: "m1.product".into(),
                     to: "out".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -2233,14 +2248,17 @@ mod tests {
                 Connection {
                     from: "a".into(),
                     to: "m1.feed[0]".into(),
+                    line: None,
                 },
                 Connection {
                     from: "b".into(),
                     to: "m1.feed[0]".into(),
+                    line: None,
                 },
                 Connection {
                     from: "m1.product".into(),
                     to: "out".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -2271,14 +2289,17 @@ mod tests {
                 Connection {
                     from: "a".into(),
                     to: "m1.feed[0]".into(),
+                    line: None,
                 },
                 Connection {
                     from: "b".into(),
                     to: "m1.feed[1]".into(),
+                    line: None,
                 },
                 Connection {
                     from: "m1.product".into(),
                     to: "out".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -2311,18 +2332,22 @@ mod tests {
                 Connection {
                     from: "a".into(),
                     to: "p1.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "a".into(),
                     to: "p2.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "p1.discharge".into(),
                     to: "out1".into(),
+                    line: None,
                 },
                 Connection {
                     from: "p2.discharge".into(),
                     to: "out2".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -2353,14 +2378,17 @@ mod tests {
                 Connection {
                     from: "a".into(),
                     to: "m1.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "b".into(),
                     to: "m1.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "m1.product".into(),
                     to: "out".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -2385,10 +2413,12 @@ mod tests {
                 Connection {
                     from: "in".into(),
                     to: "s1.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "s1.products[0]".into(),
                     to: "out".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -2430,10 +2460,12 @@ mod tests {
                 Connection {
                     from: "in".into(),
                     to: "h1.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "h1.discharge".into(),
                     to: "out".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -2501,10 +2533,12 @@ mod tests {
                 Connection {
                     from: "in".into(),
                     to: "p1.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "p1.discharge[0]".into(),
                     to: "out".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -2582,10 +2616,12 @@ mod tests {
                 Connection {
                     from: "purge".into(),
                     to: "p1.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "p1.discharge".into(),
                     to: "purge".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -2660,16 +2696,19 @@ mod tests {
                 Connection {
                     from: "a".into(),
                     to: "m1.feed".into(),
+                    line: None,
                 },
                 // The same pair a second time, which `OverfedPort` does not catch on a `many`
                 // inlet and the feed rule does not catch at all.
                 Connection {
                     from: "a".into(),
                     to: "m1.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "m1.product".into(),
                     to: "out".into(),
+                    line: None,
                 },
             ],
             recycles: vec![],
@@ -2797,14 +2836,17 @@ mod tests {
                 Connection {
                     from: "a".into(),
                     to: "m1.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "m1.product".into(),
                     to: "s1.feed".into(),
+                    line: None,
                 },
                 Connection {
                     from: "s1.products[1]".into(),
                     to: "out".into(),
+                    line: None,
                 },
             ],
             recycles: vec![Recycle::new("r1", "s1.products[0]", "m1.feed")],

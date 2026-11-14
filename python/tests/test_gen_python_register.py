@@ -29,7 +29,12 @@ LIB = REPO_ROOT / "crates" / "azoth-python" / "src" / "lib.rs"
 #: `add_class` came down from 14 when `PyKComponent` moved into the generated
 #: `record_outputs_gen.rs`: a `record_list` output's element is a class of its own and
 #: `gen_python_register` now emits it, so `lib.rs` no longer names it.
-KNOWN_HAND_WRITTEN = {"add_class": 13, "add_function": 39}
+#:
+#: `add_function` rose by eight for the DEXPI exchange - five Process entries and three for
+#: Plant and Proteus. They are genuinely underivable: the exchange is a file format's
+#: adapter, not a calculation with a spec id, so there is no registry for a generator to
+#: emit them from. A ninth would need the same sentence.
+KNOWN_HAND_WRITTEN = {"add_class": 13, "add_function": 47}
 
 
 def _tools_module(name: str) -> ModuleType:

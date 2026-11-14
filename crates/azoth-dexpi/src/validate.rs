@@ -1,9 +1,10 @@
-//! The portable half of DEXPI's semantic validation, for the Process profile.
+//! The portable half of DEXPI's semantic validation, for the Process and Plant profiles.
 //!
 //! This is what NeqSim's `Dexpi20SemanticValidator` checks that does not need a Java DOM: the
 //! exact information-model imports, unique identities, resolvable references, the supported
-//! type set, a Process model with at least one step and one stream, the port/stream
-//! reciprocity, and finite, unit-qualified quantities.
+//! type set, and then the profile's own rules - a Process model with at least one step and one
+//! stream and the port/stream reciprocity, or a Plant model with tagged items, nozzles and
+//! piping whose nodes resolve.
 //!
 //! **It is not schema validation.** XML well-formedness and the XSD are `xmllint`'s job, run by
 //! the test gate and by `azoth dexpi validate --xsd`; a document can pass this and fail the
@@ -13,7 +14,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::diagnostic::DexpiDiagnostic;
 use crate::model::{Child, ComponentChild, DataValue, Document, Object};
-use crate::profile::{self, CORE_MODEL, PROCESS_MODEL};
+use crate::profile::{self, Profile};
 use crate::units;
 
 /// Every finding the semantic rules produced.
@@ -50,19 +51,21 @@ impl ValidationReport {
     }
 }
 
-/// Validate a Process-profile document against the semantic rules.
+/// Validate a document against the semantic rules of the profile its imports declare.
 #[must_use]
 pub fn validate(document: &Document) -> ValidationReport {
     let mut report = ValidationReport::default();
     let model = &document.model;
 
-    if model.imports.is_empty() {
+    let Some(selected) = Profile::of(document) else {
         report.error(
             "missing_import",
             "Model",
-            "a DEXPI 2.0 exchange imports the Core and Process information models",
+            "a DEXPI 2.0 exchange imports exactly one of the Plant or Process information \
+             models, beside Core",
         );
-    }
+        return report;
+    };
     let mut prefixes = BTreeSet::new();
     for import in &model.imports {
         if !prefixes.insert(import.prefix.clone()) {
@@ -72,11 +75,10 @@ pub fn validate(document: &Document) -> ValidationReport {
                 "this import prefix is declared twice",
             );
         }
-        let expected = match import.prefix.as_str() {
-            "Core" => Some(CORE_MODEL),
-            "Process" => Some(PROCESS_MODEL),
-            _ => None,
-        };
+        let expected = selected
+            .imports()
+            .iter()
+            .find_map(|(prefix, uri)| (import.prefix == *prefix).then_some(*uri));
         match expected {
             Some(uri) if import.source == uri => {}
             Some(uri) => report.error(
@@ -90,11 +92,14 @@ pub fn validate(document: &Document) -> ValidationReport {
             None => report.error(
                 "unknown_import",
                 &import.prefix,
-                "the Process profile imports exactly `Core` and `Process`",
+                format!(
+                    "the {:?} profile imports exactly `Core` and `{:?}`",
+                    selected, selected
+                ),
             ),
         }
     }
-    for (prefix, uri) in profile::Profile::Process.imports() {
+    for (prefix, uri) in selected.imports() {
         if !model
             .imports
             .iter()
@@ -103,7 +108,10 @@ pub fn validate(document: &Document) -> ValidationReport {
             report.error(
                 "missing_import",
                 prefix,
-                format!("the Process profile requires the import `{prefix}` at `{uri}`"),
+                format!(
+                    "the {:?} profile requires the import `{prefix}` at `{uri}`",
+                    selected
+                ),
             );
         }
     }
@@ -115,6 +123,7 @@ pub fn validate(document: &Document) -> ValidationReport {
         &model.children,
         &mut objects,
         &prefixes,
+        selected,
         &mut report,
         &mut tag_names,
     );
@@ -145,6 +154,11 @@ pub fn validate(document: &Document) -> ValidationReport {
                 }
             }
         }
+    }
+
+    if selected == Profile::Plant {
+        validate_plant(&objects, &mut report);
+        return report;
     }
 
     // One Process model, with content.
@@ -433,17 +447,148 @@ fn resolve<'a>(target: &str, objects: &'a BTreeMap<String, &'a Object>) -> Optio
         .find(|object| object.name.as_deref() == Some(local))
 }
 
+/// The Plant rules: one plant model, tagged items with tagged nozzles, and piping whose nodes
+/// resolve.
+fn validate_plant(objects: &BTreeMap<String, &Object>, report: &mut ValidationReport) {
+    let models = objects
+        .values()
+        .filter(|object| object.ty == "Plant/PlantModel")
+        .count();
+    match models {
+        0 => report.error(
+            "missing_plant_model",
+            "Model",
+            "the document has no `Plant/PlantModel`",
+        ),
+        1 => {}
+        count => report.error(
+            "duplicate_plant_model",
+            "Model",
+            format!("the document has {count} `Plant/PlantModel` objects; one exchange holds one"),
+        ),
+    }
+
+    let items: Vec<&Object> = objects
+        .values()
+        .copied()
+        .filter(|object| is_plant_item(object))
+        .collect();
+    if items.is_empty() {
+        report.error(
+            "missing_tagged_item",
+            "PlantModel",
+            "a Plant exchange requires at least one tagged plant item",
+        );
+    }
+    for item in items {
+        let subject = item.id.clone().unwrap_or_default();
+        if item.data_string("TagName").is_none_or(str::is_empty) {
+            report.error(
+                "missing_tag_name",
+                &subject,
+                "a tagged plant item requires a non-empty `TagName`",
+            );
+        }
+        match item.components("Nozzles") {
+            Some(nozzles) if !nozzles.children.is_empty() => {}
+            _ => report.warning(
+                "missing_nozzles",
+                &subject,
+                "a tagged plant item carries no nozzle, so no stream can reach it",
+            ),
+        }
+    }
+
+    for nozzle in objects
+        .values()
+        .filter(|object| object.ty == "Plant/ProcessEquipment.Nozzle")
+    {
+        let subject = nozzle.id.clone().unwrap_or_default();
+        let nodes = nozzle
+            .components("Nodes")
+            .map(|component| {
+                component
+                    .children
+                    .iter()
+                    .filter(|child| {
+                        matches!(child, ComponentChild::Object(object)
+                            if object.ty == "Plant/Piping.PipingNode")
+                    })
+                    .count()
+            })
+            .unwrap_or(0);
+        if nodes == 0 {
+            report.error(
+                "missing_node",
+                &subject,
+                "a nozzle owns at least one `Plant/Piping.PipingNode`",
+            );
+        }
+    }
+
+    for segment in objects
+        .values()
+        .filter(|object| object.ty == "Plant/Piping.PipingNetworkSegment")
+    {
+        let subject = segment.id.clone().unwrap_or_default();
+        for property in ["SourceNode", "TargetNode"] {
+            let targets = reference_targets(segment, property);
+            if targets.len() != 1 {
+                report.error(
+                    "bad_segment_node",
+                    &subject,
+                    format!(
+                        "a segment names exactly one `{property}`; this one names {}",
+                        targets.len()
+                    ),
+                );
+                continue;
+            }
+            match resolve(&targets[0], objects) {
+                Some(node) if node.ty == "Plant/Piping.PipingNode" => {}
+                Some(node) => report.error(
+                    "wrong_node_reference",
+                    &subject,
+                    format!(
+                        "`{property}` points at `{}`, which is not a piping node",
+                        node.ty
+                    ),
+                ),
+                None => {} // the reference pass already reported it
+            }
+        }
+    }
+
+    for system in objects
+        .values()
+        .filter(|object| object.ty == "Plant/Piping.PipingNetworkSystem")
+    {
+        if system.data_string("LineNumber").is_none_or(str::is_empty) {
+            report.warning(
+                "missing_line_number",
+                system.id.clone().unwrap_or_default(),
+                "a piping network system names the line it belongs to",
+            );
+        }
+    }
+}
+
+fn is_plant_item(object: &Object) -> bool {
+    object.ty.starts_with("Plant/ProcessEquipment.") && object.ty != "Plant/ProcessEquipment.Nozzle"
+}
+
 fn collect_objects<'a>(
     _document: &'a Document,
     children: &'a [Child],
     objects: &mut BTreeMap<String, &'a Object>,
     prefixes: &BTreeSet<String>,
+    selected: Profile,
     report: &mut ValidationReport,
     tag_names: &mut BTreeSet<String>,
 ) {
     for child in children {
         if let Child::Object(object) = child {
-            collect_object(object, objects, prefixes, report, tag_names);
+            collect_object(object, objects, prefixes, selected, report, tag_names);
         }
     }
 }
@@ -452,6 +597,7 @@ fn collect_object<'a>(
     object: &'a Object,
     objects: &mut BTreeMap<String, &'a Object>,
     prefixes: &BTreeSet<String>,
+    selected: Profile,
     report: &mut ValidationReport,
     tag_names: &mut BTreeSet<String>,
 ) {
@@ -475,11 +621,14 @@ fn collect_object<'a>(
             format!("`{}` is not a `prefix/name` reference", object.ty),
         ),
     }
-    if !profile::supports(&object.ty) {
+    if !selected.supports(&object.ty) {
         report.error(
             "unsupported_type",
             &subject,
-            format!("`{}` is outside the reviewed Process profile", object.ty),
+            format!(
+                "`{}` is outside the reviewed {:?} profile",
+                object.ty, selected
+            ),
         );
     }
     if let Some(id) = &object.id {
@@ -496,7 +645,7 @@ fn collect_object<'a>(
         if let Child::Components(components) = child {
             for nested in &components.children {
                 if let ComponentChild::Object(nested) = nested {
-                    collect_object(nested, objects, prefixes, report, tag_names);
+                    collect_object(nested, objects, prefixes, selected, report, tag_names);
                 }
             }
         }

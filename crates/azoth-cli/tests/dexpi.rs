@@ -99,6 +99,97 @@ fn the_demo_exports_validates_and_imports_again() {
 }
 
 #[test]
+fn the_plant_profile_exports_validates_and_imports_again() {
+    let fixture = root()
+        .join("crates/azoth-dexpi/tests/fixtures/plant_simple.toml")
+        .display()
+        .to_string();
+    let xml = temp("plant.dexpi.xml");
+    let toml = temp("plant.imported.toml");
+
+    let export = azoth(&[
+        "dexpi",
+        "export",
+        "--profile",
+        "plant",
+        "--flowsheet",
+        &fixture,
+        "--palette",
+        &palette(),
+        "--out",
+        &xml,
+        "--allow-lossy-mappings",
+        "--with-azoth-extensions",
+    ]);
+    assert!(
+        export.status.success(),
+        "export failed: {}",
+        String::from_utf8_lossy(&export.stderr)
+    );
+
+    let validate = azoth(&["dexpi", "validate", "--input", &xml, "--xsd"]);
+    assert!(
+        validate.status.success(),
+        "validation failed: {}",
+        String::from_utf8_lossy(&validate.stdout)
+    );
+
+    let import = azoth(&[
+        "dexpi",
+        "import",
+        "--input",
+        &xml,
+        "--palette",
+        &palette(),
+        "--out",
+        &toml,
+    ]);
+    assert!(
+        import.status.success(),
+        "import failed: {}",
+        String::from_utf8_lossy(&import.stdout)
+    );
+    let text = std::fs::read_to_string(&toml).expect("the imported flowsheet is written");
+    let flowsheet = parse_flowsheet(&text).expect("the imported document parses");
+    assert_eq!(flowsheet.instances.len(), 3);
+    assert_eq!(flowsheet.connections.len(), 5);
+    assert_eq!(flowsheet.connections[0].line.as_deref(), Some("L-1001"));
+}
+
+#[test]
+fn a_proteus_plant_model_imports_from_the_command_line() {
+    let fixture = root()
+        .join("crates/azoth-dexpi/tests/fixtures/proteus_simple.xml")
+        .display()
+        .to_string();
+    let toml = temp("proteus.imported.toml");
+    let import = azoth(&[
+        "dexpi",
+        "import",
+        "--input",
+        &fixture,
+        "--palette",
+        &palette(),
+        "--out",
+        &toml,
+    ]);
+    assert!(
+        import.status.success(),
+        "import failed: {}",
+        String::from_utf8_lossy(&import.stdout)
+    );
+    let text = std::fs::read_to_string(&toml).expect("the imported flowsheet is written");
+    let flowsheet = parse_flowsheet(&text).expect("the imported document parses");
+    let units: Vec<&str> = flowsheet
+        .instances
+        .iter()
+        .map(|instance| instance.unit.as_str())
+        .collect();
+    assert!(units.contains(&"unit_ops.pump"));
+    assert!(units.contains(&"unit_ops.tank"));
+}
+
+#[test]
 fn a_refused_export_exits_non_zero_and_prints_the_refusal() {
     let fixture = temp("flare.toml");
     std::fs::write(
