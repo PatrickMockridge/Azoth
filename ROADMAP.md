@@ -839,13 +839,23 @@ a claim nothing holds.
   Wayne's transmissivity with `jet_fire`. All four publish **no distance for a target the fire
   cannot produce**, where the classes answer their near bound (`#4975`); `bleve` refuses a
   negative radiative fraction its class accepts (`#4977`), and both radiation models refuse
-  the zero-humidity `NaN` their clamps admit (`#4978`). Held to the four captures. What remains
-  owed in the package: **`ConsequenceAnalysisEngine`** (276 lines, **zero `src/main` callers**)
-  is the QRA composer whose whole dependency set — `jet_fire`, `pool_fire`, `vce`, `probit`,
-  `gaussian_plume` — is now carried, but its outcome branches need a fixed input schema;
-  **`PfpDemandCalculator`** (2 callers) is thermal protection rather than consequence distance;
-  **`Api537FlareFlameModel`** (zero callers) is flame geometry and noise; and the `firewater/`
-  family is five calculators, named rather than ported.
+  the zero-humidity `NaN` their clamps admit (`#4978`). Held to the four captures.
+- **The QRA capstone** — `process.consequence_analysis` and `process.event_tree`.
+  **`process.consequence_analysis` is `ConsequenceAnalysisEngine`**: its four convenience
+  branches (`addJetFire`, `addPoolFire`, `addVCE`, `addToxicDispersion`) as one flat
+  discriminated record list, the class's thermal, overpressure and toxic dose arithmetic
+  (`R = 8.314`, exposure seconds divided by 60), and the per-outcome frequency and summed
+  individual risk, held to `process_consequence_analysis.tsv`. The engine owns only the dose
+  formulas and the zero-dose answer (`-Infinity`'s probit published as zero); the flux,
+  overpressure and plume concentration are the ported ids' own. **The generic `addOutcome`
+  plugin, `report` and `toEventTree` are not carried**: they are presentation, and the tree
+  is **`process.event_tree`**, `EventTreeAnalyzer`'s full `2^n` bit-order enumeration with a
+  20-branch cap (`1 << n` has none) and the class's path spelling, held to
+  `process_event_tree.tsv`. What remains owed in the safety tree: **`PfpDemandCalculator`**
+  (2 callers) is thermal protection rather than consequence distance;
+  **`Api537FlareFlameModel`** (zero callers) is flame geometry and noise; **`FaultTreeAnalyzer`**,
+  the bowtie and the risk simulators (`RiskMatrix`, `OperationalRiskSimulator`, LOPA/SIL) are
+  outside this chain; and the `firewater/` family is five calculators, named rather than ported.
 - **The reactions family's**: the **ionic branch** of `reactions.reactive_tp_flash` and
   `reactions.reactive_ph_flash`, which is why a charged substance is refused at all;
   `reactions.reactive_ph_flash`'s **entropy-specified variant** and its `NR = 0` delegation to

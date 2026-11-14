@@ -8,7 +8,7 @@
 
 **NeqSim process/safety/risk/eta/EventTreeAnalyzer.java**
 
-Its `addBranch` and `evaluate`: the full `2^n` enumeration in bit order, the path spelling and the product. `report` is presentation and is not carried.
+Its `addBranch` and `evaluate`: the full `2^n` enumeration in bit order, the path spelling and the product.
 
 
 ## Algorithm
@@ -49,7 +49,7 @@ not an equation, and both implementations read it from here.
 - **the leaf probability is the product of the branches' probabilities and their complements**, and the frequency is that probability times the initiating frequency.
 - **the branch count is capped at the algorithm's `max_iterations`, 20.** The class's `1 << n` has no cap and its leaf count overflows; two million rows is not an answer.
 - **a negative initiating frequency is refused**, as the class throws; **a branch probability outside `[0, 1]`, or a NaN, is refused**, as `addBranch` throws.
-- **the initiating event's name and the report text are not carried**: they are presentation, and the port's rows carry the paths.
+- **the initiating event's name and the `report` text are presentation**: the port's rows carry the paths.
 - **the frequency is per year and dimensionless**: the vocabulary has no year unit, so the value crosses unconverted.
 
 ## Cases

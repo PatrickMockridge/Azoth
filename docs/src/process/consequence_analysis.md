@@ -8,7 +8,7 @@
 
 **NeqSim process/safety/qra/ConsequenceAnalysisEngine.java**
 
-Its `addJetFire`, `addPoolFire`, `addVCE`, `addToxicDispersion`, `evaluate` and `individualFatalityRiskPerYear`. `addOutcome`, `report` and `toEventTree` are not carried.
+Its `addJetFire`, `addPoolFire`, `addVCE`, `addToxicDispersion`, `evaluate` and `individualFatalityRiskPerYear`.
 
 
 ## Algorithm
@@ -47,7 +47,7 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
-- **the engine is the class's four convenience branches** - `addJetFire`, `addPoolFire`, `addVCE` and `addToxicDispersion` - in caller order; the generic `addOutcome` plugin has no record schema and is not carried.
+- **the engine is the class's four convenience branches** - `addJetFire`, `addPoolFire`, `addVCE` and `addToxicDispersion` - in caller order; a caller's own `Consequence` plugin has no record schema.
 - **the frequency is `release_frequency * conditional_probability`**, the class's `evaluate`, and the individual risk is the sum of the rows' fatality frequencies.
 - **the thermal dose is `exposure_seconds * I^(4/3) / 1e4`** over the composed jet or pool kernel's incident flux, and the VCE's dose is the composed kernel's overpressure in Pa.
 - **the toxic dose is `ppm * exposure_seconds / 60`**, with `ppm = (c / M) 8.314 T / P 1e6` over the shared Gaussian-plume concentration; the class's `R = 8.314` and `pressureBara * 1e5` are reproduced.
@@ -55,7 +55,7 @@ not an equation, and both implementations read it from here.
 - **the row's per-type fields are flat and optional**; the kernel requires the selected type's fields and refuses a field belonging to another type. The schema cannot enforce the discriminator.
 - **a non-positive receiver distance is refused**, where the composed jet and VCE kernels refuse zero and the class answers an infinite flux; **a negative release frequency is refused**, a port guard the class's constructor omits.
 - **the composed kernels' warnings are dropped**: their optional `target_flux` and `target_overpressure` checks are not engine inputs, and the result carries only the engine's own checks.
-- **the scenario name, the `report` text and `toEventTree` are not carried**: presentation, and the tree is `process.event_tree` over the caller's outcome probabilities.
+- **the scenario name, the `report` text and `toEventTree` are presentation**: the rows and the summed risk are the record, and the tree is `process.event_tree` over the caller's outcome probabilities.
 - **per-year quantities are dimensionless**: the vocabulary has no year unit, so the values cross unconverted.
 
 ## Cases
