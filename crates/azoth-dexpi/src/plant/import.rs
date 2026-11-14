@@ -575,14 +575,14 @@ fn visit<'a>(
     if let Some(edges) = adjacency.get(node) {
         for &index in edges {
             let target: &'a str = instance_of(&connections[index].to);
+            // numerics-ok: 0 is the DFS colour for "unvisited", not a magnitude.
             match state.get(target).copied().unwrap_or(0) {
                 1 => {
                     // The back edge closes a cycle; the ring is the suffix of the path that
                     // starts at the target.
                     let start = path
                         .iter()
-                        .position(|&entry| instance_of(&connections[entry].from) == target)
-                        .unwrap_or(0);
+                        .position(|&entry| instance_of(&connections[entry].from) == target)?;
                     let mut cycle = path[start..]
                         .iter()
                         .map(|&entry| CycleEdge {
