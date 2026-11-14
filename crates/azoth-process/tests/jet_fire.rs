@@ -47,7 +47,7 @@ fn the_test_state_reproduces_the_capture() {
         near.incident_heat_flux
             .expect("a distance was stated")
             .value,
-        2119.417_169_158_887,
+        2_119.417_169_158_887,
         "the flux at 20 m",
     );
     assert!(near.distance_to_flux.is_none(), "no target was stated");

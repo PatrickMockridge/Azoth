@@ -69,7 +69,7 @@ fn the_test_state_reproduces_the_capture() {
     );
     close(
         far.overpressure.expect("a distance was stated").value,
-        3893.740_668_243_427,
+        3_893.740_668_243_427,
         "the overpressure at 200 m",
     );
 }

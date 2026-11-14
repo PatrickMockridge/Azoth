@@ -64,7 +64,7 @@ fn the_flux_at_one_hundred_metres() {
             .incident_heat_flux
             .expect("a distance was stated")
             .value,
-        9099.481_359_504_47,
+        9_099.481_359_504_47,
         "the flux",
     );
 }
@@ -99,7 +99,7 @@ fn the_contours_are_the_class_bisections() {
     let small = fireball(1000.0, 46.0e6, 0.30, None, None, Some(10.0));
     close(
         small.distance_to_flux.expect("a reachable target").value,
-        1305.503_413_614_169_4,
+        1_305.503_413_614_169_4,
         "the distance to 10 W/m2",
     );
 }
