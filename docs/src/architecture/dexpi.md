@@ -192,13 +192,16 @@ goes under `AzothProcessConnections`, and import turns that placeholder back int
 Feeds and products are `FlowIn`/`FlowOut` off-page connectors inside the segment that uses
 them.
 
-**A valve is not a tagged item.** The DEXPI Plant model places a valve as a piping
-component inside a segment, and a tagged item is a different class. This writer places no
-piping components yet, so `unit_ops.throttling_valve` is refused on write and read-only;
-placing valves needs the segment's `Items` component and is the next step. pyDEXPI, loading
-a valve as a tagged item, rejects the file - which is how this was found.
+**A valve is a piping component, not a tagged item.** The DEXPI Plant model places a valve
+inside a segment's `Items`, with its own two `PipingNode`s, and its `Connections` chain a
+pipe to the valve and a pipe from it. The writer contracts the two flowsheet connections
+that reach a valve's ports into one segment, places the `GlobeValve` in `Items`, and splits
+the pipes around it; a chain of valves becomes one segment with one item each. The reader
+takes the segment's pipes as its edges and the segment's `Items` as instances, so the valve
+comes back as `unit_ops.throttling_valve`. pyDEXPI, loading a valve as a tagged item,
+rejects the file - which is how this was found.
 
-The Plant mapping writes **9 of 31 palette entries** and reads 23.
+The Plant mapping writes **10 of 31 palette entries** and reads 23.
 
 Reading is wider than writing by design: NeqSim's reviewed Plant writer emits a narrow set,
 while a real P&ID carries every valve, column and reactor class. A class this port reads but
@@ -306,11 +309,9 @@ development.
 
 ## Not ported
 
-**A valve cannot be written yet.** Placing a `GlobeValve` in a segment's `Items` component
-and splitting the segment's pipe around its nodes is the step that closes it; until then
-`unit_ops.throttling_valve` is refused on Plant write.
-
 The instrumentation layer exchanges; the pieces named in that section are not ported yet.
+A mixer or splitter is a junction of pipes rather than a tagged item and is still refused
+on Plant write; a valve is the one piping component this writer places.
 The middleware's command model has no instrument edit - a document's instruments are written
 by hand or by an exchange, not by a form - and the editor's graph does not draw them.
 

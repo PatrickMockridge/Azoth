@@ -569,10 +569,10 @@
       "unit": "unit_ops.throttling_valve",
       "azoth": "GlobeValve-1",
       "status": "modelled",
-      "reason": "readable, not writable: A valve is a piping component inside a segment, not a tagged plant item; this writer places no piping components yet, so the valve has no item to be. The reader accepts every valve class as `unit_ops.throttling_valve`.",
+      "reason": "mapped",
       "alternatives": [],
       "imported": true,
-      "exportable": false,
+      "exportable": true,
       "drawn": true,
       "primitives": 1
     },

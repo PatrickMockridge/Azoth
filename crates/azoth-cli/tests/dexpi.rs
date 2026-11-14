@@ -220,6 +220,59 @@ fn the_plant_profile_exports_validates_and_imports_again() {
 }
 
 #[test]
+fn a_valve_exports_inside_a_segment_and_imports_again() {
+    let fixture = root()
+        .join("crates/azoth-dexpi/tests/fixtures/plant_valve.toml")
+        .display()
+        .to_string();
+    let xml = temp("valve.dexpi.xml");
+    let toml = temp("valve.imported.toml");
+    let export = azoth(&[
+        "dexpi",
+        "export",
+        "--profile",
+        "plant",
+        "--flowsheet",
+        &fixture,
+        "--palette",
+        &palette(),
+        "--out",
+        &xml,
+        "--with-azoth-extensions",
+        "--with-drawing",
+    ]);
+    assert!(
+        export.status.success(),
+        "export failed: {}",
+        String::from_utf8_lossy(&export.stderr)
+    );
+    let text = std::fs::read_to_string(&xml).expect("the P&ID is written");
+    assert!(text.contains("Plant/Piping.GlobeValve"), "{text}");
+
+    let import = azoth(&[
+        "dexpi",
+        "import",
+        "--input",
+        &xml,
+        "--palette",
+        &palette(),
+        "--out",
+        &toml,
+    ]);
+    assert!(import.status.success());
+    let text = std::fs::read_to_string(&toml).expect("the import is written");
+    let flowsheet = parse_flowsheet(&text).expect("the scaffold parses");
+    assert!(
+        flowsheet
+            .instances
+            .iter()
+            .any(|instance| instance.id == "V-101" && instance.unit == "unit_ops.throttling_valve"),
+        "{:?}",
+        flowsheet.instances
+    );
+}
+
+#[test]
 fn a_proteus_plant_model_imports_from_the_command_line() {
     let fixture = root()
         .join("crates/azoth-dexpi/tests/fixtures/proteus_simple.xml")

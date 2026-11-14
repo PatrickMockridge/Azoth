@@ -34,6 +34,8 @@ pub(crate) enum NodeShape {
     Output,
     Recycle,
     Instrument,
+    /// A valve in a segment: a bowtie, which is the generic piping symbol.
+    Valve,
 }
 
 /// One node the drawing places.
@@ -320,6 +322,34 @@ fn outline(node: &DiagramNode) -> Vec<Point> {
             },
             Point { x: x + 12.0, y },
         ],
+        NodeShape::Valve => {
+            let cx = x + width / 2.0;
+            let cy = y + height / 2.0;
+            let hw = width / 4.0;
+            let hh = height / 3.0;
+            vec![
+                Point {
+                    x: cx - hw,
+                    y: cy - hh,
+                },
+                Point {
+                    x: cx - hw,
+                    y: cy + hh,
+                },
+                Point {
+                    x: cx + hw,
+                    y: cy - hh,
+                },
+                Point {
+                    x: cx + hw,
+                    y: cy + hh,
+                },
+                Point {
+                    x: cx - hw,
+                    y: cy - hh,
+                },
+            ]
+        }
     }
 }
 

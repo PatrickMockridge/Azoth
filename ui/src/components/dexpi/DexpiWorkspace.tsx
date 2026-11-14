@@ -140,7 +140,7 @@ export function DexpiWorkspace({
       onDrop={(event) => {
         event.preventDefault();
         const file = event.dataTransfer.files[0];
-        if (file !== null) {
+        if (file !== undefined) {
           void load(file);
         }
       }}
