@@ -27,8 +27,10 @@ from azoth.core.record_outputs_gen import (
     BrineMixingPointRow,
     CharacterizationComponent,
     ChemicalWarningRow,
+    ConsequenceOutcomeResult,
     DepositionSegmentRow,
     EquilibriumSoundSpeedSample,
+    EventTreeOutcome,
     FlowlineScaleSegment,
     HeaterInstrument,
     HeaterMechanicalType,
@@ -5897,6 +5899,22 @@ class CompressorResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ConsequenceAnalysisResult(_HasWarnings):
+    """Result of ``process.consequence_analysis``."""
+
+    CALC_ID: ClassVar[str] = "process.consequence_analysis"
+
+    #: one row per input row, in caller order: the class's fixed label, the branch type, its frequency, fatality probability and fatality frequency.
+    outcomes: tuple[ConsequenceOutcomeResult, ...]
+
+    #: the sum of the rows' fatality frequencies, in 1/year.
+    individual_fatality_risk_per_year: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class CoolerResult(_HasWarnings):
     """Result of ``process.cooler``."""
 
@@ -6179,6 +6197,19 @@ class EjectorResult(_HasWarnings):
 
     #: `getDischargeConnectionLength`: `5 + 2*clamp(discharge/mixing - 1, 0, 3)` times the diffuser outlet's diameter, in bara.
     discharge_connection_length: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class EventTreeResult(_HasWarnings):
+    """Result of ``process.event_tree``."""
+
+    CALC_ID: ClassVar[str] = "process.event_tree"
+
+    #: one row per leaf, in the class's bit order: `2^n` rows, or one when there are no branches.
+    outcomes: tuple[EventTreeOutcome, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

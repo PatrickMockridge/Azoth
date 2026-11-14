@@ -1,0 +1,173 @@
+id = "process.consequence_analysis"
+name = "Consequence analysis"
+kind = "procedure"
+assumptions = [
+    "**the engine is the class's four convenience branches** - `addJetFire`, `addPoolFire`, `addVCE` and `addToxicDispersion` - in caller order; a caller's own `Consequence` plugin has no record schema.",
+    "**the frequency is `release_frequency * conditional_probability`**, the class's `evaluate`, and the individual risk is the sum of the rows' fatality frequencies.",
+    "**the thermal dose is `exposure_seconds * I^(4/3) / 1e4`** over the composed jet or pool kernel's incident flux, and the VCE's dose is the composed kernel's overpressure in Pa.",
+    "**the toxic dose is `ppm * exposure_seconds / 60`**, with `ppm = (c / M) 8.314 T / P 1e6` over the shared Gaussian-plume concentration; the class's `R = 8.314` and `pressureBara * 1e5` are reproduced.",
+    "**a dose at or below zero is a fatality probability of zero**, the class's `-Infinity` probit answer; `process.probit` refuses a non-positive dose, so the guard is the engine's.",
+    "**the row's per-type fields are flat and optional**; the kernel requires the selected type's fields and refuses a field belonging to another type. The schema cannot enforce the discriminator.",
+    "**a non-positive receiver distance is refused**, where the composed jet and VCE kernels refuse zero and the class answers an infinite flux; **a negative release frequency is refused**, a port guard the class's constructor omits.",
+    "**the composed kernels' warnings are dropped**: their optional `target_flux` and `target_overpressure` checks are not engine inputs, and the result carries only the engine's own checks.",
+    "**the scenario name, the `report` text and `toEventTree` are presentation**: the rows and the summed risk are the record, and the tree is `process.event_tree` over the caller's outcome probabilities.",
+    "**per-year quantities are dimensionless**: the vocabulary has no year unit, so the values cross unconverted.",
+]
+references = [
+    "CCPS (2000). Guidelines for Chemical Process Quantitative Risk Analysis, 2nd Ed.",
+    "NORSOK Z-013 (2010). Risk and emergency preparedness assessment.",
+    "TNO (2005). Yellow Book, 3rd Ed., CPR 14E.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/safety/qra/ConsequenceAnalysisEngine.java` is the port source.",
+    "`validation/neqsim/captures/process_consequence_analysis.tsv` - the class's own jet test, each branch type, a mixed scenario, zero exposure, zero emission, and the zero-distance and negative-probability evidence.",
+]
+[source]
+standard = "NeqSim process/safety/qra/ConsequenceAnalysisEngine.java"
+edition = "Its `addJetFire`, `addPoolFire`, `addVCE`, `addToxicDispersion`, `evaluate` and `individualFatalityRiskPerYear`."
+[algorithm]
+scheme = "outcome_frequency_composition"
+initialisation = "first_outcome_in_caller_order"
+convergence = "absolute"
+tolerance = 1.0e-12
+max_iterations = 1
+[inputs]
+[inputs.release_frequency_per_year]
+unit = "dimensionless"
+description = "the initiating release frequency, in 1/year, at least zero. Declared dimensionless because the vocabulary has no year unit.\n"
+[inputs.receiver_distance]
+unit = "m"
+description = "the distance from the release to the receiver, above zero; one distance serves every row.\n"
+[inputs.outcomes]
+type = "record_list"
+row_type = "ConsequenceOutcomeSpec"
+description = "the outcome branches in caller order; each row selects its type and carries that type's fields.\n"
+[inputs.outcomes.fields.outcome_type]
+type = "enum"
+values = ["jet_fire", "pool_fire", "vce", "toxic_dispersion"]
+description = "the branch type, which selects the fields the row must carry.\n"
+[inputs.outcomes.fields.conditional_probability]
+unit = "dimensionless"
+description = "the branch's probability conditional on the release, in `[0, 1]`.\n"
+[inputs.outcomes.fields.probit_a]
+unit = "dimensionless"
+description = "the probit intercept, the class's `ProbitModel` first constant.\n"
+[inputs.outcomes.fields.probit_b]
+unit = "dimensionless"
+description = "the probit slope.\n"
+[inputs.outcomes.fields.probit_n]
+unit = "dimensionless"
+description = "the dose exponent, `1.0` where the published pair absorbs it.\n"
+[inputs.outcomes.fields.exposure_seconds]
+unit = "s"
+optional = true
+description = "the receiver's exposure time. Required by the two fires and the toxic branch; the toxic dose divides by 60 for the class's minutes.\n"
+[inputs.outcomes.fields.mass_flow]
+unit = "kg/s"
+optional = true
+description = "the jet's fuel mass flow, at least zero.\n"
+[inputs.outcomes.fields.heat_of_combustion]
+unit = "dimensionless"
+optional = true
+description = "the lower heating value in J/kg, above zero; declared dimensionless for want of a vocabulary unit. Required by the jet and the VCE.\n"
+[inputs.outcomes.fields.radiative_fraction]
+unit = "dimensionless"
+optional = true
+description = "the jet's radiated fraction, in `[0, 1]`.\n"
+[inputs.outcomes.fields.relative_humidity]
+unit = "dimensionless"
+optional = true
+description = "the jet's ambient humidity in `(0, 1]`; absent is the jet id's `0.5`.\n"
+[inputs.outcomes.fields.pool_diameter]
+unit = "m"
+optional = true
+description = "the pool's equivalent circular diameter, above zero.\n"
+[inputs.outcomes.fields.burn_rate]
+unit = "kg/(m**2*s)"
+optional = true
+description = "the pool's mass-burning rate per unit area, above zero.\n"
+[inputs.outcomes.fields.air_density]
+unit = "kg/m**3"
+optional = true
+description = "the pool's ambient air density, above zero; absent is the pool id's `1.2`.\n"
+[inputs.outcomes.fields.cloud_fuel_mass]
+unit = "kg"
+optional = true
+description = "the VCE's flammable fuel mass, at least zero.\n"
+[inputs.outcomes.fields.strength_class]
+unit = "dimensionless"
+optional = true
+description = "the TNO strength class, a whole number from 1 to 10.\n"
+[inputs.outcomes.fields.ambient_pressure]
+unit = "Pa"
+optional = true
+description = "the VCE's ambient pressure, above zero; absent is `101325`.\n"
+[inputs.outcomes.fields.emission_rate]
+unit = "kg/s"
+optional = true
+description = "the toxic plume's source strength, at least zero.\n"
+[inputs.outcomes.fields.effective_stack_height]
+unit = "m"
+optional = true
+description = "the toxic plume's effective release height.\n"
+[inputs.outcomes.fields.wind_speed]
+unit = "m/s"
+optional = true
+description = "the toxic plume's wind speed, above zero.\n"
+[inputs.outcomes.fields.stability]
+type = "enum"
+values = ["A", "B", "C", "D", "E", "F"]
+optional = true
+description = "the toxic plume's Pasquill class.\n"
+[inputs.outcomes.fields.terrain]
+type = "enum"
+values = ["rural", "urban"]
+optional = true
+description = "the toxic plume's terrain category.\n"
+[inputs.outcomes.fields.molar_mass]
+unit = "kg/mol"
+optional = true
+description = "the toxic component's molar mass, above zero; the ppm conversion divides by it.\n"
+[inputs.outcomes.fields.temperature]
+unit = "K"
+optional = true
+description = "the toxic plume's temperature, above zero.\n"
+[inputs.outcomes.fields.pressure]
+unit = "Pa"
+optional = true
+description = "the toxic plume's pressure, above zero.\n"
+[outputs]
+[outputs.outcomes]
+type = "record_list"
+description = "one row per input row, in caller order: the class's fixed label, the branch type, its frequency, fatality probability and fatality frequency.\n"
+[outputs.outcomes.fields.outcome]
+type = "string"
+description = "the class's fixed label: `Jet fire`, `Pool fire`, `VCE` or `Toxic dispersion`.\n"
+[outputs.outcomes.fields.outcome_type]
+type = "string"
+description = "the branch type, as the input's enum spells it.\n"
+[outputs.outcomes.fields.frequency_per_year]
+unit = "dimensionless"
+description = "`release_frequency * conditional_probability`, in 1/year.\n"
+[outputs.outcomes.fields.fatality_probability]
+unit = "dimensionless"
+description = "the probit of the class's dose, or zero when the dose is not positive.\n"
+[outputs.outcomes.fields.fatality_frequency_per_year]
+unit = "dimensionless"
+description = "the frequency times the fatality probability, in 1/year.\n"
+[outputs.individual_fatality_risk_per_year]
+unit = "dimensionless"
+description = "the sum of the rows' fatality frequencies, in 1/year.\n"
+[[valid_range]]
+quantity = "release_frequency_per_year"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a negative frequency is not a state; the class's constructor omits the guard and the port adds it"
+[[valid_range]]
+quantity = "receiver_distance"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the composed jet and VCE kernels refuse zero, where the class answers an infinite flux and overpressure"
+[implementations]
+python = "azoth.process.consequence_analysis"
+rust = "azoth_process::consequence_analysis"

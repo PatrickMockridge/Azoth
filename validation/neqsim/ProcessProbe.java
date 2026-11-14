@@ -118,6 +118,10 @@
 //       > captures/process_pool_fire.tsv
 //     java -cp .:neqsim-118d9af.jar ProcessProbe vce > captures/process_vce.tsv
 //     java -cp .:neqsim-118d9af.jar ProcessProbe bleve > captures/process_bleve.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe event_tree \
+//       > captures/process_event_tree.tsv
+//     java -cp .:neqsim-118d9af.jar ProcessProbe consequence_analysis \
+//       > captures/process_consequence_analysis.tsv
 
 import neqsim.process.equipment.stream.Stream;
 import neqsim.process.equipment.util.AccelerationMethod;
@@ -135,12 +139,14 @@ import neqsim.process.safety.fire.BLEVECalculator;
 import neqsim.process.safety.fire.JetFireModel;
 import neqsim.process.safety.fire.PoolFireModel;
 import neqsim.process.safety.fire.VCEModel;
+import neqsim.process.safety.qra.ConsequenceAnalysisEngine;
 import neqsim.process.safety.release.HomogeneousEquilibriumReleaseModel;
 import neqsim.process.safety.release.LeakModel;
 import neqsim.process.safety.release.ReleaseFlowRequest;
 import neqsim.process.safety.release.ReleaseFlowResult;
 import neqsim.process.safety.release.ReleaseState;
 import neqsim.process.safety.release.SourceTermResult;
+import neqsim.process.safety.risk.eta.EventTreeAnalyzer;
 import java.util.Map;
 
 public class ProcessProbe {
@@ -305,6 +311,12 @@ public class ProcessProbe {
         break;
       case "bleve":
         bleveRows();
+        break;
+      case "event_tree":
+        eventTreeRows();
+        break;
+      case "consequence_analysis":
+        consequenceAnalysisRows();
         break;
       case "expander_steps":
         expanderStepRows();
@@ -12725,6 +12737,211 @@ public class ProcessProbe {
       System.out.println("distance_to_flux_m=" + solved);
       System.out.println("flux_at_distance_w_m2=" + model.incidentHeatFlux(solved));
     }
+    System.out.println();
+  }
+
+  // === process.event_tree, process.consequence_analysis =====================
+
+  static void eventTreeRows() {
+    eventTreeRow("event_tree_two_branch", 1.0e-3, new String[] {"Ignition"},
+        new double[] {0.1});
+    eventTreeRow("event_tree_three_branch", 1.0e-2,
+        new String[] {"Immediate ignition", "Delayed ignition", "ESD success"},
+        new double[] {0.05, 0.10, 0.99});
+    eventTreeRow("event_tree_no_branches", 1.0e-3, new String[] {}, new double[] {});
+    eventTreeRow("event_tree_zero_and_one", 1.0e-3, new String[] {"Certain", "Impossible"},
+        new double[] {1.0, 0.0});
+
+    System.out.println("event_tree_negative_frequency_evidence");
+    System.out.println("initiating_frequency_per_year=-1.0E-3");
+    try {
+      new EventTreeAnalyzer("bad", -1.0e-3);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+
+    System.out.println("event_tree_probability_outside_evidence");
+    System.out.println("probability_of_yes=1.5");
+    try {
+      EventTreeAnalyzer tree = new EventTreeAnalyzer("bad", 1.0e-3);
+      tree.addBranch("Bad", 1.5);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+
+    // The class's `1 << n` has no cap; the count is printed, never evaluated.
+    System.out.println("event_tree_shift_evidence");
+    System.out.println("branch_count=21");
+    System.out.println("left_shift_outcome_count=" + (1 << 21));
+    EventTreeAnalyzer shifted = new EventTreeAnalyzer("shift", 1.0e-3);
+    for (int i = 0; i < 21; i++) {
+      shifted.addBranch("B" + i, 0.5);
+    }
+    System.out.println("branches_added=21");
+    System.out.println();
+  }
+
+  static void eventTreeRow(String label, double frequency, String[] names,
+      double[] probabilities) {
+    System.out.println(label);
+    System.out.println("initiating_frequency_per_year=" + frequency);
+    System.out.println("branch_count=" + names.length);
+    for (int i = 0; i < names.length; i++) {
+      System.out.println("branch" + i + "_name=" + names[i]);
+      System.out.println("branch" + i + "_probability_of_yes=" + probabilities[i]);
+    }
+    EventTreeAnalyzer tree = new EventTreeAnalyzer(label, frequency);
+    for (int i = 0; i < names.length; i++) {
+      tree.addBranch(names[i], probabilities[i]);
+    }
+    java.util.List<EventTreeAnalyzer.Outcome> outcomes = tree.evaluate();
+    System.out.println("outcome_count=" + outcomes.size());
+    for (int i = 0; i < outcomes.size(); i++) {
+      EventTreeAnalyzer.Outcome outcome = outcomes.get(i);
+      System.out.println("outcome" + i + "_path=" + outcome.path);
+      System.out.println("outcome" + i + "_probability=" + outcome.probability);
+      System.out.println("outcome" + i + "_frequency_per_year=" + outcome.frequencyPerYear);
+    }
+    System.out.println();
+  }
+
+  static void consequenceAnalysisRows() {
+    JetFireModel jet = new JetFireModel(30.0, 50.0e6, 0.25);
+    ConsequenceAnalysisEngine jetEngine = new ConsequenceAnalysisEngine("Leak", 1.0e-4);
+    jetEngine.addJetFire(0.05, jet, ProbitModel.thermalFatality(), 60.0);
+    consequenceRow("consequence_analysis_jet_fire", 1.0e-4, 10.0, jetEngine,
+        new String[] {"jet_fire"}, new double[] {jet.incidentHeatFlux(10.0)},
+        new String[] {"outcome0_mass_flow_kg_s=30.0",
+            "outcome0_heat_of_combustion_j_kg=5.0E7",
+            "outcome0_radiative_fraction=0.25", "outcome0_probit=thermal",
+            "outcome0_exposure_seconds=60.0", "outcome0_conditional_probability=0.05"});
+
+    PoolFireModel pool = new PoolFireModel(10.0, 0.06, 45.0e6, 800.0, 0.30);
+    ConsequenceAnalysisEngine poolEngine = new ConsequenceAnalysisEngine("Pool", 1.0e-4);
+    poolEngine.addPoolFire(0.10, pool, ProbitModel.thermalFatality(), 60.0);
+    consequenceRow("consequence_analysis_pool_fire", 1.0e-4, 20.0, poolEngine,
+        new String[] {"pool_fire"}, new double[] {pool.incidentHeatFlux(20.0)},
+        new String[] {"outcome0_pool_diameter_m=10.0", "outcome0_burn_rate_kg_m2_s=0.06",
+            "outcome0_probit=thermal", "outcome0_exposure_seconds=60.0",
+            "outcome0_conditional_probability=0.10"});
+
+    VCEModel vce = new VCEModel(1000.0, 46.0e6, 4);
+    ConsequenceAnalysisEngine vceEngine = new ConsequenceAnalysisEngine("VCE", 1.0e-4);
+    vceEngine.addVCE(0.30, vce, ProbitModel.blastLungFatality());
+    consequenceRow("consequence_analysis_vce", 1.0e-4, 20.0, vceEngine,
+        new String[] {"vce"}, new double[] {vce.overpressurePa(20.0)},
+        new String[] {"outcome0_cloud_fuel_mass_kg=1000.0",
+            "outcome0_heat_of_combustion_j_kg=4.6E7", "outcome0_strength_class=4",
+            "outcome0_probit=blast", "outcome0_conditional_probability=0.30"});
+
+    GaussianPlume plume = new GaussianPlume(1.0, 10.0, 5.0, GaussianPlume.Stability.D,
+        GaussianPlume.Terrain.RURAL);
+    ConsequenceAnalysisEngine toxicEngine = new ConsequenceAnalysisEngine("Toxic", 1.0e-4);
+    toxicEngine.addToxicDispersion(0.20, plume, ProbitModel.h2sFatality(), 0.0340819, 288.15,
+        1.01325, 10.0);
+    consequenceRow("consequence_analysis_toxic_dispersion", 1.0e-4, 50.0, toxicEngine,
+        new String[] {"toxic_dispersion"},
+        new double[] {plume.centerlineGroundConcentration(50.0)},
+        new String[] {"outcome0_emission_rate_kg_s=1.0",
+            "outcome0_effective_stack_height_m=10.0", "outcome0_wind_speed_m_per_s=5.0",
+            "outcome0_stability=D", "outcome0_terrain=rural",
+            "outcome0_molar_mass_kg_mol=0.0340819", "outcome0_temperature_k=288.15",
+            "outcome0_pressure_bara=1.01325", "outcome0_exposure_minutes=10.0",
+            "outcome0_exposure_seconds=600.0", "outcome0_probit=h2s",
+            "outcome0_conditional_probability=0.20"});
+
+    // All four branches in one engine, in caller order, at one receiver.
+    PoolFireModel mixedPool = new PoolFireModel(10.0, 0.06, 45.0e6, 800.0, 0.30);
+    VCEModel mixedVce = new VCEModel(1000.0, 46.0e6, 4);
+    GaussianPlume mixedPlume = new GaussianPlume(1.0, 10.0, 5.0, GaussianPlume.Stability.D,
+        GaussianPlume.Terrain.RURAL);
+    ConsequenceAnalysisEngine mixed = new ConsequenceAnalysisEngine("Mixed", 1.0e-3);
+    mixed.addJetFire(0.05, new JetFireModel(30.0, 50.0e6, 0.25),
+        ProbitModel.thermalFatality(), 60.0);
+    mixed.addPoolFire(0.10, mixedPool, ProbitModel.thermalFatality(), 60.0);
+    mixed.addVCE(0.30, mixedVce, ProbitModel.blastLungFatality());
+    mixed.addToxicDispersion(0.20, mixedPlume, ProbitModel.h2sFatality(), 0.0340819, 288.15,
+        1.01325, 10.0);
+    consequenceRow("consequence_analysis_mixed", 1.0e-3, 20.0, mixed,
+        new String[] {"jet_fire", "pool_fire", "vce", "toxic_dispersion"},
+        new double[] {new JetFireModel(30.0, 50.0e6, 0.25).incidentHeatFlux(20.0),
+            mixedPool.incidentHeatFlux(20.0), mixedVce.overpressurePa(20.0),
+            mixedPlume.centerlineGroundConcentration(20.0)},
+        new String[] {"outcome0_conditional_probability=0.05",
+            "outcome1_conditional_probability=0.10",
+            "outcome2_conditional_probability=0.30",
+            "outcome3_conditional_probability=0.20"});
+
+    // A zero exposure makes the thermal dose zero, which the class answers as 0.0.
+    ConsequenceAnalysisEngine zeroExposure = new ConsequenceAnalysisEngine("Zero exposure", 1.0e-4);
+    zeroExposure.addJetFire(0.05, new JetFireModel(30.0, 50.0e6, 0.25),
+        ProbitModel.thermalFatality(), 0.0);
+    consequenceRow("consequence_analysis_zero_exposure", 1.0e-4, 10.0, zeroExposure,
+        new String[] {"jet_fire"},
+        new double[] {new JetFireModel(30.0, 50.0e6, 0.25).incidentHeatFlux(10.0)},
+        new String[] {"outcome0_exposure_seconds=0.0"});
+
+    // A zero emission makes the plume concentration zero.
+    GaussianPlume silent = new GaussianPlume(0.0, 10.0, 5.0, GaussianPlume.Stability.D,
+        GaussianPlume.Terrain.RURAL);
+    ConsequenceAnalysisEngine zeroEmission = new ConsequenceAnalysisEngine("Zero emission", 1.0e-4);
+    zeroEmission.addToxicDispersion(0.20, silent, ProbitModel.h2sFatality(), 0.0340819,
+        288.15, 1.01325, 10.0);
+    consequenceRow("consequence_analysis_zero_emission", 1.0e-4, 50.0, zeroEmission,
+        new String[] {"toxic_dispersion"},
+        new double[] {silent.centerlineGroundConcentration(50.0)},
+        new String[] {"outcome0_emission_rate_kg_s=0.0", "outcome0_exposure_seconds=600.0"});
+
+    // The class answers an infinite flux at a zero receiver distance.
+    ConsequenceAnalysisEngine zeroDistance = new ConsequenceAnalysisEngine("Zero distance", 1.0e-4);
+    JetFireModel zeroDistanceJet = new JetFireModel(30.0, 50.0e6, 0.25);
+    zeroDistance.addJetFire(0.05, zeroDistanceJet, ProbitModel.thermalFatality(), 60.0);
+    consequenceRow("consequence_analysis_zero_distance_evidence", 1.0e-4, 0.0, zeroDistance,
+        new String[] {"jet_fire"},
+        new double[] {zeroDistanceJet.incidentHeatFlux(0.0)},
+        new String[] {"outcome0_receiver_distance_m=0.0"});
+
+    System.out.println("consequence_analysis_negative_probability_evidence");
+    System.out.println("conditional_probability=-0.1");
+    try {
+      ConsequenceAnalysisEngine bad = new ConsequenceAnalysisEngine("Bad", 1.0e-4);
+      bad.addJetFire(-0.1, new JetFireModel(30.0, 50.0e6, 0.25),
+          ProbitModel.thermalFatality(), 60.0);
+      System.out.println("refusal=none");
+    } catch (RuntimeException ex) {
+      System.out.println("refusal=" + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
+    System.out.println();
+  }
+
+  static void consequenceRow(String label, double releaseFrequency, double receiver,
+      ConsequenceAnalysisEngine engine, String[] types, double[] intermediate, String[] inputs) {
+    System.out.println(label);
+    System.out.println("release_frequency_per_year=" + releaseFrequency);
+    System.out.println("receiver_distance_m=" + receiver);
+    for (String input : inputs) {
+      System.out.println(input);
+    }
+    for (int i = 0; i < types.length; i++) {
+      System.out.println("outcome" + i + "_outcome_type=" + types[i]);
+      System.out.println("outcome" + i + "_intermediate=" + intermediate[i]);
+    }
+    java.util.List<ConsequenceAnalysisEngine.OutcomeResult> rows = engine.evaluate(receiver);
+    System.out.println("outcome_count=" + rows.size());
+    for (int i = 0; i < rows.size(); i++) {
+      ConsequenceAnalysisEngine.OutcomeResult row = rows.get(i);
+      System.out.println("outcome" + i + "_outcome=" + row.outcomeName);
+      System.out.println("outcome" + i + "_frequency_per_year=" + row.outcomeFrequencyPerYear);
+      System.out.println("outcome" + i + "_fatality_probability=" + row.fatalityProbability);
+      System.out.println(
+          "outcome" + i + "_fatality_frequency_per_year=" + row.fatalityFrequencyPerYear);
+    }
+    System.out.println(
+        "individual_fatality_risk_per_year=" + engine.individualFatalityRiskPerYear(receiver));
     System.out.println();
   }
 }

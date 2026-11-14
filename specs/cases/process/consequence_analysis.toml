@@ -1,0 +1,88 @@
+model = "process.consequence_analysis"
+[[cases]]
+id = "jet_fire_at_ten_metres"
+tolerance = 1.0e-9
+source = "`ConsequenceAnalysisEngineTest.jetFireIndividualRiskIsPositiveAndBounded`: a 30 kg/s jet at 50 MJ/kg and a 0.25 fraction, the thermal probit, 60 s, a 0.05 branch on 1e-4/yr, read at 10 m. From `validation/neqsim/captures/process_consequence_analysis.tsv` (`consequence_analysis_jet_fire`)."
+[cases.inputs]
+release_frequency_per_year = 1.0e-4
+receiver_distance = 10.0
+outcomes = [{ outcome_type = "jet_fire", conditional_probability = 0.05, probit_a = -14.9, probit_b = 2.56, probit_n = 1.0, exposure_seconds = 60.0, mass_flow = 30.0, heat_of_combustion = 50000000.0, radiative_fraction = 0.25 }]
+[cases.expected]
+outcomes = [{ outcome = "Jet fire", outcome_type = "jet_fire", frequency_per_year = 5.0e-6, fatality_probability = 1.0, fatality_frequency_per_year = 5.0e-6 }]
+individual_fatality_risk_per_year = 5.0e-6
+[[cases]]
+id = "pool_fire_at_twenty_metres"
+tolerance = 1.0e-9
+source = "A 10 m pool at 0.06 kg/(m2 s), the thermal probit, 60 s, a 0.10 branch on 1e-4/yr, read at 20 m. From (`consequence_analysis_pool_fire`)."
+[cases.inputs]
+release_frequency_per_year = 1.0e-4
+receiver_distance = 20.0
+outcomes = [{ outcome_type = "pool_fire", conditional_probability = 0.10, probit_a = -14.9, probit_b = 2.56, probit_n = 1.0, exposure_seconds = 60.0, pool_diameter = 10.0, burn_rate = 0.06 }]
+[cases.expected]
+outcomes = [{ outcome = "Pool fire", outcome_type = "pool_fire", frequency_per_year = 1.0e-5, fatality_probability = 1.0553585033729052e-4, fatality_frequency_per_year = 1.0553585033729052e-9 }]
+individual_fatality_risk_per_year = 1.0553585033729052e-9
+[[cases]]
+id = "vce_at_twenty_metres"
+tolerance = 1.0e-9
+source = "A 1000 kg, 46 MJ/kg class-4 cloud, the blast probit, a 0.30 branch on 1e-4/yr, read at 20 m; the plateau overpressure is below the probit's onset, so the probability is zero. From (`consequence_analysis_vce`)."
+[cases.inputs]
+release_frequency_per_year = 1.0e-4
+receiver_distance = 20.0
+outcomes = [{ outcome_type = "vce", conditional_probability = 0.30, probit_a = -77.1, probit_b = 6.91, probit_n = 1.0, cloud_fuel_mass = 1000.0, heat_of_combustion = 46000000.0, strength_class = 4.0 }]
+[cases.expected]
+outcomes = [{ outcome = "VCE", outcome_type = "vce", frequency_per_year = 3.0e-5, fatality_probability = 0.0, fatality_frequency_per_year = 0.0 }]
+individual_fatality_risk_per_year = 0.0
+[[cases]]
+id = "toxic_dispersion_at_fifty_metres"
+tolerance = 1.0e-9
+source = "A 1 kg/s H2S plume in D rural at 10 m, the H2S probit, a 0.20 branch on 1e-4/yr, read at 50 m over a 600 s exposure. From (`consequence_analysis_toxic_dispersion`)."
+[cases.inputs]
+release_frequency_per_year = 1.0e-4
+receiver_distance = 50.0
+outcomes = [{ outcome_type = "toxic_dispersion", conditional_probability = 0.20, probit_a = -31.42, probit_b = 3.008, probit_n = 1.43, emission_rate = 1.0, effective_stack_height = 10.0, wind_speed = 5.0, stability = "D", terrain = "rural", molar_mass = 0.0340819, temperature = 288.15, pressure = 101325.0, exposure_seconds = 600.0 }]
+[cases.expected]
+outcomes = [{ outcome = "Toxic dispersion", outcome_type = "toxic_dispersion", frequency_per_year = 2.0e-5, fatality_probability = 0.0, fatality_frequency_per_year = 0.0 }]
+individual_fatality_risk_per_year = 0.0
+[[cases]]
+id = "mixed_outcomes_at_twenty_metres"
+tolerance = 1.0e-9
+source = "All four branch types in one engine, caller order preserved, at 20 m on 1e-3/yr. From (`consequence_analysis_mixed`)."
+[cases.inputs]
+release_frequency_per_year = 1.0e-3
+receiver_distance = 20.0
+outcomes = [
+  { outcome_type = "jet_fire", conditional_probability = 0.05, probit_a = -14.9, probit_b = 2.56, probit_n = 1.0, exposure_seconds = 60.0, mass_flow = 30.0, heat_of_combustion = 50000000.0, radiative_fraction = 0.25 },
+  { outcome_type = "pool_fire", conditional_probability = 0.10, probit_a = -14.9, probit_b = 2.56, probit_n = 1.0, exposure_seconds = 60.0, pool_diameter = 10.0, burn_rate = 0.06 },
+  { outcome_type = "vce", conditional_probability = 0.30, probit_a = -77.1, probit_b = 6.91, probit_n = 1.0, cloud_fuel_mass = 1000.0, heat_of_combustion = 46000000.0, strength_class = 4.0 },
+  { outcome_type = "toxic_dispersion", conditional_probability = 0.20, probit_a = -31.42, probit_b = 3.008, probit_n = 1.43, emission_rate = 1.0, effective_stack_height = 10.0, wind_speed = 5.0, stability = "D", terrain = "rural", molar_mass = 0.0340819, temperature = 288.15, pressure = 101325.0, exposure_seconds = 600.0 },
+]
+[cases.expected]
+outcomes = [
+  { outcome = "Jet fire", outcome_type = "jet_fire", frequency_per_year = 5.0e-5, fatality_probability = 0.999185140471441, fatality_frequency_per_year = 4.9959257023572056e-5 },
+  { outcome = "Pool fire", outcome_type = "pool_fire", frequency_per_year = 1.0e-4, fatality_probability = 1.0553585033729052e-4, fatality_frequency_per_year = 1.0553585033729052e-8 },
+  { outcome = "VCE", outcome_type = "vce", frequency_per_year = 3.0e-4, fatality_probability = 0.0, fatality_frequency_per_year = 0.0 },
+  { outcome = "Toxic dispersion", outcome_type = "toxic_dispersion", frequency_per_year = 2.0e-4, fatality_probability = 0.0, fatality_frequency_per_year = 0.0 },
+]
+individual_fatality_risk_per_year = 4.996981060860579e-5
+[[cases]]
+id = "zero_exposure_is_zero_probability"
+tolerance = 1.0e-9
+source = "The class test's jet with a zero exposure: the dose is zero and the probability is the class's `-Infinity` probit answer, 0.0. From (`consequence_analysis_zero_exposure`)."
+[cases.inputs]
+release_frequency_per_year = 1.0e-4
+receiver_distance = 10.0
+outcomes = [{ outcome_type = "jet_fire", conditional_probability = 0.05, probit_a = -14.9, probit_b = 2.56, probit_n = 1.0, exposure_seconds = 0.0, mass_flow = 30.0, heat_of_combustion = 50000000.0, radiative_fraction = 0.25 }]
+[cases.expected]
+outcomes = [{ outcome = "Jet fire", outcome_type = "jet_fire", frequency_per_year = 5.0e-6, fatality_probability = 0.0, fatality_frequency_per_year = 0.0 }]
+individual_fatality_risk_per_year = 0.0
+[[cases]]
+id = "zero_emission_is_zero_probability"
+tolerance = 1.0e-9
+source = "A toxic branch with a zero emission: the plume concentration is zero, so the dose and the probability are. From (`consequence_analysis_zero_emission`)."
+[cases.inputs]
+release_frequency_per_year = 1.0e-4
+receiver_distance = 50.0
+outcomes = [{ outcome_type = "toxic_dispersion", conditional_probability = 0.20, probit_a = -31.42, probit_b = 3.008, probit_n = 1.43, emission_rate = 0.0, effective_stack_height = 10.0, wind_speed = 5.0, stability = "D", terrain = "rural", molar_mass = 0.0340819, temperature = 288.15, pressure = 101325.0, exposure_seconds = 600.0 }]
+[cases.expected]
+outcomes = [{ outcome = "Toxic dispersion", outcome_type = "toxic_dispersion", frequency_per_year = 2.0e-5, fatality_probability = 0.0, fatality_frequency_per_year = 0.0 }]
+individual_fatality_risk_per_year = 0.0

@@ -227,9 +227,11 @@
 //!   - specs/models/process/bleve.toml
 //!   - specs/models/process/component_splitter.toml
 //!   - specs/models/process/compressor.toml
+//!   - specs/models/process/consequence_analysis.toml
 //!   - specs/models/process/cooler.toml
 //!   - specs/models/process/distillation_column.toml
 //!   - specs/models/process/ejector.toml
+//!   - specs/models/process/event_tree.toml
 //!   - specs/models/process/expander.toml
 //!   - specs/models/process/filter.toml
 //!   - specs/models/process/flare.toml
@@ -2753,6 +2755,16 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "max_stages_per_casing",
         "dimensionless",
     ),
+    (
+        "process.consequence_analysis",
+        "release_frequency_per_year",
+        "dimensionless",
+    ),
+    (
+        "process.consequence_analysis",
+        "receiver_distance",
+        "length",
+    ),
     ("process.cooler", "inlet_n", "molar_flow"),
     ("process.cooler", "inlet_z", "dimensionless"),
     ("process.cooler", "inlet_p", "pressure"),
@@ -2987,6 +2999,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     ("process.ejector", "mixing_efficiency", "dimensionless"),
     ("process.ejector", "diffuser_efficiency", "dimensionless"),
+    (
+        "process.event_tree",
+        "initiating_frequency_per_year",
+        "dimensionless",
+    ),
     ("process.expander", "inlet_n", "molar_flow"),
     ("process.expander", "inlet_z", "dimensionless"),
     ("process.expander", "inlet_p", "pressure"),

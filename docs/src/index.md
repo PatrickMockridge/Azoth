@@ -331,9 +331,11 @@ Five sections, and the difference between them is the point:
 - [`process.bleve`](./process/bleve.md) — BLEVE fireball radiation
 - [`process.component_splitter`](./process/component_splitter.md) — Component splitter
 - [`process.compressor`](./process/compressor.md) — Compressor
+- [`process.consequence_analysis`](./process/consequence_analysis.md) — Consequence analysis
 - [`process.cooler`](./process/cooler.md) — Cooler
 - [`process.distillation_column`](./process/distillation_column.md) — Distillation column
 - [`process.ejector`](./process/ejector.md) — Ejector
+- [`process.event_tree`](./process/event_tree.md) — Event tree
 - [`process.expander`](./process/expander.md) — Expander
 - [`process.filter`](./process/filter.md) — Filter
 - [`process.flare`](./process/flare.md) — Flare

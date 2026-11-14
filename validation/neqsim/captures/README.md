@@ -2006,3 +2006,37 @@ target, and a negative radiative fraction.
 the radiative fraction**: `bleve_negative_fraction` answers a negative SEP, a negative
 flux and the near bound as a distance. The zero-distance row prints `Infinity`; the
 zero-target row answers the end of the bisection's numerical range.
+
+## The event tree
+
+`process_event_tree.tsv` is `EventTreeAnalyzer.evaluate` on the class's own two- and
+three-branch tests, a no-branch tree and a certain/impossible pair, plus the class's two
+refusals and the shift count the port's cap rests on.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe event_tree \
+  > captures/process_event_tree.tsv
+```
+
+**The leaves are the full `2^n` enumeration in bit order**: branch `b` is bit `b`, the path
+is `name=Y`/`name=N` joined `"; "`, and a no-branch tree is one leaf with an empty path and
+probability one. The two refusal rows print the class's exceptions; the 21-branch row
+prints `1 << 21` without building the tree.
+
+## The consequence analysis
+
+`process_consequence_analysis.tsv` is `ConsequenceAnalysisEngine`'s four convenience
+branches (`Jet fire`, `Pool fire`, `VCE`, `Toxic dispersion`) and `evaluate` on the class's
+test state, each branch alone, a mixed scenario, a zero exposure, a zero emission, and the
+zero-distance and negative-probability evidence.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe consequence_analysis \
+  > captures/process_consequence_analysis.tsv
+```
+
+**The dose is the class's**: `exposure * I^(4/3) / 1e4` for the fires, the overpressure in
+Pa for the VCE, and `ppm * exposure_minutes` for the toxic branch over the class's
+`R = 8.314` conversion. A zero dose is the class's `-Infinity` probit, answered as a
+probability of zero. The toxic rows print the class's minutes and the port's seconds,
+because the vocabulary has no minute unit.

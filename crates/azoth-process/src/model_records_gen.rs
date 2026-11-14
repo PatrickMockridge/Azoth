@@ -16,9 +16,11 @@ use crate::models::anti_surge_recycle::AntiSurgeRecycleResult;
 use crate::models::bleve::BleveResult;
 use crate::models::component_splitter::ComponentSplitterResult;
 use crate::models::compressor::CompressorResult;
+use crate::models::consequence_analysis::ConsequenceAnalysisResult;
 use crate::models::cooler::CoolerResult;
 use crate::models::distillation_column::DistillationColumnResult;
 use crate::models::ejector::EjectorResult;
+use crate::models::event_tree::EventTreeResult;
 use crate::models::expander::ExpanderResult;
 use crate::models::filter::FilterResult;
 use crate::models::flare::FlareResult;
@@ -233,6 +235,16 @@ impl CalcResult for CompressorResult {
     }
 }
 
+impl CalcResult for ConsequenceAnalysisResult {
+    const CALC_ID: &'static str = "process.consequence_analysis";
+    const FIELDS: &'static [&'static str] =
+        &["outcomes", "individual_fatality_risk_per_year", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 impl CalcResult for CoolerResult {
     const CALC_ID: &'static str = "process.cooler";
     const FIELDS: &'static [&'static str] = &[
@@ -346,6 +358,15 @@ impl CalcResult for EjectorResult {
         "discharge_connection_length",
         "warnings",
     ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for EventTreeResult {
+    const CALC_ID: &'static str = "process.event_tree";
+    const FIELDS: &'static [&'static str] = &["outcomes", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings
