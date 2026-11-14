@@ -1,0 +1,90 @@
+event_tree_two_branch
+initiating_frequency_per_year=0.001
+branch_count=1
+branch0_name=Ignition
+branch0_probability_of_yes=0.1
+outcome_count=2
+outcome0_path=Ignition=N
+outcome0_probability=0.9
+outcome0_frequency_per_year=9.000000000000001E-4
+outcome1_path=Ignition=Y
+outcome1_probability=0.1
+outcome1_frequency_per_year=1.0E-4
+
+event_tree_three_branch
+initiating_frequency_per_year=0.01
+branch_count=3
+branch0_name=Immediate ignition
+branch0_probability_of_yes=0.05
+branch1_name=Delayed ignition
+branch1_probability_of_yes=0.1
+branch2_name=ESD success
+branch2_probability_of_yes=0.99
+outcome_count=8
+outcome0_path=Immediate ignition=N; Delayed ignition=N; ESD success=N
+outcome0_probability=0.008550000000000007
+outcome0_frequency_per_year=8.550000000000007E-5
+outcome1_path=Immediate ignition=Y; Delayed ignition=N; ESD success=N
+outcome1_probability=4.500000000000005E-4
+outcome1_frequency_per_year=4.500000000000005E-6
+outcome2_path=Immediate ignition=N; Delayed ignition=Y; ESD success=N
+outcome2_probability=9.500000000000009E-4
+outcome2_frequency_per_year=9.500000000000009E-6
+outcome3_path=Immediate ignition=Y; Delayed ignition=Y; ESD success=N
+outcome3_probability=5.0000000000000057E-5
+outcome3_frequency_per_year=5.000000000000006E-7
+outcome4_path=Immediate ignition=N; Delayed ignition=N; ESD success=Y
+outcome4_probability=0.8464499999999999
+outcome4_frequency_per_year=0.0084645
+outcome5_path=Immediate ignition=Y; Delayed ignition=N; ESD success=Y
+outcome5_probability=0.044550000000000006
+outcome5_frequency_per_year=4.455000000000001E-4
+outcome6_path=Immediate ignition=N; Delayed ignition=Y; ESD success=Y
+outcome6_probability=0.09405
+outcome6_frequency_per_year=9.404999999999999E-4
+outcome7_path=Immediate ignition=Y; Delayed ignition=Y; ESD success=Y
+outcome7_probability=0.004950000000000001
+outcome7_frequency_per_year=4.950000000000001E-5
+
+event_tree_no_branches
+initiating_frequency_per_year=0.001
+branch_count=0
+outcome_count=1
+outcome0_path=
+outcome0_probability=1.0
+outcome0_frequency_per_year=0.001
+
+event_tree_zero_and_one
+initiating_frequency_per_year=0.001
+branch_count=2
+branch0_name=Certain
+branch0_probability_of_yes=1.0
+branch1_name=Impossible
+branch1_probability_of_yes=0.0
+outcome_count=4
+outcome0_path=Certain=N; Impossible=N
+outcome0_probability=0.0
+outcome0_frequency_per_year=0.0
+outcome1_path=Certain=Y; Impossible=N
+outcome1_probability=1.0
+outcome1_frequency_per_year=0.001
+outcome2_path=Certain=N; Impossible=Y
+outcome2_probability=0.0
+outcome2_frequency_per_year=0.0
+outcome3_path=Certain=Y; Impossible=Y
+outcome3_probability=0.0
+outcome3_frequency_per_year=0.0
+
+event_tree_negative_frequency_evidence
+initiating_frequency_per_year=-1.0E-3
+refusal=IllegalArgumentException: frequency must be non-negative
+
+event_tree_probability_outside_evidence
+probability_of_yes=1.5
+refusal=IllegalArgumentException: probability must be in [0,1]
+
+event_tree_shift_evidence
+branch_count=21
+left_shift_outcome_count=2097152
+branches_added=21
+
