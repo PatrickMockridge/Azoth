@@ -2026,3 +2026,23 @@ Pa for the VCE, and `ppm * exposure_minutes` for the toxic branch over the class
 `R = 8.314` conversion. A zero dose is the class's `-Infinity` probit, answered as a
 probability of zero. The toxic rows print the class's minutes and the port's seconds,
 because the vocabulary has no minute unit.
+
+## The passive fire protection demand
+
+`process_pfp_demand.tsv` is `PfpDemandCalculator`'s bare-steel time, strict PFP verdict,
+conduction-limited thickness and rating on the class's three test states, an equal survival
+time, both sides of the `3600 + 1e-6` s rating threshold, the J60 branch, the 1 K driving
+floor, every optional override, the two non-physical temperature states and the class's
+seven refusals.
+
+```bash
+../../tools/gated.sh java -cp .:neqsim-118d9af.jar ProcessProbe pfp_demand \
+  > captures/process_pfp_demand.tsv
+```
+
+**The verdict is strict**: `tBare < tReq`, so the equality row needs no protection. The
+rating's long duration is `tReq > 3600.0 + 1.0e-6`, so `3600.000001` is H60 and its
+`Math.nextUp` is H120. `driving_temperature_k` shows the class's `max(1, Tfire - steelAvg)`
+floor. The class's temperature setters are unguarded: equal temperatures publish a zero time
+and an infinite thickness, and a critical below the initial publishes a negative time and
+thickness; the port refuses both.
