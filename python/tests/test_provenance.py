@@ -153,8 +153,8 @@ def test_the_block_exists_for_every_registered_id() -> None:
     # incremental zone analysis; 280: the detailed TEMA design; 281: the gas dispersion
     # analyzer; 282: the Gaussian plume; 283: the probit; 284: the jet fire; 285: the pool
     # fire; 286: the vapour-cloud explosion; 287: the BLEVE; 288: the event tree; 289: the
-    # consequence analysis.
-    assert len(registered) == 289
+    # consequence analysis; 290: the passive fire protection demand.
+    assert len(registered) == 290
 
 
 def test_the_rust_table_carries_exactly_the_same_ids() -> None:

@@ -433,6 +433,7 @@ NON_UNIT_MODELS = {
     "process.consequence_analysis": "the QRA composition over scalars and records, not a unit",
     "process.event_tree": "the event-tree enumeration over scalars, not a unit",
     "process.hem_release": "a release source term is a calculation over a fluid, not a unit",
+    "process.pfp_demand": "the PFP demand screen over scalars, not a unit",
     "process.leak_blowdown": "a vessel blowdown is a calculation over a fluid, not a unit",
     "process.separator_capacity_assessment": "a capacity report over a vessel, not a unit",
     "process.anti_surge_recycle": "a recycle converged around a charted machine, not a unit",

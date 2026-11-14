@@ -266,6 +266,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyMapTurboExpanderResult>()?;
     m.add_class::<crate::transport_gen::PyMixerResult>()?;
     m.add_class::<crate::transport_gen::PyPackedColumnResult>()?;
+    m.add_class::<crate::transport_gen::PyPfpDemandResult>()?;
     m.add_class::<crate::transport_gen::PyPipeResult>()?;
     m.add_class::<crate::transport_gen::PyPlugFlowReactorResult>()?;
     m.add_class::<crate::transport_gen::PyPoolFireResult>()?;
@@ -915,6 +916,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::mixer, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::packed_column, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::pfp_demand, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::pipe, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::plug_flow_reactor, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pool_fire, m)?)?;

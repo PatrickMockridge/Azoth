@@ -189,6 +189,7 @@ from azoth.core.result import (
     ParahydrogenSolidPhaseResult,
     PcsaftRahmatPhaseResult,
     PedersenPlusSplitResult,
+    PfpDemandResult,
     PhaseTransportResult,
     PhFlashResult,
     PipeBeggsAndBrillsResult,
@@ -525,6 +526,7 @@ __all__ = [
     "parahydrogen_solid_phase",
     "pcsaft_rahmat_phase",
     "pedersen_plus_split",
+    "pfp_demand",
     "ph_flash",
     "phase_transport",
     "pipe",
@@ -6905,6 +6907,32 @@ def packed_column(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
         pressure_drop_per_meter=from_si(result.pressure_drop_per_meter.magnitude_si, result.pressure_drop_per_meter.unit),
         resolved_packing=result.resolved_packing,
         resolved_packing_factor=from_si(result.resolved_packing_factor.magnitude_si, result.resolved_packing_factor.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pfp_demand(incident_heat_flux: Q, steel_thickness: Q, required_survival_time: Q, absorptivity: float | None=None, initial_temperature: Q | None=None, critical_temperature: Q | None=None, fire_temperature: Q | None=None, pfp_conductivity: Q | None=None, fire_type: str | None=None) -> PfpDemandResult:
+    """``process.pfp_demand``, computed in Rust."""
+    spec = _models_gen.model("process.pfp_demand")
+    result = _core.pfp_demand(
+        input_to_si(spec, "incident_heat_flux", incident_heat_flux),
+        input_to_si(spec, "steel_thickness", steel_thickness),
+        input_to_si(spec, "required_survival_time", required_survival_time),
+        None if absorptivity is None else absorptivity,
+        None if initial_temperature is None else input_to_si(spec, "initial_temperature", initial_temperature),
+        None if critical_temperature is None else input_to_si(spec, "critical_temperature", critical_temperature),
+        None if fire_temperature is None else input_to_si(spec, "fire_temperature", fire_temperature),
+        None if pfp_conductivity is None else input_to_si(spec, "pfp_conductivity", pfp_conductivity),
+        fire_type,
+    )
+    return PfpDemandResult(
+        steel_mass_per_area=result.steel_mass_per_area,
+        bare_steel_time_to_critical=from_si(result.bare_steel_time_to_critical.magnitude_si, result.bare_steel_time_to_critical.unit),
+        required_survival_time=from_si(result.required_survival_time.magnitude_si, result.required_survival_time.unit),
+        pfp_required=result.pfp_required,
+        required_pfp_thickness=from_si(result.required_pfp_thickness.magnitude_si, result.required_pfp_thickness.unit),
+        required_pfp_thickness_mm=from_si(result.required_pfp_thickness_mm.magnitude_si, result.required_pfp_thickness_mm.unit),
+        rating=result.rating,
         warnings=_warnings(result.warnings),
     )
 

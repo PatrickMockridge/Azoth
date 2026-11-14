@@ -267,6 +267,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "process.map_turbo_expander_compressor" => azoth_process::models::map_turbo_expander_compressor::MapTurboExpanderResult::FIELDS.to_vec(),
         "process.mixer" => azoth_process::models::mixer::MixerResult::FIELDS.to_vec(),
         "process.packed_column" => azoth_process::models::packed_column::PackedColumnResult::FIELDS.to_vec(),
+        "process.pfp_demand" => azoth_process::models::pfp_demand::PfpDemandResult::FIELDS.to_vec(),
         "process.pipe" => azoth_process::models::pipe::PipeResult::FIELDS.to_vec(),
         "process.plug_flow_reactor" => azoth_process::models::plug_flow_reactor::PlugFlowReactorResult::FIELDS.to_vec(),
         "process.pool_fire" => azoth_process::models::pool_fire::PoolFireResult::FIELDS.to_vec(),

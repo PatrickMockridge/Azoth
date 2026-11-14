@@ -352,6 +352,7 @@ Five sections, and the difference between them is the point:
 - [`process.map_turbo_expander_compressor`](./process/map_turbo_expander_compressor.md) — Map turbo-expander compressor
 - [`process.mixer`](./process/mixer.md) — Mixer
 - [`process.packed_column`](./process/packed_column.md) — Packed column
+- [`process.pfp_demand`](./process/pfp_demand.md) — Passive fire protection demand
 - [`process.pipe`](./process/pipe.md) — Pipe
 - [`process.plug_flow_reactor`](./process/plug_flow_reactor.md) — Plug-flow reactor
 - [`process.pool_fire`](./process/pool_fire.md) — Pool fire radiation

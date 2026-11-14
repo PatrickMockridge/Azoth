@@ -27,6 +27,7 @@
 //!   - specs/models/process/map_turbo_expander_compressor.toml
 //!   - specs/models/process/mixer.toml
 //!   - specs/models/process/packed_column.toml
+//!   - specs/models/process/pfp_demand.toml
 //!   - specs/models/process/pipe.toml
 //!   - specs/models/process/plug_flow_reactor.toml
 //!   - specs/models/process/pool_fire.toml

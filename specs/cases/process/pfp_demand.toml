@@ -1,0 +1,162 @@
+model = "process.pfp_demand"
+
+[[cases]]
+id = "pool_fire_thin_wall_requires_h60"
+tolerance = 1.0e-12
+source = "`PfpDemandCalculatorTest.testPoolFireRequiresPfp`: 100 kW/m2 on a 0.012 m wall, 3600 s. From `validation/neqsim/captures/process_pfp_demand.tsv` (`pfp_pool_thin_wall_h60`); the class's rating `H60` is the port's `h60`."
+[cases.inputs]
+incident_heat_flux = 100000.0
+steel_thickness = 0.012
+required_survival_time = 3600.0
+[cases.expected]
+steel_mass_per_area = 94.2
+bare_steel_time_to_critical = 197.45366666666666
+required_survival_time = 3600.0
+pfp_required = true
+required_pfp_thickness = 0.028057215110380333
+required_pfp_thickness_mm = 28.057215110380334
+rating = "h60"
+
+[[cases]]
+id = "jet_fire_long_duration_selects_j120"
+tolerance = 1.0e-12
+source = "`PfpDemandCalculatorTest.testJetFireLongDurationRating`: 250 kW/m2 on a 0.012 m jet-exposed wall, 7200 s. From `validation/neqsim/captures/process_pfp_demand.tsv` (`pfp_jet_long_duration_j120`); the class's `J120` is the port's `j120`."
+[cases.inputs]
+incident_heat_flux = 250000.0
+steel_thickness = 0.012
+required_survival_time = 7200.0
+fire_type = "jet"
+[cases.expected]
+steel_mass_per_area = 94.2
+bare_steel_time_to_critical = 78.98146666666666
+required_survival_time = 7200.0
+pfp_required = true
+required_pfp_thickness = 0.05611443022076067
+required_pfp_thickness_mm = 56.11443022076067
+rating = "j120"
+
+[[cases]]
+id = "thick_wall_needs_no_protection"
+tolerance = 1.0e-12
+source = "`PfpDemandCalculatorTest.testThickWallNoPfp`: 100 kW/m2 on a 0.20 m wall, 600 s. From `validation/neqsim/captures/process_pfp_demand.tsv` (`pfp_thick_wall_none`); the class's `NONE` is the port's `none`."
+[cases.inputs]
+incident_heat_flux = 100000.0
+steel_thickness = 0.20
+required_survival_time = 600.0
+[cases.expected]
+steel_mass_per_area = 1570.0
+bare_steel_time_to_critical = 3290.8944444444446
+required_survival_time = 600.0
+pfp_required = false
+required_pfp_thickness = 0.0
+required_pfp_thickness_mm = 0.0
+rating = "none"
+
+[[cases]]
+id = "equal_time_needs_no_protection"
+tolerance = 1.0e-12
+source = "The class's strict `tBare < tReq`: the probe states the survival time as the class's own bare-steel time, so the verdict is false. From `validation/neqsim/captures/process_pfp_demand.tsv` (`pfp_equal_time_no_pfp`)."
+[cases.inputs]
+incident_heat_flux = 100000.0
+steel_thickness = 0.012
+required_survival_time = 197.45366666666666
+[cases.expected]
+steel_mass_per_area = 94.2
+bare_steel_time_to_critical = 197.45366666666666
+required_survival_time = 197.45366666666666
+pfp_required = false
+required_pfp_thickness = 0.0
+required_pfp_thickness_mm = 0.0
+rating = "none"
+
+[[cases]]
+id = "pool_fire_at_the_rating_threshold"
+tolerance = 1.0e-12
+source = "`t_req = 3600 + 1e-6` s exactly: the long-duration test is `>` that bound, so the rating stays H60. From `validation/neqsim/captures/process_pfp_demand.tsv` (`pfp_rating_at_threshold`)."
+[cases.inputs]
+incident_heat_flux = 100000.0
+steel_thickness = 0.012
+required_survival_time = 3600.000001
+[cases.expected]
+steel_mass_per_area = 94.2
+bare_steel_time_to_critical = 197.45366666666666
+required_survival_time = 3600.000001
+pfp_required = true
+required_pfp_thickness = 0.028057215118174
+required_pfp_thickness_mm = 28.057215118174
+rating = "h60"
+
+[[cases]]
+id = "pool_fire_just_past_the_rating_threshold"
+tolerance = 1.0e-12
+source = "`t_req = Math.nextUp(3600 + 1e-6)` s: the first double past the long-duration bound, so the rating is H120. From `validation/neqsim/captures/process_pfp_demand.tsv` (`pfp_rating_past_threshold`)."
+[cases.inputs]
+incident_heat_flux = 100000.0
+steel_thickness = 0.012
+required_survival_time = 3600.0000010000003
+[cases.expected]
+steel_mass_per_area = 94.2
+bare_steel_time_to_critical = 197.45366666666666
+required_survival_time = 3600.0000010000003
+pfp_required = true
+required_pfp_thickness = 0.028057215118174005
+required_pfp_thickness_mm = 28.057215118174007
+rating = "h120"
+
+[[cases]]
+id = "jet_fire_short_duration_selects_j60"
+tolerance = 1.0e-12
+source = "A jet-exposed wall at exactly 3600 s is short, so the rating is J60, the class's otherwise-uncovered branch. From `validation/neqsim/captures/process_pfp_demand.tsv` (`pfp_jet_short_j60`)."
+[cases.inputs]
+incident_heat_flux = 250000.0
+steel_thickness = 0.012
+required_survival_time = 3600.0
+fire_type = "jet"
+[cases.expected]
+steel_mass_per_area = 94.2
+bare_steel_time_to_critical = 78.98146666666666
+required_survival_time = 3600.0
+pfp_required = true
+required_pfp_thickness = 0.028057215110380333
+required_pfp_thickness_mm = 28.057215110380334
+rating = "j60"
+
+[[cases]]
+id = "driving_temperature_is_floored_at_one"
+tolerance = 1.0e-12
+source = "A fire temperature of 481 K is 0.35 K above the steel mean of 480.65 K, so the driving difference is floored to 1 K. From `validation/neqsim/captures/process_pfp_demand.tsv` (`pfp_driving_floor`), whose `driving_temperature_k=1.0`."
+[cases.inputs]
+incident_heat_flux = 100000.0
+steel_thickness = 0.012
+required_survival_time = 3600.0
+fire_temperature = 481.0
+[cases.expected]
+steel_mass_per_area = 94.2
+bare_steel_time_to_critical = 197.45366666666666
+required_survival_time = 3600.0
+pfp_required = true
+required_pfp_thickness = 4.051583409441203e-05
+required_pfp_thickness_mm = 0.04051583409441203
+rating = "h60"
+
+[[cases]]
+id = "overrides_move_the_bare_time_and_thickness"
+tolerance = 1.0e-12
+source = "Every optional numeric input overridden: absorptivity 0.5, 293.15/573.15/973.15 K, conductivity 0.4 W/(m K). From `validation/neqsim/captures/process_pfp_demand.tsv` (`pfp_overrides`)."
+[cases.inputs]
+incident_heat_flux = 100000.0
+steel_thickness = 0.012
+required_survival_time = 3600.0
+absorptivity = 0.5
+initial_temperature = 293.15
+critical_temperature = 573.15
+fire_temperature = 973.15
+pfp_conductivity = 0.4
+[cases.expected]
+steel_mass_per_area = 94.2
+bare_steel_time_to_critical = 258.4848
+required_survival_time = 3600.0
+pfp_required = true
+required_pfp_thickness = 0.06016601363020185
+required_pfp_thickness_mm = 60.16601363020185
+rating = "h60"

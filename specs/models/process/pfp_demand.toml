@@ -1,0 +1,141 @@
+id = "process.pfp_demand"
+name = "Passive fire protection demand"
+kind = "procedure"
+assumptions = [
+    "**the wall is a lumped capacitance**: `t_bare = m'' c (T_crit - T_0) / (alpha q)`, `m'' = rho t` with `rho = 7850 kg/m3` and `c = 490 J/(kg K)`. Conduction, reradiation and temperature-dependent properties do not enter.",
+    "**the protection is conduction-limited and steady**: `thickness = k (T_fire - T_steel,avg) / q_allow`, `q_allow = m'' c (T_crit - T_0) / t_req` and `T_steel,avg = (T_0 + T_crit) / 2`. The slab's own heat capacity does not enter.",
+    "**the demand test is strict**: `t_bare < t_req`. An equal survival time needs no protection, and the thickness is then exactly zero with the rating `none`.",
+    "**the rating is the class's mapping**: a `pool` wall is `h60` or `h120`, a `jet` wall `j60` or `j120`; long duration is `t_req > 3600 + 1e-6` s, so exactly 3600 s is short.",
+    "**the driving temperature is floored at 1 K**: `max(1, T_fire - T_steel,avg)` publishes a finite positive thickness when the fire is at or below the steel mean. The port reproduces the floor rather than refusing (NeqSim `#5005`).",
+    "**the class's defaults are carried**: absorptivity 0.9, initial 288.15 K, critical 673.15 K, fire 1173.15 K, PFP conductivity 0.2 W/(m K) and fire type `pool`.",
+    "**a non-physical temperature pair is refused**: `critical_temperature <= initial_temperature` makes the class publish a zero time and an infinite thickness at equality, and a negative time and thickness below it. Its setters do not guard this (NeqSim `#5004`).",
+    "**the incident flux is the caller's**: it is not computed here. `process.jet_fire` and `process.pool_fire` produce it; the class's examples are about 100 kW/m2 for a pool and up to about 350 kW/m2 for a jet.",
+    "**steel mass per area is dimensionless `kg/m2`**, because the vocabulary carries no areal mass unit. The thickness is published in metres and in millimetres, the class's two getters.",
+    "**the required survival time is echoed**: the class's result carries it, and it is the stated input unaltered.",
+]
+references = [
+    "API STD 521 (2021). Pressure-relieving and Depressuring Systems, fire exposure and passive fire protection.",
+    "NORSOK S-001 (2018). Technical safety, passive fire protection and jet fire.",
+    "UL 1709 (2017). Rapid Rise Fire Tests of Protection Materials for Structural Steel.",
+    "ISO 22899-1 (2007). Determination of the Resistance to Jet Fires of Passive Fire Protection Materials.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/safety/fire/PfpDemandCalculator.java` is the port source.",
+    "`validation/neqsim/captures/process_pfp_demand.tsv` - the class's three tests, the strict equality, both sides of the rating threshold, the J60 branch, the 1 K floor, the overrides, the non-physical temperature states and the refusals.",
+]
+[source]
+standard = "NeqSim process/safety/fire/PfpDemandCalculator.java"
+edition = "Its `steelMassPerAreaKgPerM2`, `bareSteelTimeToCriticalS`, `evaluate`, the `PfpRating` mapping and the `PfpDemandResult` getters."
+[algorithm]
+scheme = "closed_form_steel_time_to_critical"
+convergence = "absolute"
+tolerance = 1.0e-12
+max_iterations = 1
+[inputs]
+[inputs.incident_heat_flux]
+unit = "W/m**2"
+description = "the incident heat flux on the exposed steel, above zero. It is the caller's value, from `process.jet_fire` or `process.pool_fire` or a stated design flux.\n"
+[inputs.steel_thickness]
+unit = "m"
+description = "the exposed steel wall thickness, above zero.\n"
+[inputs.required_survival_time]
+unit = "s"
+description = "the time the wall must survive the fire, above zero; the class tests `t_bare < t_req` against it.\n"
+[inputs.absorptivity]
+unit = "dimensionless"
+optional = true
+description = "the steel surface absorptivity in `(0, 1]`. **Absent is 0.9.**\n"
+[inputs.initial_temperature]
+unit = "K"
+optional = true
+description = "the wall's initial temperature, above zero. **Absent is 288.15 K.** It must be below `critical_temperature`.\n"
+[inputs.critical_temperature]
+unit = "K"
+optional = true
+description = "the critical steel temperature, above zero. **Absent is 673.15 K**, about 400 C. It must be above `initial_temperature`.\n"
+[inputs.fire_temperature]
+unit = "K"
+optional = true
+description = "the effective fire temperature, above zero. **Absent is 1173.15 K**, about 900 C; a value below the steel mean is floored to a 1 K driving difference.\n"
+[inputs.pfp_conductivity]
+unit = "W/(m*K)"
+optional = true
+description = "the passive protection's thermal conductivity, above zero. **Absent is 0.2 W/(m K)**, a representative intumescent epoxy.\n"
+[inputs.fire_type]
+type = "enum"
+values = ["pool", "jet"]
+optional = true
+description = "which rating family applies: `pool` is H-class (UL 1709), `jet` is J-class (ISO 22899). **Absent is `pool`.**\n"
+[outputs]
+[outputs.steel_mass_per_area]
+unit = "dimensionless"
+description = "the steel mass per exposed area, `7850 t` kg/m2; declared dimensionless because the vocabulary has no areal mass unit.\n"
+[outputs.bare_steel_time_to_critical]
+unit = "s"
+description = "`m'' c (T_crit - T_0) / (alpha q)`, the lumped time to the critical temperature.\n"
+[outputs.required_survival_time]
+unit = "s"
+description = "the stated survival time, echoed as the class's result carries it.\n"
+[outputs.pfp_required]
+type = "boolean"
+description = "whether `t_bare < t_req`. Strict: an equal time is false.\n"
+[outputs.required_pfp_thickness]
+unit = "m"
+description = "the conduction-limited protection thickness; exactly zero when no protection is required.\n"
+[outputs.required_pfp_thickness_mm]
+unit = "mm"
+description = "the same thickness in millimetres, the class's `getRequiredPfpThicknessMm`.\n"
+[outputs.rating]
+type = "string"
+description = "`none`, `h60`, `h120`, `j60` or `j120`, the class's `PfpRating` in the port's words.\n"
+[[valid_range]]
+quantity = "incident_heat_flux"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class's constructor refuses a non-positive flux"
+[[valid_range]]
+quantity = "steel_thickness"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class's constructor refuses a non-positive thickness"
+[[valid_range]]
+quantity = "required_survival_time"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class's evaluate refuses a non-positive survival time"
+[[valid_range]]
+quantity = "absorptivity"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "the class's setter refuses a value outside (0, 1]"
+[[valid_range]]
+quantity = "initial_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a non-positive absolute temperature is not a wall state"
+[[valid_range]]
+quantity = "critical_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a non-positive absolute temperature is not a wall state"
+[[valid_range]]
+quantity = "fire_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a non-positive absolute temperature is not a fire"
+[[valid_range]]
+quantity = "pfp_conductivity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class's setter refuses a non-positive conductivity"
+[implementations]
+python = "azoth.process.pfp_demand"
+rust = "azoth_process::pfp_demand"

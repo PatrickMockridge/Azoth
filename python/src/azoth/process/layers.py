@@ -1373,6 +1373,50 @@ def _pool_fire(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dumped
 
 
+def _pfp_demand(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.pfp_demand`'s layers, from the reference's own arithmetic.
+
+    The verdict and the rating are the model's own words rather than numbers, so they are
+    asserted by the model's test and the cross-impl comparison, not dumped here.
+    """
+    from azoth.core.units import quantity
+    from azoth.process.reference.pfp_demand import _evaluate
+
+    def optional(name: str, unit: str) -> Any:
+        value = inputs.get(name)
+        return None if value is None else quantity(float(value), unit)
+
+    alpha = inputs.get("absorptivity")
+    solution, _ = _evaluate(
+        quantity(float(inputs["incident_heat_flux"]), "W/m**2"),
+        quantity(float(inputs["steel_thickness"]), "m"),
+        quantity(float(inputs["required_survival_time"]), "s"),
+        absorptivity=None if alpha is None else float(alpha),
+        initial_temperature=optional("initial_temperature", "K"),
+        critical_temperature=optional("critical_temperature", "K"),
+        fire_temperature=optional("fire_temperature", "K"),
+        pfp_conductivity=optional("pfp_conductivity", "W/(m*K)"),
+        fire_type=inputs.get("fire_type"),
+    )
+    dumped: dict[str, float] = {
+        "steel_mass_per_area_kg_m2": solution.mass_per_area,
+        "bare_steel_time_to_critical_s": solution.bare,
+        "required_survival_time_s": solution.survival,
+        "required_pfp_thickness_m": solution.thickness,
+        "required_pfp_thickness_mm": solution.thickness * 1000.0,
+        "q_abs_w_m2": solution.q_abs,
+    }
+    if (
+        solution.q_allow is not None
+        and solution.steel_average is not None
+        and solution.driving is not None
+    ):
+        dumped["q_allow_w_m2"] = solution.q_allow
+        dumped["steel_avg_temperature_k"] = solution.steel_average
+        dumped["driving_temperature_k"] = solution.driving
+    return dumped
+
+
 def _vce(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.vce`'s layers, from the reference's own arithmetic."""
     from azoth.core.units import quantity
@@ -1844,6 +1888,7 @@ DUMPERS: dict[str, Dumper] = {
     "process.bleve": _bleve,
     "process.consequence_analysis": _consequence_analysis,
     "process.jet_fire": _jet_fire,
+    "process.pfp_demand": _pfp_demand,
     "process.pool_fire": _pool_fire,
     "process.probit": _probit,
     "process.vce": _vce,
@@ -2495,6 +2540,71 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_pool_fire.tsv",
         block=6,
         identified_by=("#label", "pool_fire_zero_distance"),
+    ),
+    # The PFP demand's nine: every cased state, from the class's three tests through both
+    # sides of the rating threshold to the floored driving temperature.
+    LayerCase(
+        model="process.pfp_demand",
+        case="pool_fire_thin_wall_requires_h60",
+        capture="process_pfp_demand.tsv",
+        block=0,
+        identified_by=("#label", "pfp_pool_thin_wall_h60"),
+    ),
+    LayerCase(
+        model="process.pfp_demand",
+        case="jet_fire_long_duration_selects_j120",
+        capture="process_pfp_demand.tsv",
+        block=1,
+        identified_by=("#label", "pfp_jet_long_duration_j120"),
+    ),
+    LayerCase(
+        model="process.pfp_demand",
+        case="thick_wall_needs_no_protection",
+        capture="process_pfp_demand.tsv",
+        block=2,
+        identified_by=("#label", "pfp_thick_wall_none"),
+    ),
+    LayerCase(
+        model="process.pfp_demand",
+        case="equal_time_needs_no_protection",
+        capture="process_pfp_demand.tsv",
+        block=3,
+        identified_by=("#label", "pfp_equal_time_no_pfp"),
+    ),
+    LayerCase(
+        model="process.pfp_demand",
+        case="pool_fire_at_the_rating_threshold",
+        capture="process_pfp_demand.tsv",
+        block=4,
+        identified_by=("#label", "pfp_rating_at_threshold"),
+    ),
+    LayerCase(
+        model="process.pfp_demand",
+        case="pool_fire_just_past_the_rating_threshold",
+        capture="process_pfp_demand.tsv",
+        block=5,
+        identified_by=("#label", "pfp_rating_past_threshold"),
+    ),
+    LayerCase(
+        model="process.pfp_demand",
+        case="jet_fire_short_duration_selects_j60",
+        capture="process_pfp_demand.tsv",
+        block=6,
+        identified_by=("#label", "pfp_jet_short_j60"),
+    ),
+    LayerCase(
+        model="process.pfp_demand",
+        case="driving_temperature_is_floored_at_one",
+        capture="process_pfp_demand.tsv",
+        block=7,
+        identified_by=("#label", "pfp_driving_floor"),
+    ),
+    LayerCase(
+        model="process.pfp_demand",
+        case="overrides_move_the_bare_time_and_thickness",
+        capture="process_pfp_demand.tsv",
+        block=8,
+        identified_by=("#label", "pfp_overrides"),
     ),
     # The VCE's thirteen reachable states: the test state at two distances, the 5 kPa
     # contour and all ten plateaus. The 20.7 kPa target that exceeds the class-4 plateau,
@@ -3708,6 +3818,9 @@ UNCASED_ROWS: dict[str, int] = {
     # The pool fire's four: the two unreachable targets the class answers with its near
     # bound, the zero-target far bound, and the dead-parameter state.
     "process_pool_fire.tsv": 4,
+    # The PFP demand's nine: the two non-physical temperature states the port refuses, and
+    # the class's seven constructor and setter refusals.
+    "process_pfp_demand.tsv": 9,
     # The VCE's three: two unreachable targets the class answers with its near bound, and
     # the zero-target refusal.
     "process_vce.tsv": 3,

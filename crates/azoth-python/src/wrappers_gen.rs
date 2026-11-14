@@ -6491,6 +6491,42 @@ pub fn packed_column(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Passive fire protection demand.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (incident_heat_flux, steel_thickness, required_survival_time, absorptivity, initial_temperature, critical_temperature, fire_temperature, pfp_conductivity, fire_type))]
+#[pyo3(
+    text_signature = "(incident_heat_flux, steel_thickness, required_survival_time, absorptivity, initial_temperature, critical_temperature, fire_temperature, pfp_conductivity, fire_type)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pfp_demand(
+    py: Python<'_>,
+    incident_heat_flux: f64,
+    steel_thickness: f64,
+    required_survival_time: f64,
+    absorptivity: Option<f64>,
+    initial_temperature: Option<f64>,
+    critical_temperature: Option<f64>,
+    fire_temperature: Option<f64>,
+    pfp_conductivity: Option<f64>,
+    fire_type: Option<&str>,
+) -> PyResult<crate::transport_gen::PyPfpDemandResult> {
+    azoth_process::models::pfp_demand::pfp_demand(
+        watts_per_square_meter(incident_heat_flux),
+        meters(steel_thickness),
+        seconds(required_survival_time),
+        absorptivity,
+        initial_temperature.map(kelvins),
+        critical_temperature.map(kelvins),
+        fire_temperature.map(kelvins),
+        pfp_conductivity.map(watts_per_meter_kelvin),
+        fire_type,
+    )
+    .map(|r| crate::transport_gen::PyPfpDemandResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Pool fire radiation.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
