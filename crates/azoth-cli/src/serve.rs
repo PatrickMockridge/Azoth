@@ -83,11 +83,21 @@ const SHEETS_ROUTE: &str = "/sheets";
 /// this a second door rather than a second server, and it is a test rather than a claim.
 const MCP_ROUTE: &str = "/mcp";
 
+/// The exchange route: a drawing in, or the open document as a DEXPI file out.
+const DEXPI_ROUTE: &str = "/dexpi";
+
 /// The largest body accepted, in bytes.
 ///
 /// A command is a few hundred bytes and an envelope request is two; a megabyte is generous and
 /// still refuses a client that would otherwise make this process allocate without limit.
 const MAX_BODY: usize = 1024 * 1024;
+
+/// The largest DEXPI body, in bytes.
+///
+/// **A drawing is not a command.** A real P&ID is megabytes of XML, and the request carries it
+/// inside a JSON string, which roughly doubles it; 32 MiB is below the reader's own 64 MiB cap
+/// and still finite.
+const DEXPI_MAX_BODY: usize = 32 * 1024 * 1024;
 
 /// Serve the session until the process is killed.
 ///
@@ -186,11 +196,42 @@ fn handle(
             crate::mcp_http::Answer::Accepted => write_raw(&mut writer, 202, "", cors.as_deref()),
         };
     }
+    if request.path == DEXPI_ROUTE {
+        if request.method != "POST" {
+            return write_json(
+                &mut writer,
+                405,
+                &json!({ "error": format!("{DEXPI_ROUTE} is a POST") }),
+                cors.as_deref(),
+            );
+        }
+        let body: Value = match serde_json::from_slice(&request.body) {
+            Ok(body) => body,
+            Err(error) => {
+                return write_json(
+                    &mut writer,
+                    400,
+                    &json!({ "error": format!("the request body is not JSON: {error}") }),
+                    cors.as_deref(),
+                );
+            }
+        };
+        return match dexpi_answer(session.palette(), &body) {
+            Ok(answer) => write_json(&mut writer, 200, &answer, cors.as_deref()),
+            Err(sentence) => write_json(
+                &mut writer,
+                400,
+                &json!({ "error": sentence }),
+                cors.as_deref(),
+            ),
+        };
+    }
+
     if request.method != "POST" || (request.path != ROUTE && request.path != SHEETS_ROUTE) {
         return write_json(
             &mut writer,
             404,
-            &json!({ "error": format!("no route; every call is a POST to {ROUTE}, {SHEETS_ROUTE} or {MCP_ROUTE}") }),
+            &json!({ "error": format!("no route; every call is a POST to {ROUTE}, {SHEETS_ROUTE}, {DEXPI_ROUTE} or {MCP_ROUTE}") }),
             cors.as_deref(),
         );
     }
@@ -221,6 +262,58 @@ fn handle(
             cors.as_deref(),
         ),
     }
+}
+
+/// The exchange door: a drawing in, or the open document as a DEXPI file out.
+///
+/// **A refused view or export is a 200 with `ok: false`**, because the diagnostics are the
+/// answer; a body this route cannot read is the 400.
+fn dexpi_answer(
+    palette: &[azoth_process::UnitOpSpec],
+    body: &Value,
+) -> std::result::Result<Value, String> {
+    if let Some(xml) = body.get("view").and_then(Value::as_str) {
+        return Ok(match azoth_dexpi::inspect(xml, palette) {
+            Ok(view) => json!({ "ok": true, "view": view }),
+            Err(diagnostics) => json!({ "ok": false, "diagnostics": diagnostics }),
+        });
+    }
+    if let Some(export) = body.get("export") {
+        let document = export
+            .get("document")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "`export.document` is the flowsheet TOML".to_string())?;
+        let profile = export
+            .get("profile")
+            .and_then(Value::as_str)
+            .unwrap_or("process");
+        let options = match export.get("options") {
+            Some(options) => serde_json::from_value(options.clone())
+                .map_err(|error| format!("`export.options`: {error}"))?,
+            None => azoth_dexpi::ExchangeOptions::default(),
+        };
+        return Ok(
+            match azoth_dexpi::exchange::export(document, palette, profile, &options) {
+                Ok(report) => serde_json::to_value(report)
+                    .map_err(|error| format!("the export report: {error}"))?,
+                Err(diagnostics) => json!({
+                    "ok": false,
+                    "xml": null,
+                    "diagnostics": diagnostics,
+                    "steps": 0,
+                    "streams": 0,
+                    "items": 0,
+                    "segments": 0,
+                    "diagram_groups": 0,
+                    "diagram_primitives": 0,
+                }),
+            },
+        );
+    }
+    Err(
+        "the body is {\"view\": \"<xml>\"} or {\"export\": {document, profile, options}}"
+            .to_string(),
+    )
 }
 
 /// One request body, as the call it names.
@@ -376,9 +469,14 @@ pub(crate) fn read_request(reader: &mut impl BufRead) -> std::result::Result<Req
                 .parse()
                 .map_err(|_| format!("`{value}` is not a Content-Length"))
         })?;
-    if length > MAX_BODY {
+    let limit = if path == DEXPI_ROUTE {
+        DEXPI_MAX_BODY
+    } else {
+        MAX_BODY
+    };
+    if length > limit {
         return Err(format!(
-            "a body of {length} bytes is over the {MAX_BODY} this accepts"
+            "a body of {length} bytes is over the {limit} this accepts"
         ));
     }
     let mut body = vec![0_u8; length];

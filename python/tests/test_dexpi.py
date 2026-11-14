@@ -213,3 +213,20 @@ def test_a_pid_export_carries_a_drawing_and_places_it() -> None:
     toml, imported = dexpi.import_plant(xml, PALETTE)
     assert imported["layout_positions"] > 0
     assert "[layout.instances]" in toml
+
+
+def test_a_drawing_view_reports_coverage_and_layout() -> None:
+    report = dexpi.view(PROTEUS_FIXTURE, PALETTE)
+    assert report["format"] == "proteus"
+    assert report["counts"]["modelled"] > 0
+    assert report["scaffold"]["layout_positions"] > 0
+    assert report["drawing"]["groups"]
+
+
+def test_a_valve_exports_inside_a_segment_and_imports_again() -> None:
+    valve = (ROOT / "crates/azoth-dexpi/tests/fixtures/plant_valve.toml").read_text()
+    xml, _ = dexpi.export_plant(valve, PALETTE, drawing=True)
+    assert "Plant/Piping.GlobeValve" in xml
+    _, imported = dexpi.import_plant(xml, PALETTE)
+    units = {instance["id"]: instance["unit"] for instance in imported["flowsheet"]["instances"]}
+    assert units["V-101"] == "unit_ops.throttling_valve"

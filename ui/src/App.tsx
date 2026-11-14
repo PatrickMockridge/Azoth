@@ -24,6 +24,7 @@ import { menusOf, type CommandSpec, type MenuSpec } from "./commands/model";
 import { CalculationsApp } from "./components/calculations/CalculationsApp";
 import type { Workspace } from "./components/calculations/WorkspaceSwitch";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
+import { DexpiWorkspace } from "./components/dexpi/DexpiWorkspace";
 import { Dock } from "./components/dock/Dock";
 import { Flowsheet } from "./components/Flowsheet";
 import { NodeOverview } from "./components/NodeOverview";
@@ -53,7 +54,7 @@ import {
 import { readUnitSet, rememberUnitSet, unitsOf } from "./state/units";
 import { readWelcome, rememberWelcome } from "./state/welcome";
 import { door } from "./wire/door";
-import type { Door, Opened, Session, SheetDoor } from "./wire/session";
+import type { Door, ExchangeDoor, Opened, Session, SheetDoor } from "./wire/session";
 import type { Catalogue, Command, Envelope, ExecutionOrder } from "./wire/types";
 
 /**
@@ -92,7 +93,10 @@ export function App() {
   const [workspace, setWorkspace] = useState<Workspace>("flowsheet");
   /** The calculation book is loaded on first visit and then kept, so switching back keeps it. */
   const [calculationsSeen, setCalculationsSeen] = useState(false);
+  /** The drawing viewer is mounted on first visit and kept, like the calculation book. */
+  const [drawingSeen, setDrawingSeen] = useState(false);
   const [sheetDoor, setSheetDoor] = useState<SheetDoor | null>(null);
+  const [exchange, setExchange] = useState<ExchangeDoor | null>(null);
 
   /**
    * The unit set a reader wants values in, which is remembered like the theme and for the same
@@ -371,18 +375,19 @@ export function App() {
 
   /** Hand a document to the library: the Demo button, New, or a file. */
   const open = useCallback(
-    (text: string) => {
+    (text: string): boolean => {
       const loaded = middleware.current;
       if (loaded === null || loaded.kind !== "openable") {
-        return;
+        return false;
       }
       if (
         unsaved &&
         !window.confirm("This case has unsaved changes. Open another and lose them?")
       ) {
-        return;
+        return false;
       }
       land(loaded.open(text));
+      return true;
     },
     [land, unsaved],
   );
@@ -392,6 +397,9 @@ export function App() {
     setWorkspace(next);
     if (next === "calculations") {
       setCalculationsSeen(true);
+    }
+    if (next === "drawing") {
+      setDrawingSeen(true);
     }
   }, []);
 
@@ -433,6 +441,7 @@ export function App() {
         }
         middleware.current = loaded.flowsheet;
         setSheetDoor(loaded.sheets);
+        setExchange(loaded.exchange);
         setOpenable(loaded.flowsheet.kind === "openable");
         void loaded.flowsheet.catalogue(true).then(
           (palette) => {
@@ -1034,6 +1043,16 @@ export function App() {
         onWorkspace={chooseWorkspace}
         onAppearance={setAppearance}
         onUnits={chooseUnits}
+      />
+    ) : null}
+    {drawingSeen ? (
+      <DexpiWorkspace
+        exchange={exchange}
+        document={envelope?.flowsheet.document ?? ""}
+        openable={openable}
+        hidden={workspace !== "drawing"}
+        onOpenFlowsheet={open}
+        onWorkspace={chooseWorkspace}
       />
     ) : null}
     </>

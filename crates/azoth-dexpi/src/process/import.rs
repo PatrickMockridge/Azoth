@@ -394,7 +394,7 @@ fn unit_for(
     chosen.to_string()
 }
 
-fn preferred(dexpi_type: &str, candidates: &[&'static str]) -> &'static str {
+pub(crate) fn preferred(dexpi_type: &str, candidates: &[&'static str]) -> &'static str {
     let preferred = match dexpi_type {
         "Process/Process.Distilling" => "unit_ops.distillation_column",
         "Process/Process.SeparatingByGravity" => "unit_ops.separator",

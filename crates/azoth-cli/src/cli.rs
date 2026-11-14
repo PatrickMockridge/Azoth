@@ -73,6 +73,9 @@ pub enum DexpiCommand {
 
     /// Check a DEXPI 2.0 document against the semantic rules, and optionally the schema.
     Validate(DexpiValidateArgs),
+
+    /// Read a drawing and report what it would become: coverage, layout and the scaffold.
+    View(DexpiViewArgs),
 }
 
 #[derive(Debug, clap::Args)]
@@ -155,6 +158,21 @@ pub struct DexpiImportArgs {
     pub no_layout: bool,
 
     /// Print the report as JSON rather than as a report.
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Debug, clap::Args)]
+pub struct DexpiViewArgs {
+    /// The DEXPI XML file to read.
+    #[arg(long = "input")]
+    pub input: std::path::PathBuf,
+
+    /// The palette directory the coverage is described against.
+    #[arg(long, default_value = "specs/unit_ops")]
+    pub palette: std::path::PathBuf,
+
+    /// Print the view as JSON rather than as a summary.
     #[arg(long)]
     pub json: bool,
 }

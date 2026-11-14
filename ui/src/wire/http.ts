@@ -16,14 +16,31 @@
  * edit says `false`; Solve says `true`.
  */
 
-import { decodeCatalogue, decodeEnvelope, decodeSheetEnvelope, fieldOf } from "./decode";
-import type { HostedDoor, Opened, Session, SheetOpened, SheetSession } from "./session";
+import {
+  decodeCatalogue,
+  decodeDexpiExport,
+  decodeDexpiView,
+  decodeEnvelope,
+  decodeSheetEnvelope,
+  fieldOf,
+} from "./decode";
+import type {
+  ExchangeDoor,
+  HostedDoor,
+  Opened,
+  Session,
+  SheetOpened,
+  SheetSession,
+} from "./session";
 import type { SheetCommand } from "./sheetCommands";
 import type {
   Catalogue,
   Command,
+  DexpiExport,
+  DexpiViewResponse,
   Envelope,
   ExecutionOrder,
+  ExchangeOptions,
   SheetEnvelope,
 } from "./types";
 
@@ -116,6 +133,29 @@ class HttpSheetSession implements SheetSession {
 
   async calculate(sheet: string | null): Promise<SheetEnvelope> {
     return decodeSheetEnvelope(await post(this.#base, "/sheets", { calculate: sheet }));
+  }
+}
+
+/** The drawing exchange behind `azoth serve`'s `POST /dexpi`. */
+export class HttpExchange implements ExchangeDoor {
+  readonly #base: string;
+
+  constructor(base: string) {
+    this.#base = base;
+  }
+
+  async inspect(xml: string): Promise<DexpiViewResponse> {
+    return decodeDexpiView(await post(this.#base, "/dexpi", { view: xml }));
+  }
+
+  async exportFlowsheet(
+    document: string,
+    profile: "process" | "plant",
+    options: ExchangeOptions,
+  ): Promise<DexpiExport> {
+    return decodeDexpiExport(
+      await post(this.#base, "/dexpi", { export: { document, profile, options } }),
+    );
   }
 }
 

@@ -17,7 +17,8 @@ pub const PROCESS_MODEL: &str = "https://data.dexpi.org/models/2.0.0/Process.xml
 pub const PLANT_MODEL: &str = "https://data.dexpi.org/models/2.0.0/Plant.xml";
 
 /// The profile an exchange is written to or read as.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Profile {
     /// Core + Process: PFD/BFD content.
     Process,

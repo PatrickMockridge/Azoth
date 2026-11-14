@@ -225,6 +225,12 @@ struct Builder<'a> {
     boundaries: BTreeMap<String, String>,
     /// One entry per segment, for the drawing.
     segment_edges: Vec<SegmentEdge>,
+    /// The instance id to the Plant type it is written as, including segment-placed units.
+    mapped: BTreeMap<String, String>,
+    /// A counter for the pipes a segment's valve chain needs.
+    pipe_count: usize,
+    /// A counter for the valve objects, which are not items.
+    valve_count: usize,
 }
 
 struct SegmentEdge {
@@ -235,11 +241,28 @@ struct SegmentEdge {
     recycle: bool,
 }
 
+/// One valve the writer placed inside a segment.
+#[derive(Debug, Clone)]
+struct ValvePlacement {
+    instance: String,
+    unit: String,
+    ty: String,
+}
+
+impl ValvePlacement {
+    fn tag(&self) -> &str {
+        &self.instance
+    }
+}
+
+#[derive(Debug, Clone)]
 struct Edge {
     from: String,
     to: String,
     line: String,
     recycle: Option<String>,
+    /// The valves this edge passes through, in stream order.
+    valves: Vec<ValvePlacement>,
 }
 
 impl<'a> Builder<'a> {
@@ -261,11 +284,20 @@ impl<'a> Builder<'a> {
             item_ids: BTreeMap::new(),
             boundaries: BTreeMap::new(),
             segment_edges: Vec::new(),
+            mapped: BTreeMap::new(),
+            pipe_count: 0,
+            valve_count: 0,
         }
     }
 
     fn add_items(&mut self, mapped: &BTreeMap<String, String>) {
+        self.mapped = mapped.clone();
         for instance in &self.flowsheet.instances {
+            // **A segment-placed unit is not an item.** Its valve object is made inside the
+            // segment that passes through it, where the Plant model puts a piping component.
+            if plant::is_segment_unit(&instance.unit) {
+                continue;
+            }
             let Some(ty) = mapped.get(&instance.id) else {
                 continue;
             };
@@ -338,6 +370,7 @@ impl<'a> Builder<'a> {
                     .clone()
                     .unwrap_or_else(|| DEFAULT_LINE.to_string()),
                 recycle: None,
+                valves: Vec::new(),
             });
         }
         for recycle in &self.flowsheet.recycles {
@@ -349,8 +382,32 @@ impl<'a> Builder<'a> {
                     .options
                     .azoth_extensions
                     .then(|| recycle.stream.clone()),
+                valves: Vec::new(),
             });
         }
+
+        // **A valve is inside the segment it sits on.** The two streams that reach its ports
+        // become one segment, so the chain source -> valve -> target is one drawing edge with the
+        // valve in its `Items`, which is where the Plant model puts a piping component.
+        let valves: BTreeMap<String, ValvePlacement> = self
+            .flowsheet
+            .instances
+            .iter()
+            .filter(|instance| plant::is_segment_unit(&instance.unit))
+            .filter_map(|instance| {
+                self.mapped.get(&instance.id).map(|ty| {
+                    (
+                        instance.id.clone(),
+                        ValvePlacement {
+                            instance: instance.id.clone(),
+                            unit: instance.unit.clone(),
+                            ty: ty.clone(),
+                        },
+                    )
+                })
+            })
+            .collect();
+        contract_valves(&mut edges, &valves, fatal);
 
         for edge in edges {
             let Some(source) = self.endpoint_node(&edge.from, true) else {
@@ -387,16 +444,69 @@ impl<'a> Builder<'a> {
                     node
                 }
             };
-            if !boundary_items.is_empty() {
+            let mut items: Vec<ComponentChild> = boundary_items
+                .into_iter()
+                .map(ComponentChild::Object)
+                .collect();
+            let mut valve_nodes: Vec<(String, String)> = Vec::new();
+            for valve in &edge.valves {
+                self.valve_count += 1;
+                let valve_id = format!("Valve{}", self.valve_count);
+                let inlet = self.mint.next("ValveNode");
+                let outlet = self.mint.next("ValveNode");
+                let mut valve_children = vec![
+                    Child::Components(Components {
+                        property: "Nodes".to_string(),
+                        children: vec![
+                            ComponentChild::Object(Object {
+                                id: Some(inlet.clone()),
+                                name: None,
+                                ty: "Plant/Piping.PipingNode".to_string(),
+                                children: Vec::new(),
+                            }),
+                            ComponentChild::Object(Object {
+                                id: Some(outlet.clone()),
+                                name: None,
+                                ty: "Plant/Piping.PipingNode".to_string(),
+                                children: Vec::new(),
+                            }),
+                        ],
+                    }),
+                    Child::Data(string_data("TagName", valve.tag())),
+                ];
+                if self.options.azoth_extensions {
+                    valve_children.push(Child::Data(string_data(extensions::UNIT_OP, &valve.unit)));
+                    valve_children.push(Child::Data(string_data(
+                        extensions::INSTANCE_ID,
+                        &valve.instance,
+                    )));
+                    valve_children.push(Child::Data(string_data(extensions::TAG, valve.tag())));
+                }
+                self.item_ids
+                    .insert(valve.instance.clone(), valve_id.clone());
+                items.push(ComponentChild::Object(Object {
+                    id: Some(valve_id),
+                    name: None,
+                    ty: valve.ty.clone(),
+                    children: valve_children,
+                }));
+                valve_nodes.push((inlet, outlet));
+            }
+            if !items.is_empty() {
                 children.push(Child::Components(Components {
                     property: "Items".to_string(),
-                    children: boundary_items
-                        .into_iter()
-                        .map(ComponentChild::Object)
-                        .collect(),
+                    children: items,
                 }));
             }
-            let pipe_id = format!("Pipe{number}");
+            let mut pipes = Vec::new();
+            let mut current = source_node.clone();
+            for (inlet, outlet) in &valve_nodes {
+                self.pipe_count += 1;
+                pipes.push(pipe_object(self.pipe_count, &current, inlet));
+                current = outlet.clone();
+            }
+            self.pipe_count += 1;
+            pipes.push(pipe_object(self.pipe_count, &current, &target_node));
             let mut segment = vec![
                 Child::References(References {
                     property: "SourceNode".to_string(),
@@ -408,21 +518,7 @@ impl<'a> Builder<'a> {
                 }),
                 Child::Components(Components {
                     property: "Connections".to_string(),
-                    children: vec![ComponentChild::Object(Object {
-                        id: Some(pipe_id),
-                        name: None,
-                        ty: "Plant/Piping.Pipe".to_string(),
-                        children: vec![
-                            Child::References(References {
-                                property: "SourceNode".to_string(),
-                                objects: vec![format!("#{source_node}")],
-                            }),
-                            Child::References(References {
-                                property: "TargetNode".to_string(),
-                                objects: vec![format!("#{target_node}")],
-                            }),
-                        ],
-                    })],
+                    children: pipes,
                 }),
                 Child::Data(string_data("SegmentNumber", &number.to_string())),
             ];
@@ -519,14 +615,23 @@ impl<'a> Builder<'a> {
                 .items
                 .iter()
                 .find(|item| item.id.as_deref() == Some(object_id.as_str()))
-                .map(|item| item.ty.rsplit('.').next().unwrap_or(&item.ty).to_string());
+                .map(|item| item.ty.rsplit('.').next().unwrap_or(&item.ty).to_string())
+                .or_else(|| {
+                    self.mapped
+                        .get(&instance.id)
+                        .map(|ty| plant::class_of(ty).to_string())
+                });
             let position = positions.get(&instance.id);
             nodes.push(DiagramNode {
                 key: instance.id.clone(),
                 object_id: object_id.clone(),
                 label: instance.id.clone(),
                 detail,
-                shape: NodeShape::Unit,
+                shape: if plant::is_segment_unit(&instance.unit) {
+                    NodeShape::Valve
+                } else {
+                    NodeShape::Unit
+                },
                 x: position.map_or(0.0, |position| position.x),
                 y: position.map_or(0.0, |position| position.y),
             });
@@ -759,9 +864,107 @@ impl<'a> Builder<'a> {
     }
 }
 
+/// Join the two streams that reach a valve's ports into one segment.
+///
+/// A valve's inlet and outlet are two connections in a flowsheet and one segment in a P&ID.
+/// The contraction is repeated so a chain of valves becomes one segment with several items;
+/// a valve reached on only one side is refused, because a stream cannot cross it.
+fn contract_valves(
+    edges: &mut Vec<Edge>,
+    valves: &BTreeMap<String, ValvePlacement>,
+    fatal: &mut Vec<DexpiDiagnostic>,
+) {
+    loop {
+        let mut merged = false;
+        for (instance, valve) in valves {
+            let incoming = edges
+                .iter()
+                .position(|edge| endpoint_instance(&edge.to) == Some(instance.as_str()));
+            let outgoing = edges
+                .iter()
+                .position(|edge| endpoint_instance(&edge.from) == Some(instance.as_str()));
+            let (Some(incoming), Some(outgoing)) = (incoming, outgoing) else {
+                continue;
+            };
+            if incoming == outgoing {
+                continue;
+            }
+            let into = edges[incoming].clone();
+            let out = edges[outgoing].clone();
+            let (high, low) = if incoming > outgoing {
+                (incoming, outgoing)
+            } else {
+                (outgoing, incoming)
+            };
+            edges.remove(high);
+            edges.remove(low);
+            let mut through = into.valves;
+            through.push(valve.clone());
+            through.extend(out.valves);
+            edges.push(Edge {
+                from: into.from,
+                to: out.to,
+                line: merged_line(&into.line, &out.line),
+                recycle: into.recycle.or(out.recycle),
+                valves: through,
+            });
+            merged = true;
+            break;
+        }
+        if !merged {
+            break;
+        }
+    }
+    for edge in edges.iter() {
+        for endpoint in [&edge.from, &edge.to] {
+            if let Some(instance) = endpoint_instance(endpoint) {
+                if valves.contains_key(instance) {
+                    fatal.push(DexpiDiagnostic::error(
+                        "unpaired_segment_unit",
+                        instance,
+                        "a valve needs one inlet and one outlet stream to sit in a segment",
+                    ));
+                }
+            }
+        }
+    }
+}
+
+fn endpoint_instance(endpoint: &str) -> Option<&str> {
+    split_endpoint(endpoint).map(|(instance, _, _)| instance)
+}
+
+/// A segment carries one line; where a valve joins two lines, the incoming one is kept.
+fn merged_line(incoming: &str, outgoing: &str) -> String {
+    if incoming == DEFAULT_LINE {
+        outgoing.to_string()
+    } else {
+        incoming.to_string()
+    }
+}
+
 enum Node {
     Existing(String),
     Boundary { node: String, item: Object },
+}
+
+/// One pipe between two nodes, as the segment's `Connections` holds it.
+fn pipe_object(number: usize, source: &str, target: &str) -> ComponentChild {
+    ComponentChild::Object(Object {
+        id: Some(format!("Pipe{number}")),
+        name: None,
+        ty: "Plant/Piping.Pipe".to_string(),
+        children: vec![
+            Child::References(References {
+                property: "SourceNode".to_string(),
+                objects: vec![format!("#{source}")],
+            }),
+            Child::References(References {
+                property: "TargetNode".to_string(),
+                objects: vec![format!("#{target}")],
+            }),
+        ],
+    })
 }
 
 /// The drawing node an endpoint names: the instance, or the boundary name.

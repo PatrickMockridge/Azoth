@@ -282,6 +282,14 @@ def check_plant_rows(rows: list[dict]) -> None:
             problems.append(f"{ident}: a refused row names a Plant type")
         if write in ("lossy", "refused") and not note:
             problems.append(f"{ident}: {write} row carries no reason")
+        placement = row.get("placement", "item")
+        if placement not in ("item", "segment"):
+            problems.append(f"{ident}: placement {placement!r} is not `item` or `segment`")
+        if placement == "segment":
+            if write == "refused":
+                problems.append(f"{ident}: a segment placement needs a writable row")
+            if any(not plant_type.startswith("Plant/Piping.") for plant_type in types):
+                problems.append(f"{ident}: a segment placement names a piping component")
         for plant_type in types:
             if plant_type not in PLANT_SUPPORTED_TYPES:
                 problems.append(f"{ident}: {plant_type} is outside the reviewed Plant profile")
@@ -360,6 +368,10 @@ def render_plant(rows: list[dict]) -> str:
         }
     )
     projected_block = "".join(f"    {rust_string(name)},\n" for name in projected)
+    segment_units = sorted(
+        row["azoth_id"] for row in rows if row.get("placement", "item") == "segment"
+    )
+    segment_block = "".join(f"    {rust_string(unit)},\n" for unit in segment_units)
 
     text = (
         "//! GENERATED FILE - DO NOT EDIT BY HAND.\n"
@@ -374,6 +386,10 @@ def render_plant(rows: list[dict]) -> str:
         "/// Every palette entry, with what exchanging it as a tagged plant item costs.\n"
         "pub static PLANT_UNITS: &[PlantMapping] = &[\n"
         f"{''.join(entries)}];\n"
+        "\n"
+        "/// The units placed inside a segment's `Items`, not among the tagged items.\n"
+        "pub static PLANT_SEGMENT_UNITS: &[&str] = &[\n"
+        f"{segment_block}];\n"
         "\n"
         "/// The reverse index a reader uses: a class name and the azoth unit it stands for.\n"
         "/// One name, one unit - a class that could mean two is mapped to the general one.\n"

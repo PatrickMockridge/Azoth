@@ -34,8 +34,9 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
+import proteus from "../../crates/azoth-dexpi/tests/fixtures/proteus_simple.xml?raw";
 import demo from "../../specs/flowsheets/demo.toml?raw";
-import init, { Editor, palette_json } from "../src/wasm/pkg/azoth_wasm.js";
+import init, { Editor, Exchange, palette_json } from "../src/wasm/pkg/azoth_wasm.js";
 
 beforeAll(async () => {
   const wasm = readFileSync(resolve("src/wasm/pkg/azoth_wasm_bg.wasm"));
@@ -126,5 +127,11 @@ describe("the fixtures", () => {
     const editor = new Editor(demo);
     editor.apply('{"command":"remove_instance","id":"hx1"}');
     agree(editor.envelope(), "broken.json");
+  });
+
+  it("and the drawing view is the module's answer for the same file", () => {
+    // `azoth dexpi view --input … --json`, through the module's `Exchange`.
+    const answer = JSON.parse(new Exchange().inspect(proteus)) as { view?: unknown };
+    expect(difference(answer.view, fixture("dexpi-view.json"), "the view")).toBeNull();
   });
 });

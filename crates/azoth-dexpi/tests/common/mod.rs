@@ -44,6 +44,18 @@ pub fn plant_simple() -> azoth_process::Flowsheet {
     azoth_process::parse_flowsheet(&text).expect("the Plant fixture parses")
 }
 
+/// A pump, a valve and a separator: the valve is a segment item, not a tagged item.
+pub fn plant_valve() -> azoth_process::Flowsheet {
+    let text = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("fixtures")
+            .join("plant_valve.toml"),
+    )
+    .expect("the valve fixture reads");
+    azoth_process::parse_flowsheet(&text).expect("the valve fixture parses")
+}
+
 pub fn demo() -> azoth_process::Flowsheet {
     let text = std::fs::read_to_string(
         workspace_root()

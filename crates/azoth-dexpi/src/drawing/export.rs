@@ -11,6 +11,9 @@
 
 use std::collections::BTreeMap;
 
+use azoth_process::flowsheet::{Flowsheet, split_endpoint};
+use azoth_process::middleware::graph;
+
 use super::model::{
     Color, Drawing, DrawingGroup, DrawingOrigin, GroupKind, Point, Primitive, Stroke,
 };
@@ -31,6 +34,8 @@ pub(crate) enum NodeShape {
     Output,
     Recycle,
     Instrument,
+    /// A valve in a segment: a bowtie, which is the generic piping symbol.
+    Valve,
 }
 
 /// One node the drawing places.
@@ -123,6 +128,83 @@ pub(crate) fn build(name: &str, nodes: &[DiagramNode], edges: &[DiagramEdge]) ->
         DrawingOrigin::Derived,
         groups,
     )
+}
+
+/// A schematic of a flowsheet with no file graphics behind it.
+///
+/// The viewer's fallback: the same boxes and routes as an export, with the azoth key as the
+/// represented id, so a coverage report can still point at the node it means.
+pub(crate) fn schematic(flowsheet: &Flowsheet) -> Drawing {
+    let positions = graph::positions(flowsheet);
+    let mut nodes = Vec::new();
+    for input in &flowsheet.inputs {
+        let position = positions.get(&input.name);
+        nodes.push(DiagramNode {
+            key: input.name.clone(),
+            object_id: input.name.clone(),
+            label: input.name.clone(),
+            detail: Some("feed".to_string()),
+            shape: NodeShape::Input,
+            x: position.map_or(0.0, |position| position.x),
+            y: position.map_or(0.0, |position| position.y),
+        });
+    }
+    for instance in &flowsheet.instances {
+        let position = positions.get(&instance.id);
+        nodes.push(DiagramNode {
+            key: instance.id.clone(),
+            object_id: instance.id.clone(),
+            label: instance.id.clone(),
+            detail: Some(
+                instance
+                    .unit
+                    .strip_prefix("unit_ops.")
+                    .unwrap_or(&instance.unit)
+                    .to_string(),
+            ),
+            shape: NodeShape::Unit,
+            x: position.map_or(0.0, |position| position.x),
+            y: position.map_or(0.0, |position| position.y),
+        });
+    }
+    for product in &flowsheet.products {
+        let position = positions.get(product);
+        nodes.push(DiagramNode {
+            key: product.clone(),
+            object_id: product.clone(),
+            label: product.clone(),
+            detail: Some("product".to_string()),
+            shape: NodeShape::Output,
+            x: position.map_or(0.0, |position| position.x),
+            y: position.map_or(0.0, |position| position.y),
+        });
+    }
+    let mut edges = Vec::new();
+    for (index, connection) in flowsheet.connections.iter().enumerate() {
+        edges.push(DiagramEdge {
+            object_id: format!("Connection{}", index + 1),
+            source: schematic_key(&connection.from),
+            target: schematic_key(&connection.to),
+            label: connection.line.clone(),
+            dashed: false,
+        });
+    }
+    for recycle in &flowsheet.recycles {
+        edges.push(DiagramEdge {
+            object_id: format!("Recycle{}", recycle.stream),
+            source: schematic_key(&recycle.from),
+            target: schematic_key(&recycle.to),
+            label: Some(recycle.stream.clone()),
+            dashed: true,
+        });
+    }
+    build(&flowsheet.name, &nodes, &edges)
+}
+
+fn schematic_key(endpoint: &str) -> String {
+    split_endpoint(endpoint)
+        .map_or(endpoint, |(instance, _, _)| instance)
+        .to_string()
 }
 
 fn node_group(node: &DiagramNode) -> DrawingGroup {
@@ -240,6 +322,34 @@ fn outline(node: &DiagramNode) -> Vec<Point> {
             },
             Point { x: x + 12.0, y },
         ],
+        NodeShape::Valve => {
+            let cx = x + width / 2.0;
+            let cy = y + height / 2.0;
+            let hw = width / 4.0;
+            let hh = height / 3.0;
+            vec![
+                Point {
+                    x: cx - hw,
+                    y: cy - hh,
+                },
+                Point {
+                    x: cx - hw,
+                    y: cy + hh,
+                },
+                Point {
+                    x: cx + hw,
+                    y: cy - hh,
+                },
+                Point {
+                    x: cx + hw,
+                    y: cy + hh,
+                },
+                Point {
+                    x: cx - hw,
+                    y: cy - hh,
+                },
+            ]
+        }
     }
 }
 

@@ -94,6 +94,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(dexpi::dexpi_export_plant, m)?)?;
     m.add_function(wrap_pyfunction!(dexpi::dexpi_import_plant, m)?)?;
     m.add_function(wrap_pyfunction!(dexpi::dexpi_import_proteus, m)?)?;
+    m.add_function(wrap_pyfunction!(dexpi::dexpi_view, m)?)?;
     m.add_function(wrap_pyfunction!(dexpi::dexpi_validate, m)?)?;
     m.add_function(wrap_pyfunction!(dexpi::dexpi_schema_sha256, m)?)?;
     m.add_function(wrap_pyfunction!(dexpi::dexpi_format_double, m)?)?;

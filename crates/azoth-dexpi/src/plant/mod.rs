@@ -58,6 +58,15 @@ pub fn class_of(ty: &str) -> &str {
     ty.rsplit('.').next().unwrap_or(ty)
 }
 
+/// Whether a unit is placed inside a segment's `Items` rather than among the tagged items.
+///
+/// **A valve is piping, not equipment.** The Plant writer therefore has no tagged item to
+/// make for one; it places the valve on the segment between the two items the stream joins.
+#[must_use]
+pub fn is_segment_unit(unit: &str) -> bool {
+    crate::plant_mapping_gen::PLANT_SEGMENT_UNITS.contains(&unit)
+}
+
 /// The Plant mapping's counts: faithful, lossy and refused writes, and readable rows.
 #[must_use]
 pub fn counts() -> (usize, usize, usize, usize) {

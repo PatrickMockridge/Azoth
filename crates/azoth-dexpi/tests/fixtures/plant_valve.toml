@@ -1,0 +1,59 @@
+# A pump, a throttling valve and a separator: the valve is a piping component in the
+# segment between the pump and the separator, not a tagged item.
+id = "flowsheets.plant_valve"
+name = "Pump, valve, separator"
+
+products = ["GAS", "OIL"]
+
+[[inputs]]
+name = "FEED"
+components = ["methane", "n-butane"]
+n = 11.357
+z = [0.8, 0.2]
+P = 5.0e5
+T = 300.0
+
+[[instances]]
+id = "P-101"
+unit = "unit_ops.pump"
+[instances.parameters]
+outlet_pressure = 1.0e6
+isentropic_efficiency = 0.75
+
+[[instances]]
+id = "V-101"
+unit = "unit_ops.throttling_valve"
+[instances.parameters]
+outlet_pressure = 9.5e5
+
+[[instances]]
+id = "SEP-101"
+unit = "unit_ops.separator"
+[instances.parameters]
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+
+[[connections]]
+from = "FEED"
+to = "P-101.inlet"
+line = "L-2001"
+
+[[connections]]
+from = "P-101.outlet"
+to = "V-101.inlet"
+line = "L-2002"
+
+[[connections]]
+from = "V-101.outlet"
+to = "SEP-101.feed"
+line = "L-2002"
+
+[[connections]]
+from = "SEP-101.vapour"
+to = "GAS"
+line = "L-2003"
+
+[[connections]]
+from = "SEP-101.liquid"
+to = "OIL"
+line = "L-2004"

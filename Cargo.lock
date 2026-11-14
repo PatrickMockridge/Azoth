@@ -223,6 +223,7 @@ name = "azoth-wasm"
 version = "0.1.3"
 dependencies = [
  "azoth-core",
+ "azoth-dexpi",
  "azoth-process",
  "azoth-sheets",
  "serde_json",

@@ -635,7 +635,7 @@ impl<'a> Builder<'a> {
                 NodeShape::Input => Some("feed".to_string()),
                 NodeShape::Output => Some("product".to_string()),
                 NodeShape::Recycle => Some("recycle".to_string()),
-                NodeShape::Unit | NodeShape::Instrument => step
+                NodeShape::Unit | NodeShape::Instrument | NodeShape::Valve => step
                     .leaf_unit
                     .as_deref()
                     .map(|unit| unit.strip_prefix("unit_ops.").unwrap_or(unit).to_string()),

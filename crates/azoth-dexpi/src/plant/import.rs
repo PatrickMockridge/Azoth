@@ -83,7 +83,10 @@ pub fn import_plant_document(
 
     let mut diagnostics = Vec::new();
     let mut taken = BTreeSet::new();
-    let steps = read_steps(plant_model, &mut diagnostics, &mut taken);
+    let mut steps = read_steps(plant_model, &mut diagnostics, &mut taken);
+    // **A valve lives on the segment, not in the tagged items.** Its two nodes are the stream's
+    // way through it, and the segment's pipes name them beside the equipment's nozzles.
+    steps.extend(read_inline_steps(plant_model, &mut diagnostics, &mut taken));
 
     let mut owners: BTreeMap<String, NodeOwner> = BTreeMap::new();
     for (index, step) in steps.iter().enumerate() {
@@ -341,6 +344,86 @@ fn read_steps(
     steps
 }
 
+/// The segment-placed units: a valve in a segment's `Items`, with its own two nodes.
+fn read_inline_steps(
+    plant_model: &Object,
+    diagnostics: &mut Vec<DexpiDiagnostic>,
+    taken: &mut BTreeSet<String>,
+) -> Vec<Step> {
+    let mut steps = Vec::new();
+    let Some(systems) = plant_model.components("PipingNetworkSystems") else {
+        return steps;
+    };
+    for system in systems.children.iter().filter_map(|child| match child {
+        ComponentChild::Object(object) => Some(object),
+        _ => None,
+    }) {
+        let Some(segments) = system.components("Segments") else {
+            continue;
+        };
+        for segment in segments.children.iter().filter_map(|child| match child {
+            ComponentChild::Object(object) => Some(object),
+            _ => None,
+        }) {
+            let Some(items) = segment.components("Items") else {
+                continue;
+            };
+            for item in items.children.iter().filter_map(|child| match child {
+                ComponentChild::Object(object) => Some(object),
+                _ => None,
+            }) {
+                let class = plant::class_of(&item.ty);
+                if PASS_THROUGH_CLASSES.contains(&class) {
+                    continue;
+                }
+                let Some(unit) =
+                    plant::for_class(class).filter(|unit| plant::is_segment_unit(unit))
+                else {
+                    continue;
+                };
+                let identifier = item
+                    .data_string("TagName")
+                    .or(item.id.as_deref())
+                    .unwrap_or_default()
+                    .to_string();
+                let sanitized = sanitize_instance_id(&identifier);
+                let instance_id = uniquify(&sanitized, taken);
+                if instance_id != sanitized {
+                    diagnostics.push(DexpiDiagnostic::warning(
+                        "renamed_on_import",
+                        identifier.clone(),
+                        format!(
+                            "`{identifier}` collides with another name; this valve is `{instance_id}`"
+                        ),
+                    ));
+                }
+                let mut nozzles = Vec::new();
+                if let Some(nodes) = item.components("Nodes") {
+                    for node in nodes.children.iter().filter_map(|child| match child {
+                        ComponentChild::Object(object) => Some(object),
+                        _ => None,
+                    }) {
+                        if let Some(id) = &node.id {
+                            nozzles.push(Nozzle {
+                                nodes: vec![id.clone()],
+                                port: node.data_string("SubTagName").map(ToString::to_string),
+                            });
+                        }
+                    }
+                }
+                steps.push(Step {
+                    object_id: item.id.clone(),
+                    identifier,
+                    unit: Some(unit.to_string()),
+                    instance_id: Some(instance_id),
+                    nozzles,
+                });
+            }
+        }
+    }
+    steps
+}
+
 fn nozzle_node_ids(nozzle: &Object) -> Vec<String> {
     nozzle
         .components("Nodes")
@@ -436,21 +519,47 @@ fn read_segments(plant_model: &Object) -> Vec<Segment> {
                 _ => None,
             })
         {
-            let Some(source_node) = first_reference(segment, "SourceNode") else {
-                continue;
-            };
-            let Some(target_node) = first_reference(segment, "TargetNode") else {
-                continue;
-            };
-            segments.push(Segment {
-                id: segment.id.clone().unwrap_or_default(),
-                source_node: source_node.trim_start_matches('#').to_string(),
-                target_node: target_node.trim_start_matches('#').to_string(),
-                line: line.clone(),
-                recycle: segment
-                    .data_string(extensions::RECYCLE)
-                    .map(ToString::to_string),
-            });
+            let id = segment.id.clone().unwrap_or_default();
+            let recycle = segment
+                .data_string(extensions::RECYCLE)
+                .map(ToString::to_string);
+            // **The pipes are the chain.** A segment with a valve in its `Items` has one pipe to
+            // the valve and one from it; a segment with no valve has one pipe. A segment written
+            // before the `Connections` component fell back to its two outer nodes.
+            let mut pipes = Vec::new();
+            if let Some(connections) = segment.components("Connections") {
+                for pipe in connections.children.iter().filter_map(|child| match child {
+                    ComponentChild::Object(object) => Some(object),
+                    _ => None,
+                }) {
+                    if pipe.ty != "Plant/Piping.Pipe" {
+                        continue;
+                    }
+                    if let (Some(source), Some(target)) = (
+                        first_reference(pipe, "SourceNode"),
+                        first_reference(pipe, "TargetNode"),
+                    ) {
+                        pipes.push((source, target));
+                    }
+                }
+            }
+            if pipes.is_empty() {
+                if let (Some(source), Some(target)) = (
+                    first_reference(segment, "SourceNode"),
+                    first_reference(segment, "TargetNode"),
+                ) {
+                    pipes.push((source, target));
+                }
+            }
+            for (source_node, target_node) in pipes {
+                segments.push(Segment {
+                    id: id.clone(),
+                    source_node: source_node.trim_start_matches('#').to_string(),
+                    target_node: target_node.trim_start_matches('#').to_string(),
+                    line: line.clone(),
+                    recycle: recycle.clone(),
+                });
+            }
         }
     }
     segments

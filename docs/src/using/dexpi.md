@@ -33,8 +33,9 @@ azoth dexpi export \
 
 The Plant exchange carries tags, nozzles, line numbers and the instrumentation layer. The
 drawing adds items, off-page connectors, one segment per stream, instrument bubbles and
-dashed signals. It is a **simplified** P&ID: one pipe per stream and no inline fittings, so
-a valve is still refused on Plant write (a valve belongs inside a segment's `Items`).
+dashed signals. It is a **simplified** P&ID: one segment per stream, and a throttling valve
+is placed inside the segment's `Items` with the pipes split around it; other inline fittings
+are not written.
 
 Both profiles use generic primitives, not ISO 10628 symbols. The file is the handoff: a CAD
 tool replaces the symbols and keeps the topology, tags and values.
@@ -80,6 +81,25 @@ print(imported["layout_positions"])
 `export_plant(..., drawing=True)` does the same for a P&ID, and `import_plant` /`import_proteus`
 take `layout=False` to drop the arrangement. Every call returns the text and its report as
 JSON, the same two documents the CLI prints.
+
+## The Drawing workspace
+
+The editor's **Drawing** tab is the same view as `azoth dexpi view`, in the browser. Import a
+DEXPI 2.0 P&ID/PFD or a Proteus file; the workspace draws it, lists every object's coverage -
+modelled, lossy, ambiguous, unmapped, topology, control, drawing-only - and says what the file
+would become: instances, connections, instruments, and the check errors still owed.
+
+- **Open as flowsheet** loads the scaffold into the editor, where `azoth check`'s diagnostics
+  mark the feeds and parameters still to declare.
+- **Export PFD** and **Export P&ID** write the *open simulation* back as a DEXPI file with the
+  drawing; a refusal lists its diagnostics in the panel.
+- **Download SVG** writes the figure as shown, for a document or a slide.
+
+It is a viewer, not a CAD: it does not move or author a symbol. The arrangement is carried by
+`[layout]`; hand the XML to CAD for symbols and revisions.
+
+`azoth dexpi view --input FILE --json` is the headless form, and `dexpi.view(xml)` the
+Python one.
 
 ## What the exchange does not promise
 

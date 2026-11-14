@@ -7,8 +7,12 @@
 # this table states it rather than flattening it into one column.
 #
 #   write = "faithful" | "lossy" | "refused"  - what an export costs, as in the Process table.
-#   plant_types  - the native `Plant/ProcessEquipment.*` class the writer emits (one, for a
-#                  writable row; none for a refusal).
+#   plant_types  - the native class the writer emits (one, for a writable row; none for a
+#                  refusal). It is `Plant/ProcessEquipment.*` for a tagged item and
+#                  `Plant/Piping.*` for a row whose `placement` is `segment`.
+#   placement    - `item` (the default) or `segment`. A segment-placed unit is a piping
+#                  component written inside the segment that passes through it, not a tagged
+#                  item; a valve is the one this table has.
 #   reader_types - the bare class names a reader accepts. A native file spells them
 #                  `Plant/ProcessEquipment.<name>`; a Proteus file spells them `<name>` in
 #                  `ComponentClass`. One name, one azoth unit: a class that could mean two
@@ -226,10 +230,11 @@ note = "Separator does not say which outlet is water; the three nozzles carry th
 
 [[unit]]
 azoth_id = "unit_ops.throttling_valve"
-write = "refused"
-plant_types = []
+write = "faithful"
+plant_types = ["Plant/Piping.GlobeValve"]
+placement = "segment"
 reader_types = ["GlobeValve", "ButterflyValve", "CheckValve", "ControlValve", "PressureSafetyValve", "PressureReliefValve", "PressureReducingValve", "BallValve", "GateValve", "PlugValve", "DiaphragmValve", "NeedleValve", "SwingCheckValve", "SpringLoadedGlobeSafetyValve", "PilotOperatedSafetyValve", "SolenoidValve", "PinchValve", "RuptureDisk", "Valve"]
-note = "A valve is a piping component inside a segment, not a tagged plant item; this writer places no piping components yet, so the valve has no item to be. The reader accepts every valve class as `unit_ops.throttling_valve`."
+note = "A valve is a piping component inside a segment, not a tagged plant item. The writer places it in the segment's `Items` with its own two nodes and splits the pipes around it."
 
 [[unit]]
 azoth_id = "unit_ops.turbo_expander_compressor"

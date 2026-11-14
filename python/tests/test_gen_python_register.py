@@ -31,10 +31,11 @@ LIB = REPO_ROOT / "crates" / "azoth-python" / "src" / "lib.rs"
 #: `gen_python_register` now emits it, so `lib.rs` no longer names it.
 #:
 #: `add_function` rose by eight for the DEXPI exchange - five Process entries and three for
-#: Plant and Proteus. They are genuinely underivable: the exchange is a file format's
-#: adapter, not a calculation with a spec id, so there is no registry for a generator to
-#: emit them from. A ninth would need the same sentence.
-KNOWN_HAND_WRITTEN = {"add_class": 13, "add_function": 47}
+#: Plant and Proteus - and by a ninth for `dexpi_view`, the coverage report. They are
+#: genuinely underivable: the exchange is a file format's adapter, not a calculation with a
+#: spec id, so there is no registry for a generator to emit them from. A tenth would need the
+#: same sentence.
+KNOWN_HAND_WRITTEN = {"add_class": 13, "add_function": 48}
 
 
 def _tools_module(name: str) -> ModuleType:

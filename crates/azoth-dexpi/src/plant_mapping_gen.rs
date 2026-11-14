@@ -247,8 +247,8 @@ pub static PLANT_UNITS: &[PlantMapping] = &[
     },
     PlantMapping {
         azoth_id: "unit_ops.throttling_valve",
-        write: Disposition::Refused,
-        plant_types: &[],
+        write: Disposition::Faithful,
+        plant_types: &["Plant/Piping.GlobeValve"],
         reader_types: &[
             "GlobeValve",
             "ButterflyValve",
@@ -270,7 +270,7 @@ pub static PLANT_UNITS: &[PlantMapping] = &[
             "RuptureDisk",
             "Valve",
         ],
-        note: "A valve is a piping component inside a segment, not a tagged plant item; this writer places no piping components yet, so the valve has no item to be. The reader accepts every valve class as `unit_ops.throttling_valve`.",
+        note: "A valve is a piping component inside a segment, not a tagged plant item. The writer places it in the segment's `Items` with its own two nodes and splits the pipes around it.",
     },
     PlantMapping {
         azoth_id: "unit_ops.turbo_expander_compressor",
@@ -280,6 +280,9 @@ pub static PLANT_UNITS: &[PlantMapping] = &[
         note: "A four-port rotating machine has no reviewed Plant class.",
     },
 ];
+
+/// The units placed inside a segment's `Items`, not among the tagged items.
+pub static PLANT_SEGMENT_UNITS: &[&str] = &["unit_ops.throttling_valve"];
 
 /// The reverse index a reader uses: a class name and the azoth unit it stands for.
 /// One name, one unit - a class that could mean two is mapped to the general one.
@@ -450,14 +453,14 @@ pub static PLANT_CLASS_TYPES: &[&str] = &[
     "Plant/ProcessEquipment.WasteGasEmitter",
 ];
 
-/// Faithful writes: 4.
-pub const PLANT_FAITHFUL_COUNT: usize = 4;
+/// Faithful writes: 5.
+pub const PLANT_FAITHFUL_COUNT: usize = 5;
 
 /// Lossy writes: 5.
 pub const PLANT_LOSSY_COUNT: usize = 5;
 
-/// Refused writes: 22.
-pub const PLANT_REFUSED_COUNT: usize = 22;
+/// Refused writes: 21.
+pub const PLANT_REFUSED_COUNT: usize = 21;
 
 /// Rows with at least one readable class name: 23.
 pub const PLANT_READABLE_COUNT: usize = 23;
