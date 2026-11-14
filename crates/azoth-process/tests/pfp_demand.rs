@@ -108,7 +108,7 @@ fn the_thick_wall_needs_no_protection() {
     );
     close(
         result.bare_steel_time_to_critical.value,
-        3290.894_444_444_444_6,
+        3_290.894_444_444_444_6,
         "the bare-steel time",
     );
     assert!(!result.pfp_required);
