@@ -16168,6 +16168,92 @@ impl From<&azoth_process::models::filter::FilterResult> for PyFilterResult {
         }
     }
 }
+/// Result of `process.fire_water_demand`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "FireWaterDemandResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFireWaterDemandResult {
+    /// `protected_area application_rate`.
+    #[pyo3(get)]
+    pub area_demand: PyQty,
+    /// the sum of the objects' `surface rate`, in list order.
+    #[pyo3(get)]
+    pub object_demand: PyQty,
+    /// `(area_demand + object_demand) simultaneous_area_factor`.
+    #[pyo3(get)]
+    pub total_demand: PyQty,
+    /// `total_demand 60 / 1000`, the class's `totalDemandM3PerHour`.
+    #[pyo3(get)]
+    pub total_demand_m3_per_hour: PyQty,
+    /// `total_demand duration / 60000` with the duration in seconds, the class's `waterVolumeM3`.
+    #[pyo3(get)]
+    pub water_volume: PyQty,
+    /// `water_volume foam_concentrate_percent / 100`.
+    #[pyo3(get)]
+    pub foam_concentrate_volume: PyQty,
+    /// `object_demand / area_demand`; absent where the area demand is zero, where the class answers NaN.
+    #[pyo3(get)]
+    pub object_to_area_demand_ratio: Option<f64>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyFireWaterDemandResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FireWaterDemandResult(area_demand={:?}, object_demand={:?}, total_demand={:?}, total_demand_m3_per_hour={:?}, water_volume={:?}, foam_concentrate_volume={:?}, object_to_area_demand_ratio={:?}, {} warning(s))",
+            self.area_demand,
+            self.object_demand,
+            self.total_demand,
+            self.total_demand_m3_per_hour,
+            self.water_volume,
+            self.foam_concentrate_volume,
+            self.object_to_area_demand_ratio,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_process::models::fire_water_demand::FireWaterDemandResult>
+    for PyFireWaterDemandResult
+{
+    fn from(r: &azoth_process::models::fire_water_demand::FireWaterDemandResult) -> Self {
+        Self {
+            area_demand: PyQty {
+                magnitude_si: r.area_demand.value,
+                unit: "L/min".to_string(),
+            },
+            object_demand: PyQty {
+                magnitude_si: r.object_demand.value,
+                unit: "L/min".to_string(),
+            },
+            total_demand: PyQty {
+                magnitude_si: r.total_demand.value,
+                unit: "L/min".to_string(),
+            },
+            total_demand_m3_per_hour: PyQty {
+                magnitude_si: r.total_demand_m3_per_hour.value,
+                unit: "m**3/h".to_string(),
+            },
+            water_volume: PyQty {
+                magnitude_si: r.water_volume.value,
+                unit: "m**3".to_string(),
+            },
+            foam_concentrate_volume: PyQty {
+                magnitude_si: r.foam_concentrate_volume.value,
+                unit: "m**3".to_string(),
+            },
+            object_to_area_demand_ratio: r.object_to_area_demand_ratio,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `process.flare`, transported.
 #[pyclass(
     frozen,

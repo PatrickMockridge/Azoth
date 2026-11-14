@@ -252,6 +252,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyEventTreeResult>()?;
     m.add_class::<crate::transport_gen::PyExpanderResult>()?;
     m.add_class::<crate::transport_gen::PyFilterResult>()?;
+    m.add_class::<crate::transport_gen::PyFireWaterDemandResult>()?;
     m.add_class::<crate::transport_gen::PyFlareResult>()?;
     m.add_class::<crate::transport_gen::PyGasDispersionResult>()?;
     m.add_class::<crate::transport_gen::PyGasScrubberResult>()?;
@@ -899,6 +900,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::event_tree, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::expander, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::filter, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::process::fire_water_demand, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::flare, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::gas_dispersion, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::gas_scrubber, m)?)?;

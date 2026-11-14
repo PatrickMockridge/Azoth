@@ -91,6 +91,7 @@ from azoth.core.result import (
     FeSMorphology,
     FilippovConductivityResult,
     FilterResult,
+    FireWaterDemandResult,
     FirozabadiRamleyInterfaceTensionResult,
     FlareResult,
     FlowlineScaleProfileResult,
@@ -443,6 +444,7 @@ __all__ = [
     "expander",
     "filippov_conductivity",
     "filter",
+    "fire_water_demand",
     "firozabadi_ramley_interface_tension",
     "flare",
     "flowline_scale_profile",
@@ -6149,6 +6151,29 @@ def filter(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         collapse_pressure_utilization=result.collapse_pressure_utilization,
         differential_pressure_design_acceptable=result.differential_pressure_design_acceptable,
         design_media_area=None if result.design_media_area is None else from_si(result.design_media_area.magnitude_si, result.design_media_area.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def fire_water_demand(protected_area: Q, application_rate: float | None=None, duration: Q | None=None, foam_concentrate_percent: float | None=None, simultaneous_area_factor: float | None=None, protected_objects: list[dict[str, object]] | None=None) -> FireWaterDemandResult:
+    """``process.fire_water_demand``, computed in Rust."""
+    spec = _models_gen.model("process.fire_water_demand")
+    result = _core.fire_water_demand(
+        input_to_si(spec, "protected_area", protected_area),
+        None if application_rate is None else application_rate,
+        None if duration is None else input_to_si(spec, "duration", duration),
+        None if foam_concentrate_percent is None else foam_concentrate_percent,
+        None if simultaneous_area_factor is None else simultaneous_area_factor,
+        None if protected_objects is None else input_records_to_si(spec, "protected_objects", protected_objects),
+    )
+    return FireWaterDemandResult(
+        area_demand=from_si(result.area_demand.magnitude_si, result.area_demand.unit),
+        object_demand=from_si(result.object_demand.magnitude_si, result.object_demand.unit),
+        total_demand=from_si(result.total_demand.magnitude_si, result.total_demand.unit),
+        total_demand_m3_per_hour=from_si(result.total_demand_m3_per_hour.magnitude_si, result.total_demand_m3_per_hour.unit),
+        water_volume=from_si(result.water_volume.magnitude_si, result.water_volume.unit),
+        foam_concentrate_volume=from_si(result.foam_concentrate_volume.magnitude_si, result.foam_concentrate_volume.unit),
+        object_to_area_demand_ratio=result.object_to_area_demand_ratio,
         warnings=_warnings(result.warnings),
     )
 

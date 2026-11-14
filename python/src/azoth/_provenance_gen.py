@@ -2578,6 +2578,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 28,
         "tests_skipped": 0,
     },
+    'process.fire_water_demand': {
+        "calc_id": 'process.fire_water_demand',
+        "name": 'Fire-water demand',
+        "spec": {'path': 'specs/models/process/fire_water_demand.toml', 'sha256': 'fc2127744cda04a9af45ee96bc796b6b0ecb61235e0f2954a8c4f83c9def0b9c'},
+        "code": [{'path': 'python/src/azoth/process/reference/fire_water_demand.py', 'sha256': '7d0d13680432f8149e3fc441a3dfb2572fcabbae21cd45bafb0473c3d0d1174b'}, {'path': 'crates/azoth-process/src/models/fire_water_demand.rs', 'sha256': '1c2a723e56551a7ef4920663736dcd26df7f1b1967273b0e94227f12feabc001'}],
+        "source": 'NeqSim process/safety/firewater/FireWaterDemandCalculator.java',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 7,
+        "tests_skipped": 0,
+    },
     'process.flare': {
         "calc_id": 'process.flare',
         "name": 'Flare',

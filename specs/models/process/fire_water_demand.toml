@@ -1,0 +1,118 @@
+id = "process.fire_water_demand"
+name = "Fire-water demand"
+kind = "procedure"
+assumptions = [
+    "**the demand is an application rate over an area**: `area = protected_area rate`, `object = sum(surface rate)` over the protected objects, and `total = (area + object) simultaneous_factor`, in the class's order.",
+    "**the rate is dimensionless `L/(min m2)`** because the vocabulary has no per-area volume rate; the flow is published in `L/min`, the volume in `m3` and the hourly rate in `m3/h`.",
+    "**the duration is the port's seconds**: the class's `setDurationMin` takes minutes, and `water_volume = total duration / 60000` with the duration in seconds is the same product.",
+    "**the class's defaults are carried**: application rate 10 L/(min m2) (NORSOK process area), duration 30 min, foam concentrate 0 % and simultaneous area factor 1.",
+    "**a zero area demand has no ratio**: the class's `objectToAreaDemandRatio` answers NaN, and the port publishes the output as absent.",
+    "**the object rows validate nothing in the class**: `addObject` and `ProtectedObject` accept a negative area or rate and publish a negative demand; the port refuses both.",
+    "**the horizontal-vessel convenience is not carried**: `addHorizontalVessel` is the caller's wetted area `pi D L + 2 pi D^2 / 4`, and the row takes the surface directly.",
+    "**the object tag is JSON-only**: it is not read by any arithmetic and is not carried.",
+    "**the foam volume is the concentrate, not the water**: `foam = water concentrate_percent / 100` with the percent in `[0, 10]`.",
+]
+references = [
+    "NORSOK S-001 (2018). Technical safety, fire-water systems and application rates.",
+    "NFPA 15 (2022). Standard for Water Spray Fixed Systems for Fire Protection.",
+    "ISO 13702 (2015). Petroleum and natural gas industries - Control and mitigation of fires and explosions on offshore production installations.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/safety/firewater/FireWaterDemandCalculator.java` is the port source.",
+    "`validation/neqsim/captures/process_fire_water_demand.tsv` - the class's six tests, the horizontal-vessel wetted area, the zero area demand, the accepted negative object and the constructor and setter refusals.",
+]
+[source]
+standard = "NeqSim process/safety/firewater/FireWaterDemandCalculator.java"
+edition = "Its `areaDemandLpm`, `objectDemandLpm`, `totalDemandLpm`, `waterVolumeM3`, `foamConcentrateVolumeM3` and `objectToAreaDemandRatio`."
+[algorithm]
+scheme = "closed_form_fire_water_demand"
+convergence = "absolute"
+tolerance = 1.0e-12
+max_iterations = 1
+[inputs]
+[inputs.protected_area]
+unit = "m**2"
+description = "the protected deck or ground area, at least zero; a zero area is a demand from objects alone.\n"
+[inputs.application_rate]
+unit = "dimensionless"
+optional = true
+description = "the general-area application rate in `L/(min m2)`, at least zero. **Absent is 10**, the class's NORSOK process-area rate.\n"
+[inputs.duration]
+unit = "s"
+optional = true
+description = "the fire-water duration, above zero. **Absent is 1800 s**, the class's 30 minutes.\n"
+[inputs.foam_concentrate_percent]
+unit = "dimensionless"
+optional = true
+description = "the foam (AFFF) concentrate fraction in percent, in `[0, 10]`. **Absent is 0**, no foam.\n"
+[inputs.simultaneous_area_factor]
+unit = "dimensionless"
+optional = true
+description = "the simultaneous-release factor applied to the summed demand, at least 1. **Absent is 1.**\n"
+[inputs.protected_objects]
+type = "record_list"
+row_type = "ProtectedObject"
+optional = true
+description = "the dedicated objects, each a wetted surface and its own application rate. **Absent is no dedicated objects**, the class's empty list. A negative row area or rate is refused.\n"
+[inputs.protected_objects.fields.surface_area]
+unit = "m**2"
+description = "the object's wetted surface, at least zero. A horizontal vessel's shell and ends are `pi D L + 2 pi D^2 / 4`.\n"
+[inputs.protected_objects.fields.application_rate]
+unit = "dimensionless"
+description = "the object's application rate in `L/(min m2)`, at least zero.\n"
+[outputs]
+[outputs.area_demand]
+unit = "L/min"
+description = "`protected_area application_rate`.\n"
+[outputs.object_demand]
+unit = "L/min"
+description = "the sum of the objects' `surface rate`, in list order.\n"
+[outputs.total_demand]
+unit = "L/min"
+description = "`(area_demand + object_demand) simultaneous_area_factor`.\n"
+[outputs.total_demand_m3_per_hour]
+unit = "m**3/h"
+description = "`total_demand 60 / 1000`, the class's `totalDemandM3PerHour`.\n"
+[outputs.water_volume]
+unit = "m**3"
+description = "`total_demand duration / 60000` with the duration in seconds, the class's `waterVolumeM3`.\n"
+[outputs.foam_concentrate_volume]
+unit = "m**3"
+description = "`water_volume foam_concentrate_percent / 100`.\n"
+[outputs.object_to_area_demand_ratio]
+unit = "dimensionless"
+optional = true
+description = "`object_demand / area_demand`; absent where the area demand is zero, where the class answers NaN.\n"
+[[valid_range]]
+quantity = "protected_area"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "the class's constructor refuses a negative protected area"
+[[valid_range]]
+quantity = "application_rate"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "the class's setter refuses a negative rate"
+[[valid_range]]
+quantity = "duration"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the class's setter refuses a non-positive duration"
+[[valid_range]]
+quantity = "foam_concentrate_percent"
+min = 0
+min_inclusive = true
+max = 10
+max_inclusive = true
+severity = "error"
+rationale = "the class's setter refuses a percent outside 0..10"
+[[valid_range]]
+quantity = "simultaneous_area_factor"
+min = 1
+min_inclusive = true
+severity = "error"
+rationale = "the class's setter refuses a factor below one"
+[implementations]
+python = "azoth.process.fire_water_demand"
+rust = "azoth_process::fire_water_demand"

@@ -234,6 +234,7 @@
 //!   - specs/models/process/event_tree.toml
 //!   - specs/models/process/expander.toml
 //!   - specs/models/process/filter.toml
+//!   - specs/models/process/fire_water_demand.toml
 //!   - specs/models/process/flare.toml
 //!   - specs/models/process/gas_dispersion.toml
 //!   - specs/models/process/gas_scrubber.toml
@@ -3083,6 +3084,23 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("process.filter", "joint_efficiency", "dimensionless"),
     ("process.filter", "corrosion_allowance", "length"),
     ("process.filter", "element_collapse_pressure", "pressure"),
+    ("process.fire_water_demand", "protected_area", "area"),
+    (
+        "process.fire_water_demand",
+        "application_rate",
+        "dimensionless",
+    ),
+    ("process.fire_water_demand", "duration", "time"),
+    (
+        "process.fire_water_demand",
+        "foam_concentrate_percent",
+        "dimensionless",
+    ),
+    (
+        "process.fire_water_demand",
+        "simultaneous_area_factor",
+        "dimensionless",
+    ),
     ("process.flare", "inlet_n", "molar_flow"),
     ("process.flare", "inlet_z", "dimensionless"),
     ("process.flare", "inlet_p", "pressure"),

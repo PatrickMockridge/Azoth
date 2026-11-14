@@ -31,6 +31,7 @@ from azoth.core.result import (
     EventTreeResult,
     ExpanderResult,
     FilterResult,
+    FireWaterDemandResult,
     FlareResult,
     GasDispersionResult,
     GasScrubberResult,
@@ -99,6 +100,7 @@ __all__ = [
     "event_tree",
     "expander",
     "filter",
+    "fire_water_demand",
     "flare",
     "forms",
     "gas_dispersion",
@@ -137,6 +139,7 @@ __all__ = [
     "vce",
 ]
 
+_FIRE_WATER_DEMAND = "process.fire_water_demand"
 _MANIFOLD = "process.manifold"
 _MIXER = "process.mixer"
 _PACKED_COLUMN = "process.packed_column"
@@ -2099,6 +2102,37 @@ def event_tree(
     return resolve(_EVENT_TREE)(  # type: ignore[no-any-return]
         initiating_frequency_per_year=initiating_frequency_per_year,
         branches=branches,
+    )
+
+
+def fire_water_demand(
+    protected_area: Q,
+    application_rate: float | None = None,
+    duration: Q | None = None,
+    foam_concentrate_percent: float | None = None,
+    simultaneous_area_factor: float | None = None,
+    protected_objects: list[dict[str, object]] | None = None,
+) -> FireWaterDemandResult:
+    """The fire-water demand: area and object rates, simultaneous factor and volumes.
+
+    The NORSOK S-001 / NFPA 15 application-rate screen: ``area = protected_area rate``, the
+    object demand summed over the wetted surfaces, the simultaneous factor applied to the
+    total, and the water and foam volumes over the duration. **A zero area demand has no
+    ratio**, the class's NaN.
+
+    Raises:
+        InvalidInputError: for a negative area or rate, a non-positive duration, a foam
+            percent outside ``[0, 10]``, a factor below one, or a negative row area or rate.
+
+    See :func:`azoth.process.reference.fire_water_demand`.
+    """
+    return resolve(_FIRE_WATER_DEMAND)(  # type: ignore[no-any-return]
+        protected_area=protected_area,
+        application_rate=application_rate,
+        duration=duration,
+        foam_concentrate_percent=foam_concentrate_percent,
+        simultaneous_area_factor=simultaneous_area_factor,
+        protected_objects=protected_objects,
     )
 
 

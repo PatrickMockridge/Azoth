@@ -6476,6 +6476,37 @@ class FilterResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class FireWaterDemandResult(_HasWarnings):
+    """Result of ``process.fire_water_demand``."""
+
+    CALC_ID: ClassVar[str] = "process.fire_water_demand"
+
+    #: `protected_area application_rate`.
+    area_demand: Q
+
+    #: the sum of the objects' `surface rate`, in list order.
+    object_demand: Q
+
+    #: `(area_demand + object_demand) simultaneous_area_factor`.
+    total_demand: Q
+
+    #: `total_demand 60 / 1000`, the class's `totalDemandM3PerHour`.
+    total_demand_m3_per_hour: Q
+
+    #: `total_demand duration / 60000` with the duration in seconds, the class's `waterVolumeM3`.
+    water_volume: Q
+
+    #: `water_volume foam_concentrate_percent / 100`.
+    foam_concentrate_volume: Q
+
+    #: `object_demand / area_demand`; absent where the area demand is zero, where the class answers NaN.
+    object_to_area_demand_ratio: float | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FlareResult(_HasWarnings):
     """Result of ``process.flare``."""
 

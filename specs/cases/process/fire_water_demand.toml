@@ -1,0 +1,115 @@
+model = "process.fire_water_demand"
+[[cases]]
+id = "area_demand_follows_application_rate"
+tolerance = 1.0e-12
+source = "`FireWaterDesignTest.areaDemandFollowsApplicationRate`: 510 m2 at 10 L/(min m2) for 30 min. From `validation/neqsim/captures/process_fire_water_demand.tsv` (`fwd_area_demand`)."
+[cases.inputs]
+protected_area = 510.0
+application_rate = 10.0
+duration = 1800.0
+[cases.expected]
+area_demand = 5100.0
+object_demand = 0.0
+total_demand = 5100.0
+total_demand_m3_per_hour = 306.0
+water_volume = 153.0
+foam_concentrate_volume = 0.0
+object_to_area_demand_ratio = 0.0
+[[cases]]
+id = "wellhead_rate_is_double_the_process_area_rate"
+tolerance = 1.0e-12
+source = "`FireWaterDesignTest.wellheadRateIsDoubleTheProcessAreaRate`: the same area at 20 L/(min m2). From (`fwd_wellhead_rate`)."
+[cases.inputs]
+protected_area = 510.0
+application_rate = 20.0
+duration = 1800.0
+[cases.expected]
+area_demand = 10200.0
+object_demand = 0.0
+total_demand = 10200.0
+total_demand_m3_per_hour = 612.0
+water_volume = 306.0
+foam_concentrate_volume = 0.0
+object_to_area_demand_ratio = 0.0
+[[cases]]
+id = "horizontal_vessel_surface_is_shell_and_ends"
+tolerance = 1.0e-12
+source = "`FireWaterDesignTest.horizontalVesselSurfaceUsesShellPlusEnds`: a 0.72 m diameter, 6.606 m tangent vessel at 10 L/(min m2), its wetted area `pi D L + 2 pi D^2 / 4`. From (`fwd_horizontal_vessel`)."
+[cases.inputs]
+protected_area = 0.0
+application_rate = 10.0
+duration = 1800.0
+protected_objects = [{ surface_area = 15.75672078593268, application_rate = 10.0 }]
+[cases.expected]
+area_demand = 0.0
+object_demand = 157.5672078593268
+total_demand = 157.5672078593268
+total_demand_m3_per_hour = 9.454032471559607
+water_volume = 4.727016235779804
+foam_concentrate_volume = 0.0
+[[cases]]
+id = "selective_object_protection_ratio"
+tolerance = 1.0e-12
+source = "`FireWaterDesignTest.selectiveObjectProtectionIsASmallFractionOfTheAreaDemand`: the vessel on a 510 m2 deck. From (`fwd_selective_object`)."
+[cases.inputs]
+protected_area = 510.0
+application_rate = 10.0
+duration = 1800.0
+protected_objects = [{ surface_area = 15.75672078593268, application_rate = 10.0 }]
+[cases.expected]
+area_demand = 5100.0
+object_demand = 157.5672078593268
+total_demand = 5257.567207859327
+total_demand_m3_per_hour = 315.4540324715596
+water_volume = 157.7270162357798
+foam_concentrate_volume = 0.0
+object_to_area_demand_ratio = 0.030895530952809176
+[[cases]]
+id = "foam_concentrate_scales_with_water_volume"
+tolerance = 1.0e-12
+source = "`FireWaterDesignTest.foamConcentrateScalesWithWaterVolume`: 100 m2, 10 L/(min m2), 30 min, 3 % foam. From (`fwd_foam`)."
+[cases.inputs]
+protected_area = 100.0
+application_rate = 10.0
+duration = 1800.0
+foam_concentrate_percent = 3.0
+[cases.expected]
+area_demand = 1000.0
+object_demand = 0.0
+total_demand = 1000.0
+total_demand_m3_per_hour = 60.0
+water_volume = 30.0
+foam_concentrate_volume = 0.9
+object_to_area_demand_ratio = 0.0
+[[cases]]
+id = "simultaneous_release_factor_multiplies_the_demand"
+tolerance = 1.0e-12
+source = "`FireWaterDesignTest.simultaneousReleaseFactorMultipliesDemand`: 200 m2 at 10 L/(min m2) and a factor of 2. From (`fwd_simultaneous`)."
+[cases.inputs]
+protected_area = 200.0
+application_rate = 10.0
+duration = 1800.0
+simultaneous_area_factor = 2.0
+[cases.expected]
+area_demand = 2000.0
+object_demand = 0.0
+total_demand = 4000.0
+total_demand_m3_per_hour = 240.0
+water_volume = 120.0
+foam_concentrate_volume = 0.0
+object_to_area_demand_ratio = 0.0
+[[cases]]
+id = "zero_area_demand_has_no_ratio"
+tolerance = 1.0e-12
+source = "The class's NaN branch: a zero area with no objects has no area demand to ratio against. From (`fwd_zero_area_ratio`)."
+[cases.inputs]
+protected_area = 0.0
+application_rate = 10.0
+duration = 1800.0
+[cases.expected]
+area_demand = 0.0
+object_demand = 0.0
+total_demand = 0.0
+total_demand_m3_per_hour = 0.0
+water_volume = 0.0
+foam_concentrate_volume = 0.0

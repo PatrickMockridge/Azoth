@@ -1417,6 +1417,53 @@ def _pfp_demand(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dumped
 
 
+def _fire_water_demand(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.fire_water_demand`'s layers, from the reference's own arithmetic.
+
+    The class works in `L/min` and `m3/h`; the solution is SI, and the capture's keys are
+    the class's units. The ratio is omitted where the class answers NaN.
+    """
+    from azoth.core.units import quantity
+    from azoth.process.reference.fire_water_demand import _evaluate
+
+    def optional(name: str, unit: str) -> Any:
+        value = inputs.get(name)
+        return None if value is None else quantity(float(value), unit)
+
+    rows = [
+        {
+            "surface_area": quantity(float(row["surface_area"]), "m**2"),
+            "application_rate": float(row["application_rate"]),
+        }
+        for row in inputs.get("protected_objects", [])
+    ]
+    solution, _ = _evaluate(
+        quantity(float(inputs["protected_area"]), "m**2"),
+        application_rate=None
+        if inputs.get("application_rate") is None
+        else float(inputs["application_rate"]),
+        duration=optional("duration", "s"),
+        foam_concentrate_percent=None
+        if inputs.get("foam_concentrate_percent") is None
+        else float(inputs["foam_concentrate_percent"]),
+        simultaneous_area_factor=None
+        if inputs.get("simultaneous_area_factor") is None
+        else float(inputs["simultaneous_area_factor"]),
+        protected_objects=rows,
+    )
+    dumped: dict[str, float] = {
+        "area_demand_lpm": solution.area_demand * 60000.0,
+        "object_demand_lpm": solution.object_demand * 60000.0,
+        "total_demand_lpm": solution.total_demand * 60000.0,
+        "total_demand_m3_per_hour": solution.total_demand_m3_per_hour * 3600.0,
+        "water_volume_m3": solution.water_volume,
+        "foam_concentrate_volume_m3": solution.foam_concentrate_volume,
+    }
+    if solution.ratio is not None:
+        dumped["object_to_area_demand_ratio"] = solution.ratio
+    return dumped
+
+
 def _vce(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.vce`'s layers, from the reference's own arithmetic."""
     from azoth.core.units import quantity
@@ -1889,6 +1936,7 @@ DUMPERS: dict[str, Dumper] = {
     "process.consequence_analysis": _consequence_analysis,
     "process.jet_fire": _jet_fire,
     "process.pfp_demand": _pfp_demand,
+    "process.fire_water_demand": _fire_water_demand,
     "process.pool_fire": _pool_fire,
     "process.probit": _probit,
     "process.vce": _vce,
@@ -2605,6 +2653,57 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_pfp_demand.tsv",
         block=8,
         identified_by=("#label", "pfp_overrides"),
+    ),
+    # The fire-water demand's seven: the class's tests, the vessel surface, the ratio and the
+    # zero area demand. The accepted negative object and the six refusals are uncased.
+    LayerCase(
+        model="process.fire_water_demand",
+        case="area_demand_follows_application_rate",
+        capture="process_fire_water_demand.tsv",
+        block=0,
+        identified_by=("#label", "fwd_area_demand"),
+    ),
+    LayerCase(
+        model="process.fire_water_demand",
+        case="wellhead_rate_is_double_the_process_area_rate",
+        capture="process_fire_water_demand.tsv",
+        block=1,
+        identified_by=("#label", "fwd_wellhead_rate"),
+    ),
+    LayerCase(
+        model="process.fire_water_demand",
+        case="horizontal_vessel_surface_is_shell_and_ends",
+        capture="process_fire_water_demand.tsv",
+        block=2,
+        identified_by=("#label", "fwd_horizontal_vessel"),
+    ),
+    LayerCase(
+        model="process.fire_water_demand",
+        case="selective_object_protection_ratio",
+        capture="process_fire_water_demand.tsv",
+        block=3,
+        identified_by=("#label", "fwd_selective_object"),
+    ),
+    LayerCase(
+        model="process.fire_water_demand",
+        case="foam_concentrate_scales_with_water_volume",
+        capture="process_fire_water_demand.tsv",
+        block=4,
+        identified_by=("#label", "fwd_foam"),
+    ),
+    LayerCase(
+        model="process.fire_water_demand",
+        case="simultaneous_release_factor_multiplies_the_demand",
+        capture="process_fire_water_demand.tsv",
+        block=5,
+        identified_by=("#label", "fwd_simultaneous"),
+    ),
+    LayerCase(
+        model="process.fire_water_demand",
+        case="zero_area_demand_has_no_ratio",
+        capture="process_fire_water_demand.tsv",
+        block=6,
+        identified_by=("#label", "fwd_zero_area_ratio"),
     ),
     # The VCE's thirteen reachable states: the test state at two distances, the 5 kPa
     # contour and all ten plateaus. The 20.7 kPa target that exceeds the class-4 plateau,
@@ -3821,6 +3920,9 @@ UNCASED_ROWS: dict[str, int] = {
     # The PFP demand's nine: the two non-physical temperature states the port refuses, and
     # the class's seven constructor and setter refusals.
     "process_pfp_demand.tsv": 9,
+    # The fire-water demand's seven: the accepted negative object, and the class's
+    # constructor, setter and vessel refusals.
+    "process_fire_water_demand.tsv": 7,
     # The VCE's three: two unreachable targets the class answers with its near bound, and
     # the zero-target refusal.
     "process_vce.tsv": 3,

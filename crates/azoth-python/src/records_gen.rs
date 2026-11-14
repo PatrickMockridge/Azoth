@@ -374,6 +374,15 @@ pub struct ProductionChemicalDose {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct ProtectedObject {
+    #[pyo3(item)]
+    pub surface_area: f64,
+    #[pyo3(item)]
+    pub application_rate: f64,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct PumpCurvePoint {
     #[pyo3(item)]
     pub speed: f64,

@@ -338,6 +338,7 @@ Five sections, and the difference between them is the point:
 - [`process.event_tree`](./process/event_tree.md) — Event tree
 - [`process.expander`](./process/expander.md) — Expander
 - [`process.filter`](./process/filter.md) — Filter
+- [`process.fire_water_demand`](./process/fire_water_demand.md) — Fire-water demand
 - [`process.flare`](./process/flare.md) — Flare
 - [`process.gas_dispersion`](./process/gas_dispersion.md) — Gas dispersion screening
 - [`process.gas_scrubber`](./process/gas_scrubber.md) — Gas scrubber

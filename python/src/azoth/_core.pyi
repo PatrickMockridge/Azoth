@@ -456,6 +456,12 @@ class FilterBetaPoint(TypedDict):
     particle_size: float
     beta_ratio: float
 
+class ProtectedObject(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    surface_area: float
+    application_rate: float
+
 class MapCurvePoint(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -3153,6 +3159,17 @@ class FilterResult:
     collapse_pressure_utilization: float | None
     differential_pressure_design_acceptable: bool | None
     design_media_area: Qty | None
+    warnings: list[Warning]
+
+@final
+class FireWaterDemandResult:
+    area_demand: Qty
+    object_demand: Qty
+    total_demand: Qty
+    total_demand_m3_per_hour: Qty
+    water_volume: Qty
+    foam_concentrate_volume: Qty
+    object_to_area_demand_ratio: float | None
     warnings: list[Warning]
 
 @final
@@ -6579,6 +6596,14 @@ def filter(
     element_collapse_pressure: float | None = None,
     element_integrity_verified: bool | None = None,
 ) -> FilterResult: ...
+def fire_water_demand(
+    protected_area: float,
+    application_rate: float | None = None,
+    duration: float | None = None,
+    foam_concentrate_percent: float | None = None,
+    simultaneous_area_factor: float | None = None,
+    protected_objects: list[ProtectedObject] | None = None,
+) -> FireWaterDemandResult: ...
 def flare(
     components: list[str],
     inlet_n: float,

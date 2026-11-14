@@ -23,6 +23,7 @@ use crate::models::ejector::EjectorResult;
 use crate::models::event_tree::EventTreeResult;
 use crate::models::expander::ExpanderResult;
 use crate::models::filter::FilterResult;
+use crate::models::fire_water_demand::FireWaterDemandResult;
 use crate::models::flare::FlareResult;
 use crate::models::gas_dispersion::GasDispersionResult;
 use crate::models::gas_scrubber::GasScrubberResult;
@@ -468,6 +469,24 @@ impl CalcResult for FilterResult {
         "collapse_pressure_utilization",
         "differential_pressure_design_acceptable",
         "design_media_area",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+impl CalcResult for FireWaterDemandResult {
+    const CALC_ID: &'static str = "process.fire_water_demand";
+    const FIELDS: &'static [&'static str] = &[
+        "area_demand",
+        "object_demand",
+        "total_demand",
+        "total_demand_m3_per_hour",
+        "water_volume",
+        "foam_concentrate_volume",
+        "object_to_area_demand_ratio",
         "warnings",
     ];
 

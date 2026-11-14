@@ -1792,3 +1792,47 @@ pub fn separator_performance(
     .map(|r| crate::transport_gen::PySeparatorPerformanceResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
+
+/// The fire-water demand.
+///
+/// All arguments are SI magnitudes. See the module documentation for why. **The
+/// `record_list` input is optional**, which the wrapper generator does not derive, so this
+/// binding is hand-written.
+#[pyfunction]
+#[pyo3(signature = (protected_area, application_rate, duration, foam_concentrate_percent, simultaneous_area_factor, protected_objects))]
+#[pyo3(
+    text_signature = "(protected_area, application_rate, duration, foam_concentrate_percent, simultaneous_area_factor, protected_objects)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn fire_water_demand(
+    py: Python<'_>,
+    protected_area: f64,
+    application_rate: Option<f64>,
+    duration: Option<f64>,
+    foam_concentrate_percent: Option<f64>,
+    simultaneous_area_factor: Option<f64>,
+    protected_objects: Option<Vec<crate::records_gen::ProtectedObject>>,
+) -> PyResult<crate::transport_gen::PyFireWaterDemandResult> {
+    let rows: Option<Vec<azoth_process::models::fire_water_demand::ProtectedObject>> =
+        protected_objects.map(|objects| {
+            objects
+                .into_iter()
+                .map(
+                    |row| azoth_process::models::fire_water_demand::ProtectedObject {
+                        surface_area: square_meters(row.surface_area),
+                        application_rate: row.application_rate,
+                    },
+                )
+                .collect()
+        });
+    azoth_process::models::fire_water_demand::fire_water_demand(
+        square_meters(protected_area),
+        application_rate,
+        duration.map(seconds),
+        foam_concentrate_percent,
+        simultaneous_area_factor,
+        rows.as_deref(),
+    )
+    .map(|r| crate::transport_gen::PyFireWaterDemandResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}

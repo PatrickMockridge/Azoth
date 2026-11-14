@@ -25,6 +25,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`process.event_tree`](./event_tree.md) | `full_binary_enumeration` | NeqSim process/safety/risk/eta/EventTreeAnalyzer.java |
 | [`process.expander`](./expander.md) | `direct composition` | NeqSim process/equipment/compressor/Compressor.java |
 | [`process.filter`](./filter.md) | `direct composition` | NeqSim process/equipment/filter/Filter.java |
+| [`process.fire_water_demand`](./fire_water_demand.md) | `closed_form_fire_water_demand` | NeqSim process/safety/firewater/FireWaterDemandCalculator.java |
 | [`process.flare`](./flare.md) | `direct composition` | NeqSim process/equipment/flare/Flare.java |
 | [`process.gas_dispersion`](./gas_dispersion.md) | `pasquill_gifford_or_britter_mcquaid_screening` | NeqSim process/safety/dispersion/GasDispersionAnalyzer.java |
 | [`process.gas_scrubber`](./gas_scrubber.md) | `direct composition` | NeqSim process/equipment/separator/GasScrubber.java |
